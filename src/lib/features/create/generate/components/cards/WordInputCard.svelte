@@ -4,7 +4,7 @@ Empty = random generation. Typed word = spell that word.
 Replaces the old GenerationModeCard (Freeform/Spell toggle).
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
   import { onMount } from "svelte";
   import CardHeader from "./shared/CardHeader.svelte";
   import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
@@ -42,7 +42,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   let greekKeyMapper: IGreekKeyMapper | null = $state(null);
 
   onMount(() => {
-    greekKeyMapper = container.items.greekKeyMapper as IGreekKeyMapper;
+    greekKeyMapper = getGreekKeyMapper();
   });
 
   const hasWord = $derived(wordValue.trim().length > 0);

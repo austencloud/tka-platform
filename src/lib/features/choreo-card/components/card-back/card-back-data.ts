@@ -18,6 +18,7 @@ import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-dis
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { VTG_TURNS_RATIO_MAP } from "../../domain/elemental-theme";
 import { getReversalPattern } from "../../domain/reversal-patterns";
+import { matchReversalPatternId } from "../../domain/reversal-matcher";
 
 // The anatomy grid shows which elements appear in the sequence.
 // Each field is a set of string values; the card renders present
@@ -318,10 +319,10 @@ function deriveStartPosition(sequence: SequenceData): StartPositionInfo | null {
   let blueLocation: string | null = null;
   let redLocation: string | null = null;
 
-  const sp = sequence.startPosition ?? (sequence as any).startingPosition;
+  const sp = sequence.startPosition ?? sequence.startingPosition;
   if (sp?.motions) {
-    blueLocation = (sp.motions as any).blue?.endLocation ?? null;
-    redLocation = (sp.motions as any).red?.endLocation ?? null;
+    blueLocation = sp.motions.blue?.endLocation ?? null;
+    redLocation = sp.motions.red?.endLocation ?? null;
   }
 
   if (!blueLocation || !redLocation) {
@@ -448,7 +449,7 @@ export function deriveCardBackData(
   const turnGlyphEntries = deriveTurnGlyphEntries(sequence);
 
   // Derive reversal pattern glyph data
-  const reversalPatternId = (sequence as any).reversalPattern ?? "continuous";
+  const reversalPatternId = matchReversalPatternId(sequence.steps) ?? "continuous";
   const revPattern = getReversalPattern(reversalPatternId);
   const reversalSequence = revPattern?.sequence ?? "----";
   const reversalPeriod = revPattern?.period ?? 1;

@@ -6,8 +6,7 @@
 <script lang="ts">
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { TriGridMode } from "../domain/trigrid-types";
-  import { container } from "$lib/shared/di";
-  import type { ITriGridPositionResolver } from "../services/contracts/ITriGridPositionResolver";
+  import { getTriGridPositionResolver } from "../getTriGridPositionResolver";
   import { TRIGRID_AVAILABLE_LETTER_TYPES } from "../domain/trigrid-constants";
 
   interface Props {
@@ -18,7 +17,7 @@
 
   const { blueLocation, redLocation, mode }: Props = $props();
 
-  const resolver: ITriGridPositionResolver = container.items.triGridPositionResolver;
+  const resolver = getTriGridPositionResolver();
 
   const positionInfo = $derived(resolver.resolvePosition(blueLocation, redLocation, mode));
 

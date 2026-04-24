@@ -5,6 +5,7 @@
   Used in notifications or a dedicated invites list.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { container } from "$lib/shared/di";
   import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -21,7 +22,7 @@
   } = $props();
 
   const videoService = container.items.collaborativeVideoManager;
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   let isProcessing = $state(false);
   let error = $state<string | null>(null);

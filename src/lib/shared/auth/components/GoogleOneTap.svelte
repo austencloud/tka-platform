@@ -41,6 +41,7 @@
    * See: https://developers.google.com/identity/gsi/web/guides/fedcm-migration
    */
 
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { onMount, onDestroy } from "svelte";
   import { container } from "../../di";
 
@@ -110,7 +111,7 @@
 
     try {
       if (!authService) {
-        authService = container.items.authenticator;
+        authService = getAuthenticator();
       }
 
       if (authService) {
@@ -194,7 +195,7 @@
 
   onMount(async () => {
     try {
-      authService = container.items.authenticator;
+      authService = getAuthenticator();
       await loadGoogleScript();
       scriptLoaded = true;
       initializeOneTap();

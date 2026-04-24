@@ -12,6 +12,7 @@
   - Better screen reader support
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { container } from "../../di";
@@ -84,7 +85,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Handle confirm button

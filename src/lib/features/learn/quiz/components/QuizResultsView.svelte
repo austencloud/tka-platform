@@ -1,5 +1,6 @@
 <!-- QuizResultsView - Refactored with service architecture -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onDestroy, onMount } from "svelte";
@@ -54,7 +55,7 @@
 
   // Initialize services and queue celebrations
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     analyzer = container.items.quizResultsAnalyzer;
 
     if (results && analyzer) {

@@ -5,6 +5,7 @@
  * Handles transport, shuttle (J/K/L), and audio synchronization.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type {
   ITimelinePlayer,
   ActiveClipInfo,
@@ -12,7 +13,6 @@ import type {
 import type { TimeSeconds, TimelineClip } from "../../domain/timeline-types";
 import { getClipEndTime } from "../../domain/timeline-types";
 import { getTimelineState } from "../../state/timeline-state.svelte";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class TimelinePlayer implements ITimelinePlayer {
@@ -428,7 +428,7 @@ export class TimelinePlayer implements ITimelinePlayer {
     this.audioErrorShown = true;
 
     try {
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showWarning(
         "Audio playback failed. Try clicking anywhere on the page first (browser autoplay policy)."
       );

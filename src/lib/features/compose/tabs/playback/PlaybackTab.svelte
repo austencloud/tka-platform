@@ -5,9 +5,9 @@
   Switches renderers based on current mode and provides unified controls.
 -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getPlaybackState } from "./state/playback-state.svelte";
   import { getComposeModuleState } from "../../shared/state/compose-module-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { onMount } from "svelte";
   import PlaybackHeader from "./components/PlaybackHeader.svelte";
@@ -32,7 +32,7 @@
   let isMobile = $state(false);
 
   onMount(() => {
-    deviceDetector = container.items.deviceDetector;
+    deviceDetector = getDeviceDetector();
     // Check initial state
     isMobile = deviceDetector?.isMobile() ?? false;
 

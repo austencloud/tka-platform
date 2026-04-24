@@ -13,6 +13,8 @@ Same functionality, different density.
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
   import { container as diContainer } from "$lib/shared/di";
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
   import type { IRandomSequenceGenerator } from "../services/contracts/IRandomSequenceGenerator";
@@ -41,8 +43,8 @@ Same functionality, different density.
   } = $props();
 
   // Touch device and input focus tracking
-  const deviceDetector = diContainer.items.deviceDetector as IDeviceDetector;
-  const haptic = diContainer.items.hapticFeedback as IHapticFeedback;
+  const deviceDetector = getDeviceDetector();
+  const haptic = getHapticFeedback();
   let hasTouchCapability = $state(false);
   let isInputFocused = $state(false);
 

@@ -48,7 +48,7 @@
     <script>
       (function() {
         var p = window.location.pathname;
-        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/p/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003');
+        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/q/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003');
         if (isLanding) {
           // Mark landing mode early for loading bar skip below
           window.__tkaIsLanding = true;
@@ -103,7 +103,7 @@
                     and: [
                       { href_matches: '/*' },
                       { not: { href_matches: '/sequence/*' } },
-                      { not: { href_matches: '/p/*' } },
+                      { not: { href_matches: '/q/*' } },
                       { not: { href_matches: '/embed*' } },
                       { not: { selector_matches: '[rel~="external"]' } }
                     ]
@@ -144,6 +144,9 @@
       content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="TKA Composer" />
+    <!-- Smart App Banner: prompts iOS users to open/install native app.
+         Uncomment after Apple Developer enrollment assigns an App Store ID. -->
+    <!-- <meta name="apple-itunes-app" content="app-id=XXXXXXXXXX"> -->
 
     <!-- iOS Splash Screens (prevents white flash on launch) -->
     <link

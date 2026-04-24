@@ -24,7 +24,7 @@ even when Svelte recreates the component instance.
 </script>
 
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "../../../../application/services/contracts/IHapticFeedback";
   import type { MotionData } from "../../../shared/domain/models/MotionData";
   import type { PictographData } from "../../../shared/domain/models/PictographData";
@@ -423,7 +423,7 @@ even when Svelte recreates the component instance.
   // Get haptic service from container (lazy access)
   const getHapticService = () => {
     try {
-      return container.items.hapticFeedback;
+      return getHapticFeedback();
     } catch (error) {
       console.warn("Haptic service not available:", error);
       return null;

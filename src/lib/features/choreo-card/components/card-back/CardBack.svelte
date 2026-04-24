@@ -127,7 +127,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
     border-radius: 1.6cqi;
@@ -169,12 +169,12 @@
     font-size: 4cqi;
     font-weight: 400;
     letter-spacing: 0.22em;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.85));
   }
 
   .brand-url {
     font-size: 2.8cqi;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     letter-spacing: 0.04em;
   }
 
@@ -233,7 +233,7 @@
   .deck-designation {
     margin: 0;
     font-size: 2.8cqi;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
     line-height: 1.4;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -241,7 +241,7 @@
   }
 
   .deck-designation.vtg {
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
     font-size: 2.5cqi;
   }
 
@@ -275,14 +275,14 @@
   .corner-label {
     font-size: 6cqi;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
     line-height: 1;
   }
 
   .corner-sublabel {
     font-size: 2.8cqi;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }

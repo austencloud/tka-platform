@@ -3,9 +3,10 @@ BaseCard.svelte - Base component for all setting cards
 Provides consistent styling and interaction patterns for all generation setting cards
 -->
 <script lang="ts">
+  import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import CardHeader from "./shared/CardHeader.svelte";
 
@@ -40,8 +41,8 @@ Provides consistent styling and interaction patterns for all generation setting 
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
-    rippleService = container.items.rippleEffect;
+    hapticService = getHapticFeedback();
+    rippleService = getRippleEffect();
 
     if (clickable && cardElement) {
       return rippleService.attachRipple(cardElement, {

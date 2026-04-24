@@ -30,6 +30,8 @@ function makeCtx(): CanvasRenderingContext2D {
     translate: vi.fn(),
     rotate: vi.fn(),
     scale: vi.fn(),
+    getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
+    setTransform: vi.fn(),
     clearRect: vi.fn(),
     createRadialGradient: vi.fn(makeGradient),
     createLinearGradient: vi.fn(makeGradient),
@@ -82,8 +84,8 @@ describe("Petals2DRenderer", () => {
     }
     // Each petal draws a silhouette (fill) — we should have many fills.
     expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
-    // Save/translate/rotate called per petal per frame.
-    expect((ctx.save as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    // setTransform called per petal per frame (replaces save/translate/rotate).
+    expect((ctx.setTransform as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
   });
 
   it("motion emission outpaces ambient emission", () => {
@@ -179,8 +181,9 @@ describe("Petals2DRenderer", () => {
     for (let i = 0; i < 10; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    const translateCalls = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
-    const ys = translateCalls.map((c) => c[1] as number);
+    const stCalls = (ctx.setTransform as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c) => c.length >= 6);
+    const ys = stCalls.map((c) => c[5] as number);
     const maxY = Math.max(...ys);
     // Tip y is 100; after several frames, petals should have moved down.
     expect(maxY).toBeGreaterThan(100);

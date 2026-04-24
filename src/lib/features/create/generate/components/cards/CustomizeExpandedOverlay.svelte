@@ -36,10 +36,10 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 </script>
 
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount, untrack } from "svelte";
   import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -99,7 +99,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   let hapticService: IHapticFeedback | null = $state(null);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Accordion state — restore last-open section across drawer open/close cycles

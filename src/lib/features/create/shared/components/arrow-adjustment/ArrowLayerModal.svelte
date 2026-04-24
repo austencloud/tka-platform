@@ -6,6 +6,7 @@
   with deliberate Save/Delete/Cancel actions (no auto-save).
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../domain/models/StepData";
   import type { AdjustmentTargetKey } from "../../services/contracts/IArrowAdjustmentOrchestrator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -221,7 +222,7 @@
     globalAdjustmentVersion.increment();
     hasLocalChanges = true;
 
-    const haptic = container.items.hapticFeedback;
+    const haptic = getHapticFeedback();
     haptic?.trigger("selection");
   }
 
@@ -246,7 +247,7 @@
         adjustmentX: adj.x,
         adjustmentY: adj.y,
       });
-      const haptic = container.items.hapticFeedback;
+      const haptic = getHapticFeedback();
       haptic?.trigger("success");
     } catch (error) {
       logger.error("Save failed:", error);
@@ -269,7 +270,7 @@
       await repo.deleteAdjustment(targetKey);
       pictographPreparer.clearCache();
       globalAdjustmentVersion.increment();
-      const haptic = container.items.hapticFeedback;
+      const haptic = getHapticFeedback();
       haptic?.trigger("warning");
     } catch (error) {
       logger.error("Delete failed:", error);

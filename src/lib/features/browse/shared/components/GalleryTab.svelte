@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -28,7 +29,6 @@
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import VirtualKeyboard from "$lib/shared/components/touch/VirtualKeyboard.svelte";
-  import { container } from "$lib/shared/di";
 
   interface Props {
     isMobile: boolean;
@@ -174,7 +174,7 @@
   // Floating Search State
   let showSearchTerminal = $state(false);
   let searchMode = $state<"standard" | "spelled">("standard");
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   const currentSearchQuery = $derived.by(() => {
     const filter = galleryState.activeFilterList.find(f => f.type === 'contains_letters');

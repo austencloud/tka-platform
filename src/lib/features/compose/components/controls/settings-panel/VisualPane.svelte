@@ -7,6 +7,7 @@
   - Ends selector (One End/Both Ends) - for bilateral props
 -->
 <script lang="ts">
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { onMount } from "svelte";
   import {
     getAnimationVisibilityManager,
@@ -20,7 +21,6 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { container } from "$lib/shared/di";
 
   let {
     propType = null,
@@ -32,7 +32,7 @@
     redPropType?: PropType | string | null;
   } = $props();
 
-  const settingsState = container.items.settingsState;
+  const settingsState = settingsService;
 
   // Fall back to user's global settings when props not explicitly provided
   const effectiveBluePropType = $derived(

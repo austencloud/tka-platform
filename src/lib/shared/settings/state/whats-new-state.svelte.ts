@@ -12,8 +12,8 @@
  * - "manual": Triggered by clicking version number (shows feedback + View All Releases)
  */
 
+import { getOnboardingPersister } from "$lib/shared/onboarding/getOnboardingPersister";
 import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
-import { container } from "$lib/shared/di";
 import type { IOnboardingPersister } from "$lib/shared/onboarding/services/contracts/IOnboardingPersister";
 import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
 
@@ -28,7 +28,7 @@ function getOnboardingService(): IOnboardingPersister | null {
   if (_onboardingService) return _onboardingService;
 
   try {
-    _onboardingService = container.items.onboardingPersister;
+    _onboardingService = getOnboardingPersister();
     return _onboardingService;
   } catch {
     return null;

@@ -18,6 +18,7 @@
   import type { ISoloPropFactory } from "$lib/shared/foundation/services/contracts/ISoloPropFactory";
   import type { ISoloPropSaveOrchestrator } from "$lib/features/library/services/contracts/ISoloPropSaveOrchestrator";
   import { container } from "$lib/shared/di";
+  import { getSoloPropFactory } from "$lib/shared/foundation/getSoloPropFactory";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import GridModePicker from "./GridModePicker.svelte";
 
@@ -110,7 +111,7 @@
     soloPropSaveError = null;
 
     try {
-      const soloPropFactory = container.items.soloPropFactory as ISoloPropFactory;
+      const soloPropFactory = getSoloPropFactory();
       const orchestrator = container.items.soloPropSaveOrchestrator as ISoloPropSaveOrchestrator;
 
       const soloPropSteps = steps.map(builderStepToSoloPropStep);

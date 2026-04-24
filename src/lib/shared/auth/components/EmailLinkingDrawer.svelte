@@ -10,6 +10,8 @@
   3. Success - Confirmation that email is linked and verified
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { authState } from "../state/authState.svelte";
   import { container } from "../../di";
@@ -40,8 +42,8 @@
   let linkingState = $state<EmailLinkingState | null>(null);
 
   onMount(() => {
-    authService = container.items.authenticator;
-    hapticService = container.items.hapticFeedback;
+    authService = getAuthenticator();
+    hapticService = getHapticFeedback();
   });
 
   onDestroy(() => {

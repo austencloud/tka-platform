@@ -8,6 +8,7 @@
   Same settings accessible from context menus for quick access.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -17,7 +18,6 @@
     getSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { VisibilityMode } from "./visibility/visibility-types";
   import MobileSegmentControl from "./visibility/MobileSegmentControl.svelte";
@@ -47,7 +47,7 @@
   function bump() { version++; }
 
   onMount(() => {
-    try { haptic = container.items.hapticFeedback; } catch { /* optional */ }
+    try { haptic = getHapticFeedback(); } catch { /* optional */ }
 
     vm.registerObserver(bump, ["all"]);
     avm.registerObserver(bump);

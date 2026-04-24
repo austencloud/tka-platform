@@ -224,7 +224,6 @@
     const parsed = encoderService.parsePropsFromURL($page.url.searchParams);
 
     if (parsed.bluePropType || parsed.redPropType) {
-      const settingsService = container.items.settingsState;
       const updates: { bluePropType?: PropType; redPropType?: PropType } = {};
 
       if (parsed.bluePropType) {

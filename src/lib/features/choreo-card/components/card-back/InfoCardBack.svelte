@@ -112,7 +112,7 @@
   .card {
     width: 100%;
     height: 100%;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
     border-radius: 8px;
@@ -141,17 +141,17 @@
 
   .divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     margin: 12px 0;
   }
 
   .section-label {
     margin: 0 0 8px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
   /* Corner diagram: mini card representation */
@@ -166,7 +166,7 @@
     position: relative;
     width: 100%;
     height: 100px;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -177,14 +177,14 @@
     font-family: Georgia, serif;
     font-size: 20px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     letter-spacing: 0.1em;
   }
 
   .diagram-tl { position: absolute; top: 6px; left: 8px; }
-  .diagram-tr { position: absolute; top: 8px; right: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.5); }
-  .diagram-bl { position: absolute; bottom: 6px; left: 10px; font-size: 16px; font-weight: 700; color: rgba(255, 255, 255, 0.5); }
-  .diagram-br { position: absolute; bottom: 6px; right: 10px; font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: rgba(255, 255, 255, 0.5); }
+  .diagram-tr { position: absolute; top: 8px; right: 10px; font-size: 14px; color: var(--theme-text-muted, rgba(255, 255, 255, 0.5)); }
+  .diagram-bl { position: absolute; bottom: 6px; left: 10px; font-size: 16px; font-weight: 700; color: var(--theme-text-muted, rgba(255, 255, 255, 0.5)); }
+  .diagram-br { position: absolute; bottom: 6px; right: 10px; font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: var(--theme-text-muted, rgba(255, 255, 255, 0.5)); }
 
   .mini-badge {
     display: inline-flex;
@@ -210,8 +210,8 @@
   }
 
   .label-item {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
   .label-item.right {
@@ -219,7 +219,7 @@
   }
 
   .label-item strong {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     font-weight: 600;
   }
 
@@ -252,15 +252,15 @@
   }
 
   .level-desc {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
     text-align: center;
   }
 
   .body-text {
     margin: 0;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     line-height: 1.5;
   }
 
@@ -274,7 +274,7 @@
   .chain-text {
     margin: 0;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     line-height: 1.5;
   }
 
@@ -292,28 +292,28 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.25));
     font-family: Georgia, serif;
     font-size: 18px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
   }
 
   .chain-arrow {
     font-size: 16px;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
   }
 
   .chain-dots {
     font-size: 16px;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.2));
     letter-spacing: 2px;
   }
 
   .footer {
     text-align: center;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.25);
+    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.25));
     letter-spacing: 0.06em;
   }
 </style>

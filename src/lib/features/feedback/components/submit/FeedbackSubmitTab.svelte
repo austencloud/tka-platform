@@ -1,14 +1,14 @@
 <!-- FeedbackSubmitTab - Fluid container-query based layout -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { onMount } from "svelte";
   import FeedbackForm from "./FeedbackForm.svelte";
   import { getSharedFeedbackSubmitState } from "../../state/feedback-submit-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { container } from "$lib/shared/di";
 
   // Use shared state so drafts persist between tab and quick panel
   const submitState = getSharedFeedbackSubmitState();
-  const deviceDetector = container.items.deviceDetector;
+  const deviceDetector = getDeviceDetector();
 
   // Track focus state for input mode
   let isInputFocused = $state(false);

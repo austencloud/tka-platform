@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { getCreateModuleContext } from "../shared/context/create-module-context";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
@@ -21,7 +21,7 @@
   );
 
   // Read prop presets from settings
-  const settingsState = container.items.settingsState;
+  const settingsState = settingsService;
   const presets = $derived<(PropPreset | null)[]>(
     settingsState?.settings?.propPresets ?? []
   );

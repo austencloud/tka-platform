@@ -11,13 +11,13 @@
  * which is immune to device stutters and provides perfect trail loops.
  */
 
+import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import type { IAnimationRenderer } from "../contracts/IAnimationRenderer";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-import { container } from "$lib/shared/di";
 /**
  * Pre-rendered frame data
  */
@@ -495,7 +495,7 @@ export class SequenceFramePreRenderer {
     let bluePropType = "staff";
     let redPropType = "staff";
     try {
-      const settingsState = container.items.settingsState;
+      const settingsState = settingsService;
       const settings = settingsState.currentSettings;
       const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
       bluePropType = (

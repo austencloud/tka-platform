@@ -5,7 +5,8 @@
   Uses IUserSearcher service for efficient Firestore queries.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getUserSearcher } from "./getUserSearcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { UserSearchResult } from "./services/contracts/IUserSearcher";
 
@@ -46,8 +47,8 @@
   let wasCleared = $state(false);
 
   // Services
-  const hapticService = container.items.hapticFeedback;
-  const userSearcher = container.items.userSearcher;
+  const hapticService = getHapticFeedback();
+  const userSearcher = getUserSearcher();
 
   // Auto-focus when requested
   $effect(() => {

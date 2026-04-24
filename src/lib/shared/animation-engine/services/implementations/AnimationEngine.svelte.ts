@@ -574,12 +574,12 @@ export class AnimationEngine {
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
-    // fireDefaultsLoader is in the effects-lab lazy container — load on demand
+    // fireDefaultsLoader — load on demand via getter
     try {
-      const { effectsLabContainer } = await import("$lib/shared/di/containers/effects-lab-container");
-      this.fireDefaultsLoader = effectsLabContainer.items.fireDefaultsLoader;
+      const { getFireDefaultsLoader } = await import("$lib/shared/animation-engine/getFireDefaultsLoader");
+      this.fireDefaultsLoader = getFireDefaultsLoader();
     } catch {
-      console.warn("[AnimationEngine] Effects lab container not available");
+      console.warn("[AnimationEngine] Fire defaults loader not available");
     }
 
     // Build fireConfig from base params + slider mappings

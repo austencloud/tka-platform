@@ -5,7 +5,8 @@
   or adding external performers by Instagram handle or name.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getUserSearcher } from "$lib/shared/user-search/getUserSearcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { UserSearchResult } from "$lib/shared/user-search/services/contracts/IUserSearcher";
   import type { VideoPerformer } from "../types";
@@ -38,8 +39,8 @@
   );
 
   // Services
-  const hapticService = container.items.hapticFeedback;
-  const userSearcher = container.items.userSearcher;
+  const hapticService = getHapticFeedback();
+  const userSearcher = getUserSearcher();
 
   // Auto-focus when requested
   $effect(() => {

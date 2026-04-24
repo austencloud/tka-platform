@@ -6,8 +6,8 @@ Build Combo mode shows an interactive pie chart picker for visual consistency
 with exported sequence cards.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
@@ -41,7 +41,7 @@ with exported sequence cards.
   const explanationGenerator = new LOOPExplanationTextGenerator();
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     favorites = loopFavoritesManager.getFavorites();
   });
 

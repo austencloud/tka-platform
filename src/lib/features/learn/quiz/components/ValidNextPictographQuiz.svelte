@@ -3,6 +3,7 @@ Valid Next Pictograph Quiz - Shows a pictograph and asks which can follow it
 The next pictograph's start position must match the initial pictograph's end position.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -58,7 +59,7 @@ The next pictograph's start position must match the initial pictograph's end pos
   );
 
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     gapDetector = container.items.gapDetector;
     await loadQuestion();
   });

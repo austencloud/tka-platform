@@ -3,12 +3,12 @@
   Family multi-select + start position filter.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import FamilyFilterChip from "./FamilyFilterChip.svelte";
   import type { DeckFamily } from "../../domain/models/Deck";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -33,7 +33,7 @@
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback ?? null;
+    hapticService = getHapticFeedback() ?? null;
   });
 
   const positions = [

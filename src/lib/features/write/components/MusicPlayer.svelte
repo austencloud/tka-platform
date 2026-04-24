@@ -8,8 +8,8 @@
   - Music file status indicator
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import type { MusicPlayerState } from "../domain/types/write";
   import {
     createDefaultMusicPlayerState,
@@ -40,7 +40,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   function handlePlay() {

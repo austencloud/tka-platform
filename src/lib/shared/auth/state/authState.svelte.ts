@@ -19,6 +19,9 @@
  * - getEffectiveUserId/Role/Admin check userPreviewState for admin preview mode
  */
 
+import { getUserDocumentManager } from "$lib/shared/auth/getUserDocumentManager";
+import { getUsernameValidator } from "$lib/shared/auth/getUsernameValidator";
+import { getProfilePictureManager } from "$lib/shared/auth/getProfilePictureManager";
 import {
   onAuthStateChanged,
   signOut as firebaseSignOut,
@@ -31,6 +34,7 @@ import {
 } from "firebase/auth";
 import { container } from "../../di";
 import { getActivityLogger } from "../../analytics/getActivityLogger";
+import { getPresenceTracker } from "../../presence/getPresenceTracker";
 
 // Service imports
 import type { IProfilePictureManager } from "../services/contracts/IProfilePictureManager";
@@ -329,7 +333,7 @@ export async function initializeAuthListener() {
           role = (idTokenResult.claims.role as UserRole) || "user";
 
           // Create or update user document in Firestore
-          const userDocumentService = container.items.userDocumentManager;
+          const userDocumentService = getUserDocumentManager();
           if (userDocumentService) {
             try {
               await userDocumentService.createOrUpdateUserDocument(user);
@@ -342,7 +346,7 @@ export async function initializeAuthListener() {
           }
 
           // Update profile pictures from OAuth providers (non-blocking)
-          const profilePictureService = container.items.profilePictureManager;
+          const profilePictureService = getProfilePictureManager();
           if (profilePictureService) {
             profilePictureService
               .updateFacebookProfilePictureIfNeeded(user)
@@ -457,7 +461,7 @@ export async function initializeAuthListener() {
         // Initialize presence tracking (non-blocking)
         (async () => {
           try {
-            const presenceService = container.items.presenceTracker;
+            const presenceService = getPresenceTracker();
             if (presenceService) {
               await presenceService.initialize();
             }
@@ -665,7 +669,7 @@ export async function signOut() {
 
     // Mark user as offline in presence system before signing out
     try {
-      const presenceService = container.items.presenceTracker;
+      const presenceService = getPresenceTracker();
       if (presenceService) {
         await presenceService.goOffline();
       }
@@ -849,7 +853,7 @@ export async function updateUsername(newUsername: string) {
   }
 
   try {
-    const usernameValidator = container.items.usernameValidator;
+    const usernameValidator = getUsernameValidator();
 
     if (!usernameValidator) {
       throw new Error("Username validation service not available");

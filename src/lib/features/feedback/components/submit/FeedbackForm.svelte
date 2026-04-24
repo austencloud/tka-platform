@@ -1,5 +1,7 @@
 <!-- FeedbackForm - Streamlined feedback form orchestrator -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -37,8 +39,8 @@
   }>();
 
   // Services
-  const hapticService = container.items.hapticFeedback;
-  const deviceDetector = container.items.deviceDetector;
+  const hapticService = getHapticFeedback();
+  const deviceDetector = getDeviceDetector();
   const voiceRecorder: IVoiceRecorder = container.items.voiceRecorder;
   const transcriptionClient: ITranscriptionClient = container.items.transcriptionClient;
   const draftPersister = container.items.formDraftPersister;

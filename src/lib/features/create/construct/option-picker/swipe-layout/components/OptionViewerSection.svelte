@@ -7,6 +7,7 @@ Renders a section with:
 - Index-keyed slots so props/arrows transition in place on data change
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type {
     IReversalDetector,
     PictographWithReversals,
@@ -65,7 +66,7 @@ Renders a section with:
   const gridFitCalculator: IOptionGridFitCalculator | null = optionGridFitCalculator;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     reversalDetector = container.items.reversalDetector;
   });
 

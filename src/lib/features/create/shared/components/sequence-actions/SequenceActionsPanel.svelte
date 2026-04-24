@@ -5,6 +5,7 @@
   Individual beat editing (turns, rotation) is handled by StepEditorPanel.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -102,7 +103,7 @@
   );
 
   // Services - get from ITI container
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
   const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
   const subDrawerPersister = container.items.subDrawerStatePersister;
   const transferHandler = container.items.sequenceTransferHandler;

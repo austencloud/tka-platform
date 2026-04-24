@@ -3,8 +3,8 @@ Type1LetterVisualizer - Displays a Type 1 (Dual-Shift) letter using the Pictogra
 Shows letters A-V with their start/end positions and prospin/antispin motions
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { Type1LetterData } from "./Type1LetterData";
-  import { container } from "$lib/shared/di";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import {
     GridMode,
@@ -29,7 +29,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     size?: "small" | "medium" | "large";
   }>();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // State for loaded pictograph data
   let pictographData = $state<PictographData | null>(null);

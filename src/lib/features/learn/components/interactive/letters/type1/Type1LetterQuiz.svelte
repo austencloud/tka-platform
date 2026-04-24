@@ -3,8 +3,8 @@ Type1LetterQuiz - Coordinator for Type 1 (Dual-Shift) letter quiz
 Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hybrid)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { container } from "$lib/shared/di";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { onMount, onDestroy } from "svelte";
@@ -19,7 +19,7 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   let answerTimer: ReturnType<typeof setTimeout> | null = null;
 

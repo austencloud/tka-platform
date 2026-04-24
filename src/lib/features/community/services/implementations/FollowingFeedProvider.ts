@@ -7,6 +7,7 @@
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { container } from "$lib/shared/di";
+import { getUserRepository } from "$lib/shared/community/getUserRepository";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
@@ -26,7 +27,7 @@ export class FollowingFeedProvider implements IFollowingFeedProvider {
 
   private getServices(): boolean {
     if (!this.userService) {
-      this.userService = container.items.userRepository;
+      this.userService = getUserRepository();
     }
     if (!this.activityLogService) {
       this.activityLogService = getActivityLogger();
@@ -140,7 +141,7 @@ export class FollowingFeedProvider implements IFollowingFeedProvider {
 
     // Only need UserRepository for this check
     if (!this.userService) {
-      this.userService = container.items.userRepository;
+      this.userService = getUserRepository();
     }
 
     if (!this.userService) {

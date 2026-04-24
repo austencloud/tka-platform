@@ -5,8 +5,8 @@
   No fake thumbnails - just clean typography and icons.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import type { ActThumbnailInfo } from "../domain/types/write";
   import { onMount } from "svelte";
 
@@ -21,7 +21,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   function handleClick() {

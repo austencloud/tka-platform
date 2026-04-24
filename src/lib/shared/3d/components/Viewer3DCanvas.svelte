@@ -15,6 +15,7 @@
 
   import { Canvas } from "@threlte/core";
   import { WebGLRenderer } from "three";
+  import { onMount } from "svelte";
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
@@ -65,6 +66,20 @@
   // still waits on this to avoid mounting WebGL before any performer exists.
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
 
+  // Defer Canvas mount by one frame so the loading curtain paints before
+  // WebGL context creation blocks the main thread.
+  let canvasMountReady = $state(false);
+  $effect(() => {
+    if (avatarState && sequenceData && !canvasMountReady) {
+      requestAnimationFrame(() => {
+        canvasMountReady = true;
+      });
+    }
+    if (!avatarState || !sequenceData) {
+      canvasMountReady = false;
+    }
+  });
+
   // Camera-player state for fly mode. This is the VIEWER's avatar (what WASD
   // moves), not the performer. Created once per canvas mount so fly-mode
   // position survives mode toggles within the same session.
@@ -87,27 +102,52 @@
     }
   });
 
+  onMount(() => {
+    const features = sceneFeatureState.features.filter(
+      (f) => f.requiresAsyncLoad && sceneFeatureState.isEnabled(f.key)
+    );
+    console.debug(
+      `[Viewer3DCanvas] async features enabled: [${features.map((f) => f.key)}]`
+    );
+
+    const timer = setTimeout(() => {
+      if (sceneFeatureState.allEnabledReady) return;
+      const pending = features.filter(
+        (f) => !sceneFeatureState.isReady(f.key)
+      );
+      console.warn(
+        `[Viewer3DCanvas] 10s timeout — force-readying stuck features: [${pending.map((f) => f.key)}]`
+      );
+      for (const f of pending) {
+        sceneFeatureState.reportReady(f.key);
+      }
+    }, 10_000);
+
+    return () => clearTimeout(timer);
+  });
 
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="viewer-3d-canvas" data-swipe-block>
   {#if avatarState && sequenceData}
-    <Canvas
-      createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
-    >
-      <Viewer3DCanvasRef />
-      <Viewer3DCamera
-        cameraPlayerAvatar={cameraPlayer.avatarState}
-        cameraPlayerPhysics={cameraPlayer.physicsProvider}
-      />
-      <Viewer3DScene
-        {sequenceData}
-        {currentStep}
-        {isPlaying}
-        {avatarState}
-      />
-    </Canvas>
+    {#if canvasMountReady}
+      <Canvas
+        createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+      >
+        <Viewer3DCanvasRef />
+        <Viewer3DCamera
+          cameraPlayerAvatar={cameraPlayer.avatarState}
+          cameraPlayerPhysics={cameraPlayer.physicsProvider}
+        />
+        <Viewer3DScene
+          {sequenceData}
+          {currentStep}
+          {isPlaying}
+          {avatarState}
+        />
+      </Canvas>
+    {/if}
     <SceneLoadingCurtain />
     {#if !hideOverlays}
       <ViewerTransportBar />

@@ -1,5 +1,6 @@
 <!-- AccountRow: Clickable account identity row for sidebar footer and mobile drawer -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { authState } from "../../../auth/state/authState.svelte";
   import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
@@ -22,7 +23,7 @@
 
   function handleClick() {
     try {
-      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      const hapticService = getHapticFeedback() as IHapticFeedback;
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -51,7 +52,7 @@
     <button
       class="account-row drawer interactive"
       onclick={() => {
-        try { (container.items.hapticFeedback as IHapticFeedback)?.trigger("selection"); } catch {}
+        try { (getHapticFeedback() as IHapticFeedback)?.trigger("selection"); } catch {}
         // Close the containing drawer (e.g. mobile nav) before the auth drawer
         // opens, so we never stack two full-height sheets on top of each other.
         onclick?.();

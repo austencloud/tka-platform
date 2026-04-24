@@ -12,7 +12,7 @@ Design Principles:
 - Consistent: Same size as other action buttons (48px circle), neutral slate color
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   type TabType = "construct" | "generate";
@@ -27,7 +27,7 @@ Design Principles:
     showLabels?: boolean;
   }>();
 
-  const hapticService: IHapticFeedback = container.items.hapticFeedback;
+  const hapticService: IHapticFeedback = getHapticFeedback();
 
   function handleClick() {
     hapticService?.trigger("selection");

@@ -6,6 +6,7 @@
  * that was previously scattered throughout the massive ConstructTab component.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
@@ -220,7 +221,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       performance.mark("coordination-complete");
     } catch (error) {
       console.error("❌ Error handling option selection:", error);
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Something went wrong adding that beat",
         technicalDetails: error instanceof Error ? error.message : String(error),

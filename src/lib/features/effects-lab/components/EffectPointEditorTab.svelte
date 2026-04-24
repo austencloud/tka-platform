@@ -7,16 +7,15 @@
 -->
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
-	import { container } from "$lib/shared/di";
+	import { getTipPointOverrideProvider } from "../getTipPointOverrideProvider";
+	import { getEffectPointsPersister } from "../getEffectPointsPersister";
 	import { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
-	import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
-	import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
 	import EffectPropTypeSelector from "./EffectPropTypeSelector.svelte";
 	import EffectPointSvgCanvas from "./EffectPointSvgCanvas.svelte";
 	import EffectPointListPanel from "./EffectPointListPanel.svelte";
 
-	const provider = container.items.tipPointOverrideProvider as IEffectPointOverrideProvider;
-	const persister = container.items.effectPointsPersister as IEffectPointsPersister;
+	const provider = getTipPointOverrideProvider();
+	const persister = getEffectPointsPersister();
 	const editorState = new EffectPointEditorState(provider, persister);
 
 	function handleKeyDown(e: KeyboardEvent) {

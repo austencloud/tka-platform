@@ -9,8 +9,8 @@
   - Floating header that auto-hides
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
@@ -75,7 +75,7 @@
 
   onMount(() => {
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch {
       // Not available
     }

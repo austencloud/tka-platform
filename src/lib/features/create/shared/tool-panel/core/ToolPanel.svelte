@@ -17,9 +17,10 @@
 	✅ No TODOs (all implemented or documented)
 -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import GeneratePanel from "../../../generate/components/GeneratePanel.svelte";
@@ -101,8 +102,8 @@
   // ============================================================================
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
-    deviceDetector = container.items.deviceDetector;
+    hapticService = getHapticFeedback();
+    deviceDetector = getDeviceDetector();
 
     // Initialize navigation layout
     if (deviceDetector) {

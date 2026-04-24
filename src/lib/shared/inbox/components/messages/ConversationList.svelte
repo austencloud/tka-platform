@@ -6,6 +6,7 @@
    * Action buttons (new message, new group) are now in the parent header.
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
   import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
@@ -13,7 +14,6 @@
   import ConversationItem from "./ConversationItem.svelte";
   import ConversationSkeleton from "../skeletons/ConversationSkeleton.svelte";
   import EmptyConversations from "../empty-states/EmptyConversations.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
@@ -30,7 +30,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Check if there are any unread messages

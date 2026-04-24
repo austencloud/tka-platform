@@ -8,12 +8,12 @@
   - Micro-interactions: hover lift, active press, spring animations
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { sequenceControlsManager } from "../state/sequence-controls-state.svelte";
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import { sequenceSourceManager, type SequenceSource } from "../state/sequence-source-state.svelte";
   import { gridZoomManager } from "../state/grid-zoom-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
   import SortPopover from "./SortPopover.svelte";
@@ -134,7 +134,7 @@
   });
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   function handleSourceChange(source: SequenceSource) {

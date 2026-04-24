@@ -5,6 +5,7 @@
   Manages state, coordinates mode-specific behavior, and composes all panels.
 -->
 <script lang="ts">
+  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
@@ -466,7 +467,7 @@
     if (!result.success) {
       console.error("Failed to delete sequence:", result.error);
       try {
-        const errorHandler = container.items.errorHandler as IErrorHandler | undefined;
+        const errorHandler = getErrorHandler() as IErrorHandler | undefined;
         if (errorHandler) {
           errorHandler.showError(
             "Could not delete this sequence. Check your connection and try again.",

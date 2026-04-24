@@ -5,7 +5,8 @@
   Shows what was flagged, why, and allows user to submit an appeal.
 -->
 <script lang="ts">
-	import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
 	import { container } from '$lib/shared/di';
@@ -58,7 +59,7 @@
 
 		try {
 			const appealManager = container.items.contentAppealManager;
-			const userId = (container.items.authenticator as any)?.currentUser?.uid;
+			const userId = (getAuthenticator() as any)?.currentUser?.uid;
 
 			if (!userId) {
 				throw new Error(t('moderation_sign_in_required'));

@@ -1,10 +1,10 @@
 <!-- PictographGrid.svelte - Pictograph grid display for StartPositionPicker -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   const {
@@ -28,7 +28,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
 
     // Brief stabilization to let container queries settle after layout change
     // Matches the parent's in:scale delay (200ms) so both views feel symmetric

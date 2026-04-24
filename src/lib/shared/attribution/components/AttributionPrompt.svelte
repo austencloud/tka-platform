@@ -5,9 +5,9 @@
   asking how they discovered TKA Composer. Non-intrusive and dismissible.
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { TranslationKey } from "$lib/shared/i18n/i18n-types.js";
-  import { container } from "$lib/shared/di";
   import { getAttributionPromptState } from "../state/attribution-prompt-state.svelte";
   import type {
     SelfReportedSource,

@@ -5,10 +5,10 @@
 	Matches desktop CodexPictographGrid functionality with proper row organization.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { container } from "$lib/shared/di";
 
   // Props
   let { pictographsByLetter, letterRows, onPictographClick } = $props<{
@@ -18,7 +18,7 @@
   }>();
 
   // Services
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Handle pictograph click
   function handlePictographClick(pictograph: PictographData) {

@@ -9,7 +9,7 @@
  * the service when available.
  */
 
-import { container } from "$lib/shared/di";
+import { getOnboardingPersister } from "$lib/shared/onboarding/getOnboardingPersister";
 import type { IOnboardingPersister } from "../services/contracts/IOnboardingPersister";
 
 // Lazy service resolution to avoid circular dependencies
@@ -19,7 +19,7 @@ function getOnboardingService(): IOnboardingPersister | null {
   if (_onboardingService) return _onboardingService;
 
   try {
-    _onboardingService = container.items.onboardingPersister;
+    _onboardingService = getOnboardingPersister();
     return _onboardingService;
   } catch {
     return null;

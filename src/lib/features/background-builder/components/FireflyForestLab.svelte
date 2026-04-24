@@ -12,15 +12,15 @@
     getFireflyForestSettings,
     updateFireflyForestSettings,
   } from "../state/background-builder-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getPreviewAnimationController } from "../getPreviewAnimationController";
   import type { PreviewStats } from "../services/contracts/IPreviewAnimationController";
 
   // Child components
   import PreviewControls from "./PreviewControls.svelte";
   import TreeImageGallery from "./TreeImageGallery.svelte";
 
-  // Get services from DI container
-  const previewController = container.items.previewAnimationController;
+  // Get services from getter
+  const previewController = getPreviewAnimationController();
 
   // ============================================================================
   // STATE

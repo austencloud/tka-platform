@@ -6,6 +6,9 @@
 </script>
 
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import AchievementNotificationToast from "../../gamification/components/AchievementNotificationToast.svelte";
   import XPToast from "../../gamification/components/XPToast.svelte";
   import QuickFeedbackPanel from "$lib/features/feedback/components/quick/QuickFeedbackPanel.svelte";
@@ -189,10 +192,10 @@
       try {
         initService = container.items
           .applicationInitializer;
-        settingsService = container.items.settingsState;
-        deviceService = container.items.deviceDetector;
+        settingsService = settingsServiceSingleton;
+        deviceService = getDeviceDetector();
         sheetRouterService = container.items.sheetRouter;
-        authService = container.items.authenticator;
+        authService = getAuthenticator();
         servicesResolved = true;
       } catch (error) {
         console.error("Failed to resolve services:", error);

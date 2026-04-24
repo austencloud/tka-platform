@@ -16,6 +16,7 @@
    * - Is SEO-focused with feature sections
    * - Uses shared utilities from src/styles/landing-utilities.css
    */
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { fly, fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { onMount } from "svelte";
@@ -67,7 +68,7 @@
 
   onMount(async () => {
     try {
-      authService = container.items.authenticator;
+      authService = getAuthenticator();
     } catch (error) {
       console.error("Failed to resolve auth service:", error);
     }

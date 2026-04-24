@@ -1,5 +1,6 @@
 <!-- TimelineGrid.svelte - Duration-proportional timeline layout -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../../domain/models/StepData";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
@@ -12,12 +13,11 @@
     MAX_DURATION,
     DURATION_STEP_FINE,
   } from "../../../services/implementations/step-operations/DurationHandler";
-  import { container } from "$lib/shared/di";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
   import DurationResizeHandle from "./DurationResizeHandle.svelte";
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   let {
     steps,

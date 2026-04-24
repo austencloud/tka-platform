@@ -6,6 +6,7 @@
   Optional inline WASD editor for Global Adjustment layers.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type {
     PipelineDiagnostics,
     PipelineTier,
@@ -193,7 +194,7 @@
     globalAdjustmentVersion.increment();
     hasLocalChanges = true;
 
-    const haptic = container.items.hapticFeedback;
+    const haptic = getHapticFeedback();
     haptic?.trigger("selection");
   }
 
@@ -218,7 +219,7 @@
       });
       saveState = "saved";
       hasLocalChanges = false;
-      const haptic = container.items.hapticFeedback;
+      const haptic = getHapticFeedback();
       haptic?.trigger("success");
 
       // Refresh diagnostics
@@ -246,7 +247,7 @@
       pictographPreparer.clearCache();
       globalAdjustmentVersion.increment();
       hasLocalChanges = false;
-      const haptic = container.items.hapticFeedback;
+      const haptic = getHapticFeedback();
       haptic?.trigger("warning");
       onDiagnosticsChanged?.();
     } catch (error) {

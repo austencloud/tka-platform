@@ -13,6 +13,7 @@ The actual implementation is now in $lib/shared/components/stepper-card
     maxValue,
     onIncrement,
     onDecrement,
+    onIncrementBlocked,
     formatValue = (val: number) => val.toString(),
     subtitle = "",
     description = "",
@@ -29,6 +30,7 @@ The actual implementation is now in $lib/shared/components/stepper-card
     maxValue: number;
     onIncrement: () => void;
     onDecrement: () => void;
+    onIncrementBlocked?: () => void;
     formatValue?: (value: number) => string;
     subtitle?: string;
     description?: string;
@@ -48,6 +50,7 @@ The actual implementation is now in $lib/shared/components/stepper-card
   {maxValue}
   {onIncrement}
   {onDecrement}
+  {onIncrementBlocked}
   {formatValue}
   {subtitle}
   {description}

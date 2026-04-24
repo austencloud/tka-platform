@@ -5,12 +5,12 @@
   5 tour stops. Dims non-active sections via CSS classes on the parent.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import {
     stepEditorTourState,
     type StepEditorTourStop,
   } from "../../state/step-editor-tour-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
 
   interface StopInfo {
     id: StepEditorTourStop;
@@ -62,7 +62,7 @@
 
   let hapticService: IHapticFeedback | null = null;
   try {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   } catch {
     // Optional service
   }

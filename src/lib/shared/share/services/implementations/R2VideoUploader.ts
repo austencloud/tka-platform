@@ -9,6 +9,7 @@
  * to get presigned URLs, then PUTs directly to R2.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type {
   IVideoUploader,
   VideoUploadResult,
@@ -17,7 +18,6 @@ import type {
 } from "../contracts/IVideoUploader";
 import type { IR2Presigner } from "../contracts/IR2Presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 // ============================================================================
@@ -238,7 +238,7 @@ export class R2VideoUploader implements IVideoUploader {
 
   private handleError(error: unknown, action: string, additionalData?: Record<string, unknown>): never {
     console.error(`R2VideoUploader: Failed to ${action}:`, error);
-    const errorHandler = container.items.errorHandler as IErrorHandler;
+    const errorHandler = getErrorHandler() as IErrorHandler;
     errorHandler.showUserError({
       message: `Couldn't ${action.replace(/-/g, " ")}`,
       technicalDetails: error instanceof Error ? error.message : String(error),

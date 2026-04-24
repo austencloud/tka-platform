@@ -5,9 +5,10 @@ Portrait: Top half increments, bottom half decrements (vertical layout)
 Landscape: Left half decrements, right half increments (horizontal layout)
 -->
 <script lang="ts">
+  import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import LandscapeLayout from "./StepperLandscapeLayout.svelte";
   import PortraitLayout from "./StepperPortraitLayout.svelte";
@@ -19,6 +20,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     maxValue,
     onIncrement,
     onDecrement,
+    onIncrementBlocked,
     formatValue = (val: number) => val.toString(),
     subtitle = "",
     description = "",
@@ -35,6 +37,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     maxValue: number;
     onIncrement: () => void;
     onDecrement: () => void;
+    onIncrementBlocked?: () => void;
     formatValue?: (value: number) => string;
     subtitle?: string;
     description?: string;
@@ -61,8 +64,8 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   });
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
-    rippleService = container.items.rippleEffect;
+    hapticService = getHapticFeedback();
+    rippleService = getRippleEffect();
 
     if (cardElement) {
       return rippleService.attachRipple(cardElement, {
@@ -80,6 +83,9 @@ Landscape: Left half decrements, right half increments (horizontal layout)
       hapticService?.trigger("selection");
       snapshotAndFade();
       onIncrement();
+    } else if (onIncrementBlocked) {
+      hapticService?.trigger("warning");
+      onIncrementBlocked();
     }
   }
 
@@ -125,7 +131,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     }
   }
 
-  const canIncrement = $derived(currentValue < maxValue);
+  const canIncrement = $derived(currentValue < maxValue || !!onIncrementBlocked);
   const canDecrement = $derived(currentValue > minValue);
   const displayValue = $derived(formatValue(currentValue));
 </script>

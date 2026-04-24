@@ -95,24 +95,24 @@
 </Drawer>
 
 <style>
-  .hdr { padding: 16px 20px; border-bottom: 1px solid #1a1f2e; }
-  h3 { margin: 0; color: #fff; font-size: 18px; }
-  .sub { margin: 4px 0 0; color: #8b93a7; font-size: var(--font-size-sm, 14px); }
+  .hdr { padding: 16px 20px; border-bottom: 1px solid var(--theme-stroke, #1a1f2e); }
+  h3 { margin: 0; color: var(--theme-text, #fff); font-size: 18px; }
+  .sub { margin: 4px 0 0; color: var(--theme-text-dim, #8b93a7); font-size: var(--font-size-sm, 14px); }
   .timeline { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
   .event {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
     padding: 12px;
-    background: #0b0d17;
-    border: 1px solid #1a1f2e;
+    background: var(--theme-panel-bg, #0b0d17);
+    border: 1px solid var(--theme-stroke, #1a1f2e);
     border-radius: 6px;
     font-size: var(--font-size-sm, 14px);
     min-height: 44px;
     align-items: center;
   }
-  .when { color: #d0d5e0; }
-  .where { color: #34d399; }
-  .who { color: #8b93a7; }
-  .muted { color: #6b7491; font-size: var(--font-size-sm, 14px); }
+  .when { color: var(--theme-text-muted, #d0d5e0); }
+  .where { color: var(--theme-accent, #34d399); }
+  .who { color: var(--theme-text-dim, #8b93a7); }
+  .muted { color: var(--theme-text-dim, #6b7491); font-size: var(--font-size-sm, 14px); }
 </style>

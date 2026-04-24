@@ -27,6 +27,24 @@ import type {
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
+import { EFFECTS_CONFIG_VERSION } from "../domain/EffectsConfig";
+
+const STORAGE_KEY = "tka_effects_config";
+
+function loadStoredConfig(): EffectsConfig | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<EffectsConfig>;
+    if (parsed.version !== EFFECTS_CONFIG_VERSION) {
+      return mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed);
+    }
+    return mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed);
+  } catch {
+    return null;
+  }
+}
 
 /** Shallow-in-depth deep merge used for preset application. */
 function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): EffectsConfig {
@@ -55,80 +73,107 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
 }
 
 export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG) {
-  let config = $state<EffectsConfig>(structuredClone(initial));
+  const stored = loadStoredConfig();
+  let config = $state<EffectsConfig>(stored ?? structuredClone(initial));
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleSave() {
+    if (typeof window === "undefined") return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      } catch { /* quota exceeded or private browsing */ }
+    }, 300);
+  }
 
   function updateTrails(patch: Partial<TrailsIntent>) {
     config.trails = { ...config.trails, ...patch };
     config.activePresets.trails = null;
+    scheduleSave();
   }
 
   function updateFire(patch: Partial<FireIntent>) {
     config.fire = { ...config.fire, ...patch };
     config.activePresets.fire = null;
+    scheduleSave();
   }
 
   function updateLed(patch: Partial<LedIntent>) {
     config.led = { ...config.led, ...patch };
     config.activePresets.led = null;
+    scheduleSave();
   }
 
   function updateCharcoal(patch: Partial<CharcoalIntent>) {
     config.charcoal = { ...config.charcoal, ...patch };
     config.activePresets.charcoal = null;
+    scheduleSave();
   }
 
   function updateZap(patch: Partial<ZapIntent>) {
     config.zap = { ...config.zap, ...patch };
     config.activePresets.zap = null;
+    scheduleSave();
   }
 
   function updateSparkles(patch: Partial<SparklesIntent>) {
     config.sparkles = { ...config.sparkles, ...patch };
     config.activePresets.sparkles = null;
+    scheduleSave();
   }
 
   function updateEcho(patch: Partial<EchoIntent>) {
     config.echo = { ...config.echo, ...patch };
     config.activePresets.echo = null;
+    scheduleSave();
   }
 
   function updateBloom(patch: Partial<BloomIntent>) {
     config.bloom = { ...config.bloom, ...patch };
     config.activePresets.bloom = null;
+    scheduleSave();
   }
 
   function updateWater(patch: Partial<WaterIntent>) {
     config.water = { ...config.water, ...patch };
     config.activePresets.water = null;
+    scheduleSave();
   }
 
   function updateBubbles(patch: Partial<BubblesIntent>) {
     config.bubbles = { ...config.bubbles, ...patch };
     config.activePresets.bubbles = null;
+    scheduleSave();
   }
 
   function updatePetals(patch: Partial<PetalsIntent>) {
     config.petals = { ...config.petals, ...patch };
     config.activePresets.petals = null;
+    scheduleSave();
   }
 
   function updateSmoke(patch: Partial<SmokeIntent>) {
     config.smoke = { ...config.smoke, ...patch };
     config.activePresets.smoke = null;
+    scheduleSave();
   }
 
   function updateInk(patch: Partial<InkIntent>) {
     config.ink = { ...config.ink, ...patch };
     config.activePresets.ink = null;
+    scheduleSave();
   }
 
   function setTipEffectMap(map: TipEffectMap) {
     config.tipEffectMap = map;
+    scheduleSave();
   }
 
   function applyPreset(preset: EffectsPreset) {
     config = mergeConfig(config, preset.patch as Partial<EffectsConfig>);
     config.activePresets[preset.effectType] = preset.id;
+    scheduleSave();
   }
 
   function updateOverride<K extends keyof EffectsOverrides>(
@@ -138,10 +183,16 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     const next: EffectsOverrides = { ...(config.overrides ?? {}) };
     next[key] = { ...(next[key] ?? {}), ...patch };
     config.overrides = next;
+    scheduleSave();
   }
 
   function replace(next: EffectsConfig) {
-    config = structuredClone(next);
+    try {
+      config = structuredClone(next);
+    } catch {
+      config = JSON.parse(JSON.stringify(next));
+    }
+    scheduleSave();
   }
 
   return {

@@ -163,6 +163,7 @@
         class:on={handPointsOn}
         onclick={toggleHandPoints}
         aria-pressed={handPointsOn}
+        aria-label="Toggle hand points"
         type="button"
       >
         <i class="fas fa-hand-point-up toggle-icon" aria-hidden="true"></i>
@@ -175,6 +176,7 @@
         class:on={gridOn}
         onclick={toggleGrid}
         aria-pressed={gridOn}
+        aria-label="Toggle grid"
         type="button"
       >
         <i class="fas fa-th toggle-icon" aria-hidden="true"></i>
@@ -187,6 +189,7 @@
         class:on={tkaOn}
         onclick={toggleTka}
         aria-pressed={tkaOn}
+        aria-label="Toggle TKA glyphs"
         type="button"
       >
         <i class="fas fa-font toggle-icon" aria-hidden="true"></i>
@@ -199,6 +202,7 @@
         class:on={wordOn}
         onclick={toggleWord}
         aria-pressed={wordOn}
+        aria-label="Toggle word"
         type="button"
       >
         <i class="fas fa-tag toggle-icon" aria-hidden="true"></i>
@@ -211,6 +215,7 @@
         class:on={startPosOn}
         onclick={toggleStartPos}
         aria-pressed={startPosOn}
+        aria-label="Toggle start position"
         type="button"
       >
         <i class="fas fa-map-marker-alt toggle-icon" aria-hidden="true"></i>
@@ -223,6 +228,7 @@
         class:on={qrOn}
         onclick={toggleQR}
         aria-pressed={qrOn}
+        aria-label="Toggle QR code"
         type="button"
       >
         <i class="fas fa-qrcode toggle-icon" aria-hidden="true"></i>
@@ -235,6 +241,7 @@
         class:on={birthdayOn}
         onclick={toggleBirthday}
         aria-pressed={birthdayOn}
+        aria-label="Toggle birthday"
         type="button"
       >
         <i class="fas fa-birthday-cake toggle-icon" aria-hidden="true"></i>
@@ -250,6 +257,7 @@
       class="action-btn"
       onclick={onInfoCardToggle}
       aria-pressed={showInfoCard}
+      aria-label={showInfoCard ? "Show sequence" : "Show rules card"}
       type="button"
     >
       <i class="fas {showInfoCard ? 'fa-layer-group' : 'fa-info-circle'}" aria-hidden="true"></i>

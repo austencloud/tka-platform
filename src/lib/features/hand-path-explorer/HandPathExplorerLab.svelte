@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IHandPathNamer } from "$lib/shared/foundation/services/contracts/IHandPathNamer";
+  import { getHandPathNamer } from "$lib/shared/foundation/getHandPathNamer";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import { createExplorerState } from "./state/explorer-state.svelte";
   import { setExplorerContext } from "./context/explorer-context";
@@ -15,7 +15,7 @@
   import HandPathDetail from "./components/HandPathDetail.svelte";
 
   const sequenceRepository = container.items.sequenceRepository as ISequenceRepository;
-  const handPathNamer = container.items.handPathNamer as IHandPathNamer;
+  const handPathNamer = getHandPathNamer();
 
   const state = createExplorerState(sequenceRepository, handPathNamer);
   setExplorerContext({ state });

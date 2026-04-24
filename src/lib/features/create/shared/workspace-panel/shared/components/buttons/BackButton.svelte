@@ -5,7 +5,7 @@
   Shows a left arrow icon to go back to the previous panel.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 
   // Props
   const {
@@ -15,7 +15,7 @@
   } = $props();
 
   // Services
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function handleClick() {
     hapticService?.trigger("selection");

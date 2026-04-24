@@ -1,7 +1,7 @@
 <!-- Sidebar Footer Component -->
 <!-- Footer with settings, network status, prop switcher, account, and voice mic -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
@@ -40,7 +40,7 @@
 
   function handleMicClick() {
     try {
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -63,7 +63,7 @@
 
   function handlePropClick() {
     try {
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -73,7 +73,7 @@
 
   function handleInboxClick() {
     try {
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -83,7 +83,7 @@
 
   function handleSettingsClick() {
     try {
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available

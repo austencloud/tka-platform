@@ -9,7 +9,6 @@
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { SpecialPlacementOriKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
-  import { container } from "$lib/shared/di";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
   import { specialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer";

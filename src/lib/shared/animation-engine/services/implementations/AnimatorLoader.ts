@@ -5,6 +5,7 @@
  * Provides access to core animation dependencies.
  */
 
+import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import { container } from "$lib/shared/di";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
@@ -22,7 +23,7 @@ export class AnimatorLoader implements IAnimatorLoader {
       // With ITI, all services are already composed at startup - no async loading needed
       const services: AnimatorServices = {
         svgGenerator: container.items.svgGenerator,
-        settingsService: container.items.settingsState,
+        settingsService: settingsService,
         orchestrator: container.items.sequenceAnimationOrchestrator,
         TrailCapturer: container.items.trailCapturer,
         turnsTupleGenerator: turnsTupleGenerator,

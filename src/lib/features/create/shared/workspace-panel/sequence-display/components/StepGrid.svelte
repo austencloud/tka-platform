@@ -1,5 +1,7 @@
 <!-- StepGrid.svelte - Responsive step grid with display animations -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../../domain/models/StepData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -8,7 +10,6 @@
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createStepData } from "../../../domain/factories/createStepData";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import {
     createStepGridDisplayState,
@@ -29,8 +30,8 @@
   import StandardGrid from "./StandardGrid.svelte";
 
   // Services
-  const hapticService = container.items.hapticFeedback;
-  const deviceDetector = container.items.deviceDetector;
+  const hapticService = getHapticFeedback();
+  const deviceDetector = getDeviceDetector();
 
   let {
     steps,

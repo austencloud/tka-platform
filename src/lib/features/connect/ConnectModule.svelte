@@ -5,7 +5,8 @@
 	 * Collaborative sync for viewing sequences together.
 	 * Auto-browse nearby sessions, invite friends, or search by username.
 	 */
-	import { onMount, onDestroy } from 'svelte';
+  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+  import { onMount, onDestroy } from 'svelte';
 	import { container } from '$lib/shared/di';
 	import { connectState } from './state/connect-state.svelte';
 	import type { IErrorHandler } from '$lib/shared/application/services/contracts/IErrorHandler';
@@ -56,7 +57,7 @@
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to initialize';
 			initError = message;
-			const errorHandler = container.items.errorHandler as IErrorHandler;
+			const errorHandler = getErrorHandler() as IErrorHandler;
 			errorHandler.showError(message, error instanceof Error ? error : new Error(String(error)), {
 				module: 'connect',
 				action: 'initialize'

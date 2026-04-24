@@ -12,6 +12,7 @@
    * creating a dynamic "telekinetic control" effect where arms subtly shift
    * as the floating staffs move through the sequence.
    */
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
   import * as THREE from "three";
@@ -247,13 +248,13 @@
   // Prop type from sequence or global settings
   const bluePropType = $derived.by((): PropType => {
     try {
-      const settings = container.items.settingsState;
+      const settings = settingsService;
       return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
   const redPropType = $derived.by((): PropType => {
     try {
-      const settings = container.items.settingsState;
+      const settings = settingsService;
       return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });

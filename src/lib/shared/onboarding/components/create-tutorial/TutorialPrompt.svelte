@@ -6,9 +6,9 @@
   Skip goes straight to the main app.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
 
   interface Props {
     onAccept: () => void;
@@ -22,7 +22,7 @@
 
   onMount(() => {
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch {
       // Optional service
     }

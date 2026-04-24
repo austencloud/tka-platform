@@ -12,6 +12,7 @@
   - Uses svelte-dnd-action for drag-and-drop
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { dragHandleZone, dragHandle } from "svelte-dnd-action";
@@ -24,7 +25,6 @@
   import { toast } from "../../../toast/state/toast-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../../domain/types";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
 
   interface Props {
     isCollapsed: boolean;
@@ -305,7 +305,7 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 </script>
 

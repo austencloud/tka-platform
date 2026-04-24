@@ -1,5 +1,6 @@
 <!-- LessonWorkspaceView.svelte - Enhanced lesson workspace with full functionality -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import QuizTimer from "./QuizTimer.svelte";
   import { onDestroy, onMount } from "svelte";
 
@@ -50,7 +51,7 @@
   let timerComponent = $state<QuizTimer>();
 
   // Services
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
   const quizSessionService = container.items.quizSessionManager;
 
   // Derived state

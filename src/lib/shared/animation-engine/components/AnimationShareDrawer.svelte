@@ -23,7 +23,7 @@
   import AnimationViewerHelpSheet from "./AnimationViewerHelpSheet.svelte";
 
   // Services
-  import { container } from "$lib/shared/di";
+  import { getKeyboardShortcutManager } from "$lib/shared/keyboard/getKeyboardShortcutManager";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
   import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
@@ -285,7 +285,7 @@
     }
 
     // Try to resolve keyboard shortcut service
-    shortcutService = container.items.keyboardShortcutManager ?? null;
+    shortcutService = getKeyboardShortcutManager();
   });
 
   // Update on resize

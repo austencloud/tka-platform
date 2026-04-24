@@ -9,6 +9,7 @@
   Unified sequence viewer panel that works in both Browse (Browse) and Edit (Create) modes.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
@@ -156,7 +157,7 @@
   const effectiveSequence = $derived(fullSequence ?? sequence);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     imageSharer = container.items.sequenceImageSharer;
 
     if (mode === "browse") {

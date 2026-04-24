@@ -11,8 +11,8 @@
   - Desktop → "Open App" button (use browser)
 -->
 <script lang="ts">
+  import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import type {
     Platform,
     InAppBrowser,
@@ -44,7 +44,7 @@
     "https://play.google.com/store/apps/details?id=com.tkacomposer.app";
 
   onMount(async () => {
-    const platformService = container.items.platformDetector;
+    const platformService = getPlatformDetector();
     const info = platformService.detectPlatformAndBrowser();
 
     platform = info.platform;

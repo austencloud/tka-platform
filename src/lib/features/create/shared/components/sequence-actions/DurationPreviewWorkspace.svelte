@@ -17,7 +17,6 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { container } from "$lib/shared/di";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { onMount, onDestroy } from "svelte";
   import { formatDurationCompact } from "../../domain/models/DurationPatternData";

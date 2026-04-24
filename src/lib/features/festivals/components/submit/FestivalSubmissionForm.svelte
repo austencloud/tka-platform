@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Timestamp } from "firebase/firestore";
-  import { container } from "$lib/shared/di";
+  import { getFestivalSubmissionReviewer } from "../../getFestivalSubmissionReviewer";
+  import { getGeocodingService } from "$lib/features/community/getGeocodingService";
   import { auth } from "$lib/shared/auth/firebase";
   import { getFestivalContext } from "../../context/festival-context";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -18,8 +19,8 @@
   const { open, onclose }: Props = $props();
 
   // Services
-  const submissionReviewer = container.items.festivalSubmissionReviewer;
-  const geocodingService = container.items.geocodingService;
+  const submissionReviewer = getFestivalSubmissionReviewer();
+  const geocodingService = getGeocodingService();
 
   // Form fields
   let name = $state("");

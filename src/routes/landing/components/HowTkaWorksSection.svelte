@@ -16,7 +16,7 @@
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
-  import { container } from "$lib/shared/di";
+  import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -169,7 +169,7 @@
       };
 
       if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
-        const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+        const hydrator = getSequenceHydrator();
         const hydrated = hydrator.hydrate(seq);
         if (hydrated.steps && hydrated.steps.length > 0) {
           setupFromSequence({ ...hydrated, sequenceLength: hydrated.steps.length });

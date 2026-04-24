@@ -6,7 +6,7 @@
   Supports focus mode (tap to expand one pane).
 -->
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { fade } from "svelte/transition";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
@@ -30,6 +30,7 @@
   import { setScene3DRenderContext, getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
   import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
+  import { startSceneAssetPreload } from "$lib/shared/3d/services/scene-asset-preloader.svelte";
 
   // Derive trail settings from the global singleton so canvas settings changes
   // (e.g. switching from "one end" to "both ends") propagate to this canvas.
@@ -155,6 +156,10 @@
     rerenderTrigger = 0,
     isExporting = false,
   }: Props = $props();
+
+  onMount(() => {
+    startSceneAssetPreload();
+  });
 
   let pointerDownPos: { x: number; y: number } | null = null;
 
@@ -295,28 +300,33 @@
             onExitFullScreen={onUnfocusPane}
           />
         </div>
-        <AnimatorCanvas
-          sequenceData={playback.animationState.sequenceData}
-          currentStep={playback.currentStep}
-          isPlaying={playback.isPlaying}
-          blueProp={playback.animationState.bluePropState}
-          redProp={playback.animationState.redPropState}
-          gridMode={sequence?.gridMode}
-          letter={playback.currentLetter}
-          stepData={playback.currentStepData}
-          word={sequence?.word}
-          bluePropType={propRendering.bluePropType}
-          redPropType={propRendering.redPropType}
-          {trailSettings}
-          {onCanvasReady}
-          {onPlaybackToggle}
-          onProgressBarSeek={onProgressBarSeek ?? null}
-          onProgressBarScrubStart={onProgressBarScrubStart ?? null}
-          onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
-          focused={layout.focusedPane === "animation"}
-          suppress2DOverlays={renderMode === '3d'}
-          hideProgressBar={renderMode === '3d'}
-        />
+        <div
+          class="canvas-layer canvas-2d-layer"
+          style="opacity:{renderMode === '3d' ? 0 : 1};pointer-events:{renderMode === '3d' ? 'none' : 'auto'};"
+        >
+          <AnimatorCanvas
+            sequenceData={playback.animationState.sequenceData}
+            currentStep={playback.currentStep}
+            isPlaying={playback.isPlaying}
+            blueProp={playback.animationState.bluePropState}
+            redProp={playback.animationState.redPropState}
+            gridMode={sequence?.gridMode}
+            letter={playback.currentLetter}
+            stepData={playback.currentStepData}
+            word={sequence?.word}
+            bluePropType={propRendering.bluePropType}
+            redPropType={propRendering.redPropType}
+            {trailSettings}
+            {onCanvasReady}
+            {onPlaybackToggle}
+            onProgressBarSeek={onProgressBarSeek ?? null}
+            onProgressBarScrubStart={onProgressBarScrubStart ?? null}
+            onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
+            focused={layout.focusedPane === "animation"}
+            suppress2DOverlays={renderMode === '3d'}
+            hideProgressBar={renderMode === '3d'}
+          />
+        </div>
       {/if}
 
     </div>
@@ -499,6 +509,13 @@
     position: absolute;
     inset: 0;
     z-index: 2;
+    transition: opacity 250ms ease;
+  }
+
+  .canvas-2d-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
     transition: opacity 250ms ease;
   }
 

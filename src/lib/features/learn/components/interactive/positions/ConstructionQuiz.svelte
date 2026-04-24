@@ -4,8 +4,8 @@ by placing hands on the grid. Adaptive difficulty ramps from diamond-only to mix
 Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was requested.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     POSITION_TYPE_INFO,
@@ -30,7 +30,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
 
   let hapticService: { trigger: (type: string) => void } | null = null;
   try {
-    hapticService = container.items.hapticFeedback as {
+    hapticService = getHapticFeedback() as {
       trigger: (type: string) => void;
     } | null;
   } catch {

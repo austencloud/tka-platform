@@ -6,10 +6,10 @@
 	Supports View Transitions API with manual FLIP fallback.
 -->
 <script lang="ts">
-	import { onMount, onDestroy } from "svelte";
+  import { container } from "$lib/shared/di";
+  import { onMount, onDestroy } from "svelte";
 	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
-	import { container } from "$lib/shared/di";
 	import type { ICompositionThumbnailResolver } from "../services/contracts/ICompositionThumbnailResolver";
 	import CompositionDetailActions from "./CompositionDetailActions.svelte";
 

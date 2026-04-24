@@ -9,6 +9,7 @@
   - Auto-load when 3 items from end
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem } from "../../domain/models/feed-models";
@@ -72,7 +73,7 @@
   onMount(async () => {
     // Resolve services
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch {
       // Not available
     }

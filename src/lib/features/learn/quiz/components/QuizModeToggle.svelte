@@ -5,8 +5,8 @@ A smooth pill-style segmented control with icons for selecting between
 Fixed Questions mode (set number) and Countdown mode (timed challenge).
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { QuizMode } from "../domain/enums/quiz-enums";
 
@@ -25,7 +25,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Calculate slider position based on selected mode

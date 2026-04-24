@@ -5,13 +5,13 @@
   Building: panel disappears, grid recenters via flex layout.
 -->
 <script lang="ts">
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import type { AssembleTabState } from "../../shared/state/assemble-tab-state.svelte";
   import BuilderInstructionHeader from "$lib/features/assemble-lab/components/BuilderInstructionHeader.svelte";
   import BuilderControls from "$lib/features/assemble-lab/components/BuilderControls.svelte";
   import InteractiveGrid from "$lib/features/assemble-lab/components/InteractiveGrid.svelte";
   import BuilderTurnBar from "$lib/features/assemble-lab/components/BuilderTurnBar.svelte";
   import AssembleIdlePanel from "$lib/features/assemble-lab/components/AssembleIdlePanel.svelte";
-  import { container } from "$lib/shared/di";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
@@ -75,7 +75,7 @@
   let settingsState: ISettingsState | null = null;
   $effect.pre(() => {
     try {
-      settingsState = container.items.settingsState as ISettingsState;
+      settingsState = settingsService as ISettingsState;
       const saved = settingsState.currentSettings;
       if (saved.preferredGridMode) {
         props.tabState.assembleBuilderState.setGridMode(saved.preferredGridMode);

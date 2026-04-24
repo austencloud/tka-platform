@@ -13,6 +13,7 @@
   - Touch-optimized tap targets
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { container } from "../../di";
@@ -48,7 +49,7 @@
   });
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Filter to main modules and dev modules - static order from module-definitions.ts

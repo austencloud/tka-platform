@@ -9,8 +9,8 @@
     <DrawerHeader title="What's New" icon="fa-gift" onClose={handleClose} />
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
 
   interface Props {
     /** The title displayed in the header */
@@ -29,7 +29,7 @@
 
   let hapticService: IHapticFeedback | null = null;
   try {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   } catch {
     // Optional service
   }

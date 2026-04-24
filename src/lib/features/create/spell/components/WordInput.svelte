@@ -8,7 +8,8 @@ Features:
 - Haptic feedback on button interactions
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
   import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
   import {
     uppercasePreservingGreek,
@@ -31,8 +32,8 @@ Features:
     onSubmit?: () => void;
   } = $props();
 
-  const haptic = container.items.hapticFeedback;
-  const greekKeyMapper = container.items.greekKeyMapper as IGreekKeyMapper;
+  const haptic = getHapticFeedback();
+  const greekKeyMapper = getGreekKeyMapper();
 
   function handleFocus() {
     onFocusChange?.(true);

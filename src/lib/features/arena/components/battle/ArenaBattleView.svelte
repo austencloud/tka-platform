@@ -9,6 +9,7 @@
   Mobile: Tap panel to vote
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import ArenaMatchupPanel from "./ArenaMatchupPanel.svelte";
   import ArenaDivider from "./ArenaDivider.svelte";
@@ -17,7 +18,7 @@
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import ArenaPropDrawer from "./ArenaPropDrawer.svelte";
   import { arenaState } from "../../state/arena-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getArenaOrchestrator } from "../../getArenaOrchestrator";
   import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -40,7 +41,7 @@
   let userId = $state<string | null>(null);
 
   // Get orchestrator from DI
-  const orchestrator: IArenaOrchestrator = container?.items?.arenaOrchestrator;
+  const orchestrator: IArenaOrchestrator = getArenaOrchestrator();
 
   // Vote feedback animation state
   let voteResult = $state<"left" | "right" | null>(null);
@@ -132,7 +133,7 @@
     voteResult = side;
 
     // Haptic feedback on mobile
-    container.items.hapticFeedback.trigger("selection");
+    getHapticFeedback().trigger("selection");
 
     try {
       await orchestrator.vote(winnerId);

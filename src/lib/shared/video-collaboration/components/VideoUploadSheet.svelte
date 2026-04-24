@@ -5,6 +5,7 @@
   Handles: file selection → metadata extraction → upload → save to Firestore
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { container } from "$lib/shared/di";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
@@ -39,7 +40,7 @@
   // Services
   const uploadService = container.items.videoUploader;
   const videoService = container.items.collaborativeVideoManager;
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // State
   let selectedFile = $state<File | null>(null);

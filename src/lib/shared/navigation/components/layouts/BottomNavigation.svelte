@@ -1,7 +1,7 @@
 <!-- BottomNavigation - Portrait/Bottom Navigation Layout -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { Section } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
@@ -108,7 +108,7 @@
 
   onMount(() => {
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch (error) {
       console.warn(
         "BottomNavigation: Failed to resolve IHapticFeedback",

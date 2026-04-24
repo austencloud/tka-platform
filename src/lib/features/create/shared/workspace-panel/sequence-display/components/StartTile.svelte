@@ -1,10 +1,10 @@
 <!-- StartTile.svelte - Reusable start position tile for all grid modes -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../../domain/models/StepData";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import StepCell from "./StepCell.svelte";
 
   let {
@@ -31,7 +31,7 @@
     isTimelineMode?: boolean;
   }>();
 
-  const hapticService: IHapticFeedback | null = container.items.hapticFeedback;
+  const hapticService: IHapticFeedback | null = getHapticFeedback();
 
   function handleStartClick() {
     hapticService?.trigger("selection");

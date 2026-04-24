@@ -13,6 +13,7 @@
  * sequence is already safe in local storage.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceVisibility } from "../../domain/models/LibrarySequence";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
@@ -29,7 +30,6 @@ import type {
   SaveProgress,
   SaveResult,
 } from "../contracts/ILibrarySaveService";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import { LibraryError } from "./LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -252,7 +252,7 @@ export class LibrarySaveService implements ILibrarySaveService {
         "[LibrarySaveService] Failed to generate/upload thumbnail:",
         error
       );
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Sequence saved, but the thumbnail didn't generate",
         technicalDetails: error instanceof Error ? error.message : String(error),

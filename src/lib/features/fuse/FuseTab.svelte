@@ -9,7 +9,7 @@
 
 	import { onDestroy } from "svelte";
 	import { fade } from "svelte/transition";
-	import { container } from "$lib/shared/di";
+	import { getSequenceFuser } from "./getSequenceFuser";
 	import { createFuseState } from "./state/fuse-state.svelte";
 	import { setFuseContext } from "./context/fuse-context";
 	import FuseLayout from "./components/FuseLayout.svelte";
@@ -17,7 +17,7 @@
 
 	function init(): { state: ReturnType<typeof createFuseState>; error: null } | { state: null; error: string } {
 		try {
-			const sequenceFuser = container.items.sequenceFuser;
+			const sequenceFuser = getSequenceFuser();
 			const state = createFuseState({ sequenceFuser });
 			setFuseContext({ state });
 			return { state, error: null };

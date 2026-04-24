@@ -22,9 +22,9 @@
    * </AdminTwoPanelLayout>
    */
 
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { onMount } from "svelte";
   import type { Snippet } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
@@ -78,7 +78,7 @@
     let cleanup: (() => void) | undefined;
 
     try {
-      deviceDetector = container.items.deviceDetector;
+      deviceDetector = getDeviceDetector();
       if (deviceDetector) {
         responsiveSettings = deviceDetector.getResponsiveSettings();
 

@@ -117,10 +117,10 @@ export class Bubbles2DRenderer {
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      this.smoothedVelocity[key] = { vx: svx, vy: svy };
+      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
       const speedPx = Math.hypot(svx, svy);
       this.spawnBubbles(params, tip, speedPx, dt, scale, baseR, poolCap);
-      this.lastTipPos[key] = { x: tip.x, y: tip.y };
+      if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
     // 2. Integrate + age + cull.
@@ -211,52 +211,48 @@ export class Bubbles2DRenderer {
     scale: number,
     params: Bubbles2DParams,
   ): void {
-    const survivors: Bubble[] = [];
-    for (const b of this.bubbles) {
+    let writeIdx = 0;
+    for (let i = 0; i < this.bubbles.length; i++) {
+      const b = this.bubbles[i]!;
       if (b.popping === 1) {
         b.popAge += dt;
-        if (b.popAge >= POP_DURATION) {
-          // Fully popped — skip.
-          continue;
-        }
-        // Continue drifting during pop so the rim expand doesn't freeze.
+        if (b.popAge >= POP_DURATION) continue;
         b.x += b.vx * dt;
         b.y += b.vy * dt;
-        survivors.push(b);
+        if (i !== writeIdx) this.bubbles[writeIdx] = b;
+        writeIdx++;
         continue;
       }
       b.age += dt;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
-      // Check pop triggers.
       const currentR = this.currentRadius(b);
       if (b.age >= b.maxAge || currentR >= b.maxR) {
-        // Start pop. Spawn burst fragments immediately.
         b.popping = 1;
         b.popAge = 0;
         b.popR = currentR;
         this.spawnBurst(b, params, scale);
-        survivors.push(b);
-        continue;
       }
-      survivors.push(b);
+      if (i !== writeIdx) this.bubbles[writeIdx] = b;
+      writeIdx++;
     }
-    this.bubbles = survivors;
+    this.bubbles.length = writeIdx;
   }
 
   private integrateBursts(dt: number): void {
-    const survivors: PopBurst[] = [];
-    for (const p of this.bursts) {
+    let writeIdx = 0;
+    for (let i = 0; i < this.bursts.length; i++) {
+      const p = this.bursts[i]!;
       p.age += dt;
       if (p.age >= p.maxAge) continue;
-      // Slight deceleration so bursts don't fly off forever.
       p.vx *= 0.94;
       p.vy *= 0.94;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      survivors.push(p);
+      if (i !== writeIdx) this.bursts[writeIdx] = p;
+      writeIdx++;
     }
-    this.bursts = survivors;
+    this.bursts.length = writeIdx;
   }
 
   private spawnBurst(
@@ -313,6 +309,11 @@ export class Bubbles2DRenderer {
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       const iridescent = palette.iridescent === true;
+      // Unit-radius specular gradient reused for every bubble. CTM at
+      // paint time scales it per bubble — zero per-particle allocation.
+      const specGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
+      specGrad.addColorStop(0, palette.highlight);
+      specGrad.addColorStop(1, withAlpha(palette.highlight, 0));
 
       for (const b of this.bubbles) {
         let r: number;
@@ -323,7 +324,6 @@ export class Bubbles2DRenderer {
           alpha = 1 - t;
         } else {
           r = this.currentRadius(b);
-          // Birth-in fade (0→0.08) + subtle death-approach fade from 0.85→1.
           const lifeT = Math.min(1, b.age / b.maxAge);
           const fadeIn = lifeT < 0.08 ? lifeT / 0.08 : 1;
           const fadeOut = lifeT > 0.85 ? 1 - (lifeT - 0.85) / 0.15 : 1;
@@ -334,35 +334,27 @@ export class Bubbles2DRenderer {
           ? oilIridescentRim(Math.min(1, b.age / b.maxAge))
           : palette.rim;
 
-        // Interior fill — transparent tint. Lighter than rim.
         ctx.globalAlpha = alpha * 0.9;
         ctx.fillStyle = palette.fill;
         ctx.beginPath();
         ctx.arc(b.x, b.y, r, 0, TAU);
         ctx.fill();
 
-        // Rim stroke. Thickness scales mildly with radius so big bubbles
-        // keep a proportional outline.
         const rimWidth = Math.max(1, r * 0.08) * (b.popping === 1 ? 1.2 : 1);
         ctx.globalAlpha = alpha;
         ctx.lineWidth = rimWidth;
         ctx.strokeStyle = rim;
         ctx.stroke();
 
-        // Specular highlight — small bright dot in upper-left quadrant.
-        // Skipped during pop (it looks weird expanding).
         if (b.popping === 0) {
           const specR = r * 0.22;
-          const sx = b.x - r * 0.38;
-          const sy = b.y - r * 0.42;
+          ctx.setTransform(specR, 0, 0, specR, b.x - r * 0.38, b.y - r * 0.42);
           ctx.globalAlpha = alpha * 0.85;
-          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, specR);
-          grad.addColorStop(0, palette.highlight);
-          grad.addColorStop(1, withAlpha(palette.highlight, 0));
-          ctx.fillStyle = grad;
+          ctx.fillStyle = specGrad;
           ctx.beginPath();
-          ctx.arc(sx, sy, specR, 0, TAU);
+          ctx.arc(0, 0, 1.0, 0, TAU);
           ctx.fill();
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
       }
     } finally {

@@ -7,7 +7,7 @@
   Click any cell to set grid dimensions to that position.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   type PresetType =
     | "single"
     | "vertical"
@@ -36,7 +36,7 @@
     onPresetLayout: (preset: PresetType) => void;
   } = $props();
 
-  const haptic = container.items.hapticFeedback;
+  const haptic = getHapticFeedback();
 
   const MAX_GRID = 8;
 

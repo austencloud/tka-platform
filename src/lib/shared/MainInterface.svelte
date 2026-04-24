@@ -9,6 +9,8 @@
   import { onMount } from "svelte";
   import { getActiveTab } from "./application/state/ui/ui-state.svelte";
   import { handleHMRInit } from "./hmr-helper";
+  import { getDeviceDetector } from "./device/getDeviceDetector";
+  import { getViewportManager } from "./device/getViewportManager";
   import {
     layoutState,
     moduleHasPrimaryNav,
@@ -228,10 +230,10 @@
 
     // Initialize desktop sidebar visibility
     try {
-      const deviceDetector = container.items.deviceDetector;
-      const viewportService = container.items.viewportManager;
+      const deviceDetectorInstance = getDeviceDetector();
+      const viewportService = getViewportManager();
       desktopSidebarVisibility = useDesktopSidebarVisibility(
-        deviceDetector,
+        deviceDetectorInstance,
         viewportService
       );
     } catch (error) {

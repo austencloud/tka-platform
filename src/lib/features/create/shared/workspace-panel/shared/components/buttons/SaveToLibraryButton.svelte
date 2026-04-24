@@ -6,7 +6,7 @@
   Opens SaveToLibraryDialog when clicked.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   // Props
@@ -21,7 +21,7 @@
   } = $props();
 
   // Resolve haptic feedback service
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Check if sequence has content worth saving
   const hasContent = $derived.by(() => {

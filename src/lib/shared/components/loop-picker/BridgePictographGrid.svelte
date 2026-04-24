@@ -8,11 +8,11 @@
   Pattern follows: PictographGrid from StartPositionPicker
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
@@ -34,7 +34,7 @@
   let isLayoutStabilizing = $state(true);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
 
     // Allow layout to settle
     const stabilizationTimer = setTimeout(() => {

@@ -3,9 +3,9 @@
   Shows selected props as larger cards. Tap one to crown it as favorite.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
@@ -23,7 +23,7 @@
     chosenProp = prop;
 
     try {
-      const haptic = container.items.hapticFeedback as IHapticFeedback;
+      const haptic = getHapticFeedback() as IHapticFeedback;
       haptic?.trigger("success");
     } catch {
       // Not available

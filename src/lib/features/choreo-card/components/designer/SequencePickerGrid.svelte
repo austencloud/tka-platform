@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
 
   interface LengthOption {
@@ -8,7 +9,7 @@
   }
 
   interface Props {
-    sequences: any[];
+    sequences: SequenceData[];
     selectedIndex: number;
     selectedLength: number;
     onSelect: (index: number) => void;
@@ -102,6 +103,7 @@
         class:active={selectedLength === opt.value}
         onclick={() => onLengthChange(opt.value)}
         aria-pressed={selectedLength === opt.value}
+        aria-label="Filter by {opt.label === 'All' ? 'all lengths' : opt.label + ' beats'}"
       >
         {opt.label}
       </button>
@@ -109,13 +111,14 @@
   </div>
 
   <div class="column-chips" role="group" aria-label="Grid columns">
-    <i class="fas fa-th" aria-hidden="true" style="font-size: 11px; opacity: 0.5; margin-right: 2px;"></i>
+    <i class="fas fa-th" aria-hidden="true" style="font-size: 12px; opacity: 0.5; margin-right: 2px;"></i>
     {#each Array.from({ length: MAX_COLUMNS - MIN_COLUMNS + 1 }, (_, i) => i + MIN_COLUMNS) as col}
       <button
         class="chip"
         class:active={columnCount === col}
         onclick={() => { columnCount = col; }}
         aria-pressed={columnCount === col}
+        aria-label="Show {col} {col === 1 ? 'column' : 'columns'}"
       >
         {col}
       </button>

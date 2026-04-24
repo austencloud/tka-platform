@@ -410,7 +410,7 @@
     <!-- CTA -->
     <footer class="about-footer">
       <div class="cta-card">
-        <h3>Ready to browse?</h3>
+        <h3>Ready to create?</h3>
         <p>TKA Composer is free to use. No download required.</p>
         <a href="/create" class="cta-button">
           <span>Open TKA Composer</span>

@@ -5,9 +5,9 @@
   Follows TabOverflowSelector pattern with native Popover API.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { ModelOption } from "../types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let {
@@ -76,7 +76,7 @@
 
   // Set up toggle event listener for chevron rotation
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
 
     const element = popoverElement;
     if (!element) return;

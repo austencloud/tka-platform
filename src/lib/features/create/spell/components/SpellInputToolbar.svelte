@@ -11,9 +11,9 @@
   - CSS env() variables for positioning
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
-  import { container } from "$lib/shared/di";
 
   let {
     visible = false,
@@ -38,7 +38,7 @@
     onKeyboardHeightChange?: (height: number) => void;
   }>();
 
-  const haptic = container.items.hapticFeedback;
+  const haptic = getHapticFeedback();
 
   let keyboardHeight = $state(0);
   let isKeyboardVisible = $state(false);

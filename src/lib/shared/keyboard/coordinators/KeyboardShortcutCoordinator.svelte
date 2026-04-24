@@ -9,7 +9,8 @@
    */
 
   import { onMount } from "svelte";
-  import { container } from "../../di";
+  import { getKeyboardShortcutManager } from "../getKeyboardShortcutManager";
+  import { getCommandPalette } from "../getCommandPalette";
 
   import type { IKeyboardShortcutManager } from "../services/contracts/IKeyboardShortcutManager";
   import type { ICommandPalette } from "../services/contracts/ICommandPalette";
@@ -29,8 +30,8 @@
     (async () => {
       try {
         // Resolve services
-        const manager = container.items.keyboardShortcutManager;
-        const palette = container.items.commandPalette;
+        const manager = getKeyboardShortcutManager();
+        const palette = getCommandPalette();
 
         // Assign to component variables for cleanup
         shortcutManager = manager;

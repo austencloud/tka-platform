@@ -3,9 +3,9 @@ StaffIdentificationQuiz - Coordinator for staff position and rotation quiz
 Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/Antispin
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onDestroy } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import {
     type StaffQuizQuestion,
     generateStaffQuizQuestions,
@@ -16,7 +16,7 @@ Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   let answerTimer: ReturnType<typeof setTimeout> | null = null;
 

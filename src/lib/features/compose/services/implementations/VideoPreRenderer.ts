@@ -17,6 +17,7 @@
  * The result is a video that looks EXACTLY like the live preview.
  */
 
+import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
 import type {
@@ -256,7 +257,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       let bluePropType = "staff";
       let redPropType = "staff";
       try {
-        const settingsState = container.items.settingsState;
+        const settingsState = settingsService;
         const settings = settingsState.currentSettings;
         const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
         bluePropType = (

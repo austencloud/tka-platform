@@ -1,6 +1,7 @@
 <!-- PropNavButton - Circular prop type button for bottom/side navigation -->
 <!-- Tap: toggle prop drawer. Long-press (touch only): open quick feedback panel. -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import NavButton from "./NavButton.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -8,7 +9,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   const LONG_PRESS_MS = 500;
@@ -18,7 +18,7 @@
   let suppressClick = $state(false);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   const settings = $derived(getSettings());

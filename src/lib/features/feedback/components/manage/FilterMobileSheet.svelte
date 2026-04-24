@@ -1,6 +1,6 @@
 <!-- FilterMobileSheet - Bottom sheet with all filter sections for mobile -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import type { FilterBarUIState } from "../../state/filter-bar-ui-state.svelte";
@@ -24,7 +24,7 @@
 
   const { manageState, uiState }: Props = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function handleTypeFilter(type: FeedbackType | "all") {
     hapticService?.trigger("selection");

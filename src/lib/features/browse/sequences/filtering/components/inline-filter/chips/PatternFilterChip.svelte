@@ -3,10 +3,10 @@ PatternFilterChip.svelte - Dropdown chip for LOOP type filtering.
 Shows circular/non-circular/specific LOOP types with counts.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipBase from "../FilterChipBase.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -21,7 +21,7 @@ Shows circular/non-circular/specific LOOP types with counts.
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback ?? null;
+    hapticService = getHapticFeedback() ?? null;
   });
 
   const label = $derived(activeValue ? formatLabel(activeValue) : t('browse_chip_pattern'));

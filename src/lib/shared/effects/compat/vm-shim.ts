@@ -96,7 +96,25 @@ export function bindVmToEffectsConfig(
 ): () => void {
   const onChange = () => {
     const snap = snapshotConfigFromVm(vm);
-    state.replace(snap);
+    // Merge only VM-owned fields into the existing config. New effects
+    // (sparkles, echo, bloom, etc.) are managed directly by the
+    // EffectsConfigState and must NOT be overwritten with defaults.
+    const cur = state.config;
+    state.replace({
+      ...cur,
+      tipEffectMap: snap.tipEffectMap,
+      trails: snap.trails,
+      fire: snap.fire,
+      led: snap.led,
+      charcoal: snap.charcoal,
+      activePresets: {
+        ...cur.activePresets,
+        trails: snap.activePresets.trails,
+        fire: snap.activePresets.fire,
+        led: snap.activePresets.led,
+        charcoal: snap.activePresets.charcoal,
+      },
+    });
   };
   vm.registerObserver(onChange);
   return () => vm.unregisterObserver(onChange);

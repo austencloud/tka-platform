@@ -9,10 +9,12 @@
  * by tracking pointer position and using a generous movement threshold.
  */
 
+import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
+import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
 import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-import { container } from "$lib/shared/di";
 
 // Touch tolerance constants
 // 75px is very generous for lazy/casual taps on mobile
@@ -60,16 +62,16 @@ export function createToggleCardState<T>(props: {
   async function initialize(): Promise<() => void> {
     try {
       // Resolve services from DI container
-      hapticService = container.items.hapticFeedback;
-      rippleService = container.items.rippleEffect;
-      deviceDetector = container.items.deviceDetector;
+      hapticService = getHapticFeedback();
+      rippleService = getRippleEffect();
+      deviceDetector = getDeviceDetector();
 
       // Set initial layout state
       isLandscapeMobile = deviceDetector?.isLandscapeMobile() ?? false;
 
       // Subscribe to device capability changes
       const cleanupDeviceListener = deviceDetector?.onCapabilitiesChanged(() => {
-        const detector = deviceDetector;
+        const detector = getDeviceDetector();
         if (detector) {
           isLandscapeMobile = detector.isLandscapeMobile();
         }

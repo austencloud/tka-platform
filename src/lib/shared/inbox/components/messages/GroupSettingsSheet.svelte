@@ -7,6 +7,7 @@
    * All members can view participants and leave the group.
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type {
     Conversation,
@@ -16,7 +17,6 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
@@ -80,7 +80,7 @@
   const excludeUserIds = $derived(conversation.participants);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     editedName = groupName;
   });
 

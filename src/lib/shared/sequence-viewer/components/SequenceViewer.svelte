@@ -14,7 +14,8 @@
   Uses sessionStorage for persistence (survives HMR and page refresh).
 -->
 <script lang="ts">
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 	import type { ControlsLevel, MediaType } from "../domain/types";
 	import { container } from "$lib/shared/di";
@@ -54,7 +55,7 @@
 	const useExternalControl = !!animationExportContext;
 
 	onMount(() => {
-		hapticService = container.items.hapticFeedback;
+		hapticService = getHapticFeedback();
 		// Notify parent of initial/persisted media type so export button label syncs
 		onMediaTypeChange?.(activeMediaType);
 	});

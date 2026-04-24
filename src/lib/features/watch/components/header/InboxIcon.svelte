@@ -5,9 +5,9 @@
   Tapping navigates to messages view.
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IConversationManager } from "$lib/shared/messaging/services/contracts/IConversationManager";
 
   interface Props {

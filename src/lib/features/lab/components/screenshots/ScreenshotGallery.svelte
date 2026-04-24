@@ -8,12 +8,16 @@
   - gallery-capture-state (capture + upload pipeline)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { DeviceCategory } from "../../services/contracts/IScreenshotOrchestrator";
   import type { ScreenshotMetadata } from "../../services/contracts/IScreenshotUploader";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IScreenshotTagController } from "../../services/contracts/IScreenshotTagController";
   import type { GalleryItem } from "../../services/contracts/IGalleryItemAdapter";
-  import { container } from "$lib/shared/di";
+  import { getScreenshotOrchestrator } from "../../getScreenshotOrchestrator";
+  import { getScreenshotUploadOrchestrator } from "../../getScreenshotUploadOrchestrator";
+  import { getScreenshotTagController } from "../../getScreenshotTagController";
+  import { getScreenshotLoader } from "../../getScreenshotLoader";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { MediaSpotlight, type MediaItem as SpotlightMediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
@@ -47,13 +51,13 @@
   });
 
   const capture = createGalleryCaptureState({
-    getOrchestrator: () => container.items.screenshotOrchestrator,
-    getUploadOrchestrator: () => container.items.screenshotUploadOrchestrator,
+    getOrchestrator: () => getScreenshotOrchestrator(),
+    getUploadOrchestrator: () => getScreenshotUploadOrchestrator(),
   });
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
-    tagController = container.items.screenshotTagController;
+    hapticService = getHapticFeedback();
+    tagController = getScreenshotTagController();
   });
 
   // ─── Auth-gated Firestore subscription ──────────────────────────────────────
@@ -87,7 +91,7 @@
     errorMessage = null;
 
     try {
-      const loader = container.items.screenshotLoader;
+      const loader = getScreenshotLoader();
       screenshotUnsubscribe = loader.subscribeToScreenshots(
         (data: ScreenshotMetadata[]) => {
           screenshots = data;
@@ -379,7 +383,7 @@
     {#if capture.capturePhase === "capturing"}
       <CaptureProgress
         jobId={capture.captureJobId}
-        orchestrator={container.items.screenshotOrchestrator}
+        orchestrator={getScreenshotOrchestrator()}
         onPollStatus={capture.handleCaptureStatusUpdate}
         onComplete={capture.handleCaptureComplete}
       />

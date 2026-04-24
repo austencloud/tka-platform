@@ -238,4 +238,8 @@ export interface Ink2DParams extends InkIntent {
   lifetimeSeconds: number;
   /** Max stroke points per tip (bounded history). Spec range 30-50. */
   maxPointsPerTip: number;
+  /** Min stamp scale factor — reached at high tip speed (brush lifting). */
+  stampScaleMin: number;
+  /** Max stamp scale factor — reached at low tip speed (brush pressing). */
+  stampScaleMax: number;
 }

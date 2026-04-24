@@ -1,6 +1,7 @@
 <!-- Desktop Navigation Sidebar -->
 <!-- Modern 2026-style sidebar navigation for desktop in side-by-side layout -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { container } from "../../di";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
@@ -286,7 +287,7 @@
     initializeDesktopSidebarCollapsedState();
 
     // Initialize services
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
 
     // Set up ResizeObserver to measure and report sidebar height
     let resizeObserver: ResizeObserver | null = null;

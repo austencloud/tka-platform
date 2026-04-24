@@ -12,11 +12,11 @@
  * Other options are session-specific and stored in localStorage.
  */
 
+import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-import { container } from "$lib/shared/di";
 import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
 // ===== Session-local Persistence (localStorage) =====
@@ -114,7 +114,7 @@ export function createStartEndOptionsState(
   // Get settings service for Firebase-synced blocked positions
   let settingsState: ISettingsState | null = null;
   try {
-    settingsState = container.items.settingsState;
+    settingsState = settingsService;
   } catch {
     console.warn("⚠️ StartEndOptions: Settings service not available");
   }

@@ -7,7 +7,7 @@
  * Domain: Create module - PWA Engagement Tracking
  */
 
-import { container } from "$lib/shared/di";
+import { getPWAEngagementTracker } from "$lib/shared/mobile/getPWAEngagementTracker";
 import type { IPWAEngagementTracker } from "$lib/shared/mobile/services/contracts/IPWAEngagementTracker";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -43,7 +43,7 @@ export function createPWAEngagementEffect(
       if (!CreateModuleState.hasSequence) return;
 
       try {
-        const engagementService = container.items.pwaEngagementTracker;
+        const engagementService = getPWAEngagementTracker();
         engagementService.recordSequenceCreated();
         engagementService.recordInteraction(); // Also count as interaction
         hasTrackedSequenceCreation = true;

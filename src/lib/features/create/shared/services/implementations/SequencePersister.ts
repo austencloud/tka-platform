@@ -8,13 +8,13 @@
  * with independent localStorage persistence.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { IPersistenceService } from "$lib/shared/persistence/services/contracts/IPersistenceService";
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 import type { ISequencePersister } from "../contracts/ISequencePersister";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class SequencePersister implements ISequencePersister {
@@ -59,7 +59,7 @@ export class SequencePersister implements ISequencePersister {
         "❌ SequencePersister: Failed to save current state:",
         error
       );
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't save your sequence",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -107,7 +107,7 @@ export class SequencePersister implements ISequencePersister {
         "❌ SequencePersister: Failed to load current state:",
         error
       );
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load your sequence",
         technicalDetails: error instanceof Error ? error.message : String(error),

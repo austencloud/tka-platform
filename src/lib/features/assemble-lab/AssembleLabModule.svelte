@@ -2,6 +2,7 @@
   AssembleLabModule.svelte - Standalone assemble lab (accessed from Lab tab).
 -->
 <script lang="ts">
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { createAssembleState } from "./state/assemble-state.svelte";
   import InteractiveGrid from "./components/InteractiveGrid.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
@@ -9,7 +10,6 @@
   import BuilderTurnBar from "./components/BuilderTurnBar.svelte";
   import StepStrip from "./components/StepStrip.svelte";
   import AssembleIdlePanel from "./components/AssembleIdlePanel.svelte";
-  import { container } from "$lib/shared/di";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   const builderState = createAssembleState();
@@ -31,7 +31,7 @@
   // Load last-used grid preferences from settings
   let settingsState: ISettingsState | null = null;
   try {
-    settingsState = container.items.settingsState as ISettingsState;
+    settingsState = settingsService as ISettingsState;
     const saved = settingsState.currentSettings;
     if (saved.preferredGridMode) {
       builderState.setGridMode(saved.preferredGridMode);

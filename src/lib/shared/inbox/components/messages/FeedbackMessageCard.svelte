@@ -7,6 +7,7 @@
    * Shows deleted state if the feedback no longer exists.
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import {
     TYPE_CONFIG,
@@ -18,7 +19,6 @@
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/features/feedback/state/notification-action-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
@@ -44,7 +44,7 @@
 
   // Check if feedback exists on mount
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
 
     const feedbackId = attachment.metadata?.feedbackId;
     if (!feedbackId) {

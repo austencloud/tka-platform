@@ -5,6 +5,7 @@ Start Position: Multi-select with presets (All, Classic 3, Custom)
 End Position: Single select (for freeform mode only)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -12,7 +13,6 @@ End Position: Single select (for freeform mode only)
     GridMode,
     type GridPosition,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { container } from "$lib/shared/di";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
@@ -59,7 +59,7 @@ End Position: Single select (for freeform mode only)
   let isStartPositionExpanded = $state(true);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Sync options when panel opens

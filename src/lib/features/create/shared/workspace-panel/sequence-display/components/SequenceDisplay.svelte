@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import { container } from "$lib/shared/di";
@@ -56,7 +57,7 @@
   const logger = createComponentLogger("SequenceDisplay");
 
   // Services
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Get context for UndoButton and LOOP completion
   const ctx = getCreateModuleContext();

@@ -5,9 +5,11 @@
    * Responsive design for mobile and desktop
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { doc, setDoc } from "firebase/firestore";
   import { container } from "$lib/shared/di";
+  import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -88,9 +90,9 @@
   onMount(async () => {
     try {
       // Resolve services
-      userService = container.items.userRepository;
+      userService = getUserRepository();
       libraryService = container.items.libraryRepository;
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
 
       // Load user profile with current user context for follow status
       userProfile = await userService.getUserProfile(userId, currentUserId);

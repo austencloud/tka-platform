@@ -4,9 +4,10 @@ Uses shared StepperCard for consistent styling with Generate module
 Can operate as stepper (inline) or panel opener (click to select)
 -->
 <script lang="ts">
+  import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
 
@@ -43,8 +44,8 @@ Can operate as stepper (inline) or panel opener (click to select)
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback ?? null;
-    rippleService = container.items.rippleEffect ?? null;
+    hapticService = getHapticFeedback() ?? null;
+    rippleService = getRippleEffect() ?? null;
 
     if (mode === "panel-opener" && cardElement && rippleService) {
       return rippleService.attachRipple(cardElement, {

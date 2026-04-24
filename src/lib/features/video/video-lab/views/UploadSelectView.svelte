@@ -10,6 +10,7 @@
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
   import { container } from "$lib/shared/di";
+  import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
 
@@ -53,7 +54,7 @@
       repo.getSequence(sequenceId).then((seq) => {
         if (seq) {
           try {
-            const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+            const hydrator = getSequenceHydrator();
             selectedSequence = hydrator.hydrate(seq);
           } catch {
             selectedSequence = seq;

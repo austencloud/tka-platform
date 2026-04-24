@@ -6,6 +6,7 @@
  * Domain: Keyboard Shortcuts - CREATE Module
  */
 
+import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 import type { IKeyboardShortcutManager } from "../services/contracts/IKeyboardShortcutManager";
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/features/create/shared/state/create-module-state-ref.svelte";
@@ -14,7 +15,6 @@ import { executeClearSequenceWorkflow } from "$lib/features/create/shared/utils/
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
 import { shiftStartPosition } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
-import { container } from "$lib/shared/di";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
@@ -35,7 +35,7 @@ async function applyPropPreset(presetIndex: number): Promise<void> {
   }
 
   // Trigger haptic feedback
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
   hapticService?.trigger("selection");
 
   // Apply the preset settings
@@ -786,7 +786,7 @@ export function registerCreateShortcuts(
       const otherProps = allProps.filter((p) => p !== currentProp);
       const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
 
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
 
       await updateSettings({ bluePropType: randomProp, redPropType: randomProp });

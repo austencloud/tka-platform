@@ -13,7 +13,7 @@
   import type { TriGridMode } from "../domain/trigrid-types";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { svgPreloader } from "$lib/shared/pictograph/shared/services/implementations/SvgPreloader";
-  import { container } from "$lib/shared/di";
+  import { getTriGridCalculator } from "../getTriGridCalculator";
   import { TRIGRID_SVG_SIZE } from "../domain/trigrid-constants";
   import type { ITriGridCalculator } from "../services/contracts/ITriGridCalculator";
   import { applyColorToSvg } from "$lib/shared/utils/svg-color-utils";
@@ -36,7 +36,7 @@
     showGrid,
   }: Props = $props();
 
-  const calculator: ITriGridCalculator = container.items.triGridCalculator;
+  const calculator = getTriGridCalculator();
 
   // Triad SVG center point (from viewBox 0 0 248.76 219.09)
   const TRIAD_CENTER_X = 124.38;

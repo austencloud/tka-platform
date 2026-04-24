@@ -12,6 +12,7 @@
   Domain: Create module - Beat Editing Coordination
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { container } from "$lib/shared/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -42,7 +43,7 @@
   const { CreateModuleState, panelState } = ctx;
 
   // Services
-  const hapticService: IHapticFeedback = container.items.hapticFeedback;
+  const hapticService: IHapticFeedback = getHapticFeedback();
   const StepOperator: IStepOperator = container.items.stepOperator;
 
   // Only show panel if the current tab supports it AND panel state says it's open

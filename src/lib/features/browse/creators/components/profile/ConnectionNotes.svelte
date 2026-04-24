@@ -6,7 +6,7 @@
    * Only visible to the current user viewing another profile.
    */
 
-  import { container } from "$lib/shared/di";
+  import { getConnectionManager } from "$lib/shared/community/getConnectionManager";
   import type { IConnectionManager } from "$lib/shared/community/services/contracts/IConnectionManager";
 
   interface Props {
@@ -25,7 +25,7 @@
   let connectionManager: IConnectionManager;
 
   $effect(() => {
-    connectionManager = container.items.connectionManager;
+    connectionManager = getConnectionManager();
   });
 
   // Sync with initial notes if they change

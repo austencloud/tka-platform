@@ -41,6 +41,17 @@
   let copyDataState = $state<"idle" | "success" | "error">("idle");
   let copyImageState = $state<"idle" | "copying" | "success" | "error">("idle");
 
+  let dataResetTimer: ReturnType<typeof setTimeout>;
+  let dataErrorTimer: ReturnType<typeof setTimeout>;
+  let imageResetTimer: ReturnType<typeof setTimeout>;
+  let imageErrorTimer: ReturnType<typeof setTimeout>;
+  onDestroy(() => {
+    clearTimeout(dataResetTimer);
+    clearTimeout(dataErrorTimer);
+    clearTimeout(imageResetTimer);
+    clearTimeout(imageErrorTimer);
+  });
+
   const word = $derived(sequence.word ?? sequence.name ?? '');
 
   // QR code visibility — follows the user's global visibility setting so turning it off
@@ -60,10 +71,10 @@
       const copier = di.items.claudeCodeCopier;
       const result = await copier.copyForClaude(sequence);
       copyDataState = result.success ? "success" : "error";
-      setTimeout(() => { copyDataState = "idle"; }, 2000);
+      dataResetTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
     } catch {
       copyDataState = "error";
-      setTimeout(() => { copyDataState = "idle"; }, 2000);
+      dataErrorTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
     }
   }
 
@@ -90,10 +101,10 @@
         new ClipboardItem({ "image/png": blob }),
       ]);
       copyImageState = "success";
-      setTimeout(() => { copyImageState = "idle"; }, 2000);
+      imageResetTimer = setTimeout(() => { copyImageState = "idle"; }, 2000);
     } catch {
       copyImageState = "error";
-      setTimeout(() => { copyImageState = "idle"; }, 2000);
+      imageErrorTimer = setTimeout(() => { copyImageState = "idle"; }, 2000);
     }
   }
 
@@ -116,13 +127,11 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="modal-backdrop" onclick={handleBackdropClick}>
-  <div class="modal-container">
+<div class="modal-backdrop" role="presentation" onclick={handleBackdropClick}>
+  <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="inspect-modal-title">
     <!-- Header -->
     <div class="modal-header">
-      <h2 class="modal-title">{word}</h2>
+      <h2 class="modal-title" id="inspect-modal-title">{word}</h2>
       <p class="modal-hint">Click a card to focus it. Click again to reset.</p>
     </div>
 
@@ -206,7 +215,6 @@
     inset: 0;
     z-index: 1000;
     background: rgba(0, 0, 0, 0.88);
-    backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -330,7 +338,7 @@
   .hints {
     display: flex;
     gap: 16px;
-    font-size: 11px;
+    font-size: 12px;
     color: rgba(255, 255, 255, 0.12);
     flex-shrink: 0;
   }
@@ -341,7 +349,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 3px;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 12px;
     color: rgba(255, 255, 255, 0.25);
     margin-right: 4px;
   }

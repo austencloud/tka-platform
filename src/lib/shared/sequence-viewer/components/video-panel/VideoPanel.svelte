@@ -9,6 +9,7 @@
   video count awareness, and beat-mapping entry point.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -88,7 +89,7 @@
   const uploadService = container.items.videoUploader as IVideoUploader;
   const videoManager = container.items
     .collaborativeVideoManager as ICollaborativeVideoManager;
-  const hapticService = container.items.hapticFeedback as
+  const hapticService = getHapticFeedback() as
     | IHapticFeedback
     | undefined;
 

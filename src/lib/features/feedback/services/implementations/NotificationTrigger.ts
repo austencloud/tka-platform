@@ -39,6 +39,7 @@
  * - System announcements always bypass preferences
  */
 
+import { container } from "$lib/shared/di";
 import {
   collection,
   addDoc,
@@ -61,7 +62,6 @@ import type {
   ModerationNotification,
 } from "../../domain/models/notification-models";
 import { getPreferenceKeyForType } from "../../domain/models/notification-models";
-import { container } from "$lib/shared/di";
 import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
 
 const USERS_COLLECTION = "users";

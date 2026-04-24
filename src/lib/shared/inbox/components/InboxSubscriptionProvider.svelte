@@ -12,13 +12,13 @@
   without requiring the user to visit the Inbox module first.
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { inboxState } from "../state/inbox-state.svelte";
   import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
   import { notificationService } from "$lib/features/feedback/services/implementations/Notifier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import { container } from "$lib/shared/di";
   import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
   import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
   import {

@@ -10,6 +10,8 @@
   Mobile: Swipe left from left edge to exit (matches portal animation direction)
 -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import {
     getSettings,
@@ -20,7 +22,6 @@
   import Toast from "$lib/shared/settings/components/Toast.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
-  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -66,14 +67,14 @@
   onMount(() => {
     let deviceCleanup: (() => void) | undefined;
     try {
-      deviceDetector = container.items.deviceDetector;
+      deviceDetector = getDeviceDetector();
       if (deviceDetector) {
         responsiveSettings = deviceDetector.getResponsiveSettings();
         deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
           responsiveSettings = deviceDetector!.getResponsiveSettings();
         });
       }
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch (error) {
       console.warn("SettingsModule: Failed to resolve DeviceDetector", error);
     }

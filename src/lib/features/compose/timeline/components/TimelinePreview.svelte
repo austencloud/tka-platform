@@ -10,10 +10,10 @@
   - Shows empty state when no clip at playhead
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import type { TimelineClip } from "../domain/timeline-types";

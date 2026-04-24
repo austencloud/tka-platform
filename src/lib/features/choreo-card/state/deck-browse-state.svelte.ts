@@ -116,6 +116,7 @@ export function createDeckBrowseState(allDecksOrGetter: Deck[] | (() => Deck[]))
     const snapshot: SavedDeckBrowseState = { collection, filters, scrollY };
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => saveToStorage(snapshot), DEBOUNCE_MS);
+    return () => clearTimeout(saveTimer);
   });
 
   return {

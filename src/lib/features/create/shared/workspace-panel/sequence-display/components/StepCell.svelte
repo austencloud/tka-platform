@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../../domain/models/StepData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
@@ -65,7 +65,7 @@
   }>();
 
   // Services
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Animation state manager (per-instance, not a DI singleton)
   const animationManager = createStepCellAnimationManager();

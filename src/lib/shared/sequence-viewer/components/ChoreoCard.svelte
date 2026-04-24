@@ -113,11 +113,17 @@
     if (globalPreviewCache.size >= MAX_PREVIEW_CACHE && !globalPreviewCache.has(key)) {
       const oldest = globalPreviewCache.keys().next().value;
       if (oldest !== undefined) {
-        // Revoke blob URLs from evicted cache entry
         const evicted = globalPreviewCache.get(oldest);
         if (evicted) {
+          const activeUrls = new Set<string>();
+          for (const c of cells) {
+            if (c.imageUrl.startsWith("blob:")) activeUrls.add(c.imageUrl);
+            if (c.fadeOutUrl?.startsWith("blob:")) activeUrls.add(c.fadeOutUrl);
+          }
           for (const cell of evicted.cells) {
-            if (cell.imageUrl.startsWith("blob:")) URL.revokeObjectURL(cell.imageUrl);
+            if (cell.imageUrl.startsWith("blob:") && !activeUrls.has(cell.imageUrl)) {
+              URL.revokeObjectURL(cell.imageUrl);
+            }
           }
         }
         globalPreviewCache.delete(oldest);
@@ -1260,22 +1266,7 @@
       clearTimeout(crossfadeTimer);
       crossfadeTimer = null;
       crossfadeActive = false;
-      // Immediately run the cleanup that was scheduled:
-      // revoke fadeOutUrls and purge cache entries referencing them.
-      const toRevoke: string[] = [];
-      cells = cells.map(c => {
-        if (c.fadeOutUrl?.startsWith("blob:")) toRevoke.push(c.fadeOutUrl);
-        return { ...c, fadeOutUrl: undefined };
-      });
-      if (toRevoke.length > 0) {
-        const revokedSet = new Set(toRevoke);
-        for (const [key, entry] of globalPreviewCache) {
-          if (entry.cells.some(c => revokedSet.has(c.imageUrl))) {
-            globalPreviewCache.delete(key);
-          }
-        }
-        for (const url of toRevoke) URL.revokeObjectURL(url);
-      }
+      cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
     }
 
     try {
@@ -1352,26 +1343,17 @@
       activeDarkMode = isDark;
       crossfadeActive = true;
 
-      // Clean up after the CSS transition completes
+      // Clean up after the CSS transition completes.
+      // Don't revoke fadeOutUrl blob URLs here — they may still be referenced
+      // by globalPreviewCache entries for other modes (e.g. the opposite
+      // motion-visibility state). Revoking them poisons the cache, causing
+      // ERR_FILE_NOT_FOUND on the next toggle. URLs are revoked later by
+      // renderAllCells (full re-render), storePreviewInCache (eviction),
+      // or clearCellUrls (component destroy).
       if (crossfadeTimer) clearTimeout(crossfadeTimer);
       crossfadeTimer = setTimeout(() => {
         crossfadeActive = false;
-        const toRevoke: string[] = [];
-        cells = cells.map(c => {
-          if (c.fadeOutUrl?.startsWith("blob:")) toRevoke.push(c.fadeOutUrl);
-          return { ...c, fadeOutUrl: undefined };
-        });
-        // Invalidate any globalPreviewCache entries that reference the revoked URLs.
-        // Without this, toggling dark→light→dark serves revoked blob URLs from cache.
-        if (toRevoke.length > 0) {
-          const revokedSet = new Set(toRevoke);
-          for (const [key, entry] of globalPreviewCache) {
-            if (entry.cells.some(c => revokedSet.has(c.imageUrl))) {
-              globalPreviewCache.delete(key);
-            }
-          }
-        }
-        for (const url of toRevoke) URL.revokeObjectURL(url);
+        cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
         crossfadeTimer = null;
       }, 400);
     } catch (error) {
@@ -1391,19 +1373,18 @@
   }
 
   function clearCellUrls() {
-    // Collect all blob URLs that are still referenced by the globalPreviewCache.
-    // Revoking those would poison the cache — a new ChoreoCard mounting for
-    // the same sequence would hit the cache and get revoked URLs (ERR_FILE_NOT_FOUND).
     const cachedUrls = new Set<string>();
     for (const entry of globalPreviewCache.values()) {
       for (const c of entry.cells) {
         if (c.imageUrl.startsWith("blob:")) cachedUrls.add(c.imageUrl);
       }
     }
-    // Only revoke URLs that are NOT in the cache
     for (const cell of cells) {
       if (cell.imageUrl.startsWith("blob:") && !cachedUrls.has(cell.imageUrl)) {
         URL.revokeObjectURL(cell.imageUrl);
+      }
+      if (cell.fadeOutUrl?.startsWith("blob:") && !cachedUrls.has(cell.fadeOutUrl)) {
+        URL.revokeObjectURL(cell.fadeOutUrl);
       }
     }
     cells = [];
@@ -2692,11 +2673,11 @@
 
   .cell-image.cell-fade-new {
     opacity: 0;
-    transition: opacity 350ms ease;
   }
 
   .cell-image.cell-fade-new.reveal {
     opacity: 1;
+    transition: opacity 350ms ease;
   }
 
   /* Step number overlay — rendered as HTML instead of baked into blobs

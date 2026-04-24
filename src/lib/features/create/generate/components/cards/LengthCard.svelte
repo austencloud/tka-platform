@@ -84,6 +84,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
   maxValue={MAX_LENGTH}
   onIncrement={handleIncrement}
   onDecrement={handleDecrement}
+  onIncrementBlocked={onBeatCapExceeded}
   {formatValue}
   {subtitle}
   {color}

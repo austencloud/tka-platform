@@ -1,5 +1,6 @@
 <script lang="ts">
 
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
@@ -397,7 +398,7 @@
     // Initialize DeviceDetector service
     let cleanup: (() => void) | undefined;
     try {
-      deviceDetector = container.items.deviceDetector;
+      deviceDetector = getDeviceDetector();
       if (deviceDetector) {
         responsiveSettings = deviceDetector.getResponsiveSettings();
 

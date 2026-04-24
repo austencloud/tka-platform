@@ -5,6 +5,7 @@
   Overlays two sequences with different colors on the same canvas.
 -->
 <script lang="ts">
+  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
@@ -113,7 +114,7 @@
       primaryPlaybackController = container.items.animationPlaybackController;
       // Create a new instance for secondary controller (tunnel mode needs two)
       secondaryPlaybackController = container.items.animationPlaybackController;
-      settingsService = container.items.settingsState;
+      settingsService = settingsServiceSingleton;
     } catch (err) {
       console.error("Failed to initialize tunnel renderer:", err);
       error = "Failed to initialize animation services";

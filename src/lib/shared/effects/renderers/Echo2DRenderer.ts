@@ -79,13 +79,26 @@ export class Echo2DRenderer {
       this.lastBeatIndex = beatIndex;
     }
 
-    // 2. Cull aged-out phantoms. Age is measured in intervals, not seconds,
-    //    so slider changes to `decay` feel instant.
+    // 2. Cull aged-out phantoms (in-place compaction — zero allocation).
     const cullAge = params.decay;
     const ageInIntervals = (p: Phantom) =>
       (tips.currentStep - p.capturedStep) / params.interval;
-    this.phantomsBlue = this.phantomsBlue.filter((p) => ageInIntervals(p) < cullAge);
-    this.phantomsRed = this.phantomsRed.filter((p) => ageInIntervals(p) < cullAge);
+    let bw = 0;
+    for (let i = 0; i < this.phantomsBlue.length; i++) {
+      if (ageInIntervals(this.phantomsBlue[i]!) < cullAge) {
+        if (i !== bw) this.phantomsBlue[bw] = this.phantomsBlue[i]!;
+        bw++;
+      }
+    }
+    this.phantomsBlue.length = bw;
+    let rw = 0;
+    for (let i = 0; i < this.phantomsRed.length; i++) {
+      if (ageInIntervals(this.phantomsRed[i]!) < cullAge) {
+        if (i !== rw) this.phantomsRed[rw] = this.phantomsRed[i]!;
+        rw++;
+      }
+    }
+    this.phantomsRed.length = rw;
 
     if (!this.phantomsBlue.length && !this.phantomsRed.length) return;
 

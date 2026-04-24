@@ -12,7 +12,7 @@ Supports two view modes:
 - "scroll": All pages displayed vertically for scrolling (review mode)
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { createType1ConceptState } from "./state/type1-concept-state.svelte";
   import Type1IntroPage from "./pages/Type1IntroPage.svelte";
   import Type1ProspinPage from "./pages/Type1ProspinPage.svelte";
@@ -31,7 +31,7 @@ Supports two view modes:
 
   let { onComplete, viewMode = "step" }: { onComplete?: () => void; viewMode?: ExperienceViewMode } = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Only create interactive state in step mode
   const state = $derived.by(() => viewMode === "step"

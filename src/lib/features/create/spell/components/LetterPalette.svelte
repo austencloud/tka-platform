@@ -6,7 +6,7 @@ Clicking a letter inserts it into the word input.
 Haptic feedback on letter selection.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import {
     GREEK_LETTER_PALETTE,
     GREEK_LETTER_DISPLAY,
@@ -19,7 +19,7 @@ Haptic feedback on letter selection.
     onSelect: (letter: string) => void;
   } = $props();
 
-  const haptic = container.items.hapticFeedback;
+  const haptic = getHapticFeedback();
 
   // Get display label for a letter
   function getDisplayLabel(letter: Letter): string {

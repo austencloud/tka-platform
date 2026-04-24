@@ -7,6 +7,8 @@
   - Unlink providers (if more than one is linked)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import { container } from "../../../di";
   import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
@@ -33,8 +35,8 @@
   let providerToUnlink = $state<ProviderId | null>(null);
 
   onMount(() => {
-    authService = container.items.authenticator;
-    hapticService = container.items.hapticFeedback;
+    authService = getAuthenticator();
+    hapticService = getHapticFeedback();
   });
 
   // Derived state

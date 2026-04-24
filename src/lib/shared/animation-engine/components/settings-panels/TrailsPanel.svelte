@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { animationSettings } from "../../state/animation-settings-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { animationSettings } from "../../state/animation-settings-state.svelte";
 	import {
 		TrackingMode,
 		TAIL_LENGTH_MIN,
@@ -9,9 +10,8 @@
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 	import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 	import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-	import { container } from "$lib/shared/di";
 
-	const settingsState = container.items.settingsState;
+	const settingsState = settingsService;
 
 	const hasBilateralProp = $derived.by(() => {
 		const blue = settingsState.settings.bluePropType;

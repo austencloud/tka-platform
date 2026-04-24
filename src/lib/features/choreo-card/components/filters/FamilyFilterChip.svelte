@@ -4,10 +4,10 @@ Shows motion type pills (parsed from typeCombo) in a dropdown popover.
 Supports selecting multiple families simultaneously; "All Families" clears selection.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import type { DeckFamily } from "$lib/features/choreo-card/domain/models/Deck";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -32,7 +32,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback ?? null;
+    hapticService = getHapticFeedback() ?? null;
   });
 
   // ── Motion type metadata ─────────────────────────────────────────────────
@@ -259,7 +259,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
   /* ── Sequence count badge ─────────────────────────────────────────────── */
 
   .seq-count {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     opacity: 0.55;
@@ -268,7 +268,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
   /* ── Check icon ───────────────────────────────────────────────────────── */
 
   .check-icon {
-    font-size: 10px;
+    font-size: 12px;
     color: #8b5cf6;
   }
 
@@ -288,7 +288,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
     align-items: center;
     justify-content: center;
     padding: 2px 6px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     border-radius: 3px;
     background: var(--c1);

@@ -235,7 +235,7 @@ export class Water2DRenderer {
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      this.smoothedVelocity[key] = { vx: svx, vy: svy };
+      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
       const speedPx = Math.hypot(svx, svy);
       this.spawnDroplets(
         params,
@@ -249,16 +249,19 @@ export class Water2DRenderer {
         poolCap,
         tuning,
       );
-      this.lastTipPos[key] = { x: tip.x, y: tip.y };
+      if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
-    // 2. Age + evict.
-    const alive: WaterDroplet[] = [];
-    for (const d of this.droplets) {
+    // 2. Age + evict (in-place compaction — zero allocation).
+    let writeIdx = 0;
+    for (let i = 0; i < this.droplets.length; i++) {
+      const d = this.droplets[i]!;
       d.age += dt;
-      if (d.age < d.maxAge) alive.push(d);
+      if (d.age >= d.maxAge) continue;
+      if (i !== writeIdx) this.droplets[writeIdx] = d;
+      writeIdx++;
     }
-    this.droplets = alive;
+    this.droplets.length = writeIdx;
     if (this.droplets.length === 0) return;
 
     // 3. Resolve sprite for active palette.
@@ -298,21 +301,19 @@ export class Water2DRenderer {
     // and fade.
     const prevComposite = ctx.globalCompositeOperation;
     const prevAlpha = ctx.globalAlpha;
+    const savedTransform = ctx.getTransform();
     try {
       ctx.globalCompositeOperation = "source-over";
-      // Surface tension tightens the per-style stretch limit (rounder drops).
       const stretchLimit = tuning.stretchLimitBase * (1.0 - params.surfaceTension * 0.55);
       const trailCount = tuning.trailCount;
       const trailStep = tuning.trailStep;
       const trailAlphaStart = tuning.trailAlphaStart;
-      // Phantoms only kick in on moving droplets — at rest they'd just
-      // overlap the current stamp and dirty the silhouette.
       const TRAIL_SPEED_THRESHOLD = 70;
+      const halfSprite = -SPRITE_SIZE / 2;
       for (const d of this.droplets) {
-        const pt = this.positionAt(d, g);
+        const ptX = d.x0 + d.vx0 * d.age;
+        const ptY = d.y0 + d.vy0 * d.age + 0.5 * g * d.age * d.age;
         const ageT = d.age / d.maxAge;
-        // Birth-in fade (0→0.1) so spawns don't pop; death fade from
-        // 0.75→1.0 so expiries don't vanish abruptly.
         const fade =
           ageT < 0.1
             ? ageT / 0.1
@@ -329,43 +330,36 @@ export class Water2DRenderer {
           sp > 6 ? Math.atan2(currVy, d.vx0) : d.rotation + d.rotVel * d.age;
         const drawR = d.radius * sizeFade;
         const spriteScale = drawR / (SPRITE_SIZE * 0.42);
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
 
-        // Motion trails: stamp phantoms at earlier positions along the
-        // droplet's flight path. This is the temporal streaking real
-        // water shows when photographed in motion — without it every
-        // frozen frame reads as a "posed" particle.
         if (trailCount > 0 && sp > TRAIL_SPEED_THRESHOLD) {
           for (let k = trailCount; k >= 1; k--) {
             const phantomAge = Math.max(0, d.age - k * trailStep);
             if (phantomAge <= 0) continue;
-            const phantomPt = {
-              x: d.x0 + d.vx0 * phantomAge,
-              y: d.y0 + d.vy0 * phantomAge + 0.5 * g * phantomAge * phantomAge,
-            };
+            const px = d.x0 + d.vx0 * phantomAge;
+            const py = d.y0 + d.vy0 * phantomAge + 0.5 * g * phantomAge * phantomAge;
             const phantomAlpha =
               fade * trailAlphaStart * ((trailCount - k + 1) / trailCount);
             if (phantomAlpha <= 0.01) continue;
-            ctx.save();
+            const tsx = spriteScale * stretchX;
+            const tsy = spriteScale * squashY;
+            ctx.setTransform(tsx * cos, tsx * sin, -tsy * sin, tsy * cos, px, py);
             ctx.globalAlpha = phantomAlpha;
-            ctx.translate(phantomPt.x, phantomPt.y);
-            ctx.rotate(angle);
-            ctx.scale(spriteScale * stretchX, spriteScale * squashY);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ctx.drawImage(sprite as any, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2);
-            ctx.restore();
+            ctx.drawImage(sprite as any, halfSprite, halfSprite);
           }
         }
 
-        ctx.save();
+        const sx = spriteScale * stretchX;
+        const sy = spriteScale * squashY;
+        ctx.setTransform(sx * cos, sx * sin, -sy * sin, sy * cos, ptX, ptY);
         ctx.globalAlpha = fade;
-        ctx.translate(pt.x, pt.y);
-        ctx.rotate(angle);
-        ctx.scale(spriteScale * stretchX, spriteScale * squashY);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ctx.drawImage(sprite as any, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2);
-        ctx.restore();
+        ctx.drawImage(sprite as any, halfSprite, halfSprite);
       }
     } finally {
+      ctx.setTransform(savedTransform);
       ctx.globalCompositeOperation = prevComposite;
       ctx.globalAlpha = prevAlpha;
     }
@@ -521,13 +515,6 @@ export class Water2DRenderer {
         rotVel: (Math.random() - 0.5) * 2.0,
       });
     }
-  }
-
-  private positionAt(d: WaterDroplet, g: number): { x: number; y: number } {
-    return {
-      x: d.x0 + d.vx0 * d.age,
-      y: d.y0 + d.vy0 * d.age + 0.5 * g * d.age * d.age,
-    };
   }
 
   private isTipEnabled(

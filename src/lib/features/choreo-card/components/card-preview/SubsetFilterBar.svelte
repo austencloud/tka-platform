@@ -49,6 +49,8 @@
           class="chip"
           class:active={selectedFamilyIds.includes(family.id)}
           onclick={() => toggleFamily(family.id)}
+          aria-label="Toggle {family.label} family filter"
+          aria-pressed={selectedFamilyIds.includes(family.id)}
         >
           {family.label}
           <span class="chip-count">{family.sequenceIds.length}</span>
@@ -65,6 +67,8 @@
           class="chip"
           class:active={activePosition === pos}
           onclick={() => togglePosition(pos)}
+          aria-label="Toggle {pos} position filter"
+          aria-pressed={activePosition === pos}
         >
           {pos}
         </button>

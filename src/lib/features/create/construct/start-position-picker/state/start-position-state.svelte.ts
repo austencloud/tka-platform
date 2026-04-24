@@ -5,7 +5,7 @@
  * No over-engineering, just the core functionality needed.
  */
 
-import { container } from "$lib/shared/di";
+import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
 import { GridMode } from "../../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { ISettingsState } from "../../../../../shared/settings/services/contracts/ISettingsState";
@@ -17,7 +17,7 @@ export function createSimplifiedStartPositionState() {
 
   function getSettingsServiceSync(): ISettingsState {
     if (!settingsService) {
-      settingsService = container.items.settingsState;
+      settingsService = settingsServiceSingleton;
     }
     return settingsService!;
   }

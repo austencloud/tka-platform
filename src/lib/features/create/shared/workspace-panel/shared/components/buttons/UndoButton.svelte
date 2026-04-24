@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import type { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
-  import { container } from "$lib/shared/di";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   type CreateModuleState = ReturnType<typeof createCreateModuleState>;
@@ -16,7 +16,7 @@
   } = $props();
 
   // Resolve haptic feedback service
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   const isAssembleTab = $derived(navigationState.activeTab === "assemble");
 

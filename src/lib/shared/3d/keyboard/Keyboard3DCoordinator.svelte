@@ -8,8 +8,7 @@
    */
 
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
-  import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
+  import { getKeyboardShortcutManager } from "$lib/shared/keyboard/getKeyboardShortcutManager";
   import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
   import {
     createViewer3DShortcuts,
@@ -74,7 +73,7 @@
 
   onMount(async () => {
     try {
-      const shortcutService = container.items.keyboardShortcutManager;
+      const shortcutService = getKeyboardShortcutManager();
 
       // Set context to realm so our shortcuts are active
       shortcutService.setContext("realm");

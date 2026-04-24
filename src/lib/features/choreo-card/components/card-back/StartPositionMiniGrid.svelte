@@ -55,7 +55,7 @@
   xmlns="http://www.w3.org/2000/svg"
   aria-label="Starting position: {info.group ?? 'unknown'}"
 >
-  <circle cx={cx} cy={cy} r={centerDotR} fill="rgba(255,255,255,0.3)" />
+  <circle cx={cx} cy={cy} r={centerDotR} fill="var(--theme-stroke, rgba(255,255,255,0.3))" />
 
   {#each gridPoints as dir}
     {@const p = pos(dir)}
@@ -64,7 +64,7 @@
       cy={p.y}
       r={dotR}
       fill="none"
-      stroke="rgba(255,255,255,0.3)"
+      stroke="var(--theme-stroke, rgba(255,255,255,0.3))"
       stroke-width="1"
     />
   {/each}

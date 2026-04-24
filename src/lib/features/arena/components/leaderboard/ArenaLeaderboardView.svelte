@@ -14,11 +14,11 @@
     ArenaLeaderboardEntry,
     ArenaUserStats,
   } from "../../domain/models/arena-models";
-  import { container } from "$lib/shared/di";
+  import { getArenaOrchestrator } from "../../getArenaOrchestrator";
   import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
-  const orchestrator: IArenaOrchestrator = container?.items?.arenaOrchestrator;
+  const orchestrator: IArenaOrchestrator = getArenaOrchestrator();
 
   let leaderboard = $state<ArenaLeaderboardEntry[]>([]);
   let userStats = $state<ArenaUserStats | null>(null);

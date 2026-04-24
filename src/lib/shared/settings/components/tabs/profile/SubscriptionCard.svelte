@@ -3,9 +3,9 @@
   Single $10/mo tier
 -->
 <script lang="ts">
+  import { getSubscriptionManager } from "$lib/shared/subscription/getSubscriptionManager";
   import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  import { container } from "$lib/shared/di";
   import type { ISubscriptionManager } from "../../../../subscription/services/contracts/ISubscriptionManager";
   import type { SubscriptionInfo } from "../../../../subscription/services/contracts/ISubscriptionManager";
   import type { IHapticFeedback } from "../../../../application/services/contracts/IHapticFeedback";
@@ -41,7 +41,7 @@
   );
 
   onMount(async () => {
-    subscriptionService = container.items.subscriptionManager;
+    subscriptionService = getSubscriptionManager();
 
     if (subscriptionService) {
       // Initial load
