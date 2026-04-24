@@ -28,7 +28,6 @@ import type { TargetHand } from "./panel-coordination-state.svelte";
 import { container } from "$lib/shared/di";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { ISequencePersister } from "../services/contracts/ISequencePersister";
 import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
@@ -209,13 +208,11 @@ export function createSequenceState(services: SequenceStateServices) {
 
       // Log sequence creation for analytics
       try {
-        const activityService = getActivityLogger() as IActivityLogger | undefined;
-        if (activityService) {
-          void activityService.logSequenceAction("create", sequence.id, {
-            sequenceWord: sequence.word,
-            sequenceLength: sequence.steps.length,
-          });
-        }
+        const activityLogger = getActivityLogger();
+        void activityLogger.logSequenceAction("create", sequence.id, {
+          sequenceWord: sequence.word,
+          sequenceLength: sequence.steps.length,
+        });
       } catch {
         // Silently fail - activity logging is non-critical
       }
