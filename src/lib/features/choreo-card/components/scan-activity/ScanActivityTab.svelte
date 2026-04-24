@@ -31,6 +31,12 @@
   }
 
 
+  function hashJitter(s: string): number {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return ((h & 0x7fffffff) / 0x7fffffff - 0.5) * 2;
+  }
+
   const globePoints = $derived.by(() => {
     const pts: { id: string; lat: number; lng: number; label: string; newest?: boolean }[] = [];
     scanState.recentEvents.slice(0, 40).forEach((e, i) => {
@@ -40,8 +46,8 @@
       const jitter = 1.5;
       pts.push({
         id: `${e.code}-${i}`,
-        lat: lat + (Math.random() - 0.5) * jitter,
-        lng: lng + (Math.random() - 0.5) * jitter,
+        lat: lat + hashJitter(`${e.code}lat`) * jitter,
+        lng: lng + hashJitter(`${e.code}lng`) * jitter,
         label: `${e.code} · ${e.city ?? e.country ?? ""}`,
         newest: i === 0,
       });

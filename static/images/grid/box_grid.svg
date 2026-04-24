@@ -8,7 +8,7 @@
     xml:space="preserve">
   <style>
     /* Default: show normal points, hide strict points */
-    .box-grid-stroke{stroke:#000;stroke-width:7;stroke-miterlimit:10}
+    .box-outer-ring{fill:none;stroke:#000;stroke-width:13;stroke-miterlimit:10}
     .box-grid-invisible{fill:none}
     .normal-hand-point{fill:currentColor}
     .normal-layer2-point{fill:none}
@@ -25,11 +25,11 @@
   <!-- Center point -->
   <circle id="center_point" cx="475" cy="475" r="11.2"/>
 
-  <!-- Outer points -->
-  <path id="ne_box_outer_point" class="box-grid-stroke" d="M262.9 247.9c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.8-2.9 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
-  <path id="se_box_outer_point" class="box-grid-stroke" d="M687.1 247.9c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.9-2.9 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
-  <path id="sw_box_outer_point" class="box-grid-stroke" d="M687.1 672.1c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.9-2.8 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
-  <path id="nw_box_outer_point" class="box-grid-stroke" d="M262.9 672.1c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.8-2.8 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
+  <!-- Outer points — hollow rings matching skewed_grid.svg ring weight -->
+  <circle id="ne_box_outer_point" class="box-outer-ring" cx="262.9" cy="262.9" r="25"/>
+  <circle id="se_box_outer_point" class="box-outer-ring" cx="687.1" cy="262.9" r="25"/>
+  <circle id="sw_box_outer_point" class="box-outer-ring" cx="687.1" cy="687.1" r="25"/>
+  <circle id="nw_box_outer_point" class="box-outer-ring" cx="262.9" cy="687.1" r="25"/>
 
   <!-- Hand points -->
   <circle id="nw_box_hand_point" class="normal-hand-point" cx="373.8" cy="373.8" r="4.7"/>
