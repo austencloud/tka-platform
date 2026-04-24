@@ -26,6 +26,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
 import { container } from "$lib/shared/di";
+import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { ISequencePersister } from "../services/contracts/ISequencePersister";
@@ -208,7 +209,7 @@ export function createSequenceState(services: SequenceStateServices) {
 
       // Log sequence creation for analytics
       try {
-        const activityService = container.items.activityLogger as IActivityLogger | undefined;
+        const activityService = getActivityLogger() as IActivityLogger | undefined;
         if (activityService) {
           void activityService.logSequenceAction("create", sequence.id, {
             sequenceWord: sequence.word,

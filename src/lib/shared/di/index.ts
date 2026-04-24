@@ -55,7 +55,7 @@ import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/position
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import { analyticsContainer } from "./containers/analytics-container";
+import { getActivityLogger } from "../analytics/getActivityLogger";
 import { presenceContainer } from "./containers/presence-container";
 import { communityContainer } from "./containers/community-container";
 import { writeContainer } from "./containers/write-container";
@@ -261,7 +261,7 @@ const trainContainer = typeof window !== 'undefined' ? _timeContainer('train', (
 
 // Admin container needs activityLogger and presenceTracker
 const adminContainer = typeof window !== 'undefined' ? _timeContainer('admin', () => createAdminContainer({
-  activityLogger: analyticsContainer.items.activityLogger,
+  activityLogger: getActivityLogger(),
   presenceTracker: presenceContainer.items.presenceTracker,
 })) : null as any;
 
@@ -431,7 +431,6 @@ function buildAppContainer(): any {
   c = c.add(adminContainer.items);
   c = c.add(promoContainer.items);
   c = c.add(keyboardContainer.items);
-  c = c.add(analyticsContainer.items);
   c = c.add(presenceContainer.items);
   c = c.add(communityContainer.items);
   c = c.add(writeContainer.items);

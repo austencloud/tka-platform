@@ -5,7 +5,7 @@
  * ICollectionManager for the underlying collection membership.
  */
 
-import { container } from "$lib/shared/di";
+import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { IFavoritesManager } from "../contracts/IFavoritesManager";
 import type { ICollectionManager } from "../contracts/ICollectionManager";
@@ -57,7 +57,7 @@ export class FavoritesManager implements IFavoritesManager {
   }
 
   private logFavoriteAction(sequenceId: string, isFavorite: boolean): void {
-    const activityService = container.items.activityLogger;
+    const activityService = getActivityLogger();
     if (activityService) {
       activityService.log(
         isFavorite ? "sequence_favorite" : "sequence_unfavorite",

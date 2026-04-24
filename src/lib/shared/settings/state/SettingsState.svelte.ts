@@ -26,6 +26,7 @@ import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { AppSettings, PropPreset } from "../domain/AppSettings";
 import { container } from "$lib/shared/di";
+import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { ISettingsPersister } from "../services/contracts/ISettingsPersister";
 import { auth } from "../../auth/firebase";
 import type { ISettingsState } from "../services/contracts/ISettingsState";
@@ -433,7 +434,7 @@ class SettingsState implements ISettingsState {
 
     // Log settings change for analytics (non-blocking)
     try {
-      const activityService = container.items.activityLogger;
+      const activityService = getActivityLogger();
       if (activityService) {
         void activityService.logSettingChange(
           key,
