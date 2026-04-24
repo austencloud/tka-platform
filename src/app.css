@@ -26,14 +26,9 @@ html,
 body {
   margin: 0;
   padding: 0;
-  /* Prevent browser back navigation on horizontal swipe gestures (PWA) */
-  overscroll-behavior-x: none;
-  /*
-   * Pull-to-refresh: CONDITIONALLY blocked by DrawerStack.ts
-   * When no drawers are open: pull-to-refresh works normally
-   * When any drawer is open: overscroll-behavior-y: contain is added to <html>
-   * This allows refresh when nothing is open, but prevents conflicts with swipe-to-dismiss
-   */
+  /* SPA: kill all overscroll — pull-to-refresh destroys DI/auth/editor state,
+     iOS rubber-banding is cosmetic noise, horizontal swipe triggers back nav */
+  overscroll-behavior: none;
   /* PWA: Prevent Android gesture navigation interference */
   -webkit-touch-callout: none;
   /* Ensure full viewport coverage - tells browser we're handling safe areas */

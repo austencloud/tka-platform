@@ -41,8 +41,6 @@ Card-based architecture with integrated Generate button:
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
-
   // Get context for panel coordination (optional - may not be available in all contexts)
   const context = tryGetCreateModuleContext();
   const panelState = context?.panelState;
@@ -287,8 +285,6 @@ Card-based architecture with integrated Generate button:
       panelState.closeLOOPPanel();
       configState.updateConfig({ loopEnabled: false });
     }}
-    sliceSize={configState.config.sliceSize as SliceSize}
-    onSliceSizeChange={(size) => configState.updateConfig({ sliceSize: size })}
   />
 
   <CustomizeDrawer

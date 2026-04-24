@@ -290,7 +290,8 @@
 
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
     // No-op on web — the isNative check inside returns immediately.
-    container.items.nativeInitializer.initialize().catch((err: unknown) =>
+    const { getNativeInitializer } = await import("$lib/shared/platform/getNativeInitializer");
+    getNativeInitializer().initialize().catch((err: unknown) =>
       console.warn("[Layout] Native init skipped:", err)
     );
 
@@ -313,7 +314,8 @@
       import("$lib/features/browse/creators/state/creators-data-state.svelte")
         .then(({ creatorsDataState }) => {
           if (!creatorsDataState.isInitialized) {
-            const userRepo = container.items.userRepository;
+            const { getUserRepository } = await import("$lib/shared/community/getUserRepository");
+            const userRepo = getUserRepository();
             if (userRepo) {
               Promise.all([
                 creatorsDataState.loadCreators(userRepo),
@@ -457,6 +459,26 @@
   }
 
   onMount(() => {
+    // Back-gesture guard: in standalone PWA mode, one accidental back swipe
+    // exits the app. Push a dummy history entry and re-push on popstate so
+    // the first swipe is absorbed. Rapid double-back still exits.
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone === true;
+
+    let backGuardCleanup: (() => void) | undefined;
+    if (isStandalone) {
+      history.pushState({ __backGuard: true }, "");
+
+      const onPopState = (e: PopStateEvent) => {
+        if (e.state?.__backGuard) return;
+        history.pushState({ __backGuard: true }, "");
+      };
+
+      window.addEventListener("popstate", onPopState);
+      backGuardCleanup = () => window.removeEventListener("popstate", onPopState);
+    }
+
     siteMode = detectSiteMode();
 
     // Retro routes get a lightweight bootstrap: Firebase + auth + DI container,
@@ -495,6 +517,7 @@
       });
 
     return () => {
+      backGuardCleanup?.();
       appCleanup?.();
     };
   });

@@ -11,7 +11,7 @@ Animates forward in z-axis and expands to fill the container space
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
-  import { LOOPType, SliceSize } from "../../circular/domain/models/circular-models";
+  import { LOOPType } from "../../circular/domain/models/circular-models";
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
   import LOOPModeSelector from "../modals/LOOPModeSelector.svelte";
 
@@ -21,37 +21,13 @@ Animates forward in z-axis and expands to fill the container space
     onChange,
     onClose,
     onLoopDisable,
-    sliceSize = SliceSize.HALVED,
-    onSliceSizeChange,
   } = $props<{
     currentType: LOOPType;
     selectedComponents: Set<LOOPComponent>;
     onChange: (loopType: LOOPType) => void;
     onClose: () => void;
     onLoopDisable?: () => void;
-    sliceSize?: SliceSize;
-    onSliceSizeChange?: (size: SliceSize) => void;
   }>();
-
-  // Determine if current selection allows slice choice (rotated variants)
-  const ROTATED_TYPES = new Set([
-    LOOPType.ROTATED,
-    LOOPType.ROTATED_INVERTED,
-    LOOPType.ROTATED_SWAPPED,
-    LOOPType.MIRRORED_ROTATED,
-    LOOPType.MIRRORED_INVERTED_ROTATED,
-    LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
-  ]);
-
-  // Resolve the LOOP type from current local selection to check slice eligibility
-  const resolvedType = $derived.by(() => {
-    if (localSelectedComponents.size === 0) return currentType;
-    return loopTypeResolver.generateLOOPType(localSelectedComponents);
-  });
-
-  const showSliceSize = $derived(
-    onSliceSizeChange && ROTATED_TYPES.has(resolvedType)
-  );
 
   let hapticService: IHapticFeedback | null = null;
   let isMultiSelectMode = $state(false);
@@ -141,11 +117,6 @@ Animates forward in z-axis and expands to fill the container space
     hapticService?.trigger("selection");
     onLoopDisable?.();
   }
-
-  function handleSliceToggle(size: SliceSize) {
-    hapticService?.trigger("selection");
-    onSliceSizeChange?.(size);
-  }
 </script>
 
 <div
@@ -197,25 +168,6 @@ Animates forward in z-axis and expands to fill the container space
     />
   </div>
 
-  <!-- Slice size toggle (rotated variants only) -->
-  {#if showSliceSize}
-    <div class="slice-section">
-      <span class="slice-label">Slice</span>
-      <div class="slice-toggle">
-        <button
-          class="slice-option"
-          class:selected={sliceSize === SliceSize.HALVED}
-          onclick={() => handleSliceToggle(SliceSize.HALVED)}
-        >Halved</button>
-        <button
-          class="slice-option"
-          class:selected={sliceSize === SliceSize.QUARTERED}
-          onclick={() => handleSliceToggle(SliceSize.QUARTERED)}
-        >Quartered</button>
-      </div>
-    </div>
-  {/if}
-
   <!-- Explanation panel (combo mode only) -->
   {#if isMultiSelectMode}
     <div class="explanation-section">
@@ -265,6 +217,7 @@ Animates forward in z-axis and expands to fill the container space
 
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior: contain;
   }
 
   .overlay-header {
@@ -346,6 +299,7 @@ Animates forward in z-axis and expands to fill the container space
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .explanation-section {
@@ -374,55 +328,6 @@ Animates forward in z-axis and expands to fill the container space
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-align: center;
-  }
-
-  .slice-section {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-  }
-
-  .slice-label {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    flex-shrink: 0;
-  }
-
-  .slice-toggle {
-    display: flex;
-    gap: 4px;
-    flex: 1;
-  }
-
-  .slice-option {
-    flex: 1;
-    padding: 8px 12px;
-    min-height: 40px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .slice-option.selected {
-    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
-    border-color: var(--theme-accent);
-    color: var(--theme-text, white);
-  }
-
-  .slice-option:hover:not(.selected) {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .apply-button {
@@ -460,8 +365,7 @@ Animates forward in z-axis and expands to fill the container space
   @media (prefers-reduced-motion: reduce) {
     .apply-button,
     .close-button,
-    .disable-button,
-    .slice-option {
+    .disable-button {
       transition: none;
     }
   }
