@@ -24,6 +24,7 @@ import { PropPositionCalculator } from "$lib/shared/animation-engine/services/im
 import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+import { Canvas2DVisibilityFadeManager } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
 
 import type { RenderBackend } from "$lib/shared/render-graph/domain/Backend";
 import type { FrameGraph } from "$lib/shared/render-graph/domain/FrameGraph";
@@ -108,6 +109,25 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // line between the stale tail and the fresh tip. Clear on false→true.
   private lastHasBlue = true;
   private lastHasRed = true;
+
+  // Per-color tipId epoch. Bumped once the fade-out envelope reaches
+  // zero, so the next fade-in allocates a fresh accumulator FBO rather
+  // than inheriting the previous cycle's residual pixels. The idle FBO
+  // is reclaimed by the backend's per-tip GC after MAX_UNUSED_FRAMES_
+  // BEFORE_GC idle frames.
+  private blueTipEpoch = 0;
+  private redTipEpoch = 0;
+
+  // Per-color alpha envelope. Matches prop fade timing (300 ms in /
+  // 200 ms out with cubic ease-out) so the trail appears and disappears
+  // alongside the prop instead of snapping in/out.
+  private blueEnvelope = new Canvas2DVisibilityFadeManager(300, 200);
+  private redEnvelope = new Canvas2DVisibilityFadeManager(300, 200);
+  // Remembers whether the envelope was fully faded out on the previous
+  // frame, so we know to bump the epoch (for a clean accumulator FBO)
+  // before the next fade-in begins.
+  private blueEnvelopeWasZero = false;
+  private redEnvelopeWasZero = false;
 
   private warmupFramesRemaining = 0;
   private static readonly WARMUP_FRAMES = 3;
@@ -200,20 +220,45 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     }
     this.lastTrackingMode = trailSettings.trackingMode;
 
-    // Clear per-color rings on hidden→visible transition so the first
-    // captured point starts fresh instead of connecting to a stale tail.
+    // Advance per-color envelopes toward the current target visibility.
+    this.blueEnvelope.setVisible(hasBlue);
+    this.redEnvelope.setVisible(hasRed);
+    const nowMs = performance.now();
+    const blueAlpha = this.blueEnvelope.updateProgress(nowMs).alpha;
+    const redAlpha = this.redEnvelope.updateProgress(nowMs).alpha;
+
+    // On hidden→visible transitions: reset the ring so the fresh trail
+    // starts from the current prop position (not a straight line from
+    // the stale tail to the new tip). If the envelope had already fully
+    // faded out before the re-enable, bump the tipId epoch so the
+    // backend hands us a pristine accumulator FBO for the fade-in.
     if (hasBlue && !this.lastHasBlue) {
       this.blueLeftRing = [];
       this.blueRightRing = [];
       this.blueLeftTail = createTailState(leadingEdge);
       this.blueRightTail = createTailState(leadingEdge);
+      if (this.blueEnvelopeWasZero) {
+        this.blueTipEpoch++;
+        this.blueEnvelopeWasZero = false;
+      }
     }
     if (hasRed && !this.lastHasRed) {
       this.redLeftRing = [];
       this.redRightRing = [];
       this.redLeftTail = createTailState(leadingEdge);
       this.redRightTail = createTailState(leadingEdge);
+      if (this.redEnvelopeWasZero) {
+        this.redTipEpoch++;
+        this.redEnvelopeWasZero = false;
+      }
     }
+
+    // Latch "fully faded out" the first time the envelope reaches 0
+    // while the color is hidden. The next hidden→visible transition
+    // consults this flag to decide whether to bump the epoch.
+    if (!hasBlue && blueAlpha === 0) this.blueEnvelopeWasZero = true;
+    if (!hasRed && redAlpha === 0) this.redEnvelopeWasZero = true;
+
     this.lastHasBlue = hasBlue;
     this.lastHasRed = hasRed;
 
@@ -234,12 +279,16 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     let blueRightMoved = false;
     let redLeftMoved = false;
     let redRightMoved = false;
-    if (blueProp && hasBlue) {
+    // Keep capturing while the envelope is still fading so the trail
+    // tracks the prop through the fade-out instead of freezing in place.
+    const blueCaptureLive = hasBlue || blueAlpha > 0;
+    const redCaptureLive = hasRed || redAlpha > 0;
+    if (blueProp && blueCaptureLive) {
       const r = this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight);
       blueLeftMoved = r.leftMoved;
       blueRightMoved = r.rightMoved;
     }
-    if (redProp && hasRed) {
+    if (redProp && redCaptureLive) {
       const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight);
       redLeftMoved = r.leftMoved;
       redRightMoved = r.rightMoved;
@@ -274,12 +323,26 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
     const tips: TrailTipState[] = [];
 
-    const push = (
+    // Epoch-scoped tipIds let the backend spin up a fresh accumulator FBO
+    // after a full fade-out without wiping the whole backend.
+    const blueSuffix = this.blueTipEpoch > 0 ? `-e${this.blueTipEpoch}` : "";
+    const redSuffix = this.redTipEpoch > 0 ? `-e${this.redTipEpoch}` : "";
+
+    // Emit tips whenever the envelope has any visibility. Stamps go into
+    // the accumulator at full alpha so the trail's shape stays consistent
+    // across the fade; the envelope shows up as `blitAlpha`, which the
+    // backend multiplies into the composite when copying the accumulator
+    // to screen. Result: the on-screen trail dims smoothly in step with
+    // the envelope during fade-out and brightens during fade-in, instead
+    // of staying bright until emission stops and then popping to zero.
+    const pushTip = (
       tipId: string,
       ring: TrailPoint[],
       rgb: [number, number, number],
       tail: TailState,
+      envelope: number,
     ) => {
+      if (envelope <= 0) return;
       const path = computeVisiblePath(ring, tail, this.width, this.height);
       if (path.length < 2) return;
       tips.push({
@@ -292,17 +355,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         decayPerSecond,
         fadeExponent: FADE_EXPONENT,
         blendMode: "alpha",
+        blitAlpha: envelope,
       });
     };
 
-    if (hasBlue) {
-      push("blue-left", this.blueLeftRing, [bR, bG, bB], this.blueLeftTail);
-      push("blue-right", this.blueRightRing, [bR, bG, bB], this.blueRightTail);
-    }
-    if (hasRed) {
-      push("red-left", this.redLeftRing, [rR, rG, rB], this.redLeftTail);
-      push("red-right", this.redRightRing, [rR, rG, rB], this.redRightTail);
-    }
+    pushTip(`blue-left${blueSuffix}`, this.blueLeftRing, [bR, bG, bB], this.blueLeftTail, blueAlpha);
+    pushTip(`blue-right${blueSuffix}`, this.blueRightRing, [bR, bG, bB], this.blueRightTail, blueAlpha);
+    pushTip(`red-left${redSuffix}`, this.redLeftRing, [rR, rG, rB], this.redLeftTail, redAlpha);
+    pushTip(`red-right${redSuffix}`, this.redRightRing, [rR, rG, rB], this.redRightTail, redAlpha);
 
     const payload: TrailPassPayload = { tips };
     const graph: FrameGraph = {
@@ -324,6 +384,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
   clear(): void {
     this.resetRingsAndTails();
+    this.blueEnvelope.reset();
+    this.redEnvelope.reset();
+    this.blueEnvelopeWasZero = false;
+    this.redEnvelopeWasZero = false;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     this.rebuildBackend();
   }

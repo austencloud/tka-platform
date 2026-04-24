@@ -367,7 +367,8 @@ export class WebGL2Backend implements RenderBackend {
     accumulator.swap();
 
     // 5. Blit the fresh accumulator (now in read slot after swap) to screen.
-    this.blitToScene(accumulator.read, tip.blendMode, gl, shaders);
+    const blitAlpha = tip.blitAlpha ?? 1;
+    this.blitToScene(accumulator.read, tip.blendMode, blitAlpha, gl, shaders);
   }
 
   private decayInto(
@@ -505,9 +506,11 @@ export class WebGL2Backend implements RenderBackend {
   private blitToScene(
     source: FBO,
     blendMode: TrailBlendMode,
+    blitAlpha: number,
     gl: WebGL2RenderingContext,
     shaders: ShaderLibrary,
   ): void {
+    if (blitAlpha <= 0) return;
     const canvas = this.canvas!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -519,7 +522,10 @@ export class WebGL2Backend implements RenderBackend {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, source.texture);
     gl.uniform1i(prog.uniforms["u_src"]!, 0);
-    gl.uniform4f(prog.uniforms["u_tint"]!, 1, 1, 1, 1);
+    // Source is premultiplied alpha, so scaling opacity means scaling
+    // all four channels uniformly.
+    const a = Math.max(0, Math.min(1, blitAlpha));
+    gl.uniform4f(prog.uniforms["u_tint"]!, a, a, a, a);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     gl.disable(gl.BLEND);
