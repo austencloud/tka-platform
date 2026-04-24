@@ -37,6 +37,12 @@ export interface TrailTipState {
   fadeExponent: number;
   /** Compositing mode when blitting this tip's FBO onto the scene target. */
   blendMode: TrailBlendMode;
+  /**
+   * Display-only alpha multiplier applied when the accumulator FBO is
+   * blitted to screen. Defaults to 1 (full visibility). Drives smooth
+   * per-tip fade in/out without disturbing the accumulator's contents.
+   */
+  blitAlpha?: number;
 }
 
 export interface TrailPassPayload {

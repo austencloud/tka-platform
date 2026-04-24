@@ -366,3 +366,17 @@ export function getTipPoints(
   }
   return PROP_TIP_POINTS[key] ?? DEFAULT_TIP_POINTS;
 }
+
+/**
+ * Look up baseline tip points for a prop type, bypassing any registered
+ * override provider. Used by the mandala geometry calculator, which traces
+ * hand-path geometry using canonical prop dimensions rather than
+ * effects-lab custom tip positions.
+ */
+export function getTipPointsBaseline(
+  propType: string | null | undefined
+): PropTipConfig {
+  if (!propType) return DEFAULT_TIP_POINTS;
+  const key = propType.toLowerCase();
+  return PROP_TIP_POINTS[key] ?? DEFAULT_TIP_POINTS;
+}
