@@ -9,9 +9,9 @@
  * loopType, and gridMode.
  *
  * Why a standalone helper rather than a service class: the three
- * resolver paths (/p/[code], /sequence/[id], SequenceViewerDrawerHost)
+ * resolver paths (/q/[code], /sequence/[id], SequenceViewerDrawerHost)
  * all need identical behavior, and without centralizing the pipeline
- * each one drifts. Previously /p and /sequence ran letter+position
+ * each one drifts. Previously /q and /sequence ran letter+position
  * only; the drawer host ran nothing at all. Refreshing a scanned link
  * would restore a sequence with empty word and null loopType — which
  * is what broke card footers and the reversal/difficulty indicators.

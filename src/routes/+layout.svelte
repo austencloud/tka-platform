@@ -312,7 +312,7 @@
 
       // Creators: load creator profiles so the Creators tab is instant
       import("$lib/features/browse/creators/state/creators-data-state.svelte")
-        .then(({ creatorsDataState }) => {
+        .then(async ({ creatorsDataState }) => {
           if (!creatorsDataState.isInitialized) {
             const { getUserRepository } = await import("$lib/shared/community/getUserRepository");
             const userRepo = getUserRepository();
@@ -523,7 +523,7 @@
   });
 
   // Upgrade from landing mode → app mode when navigating to an app route.
-  // This happens when a user scans a QR code (/p/[code] = landing mode),
+  // This happens when a user scans a QR code (/q/[code] = landing mode),
   // then dismisses the viewer and lands on an app route like /browse/gallery.
   // Without this, auth/DI/Firestore are never initialized and the app
   // shows "Warming up..." forever.

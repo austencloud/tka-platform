@@ -55,7 +55,7 @@ export class NativeInitializer implements INativeInitializer {
 		}
 
 		// When a user taps an App Link / Universal Link (e.g. a QR code targeting
-		// tkaflowarts.com/p/ABC123), Android hands us the full URL. Route to
+		// tkaflowarts.com/q/ABC123), Android hands us the full URL. Route to
 		// the matching in-app path via SvelteKit's client navigation so we keep the
 		// app alive — a full reload would drop state and flash the splash screen.
 		await App.addListener("appUrlOpen", async ({ url }) => {

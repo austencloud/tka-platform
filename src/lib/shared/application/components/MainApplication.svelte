@@ -108,7 +108,7 @@
   // is only for initial app startup, not mid-session auth transitions
   // (e.g., guest signing up mid-session should NOT destroy MainInterface).
   // Module-level so it survives component remounts (e.g., navigating from
-  // /p/[code] back to a main app route remounts MainApplication fresh).
+  // /q/[code] back to a main app route remounts MainApplication fresh).
   const showAuthLoadingSpinner = $derived(authLoading && !_mainInterfaceShown);
 
   // Mark MainInterface as shown once auth loading completes for the first time

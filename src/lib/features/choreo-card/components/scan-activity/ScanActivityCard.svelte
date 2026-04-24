@@ -4,7 +4,7 @@
   Feed card for the Scan Activity view. Renders the real playing-card face
   via ChoreoCard (cardMode) with a scan-count badge overlay and a thin
   lower strip showing last-scan city + time-ago. Click navigates to the
-  canonical short-code viewer at /p/{code}.
+  canonical short-code viewer at /q/{code}.
 -->
 <script lang="ts">
   import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
@@ -92,8 +92,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #151a28 0%, #0d1019 100%);
-    border: 1px solid #222838;
+    background: var(--theme-panel-bg, linear-gradient(180deg, #151a28 0%, #0d1019 100%));
+    border: 1px solid var(--theme-stroke, #222838);
     border-radius: 8px;
     aspect-ratio: 5 / 7;
     overflow: hidden;
@@ -102,8 +102,8 @@
     font: inherit;
     transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
   }
-  .scard:hover { border-color: rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
-  .scard.hot { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.35); }
+  .scard:hover { border-color: var(--theme-accent, rgba(16, 185, 129, 0.4)); transform: translateY(-2px); }
+  .scard.hot { border-color: var(--theme-accent, #10b981); box-shadow: 0 0 20px rgba(16, 185, 129, 0.35); }
 
   .card-face {
     flex: 1;
@@ -125,10 +125,10 @@
     top: 8px;
     right: 8px;
     padding: 3px 9px;
-    background: rgba(16, 185, 129, 0.92);
+    background: var(--theme-accent, rgba(16, 185, 129, 0.92));
     border-radius: 12px;
     font-size: var(--font-size-sm, 14px);
-    color: #04120b;
+    color: var(--theme-card-bg, #04120b);
     font-weight: 800;
     z-index: 2;
     pointer-events: none;
@@ -136,7 +136,7 @@
   }
   .badge-error {
     background: rgba(239, 68, 68, 0.95);
-    color: #2b0707;
+    color: var(--theme-card-bg, #2b0707);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
   }
 
@@ -147,8 +147,8 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #34d399;
-    box-shadow: 0 0 10px #10b981;
+    background: var(--theme-accent, #34d399);
+    box-shadow: 0 0 10px var(--theme-accent, #10b981);
     animation: hotPulse 1.4s infinite;
     z-index: 2;
   }
@@ -162,11 +162,11 @@
     justify-content: space-between;
     padding: 6px 10px;
     font-size: var(--font-size-sm, 14px);
-    background: #0b0d17;
-    border-top: 1px solid #1a1f2e;
+    background: var(--theme-panel-bg, #0b0d17);
+    border-top: 1px solid var(--theme-stroke, #1a1f2e);
   }
-  .loc { color: #d0d5e0; }
-  .ago { color: #34d399; font-weight: 600; }
+  .loc { color: var(--theme-text-muted, #d0d5e0); }
+  .ago { color: var(--theme-accent, #34d399); font-weight: 600; }
   .ago.err { color: #fca5a5; }
 
   /* Placeholder (integrity-failed) state keeps the old styling */
@@ -177,17 +177,17 @@
     gap: 6px;
     cursor: pointer;
   }
-  .placeholder:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+  .placeholder:focus-visible { outline: 2px solid var(--theme-accent, #34d399); outline-offset: 2px; }
   .placeholder .word {
     font-family: monospace;
-    color: #94a3b8;
+    color: var(--theme-text-dim, #94a3b8);
     font-size: var(--font-size-sm, 14px);
   }
   .code-pill {
     font-family: monospace;
     font-size: var(--font-size-sm, 14px);
-    color: #8b93a7;
-    background: #0b0d17;
+    color: var(--theme-text-dim, #8b93a7);
+    background: var(--theme-panel-bg, #0b0d17);
     padding: 2px 6px;
     border-radius: 3px;
     align-self: flex-start;
@@ -199,7 +199,7 @@
     flex: 1;
   }
   .cell {
-    background: repeating-linear-gradient(45deg, #1a1f2e, #1a1f2e 5px, #0b0d17 5px, #0b0d17 10px);
+    background: repeating-linear-gradient(45deg, var(--theme-stroke, #1a1f2e), var(--theme-stroke, #1a1f2e) 5px, var(--theme-panel-bg, #0b0d17) 5px, var(--theme-panel-bg, #0b0d17) 10px);
     border-radius: 3px;
   }
 
