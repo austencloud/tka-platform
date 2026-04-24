@@ -4,27 +4,23 @@
 
   interface Props {
     deck: Deck;
+    tags: string;
     onSelect: () => void;
   }
 
-  const { deck, onSelect }: Props = $props();
+  const { deck, tags, onSelect }: Props = $props();
 
   const patternDef = $derived(
     deck.reversalPattern ? getReversalPattern(deck.reversalPattern) : null
   );
 
   const displayLabel = $derived(patternDef?.label ?? "Continuous");
-  const displayDescription = $derived(
-    patternDef?.description ?? "No reversals. Props maintain rotation direction throughout."
-  );
 
   const displaySymbols = $derived(
     patternDef
       ? patternDef.sequence.slice(0, Math.min(8, patternDef.period)).split("")
       : ["-", "-", "-", "-"]
   );
-
-  const showEllipsis = $derived(patternDef ? patternDef.period > 8 : false);
 
   function getDotPair(symbol: string): [boolean, boolean] {
     switch (symbol) {
@@ -36,9 +32,7 @@
   }
 
   function formatCount(n: number): string {
-    if (n >= 1000) {
-      return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
-    }
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
     return String(n);
   }
 </script>
@@ -49,127 +43,116 @@
   aria-label="Open {displayLabel} deck with {deck.totalSequences} sequences"
   onclick={onSelect}
 >
-  <div class="dots-row">
-    {#each displaySymbols as symbol}
-      {@const [redDot, blueDot] = getDotPair(symbol)}
-      <div class="dot-pair">
-        <div class="dot" class:red={redDot} class:empty={!redDot} aria-hidden="true"></div>
-        <div class="dot" class:blue={blueDot} class:empty={!blueDot} aria-hidden="true"></div>
-      </div>
-    {/each}
-    {#if showEllipsis}
-      <span class="ellipsis">...</span>
-    {/if}
+  <div class="card-picto" aria-hidden="true">
+    <svg viewBox="0 0 36 36" width="36" height="36">
+      <circle cx="18" cy="4" r="3" fill="rgba(255,255,255,0.15)" />
+      <circle cx="32" cy="18" r="3" fill="rgba(255,255,255,0.15)" />
+      <circle cx="18" cy="32" r="3" fill="rgba(255,255,255,0.15)" />
+      <circle cx="4" cy="18" r="3" fill="rgba(255,255,255,0.15)" />
+    </svg>
   </div>
 
-  <span class="card-label">{displayLabel}</span>
-  <span class="card-description">{displayDescription}</span>
+  <div class="card-center">
+    <span class="card-name">{displayLabel}</span>
+    <span class="card-meta">
+      {formatCount(deck.totalSequences)} seq · {deck.stepCount}-step{#if tags} · {tags}{/if}
+    </span>
+  </div>
 
-  <div class="card-footer">
-    <span class="card-count">{formatCount(deck.totalSequences)} sequences</span>
-    <span class="card-families">{deck.families.length} families</span>
+  <div class="card-dots">
+    {#each displaySymbols as symbol}
+      {@const [redDot, blueDot] = getDotPair(symbol)}
+      <div class="dot-col">
+        <div class="dot" class:red={redDot} class:empty={!redDot}></div>
+        <div class="dot" class:blue={blueDot} class:empty={!blueDot}></div>
+      </div>
+    {/each}
   </div>
 </button>
 
 <style>
   .deck-card {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 24px 20px;
+    gap: 12px;
+    padding: 14px 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 14px;
+    border-radius: 10px;
     cursor: pointer;
-    color: var(--theme-text, #ffffff);
-    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-    text-align: center;
-    min-height: 140px;
+    color: var(--theme-text, #fff);
+    text-align: left;
+    width: 100%;
+    font: inherit;
+    transition: border-color 0.15s ease;
   }
 
   .deck-card:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    transform: translateY(-4px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    border-color: var(--accent, #63b7cd);
   }
 
   .deck-card:focus-visible {
-    outline: 2px solid var(--theme-accent, #6c8ee8);
+    outline: 2px solid var(--accent, #63b7cd);
     outline-offset: 2px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .deck-card {
-      transition: none;
-    }
-    .deck-card:hover {
-      transform: none;
-    }
+  .card-picto {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
   }
 
-  .dots-row {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    justify-content: center;
-  }
-
-  .dot-pair {
+  .card-center {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    align-items: center;
   }
 
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+  .card-name {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-meta {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    line-height: 1.3;
+  }
+
+  .card-dots {
+    display: flex;
+    gap: 3px;
     flex-shrink: 0;
   }
 
-  .dot.red {
-    background-color: var(--prop-red, #e74c3c);
-  }
-
-  .dot.blue {
-    background-color: var(--prop-blue, #3498db);
-  }
-
-  .dot.empty {
-    background-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .ellipsis {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-  }
-
-  .card-label {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.2;
-  }
-
-  .card-description {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    line-height: 1.4;
-    max-width: 220px;
-  }
-
-  .card-footer {
+  .dot-col {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-top: 4px;
+    flex-direction: column;
+    gap: 2px;
   }
 
-  .card-count,
-  .card-families {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .dot.red { background: var(--prop-red, #e74c3c); }
+  .dot.blue { background: var(--prop-blue, #3498db); }
+  .dot.empty { background: rgba(255, 255, 255, 0.08); }
+
+  @media (max-width: 768px) {
+    .card-picto { width: 28px; height: 28px; }
+    .card-picto :global(svg) { width: 28px; height: 28px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .deck-card { transition: none; }
   }
 </style>
