@@ -2,7 +2,7 @@
   DeckBrowser.svelte — Browse and explore curated sequence decks.
 
   Two modes:
-  - Drill-down: hierarchical collection/shape/category/turn navigation (DeckDrillDown)
+  - Browse: full-width filter bar + grouped grid of all decks
   - Deck interior: filterable sequence grid with family/position chips
 -->
 <script lang="ts">
@@ -11,12 +11,11 @@
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import CardInspectModal from "./CardInspectModal.svelte";
-  import DeckDrillDown from "./drilldown/DeckDrillDown.svelte";
-  import DeckFilterSidebar from "./drilldown/sidebar/DeckFilterSidebar.svelte";
-  import DeckResultsPanel from "./drilldown/DeckResultsPanel.svelte";
+  import DeckBrowseFilterBar from "./DeckBrowseFilterBar.svelte";
+  import DeckBrowseGrid from "./DeckBrowseGrid.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
-  import { createDrillDownState } from "../state/deck-drilldown-state.svelte";
-  import { setDrillDownContext } from "../context/deck-drilldown-context";
+  import { createDeckBrowseState } from "../state/deck-browse-state.svelte";
+  import { setBrowseContext } from "../context/deck-browse-context";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
@@ -74,35 +73,26 @@
     return () => mq.removeEventListener('change', handler);
   });
 
-  // ── Drill-down state (owned here so sidebar survives deck selection) ───
-  const drillState = createDrillDownState(() => decks);
-  setDrillDownContext(drillState);
+  const browseState = createDeckBrowseState(() => decks);
+  setBrowseContext(browseState);
 
-  function handleSidebarDeckSelect(deck: Deck) {
-    // Narrow the drill filter to the clicked deck's reversal pattern so the
-    // auto-sync effect below sees a single-deck match. Without this, the
-    // effect reads selectedDeckId-set + drillState.selectedDeck-null and
-    // reverts via onBackToCollections, turning the click into a no-op.
-    if (drillState.selections.reversalPattern !== deck.reversalPattern) {
-      drillState.selectReversalPattern(deck.reversalPattern);
-    }
-    onSelectDeck(deck.id, drillState.selections.category?.vtgFamily ?? null);
+  let scrollContainer: HTMLDivElement | null = $state(null);
+
+  function handleBrowseDeckSelect(deck: Deck) {
+    onSelectDeck(deck.id, null);
   }
 
-  // On desktop, reactively sync the drill state's single-deck result with
-  // the selected deck. Changing any sidebar filter (including reversal)
-  // that narrows to 1 deck automatically switches to it.
+  function handleBrowseScroll() {
+    if (scrollContainer && !selectedDeckId) {
+      browseState.setScrollY(scrollContainer.scrollTop);
+    }
+  }
+
   $effect(() => {
-    if (!isDesktop) return;
-    const single = drillState.selectedDeck;
-    if (single) {
-      // Only call onSelectDeck if it's a different deck than currently viewed
-      if (single.id !== selectedDeckId) {
-        onSelectDeck(single.id, drillState.selections.category?.vtgFamily ?? null);
-      }
-    } else if (selectedDeckId && drillState.selections.path) {
-      // Filters changed to produce multiple/zero results — deselect deck
-      onBackToCollections();
+    if (scrollContainer && !selectedDeckId && browseState.scrollY > 0) {
+      requestAnimationFrame(() => {
+        scrollContainer?.scrollTo(0, browseState.scrollY);
+      });
     }
   });
 
@@ -293,12 +283,6 @@
     return abbr;
   });
 
-  // ── Drill-down deck selection bridge ──
-  // DeckDrillDown gives us a Deck object; parent expects a deck ID string.
-  function handleDrillDownSelect(deck: Deck, vtgFamily?: string | null) {
-    onSelectDeck(deck.id, vtgFamily);
-  }
-
   // ── Level 2: Deck Interior State ──
 
   let interiorFilters = $state({ familyIds: [] as string[], position: null as string | null });
@@ -426,65 +410,44 @@
   }
 </script>
 
-<div class="deck-browser" class:desktop-integrated={isDesktop}>
-  {#if isDesktop}
-    <!-- ═══ Desktop: Sidebar + inline right panel ═══ -->
-    <div class="desktop-split">
-      <DeckFilterSidebar state={drillState} allDecks={decks} />
-
-      <div class="desktop-right-panel">
-        {#if selectedDeck}
-          <!-- Deck interior rendered inline next to sidebar -->
-          {@render deckInterior()}
-        {:else if selectedDeckId && decks.length === 0}
-          <div class="loading" role="status" aria-live="polite">
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Loading deck...
-          </div>
-        {:else if isLoading || decks.length === 0}
-          <div class="loading" role="status" aria-live="polite">
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Loading decks...
-          </div>
-        {:else}
-          <DeckResultsPanel
-            decks={drillState.filteredDecks}
-            onSelectDeck={handleSidebarDeckSelect}
-          />
-        {/if}
+<div class="deck-browser" bind:this={scrollContainer} onscroll={handleBrowseScroll}>
+  {#if selectedDeck || (selectedDeckId && decks.length === 0)}
+    {#if !selectedDeck}
+      <div class="loading" role="status" aria-live="polite">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        Loading deck...
       </div>
-    </div>
-
-  {:else}
-    <!-- ═══ Mobile: Full-page switching ═══ -->
-    {#if selectedDeck || (selectedDeckId && decks.length === 0)}
-      {#if !selectedDeck}
-        <div class="loading" role="status" aria-live="polite">
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading deck...
-        </div>
-      {:else}
-        <div class="level-container level-interior">
-          <div class="top-bar">
-            <nav class="breadcrumb" aria-label="Deck navigation">
-              <button class="crumb" onclick={onBackToCollections} type="button">
-                <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:11px;"></i>
-                Back to browser
-              </button>
-              <span class="crumb-sep" aria-hidden="true">›</span>
-              <span class="crumb current">{tkaDesignation}</span>
-              {#if vtgDesignation}
-                <span class="crumb-sep" aria-hidden="true">·</span>
-                <span class="crumb vtg-label">{vtgDesignation}</span>
-              {/if}
-            </nav>
-          </div>
-          {@render deckInterior()}
-        </div>
-      {/if}
     {:else}
-      <DeckDrillDown {decks} onSelectDeck={handleDrillDownSelect} />
+      <div class="level-container level-interior">
+        <div class="top-bar">
+          <nav class="breadcrumb" aria-label="Deck navigation">
+            <button class="crumb" onclick={onBackToCollections} type="button">
+              <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:11px;"></i>
+              Back to browser
+            </button>
+            <span class="crumb-sep" aria-hidden="true">›</span>
+            <span class="crumb current">{tkaDesignation}</span>
+            {#if vtgDesignation}
+              <span class="crumb-sep" aria-hidden="true">·</span>
+              <span class="crumb vtg-label">{vtgDesignation}</span>
+            {/if}
+          </nav>
+        </div>
+        {@render deckInterior()}
+      </div>
     {/if}
+  {:else if isLoading || decks.length === 0}
+    <div class="loading" role="status" aria-live="polite">
+      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+      Loading decks...
+    </div>
+  {:else}
+    <DeckBrowseFilterBar state={browseState} />
+    <DeckBrowseGrid
+      groupedDecks={browseState.groupedDecks}
+      collection={browseState.collection}
+      onSelectDeck={handleBrowseDeckSelect}
+    />
   {/if}
 </div>
 
@@ -781,19 +744,6 @@
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .desktop-split {
-    display: flex;
-    gap: 20px;
-    padding: 16px 20px;
-    height: 100%;
-  }
-
-  .desktop-right-panel {
-    flex: 1;
-    min-width: 0;
-    overflow-y: auto;
   }
 
   .interior-content {
