@@ -2,6 +2,7 @@
 Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -70,7 +71,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   );
 
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     gapDetector = container.items.gapDetector;
     await loadQuestion();
   });

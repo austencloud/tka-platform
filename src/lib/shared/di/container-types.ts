@@ -15,16 +15,7 @@
 // ============================================================================
 // Container type imports — simple (typeof) containers
 // ============================================================================
-import type { CoreContainer } from "./containers/core-container";
 import type { DataContainerType } from "./containers/data-container";
-import type { KeyboardContainer } from "./containers/keyboard-container";
-import type { PresenceContainer } from "./containers/presence-container";
-import type { CommunityContainer } from "./containers/community-container";
-import type { WriteContainer } from "./containers/write-container";
-import type { MandalaContainer } from "./containers/mandala-container";
-import type { SequenceMandalaContainer } from "./containers/sequence-mandala-container";
-import type { BackgroundBuilderContainerType } from "./containers/background-builder-container";
-import type { CompositionContainer } from "./containers/composition-container";
 
 // ============================================================================
 // Container type imports — factory (ReturnType<typeof create...>) containers
@@ -55,23 +46,15 @@ import type { ConnectContainer } from "./containers/connect-container";
 import type { DeviceSyncContainer } from "./containers/device-sync-container";
 import type { PushContainer } from "./containers/push-container";
 import type { OfflineContainer } from "./containers/offline-container";
-import type { PlatformContainerType } from "./containers/platform-container";
-import type { ViewerAuthContainer } from "./containers/viewer-auth-container";
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
 import type { ComposeCoreContainerItems } from "./containers/compose-core-container";
 import type { LoopLabelerContainerItems } from "./containers/loop-labeler-container";
 // Feature containers not yet wired above
-import type { ArenaContainer } from "./containers/arena-container";
-import type { AssembleContainer } from "./containers/assemble-container";
 import type { CollisionLabContainer } from "./containers/collision-lab-container";
 import type { ComposeArrangeContainer } from "./containers/compose-arrange-container";
 import type { ComposeBrowseContainer } from "./containers/compose-browse-container";
-import type { EffectsLabContainer } from "./containers/effects-lab-container";
-import type { FestivalContainer } from "./containers/festival-container";
-import type { FuseContainer } from "./containers/fuse-container";
 import type { HallOfShameContainer } from "./containers/hall-of-shame-container";
-import type { LabContainer } from "./containers/lab-container";
 import type { LandingPreviewContainer } from "./containers/landing-preview-container";
 import type { MultiGridContainer } from "./containers/multi-grid-container";
 import type { MuseumContainer } from "./containers/museum-container";
@@ -79,7 +62,6 @@ import type { PoiContainer } from "./containers/poi-container";
 import type { PoiLabContainer } from "./containers/poi-lab-container";
 import type { StoreContainer } from "./containers/store-container";
 import type { TikaContainer } from "./containers/tika-container";
-import type { TrigridLabContainer } from "./containers/trigrid-lab-container";
 import type { VideoInfraContainer } from "./containers/video-infra-container";
 import type { VideoTrailsContainer } from "./containers/video-trails-container";
 
@@ -99,17 +81,48 @@ type ItemsOf<C> = C extends { items: infer I } ? { [K in keyof I]: I[K] } : neve
 // Extract items from each container
 // ============================================================================
 
+// Core items — dissolved from core-container into module singleton getters.
+// Explicit interface replaces ItemsOf<CoreContainer>.
+interface CoreItems {
+	appState: import("../application/state/IAppState").IAppState;
+	appStateInitializer: import("../application/state/app-state-contracts").IAppStateInitializer;
+	performanceMetricsState: import("../application/state/IPerformanceMetricsState").IPerformanceMetricsState;
+	settingsState: import("../settings/services/contracts/ISettingsState").ISettingsState;
+	settingsPersister: import("../settings/services/contracts/ISettingsPersister").ISettingsPersister;
+	globalFeatureFlagPersister: import("../auth/services/contracts/IGlobalFeatureFlagPersister").IGlobalFeatureFlagPersister;
+	userFeatureFlagPersister: import("../auth/services/contracts/IUserFeatureFlagPersister").IUserFeatureFlagPersister;
+	viewportManager: import("../device/services/contracts/IViewportManager").IViewportManager;
+	deviceDetector: import("../device/services/contracts/IDeviceDetector").IDeviceDetector;
+	applicationInitializer: import("../application/services/contracts/IApplicationInitializer").IApplicationInitializer;
+	resourceTracker: import("../application/services/contracts/IResourceTracker").IResourceTracker;
+	componentManager: import("../application/services/contracts/IComponentManager").IComponentManager;
+	errorHandler: import("../application/services/contracts/IErrorHandler").IErrorHandler;
+	hapticFeedback: import("../application/services/contracts/IHapticFeedback").IHapticFeedback;
+	rippleEffect: import("../application/services/contracts/IRippleEffect").IRippleEffect;
+	authenticator: import("../auth/services/contracts/IAuthenticator").IAuthenticator;
+	profilePictureManager: import("../auth/services/contracts/IProfilePictureManager").IProfilePictureManager;
+	userDocumentManager: import("../auth/services/contracts/IUserDocumentManager").IUserDocumentManager;
+	subscriptionManager: import("../subscription/services/contracts/ISubscriptionManager").ISubscriptionManager;
+	premiumGateChecker: import("../subscription/services/contracts/IPremiumGateChecker").IPremiumGateChecker;
+	usernameValidator: import("../auth/services/contracts/IUsernameValidator").IUsernameValidator;
+	accountManager: import("../auth/services/contracts/IAccountManager").IAccountManager;
+	mobileFullscreenManager: import("../mobile/services/contracts/IMobileFullscreenManager").IMobileFullscreenManager;
+	platformDetector: import("../mobile/services/contracts/IPlatformDetector").IPlatformDetector;
+	gestureHandler: import("../mobile/services/contracts/IGestureHandler").IGestureHandler;
+	pwaEngagementTracker: import("../mobile/services/contracts/IPWAEngagementTracker").IPWAEngagementTracker;
+	pwaInstallDismissalManager: import("../mobile/services/contracts/IPWAInstallDismissalManager").IPWAInstallDismissalManager;
+	wordDeriver: import("../foundation/services/contracts/IWordDeriver").IWordDeriver;
+	fileDownloader: import("../foundation/services/contracts/IFileDownloader").IFileDownloader;
+	storageManager: import("../foundation/services/contracts/IStorageManager").IStorageManager;
+	seoManager: import("../foundation/services/contracts/ISeoManager").ISeoManager;
+	svgImageConverter: import("../foundation/services/contracts/ISvgImageConverter").ISvgImageConverter;
+	onboardingPersister: import("../onboarding/services/contracts/IOnboardingPersister").IOnboardingPersister;
+	tagManager: import("$lib/features/library/services/contracts/ITagManager").ITagManager;
+	conflictResolver: import("../offline/services/contracts/IConflictResolver").IConflictResolver;
+}
+
 // Simple containers
-type CompositionItems = ItemsOf<CompositionContainer>;
-type CoreItems = ItemsOf<CoreContainer>;
 type DataItems = ItemsOf<DataContainerType>;
-type KeyboardItems = ItemsOf<KeyboardContainer>;
-type PresenceItems = ItemsOf<PresenceContainer>;
-type CommunityItems = ItemsOf<CommunityContainer>;
-type WriteItems = ItemsOf<WriteContainer>;
-type MandalaItems = ItemsOf<MandalaContainer>;
-type SequenceMandalaItems = ItemsOf<SequenceMandalaContainer>;
-type BackgroundBuilderItems = ItemsOf<BackgroundBuilderContainerType>;
 
 // Factory containers
 type FeedbackItems = ItemsOf<FeedbackContainer>;
@@ -137,20 +150,12 @@ type ConnectItems = ItemsOf<ConnectContainer>;
 type DeviceSyncItems = ItemsOf<DeviceSyncContainer>;
 type PushItems = ItemsOf<PushContainer>;
 type OfflineItems = ItemsOf<OfflineContainer>;
-type PlatformNativeItems = ItemsOf<PlatformContainerType>;
-type ViewerAuthItems = ItemsOf<ViewerAuthContainer>;
 
 // Feature container items (not previously wired into the intersection)
-type ArenaItems = ItemsOf<ArenaContainer>;
-type AssembleItems = ItemsOf<AssembleContainer>;
 type CollisionLabItems = ItemsOf<CollisionLabContainer>;
 type ComposeArrangeItems = ItemsOf<ComposeArrangeContainer>;
 type ComposeBrowseItems = ItemsOf<ComposeBrowseContainer>;
-type EffectsLabItems = ItemsOf<EffectsLabContainer>;
-type FestivalItems = ItemsOf<FestivalContainer>;
-type FuseItems = ItemsOf<FuseContainer>;
 type HallOfShameItems = ItemsOf<HallOfShameContainer>;
-type LabItems = ItemsOf<LabContainer>;
 type LandingPreviewItems = ItemsOf<LandingPreviewContainer>;
 type MultiGridItems = ItemsOf<MultiGridContainer>;
 type MuseumItems = ItemsOf<MuseumContainer>;
@@ -158,7 +163,6 @@ type PoiItems = ItemsOf<PoiContainer>;
 type PoiLabItems = ItemsOf<PoiLabContainer>;
 type StoreItems = ItemsOf<StoreContainer>;
 type TikaItems = ItemsOf<TikaContainer>;
-type TrigridLabItems = ItemsOf<TrigridLabContainer>;
 type VideoInfraItems = ItemsOf<VideoInfraContainer>;
 type VideoTrailsItems = ItemsOf<VideoTrailsContainer>;
 // ============================================================================
@@ -192,7 +196,6 @@ interface StandaloneItems {
 // ============================================================================
 export type IAppContainerItems =
 	// Core infrastructure
-	CompositionItems &
 	CoreItems &
 	DataItems &
 	NavigationContainerItems &
@@ -212,16 +215,9 @@ export type IAppContainerItems =
 	ShareItems &
 	AdminItems &
 	PromoItems &
-	KeyboardItems &
-	PresenceItems &
-	CommunityItems &
-	WriteItems &
-	MandalaItems &
-	SequenceMandalaItems &
 	QRItems &
 	Engine3DItems &
 	Viewer3DItems &
-	BackgroundBuilderItems &
 	DelightItems &
 	ModerationItems &
 	WatchItems &
@@ -236,21 +232,11 @@ export type IAppContainerItems =
 	PushItems &
 	// Offline caching (proactive gallery + thumbnail prefetch)
 	OfflineItems &
-	// Native platform (Capacitor) services
-	PlatformNativeItems &
-	// Viewer auth (pending-action queue + webview detection)
-	ViewerAuthItems &
 	// Feature containers (wired via buildAppContainer)
-	ArenaItems &
-	AssembleItems &
 	CollisionLabItems &
 	ComposeArrangeItems &
 	ComposeBrowseItems &
-	EffectsLabItems &
-	FestivalItems &
-	FuseItems &
 	HallOfShameItems &
-	LabItems &
 	LandingPreviewItems &
 	MultiGridItems &
 	MuseumItems &
@@ -259,7 +245,6 @@ export type IAppContainerItems =
 	Skel2TKAItems &
 	StoreItems &
 	TikaItems &
-	TrigridLabItems &
 	VideoInfraItems &
 	VideoTrailsItems &
 	// Standalone services

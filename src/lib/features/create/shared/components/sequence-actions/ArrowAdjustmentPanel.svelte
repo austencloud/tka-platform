@@ -16,6 +16,7 @@
     - Layer 3 (Combination Override): Edge cases where blue+red prop combo needs special handling
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../domain/models/StepData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IArrowAdjustmentOrchestrator, AdjustmentTargetKey } from "$lib/features/create/shared/services/contracts/IArrowAdjustmentOrchestrator";
@@ -367,7 +368,7 @@
 
   onMount(() => {
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
       adjustmentOrchestrator = container.items.arrowAdjustmentOrchestrator;
     } catch (error) {
       logger.error("Failed to initialize services:", error);

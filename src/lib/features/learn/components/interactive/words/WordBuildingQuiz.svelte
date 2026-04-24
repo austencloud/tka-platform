@@ -3,8 +3,8 @@ WordBuildingQuiz - Coordinator for word formation quiz
 Questions about letter sequences, motion types, position transitions, and LOOPs
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import {
     type WordQuizQuestion,
     generateWordQuizQuestions,
@@ -15,7 +15,7 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   let answerTimer: ReturnType<typeof setTimeout> | null = null;
 

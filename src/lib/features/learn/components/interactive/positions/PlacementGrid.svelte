@@ -5,6 +5,7 @@ with an interactive SVG overlay for touch targets and pulse indicators.
 Hands render at the exact same size/position as everywhere else in the app.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { untrack } from 'svelte';
   import { GridMode, GridLocation } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
   import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
@@ -101,7 +102,7 @@ Hands render at the exact same size/position as everywhere else in the app.
 
   let hapticService: { trigger: (type: string) => void } | null = null;
   try {
-    hapticService = container.items.hapticFeedback as {
+    hapticService = getHapticFeedback() as {
       trigger: (type: string) => void;
     } | null;
   } catch {

@@ -8,8 +8,8 @@ Clean design with:
 - Prominent CTA
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { CONCEPT_CATEGORIES } from "../domain/concepts";
   import type { LearnConcept, ConceptStatus } from "../domain/types";
 
@@ -23,7 +23,7 @@ Clean design with:
     onStart?: (concept: LearnConcept) => void;
   } = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   const category = $derived(CONCEPT_CATEGORIES[concept.category]);
   const isAvailable = $derived(

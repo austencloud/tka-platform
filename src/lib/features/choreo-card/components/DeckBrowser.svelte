@@ -421,8 +421,8 @@
       <div class="level-container level-interior">
         <div class="top-bar">
           <nav class="breadcrumb" aria-label="Deck navigation">
-            <button class="crumb" onclick={onBackToCollections} type="button">
-              <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:11px;"></i>
+            <button class="crumb" onclick={onBackToCollections} type="button" aria-label="Go back to browser">
+              <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:12px;"></i>
               Back to browser
             </button>
             <span class="crumb-sep" aria-hidden="true">›</span>
@@ -545,12 +545,13 @@
                 <button
                   class="picker-card"
                   type="button"
+                  aria-label="Preview {family.label || family.typeCombo} family"
                   onclick={() => {
                     interiorFilters = { ...interiorFilters, familyIds: [family.id] };
                     onLoadFamilySequences([family.id]);
                   }}
                 >
-                  <span class="picker-label"><MotionTypePills label={family.label || family.typeCombo} fontSize="11px" /></span>
+                  <span class="picker-label"><MotionTypePills label={family.label || family.typeCombo} fontSize="12px" /></span>
                   <span class="picker-count">{family.sequenceIds.length}</span>
                 </button>
               {/each}
@@ -573,7 +574,8 @@
               onclick={() => {
                 interiorFilters = { familyIds: [], position: null };
               }}
-              type="button">Clear filters</button
+              type="button"
+              aria-label="Clear filters">Clear filters</button
             >
           </div>
         {/if}
@@ -590,6 +592,7 @@
                 <button
                   class="picker-card"
                   type="button"
+                  aria-label="Preview {group.label} subgroup"
                   onclick={() => {
                     if (group.familyId) {
                       interiorFilters = { ...interiorFilters, familyIds: [group.familyId] };
@@ -599,7 +602,7 @@
                     }
                   }}
                 >
-                  <span class="picker-label"><MotionTypePills label={group.label} fontSize="11px" /></span>
+                  <span class="picker-label"><MotionTypePills label={group.label} fontSize="12px" /></span>
                   <span class="picker-count">{group.count}</span>
                 </button>
               {/each}

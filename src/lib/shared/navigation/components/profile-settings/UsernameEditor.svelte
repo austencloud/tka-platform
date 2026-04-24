@@ -5,10 +5,10 @@
   Extracted from AccountSettingsSection for single responsibility.
 -->
 <script lang="ts">
+  import { getUsernameValidator } from "$lib/shared/auth/getUsernameValidator";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
@@ -33,7 +33,7 @@
   let checkTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // Get username validator service
-  const usernameValidator = container.items.usernameValidator;
+  const usernameValidator = getUsernameValidator();
 
   // Load current username from Firestore on mount
   onMount(async () => {

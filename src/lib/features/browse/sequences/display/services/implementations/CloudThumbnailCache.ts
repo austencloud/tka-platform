@@ -14,6 +14,7 @@
  * 3. All subsequent users get the pre-rendered image instantly
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
 import type {
   ICloudThumbnailCache,
@@ -21,7 +22,6 @@ import type {
   ThumbnailVariant,
   DeleteProgress,
 } from "../contracts/ICloudThumbnailCache";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 // In-memory cache with TTL to avoid stale URLs
@@ -270,7 +270,7 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       return await response.blob();
     } catch (error) {
       try {
-        const errorHandler = container.items.errorHandler as IErrorHandler;
+        const errorHandler = getErrorHandler() as IErrorHandler;
         errorHandler.showUserError({
           message: "Thumbnail didn't load",
           technicalDetails: error instanceof Error ? error.message : String(error),

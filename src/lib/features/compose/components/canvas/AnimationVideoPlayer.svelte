@@ -13,6 +13,7 @@
   5. Video plays back perfectly smooth, regardless of device
 -->
 <script lang="ts">
+  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
@@ -21,7 +22,6 @@
   } from "../../services/contracts/IVideoPreRenderer";
   import { getVideoPlayer } from "../../services/implementations/VideoPlayer";
   import { getVideoGenerationCoordinator } from "../../services/implementations/VideoGenerationCoordinator";
-  import { container } from "$lib/shared/di";
   import VideoGenerationStatus from "../video-player/VideoGenerationStatus.svelte";
   import VideoReadyNotification from "../video-player/VideoReadyNotification.svelte";
   import GenerateVideoButton from "../video-player/GenerateVideoButton.svelte";
@@ -61,7 +61,7 @@
   // Services
   const playbackService = getVideoPlayer();
   const generationCoordinator = getVideoGenerationCoordinator();
-  const errorHandler = container.items.errorHandler;
+  const errorHandler = getErrorHandler();
 
   // Timer refs for cleanup
   let switchToVideoTimer: ReturnType<typeof setTimeout> | null = null;

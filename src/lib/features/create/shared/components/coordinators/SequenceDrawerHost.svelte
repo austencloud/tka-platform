@@ -19,6 +19,8 @@
    * - Services lazy-loaded when Animation format selected
    */
 
+  import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/export-panel/domain/models/ExportSettings";
@@ -94,7 +96,7 @@
 
   // Resolve core services
   try {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   } catch (error) {
     console.warn("⚠️ Failed to resolve haptic feedback service:", error);
   }
@@ -106,7 +108,7 @@
   }
 
   try {
-    platformService = container.items.platformDetector;
+    platformService = getPlatformDetector();
   } catch (error) {
     console.warn("⚠️ Failed to resolve platform detection service:", error);
   }

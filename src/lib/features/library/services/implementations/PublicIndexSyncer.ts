@@ -8,6 +8,7 @@
  * Extracted from LibraryRepository for single responsibility.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import {
   doc,
   getDoc,
@@ -223,7 +224,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       );
       // Don't show a generic error modal for moderation failures — those have their own UI
       if (!(error instanceof ContentModerationError)) {
-        const errorHandler = container.items.errorHandler as IErrorHandler;
+        const errorHandler = getErrorHandler() as IErrorHandler;
         errorHandler.showUserError({
           message: "Couldn't publish your sequence",
           technicalDetails: error instanceof Error ? error.message : String(error),
@@ -256,7 +257,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         "[PublicIndexSyncer] Failed to remove from public index:",
         error
       );
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't unpublish your sequence",
         technicalDetails: error instanceof Error ? error.message : String(error),

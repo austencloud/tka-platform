@@ -3,8 +3,8 @@ WordsConceptExperience - Multi-page lesson on TKA word formation
 Orchestrator component that manages page navigation and state
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
 
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
   import WordsIntroPage from "./pages/WordsIntroPage.svelte";
@@ -24,7 +24,7 @@ Orchestrator component that manages page navigation and state
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Persistence for HMR/refresh survival
   const persistence = getExperiencePersistence("words");

@@ -3,8 +3,8 @@ ModalHeader.svelte - Reusable modal header component
 Displays modal title and close button
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
 
   let {
     title,
@@ -18,7 +18,7 @@ Displays modal title and close button
 
   let hapticService: IHapticFeedback | null = null;
   try {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   } catch {
     // Optional service
   }

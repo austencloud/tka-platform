@@ -19,6 +19,7 @@
     />
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -215,7 +216,7 @@
 
     // Resolve core services via ITI container
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
       sheetRouterService = container.items.sheetRouter;
       debug.success("Core services resolved");
     } catch (error) {

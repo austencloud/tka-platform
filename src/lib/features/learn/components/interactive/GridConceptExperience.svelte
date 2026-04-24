@@ -7,7 +7,8 @@ Supports two view modes:
 - "scroll": All pages displayed vertically for review
 -->
 <script lang="ts">
-	import { container } from '$lib/shared/di';
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { container } from '$lib/shared/di';
 	import { onMount } from 'svelte';
 	import GridMergeAnimation from './grid-merge/GridMergeAnimation.svelte';
 	import ExperienceProgressIndicator from './ExperienceProgressIndicator.svelte';
@@ -28,7 +29,7 @@ Supports two view modes:
 		viewMode?: ExperienceViewMode;
 	}>();
 
-	const hapticService = container.items.hapticFeedback;
+	const hapticService = getHapticFeedback();
 	const experienceState = $derived.by(() => createGridExperienceState(viewMode === 'scroll'));
 
 	// Accessibility: refs for focus management

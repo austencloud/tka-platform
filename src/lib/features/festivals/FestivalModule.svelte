@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getFestivalLoader } from "./getFestivalLoader";
+  import { getFestivalTrackerRepository } from "./getFestivalTrackerRepository";
+  import { getFestivalAttendanceRepository } from "./getFestivalAttendanceRepository";
+  import { getWorkshopPortfolioRepository } from "./getWorkshopPortfolioRepository";
   import { createFestivalState, type FestivalTab } from "./state/festival-state.svelte";
   import { setFestivalContext } from "./context/festival-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -12,10 +15,10 @@
   import WorkshopPortfolioEditor from "./components/portfolio/WorkshopPortfolioEditor.svelte";
 
   const festivalState = createFestivalState(
-    container.items.festivalLoader,
-    container.items.festivalTrackerRepository,
-    container.items.festivalAttendanceRepository,
-    container.items.workshopPortfolioRepository
+    getFestivalLoader(),
+    getFestivalTrackerRepository(),
+    getFestivalAttendanceRepository(),
+    getWorkshopPortfolioRepository(),
   );
 
   setFestivalContext({ state: festivalState });

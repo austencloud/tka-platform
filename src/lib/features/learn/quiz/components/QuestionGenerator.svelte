@@ -6,9 +6,9 @@
 -->
 
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   // TODO: Fix service import - temporarily commented out
   // import { QuestionGeneratorService } from "../../services/implementations";
   import type {
@@ -30,7 +30,7 @@
 
   // Initialize haptic service
   $effect(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Type guards for type-safe access to questionData properties

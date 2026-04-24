@@ -4,14 +4,14 @@
   Opens a sheet with various sequence actions (Animate, Mirror, Rotate, etc.)
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 
   let { onclick } = $props<{
     onclick?: () => void;
   }>();
 
   // Resolve haptic feedback service
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function handleClick() {
     hapticService?.trigger("selection");

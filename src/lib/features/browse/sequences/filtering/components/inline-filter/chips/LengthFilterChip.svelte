@@ -3,12 +3,12 @@ LengthFilterChip.svelte - Dropdown chip for sequence length filtering.
 Shows available lengths with contextual counts.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipBase from "../FilterChipBase.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -25,7 +25,7 @@ Shows available lengths with contextual counts.
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback ?? null;
+    hapticService = getHapticFeedback() ?? null;
   });
 
   const label = $derived(activeLength ? t('browse_n_steps', { count: String(activeLength) }) : t('browse_chip_length'));

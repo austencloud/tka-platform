@@ -3,8 +3,8 @@ MotionsConceptExperience - Coordinator for 8-page hand motions learning flow
 Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import {
     TYPE_EXAMPLES,
     MOTION_INFO,
@@ -25,7 +25,7 @@ Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Persistence for HMR/refresh survival
   const persistence = getExperiencePersistence("motions");

@@ -6,10 +6,10 @@
    * Supports reply mode, edit mode, and typing indicators.
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { messagingService } from "../../../messaging/services/implementations/Messenger";
   import { toast } from "../../../toast/state/toast-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { inboxState } from "../../state/inbox-state.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
@@ -33,7 +33,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     // Capture at mount time so the cleanup doesn't access a stale/null prop
     const mountedConversationId = conversationId;
 

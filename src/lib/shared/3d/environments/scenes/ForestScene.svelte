@@ -22,6 +22,7 @@
     createDefaultForestFireflyConfig,
     createDefaultForestAutumnConfig,
   } from "../domain/models/scene-configs";
+  import { onMount } from "svelte";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
   import { Vector3, FogExp2, Color } from "three";
@@ -155,13 +156,28 @@
     };
   });
 
-  // Report environment readiness when all forest GLBs have loaded
+  // Report per-GLB progress so the loading curtain fills smoothly
+  // instead of jumping 0% → 100%.
   $effect(() => {
     if (!sceneFeatures) return;
-    const allLoaded = $tree1 && $tree2 && $tree3 && $rock1 && $rock2 && $bush1 && $bush2 && $campfire && $tent && $fallenLog && $fallenLogSmall;
-    if (allLoaded) {
+    const glbs = [$tree1, $tree2, $tree3, $rock1, $rock2, $bush1, $bush2, $campfire, $tent, $fallenLog, $fallenLogSmall];
+    const loaded = glbs.filter(Boolean).length;
+    sceneFeatures.reportProgress("environment", loaded / glbs.length);
+    if (loaded === glbs.length) {
       sceneFeatures.reportReady("environment");
     }
+  });
+
+  // Safety valve: if GLBs stall (CDN timeout, CORS failure), lift the
+  // curtain after 15 s so the user isn't stuck on a permanent loading screen.
+  onMount(() => {
+    const timer = setTimeout(() => {
+      if (sceneFeatures && !sceneFeatures.isReady("environment")) {
+        console.warn("[ForestScene] GLB loading timed out — lifting curtain");
+        sceneFeatures.reportReady("environment");
+      }
+    }, 15_000);
+    return () => clearTimeout(timer);
   });
 </script>
 

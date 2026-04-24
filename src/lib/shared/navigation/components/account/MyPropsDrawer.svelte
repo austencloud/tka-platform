@@ -7,12 +7,12 @@
   Content morphs in place. No navigation, no step indicators.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import PropFamilyGrid from "./PropFamilyGrid.svelte";
   import { PROP_FAMILIES } from "./PropFamilyGrid.svelte";
   import SelectionFooterBar from "./SelectionFooterBar.svelte";
   import FavoritePicker from "./FavoritePicker.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
@@ -47,7 +47,7 @@
 
   function triggerHaptic(type: "selection" | "success" = "selection") {
     try {
-      const haptic = container.items.hapticFeedback as IHapticFeedback;
+      const haptic = getHapticFeedback() as IHapticFeedback;
       haptic?.trigger(type);
     } catch {
       // Not available

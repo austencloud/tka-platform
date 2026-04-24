@@ -13,7 +13,7 @@
 
   import { T, useThrelte } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import {
     Vector3,
     FogExp2,
@@ -237,17 +237,25 @@
     };
   });
 
-  // Report environment readiness when all winter GLBs have loaded. Without
-  // this, the loading curtain stays up forever on winter backgrounds.
   const sceneFeatures = getSceneFeatureContext();
   $effect(() => {
     if (!sceneFeatures) return;
-    const allLoaded =
-      $pineTallA && $pineTallC && $pineDefault && $pineRound && $pineSmall &&
-      $rockA && $rockB && $logModel && $logLarge && $campfire;
-    if (allLoaded) {
+    const glbs = [$pineTallA, $pineTallC, $pineDefault, $pineRound, $pineSmall, $rockA, $rockB, $logModel, $logLarge, $campfire];
+    const loaded = glbs.filter(Boolean).length;
+    sceneFeatures.reportProgress("environment", loaded / glbs.length);
+    if (loaded === glbs.length) {
       sceneFeatures.reportReady("environment");
     }
+  });
+
+  onMount(() => {
+    const timer = setTimeout(() => {
+      if (sceneFeatures && !sceneFeatures.isReady("environment")) {
+        console.warn("[WinterScene] GLB loading timed out — lifting curtain");
+        sceneFeatures.reportReady("environment");
+      }
+    }, 15_000);
+    return () => clearTimeout(timer);
   });
 </script>
 

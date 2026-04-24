@@ -5,9 +5,9 @@
   waiting for engagement thresholds to be met.
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
   import { getAttributionPromptState } from "$lib/shared/attribution/state/attribution-prompt-state.svelte";
   import AttributionPrompt from "$lib/shared/attribution/components/AttributionPrompt.svelte";
-  import { container } from "$lib/shared/di";
 
   const promptState = getAttributionPromptState();
 

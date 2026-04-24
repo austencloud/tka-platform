@@ -6,6 +6,7 @@
   - Bilateral prop toggle for both ends vs single end
 -->
 <script lang="ts">
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { onMount } from "svelte";
   import {
     animationSettings,
@@ -18,10 +19,9 @@
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { container } from "$lib/shared/di";
 
   const animationVisibilityManager = getAnimationVisibilityManager();
-  const settingsState = container.items.settingsState;
+  const settingsState = settingsService;
 
   interface Props {
     /** @deprecated Use bluePropType and redPropType instead */

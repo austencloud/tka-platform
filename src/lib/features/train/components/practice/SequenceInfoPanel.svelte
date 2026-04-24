@@ -5,8 +5,8 @@
   Compact on mobile. Click to open sequence browser.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -18,7 +18,7 @@
 
   let { sequence = null, totalSteps = 0, onBrowseSequences }: Props = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function handleClick() {
     hapticService?.trigger("selection");

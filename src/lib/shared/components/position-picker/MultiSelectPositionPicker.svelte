@@ -8,13 +8,13 @@ Displays all 16 positions with toggle behavior:
 Uses blocklist approach: positions in blockedPositions are excluded.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import {
     GridMode,
     GridPosition,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
@@ -53,7 +53,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
 
   onMount(async () => {
     try {
-      hapticService = container.items.hapticFeedback ?? null;
+      hapticService = getHapticFeedback() ?? null;
       loadVariations(gridModeProp);
     } catch (error) {
       console.warn(

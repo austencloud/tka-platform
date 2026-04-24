@@ -211,6 +211,7 @@
       class="family-header"
       onclick={toggle}
       aria-expanded={expanded}
+      aria-label="{expanded ? 'Collapse' : 'Expand'} {family.label} family"
       type="button"
     >
       <i

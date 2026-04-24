@@ -11,9 +11,10 @@ Card-based architecture with integrated Generate button:
 - Tour: Guided tour triggered from help button or ButtonPanel
 -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
@@ -159,13 +160,13 @@ Card-based architecture with integrated Generate button:
   // ===== Device Service Integration =====
   onMount(() => {
     try {
-      const deviceService = container.items.deviceDetector;
+      const deviceService = getDeviceDetector();
       deviceState.initializeDevice(deviceService);
     } catch (error) {
       // Fallback handled in deviceState
     }
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch {
       // Optional service
     }

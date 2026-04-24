@@ -11,9 +11,10 @@
    * - Visibility-driven color extraction
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { doc, getDoc } from "firebase/firestore";
-  import { container } from "$lib/shared/di";
+  import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
@@ -90,8 +91,8 @@
   onMount(async () => {
     try {
       // Resolve services from DI container
-      userRepository = container.items.userRepository;
-      hapticService = container.items.hapticFeedback;
+      userRepository = getUserRepository();
+      hapticService = getHapticFeedback();
 
       // Load creators data if not already initialized
       if (!creatorsDataState.isInitialized) {

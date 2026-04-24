@@ -3,9 +3,9 @@ CustomizeCard.svelte - Single card absorbing Style, Rhythm, and Start/End
 Shows summary ("Default" or "Custom"), click opens the expanded overlay
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { StartEndOptions, PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount, getContext } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CardHeader from "./shared/CardHeader.svelte";
@@ -59,7 +59,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Determine if everything is default

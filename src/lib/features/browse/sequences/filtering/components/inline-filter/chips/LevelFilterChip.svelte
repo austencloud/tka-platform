@@ -3,12 +3,12 @@ LevelFilterChip.svelte - Dropdown chip for difficulty level filtering.
 Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipBase from "../FilterChipBase.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -23,7 +23,7 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback ?? null;
+    hapticService = getHapticFeedback() ?? null;
   });
 
   const label = $derived(activeLevel ? t('browse_filter_level', { level: String(activeLevel) }) : t('browse_chip_level'));

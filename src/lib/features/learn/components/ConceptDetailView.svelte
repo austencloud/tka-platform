@@ -5,6 +5,7 @@ Supports two navigation modes:
 - "scroll": All pages displayed vertically for scrolling (review mode, unlocked after completion)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -24,7 +25,7 @@ Supports two navigation modes:
     onClose?: () => void;
   }>();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
   const conceptProgressService = container.items.conceptProgressTracker;
 
   let progress = $state<ConceptProgress>({

@@ -8,11 +8,11 @@
   - Header-based management (Clear / Display / Close)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import { fly, fade } from "svelte/transition";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { LetterDomainService } from "../../pictograph/tka-glyph/services/implementations/LetterDomainService";
 
@@ -44,7 +44,7 @@
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback ?? null;
+    hapticService = getHapticFeedback() ?? null;
   });
 
   /**

@@ -3,11 +3,11 @@ ConsolidatedLOOPCard.svelte - Single LOOP card that absorbs toggle, type, and sl
 Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded overlay.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import {
     LOOPType,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { container } from "$lib/shared/di";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -34,7 +34,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Selected components for the overlay

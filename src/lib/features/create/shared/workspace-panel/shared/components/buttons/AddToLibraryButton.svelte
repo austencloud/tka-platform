@@ -5,7 +5,7 @@
   Saves the current constructed sequence to the user's Firebase library.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 
   // Props
   const {
@@ -17,7 +17,7 @@
   } = $props();
 
   // Services
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function handleClick() {
     if (disabled) return;

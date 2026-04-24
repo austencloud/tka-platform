@@ -81,23 +81,25 @@ export class Sparkles2DRenderer {
       }
       const last = this.lastTipPos[key];
       this.spawnFromTip(params, tip, last, dt, perTipCap, scale);
-      this.lastTipPos[key] = { x: tip.x, y: tip.y };
+      const lp = this.lastTipPos[key];
+      if (lp) { lp.x = tip.x; lp.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
-    // 2. Step physics + cull dead particles.
-    // Gravity is px/s² at scale=1; scales linearly with canvas.
+    // 2. Step physics + cull dead particles (in-place compaction — zero allocation).
     const gravityPx = params.gravity * 200 * scale;
-    const surviving: Particle[] = [];
-    for (const p of this.particles) {
+    let writeIdx = 0;
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i]!;
       p.life += dt;
       if (p.life >= p.maxLife) continue;
       p.vy += gravityPx * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.rotation += p.spinSpeed * dt;
-      surviving.push(p);
+      if (i !== writeIdx) this.particles[writeIdx] = p;
+      writeIdx++;
     }
-    this.particles = surviving;
+    this.particles.length = writeIdx;
 
     // 3. Draw — each particle is a 4-point star (cross + smaller diagonal cross)
     //    with a bright pinpoint core. Sin-modulated alpha = twinkle. The cross
@@ -110,10 +112,10 @@ export class Sparkles2DRenderer {
     const prevStroke = ctx.strokeStyle;
     const prevLineWidth = ctx.lineWidth;
     const prevLineCap = ctx.lineCap;
+    const savedTransform = ctx.getTransform();
     try {
       ctx.globalCompositeOperation = params.blendMode ?? "lighter";
       ctx.lineCap = "round";
-      // baseRadius is px at reference size; scale into canvas pixels.
       const baseR = params.baseRadius * scale;
       for (const p of this.particles) {
         const t = p.life / p.maxLife;
@@ -123,14 +125,12 @@ export class Sparkles2DRenderer {
         const armLen = baseR * p.scale * 2.4;
         const diagLen = armLen * 0.55;
 
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation);
+        const cos = Math.cos(p.rotation);
+        const sin = Math.sin(p.rotation);
+        ctx.setTransform(cos, sin, -sin, cos, p.x, p.y);
 
-        // Major cross (+) — long, thin, bright.
         ctx.strokeStyle = p.color;
         ctx.globalAlpha = alpha;
-        // Line-width clamp stays in canvas px so sub-pixel strokes don't vanish.
         ctx.lineWidth = Math.max(1, baseR * p.scale * 0.45);
         ctx.beginPath();
         ctx.moveTo(-armLen, 0);
@@ -139,7 +139,6 @@ export class Sparkles2DRenderer {
         ctx.lineTo(0, armLen);
         ctx.stroke();
 
-        // Minor diagonal cross (×) — shorter, thinner, gives it the 8-point feel.
         ctx.lineWidth = Math.max(0.6, baseR * p.scale * 0.25);
         ctx.globalAlpha = alpha * 0.7;
         ctx.beginPath();
@@ -149,16 +148,14 @@ export class Sparkles2DRenderer {
         ctx.lineTo(diagLen, -diagLen);
         ctx.stroke();
 
-        // Bright white pinpoint core.
         ctx.fillStyle = "#ffffff";
         ctx.globalAlpha = alpha;
         ctx.beginPath();
         ctx.arc(0, 0, Math.max(0.5, baseR * p.scale * 0.35), 0, Math.PI * 2);
         ctx.fill();
-
-        ctx.restore();
       }
     } finally {
+      ctx.setTransform(savedTransform);
       ctx.globalCompositeOperation = prevComposite;
       ctx.globalAlpha = prevAlpha;
       ctx.fillStyle = prevFill;

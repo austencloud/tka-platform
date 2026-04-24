@@ -10,12 +10,13 @@
   Collects user preferences and applies them to settings.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getPropPreferencePersister } from "$lib/shared/community/getPropPreferencePersister";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { FirstRunStep } from "../../domain/first-run-types";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -106,7 +107,7 @@
 
   onMount(() => {
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch {
       // Haptics optional
     }
@@ -212,7 +213,7 @@
     try {
       const userId = authState.user?.uid;
       if (userId) {
-        const persister = container.items.propPreferencePersister as IPropPreferencePersister;
+        const persister = getPropPreferencePersister();
         await persister.save(userId, {
           propsISpinWith: [prop],
           favoriteProp: prop,

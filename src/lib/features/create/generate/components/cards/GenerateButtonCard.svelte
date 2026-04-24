@@ -3,7 +3,7 @@ GenerateButtonCard.svelte - Generate button as a card in the grid
 Always renders as a pure button. Word input is now in WordInputCard.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -42,7 +42,7 @@ Always renders as a pure button. Word input is now in WordInputCard.
   let hapticService: IHapticFeedback | null = $state(null);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   async function handleClick() {

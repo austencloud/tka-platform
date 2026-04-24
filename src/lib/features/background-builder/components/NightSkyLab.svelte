@@ -3,9 +3,8 @@
   import { type QualityLevel, type UFOMood, type WobbleType } from "@austencloud/backgrounds";
   import type { NightSkyDensityPreset, NightSkyLabMode } from "../domain/lab-settings-types";
   import type { UFOStatusSnapshot } from "../services/contracts/IUFOStatusPoller";
-  import { container } from "$lib/shared/di";
-  import type { INightSkyLabController } from "../services/contracts/INightSkyLabController";
-  import type { IUFOStatusPoller } from "../services/contracts/IUFOStatusPoller";
+  import { getNightSkyLabController } from "../getNightSkyLabController";
+  import { getUFOStatusPoller } from "../getUFOStatusPoller";
   import {
     getNightSkySettings,
     updateNightSkySettings,
@@ -14,8 +13,8 @@
   import UFOLabControls from "./UFOLabControls.svelte";
 
   // Services from container
-  const controller: INightSkyLabController = container.items.nightSkyLabController;
-  const statusPoller: IUFOStatusPoller = container.items.ufoStatusPoller;
+  const controller = getNightSkyLabController();
+  const statusPoller = getUFOStatusPoller();
 
   // Load persisted settings
   const savedSettings = getNightSkySettings();

@@ -2,7 +2,7 @@
 WordStepNavigation - Step navigation dots for letter sequence
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { LetterDefinition } from "../../../../domain/constants/word-visualizer-data";
 
   let {
@@ -19,7 +19,7 @@ WordStepNavigation - Step navigation dots for letter sequence
     onStepChange: (index: number) => void;
   } = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function goToStep(index: number) {
     hapticService?.trigger("selection");

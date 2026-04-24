@@ -181,7 +181,7 @@
     {#if drillFilter}
       <!-- Drill-down: filtered deck list -->
       <div class="drill-header">
-        <button type="button" class="back-btn" onclick={clearDrill}>
+        <button type="button" class="back-btn" aria-label="Go back to grid view" onclick={clearDrill}>
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
           Back
         </button>

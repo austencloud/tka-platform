@@ -8,9 +8,9 @@
   - Settings: Opens mode settings sheet
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { PracticeMode } from "../../domain/enums/TrainEnums";
   import type { DisplayView } from "../../state/train-practice-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -34,7 +34,7 @@
     onSettingsClick,
   }: Props = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Get icon for current display view
   const viewIcon = $derived(() => {

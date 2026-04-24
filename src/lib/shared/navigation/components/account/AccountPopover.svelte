@@ -1,8 +1,10 @@
 <!-- AccountPopover: Desktop-only popover menu above AccountRow in sidebar -->
 <script lang="ts">
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { container } from "../../../di";
+  import { getPropPreferencePersister } from "../../../community/getPropPreferencePersister";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import type { IPropPreferencePersister } from "../../../community/services/contracts/IPropPreferencePersister";
   import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
@@ -111,7 +113,7 @@
     // app on return — no double-update flash.
     onClose();
     try {
-      const authenticator = container.items.authenticator;
+      const authenticator = getAuthenticator();
       await authenticator.signInWithGoogle();
     } catch {
       // Sign-in failure handled by auth UI
@@ -128,7 +130,7 @@
   const userId = $derived(authState.user?.uid);
   const propState = $derived.by(() => {
     if (!userId) return null;
-    const persister = container.items.propPreferencePersister as IPropPreferencePersister;
+    const persister = getPropPreferencePersister();
     return createPropPreferenceState(persister, userId);
   });
 

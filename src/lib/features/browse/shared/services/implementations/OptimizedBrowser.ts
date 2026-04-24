@@ -8,13 +8,13 @@
  * - Virtual scrolling support
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
 import type {
   IOptimizedBrowser,
   PaginatedSequences,
   SequenceMetadata,
 } from "../contracts/IOptimizedBrowser";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 // API Response types
@@ -70,7 +70,7 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error("Failed to load initial sequences:", error);
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load more results",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -120,7 +120,7 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error(`Failed to load page ${page}:`, error);
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load more results",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -205,7 +205,7 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error("Search failed:", error);
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load more results",
         technicalDetails: error instanceof Error ? error.message : String(error),

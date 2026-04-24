@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { container } from "$lib/shared/di";
+	import { getMandalaGeometryCalculator } from "../getMandalaGeometryCalculator";
+	import { getMandalaRenderer } from "../getMandalaRenderer";
 	import { onMount } from "svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import type {
@@ -84,8 +85,8 @@
 	let renderer: IMandalaRenderer | null = $state(null);
 
 	onMount(() => {
-		calculator = container.items.mandalaGeometryCalculator;
-		renderer = container.items.mandalaRenderer;
+		calculator = getMandalaGeometryCalculator();
+		renderer = getMandalaRenderer();
 	});
 
 	// Derive geometry from sequence steps — recomputes whenever sequence or

@@ -5,8 +5,8 @@
  * Helps developers understand the user's environment when debugging issues.
  */
 
+import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
 import type { DeviceContext } from "../domain/models/feedback-models";
-import { container } from "$lib/shared/di";
 
 /**
  * Capture current device/browser context
@@ -20,7 +20,7 @@ export function captureDeviceContext(
 ): DeviceContext {
   // Get app version from package.json (injected at build time via Vite)
   const appVersion = import.meta.env.VITE_APP_VERSION || "unknown";
-  const deviceDetector = container.items.deviceDetector;
+  const deviceDetector = getDeviceDetector();
 
   return {
     // Device & Browser

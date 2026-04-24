@@ -10,6 +10,7 @@
   - Desktop: Fixed layout with full controls
 -->
 <script lang="ts">
+  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -18,7 +19,6 @@
     animationSettings,
     TrailMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   // Subcomponents
@@ -144,7 +144,7 @@
     if (!browser) return;
 
     // Initialize settings service
-    settingsService = container.items.settingsState;
+    settingsService = settingsServiceSingleton;
 
     const checkViewport = () => {
       viewportHeight = window.innerHeight;

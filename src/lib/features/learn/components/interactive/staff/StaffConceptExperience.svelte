@@ -9,8 +9,8 @@ Manages navigation through 5 pages:
 5. Quiz
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedbackType } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import StaffIntroPage from "./pages/StaffIntroPage.svelte";
   import ThumbOrientationsPage from "./pages/ThumbOrientationsPage.svelte";
   import ProspinPage from "./pages/ProspinPage.svelte";
@@ -29,7 +29,7 @@ Manages navigation through 5 pages:
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticServiceRaw = container.items.hapticFeedback;
+  const hapticServiceRaw = getHapticFeedback();
 
   // Wrap the haptic service to match the simpler interface expected by child components
   const hapticService: { trigger: (type: string) => void } | undefined = hapticServiceRaw

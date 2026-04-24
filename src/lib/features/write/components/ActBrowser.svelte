@@ -4,8 +4,8 @@
   Clean sidebar-style browser with act cards.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import type { ActThumbnailInfo } from "../domain/types/write";
   import ActCard from "./ActCard.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -26,7 +26,7 @@
     onRefresh,
   }: Props = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function handleRefresh() {
     hapticService?.trigger("selection");

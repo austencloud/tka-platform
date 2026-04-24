@@ -1,8 +1,8 @@
 <!-- Module Button Component -->
 <!-- Button for a module that can expand/collapse to show sections -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ModuleDefinition } from "../../domain/types";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -42,7 +42,7 @@
   const inboxUnreadCount = $derived(inboxState.totalUnreadCount);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   function handleClick() {

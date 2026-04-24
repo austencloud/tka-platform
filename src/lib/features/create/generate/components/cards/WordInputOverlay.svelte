@@ -8,7 +8,7 @@
 <script lang="ts">
   import { pushState as svelteKitPushState } from "$app/navigation";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
   import MobileInputToolbar from "$lib/shared/components/MobileInputToolbar.svelte";
   import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
   import {
@@ -31,7 +31,7 @@
   let isInputFocused = $state(false);
 
   onMount(() => {
-    greekKeyMapper = container.items.greekKeyMapper as IGreekKeyMapper;
+    greekKeyMapper = getGreekKeyMapper();
 
     // Auto-focus after a brief delay to let the overlay animate in
     requestAnimationFrame(() => {

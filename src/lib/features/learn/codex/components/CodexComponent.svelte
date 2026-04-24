@@ -6,9 +6,9 @@
 	Now featuring beautiful glass scrollbars.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { container } from "$lib/shared/di";
   import SimpleGlassScroll from "$lib/shared/foundation/ui/SimpleGlassScroll.svelte";
   import { createCodexState } from "../state/codex-state.svelte";
   import CodexControlPanel from "./CodexControlPanel.svelte";
@@ -29,7 +29,7 @@
   // Create codex state using runes
   const codexState = createCodexState();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Initialize pictographs when component mounts - only once
   $effect(() => {

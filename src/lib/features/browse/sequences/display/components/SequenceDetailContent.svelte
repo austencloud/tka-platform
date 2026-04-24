@@ -9,6 +9,7 @@ Displays:
 Used by both desktop side panel and mobile slide-up overlay.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -24,6 +25,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 
   import { container } from "$lib/shared/di";
+  import { getPresentationResolver } from "$lib/shared/sequence-viewer/getPresentationResolver";
   import { onMount } from "svelte";
   import { untrack } from "svelte";
   import { getAuthSync } from "$lib/shared/auth/firebase";
@@ -118,7 +120,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   const activeContext = $derived(contextOverride ?? viewingContext);
 
   const presentation = $derived.by(() => {
-    const resolver = container.items.presentationResolver as IPresentationResolver;
+    const resolver = getPresentationResolver();
     const viewerBlue = settingsService.settings.bluePropType as PropType;
     const viewerRed = settingsService.settings.redPropType as PropType;
     const viewerCatDog = settingsService.settings.catDogMode ?? false;
@@ -157,7 +159,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   );
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     detailLoader = container.items.sequenceDetailLoader;
     videoCountManager = container.items.videoCountManager;
     imageSharer = container.items.sequenceImageSharer;

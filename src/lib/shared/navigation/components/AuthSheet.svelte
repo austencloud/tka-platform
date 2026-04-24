@@ -5,6 +5,8 @@
   Supports: Facebook, Google, Email/Password
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import Drawer from "../../foundation/ui/Drawer.svelte";
 
   import { container } from "../../di";
@@ -32,8 +34,8 @@
 
   onMount(async () => {
     try {
-      hapticService = container.items.hapticFeedback;
-      authService = container.items.authenticator;
+      hapticService = getHapticFeedback();
+      authService = getAuthenticator();
     } catch (error) {
       console.error("❌ [AuthSheet] Failed to resolve services:", error);
     }

@@ -8,7 +8,7 @@
   Parent controls which prop is selected and handles the selection callback.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BentoPropGrid from "./BentoPropGrid.svelte";
@@ -47,7 +47,7 @@
   }>();
 
   function handlePropSelect(propType: PropType) {
-    const hapticService = container.items.hapticFeedback;
+    const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
     onSelect(propType);
     if (autoClose) {
@@ -56,7 +56,7 @@
   }
 
   function handleTabChange(tab: "blue" | "red") {
-    const hapticService = container.items.hapticFeedback;
+    const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
     activeTab = tab;
   }

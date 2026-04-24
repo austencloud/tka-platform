@@ -4,9 +4,9 @@
   Shows sequences as they would appear on printed pages (letter size).
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
@@ -56,7 +56,7 @@
   let pageDisplayEl: HTMLDivElement;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     // Must use { passive: false } so preventDefault() works on wheel events
     pageDisplayEl?.addEventListener("wheel", handleWheel, { passive: false });
   });
@@ -112,7 +112,7 @@
       </div>
       <h3 class="state-title">Error Loading Sequences</h3>
       <p class="state-message">{error}</p>
-      <button class="retry-btn" onclick={handleRetry} type="button">
+      <button class="retry-btn" onclick={handleRetry} type="button" aria-label="Retry loading sequences">
         <i class="fas fa-redo" aria-hidden="true"></i>
         <span>Try Again</span>
       </button>

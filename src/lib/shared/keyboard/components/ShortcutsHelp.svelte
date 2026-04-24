@@ -14,7 +14,7 @@
     ShortcutRegistrationOptions,
     ShortcutScope,
   } from "../domain/types/keyboard-types";
-  import { container } from "../../di";
+  import { getKeyboardShortcutManager } from "../getKeyboardShortcutManager";
 
   // Service
   let shortcutService: IKeyboardShortcutManager | null = null;
@@ -26,7 +26,7 @@
 
   onMount(async () => {
     try {
-      shortcutService = container.items.keyboardShortcutManager;
+      shortcutService = getKeyboardShortcutManager();
       loadShortcuts();
     } catch (error) {
       console.error("Failed to resolve shortcut service:", error);

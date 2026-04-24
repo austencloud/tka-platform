@@ -6,8 +6,8 @@ Appears below the feedback banner during the feedback window.
 Tappable: navigates to TIKA with the misconception pre-loaded.
 -->
 <script lang="ts">
-  import type { DetectedGap } from "../../../services/contracts/IGapDetector";
   import { container } from "$lib/shared/di";
+  import type { DetectedGap } from "../../../services/contracts/IGapDetector";
   import type { ILetterBreakdownGenerator } from "../../../services/contracts/ILetterBreakdownGenerator";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { browser } from "$app/environment";

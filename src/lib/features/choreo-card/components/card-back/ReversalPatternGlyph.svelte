@@ -57,5 +57,5 @@
 
   .dot.red { background: #e74c3c; }
   .dot.blue { background: #3498db; }
-  .dot.empty { background: rgba(255, 255, 255, 0.18); }
+  .dot.empty { background: var(--theme-stroke, rgba(255, 255, 255, 0.18)); }
 </style>

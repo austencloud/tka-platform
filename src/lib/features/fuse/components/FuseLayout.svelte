@@ -12,6 +12,7 @@
 	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
 	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
+	import { getFuseAssemblyAnimator } from "../getFuseAssemblyAnimator";
 	import { container } from "$lib/shared/di";
 	import { onMount } from "svelte";
 	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
@@ -47,7 +48,7 @@
 
 	let fuseAssemblyAnimator: IFuseAssemblyAnimator;
 	try {
-		fuseAssemblyAnimator = container.items.fuseAssemblyAnimator;
+		fuseAssemblyAnimator = getFuseAssemblyAnimator();
 	} catch {
 		fuseAssemblyAnimator = { async animate() {} };
 	}

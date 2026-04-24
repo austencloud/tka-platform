@@ -8,13 +8,14 @@
    * - Existing group with same participants is reused
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -76,8 +77,8 @@
   });
 
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
-    userService = container.items.userRepository;
+    hapticService = getHapticFeedback();
+    userService = getUserRepository();
     await loadSuggestions();
   });
 

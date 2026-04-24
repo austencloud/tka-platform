@@ -5,7 +5,8 @@
   Uses the shared Drawer component (vaul-svelte based) for consistent UX.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
@@ -77,12 +78,12 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
 
     // Resolve DeviceDetector service (same pattern as MobileNavigation)
     let deviceCleanup: (() => void) | undefined;
     try {
-      deviceDetector = container.items.deviceDetector;
+      deviceDetector = getDeviceDetector();
 
       if (deviceDetector) {
         // Get initial responsive settings

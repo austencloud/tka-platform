@@ -8,7 +8,7 @@
    */
 
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getConnectionManager } from "$lib/shared/community/getConnectionManager";
   import type { IConnectionManager, ConnectionInfo } from "$lib/shared/community/services/contracts/IConnectionManager";
   import ConnectionNotes from "./ConnectionNotes.svelte";
   import ConnectionMutualStatus from "./ConnectionMutualStatus.svelte";
@@ -54,7 +54,7 @@
 
   async function loadConnectionInfo() {
     try {
-      connectionManager = container.items.connectionManager;
+      connectionManager = getConnectionManager();
       connectionInfo = await connectionManager.getConnectionInfo(targetUserId);
     } catch (err) {
       console.error("[ProfileConnectionSection] Error loading connection:", err);

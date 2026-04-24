@@ -5,8 +5,8 @@ Provides sleek control buttons and orientation selector for
 rotating, mirroring, and color-swapping pictographs.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
 
   // Props
   let {
@@ -24,7 +24,7 @@ rotating, mirroring, and color-swapping pictographs.
   }>();
 
   // Services
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Available orientations (matches desktop options)
   const orientations = ["Diamond", "Box", "Skewed"];

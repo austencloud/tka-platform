@@ -4,8 +4,8 @@
   Level, favorites, grid mode, and author filters.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -39,7 +39,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   const levelOptions = [
@@ -98,6 +98,7 @@
           class:selected={level === option.value}
           onclick={() => handleLevelClick(option.value)}
           aria-pressed={level === option.value}
+          aria-label="Filter level {option.label}"
           type="button"
         >
           {option.label}
@@ -113,6 +114,7 @@
       class:active={favorites}
       onclick={handleFavoritesClick}
       aria-pressed={favorites}
+      aria-label="Toggle favorites only"
       type="button"
     >
       <i class="fas fa-heart" aria-hidden="true"></i>
@@ -127,6 +129,7 @@
       class:active={showQRCodes}
       onclick={handleShowQRCodesClick}
       aria-pressed={showQRCodes}
+      aria-label="Toggle QR codes"
       type="button"
     >
       <i class="fas fa-qrcode" aria-hidden="true"></i>
@@ -147,6 +150,7 @@
           class:selected={gridMode === option.value}
           onclick={() => handleGridModeClick(option.value)}
           aria-pressed={gridMode === option.value}
+          aria-label="Filter grid mode {option.label}"
           type="button"
         >
           {option.label}
@@ -203,7 +207,7 @@
   }
 
   .section-title i {
-    font-size: 0.7rem;
+    font-size: 12px;
     opacity: 0.7;
   }
 

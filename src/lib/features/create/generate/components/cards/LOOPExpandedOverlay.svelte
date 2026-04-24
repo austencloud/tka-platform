@@ -3,10 +3,10 @@ LOOPExpandedOverlay.svelte - Expanded LOOP selection that covers the card grid
 Animates forward in z-axis and expands to fill the container space
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
@@ -40,7 +40,7 @@ Animates forward in z-axis and expands to fill the container space
   });
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Generate explanation text based on selected components

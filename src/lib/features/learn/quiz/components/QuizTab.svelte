@@ -8,6 +8,7 @@ Provides quiz functionality for learning TKA notation:
 - Codex integration for reference
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onDestroy, onMount } from "svelte";
@@ -35,7 +36,7 @@ Provides quiz functionality for learning TKA notation:
   const codexService = container.items.codex;
   const quizRepo = container.items.quizRepoManager;
   const quizSessionService = container.items.quizSessionManager;
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
   const quizHistoryRecorder = container.items.quizHistoryRecorder;
   const letterToConceptMapper = container.items.letterToConceptMapper;
   const gapDetector = container.items.gapDetector;

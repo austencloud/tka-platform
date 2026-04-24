@@ -46,12 +46,14 @@
         class:active={deckState.collection === 'LOOPs'}
         onclick={() => deckState.setCollection('LOOPs')}
         type="button"
+        aria-label="Browse LOOPs collection"
       >LOOPs</button>
       <button
         class="collection-pill vtg"
         class:active={deckState.collection === 'VTG'}
         onclick={() => deckState.setCollection('VTG')}
         type="button"
+        aria-label="Browse VTG collection"
       >VTG</button>
     </div>
 
@@ -145,7 +147,7 @@
       </FilterChipRow>
 
       {#if hasActiveFilters}
-        <button class="clear-btn" onclick={() => deckState.clearFilters()} type="button">
+        <button class="clear-btn" onclick={() => deckState.clearFilters()} type="button" aria-label="Clear all filters">
           <i class="fas fa-times" aria-hidden="true"></i> Clear filters
         </button>
       {/if}

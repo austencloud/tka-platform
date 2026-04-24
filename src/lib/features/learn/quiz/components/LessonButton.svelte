@@ -6,8 +6,8 @@ selecting different game types. Features glass morphism styling
 and smooth hover animations.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { QuizType } from "../domain/enums/quiz-enums";
 
@@ -30,7 +30,7 @@ and smooth hover animations.
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Get icon and enhanced text based on game type

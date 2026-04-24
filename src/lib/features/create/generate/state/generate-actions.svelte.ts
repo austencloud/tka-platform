@@ -5,8 +5,11 @@
  * Manages reactive state and workbench animation updates.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
+import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/components/ArrowSvg.svelte";
+import { clearPropPositionCache } from "$lib/shared/pictograph/prop/components/PropSvg.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
@@ -83,7 +86,7 @@ export function createGenerationActionsState(
             ? `${viability.reason} ${viability.suggestion}`
             : (viability.reason ?? "LOOP configuration is not viable.");
           generationError = fullMessage;
-          const errorService = container.items.errorHandler;
+          const errorService = getErrorHandler();
           errorService?.showUserError({
             message: "This LOOP combination isn't supported",
             technicalDetails: fullMessage,
@@ -164,7 +167,7 @@ export function createGenerationActionsState(
         error instanceof Error ? error.message : "Unknown generation error";
 
       // Show user-facing error with bug report option
-      const errorService = container.items.errorHandler;
+      const errorService = getErrorHandler();
       if (errorService) {
         errorService.showUserError({
           message: "Sequence generation failed",
@@ -407,7 +410,7 @@ export function createGenerationActionsState(
       generationError = error instanceof Error ? error.message : "Spell generation failed";
       spellState.setError(generationError);
 
-      const errorService = container.items.errorHandler;
+      const errorService = getErrorHandler();
       if (errorService) {
         errorService.showUserError({
           message: "Spell generation failed",
@@ -575,6 +578,11 @@ export function createGenerationActionsState(
         window.dispatchEvent(new CustomEvent("clear-sequence-animation"));
         await new Promise((resolve) => setTimeout(resolve, 300));
       }
+
+      // Flush stale positions so incoming steps render at their correct
+      // locations immediately rather than animating from the old sequence's spots.
+      clearArrowPositionCache();
+      clearPropPositionCache();
 
       const isSequential = getIsSequential?.() ?? false;
 

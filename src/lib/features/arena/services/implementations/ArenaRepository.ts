@@ -19,7 +19,7 @@ import type {
 import type { MatchupCandidate } from "../contracts/IMatchupSelector";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
-import { container } from "$lib/shared/di";
+import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import {
   INITIAL_MU,
   INITIAL_PHI,
@@ -286,7 +286,7 @@ export class ArenaRepository implements IArenaRepository {
       };
 
       // Hydrate: re-derive steps from compositional fields if present
-      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      const hydrator = getSequenceHydrator();
       return hydrator.hydrate(mapped);
     } catch (err) {
       console.error(`[Arena] Failed to load full sequence from ${sourceRef}:`, err);

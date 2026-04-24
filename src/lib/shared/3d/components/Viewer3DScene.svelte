@@ -12,11 +12,11 @@
    * lighting, dual-wheel prop swapping, and the puppet-mode sync loop.
    */
 
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
   import PerformerRig from "./PerformerRig.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { container } from "$lib/shared/di";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
@@ -248,7 +248,7 @@
     if (sequenceData?.intendedProp?.bluePropType) return sequenceData.intendedProp.bluePropType;
     if (sequenceData?.creatorIntent?.propConfig?.bluePropType) return sequenceData.creatorIntent.propConfig.bluePropType;
     try {
-      const settings = container.items.settingsState;
+      const settings = settingsService;
       return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
@@ -256,7 +256,7 @@
     if (sequenceData?.intendedProp?.redPropType) return sequenceData.intendedProp.redPropType;
     if (sequenceData?.creatorIntent?.propConfig?.redPropType) return sequenceData.creatorIntent.propConfig.redPropType;
     try {
-      const settings = container.items.settingsState;
+      const settings = settingsService;
       return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
@@ -269,7 +269,7 @@
   // Read background type from settings for themed 3D environment
   const backgroundType = $derived.by((): BackgroundType => {
     try {
-      const settings = container.items.settingsState;
+      const settings = settingsService;
       return (settings as any)?.settings?.backgroundType ?? BackgroundType.SOLID_COLOR;
     } catch { return BackgroundType.SOLID_COLOR; }
   });
@@ -285,6 +285,15 @@
     backgroundType === BackgroundType.NIGHT_SKY ||
     backgroundType === BackgroundType.DEEP_OCEAN
   );
+
+  // When the background type doesn't produce a 3D environment (solid color,
+  // gradient), Environment3D never mounts — so nothing will ever call
+  // reportReady("environment"). Report it immediately so the curtain lifts.
+  $effect(() => {
+    if (!hasEnvironment && sceneFeatures.isEnabled("environment")) {
+      sceneFeatures.reportReady("environment");
+    }
+  });
 </script>
 
 <!-- Environment (gated by scene feature toggle) -->

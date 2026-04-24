@@ -46,6 +46,7 @@
       type="button"
       class="toggle-pill"
       class:active={activeView === "family"}
+      aria-label="Browse by family"
       onclick={() => setView("family")}
     >
       Family
@@ -54,6 +55,7 @@
       type="button"
       class="toggle-pill"
       class:active={activeView === "ratio"}
+      aria-label="Browse by ratio"
       onclick={() => setView("ratio")}
     >
       Ratio
@@ -62,6 +64,7 @@
       type="button"
       class="toggle-pill"
       class:active={activeView === "reversal"}
+      aria-label="Browse by reversal"
       onclick={() => setView("reversal")}
     >
       Reversal

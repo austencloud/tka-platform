@@ -5,8 +5,8 @@
   Icon-only mode on small screens, labels shown on larger screens.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { TrainMode, PracticeMode } from "../../domain/enums/TrainEnums";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -34,7 +34,7 @@
     onSettingsClick,
   }: Props = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Get icon for current practice mode
   const modeIcon = $derived(() => {

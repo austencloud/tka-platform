@@ -1,34 +1,3 @@
-/**
- * Canvas2D ink stroke renderer.
- *
- * Per-tip path builder that reads the tip's position each frame, pushes
- * a new point onto a bounded history (gated by velocity for motion-
- * dominant emission), and re-strokes the path with variable lineWidth
- * derived from per-segment speed. Slow tip = thick loaded brush pressing,
- * fast tip = thin lifted brush — this is calligraphic pressure sensitivity,
- * the opaque-pigment counterpart to trails' gravity-free ribbons.
- *
- * The #1 differentiator from trails: composite is `source-over` (OPAQUE),
- * not `lighter`/emissive. The only exception is the neon palette, which
- * intentionally switches to `lighter` to prove the default read is flat
- * pigment. One palette glowing reinforces that the other five don't.
- *
- * Sprint 1 (1j.i) ships the stroke MVP only. Sprint 2 (1j.ii-iv) adds:
- *   - Gravity sag on path points
- *   - Strand breakup into falling droplets (viscosity knob)
- *   - Splatter bursts on velocity spikes (splatterIntensity knob)
- *   - Ground pooling decals
- *
- * Spec: docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md
- *
- * Known sprint-1 risk (to verify in the browser): variable-width strokes
- * require per-segment stroke calls because Canvas2D doesn't interpolate
- * lineWidth across a single path. That means N segments = N stroke
- * operations per tip per frame. For 4 tips * 40 points = 160 segments
- * per frame at 60 fps = 9600 stroke ops/sec. Budget validated below 2 ms
- * for typical cases; falls back to fewer points under heavy load.
- */
-
 import type { Ink2DParams } from "../translators/canvas2d-types";
 
 export interface InkTipInput {
@@ -41,53 +10,188 @@ export interface InkTipInput {
 type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
 const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
-/**
- * Single point in a stroke path. `vx`/`vy` are the instantaneous segment
- * velocity used for per-segment width — kept on the point so that
- * re-stroking doesn't have to recompute from neighbor positions.
- */
+const STAMP_SIZE = 64;
+const STAMP_HALF = STAMP_SIZE / 2;
+const STAMP_R = STAMP_SIZE * 0.42;
+
+// --- Hash noise for fiber texture (generated at cache time, not per frame) ---
+
+function hashNoise(ix: number, iy: number, seed: number): number {
+  let h = (ix * 374761393 + iy * 668265263 + seed * 1274126177) | 0;
+  h = ((h ^ (h >> 13)) * 1103515245) | 0;
+  return (h & 0x7fffffff) / 0x7fffffff;
+}
+
+function sampleNoise(x: number, y: number, gridScale: number, seed: number): number {
+  const gx = x / gridScale;
+  const gy = y / gridScale;
+  const ix = Math.floor(gx);
+  const iy = Math.floor(gy);
+  const fx = gx - ix;
+  const fy = gy - iy;
+  const n00 = hashNoise(ix, iy, seed);
+  const n10 = hashNoise(ix + 1, iy, seed);
+  const n01 = hashNoise(ix, iy + 1, seed);
+  const n11 = hashNoise(ix + 1, iy + 1, seed);
+  const nx0 = n00 + (n10 - n00) * fx;
+  const nx1 = n01 + (n11 - n01) * fx;
+  return nx0 + (nx1 - nx0) * fy;
+}
+
+function twoOctaveNoise(px: number, py: number, seed: number): number {
+  return sampleNoise(px, py, 8, seed) * 0.6 + sampleNoise(px, py, 4, seed + 7) * 0.4;
+}
+
+// --- Hex color parsing ---
+
+function parseHex(hex: string): [number, number, number] {
+  const s = hex.trim().replace(/^#/, "");
+  const norm =
+    s.length === 3
+      ? s
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : s.length >= 6
+        ? s.slice(0, 6)
+        : "0a0a0a";
+  return [
+    parseInt(norm.slice(0, 2), 16),
+    parseInt(norm.slice(2, 4), 16),
+    parseInt(norm.slice(4, 6), 16),
+  ];
+}
+
+// --- BrushStampCache ---
+
+class BrushStampCache {
+  private canvas: OffscreenCanvas | HTMLCanvasElement | null = null;
+  private signature = "";
+  private noiseSeed = (Math.random() * 100000) | 0;
+
+  get(params: Ink2DParams): OffscreenCanvas | HTMLCanvasElement {
+    const palette = params.resolvedPalette;
+    const sig = `${palette.pigment}|${palette.edge}|${params.intensity.toFixed(2)}|${palette.watercolor ? "w" : ""}|${palette.emissive ? "e" : ""}`;
+    if (sig === this.signature && this.canvas) return this.canvas;
+
+    const canvas =
+      typeof OffscreenCanvas !== "undefined"
+        ? new OffscreenCanvas(STAMP_SIZE, STAMP_SIZE)
+        : typeof document !== "undefined"
+          ? document.createElement("canvas")
+          : ({
+              width: STAMP_SIZE,
+              height: STAMP_SIZE,
+              getContext: () => null,
+            } as unknown as HTMLCanvasElement);
+    if ("width" in canvas) {
+      canvas.width = STAMP_SIZE;
+      canvas.height = STAMP_SIZE;
+    }
+    const ctx = canvas.getContext("2d") as
+      | CanvasRenderingContext2D
+      | OffscreenCanvasRenderingContext2D;
+    if (!ctx) {
+      this.canvas = canvas;
+      this.signature = sig;
+      return canvas;
+    }
+
+    const cx = STAMP_HALF;
+    const cy = STAMP_HALF;
+    const R = STAMP_R;
+    const [pr, pg, pb] = parseHex(palette.pigment);
+    const [er, eg, eb] = parseHex(palette.edge);
+
+    ctx.clearRect(0, 0, STAMP_SIZE, STAMP_SIZE);
+
+    // Layer 1: Core pigment — radial gradient, dense center → transparent edge
+    const grad1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+    grad1.addColorStop(0, `rgba(${pr},${pg},${pb},0.95)`);
+    grad1.addColorStop(0.55, `rgba(${pr},${pg},${pb},0.7)`);
+    grad1.addColorStop(1, `rgba(${pr},${pg},${pb},0)`);
+    ctx.fillStyle = grad1;
+    ctx.fillRect(0, 0, STAMP_SIZE, STAMP_SIZE);
+
+    // Layer 2: Wet edge ring (skip for watercolor)
+    if (!palette.watercolor) {
+      const ringAlpha = palette.emissive ? 0.6 : 0.4;
+      const grad2 = ctx.createRadialGradient(cx, cy, R * 0.55, cx, cy, R * 0.95);
+      grad2.addColorStop(0, `rgba(${pr},${pg},${pb},0)`);
+      grad2.addColorStop(0.35, `rgba(${pr},${pg},${pb},${ringAlpha})`);
+      grad2.addColorStop(0.65, `rgba(${pr},${pg},${pb},${ringAlpha * 0.7})`);
+      grad2.addColorStop(1, `rgba(${pr},${pg},${pb},0)`);
+      ctx.fillStyle = grad2;
+      ctx.fillRect(0, 0, STAMP_SIZE, STAMP_SIZE);
+    }
+
+    // Layer 3: Edge bleed — soft feather beyond pigment boundary
+    const grad3 = ctx.createRadialGradient(cx, cy, R * 0.7, cx, cy, R * 1.1);
+    grad3.addColorStop(0, `rgba(${er},${eg},${eb},0)`);
+    grad3.addColorStop(1, `rgba(${er},${eg},${eb},0.2)`);
+    ctx.fillStyle = grad3;
+    ctx.fillRect(0, 0, STAMP_SIZE, STAMP_SIZE);
+
+    // Layer 4: Fiber noise — per-pixel alpha modulation
+    const noiseStrength = palette.watercolor ? 0.15 : palette.emissive ? 0.2 : 1.0;
+    if (noiseStrength > 0.05) {
+      const imgData = ctx.getImageData(0, 0, STAMP_SIZE, STAMP_SIZE);
+      const data = imgData.data;
+      for (let py = 0; py < STAMP_SIZE; py++) {
+        for (let px = 0; px < STAMP_SIZE; px++) {
+          const idx = (py * STAMP_SIZE + px) * 4;
+          if (data[idx + 3]! === 0) continue;
+          const n = twoOctaveNoise(px, py, this.noiseSeed);
+          const factor = 0.5 + 0.5 * n;
+          const blend = 1.0 - noiseStrength + noiseStrength * factor;
+          data[idx + 3] = Math.round(data[idx + 3]! * blend);
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    this.canvas = canvas;
+    this.signature = sig;
+    return canvas;
+  }
+
+  dispose(): void {
+    this.canvas = null;
+    this.signature = "";
+  }
+}
+
+// --- InkPoint with tangent + jitter seed ---
+
 interface InkPoint {
   x: number;
   y: number;
-  /** Seconds since this point was spawned. */
   age: number;
-  /**
-   * Smoothed tip speed (px/s) at the moment of spawn. Drives the stroke
-   * width of the segment leading into this point. Slow = thick, fast = thin.
-   */
   spawnSpeedPx: number;
+  tangentAngle: number;
+  jitterSeed: number;
 }
 
-/** Per-tip bounded history. */
 interface TipState {
   points: InkPoint[];
-  /** Last known tip position for velocity diffing. */
   lastPos: { x: number; y: number } | null;
-  /** Smoothed tip velocity (px/s). */
   smoothedVx: number;
   smoothedVy: number;
-  /**
-   * Accumulator for sub-dt spawn emission. When >= 1 we push a point and
-   * subtract 1. Lets the renderer emit at fractional rates below 1/frame.
-   */
   emitAccumulator: number;
-  /** Seconds since the last ambient-mode point was spawned. */
-  timeSinceLastAmbient: number;
 }
 
-/**
- * Velocity threshold for motion-mode gating. Below this tip speed the
- * renderer falls back to ambient mode (periodic slow spawn). Above, the
- * motion-mode spawn rate dominates. Tuned against 2D canvas tips at 60fps
- * producing ~500 px/s during moderate prop motion.
- */
 const MOTION_VELOCITY_THRESHOLD_PX = 30;
-
-/**
- * Fade-out begins at FADE_FRACTION of the point's lifetime (so points
- * are opaque for 60% of life, then fade across the last 40%).
- */
 const FADE_FRACTION = 0.6;
+const LIGHT_SAG_PX = 0.8;
+const MAX_ROTATION_JITTER = 0.14;
+const MAX_SCALE_JITTER = 0.24;
+const MAX_OPACITY_JITTER = 0.15;
+
+function jitterHash(seed: number, channel: number): number {
+  let h = ((seed * 1000000) | 0) + channel * 374761393;
+  h = ((h ^ (h >> 13)) * 1103515245) | 0;
+  return (h & 0x7fffffff) / 0x7fffffff;
+}
 
 export class Ink2DRenderer {
   private tips: Record<TipKey, TipState | null> = {
@@ -96,6 +200,7 @@ export class Ink2DRenderer {
     redPosA: null,
     redPosB: null,
   };
+  private stampCache = new BrushStampCache();
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -104,24 +209,17 @@ export class Ink2DRenderer {
     dt: number,
     _scale: number = 1,
   ): void {
-    // 1. Sample tip positions, update velocity, spawn new points.
     for (const key of TIP_KEYS) {
       const pos = tips[key];
       const enabled = this.isTipEnabled(key, params);
       if (!pos || !enabled) {
-        // Tip disappeared — clear its state so the next appearance starts
-        // fresh rather than teleporting the stroke.
         this.tips[key] = null;
         continue;
       }
       this.updateTip(key, pos, params, dt);
     }
-
-    // 2. Age every point; drop expired.
     this.ageAndCullPoints(dt, params.lifetimeSeconds);
-
-    // 3. Stroke each tip's path.
-    this.drawStrokes(ctx, params);
+    this.drawStamps(ctx, params);
   }
 
   private updateTip(
@@ -138,13 +236,11 @@ export class Ink2DRenderer {
         smoothedVx: 0,
         smoothedVy: 0,
         emitAccumulator: 0,
-        timeSinceLastAmbient: 0,
       };
       this.tips[key] = state;
       return;
     }
 
-    // Velocity smoothing — first-order low-pass, same shape as smoke.
     const last = state.lastPos;
     let vx = 0;
     let vy = 0;
@@ -157,16 +253,10 @@ export class Ink2DRenderer {
     state.smoothedVy += (vy - state.smoothedVy) * alpha;
     const speedPx = Math.hypot(state.smoothedVx, state.smoothedVy);
 
-    // Detect tip teleport (rare: scene cut, loop restart). A huge dx with
-    // small dt would register as extreme velocity — clamp by dropping the
-    // path so the stroke doesn't draw a straight line across the canvas.
     if (last && Math.hypot(pos.x - last.x, pos.y - last.y) > 300) {
       state.points = [];
     }
 
-    // Motion-dominant emission. Motion mode spawns when the tip is moving;
-    // ambient mode fills in at a tiny rate at rest (hard-capped in the
-    // translator — effectiveAmbient <= 0.3).
     const PX_PER_WORLD = 60;
     const refSpeed = params.motionReferenceSpeed * PX_PER_WORLD;
     const speedScalar = refSpeed > 0 ? Math.min(1, speedPx / refSpeed) : 0;
@@ -176,22 +266,37 @@ export class Ink2DRenderer {
         ? params.motionEmission * speedScalar * params.motionSpawnRate
         : 0;
     const ambientRate = params.effectiveAmbient * params.ambientSpawnRate;
-
     const totalRate = motionRate + ambientRate;
     state.emitAccumulator += totalRate * dt;
 
+    const tangent = Math.atan2(state.smoothedVy, state.smoothedVx);
+
+    // Spacing gate: enforce minimum distance between consecutive stamps
+    const speedT = Math.min(1, speedPx / (params.motionReferenceSpeed * PX_PER_WORLD * 2));
+    const currentScale =
+      params.stampScaleMax + (params.stampScaleMin - params.stampScaleMax) * speedT;
+    const brushWidth = STAMP_SIZE * currentScale;
+    const minSpacing = brushWidth * 0.22;
+
     while (state.emitAccumulator >= 1) {
       state.emitAccumulator -= 1;
-      this.pushPoint(state, pos.x, pos.y, speedPx, params);
+      if (this.canEmit(state, pos.x, pos.y, minSpacing)) {
+        this.pushPoint(state, pos.x, pos.y, speedPx, tangent, params);
+      }
     }
-    // Residual emission handled by Bernoulli to avoid frame-quantization
-    // bias at very low rates.
     if (Math.random() < state.emitAccumulator * 0.1) {
-      // Don't consume the full accumulator — just a chance at a bonus point.
-      this.pushPoint(state, pos.x, pos.y, speedPx, params);
+      if (this.canEmit(state, pos.x, pos.y, minSpacing)) {
+        this.pushPoint(state, pos.x, pos.y, speedPx, tangent, params);
+      }
     }
 
     state.lastPos = { x: pos.x, y: pos.y };
+  }
+
+  private canEmit(state: TipState, x: number, y: number, minSpacing: number): boolean {
+    if (state.points.length === 0) return true;
+    const last = state.points[state.points.length - 1]!;
+    return Math.hypot(x - last.x, y - last.y) >= minSpacing;
   }
 
   private pushPoint(
@@ -199,9 +304,17 @@ export class Ink2DRenderer {
     x: number,
     y: number,
     speedPx: number,
+    tangentAngle: number,
     params: Ink2DParams,
   ): void {
-    state.points.push({ x, y, age: 0, spawnSpeedPx: speedPx });
+    state.points.push({
+      x,
+      y,
+      age: 0,
+      spawnSpeedPx: speedPx,
+      tangentAngle,
+      jitterSeed: Math.random(),
+    });
     while (state.points.length > params.maxPointsPerTip) {
       state.points.shift();
     }
@@ -214,87 +327,92 @@ export class Ink2DRenderer {
       const survivors: InkPoint[] = [];
       for (const p of state.points) {
         p.age += dt;
+        // Light gravity preview: aged points drift downward
+        if (p.age > lifetimeSeconds * 0.4) {
+          const sagT = (p.age - lifetimeSeconds * 0.4) / (lifetimeSeconds * 0.6);
+          p.y += LIGHT_SAG_PX * sagT * sagT * dt * 60;
+        }
         if (p.age < lifetimeSeconds) survivors.push(p);
       }
       state.points = survivors;
     }
   }
 
-  private drawStrokes(ctx: CanvasRenderingContext2D, params: Ink2DParams): void {
+  private drawStamps(ctx: CanvasRenderingContext2D, params: Ink2DParams): void {
+    const stamp = this.stampCache.get(params);
     const palette = params.resolvedPalette;
     const prevComposite = ctx.globalCompositeOperation;
     const prevAlpha = ctx.globalAlpha;
-    const prevLineCap = ctx.lineCap;
-    const prevLineJoin = ctx.lineJoin;
+    const composite: GlobalCompositeOperation = palette.emissive ? "lighter" : "source-over";
+
     try {
-      ctx.globalCompositeOperation = palette.emissive ? "lighter" : "source-over";
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
+      ctx.globalCompositeOperation = composite;
 
       const peakAlpha = params.opacityMax * (0.45 + 0.55 * params.intensity);
+      const watercolorCap = palette.watercolor ? 0.35 : 1.0;
       const SPEED_CEILING_PX = params.motionReferenceSpeed * 60 * 2;
-      const widthMax = params.strokeWidthMax * (0.6 + 0.8 * params.intensity);
-      const widthMin = params.strokeWidthMin;
+      const watercolorScale = palette.watercolor ? 1.8 : 1.0;
+      const bleedAlphaMultiplier = palette.watercolor ? 0.3 : 0.18;
 
       for (const key of TIP_KEYS) {
         const state = this.tips[key];
-        if (!state || state.points.length < 2) continue;
+        if (!state || state.points.length === 0) continue;
 
-        // Single path per tip — one stroke() call so Canvas2D computes
-        // proper round joins at every intermediate point instead of
-        // isolated round caps per segment. Per-segment isolated stroke()
-        // calls produced a chain-of-ovals look (the sprint-1 regression).
-        //
-        // Width uses the median spawn speed across the whole stroke.
-        // True calligraphic per-segment width variation (filled polygon
-        // approach) is sprint-2 (1j.ii).
-        const sorted = state.points
-          .map((p) => p.spawnSpeedPx)
-          .slice()
-          .sort((a, b) => a - b);
-        const medianSpeed = sorted[Math.floor(sorted.length / 2)] ?? 0;
-        const t = Math.min(1, medianSpeed / SPEED_CEILING_PX);
-        const width = widthMax + (widthMin - widthMax) * t;
+        // Edge bleed pass: larger stamps, low alpha, edge color
+        for (const p of state.points) {
+          const ageT = p.age / params.lifetimeSeconds;
+          const fadeOut =
+            ageT > FADE_FRACTION ? Math.max(0, (1 - ageT) / (1 - FADE_FRACTION)) : 1;
+          const baseAlpha = Math.min(peakAlpha * fadeOut, watercolorCap);
+          if (baseAlpha <= 0.01) continue;
 
-        // Fade alpha from the oldest surviving point so the tail
-        // gradually disappears rather than individual segments blinking.
-        const oldestT = state.points[0]!.age / params.lifetimeSeconds;
-        const fadeOut =
-          oldestT > FADE_FRACTION
-            ? Math.max(0, (1 - oldestT) / (1 - FADE_FRACTION))
-            : 1;
-        const alpha = peakAlpha * fadeOut;
-        if (alpha <= 0.01) continue;
+          const speedT = Math.min(1, p.spawnSpeedPx / SPEED_CEILING_PX);
+          const scale =
+            (params.stampScaleMax + (params.stampScaleMin - params.stampScaleMax) * speedT) *
+            watercolorScale;
+          const scaleJitter = 1.0 + (jitterHash(p.jitterSeed, 1) - 0.5) * MAX_SCALE_JITTER;
+          const rotJitter = (jitterHash(p.jitterSeed, 0) - 0.5) * MAX_ROTATION_JITTER;
+          const bleedScale = scale * scaleJitter * 1.7;
 
-        const buildPath = (): void => {
-          ctx.beginPath();
-          ctx.moveTo(state.points[0]!.x, state.points[0]!.y);
-          for (let i = 1; i < state.points.length; i++) {
-            ctx.lineTo(state.points[i]!.x, state.points[i]!.y);
-          }
-        };
-
-        // Edge feathering pass — wider, low-alpha. Creates a soft halo
-        // around the pigment stroke that reads like ink bleed on paper.
-        // Skipped on emissive (neon) because additive blend self-feathers.
-        if (!palette.emissive) {
-          ctx.lineWidth = width * 1.8;
-          ctx.strokeStyle = withAlpha(palette.edge, alpha * 0.28);
-          buildPath();
-          ctx.stroke();
+          ctx.globalAlpha = baseAlpha * bleedAlphaMultiplier;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.tangentAngle + rotJitter);
+          const squash = 1.0 / Math.sqrt(1.0 + speedT * 0.4);
+          ctx.scale(bleedScale, bleedScale * squash);
+          ctx.drawImage(stamp, -STAMP_HALF, -STAMP_HALF);
+          ctx.restore();
         }
 
-        // Pigment pass — the main stroke.
-        ctx.lineWidth = width;
-        ctx.strokeStyle = withAlpha(palette.pigment, alpha);
-        buildPath();
-        ctx.stroke();
+        // Pigment pass: main stamps
+        for (const p of state.points) {
+          const ageT = p.age / params.lifetimeSeconds;
+          const fadeOut =
+            ageT > FADE_FRACTION ? Math.max(0, (1 - ageT) / (1 - FADE_FRACTION)) : 1;
+          const baseAlpha = Math.min(peakAlpha * fadeOut, watercolorCap);
+          if (baseAlpha <= 0.01) continue;
+
+          const speedT = Math.min(1, p.spawnSpeedPx / SPEED_CEILING_PX);
+          const scale =
+            (params.stampScaleMax + (params.stampScaleMin - params.stampScaleMax) * speedT) *
+            watercolorScale;
+          const scaleJitter = 1.0 + (jitterHash(p.jitterSeed, 1) - 0.5) * MAX_SCALE_JITTER;
+          const rotJitter = (jitterHash(p.jitterSeed, 0) - 0.5) * MAX_ROTATION_JITTER;
+          const opacityJitter = 1.0 - jitterHash(p.jitterSeed, 2) * MAX_OPACITY_JITTER;
+
+          ctx.globalAlpha = baseAlpha * opacityJitter;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.tangentAngle + rotJitter);
+          const squash = 1.0 / Math.sqrt(1.0 + speedT * 0.4);
+          ctx.scale(scale * scaleJitter, scale * scaleJitter * squash);
+          ctx.drawImage(stamp, -STAMP_HALF, -STAMP_HALF);
+          ctx.restore();
+        }
       }
     } finally {
       ctx.globalCompositeOperation = prevComposite;
       ctx.globalAlpha = prevAlpha;
-      ctx.lineCap = prevLineCap;
-      ctx.lineJoin = prevLineJoin;
     }
   }
 
@@ -308,23 +426,6 @@ export class Ink2DRenderer {
     for (const key of TIP_KEYS) {
       this.tips[key] = null;
     }
+    this.stampCache.dispose();
   }
-}
-
-function withAlpha(hex: string, alpha: number): string {
-  const s = hex.trim().replace(/^#/, "");
-  const norm =
-    s.length === 3
-      ? s
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : s.length >= 6
-        ? s.slice(0, 6)
-        : "0a0a0a";
-  const r = parseInt(norm.slice(0, 2), 16);
-  const g = parseInt(norm.slice(2, 4), 16);
-  const b = parseInt(norm.slice(4, 6), 16);
-  const a = Math.max(0, Math.min(1, alpha));
-  return `rgba(${r},${g},${b},${a})`;
 }

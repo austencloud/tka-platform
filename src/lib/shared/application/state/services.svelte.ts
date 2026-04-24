@@ -1,6 +1,7 @@
 import type { IPersistenceService } from "../../persistence/services/contracts/IPersistenceService";
 import { container } from "../../di";
 import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
+import { settingsService as settingsServiceSingleton } from "../../settings/state/SettingsState.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
 // ============================================================================
@@ -28,7 +29,7 @@ if (import.meta.hot) {
 export async function initializeAppServices(): Promise<void> {
   if (isInitialized) return;
 
-  settingsService = container.items.settingsState;
+  settingsService = settingsServiceSingleton;
   isInitialized = true;
 
   // Sync darkMode from AppSettings to animation visibility manager
@@ -64,7 +65,7 @@ export function getSettingsServiceSync(): ISettingsState {
 
 export async function getSettingsService(): Promise<ISettingsState> {
   if (!settingsService) {
-    settingsService = container.items.settingsState;
+    settingsService = settingsServiceSingleton;
   }
   if (!settingsService) {
     throw new Error("Settings service is null after resolution");

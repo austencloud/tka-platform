@@ -105,10 +105,10 @@ export class Petals2DRenderer {
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      this.smoothedVelocity[key] = { vx: svx, vy: svy };
+      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
       const speedPx = Math.hypot(svx, svy);
       this.spawnPetals(params, palette, tip, speedPx, dt, scale, baseSize, poolCap);
-      this.lastTipPos[key] = { x: tip.x, y: tip.y };
+      if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
     // 2. Integrate + age + cull.
@@ -174,22 +174,21 @@ export class Petals2DRenderer {
   }
 
   private integratePetals(dt: number, params: Petals2DParams): void {
-    const survivors: Petal[] = [];
     const swayFreq = params.swayFrequency;
     const swayBase = params.swayBaseSpeed * params.swayAmplitude;
-    for (const p of this.petals) {
+    let writeIdx = 0;
+    for (let i = 0; i < this.petals.length; i++) {
+      const p = this.petals[i]!;
       p.age += dt;
       if (p.age >= p.maxAge) continue;
-      // Sinusoidal horizontal sway — each petal has its own phase.
       const swayX = Math.sin(p.phase + this.clock * swayFreq * TAU) * swayBase;
       p.x += (p.vx + swayX) * dt;
       p.y += p.vy * dt;
-      // Rotate around sprite center. Angular velocity coupled to sway so a
-      // hard flutter spins faster than a slow drift.
       p.rot += (swayX * p.rotK + p.vx * 0.0008) * dt * 60;
-      survivors.push(p);
+      if (i !== writeIdx) this.petals[writeIdx] = p;
+      writeIdx++;
     }
-    this.petals = survivors;
+    this.petals.length = writeIdx;
   }
 
   private drawPetals(
@@ -198,6 +197,7 @@ export class Petals2DRenderer {
   ): void {
     const prevAlpha = ctx.globalAlpha;
     const prevComposite = ctx.globalCompositeOperation;
+    const savedTransform = ctx.getTransform();
     try {
       ctx.globalCompositeOperation = "source-over";
       for (const p of this.petals) {
@@ -210,12 +210,11 @@ export class Petals2DRenderer {
         const alpha = Math.max(0, fadeIn * fadeOut);
         if (alpha <= 0.02) continue;
 
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
+        const cos = Math.cos(p.rot);
+        const sin = Math.sin(p.rot);
+        ctx.setTransform(cos, sin, -sin, cos, p.x, p.y);
         ctx.globalAlpha = alpha;
         drawPetalSilhouette(ctx, p.shape, p.size, p.tint);
-        // Ember rim — ash palette only, first 400ms of life.
         if (p.ember && palette.emberEdge && p.age < EMBER_MAX_AGE) {
           const emberT = p.age / EMBER_MAX_AGE;
           const emberAlpha = (1 - emberT) * alpha * 0.9;
@@ -229,9 +228,9 @@ export class Petals2DRenderer {
             );
           }
         }
-        ctx.restore();
       }
     } finally {
+      ctx.setTransform(savedTransform);
       ctx.globalAlpha = prevAlpha;
       ctx.globalCompositeOperation = prevComposite;
     }

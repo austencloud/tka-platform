@@ -6,8 +6,8 @@
  * Connects to FeedLoader service for data fetching.
  */
 
-import type { FeedItem } from "../domain/models/feed-models";
 import { container } from "$lib/shared/di";
+import type { FeedItem } from "../domain/models/feed-models";
 import type { IFeedLoader } from "../services/contracts/IFeedLoader";
 
 export type FeedStatus = "idle" | "loading" | "loaded" | "error";

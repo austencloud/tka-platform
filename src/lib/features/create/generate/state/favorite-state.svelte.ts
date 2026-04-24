@@ -5,7 +5,7 @@
  * Also loads community favorites for browsing.
  */
 
-import { container } from "$lib/shared/di";
+import { getFavoriteConfigRepository } from "../getFavoriteConfigRepository";
 import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
 import type { IFavoriteConfigRepository } from "../services/contracts/IFavoriteConfigRepository";
 import type { FavoriteConfig, CommunityFavorite } from "../domain/models/favorite-config";
@@ -40,7 +40,7 @@ export function createFavoriteState() {
     }
 
     try {
-      const repo = container.items.favoriteConfigRepository as IFavoriteConfigRepository;
+      const repo = getFavoriteConfigRepository();
       const [myFav, community] = await Promise.all([
         repo.getMyFavorite(userId),
         repo.getCommunityFavorites(20),
@@ -64,7 +64,7 @@ export function createFavoriteState() {
     if (!userId) return;
 
     try {
-      const repo = container.items.favoriteConfigRepository as IFavoriteConfigRepository;
+      const repo = getFavoriteConfigRepository();
       await repo.setMyFavorite(userId, config, startEndOptions);
       myFavorite = { config, startEndOptions: startEndOptions ?? null, setAt: new Date() };
     } catch (error) {
@@ -77,7 +77,7 @@ export function createFavoriteState() {
     if (!userId) return;
 
     try {
-      const repo = container.items.favoriteConfigRepository as IFavoriteConfigRepository;
+      const repo = getFavoriteConfigRepository();
       await repo.clearMyFavorite(userId);
       myFavorite = null;
       if (activeFavoriteId === "mine") {

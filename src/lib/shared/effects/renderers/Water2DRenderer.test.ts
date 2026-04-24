@@ -30,6 +30,8 @@ beforeAll(() => {
           translate: () => {},
           rotate: () => {},
           scale: () => {},
+          getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+          setTransform: () => {},
           drawImage: () => {},
           createRadialGradient: () => ({ addColorStop: () => {} }),
         };
@@ -62,6 +64,8 @@ function makeCtx(): CanvasRenderingContext2D {
     translate: vi.fn(),
     rotate: vi.fn(),
     scale: vi.fn(),
+    getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
+    setTransform: vi.fn(),
     clearRect: vi.fn(),
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
@@ -182,15 +186,16 @@ describe("Water2DRenderer", () => {
     const r = new Water2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ ambientEmission: 1, motionEmission: 0 });
-    // Integrate physics — the translate call before each drawImage places
-    // the droplet at its ballistic position, so tracking the max y across
-    // translate calls is a gravity-downward check.
+    // Integrate physics — setTransform places the droplet via its f parameter
+    // (6th arg = translation y), so tracking the max f across setTransform
+    // calls is a gravity-downward check.
     for (let i = 0; i < 30; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    const translateCalls = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
-    expect(translateCalls.length).toBeGreaterThan(0);
-    const maxY = Math.max(...translateCalls.map((c) => c[1] as number));
+    const stCalls = (ctx.setTransform as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c) => c.length >= 6);
+    expect(stCalls.length).toBeGreaterThan(0);
+    const maxY = Math.max(...stCalls.map((c) => c[5] as number));
     expect(maxY).toBeGreaterThan(100);
   });
 

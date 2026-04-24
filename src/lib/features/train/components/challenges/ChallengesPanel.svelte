@@ -5,6 +5,7 @@
   Modern mobile-first design with slide-up filter panel and 52px touch targets.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -27,7 +28,7 @@
 
   // Services
   const challengeService = container.items.trainChallengeManager;
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Local UI state (filter preferences)
   let filter = $state<TrainChallengeFilter>("all");

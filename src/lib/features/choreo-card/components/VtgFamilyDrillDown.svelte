@@ -180,7 +180,7 @@
 <div class="vtg-family-drilldown">
   <div class="top-bar">
     <nav class="breadcrumb" aria-label="Deck navigation">
-      <button class="crumb" onclick={onBack} type="button">VTG</button>
+      <button class="crumb" onclick={onBack} type="button" aria-label="Go back to VTG">VTG</button>
       <span class="crumb-sep" aria-hidden="true">›</span>
       <span class="crumb current">{familyLabel}</span>
     </nav>
@@ -191,6 +191,8 @@
           class:active={viewMode === 'grid'}
           onclick={() => setViewMode('grid')}
           type="button"
+          role="radio"
+          aria-checked={viewMode === 'grid'}
         >
           <i class="fas fa-th" aria-hidden="true"></i> Grid
         </button>
@@ -199,6 +201,8 @@
           class:active={viewMode === 'print'}
           onclick={() => setViewMode('print')}
           type="button"
+          role="radio"
+          aria-checked={viewMode === 'print'}
         >
           <i class="fas fa-print" aria-hidden="true"></i> Print Preview
         </button>
@@ -239,12 +243,12 @@
     <div class="error-state" role="alert">
       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
       <p>{error}</p>
-      <button type="button" class="back-btn" onclick={onBack}>Back to VTG</button>
+      <button type="button" class="back-btn" aria-label="Go back to VTG" onclick={onBack}>Back to VTG</button>
     </div>
   {:else if ratioGroups.length === 0}
     <div class="empty-state" role="status">
       <p>No sequences found for {familyLabel}</p>
-      <button type="button" class="back-btn" onclick={onBack}>Back to VTG</button>
+      <button type="button" class="back-btn" aria-label="Go back to VTG" onclick={onBack}>Back to VTG</button>
     </div>
   {:else if viewMode === 'print'}
     <PrintPreviewPages

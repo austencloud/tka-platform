@@ -9,7 +9,7 @@
   Domain: Retro Desktop Shell
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import type { IAuthenticator } from "$lib/shared/auth/services/contracts/IAuthenticator";
   import { desktopState } from "../../state/desktop-state.svelte";
   import RetroButton from "../primitives/RetroButton.svelte";
@@ -38,10 +38,6 @@
   /* ------------------------------------------------------------------ */
   /* Auth handler helpers                                                */
   /* ------------------------------------------------------------------ */
-
-  function getAuthenticator(): IAuthenticator {
-    return container.items.authenticator as IAuthenticator;
-  }
 
   function handleSuccess() {
     // authState watcher in RetroDesktop will populate display name / email

@@ -467,14 +467,9 @@ export function createNavigationState() {
         }
 
         // Update presence with new location (non-blocking)
-        try {
-          const presenceService = tryResolveService<IPresenceTracker>("presenceTracker");
-          if (presenceService) {
-            void presenceService.updateLocation(moduleId, nextTab || null);
-          }
-        } catch {
-          // Silently fail - presence is non-critical
-        }
+        void import("../../presence/getPresenceTracker").then(({ getPresenceTracker }) => {
+          getPresenceTracker().updateLocation(moduleId, nextTab || null);
+        }).catch(() => {});
       }
 
       // Persist both module and active tab
@@ -563,10 +558,9 @@ export function createNavigationState() {
 
     // Update presence with new tab (non-blocking)
     try {
-      const presenceService = tryResolveService<IPresenceTracker>("presenceTracker");
-      if (presenceService) {
-        void presenceService.updateLocation(currentModule, tabId);
-      }
+      import("../../presence/getPresenceTracker").then(({ getPresenceTracker }) => {
+        void getPresenceTracker().updateLocation(currentModule, tabId);
+      }).catch(() => { /* presence is non-critical */ });
     } catch {
       // Silently fail - presence is non-critical
     }

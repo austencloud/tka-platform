@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getVideoTrailsContext } from "../context/video-trails-context";
   import { container } from "$lib/shared/di";
+  import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
   import type { IEndpointDetector } from "../services/contracts/IEndpointDetector";
   import type { DetectedEndpoint, EndpointCorrection } from "../domain/types";

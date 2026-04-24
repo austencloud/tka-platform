@@ -9,7 +9,8 @@
   - Participant count
 -->
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+  import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../../state/connect-state.svelte';
 	import { container } from '$lib/shared/di';
@@ -156,7 +157,7 @@
 			loadError = t('connect_sequence_not_found');
 		} catch (error) {
 			loadError = error instanceof Error ? error.message : 'Failed to load sequence';
-			const errorHandler = container.items.errorHandler;
+			const errorHandler = getErrorHandler();
 			errorHandler.showUserError({
 				message: t('connect_load_sequence_failed'),
 				technicalDetails: error instanceof Error ? error.message : String(error),

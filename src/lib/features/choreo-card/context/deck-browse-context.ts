@@ -5,7 +5,7 @@ import type { DeckBrowseState } from '../state/deck-browse-state.svelte';
 
 const KEY = Symbol('deck-browse');
 
-export function setBrowseContext(state: DeckBrowseState) {
+export function setBrowseContext(state: DeckBrowseState): void {
   setContext(KEY, state);
 }
 

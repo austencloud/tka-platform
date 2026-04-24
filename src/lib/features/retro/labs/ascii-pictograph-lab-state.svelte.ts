@@ -8,6 +8,7 @@
  * Domain: Retro DOS Terminal Lab
  */
 
+import { container } from "$lib/shared/di";
 import {
 	GridLocation,
 	GridMode,
@@ -20,7 +21,6 @@ import type {
 	RetroPictographData,
 	RetroHandData,
 } from "$lib/features/retro/shared/domain/pictograph-types";
-import { container } from "$lib/shared/di";
 import type { IVariationExplorationOrchestrator } from "$lib/features/create/spell/services/contracts/IVariationExplorationOrchestrator";
 import type { IRandomSequenceGenerator } from "$lib/features/create/spell/services/contracts/IRandomSequenceGenerator";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";

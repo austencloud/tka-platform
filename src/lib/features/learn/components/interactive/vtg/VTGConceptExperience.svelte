@@ -3,7 +3,7 @@ VTGConceptExperience - Multi-page VTG (Velocity-Timing-Direction) learning exper
 Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import {
     VTG_MODES,
     type VTGMode,
@@ -24,7 +24,7 @@ Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Persistence for HMR/refresh survival
   const persistence = getExperiencePersistence("vtg");

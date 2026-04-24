@@ -3,12 +3,12 @@ LOOPCard.svelte - Card for selecting LOOP type
 Always opens selector panel when clicked
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import {
     LOOP_TYPE_LABELS,
     LOOPType,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { container } from "$lib/shared/di";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -37,7 +37,7 @@ Always opens selector panel when clicked
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Get current selected components using service

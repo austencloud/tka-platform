@@ -23,6 +23,7 @@
   - Drawer wrapper/snap points (drawer-specific)
 -->
 <script lang="ts" module>
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -217,6 +218,9 @@
   import { auth } from "$lib/shared/auth/firebase";
   import { browser } from "$app/environment";
   import { container } from "$lib/shared/di";
+  import { getPendingActionQueue } from "../getPendingActionQueue";
+  import { getWebviewDetector } from "../getWebviewDetector";
+  import { getPresentationResolver } from "../getPresentationResolver";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
@@ -333,8 +337,8 @@
   let hapticService: IHapticFeedback | null = null;
 
   // Viewer-auth services (pending-action queue + webview detection)
-  const pendingActionQueue = container.items.pendingActionQueue;
-  const webviewDetector = container.items.webviewDetector;
+  const pendingActionQueue = getPendingActionQueue();
+  const webviewDetector = getWebviewDetector();
 
   // Sign-in sheet state
   let signInSheetOpen = $state(false);
@@ -582,7 +586,7 @@
         source: "viewer-settings",
       };
     }
-    const resolver = container.items.presentationResolver as IPresentationResolver;
+    const resolver = getPresentationResolver();
     return resolver.resolve(
       sequence,
       activeContext,
@@ -1000,7 +1004,7 @@
     try {
       playbackController = container.items.animationPlaybackController;
       sequenceDataProvider = container.items.sequenceDataProvider;
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
 
       const lanSyncCoordinator = container.items.lanSyncCoordinator;
       lanSyncState.initialize(lanSyncCoordinator);

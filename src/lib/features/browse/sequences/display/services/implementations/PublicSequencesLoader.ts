@@ -10,6 +10,7 @@
  * - Fetches full sequence data on demand via sourceRef
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import {
   collection,
   getDocs,
@@ -23,7 +24,7 @@ import { getPublicSequencesPath } from "$lib/features/library/data/firestore-pat
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IBrowseLoader } from "../contracts/IBrowseLoader";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
-import { container } from "$lib/shared/di";
+import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
 import type { IGalleryOfflineCache } from "$lib/shared/offline/services/contracts/IGalleryOfflineCache";
@@ -62,7 +63,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
       this.cachedSequences = await this.loadPromise;
       return this.cachedSequences;
     } catch (error) {
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load the gallery",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -323,7 +324,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
     // so the sequence is fully renderable without a sourceRef fetch
     if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
       try {
-        const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+        const hydrator = getSequenceHydrator();
         const hydrated = hydrator.hydrate(seq);
         // Trust the actual step count over the stored sequenceLength,
         // which may be stale (e.g. base word length before LOOP expansion)
@@ -411,7 +412,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
     // If compositional fields are present, derive steps from them so
     // the compositional model is the single source of truth.
     try {
-      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      const hydrator = getSequenceHydrator();
       const hydrated = hydrator.hydrate(seq);
 
       // Normalize: ensure step 0 (start position) is separated from the steps

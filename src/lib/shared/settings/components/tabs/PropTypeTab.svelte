@@ -8,8 +8,9 @@
   - Keyboard shortcuts (1-9, 0) for presets
 -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { AppSettings, PropPreset } from "../../domain/AppSettings";
-  import { container } from "$lib/shared/di";
   import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "../../../device/services/contracts/IDeviceDetector";
@@ -71,8 +72,8 @@
   let redBuugengFlipped = $state(false);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
-    deviceDetector = container.items.deviceDetector;
+    hapticService = getHapticFeedback();
+    deviceDetector = getDeviceDetector();
 
     updateDeviceCapabilities();
     const cleanup = deviceDetector?.onCapabilitiesChanged(() => {

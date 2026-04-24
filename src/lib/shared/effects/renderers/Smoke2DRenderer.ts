@@ -124,19 +124,19 @@ export class Smoke2DRenderer {
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      this.smoothedVelocity[key] = { vx: svx, vy: svy };
+      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity[key] = { vx: svx, vy: svy }; }
       const speedPx = Math.hypot(svx, svy);
       this.spawnPuffs(
         params,
         tip,
-        { vx: svx, vy: svy },
+        this.smoothedVelocity[key]!,
         speedPx,
         dt,
         scale,
         baseRadius,
         poolCap,
       );
-      this.lastTipPos[key] = { x: tip.x, y: tip.y };
+      if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
     // 2. Integrate + age + cull.
@@ -221,25 +221,19 @@ export class Smoke2DRenderer {
   }
 
   private integratePuffs(dt: number, params: Smoke2DParams): void {
-    const survivors: SmokePuff[] = [];
     const curlStrength = params.resolvedCurlStrength;
-    // resolvedRiseSpeed is the Boussinesq buoyancy target (px/s upward) at
-    // temperature=1. Palette riseBias is already baked in at the
-    // translator. Negate so screen-up (-y) is the rise direction.
     const buoyancyTarget = -params.resolvedRiseSpeed;
     const coolingFactor = Math.exp(-COOLING * dt);
     const dragStep = DRAG * dt;
 
-    for (const p of this.puffs) {
+    let writeIdx = 0;
+    for (let i = 0; i < this.puffs.length; i++) {
+      const p = this.puffs[i]!;
       p.age += dt;
       if (p.age >= p.maxAge) continue;
 
-      // Exponential thermal cooling.
       p.temperature *= coolingFactor;
 
-      // Multi-octave curl sample at the puff's own position. SHARED
-      // spatial coordinates — no per-particle phase offset — so two
-      // neighbouring puffs sample the same flow and move together.
       const c1 = curl2D(
         p.x * LARGE_EDDY_SCALE,
         p.y * LARGE_EDDY_SCALE,
@@ -255,27 +249,21 @@ export class Smoke2DRenderer {
       const flowVy =
         (c1.vy * LARGE_STRENGTH + c2.vy * SMALL_STRENGTH) * curlStrength;
 
-      // Boussinesq: buoyancy acts as an upward target velocity scaled by
-      // temperature. Hot → strong lift; cool → near zero.
       const targetVx = flowVx;
       const targetVy = flowVy + buoyancyTarget * p.temperature;
 
-      // Linear drag advects velocity toward target (flow + buoyancy),
-      // instead of kicking velocity away from it — that's what gives
-      // smoke its "following the current" look.
       p.vx += (targetVx - p.vx) * dragStep;
       p.vy += (targetVy - p.vy) * dragStep;
 
-      // Integrate position.
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
-      // Rotation is continuous — no per-frame randomness.
       p.angle += p.angularVel * dt;
 
-      survivors.push(p);
+      if (i !== writeIdx) this.puffs[writeIdx] = p;
+      writeIdx++;
     }
-    this.puffs = survivors;
+    this.puffs.length = writeIdx;
   }
 
   private drawPuffs(
@@ -284,10 +272,19 @@ export class Smoke2DRenderer {
   ): void {
     const prevAlpha = ctx.globalAlpha;
     const prevComposite = ctx.globalCompositeOperation;
+    const savedTransform = ctx.getTransform();
     try {
       ctx.globalCompositeOperation = "source-over";
       const { r: cr, g: cg, b: cb } = hexToRgb(palette.core);
       const { r: er, g: eg, b: eb } = hexToRgb(palette.edge);
+      // Unit-radius gradient reused for every puff. Canvas2D applies the
+      // CTM at paint time, so setTransform scales it per puff — zero
+      // per-particle gradient allocation.
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
+      grad.addColorStop(0, `rgba(${cr},${cg},${cb},1)`);
+      grad.addColorStop(0.55, `rgba(${er},${eg},${eb},0.55)`);
+      grad.addColorStop(1, `rgba(${er},${eg},${eb},0)`);
+      ctx.fillStyle = grad;
       for (const p of this.puffs) {
         const lifeT = p.age / p.maxAge;
         const fadeIn = p.age < FADE_IN_DURATION ? p.age / FADE_IN_DURATION : 1;
@@ -300,26 +297,18 @@ export class Smoke2DRenderer {
 
         const radius = p.r0 + (p.r1 - p.r0) * lifeT;
 
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle);
-        // Area-preserving stretch breaks the identical-blob look.
-        const sx = p.stretch;
-        const sy = 1 / p.stretch;
-        ctx.scale(sx, sy);
-
-        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
-        grad.addColorStop(0, `rgba(${cr},${cg},${cb},${alpha})`);
-        grad.addColorStop(0.55, `rgba(${er},${eg},${eb},${alpha * 0.55})`);
-        grad.addColorStop(1, `rgba(${er},${eg},${eb},0)`);
-
-        ctx.fillStyle = grad;
+        const cos = Math.cos(p.angle);
+        const sin = Math.sin(p.angle);
+        const sx = p.stretch * radius;
+        const sy = radius / p.stretch;
+        ctx.setTransform(sx * cos, sx * sin, -sy * sin, sy * cos, p.x, p.y);
+        ctx.globalAlpha = alpha;
         ctx.beginPath();
-        ctx.arc(0, 0, radius, 0, TAU);
+        ctx.arc(0, 0, 1.0, 0, TAU);
         ctx.fill();
-        ctx.restore();
       }
     } finally {
+      ctx.setTransform(savedTransform);
       ctx.globalAlpha = prevAlpha;
       ctx.globalCompositeOperation = prevComposite;
     }

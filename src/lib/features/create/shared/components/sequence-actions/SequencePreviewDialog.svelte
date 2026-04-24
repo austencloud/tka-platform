@@ -5,10 +5,10 @@
   Used when replacing an existing sequence in the Construct tab.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import StepGrid from "../../workspace-panel/sequence-display/components/StepGrid.svelte";
 
@@ -30,7 +30,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Helper to get sequence display name

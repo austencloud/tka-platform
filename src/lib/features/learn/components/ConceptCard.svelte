@@ -9,8 +9,8 @@ Displays:
 - Checkmark for completed
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { CONCEPT_CATEGORIES } from "../domain/concepts";
   import type { LearnConcept, ConceptStatus } from "../domain/types";
 
@@ -26,7 +26,7 @@ Displays:
     onClick?: (concept: LearnConcept) => void;
   } = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   const isClickable = $derived(status !== "locked");
 

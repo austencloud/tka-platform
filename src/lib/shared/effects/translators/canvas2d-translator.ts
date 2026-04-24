@@ -214,6 +214,8 @@ export function resolveInk2D(
   // bounded-history shift doesn't eat the newest stroke while keeping
   // older tail visible for the full lifetime.
   const MAX_POINTS_PER_TIP = 90;
+  const STAMP_SCALE_MIN = 0.3;
+  const STAMP_SCALE_MAX = 1.2;
 
   // Motion-dominant hard cap on ambient. Even at slider=1 the effective
   // ambient rate is ≤ 30% of the base rate.
@@ -243,6 +245,8 @@ export function resolveInk2D(
     opacityMax,
     lifetimeSeconds: LIFETIME_SECONDS_BASE,
     maxPointsPerTip: MAX_POINTS_PER_TIP,
+    stampScaleMin: STAMP_SCALE_MIN,
+    stampScaleMax: STAMP_SCALE_MAX,
   };
   return { ...intent, ...defaults, ...override };
 }

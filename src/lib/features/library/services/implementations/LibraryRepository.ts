@@ -4,6 +4,7 @@
  * Firestore-based service for managing sequences in a user's library.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import {
   collection,
   doc,
@@ -30,7 +31,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { container } from "$lib/shared/di";
+import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import type { ITagManager } from "../contracts/ITagManager";
@@ -112,7 +113,7 @@ export class LibraryRepository implements ILibraryRepository {
     severity: "error" | "warning" = "error"
   ): void {
     try {
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message,
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -384,7 +385,7 @@ export class LibraryRepository implements ILibraryRepository {
     // compositional data — even if the sequence was modified via the old
     // steps-based mutation API.
     try {
-      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      const hydrator = getSequenceHydrator();
       libSeq = hydrator.ensureComposition(libSeq) as LibrarySequence;
     } catch {
       // Composition services not available (e.g. during SSR or early boot).
@@ -564,7 +565,7 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Hydrate: derive steps from compositional fields if present
     try {
-      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      const hydrator = getSequenceHydrator();
       return hydrator.hydrate(seq) as LibrarySequence;
     } catch {
       return seq;
@@ -640,7 +641,7 @@ export class LibraryRepository implements ILibraryRepository {
         console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null — public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
       } else if (updates.visibility === "public") {
         // Ensure compositional fields are fresh before publishing
-        const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+        const hydrator = getSequenceHydrator();
         const compositionReady = { ...updated, ...hydrator.ensureComposition(updated) };
         this.publicIndexSyncer
           .syncToPublicIndex(compositionReady, userId)
@@ -798,7 +799,7 @@ export class LibraryRepository implements ILibraryRepository {
     // gallery to miscalculate aspect ratios and show black bars.
     let hydrator: ISequenceHydrator | null = null;
     try {
-      hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      hydrator = getSequenceHydrator();
     } catch {
       // Hydrator not available — steps will remain as loaded from Firestore
     }
@@ -936,7 +937,7 @@ export class LibraryRepository implements ILibraryRepository {
             const sequences: LibrarySequence[] = [];
             let snapshotHydrator: ISequenceHydrator | null = null;
             try {
-              snapshotHydrator = container.items.sequenceHydrator as ISequenceHydrator;
+              snapshotHydrator = getSequenceHydrator();
             } catch {
               // Hydrator not available
             }
@@ -1289,7 +1290,7 @@ export class LibraryRepository implements ILibraryRepository {
 
         // Track public index changes
         if (visibility === "public" && existing.visibility !== "public") {
-          const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+          const hydrator = getSequenceHydrator();
           const withComposition = hydrator.ensureComposition(existing);
           toPublish.push({ ...existing, ...withComposition, visibility });
         } else if (

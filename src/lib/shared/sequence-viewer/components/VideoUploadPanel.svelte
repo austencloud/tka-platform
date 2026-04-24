@@ -8,6 +8,7 @@
   Flow: pick file -> preview -> upload -> done (auto-exit)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -51,7 +52,7 @@
   // Services
   const uploadService = container.items.videoUploader as IVideoUploader;
   const videoService = container.items.collaborativeVideoManager as ICollaborativeVideoManager;
-  const hapticService = container.items.hapticFeedback as IHapticFeedback | undefined;
+  const hapticService = getHapticFeedback() as IHapticFeedback | undefined;
 
   // File state
   let selectedFile = $state<File | null>(null);

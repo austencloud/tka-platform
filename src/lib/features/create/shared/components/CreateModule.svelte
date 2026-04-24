@@ -33,6 +33,8 @@
    * Domain: Create module - Composition Root
    */
 
+  import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { container } from "$lib/shared/di";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -312,7 +314,7 @@
         servicesInitialized = true;
 
         // Resolve settings service for user preferences
-        settingsService = container.items.settingsState;
+        settingsService = settingsServiceSingleton;
 
         // Wire LOOP completion callback so the workspace header can trigger the flow
         panelState.setLoopCompletionCallback(handleLoopCompletionRequest);
@@ -583,11 +585,11 @@
 
     if (result.success && result.sequence) {
       activeSeqState.setCurrentSequence(result.sequence);
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("success");
       toast.success(result.message);
     } else {
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("error");
       toast.warning(result.message);
     }

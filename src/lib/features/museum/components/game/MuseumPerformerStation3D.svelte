@@ -6,6 +6,7 @@
    * with spinning staves. Uses PerformerRig for the unified transform hierarchy
    * — no manual STAGE_LIFT math, no sibling Avatar3D/Prop3D/Grid3D calls.
    */
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
   import * as THREE from "three";
@@ -125,14 +126,14 @@
   const bluePropType = $derived.by((): PropType => {
     if (resolvedSequence?.intendedProp?.bluePropType) return resolvedSequence.intendedProp.bluePropType;
     try {
-      const settings = container.items.settingsState;
+      const settings = settingsService;
       return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });
   const redPropType = $derived.by((): PropType => {
     if (resolvedSequence?.intendedProp?.redPropType) return resolvedSequence.intendedProp.redPropType;
     try {
-      const settings = container.items.settingsState;
+      const settings = settingsService;
       return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
     } catch { return PropType.STAFF; }
   });

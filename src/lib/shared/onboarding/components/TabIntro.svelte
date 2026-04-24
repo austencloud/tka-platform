@@ -13,9 +13,9 @@
   <TabIntro moduleId="create" tabId="generate" />
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { fly, fade } from "svelte/transition";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import {
@@ -64,7 +64,7 @@
   // Check if user has seen this intro before
   onMount(() => {
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch {
       /* Optional */
     }

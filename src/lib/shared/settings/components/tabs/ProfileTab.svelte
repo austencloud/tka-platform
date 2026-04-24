@@ -1,12 +1,16 @@
 <!-- ProfileTab.svelte - User Profile & Account Settings (Refactored) -->
 <script lang="ts">
+  import { getUserDocumentManager } from "$lib/shared/auth/getUserDocumentManager";
+  import { getProfilePictureManager } from "$lib/shared/auth/getProfilePictureManager";
+  import { getAccountManager } from "$lib/shared/auth/getAccountManager";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import {
     userPreviewState,
     loadPreviewSection,
     isSectionLoaded,
   } from "../../../debug/state/user-preview-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
   import type { IAccountManager } from "../../../auth/services/contracts/IAccountManager";
   import { onMount } from "svelte";
@@ -119,9 +123,9 @@
   });
 
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
-    authService = container.items.authenticator;
-    accountManager = container.items.accountManager;
+    hapticService = getHapticFeedback();
+    authService = getAuthenticator();
+    accountManager = getAccountManager();
 
     setTimeout(() => (isVisible = true), 30);
 
@@ -228,7 +232,7 @@
     if (!user) return;
 
     try {
-      const userDocumentManager = container.items.userDocumentManager;
+      const userDocumentManager = getUserDocumentManager();
       await userDocumentManager.updateProfileColor(user.uid, color);
     } catch (err) {
       console.error("Failed to save profile color:", err);
@@ -269,8 +273,8 @@
 
     hapticService?.trigger("selection");
 
-    const profilePictureManager = container.items.profilePictureManager;
-    const userDocumentManager = container.items.userDocumentManager;
+    const profilePictureManager = getProfilePictureManager();
+    const userDocumentManager = getUserDocumentManager();
 
     try {
       let newPhotoURL: string | null = null;

@@ -117,11 +117,15 @@ export class SVGGenerator implements ISVGGenerator {
       return `<?xml version="1.0" encoding="utf-8"?>
 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 950 950" xml:space="preserve" class="strict-mode">
 <style>
-  .box-grid-stroke{stroke:#000;stroke-width:7;stroke-miterlimit:10}
+  .box-outer-ring{fill:none;stroke:#000;stroke-width:13;stroke-miterlimit:10}
   .normal-hand-point{fill:none}
   .strict-hand-point{fill:currentColor}
 </style>
 <circle id="center_point" cx="475" cy="475" r="11.2"/>
+<circle id="ne_box_outer_point" class="box-outer-ring" cx="262.9" cy="262.9" r="25"/>
+<circle id="se_box_outer_point" class="box-outer-ring" cx="687.1" cy="262.9" r="25"/>
+<circle id="sw_box_outer_point" class="box-outer-ring" cx="687.1" cy="687.1" r="25"/>
+<circle id="nw_box_outer_point" class="box-outer-ring" cx="262.9" cy="687.1" r="25"/>
 <circle id="strict_ne_box_hand_point" class="strict-hand-point" cx="581.1" cy="368.9" r="4.7"/>
 <circle id="strict_se_box_hand_point" class="strict-hand-point" cx="581.1" cy="581.1" r="4.7"/>
 <circle id="strict_sw_box_hand_point" class="strict-hand-point" cx="368.9" cy="581.1" r="4.7"/>

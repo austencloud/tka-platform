@@ -1,13 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getFestivalSubmissionReviewer } from "../../getFestivalSubmissionReviewer";
   import { getFestivalContext } from "../../context/festival-context";
   import type { FestivalSubmission } from "../../domain/models/festival";
 
   // Destructure as festivalState to avoid conflict with Svelte 5 $state rune
   const { state: festivalState } = getFestivalContext();
 
-  const submissionReviewer = container.items.festivalSubmissionReviewer;
+  const submissionReviewer = getFestivalSubmissionReviewer();
 
   let pending = $state<FestivalSubmission[]>([]);
   let isLoading = $state(true);

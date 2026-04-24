@@ -12,9 +12,9 @@ Provides sophisticated navigation sections matching desktop functionality:
 Follows Svelte 5 runes + microservices architecture.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { container } from "$lib/shared/di";
     import type {
     BrowseNavigationConfig,
     BrowseNavigationItem,
@@ -41,7 +41,7 @@ Follows Svelte 5 runes + microservices architecture.
   let hapticService: IHapticFeedback | null = $state(null);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Handle section header click

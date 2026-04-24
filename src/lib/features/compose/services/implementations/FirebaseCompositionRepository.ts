@@ -9,6 +9,7 @@
  * but don't block the user.
  */
 
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import {
   doc,
   collection,
@@ -22,7 +23,6 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import {
@@ -146,7 +146,7 @@ export class FirebaseCompositionRepository {
     } catch (error) {
       console.error(`Failed to load composition ${compositionId} from Firebase:`, error);
       try {
-        const errorHandler = container.items.errorHandler as IErrorHandler;
+        const errorHandler = getErrorHandler() as IErrorHandler;
         errorHandler.showWarning("Couldn't load a composition from the cloud. Using local version.");
       } catch {
         // ErrorHandler not available
@@ -197,7 +197,7 @@ export class FirebaseCompositionRepository {
     } catch (error) {
       console.error(`Failed to delete composition ${compositionId} from Firebase:`, error);
       try {
-        const errorHandler = container.items.errorHandler as IErrorHandler;
+        const errorHandler = getErrorHandler() as IErrorHandler;
         errorHandler.showWarning("Composition deleted locally, but cloud deletion failed. It may reappear on sync.");
       } catch {
         // ErrorHandler not available
@@ -231,7 +231,7 @@ export class FirebaseCompositionRepository {
     } catch (error) {
       console.error(`Failed to update favorite for ${compositionId}:`, error);
       try {
-        const errorHandler = container.items.errorHandler as IErrorHandler;
+        const errorHandler = getErrorHandler() as IErrorHandler;
         errorHandler.showWarning("Favorite updated locally, but cloud sync failed.");
       } catch {
         // ErrorHandler not available

@@ -10,9 +10,10 @@ This creates a better UX than height-based thresholds by directly detecting
 the actual fullscreen state rather than inferring from viewport size.
 -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getMobileFullscreenManager } from "$lib/shared/mobile/getMobileFullscreenManager";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IMobileFullscreenManager } from "$lib/shared/mobile/services/contracts/IMobileFullscreenManager";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let showPrompt = $state(false);
@@ -43,8 +44,8 @@ the actual fullscreen state rather than inferring from viewport size.
 
     try {
       // Resolve services
-      deviceDetector = container.items.deviceDetector;
-      fullscreenService = container.items.mobileFullscreenManager;
+      deviceDetector = getDeviceDetector();
+      fullscreenService = getMobileFullscreenManager();
 
       // Pick a random message
       message = messages[Math.floor(Math.random() * messages.length)] || "";

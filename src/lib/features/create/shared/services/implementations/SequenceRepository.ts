@@ -11,7 +11,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
-import { container } from "$lib/shared/di";
+import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 import type { IPersistenceService } from "../contracts/IPersister";
@@ -46,7 +46,7 @@ export class SequenceRepository implements ISequenceRepository {
   // compositional model is the source of truth for all downstream readers.
   private hydrateSequence(seq: SequenceData): SequenceData {
     try {
-      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      const hydrator = getSequenceHydrator();
       return hydrator.hydrate(seq);
     } catch {
       return seq;

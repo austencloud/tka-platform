@@ -4,6 +4,7 @@
   Allows users to control which notification types they want to receive.
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type {
@@ -21,7 +22,6 @@
     userPreviewState,
     getPreviewNotificationPreferences,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
   import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";

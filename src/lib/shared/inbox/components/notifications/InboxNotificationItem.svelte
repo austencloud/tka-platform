@@ -5,6 +5,7 @@
    * Simple notification card - Facebook/Instagram style
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { UserNotification } from "$lib/features/feedback/domain/models/notification-models";
   import { formatRelativeTimeVerbose } from "../../utils/format";
@@ -12,7 +13,6 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/features/feedback/state/notification-action-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
 
@@ -41,7 +41,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Get icon based on notification type

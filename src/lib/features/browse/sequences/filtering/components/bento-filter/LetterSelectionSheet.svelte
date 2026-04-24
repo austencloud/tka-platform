@@ -3,8 +3,8 @@ LetterSelectionSheet.svelte - Sheet content for selecting a letter filter
 Displays A-Z grid with clear option
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
@@ -21,7 +21,7 @@ Displays A-Z grid with clear option
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");

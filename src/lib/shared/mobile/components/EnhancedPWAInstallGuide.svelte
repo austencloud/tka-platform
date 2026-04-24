@@ -17,6 +17,7 @@
   - Measurement logic isolated to utility
 -->
 <script lang="ts">
+  import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
   import { container } from "../../di";
@@ -42,7 +43,7 @@
 
   // Detect platform and browser on mount
   onMount(() => {
-    const platformService = container.items.platformDetector;
+    const platformService = getPlatformDetector();
     const detected = platformService.detectPlatformAndBrowser();
     platform = detected.platform;
     browser = detected.browser;

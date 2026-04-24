@@ -4,9 +4,9 @@
   Composed from small, focused primitives for effective AI-assisted development.
 -->
 <script lang="ts">
+  import { getSubscriptionManager } from "$lib/shared/subscription/getSubscriptionManager";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
-  import { container } from "$lib/shared/di";
   import type { ISubscriptionManager } from "../../../shared/subscription/services/contracts/ISubscriptionManager";
   import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
   import PremiumHero from "./PremiumHero.svelte";
@@ -40,7 +40,7 @@
   $effect(() => {
     // Try to get subscription manager - may not be available
     try {
-      subscriptionService = container.items.subscriptionManager ?? null;
+      subscriptionService = getSubscriptionManager() ?? null;
     } catch {
       subscriptionService = null;
     }

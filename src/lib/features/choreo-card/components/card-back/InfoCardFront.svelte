@@ -108,7 +108,7 @@
   .card {
     width: 100%;
     height: 100%;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
     border-radius: 8px;
@@ -140,12 +140,12 @@
     text-align: center;
     font-size: 17px;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
   }
 
   .divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   /* Numbered steps */
@@ -169,22 +169,22 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.25));
     font-size: 13px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     margin-top: 1px;
   }
 
   .step-text {
     margin: 0;
     font-size: 13.5px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     line-height: 1.45;
   }
 
   .step-text em {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
     font-style: italic;
   }
 
@@ -203,11 +203,11 @@
   /* Pronunciation grid */
   .section-label {
     margin: 0 0 8px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     text-align: center;
   }
 
@@ -220,11 +220,11 @@
 
   .pron-item {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
   }
 
   .pron-item strong {
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
     font-family: Georgia, serif;
     font-size: 14px;
     margin-right: 3px;
@@ -237,7 +237,7 @@
     justify-content: center;
     gap: 8px;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.35));
   }
 
   .qr-hint i {
@@ -247,8 +247,8 @@
 
   .footer {
     text-align: center;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.25);
+    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.25));
     letter-spacing: 0.06em;
   }
 </style>

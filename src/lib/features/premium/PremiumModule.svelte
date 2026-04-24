@@ -5,14 +5,14 @@
   Disappears after user subscribes.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import PremiumShowcase from "./components/PremiumShowcase.svelte";
 
   let hapticService = $state<IHapticFeedback | null>(null);
 
   $effect(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 </script>
 

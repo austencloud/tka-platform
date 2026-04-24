@@ -14,6 +14,7 @@ import {
   getSystemDecksPath,
   getSystemDeckSequencesPath,
 } from "$lib/features/library/data/firestore-paths";
+import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
 
 /**
  * Derive the TKA letter from a grid position string.
@@ -105,10 +106,12 @@ export class DeckLoader implements IDeckLoader {
         }
       : undefined;
 
-    return {
+    const hydrated: SequenceData = {
       ...seq,
       steps: hydrateSteps(seq.steps),
       ...(startPosition && { startPosition }),
     };
+
+    return reversalDetector.processReversals(hydrated);
   }
 }

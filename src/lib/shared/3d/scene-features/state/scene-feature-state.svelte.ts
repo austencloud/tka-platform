@@ -35,6 +35,7 @@ export function createSceneFeatureState(
 
   let enabledMap = $state<Record<string, boolean>>({ ...initialToggles });
   let readySet = $state<Set<string>>(new Set());
+  let progressMap = $state<Record<string, number>>({});
 
   function getEnabledAsyncFeatures(): SceneFeature[] {
     return SCENE_FEATURES.filter((f) => f.requiresAsyncLoad && enabledMap[f.key]);
@@ -57,8 +58,16 @@ export function createSceneFeatureState(
     persistToggles(stored);
   }
 
+  function reportProgress(key: string, fraction: number): void {
+    const clamped = Math.max(0, Math.min(1, fraction));
+    if (progressMap[key] === clamped) return;
+    console.debug(`[SceneFeature] ${key} progress: ${(clamped * 100).toFixed(0)}%`);
+    progressMap = { ...progressMap, [key]: clamped };
+  }
+
   function reportReady(key: string): void {
     if (readySet.has(key)) return;
+    console.debug(`[SceneFeature] ${key} READY`);
     readySet = new Set([...readySet, key]);
   }
 
@@ -82,6 +91,7 @@ export function createSceneFeatureState(
     isEnabled,
     isReady,
     toggle,
+    reportProgress,
     reportReady,
     get allEnabledReady(): boolean {
       const asyncFeatures = getEnabledAsyncFeatures();
@@ -93,8 +103,15 @@ export function createSceneFeatureState(
     get readyProgress(): number {
       const asyncFeatures = getEnabledAsyncFeatures();
       if (asyncFeatures.length === 0) return 1;
-      const readyCount = asyncFeatures.filter((f) => readySet.has(f.key)).length;
-      return readyCount / asyncFeatures.length;
+      let sum = 0;
+      for (const f of asyncFeatures) {
+        if (readySet.has(f.key)) {
+          sum += 1;
+        } else {
+          sum += progressMap[f.key] ?? 0;
+        }
+      }
+      return sum / asyncFeatures.length;
     },
     reset,
   };

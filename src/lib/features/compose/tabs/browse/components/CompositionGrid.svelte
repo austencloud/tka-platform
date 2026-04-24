@@ -5,9 +5,9 @@
 	to assign hero/medium/compact sizes. Responsive column count via ResizeObserver.
 -->
 <script lang="ts">
-	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
+  import { container } from "$lib/shared/di";
+  import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import type { CardSize } from "../services/contracts/ICompositionLayoutCalculator";
-	import { container } from "$lib/shared/di";
 	import type { ICompositionLayoutCalculator } from "../services/contracts/ICompositionLayoutCalculator";
 	import CompositionCard from "./CompositionCard.svelte";
 	import CompositionHeroCard from "./CompositionHeroCard.svelte";

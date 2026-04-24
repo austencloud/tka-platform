@@ -5,9 +5,11 @@
   Renders sequences as print-ready PNGs in a zip file.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
@@ -45,7 +47,7 @@
   });
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     browseLoader = container.items.browseLoader;
   });
 
@@ -130,6 +132,7 @@
     } catch (error) {
       console.error("[ChoreoCardExport] Export failed:", error);
       hapticService?.trigger("error");
+      toast.error("Export failed. Try again.");
     } finally {
       isExporting = false;
       exportCurrent = 0;
@@ -197,7 +200,7 @@
   }
 
   .section-title i {
-    font-size: 0.7rem;
+    font-size: 12px;
     opacity: 0.7;
   }
 

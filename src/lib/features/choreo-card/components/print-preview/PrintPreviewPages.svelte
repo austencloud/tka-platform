@@ -107,8 +107,8 @@
       handPointsVisible,
       theme,
       elementTheme,
-      bluePropType: settingsService.settings.bluePropType as any,
-      redPropType: settingsService.settings.redPropType as any,
+      bluePropType: settingsService.settings.bluePropType,
+      redPropType: settingsService.settings.redPropType,
       leftLabel,
       elementIcon: loadedElementIcon ?? undefined,
     };
@@ -129,8 +129,7 @@
   }
 
   // Module-level: persists across component instances
-  const globalCardCache = (globalThis as any).__printCardCache ??= new Map<string, CachedCard>();
-  const cardCache: Map<string, CachedCard> = globalCardCache;
+  const cardCache = new Map<string, CachedCard>();
   let lastRerenderKey = 0;
 
   function buildCacheKey(seq: SequenceData, stepCount: number | undefined): string {

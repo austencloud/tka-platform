@@ -5,11 +5,11 @@
   Tap toggles the prop selection drawer (mounted at CreateModule level).
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getPropTypeDisplayInfo, getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
-  import { container } from "$lib/shared/di";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
 
   const settings = $derived(getSettings());
@@ -22,7 +22,7 @@
     const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
 
     try {
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
     } catch {
       // Haptic not available
@@ -38,7 +38,7 @@
     }
 
     try {
-      const hapticService = container.items.hapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
     } catch {
       // Haptic not available

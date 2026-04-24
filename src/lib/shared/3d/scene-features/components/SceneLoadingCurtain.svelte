@@ -28,6 +28,17 @@
 
   const showCurtain = $derived(!initialLoadComplete);
 
+  $effect(() => {
+    if (!showCurtain) return;
+    const enabled = sceneFeatures.features.filter(
+      (f) => f.requiresAsyncLoad && sceneFeatures.isEnabled(f.key)
+    );
+    const pending = enabled.filter((f) => !sceneFeatures.isReady(f.key));
+    console.debug(
+      `[Curtain] progress=${(progress * 100).toFixed(0)}% | enabled=[${enabled.map((f) => f.key)}] | pending=[${pending.map((f) => f.key)}]`
+    );
+  });
+
   const fireflies = Array.from({ length: 8 }, (_, i) => ({
     id: i,
     left: 10 + ((i * 37) % 80),

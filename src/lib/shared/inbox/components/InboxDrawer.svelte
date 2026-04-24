@@ -7,6 +7,7 @@
    * Includes bottom navigation on mobile for app navigation.
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { inboxState } from "../state/inbox-state.svelte";
@@ -29,7 +30,6 @@
     handleModuleChange,
   } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   // Responsive placement
@@ -54,7 +54,7 @@
   );
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
 
     mediaQuery = window.matchMedia("(max-width: 768px)");
     isMobile = mediaQuery.matches;

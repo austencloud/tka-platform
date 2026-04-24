@@ -9,6 +9,7 @@
   Pictographs render inline in message bubbles (no side panel).
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
   import { Chat, type UIMessage } from "@ai-sdk/svelte";
   import { DefaultChatTransport } from "ai";
   import { browser } from "$app/environment";
@@ -19,7 +20,6 @@
   import TikaHistoryDrawer from "./components/TikaHistoryDrawer.svelte";
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { auth } from "$lib/shared/auth/firebase";
-  import { container } from "$lib/shared/di";
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
   import type { IQuizHistoryRecorder } from "$lib/features/learn/services/contracts/IQuizHistoryRecorder";
   import type { IConceptRecommender } from "$lib/features/learn/services/contracts/IConceptRecommender";

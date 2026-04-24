@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getCoralSceneRenderer } from "../getCoralSceneRenderer";
+  import { getDeepOceanBackgroundSystem } from "../getDeepOceanBackgroundSystem";
   import {
     type FishMarineLife,
     type FishMood,
@@ -28,7 +29,7 @@
   let quality: QualityLevel = $state("high");
 
   // Coral renderer
-  let coralRenderer: ICoralSceneRenderer = container.items.coralSceneRenderer;
+  let coralRenderer: ICoralSceneRenderer = getCoralSceneRenderer();
   let showCoral = $state(true);
   let coralCount = $state(0);
 
@@ -134,7 +135,7 @@
     }
 
     try {
-      const system = container.items.deepOceanBackgroundSystem;
+      const system = getDeepOceanBackgroundSystem();
       backgroundSystem = system;
 
       if (system) {

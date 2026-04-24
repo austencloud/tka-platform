@@ -5,9 +5,9 @@
  * Used by the Duration Pattern Drawer UI to display available patterns.
  */
 
+import { container } from "$lib/shared/di";
 import type { DurationPattern } from "../domain/models/DurationPatternData";
 import type { IDurationPatternManager } from "../services/contracts/IDurationPatternManager";
-import { container } from "$lib/shared/di";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 

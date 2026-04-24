@@ -8,7 +8,8 @@ Features:
 - Dismisses on tap
 -->
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { onMount, onDestroy } from 'svelte';
 	import { scale, fade } from 'svelte/transition';
 	import { elasticOut, cubicOut } from 'svelte/easing';
 	import { getDelightOrchestrator } from '$lib/shared/delight/context/delight-context';
@@ -19,7 +20,7 @@ Features:
 	}>();
 
 	const delightOrchestrator = getDelightOrchestrator();
-	const hapticService = container.items.hapticFeedback;
+	const hapticService = getHapticFeedback();
 
 	let visible = $state(false);
 	let textVisible = $state(false);

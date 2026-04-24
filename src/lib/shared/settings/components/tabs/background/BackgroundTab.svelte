@@ -5,6 +5,7 @@
   Preserves TKA's theme integration via applyThemeFromColors().
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { AppSettings } from "../../../domain/AppSettings";
   import { BackgroundType } from "@austencloud/backgrounds";
   import {
@@ -14,7 +15,6 @@
   } from "@austencloud/backgrounds/card";
   import type { BackgroundCardSelectDetail } from "@austencloud/backgrounds/card";
   import { applyThemeFromColors } from "../../../utils/background-theme-calculator";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -33,7 +33,7 @@
   const currentBg = $derived(settings?.backgroundType || BackgroundType.NIGHT_SKY);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     setTimeout(() => (isVisible = true), 30);
 
     // Record that user has visited the background tab (for theme discovery nudge)

@@ -8,7 +8,7 @@
    */
 
   import { onMount } from "svelte";
-  import { container } from "../../di";
+  import { getCommandPalette } from "../getCommandPalette";
   import type { ICommandPalette } from "../services/contracts/ICommandPalette";
   import { commandPaletteState } from "../state/command-palette-state.svelte";
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
@@ -23,7 +23,7 @@
 
   onMount(async () => {
     try {
-      paletteService = container.items.commandPalette;
+      paletteService = getCommandPalette();
     } catch (error) {
       console.error("Failed to resolve command palette:", error);
     }

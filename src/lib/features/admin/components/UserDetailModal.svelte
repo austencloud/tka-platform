@@ -12,7 +12,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { container } from "$lib/shared/di";
+  import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -59,7 +59,7 @@
     userProfile = null;
 
     try {
-      userService = container.items.userRepository;
+      userService = getUserRepository();
 
       if (!userService) {
         throw new Error("User service not available");

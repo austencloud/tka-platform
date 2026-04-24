@@ -5,6 +5,7 @@
   Shows an engaging placeholder when no data exists yet.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -26,7 +27,7 @@
   let stats = $state<StatsOverview | null>(null);
   let personalBests = $state<PersonalBest[]>([]);
   let recentSessions = $state<StoredPerformance[]>([]);
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
   const historyService = container.items.performanceHistoryTracker;
 
   const hasData = $derived(stats && stats.totalSessions > 0);

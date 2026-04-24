@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getShortcutCustomizer } from "../../getShortcutCustomizer";
   import type {
     IShortcutCustomizer,
     ShortcutWithBinding,
@@ -63,7 +63,7 @@
 
   onMount(() => {
     try {
-      customizationService = container.items.shortcutCustomizer;
+      customizationService = getShortcutCustomizer();
       refreshShortcuts();
     } catch (error) {
       console.warn("Failed to resolve shortcut customization service:", error);

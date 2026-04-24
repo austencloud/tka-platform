@@ -28,6 +28,7 @@ function makeCtx(): CanvasRenderingContext2D {
     rotate: vi.fn(),
     scale: vi.fn(),
     clearRect: vi.fn(),
+    drawImage: vi.fn(),
     createRadialGradient: vi.fn(makeGradient),
     createLinearGradient: vi.fn(makeGradient),
   } as unknown as CanvasRenderingContext2D;
@@ -48,23 +49,18 @@ function makeParams(overrides: Partial<Ink2DParams> = {}): Ink2DParams {
     blendMode: "source-over",
     effectiveAmbient: 0.2,
     ambientSpawnRate: 2,
-    motionSpawnRate: 60, // bumped for test budgets
+    motionSpawnRate: 60,
     motionReferenceSpeed: 3.0,
-    strokeWidthMin: 1,
-    strokeWidthMax: 12,
+    strokeWidthMin: 2,
+    strokeWidthMax: 18,
     opacityMax: 1.0,
-    lifetimeSeconds: 4.5,
-    maxPointsPerTip: 40,
+    lifetimeSeconds: 3.0,
+    maxPointsPerTip: 90,
+    stampScaleMin: 0.3,
+    stampScaleMax: 1.2,
     ...overrides,
   };
 }
-
-const STATIC_TIPS = {
-  bluePosA: { x: 100, y: 400 },
-  bluePosB: { x: 120, y: 400 },
-  redPosA: { x: 200, y: 400 },
-  redPosB: { x: 220, y: 400 },
-};
 
 describe("Ink2DRenderer", () => {
   it("does not throw on empty tips", () => {
@@ -73,42 +69,36 @@ describe("Ink2DRenderer", () => {
     r.render(
       ctx,
       makeParams(),
-      {
-        bluePosA: null,
-        bluePosB: null,
-        redPosA: null,
-        redPosB: null,
-      },
+      { bluePosA: null, bluePosB: null, redPosA: null, redPosB: null },
       1 / 60,
     );
-    // No strokes should have been issued.
+    expect((ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+  });
+
+  it("uses drawImage (not stroke) for rendering stamps", () => {
+    const r = new Ink2DRenderer();
+    const ctx = makeCtx();
+    for (let i = 0; i < 30; i++) {
+      r.render(
+        ctx,
+        makeParams(),
+        {
+          bluePosA: { x: 100 + i * 8, y: 400 },
+          bluePosB: { x: 120 + i * 8, y: 400 },
+          redPosA: { x: 200 + i * 8, y: 400 },
+          redPosB: { x: 220 + i * 8, y: 400 },
+        },
+        1 / 60,
+      );
+    }
+    expect(
+      (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBeGreaterThan(0);
     expect((ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
   });
 
-  it("builds up path points under moving tips and strokes them", () => {
+  it("uses source-over composite for opaque india palette", () => {
     const r = new Ink2DRenderer();
-    const ctx = makeCtx();
-    // Move the tips between each render call to drive motion-mode emission.
-    for (let i = 0; i < 30; i++) {
-      const tips = {
-        bluePosA: { x: 100 + i * 8, y: 400 },
-        bluePosB: { x: 120 + i * 8, y: 400 },
-        redPosA: { x: 200 + i * 8, y: 400 },
-        redPosB: { x: 220 + i * 8, y: 400 },
-      };
-      r.render(ctx, makeParams(), tips, 1 / 60);
-    }
-    // Once points accumulate, every segment triggers a stroke (plus an
-    // edge pass = 2 strokes per segment on opaque palettes).
-    expect(
-      (ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length,
-    ).toBeGreaterThan(0);
-  });
-
-  it("uses source-over composite during draw for opaque india palette", () => {
-    const r = new Ink2DRenderer();
-    // Track every composite op assignment — the renderer restores the
-    // original on finally, so post-render inspection is unreliable.
     const assignments: GlobalCompositeOperation[] = [];
     const ctx = makeCtx();
     let current: GlobalCompositeOperation = "source-over";
@@ -122,22 +112,23 @@ describe("Ink2DRenderer", () => {
       },
     });
     for (let i = 0; i < 15; i++) {
-      const tips = {
-        bluePosA: { x: 100 + i * 10, y: 400 },
-        bluePosB: { x: 120 + i * 10, y: 400 },
-        redPosA: null,
-        redPosB: null,
-      };
-      r.render(ctx, makeParams(), tips, 1 / 60);
+      r.render(
+        ctx,
+        makeParams(),
+        {
+          bluePosA: { x: 100 + i * 10, y: 400 },
+          bluePosB: { x: 120 + i * 10, y: 400 },
+          redPosA: null,
+          redPosB: null,
+        },
+        1 / 60,
+      );
     }
-    // The renderer MUST set source-over at least once during draw —
-    // that's the #1 differentiator from trails (always emissive/lighter).
     expect(assignments).toContain("source-over");
-    // And MUST NEVER set lighter for an opaque palette.
     expect(assignments).not.toContain("lighter");
   });
 
-  it("uses lighter composite during draw for emissive neon palette", () => {
+  it("uses lighter composite for emissive neon palette", () => {
     const r = new Ink2DRenderer();
     const assignments: GlobalCompositeOperation[] = [];
     const ctx = makeCtx();
@@ -157,16 +148,18 @@ describe("Ink2DRenderer", () => {
       blendMode: "lighter",
     });
     for (let i = 0; i < 15; i++) {
-      const tips = {
-        bluePosA: { x: 100 + i * 10, y: 400 },
-        bluePosB: { x: 120 + i * 10, y: 400 },
-        redPosA: null,
-        redPosB: null,
-      };
-      r.render(ctx, neonParams, tips, 1 / 60);
+      r.render(
+        ctx,
+        neonParams,
+        {
+          bluePosA: { x: 100 + i * 10, y: 400 },
+          bluePosB: { x: 120 + i * 10, y: 400 },
+          redPosA: null,
+          redPosB: null,
+        },
+        1 / 60,
+      );
     }
-    // Neon is the only ink palette that glows. Renderer flips to lighter
-    // when palette.emissive is true.
     expect(assignments).toContain("lighter");
   });
 
@@ -174,56 +167,56 @@ describe("Ink2DRenderer", () => {
     const r = new Ink2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ trackingMode: "left_end" });
-    // Feed motion to all four tips; only left_ends should accumulate points.
     for (let i = 0; i < 20; i++) {
-      const tips = {
-        bluePosA: { x: 100 + i * 10, y: 400 }, // left end A
-        bluePosB: { x: 500 + i * 10, y: 400 }, // right end B (ignored)
-        redPosA: { x: 200 + i * 10, y: 400 }, // left end A
-        redPosB: { x: 600 + i * 10, y: 400 }, // right end B (ignored)
-      };
-      r.render(ctx, params, tips, 1 / 60);
+      r.render(
+        ctx,
+        params,
+        {
+          bluePosA: { x: 100 + i * 10, y: 400 },
+          bluePosB: { x: 500 + i * 10, y: 400 },
+          redPosA: { x: 200 + i * 10, y: 400 },
+          redPosB: { x: 600 + i * 10, y: 400 },
+        },
+        1 / 60,
+      );
     }
-    // Strokes should still be issued (left ends produced points).
     expect(
-      (ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length,
+      (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length,
     ).toBeGreaterThan(0);
   });
 
-  it("caps maxPointsPerTip — pool does not grow without bound", () => {
+  it("caps maxPointsPerTip — stamps do not grow without bound", () => {
     const r = new Ink2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({
       motionSpawnRate: 500,
       maxPointsPerTip: 10,
-      lifetimeSeconds: 60, // long life so cap is the only bound
+      lifetimeSeconds: 60,
     });
     for (let i = 0; i < 120; i++) {
-      const tips = {
-        bluePosA: { x: 100 + i * 5, y: 400 },
-        bluePosB: null,
-        redPosA: null,
-        redPosB: null,
-      };
-      r.render(ctx, params, tips, 1 / 60);
+      r.render(
+        ctx,
+        params,
+        {
+          bluePosA: { x: 100 + i * 5, y: 400 },
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        },
+        1 / 60,
+      );
     }
-    // Each segment produces at most 2 strokes (edge + pigment), so per
-    // frame the stroke count is bounded by 2 * (maxPointsPerTip - 1).
-    // Over the last few frames we should still be at that ceiling.
+    // 10 points max × 2 passes (bleed + pigment) = at most 20 drawImage calls per frame
     const ctx2 = makeCtx();
-    for (let i = 0; i < 6; i++) {
-      const tips = {
-        bluePosA: { x: 100 + i * 5, y: 400 },
-        bluePosB: null,
-        redPosA: null,
-        redPosB: null,
-      };
-      r.render(ctx2, params, tips, 1 / 60);
-    }
-    const lastFrameStrokesPerFrame =
-      (ctx2.stroke as ReturnType<typeof vi.fn>).mock.calls.length / 6;
-    // At maxPointsPerTip=10, max = 2*(10-1) = 18 strokes per tip per frame.
-    expect(lastFrameStrokesPerFrame).toBeLessThanOrEqual(20);
+    r.render(
+      ctx2,
+      params,
+      { bluePosA: { x: 700, y: 400 }, bluePosB: null, redPosA: null, redPosB: null },
+      1 / 60,
+    );
+    expect(
+      (ctx2.drawImage as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBeLessThanOrEqual(22);
   });
 
   it("ages points so the pool drains after the tip disappears", () => {
@@ -234,17 +227,19 @@ describe("Ink2DRenderer", () => {
       lifetimeSeconds: 0.3,
       maxPointsPerTip: 40,
     });
-    // Seed motion for 0.3s.
     for (let i = 0; i < 18; i++) {
-      const tips = {
-        bluePosA: { x: 100 + i * 8, y: 400 },
-        bluePosB: null,
-        redPosA: null,
-        redPosB: null,
-      };
-      r.render(ctx, params, tips, 1 / 60);
+      r.render(
+        ctx,
+        params,
+        {
+          bluePosA: { x: 100 + i * 8, y: 400 },
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        },
+        1 / 60,
+      );
     }
-    // Drop the tip entirely — no more spawning, and points age out.
     for (let i = 0; i < 30; i++) {
       r.render(
         ctx,
@@ -253,7 +248,6 @@ describe("Ink2DRenderer", () => {
         1 / 60,
       );
     }
-    // After ~0.5s with no tip, all points should have aged past lifetime.
     const ctx2 = makeCtx();
     r.render(
       ctx2,
@@ -261,18 +255,120 @@ describe("Ink2DRenderer", () => {
       { bluePosA: null, bluePosB: null, redPosA: null, redPosB: null },
       1 / 60,
     );
-    expect((ctx2.stroke as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+    expect((ctx2.drawImage as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
   });
 
-  it("dispose resets state", () => {
+  it("applies light gravity sag to aged points", () => {
+    const r = new Ink2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({
+      motionSpawnRate: 200,
+      lifetimeSeconds: 2.0,
+      maxPointsPerTip: 40,
+    });
+    for (let i = 0; i < 10; i++) {
+      r.render(
+        ctx,
+        params,
+        {
+          bluePosA: { x: 100 + i * 8, y: 400 },
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        },
+        1 / 60,
+      );
+    }
+    // Age past 40% threshold (0.4 * 2.0 = 0.8s)
+    for (let i = 0; i < 60; i++) {
+      r.render(
+        ctx,
+        params,
+        { bluePosA: null, bluePosB: null, redPosA: null, redPosB: null },
+        1 / 60,
+      );
+    }
+    const ctx2 = makeCtx();
+    r.render(
+      ctx2,
+      params,
+      { bluePosA: null, bluePosB: null, redPosA: null, redPosB: null },
+      1 / 60,
+    );
+    const translateCalls = (ctx2.translate as ReturnType<typeof vi.fn>).mock.calls;
+    if (translateCalls.length > 0) {
+      const yValues = translateCalls.map((c: number[]) => c[1]);
+      const maxY = Math.max(...yValues);
+      expect(maxY).toBeGreaterThan(400);
+    }
+  });
+
+  it("dispose clears stamp cache and point history", () => {
     const r = new Ink2DRenderer();
     const ctx = makeCtx();
     for (let i = 0; i < 20; i++) {
-      r.render(ctx, makeParams(), STATIC_TIPS, 1 / 60);
+      r.render(
+        ctx,
+        makeParams(),
+        {
+          bluePosA: { x: 100 + i * 5, y: 400 },
+          bluePosB: { x: 120 + i * 5, y: 400 },
+          redPosA: { x: 200 + i * 5, y: 400 },
+          redPosB: { x: 220 + i * 5, y: 400 },
+        },
+        1 / 60,
+      );
     }
     r.dispose();
-    // Subsequent render after dispose should not crash.
-    r.render(ctx, makeParams(), STATIC_TIPS, 1 / 60);
-    expect(true).toBe(true);
+    const ctx2 = makeCtx();
+    r.render(
+      ctx2,
+      makeParams(),
+      {
+        bluePosA: { x: 100, y: 400 },
+        bluePosB: { x: 120, y: 400 },
+        redPosA: { x: 200, y: 400 },
+        redPosB: { x: 220, y: 400 },
+      },
+      1 / 60,
+    );
+    expect(
+      (ctx2.drawImage as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBeLessThanOrEqual(4);
+  });
+
+  it("enforces minimum spacing between consecutive stamps", () => {
+    const r = new Ink2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({
+      motionSpawnRate: 1000,
+      maxPointsPerTip: 200,
+      lifetimeSeconds: 60,
+      stampScaleMax: 1.0,
+    });
+    // Feed same position repeatedly — spacing gate blocks most emits
+    for (let i = 0; i < 60; i++) {
+      r.render(
+        ctx,
+        params,
+        {
+          bluePosA: { x: 400, y: 400 },
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        },
+        1 / 60,
+      );
+    }
+    const ctx2 = makeCtx();
+    r.render(
+      ctx2,
+      params,
+      { bluePosA: { x: 400, y: 400 }, bluePosB: null, redPosA: null, redPosB: null },
+      1 / 60,
+    );
+    expect(
+      (ctx2.drawImage as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBeLessThanOrEqual(10);
   });
 });

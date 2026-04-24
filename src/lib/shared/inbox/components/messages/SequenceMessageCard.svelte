@@ -7,11 +7,11 @@
    * Shows deleted state if the sequence no longer exists.
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import { goto } from "$app/navigation";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
 
@@ -83,7 +83,7 @@
 
   // Initialize haptic service
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   async function handleClick() {

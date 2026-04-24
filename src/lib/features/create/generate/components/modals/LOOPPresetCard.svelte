@@ -2,9 +2,9 @@
 LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let { preset, onSelect, isFavorite = false, onToggleFavorite } = $props<{
@@ -17,7 +17,7 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   function handleSelect() {

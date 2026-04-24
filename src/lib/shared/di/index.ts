@@ -22,22 +22,49 @@ import { createContainer } from "iti";
 // ============================================================================
 // SIMPLE CONTAINERS (export const xyzContainer = createContainer()...)
 // ============================================================================
-import { compositionContainer } from "./containers/composition-container";
-import { coreContainer } from "./containers/core-container";
 import { dataContainer } from "./containers/data-container";
-import { keyboardContainer } from "./containers/keyboard-container";
-import { platformContainer } from "./containers/platform-container";
-import { viewerAuthContainer } from "./containers/viewer-auth-container";
-import { arenaContainer } from "./containers/arena-container";
-import { assembleContainer } from "./containers/assemble-container";
-import { effectsLabContainer } from "./containers/effects-lab-container";
-import { festivalContainer } from "./containers/festival-container";
-import { fuseContainer } from "./containers/fuse-container";
-import { labContainer } from "./containers/lab-container";
 import { multiGridContainer } from "./containers/multi-grid-container";
-import { trigridLabContainer } from "./containers/trigrid-lab-container";
 import { videoInfraContainer } from "./containers/video-infra-container";
 import { videoTrailsContainer } from "./containers/video-trails-container";
+
+// ============================================================================
+// CORE SERVICE GETTERS (migrated from core-container)
+// ============================================================================
+import { getAppState } from "../application/getAppState";
+import { getAppStateInitializer } from "../application/getAppStateInitializer";
+import { getPerformanceMetricsState } from "../application/getPerformanceMetricsState";
+import { getApplicationInitializer } from "../application/getApplicationInitializer";
+import { getResourceTracker } from "../application/getResourceTracker";
+import { getComponentManager } from "../application/getComponentManager";
+import { getErrorHandler } from "../application/getErrorHandler";
+import { getHapticFeedback } from "../application/getHapticFeedback";
+import { getRippleEffect } from "../application/getRippleEffect";
+import { getAuthenticator } from "../auth/getAuthenticator";
+import { getProfilePictureManager } from "../auth/getProfilePictureManager";
+import { getUsernameValidator } from "../auth/getUsernameValidator";
+import { getUserDocumentManager } from "../auth/getUserDocumentManager";
+import { getAccountManager } from "../auth/getAccountManager";
+import { getGlobalFeatureFlagPersister } from "../auth/getGlobalFeatureFlagPersister";
+import { getUserFeatureFlagPersister } from "../auth/getUserFeatureFlagPersister";
+import { getSubscriptionManager } from "../subscription/getSubscriptionManager";
+import { getPremiumGateChecker } from "../subscription/getPremiumGateChecker";
+import { getDeviceDetector } from "../device/getDeviceDetector";
+import { getViewportManager } from "../device/getViewportManager";
+import { settingsService } from "../settings/state/SettingsState.svelte";
+import { getSettingsPersister } from "../settings/getSettingsPersister";
+import { getMobileFullscreenManager } from "../mobile/getMobileFullscreenManager";
+import { getPlatformDetector } from "../mobile/getPlatformDetector";
+import { getGestureHandler } from "../mobile/getGestureHandler";
+import { getPWAEngagementTracker } from "../mobile/getPWAEngagementTracker";
+import { getPWAInstallDismissalManager } from "../mobile/getPWAInstallDismissalManager";
+import { getWordDeriver } from "../foundation/getWordDeriver";
+import { getFileDownloader } from "../foundation/getFileDownloader";
+import { getStorageManager } from "../foundation/getStorageManager";
+import { getSeoManager } from "../foundation/getSeoManager";
+import { getSvgImageConverter } from "../foundation/getSvgImageConverter";
+import { getOnboardingPersister } from "../onboarding/getOnboardingPersister";
+import { getTagManager } from "$lib/features/library/getTagManager";
+import { getConflictResolver } from "../offline/getConflictResolver";
 
 // ============================================================================
 // DIRECT PICTOGRAPH IMPORTS (migrated away from DI container)
@@ -56,11 +83,7 @@ import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positionin
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { getActivityLogger } from "../analytics/getActivityLogger";
-import { presenceContainer } from "./containers/presence-container";
-import { communityContainer } from "./containers/community-container";
-import { writeContainer } from "./containers/write-container";
-import { mandalaContainer } from "./containers/mandala-container";
-import { sequenceMandalaContainer } from "./containers/sequence-mandala-container";
+import { getPresenceTracker } from "../presence/getPresenceTracker";
 
 // ============================================================================
 // FACTORY CONTAINERS (export function createXyzContainer(deps)...)
@@ -84,7 +107,6 @@ import { createQRContainer } from "./containers/qr-container";
 import { create3DEngineContainer } from "./containers/3d-engine-container";
 import { createViewer3DContainer } from "./containers/viewer-3d-container";
 import { createDelightContainer } from "./containers/delight-container";
-import { backgroundBuilderContainer } from "./containers/background-builder-container";
 import { createModerationContainer } from "./containers/moderation-container";
 import { createWatchContainer } from "./containers/watch-container";
 import { createLanSyncContainer } from "./containers/lan-sync-container";
@@ -154,7 +176,7 @@ const promoContainer = typeof window !== 'undefined' ? _timeContainer('promo', c
 
 // Render container needs fileDownloader from core
 const renderContainer = typeof window !== 'undefined' ? _timeContainer('render', () => createRenderContainer(
-  coreContainer.items.fileDownloader
+  getFileDownloader()
 )) : null as any;
 
 // Navigation container needs external deps from pictograph and data containers
@@ -170,8 +192,8 @@ const shareContainer = typeof window !== 'undefined' ? _timeContainer('share', (
 
 // Browse container needs multiple external deps
 const browseContainer = typeof window !== 'undefined' ? _timeContainer('browse', () => createBrowseContainer({
-  wordDeriver: coreContainer.items.wordDeriver,
-  deviceDetector: coreContainer.items.deviceDetector,
+  wordDeriver: getWordDeriver(),
+  deviceDetector: getDeviceDetector(),
   sequenceRenderer: renderContainer.items.sequenceRenderer,
   startPositionDeriver,
   cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
@@ -181,8 +203,8 @@ const browseContainer = typeof window !== 'undefined' ? _timeContainer('browse',
 
 // Create module container needs many external deps
 const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('create', () => createCreateContainer({
-  deviceDetector: coreContainer.items.deviceDetector,
-  viewportManager: coreContainer.items.viewportManager,
+  deviceDetector: getDeviceDetector(),
+  viewportManager: getViewportManager(),
   gridPositionDeriver,
   gridModeDeriver,
   motionQueryHandler,
@@ -211,8 +233,8 @@ const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('cr
 // Components can use getCreateContainer() instead of container.items for better HMR
 if (typeof window !== 'undefined') {
   configureLazyCreateContainer(() => ({
-    deviceDetector: coreContainer.items.deviceDetector,
-    viewportManager: coreContainer.items.viewportManager,
+    deviceDetector: getDeviceDetector(),
+    viewportManager: getViewportManager(),
     gridPositionDeriver,
     gridModeDeriver,
     motionQueryHandler,
@@ -241,8 +263,8 @@ const composeCoreContainer = typeof window !== 'undefined' ? _timeContainer('com
   imageComposer: renderContainer.items.imageComposer,
   dimensionCalculator: renderContainer.items.dimensionCalculator,
   layoutCalculator: renderContainer.items.layoutCalculator,
-  svgImageConverter: coreContainer.items.svgImageConverter,
-  fileDownloader: coreContainer.items.fileDownloader,
+  svgImageConverter: getSvgImageConverter(),
+  fileDownloader: getFileDownloader(),
   sequenceRepository: dataContainer.items.sequenceRepository,
   sequenceTransformer: createModuleContainer.items.sequenceTransformer,
   browseLoader: browseContainer.items.browseLoader,
@@ -262,7 +284,7 @@ const trainContainer = typeof window !== 'undefined' ? _timeContainer('train', (
 // Admin container needs activityLogger and presenceTracker
 const adminContainer = typeof window !== 'undefined' ? _timeContainer('admin', () => createAdminContainer({
   activityLogger: getActivityLogger(),
-  presenceTracker: presenceContainer.items.presenceTracker,
+  presenceTracker: getPresenceTracker(),
 })) : null as any;
 
 // Learn container needs letterQueryHandler from pictograph
@@ -277,14 +299,14 @@ const moderationContainer = typeof window !== 'undefined' ? _timeContainer('mode
 const libraryContainer = typeof window !== 'undefined' ? _timeContainer('library', () => createLibraryContainer({
   libraryRepository: {
     achievementManager: gamificationContainer.items.achievementManager,
-    tagManager: coreContainer.items.tagManager,
+    tagManager: getTagManager(),
     orientationCycleDetector: createModuleContainer.items.orientationCycleDetector,
-    conflictResolver: coreContainer.items.conflictResolver,
+    conflictResolver: getConflictResolver(),
   },
   librarySaveService: {
     sharer: shareContainer.items.sharer,
     videoUploader: shareContainer.items.videoUploader,
-    tagManager: coreContainer.items.tagManager,
+    tagManager: getTagManager(),
   },
   publicIndexSyncer: {
     contentModerator: moderationContainer.items.contentModerator,
@@ -310,7 +332,7 @@ const viewer3DContainer = typeof window !== 'undefined' ? _timeContainer('viewer
 
 // Delight container needs hapticFeedback from core
 const delightContainer = typeof window !== 'undefined' ? _timeContainer('delight', () => createDelightContainer(
-  coreContainer.items.hapticFeedback
+  getHapticFeedback()
 )) : null as any;
 
 // Attribution container - self-contained, captures how users find the app
@@ -389,7 +411,7 @@ const sequenceDataProvider = typeof window !== 'undefined' ? new SequenceDataPro
  * The main application container, composed from all module containers.
  *
  * Services are accessed via container.items:
- *   container.items.authenticator
+ *   getAuthenticator()
  *   container.items.sequenceRenderer
  *   etc.
  *
@@ -402,10 +424,44 @@ function buildAppContainer(): any {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let c: any = createContainer();
 
-  // Compositional model services (hand path, solo prop, decompose/derive)
-  c = c.add(compositionContainer.items);
-  // Core infrastructure (must be first)
-  c = c.add(coreContainer.items);
+  // Core infrastructure (dissolved from core-container — services accessed via getters)
+  c = c.add({
+    appState: () => getAppState(),
+    appStateInitializer: () => getAppStateInitializer(),
+    performanceMetricsState: () => getPerformanceMetricsState(),
+    settingsState: () => settingsService,
+    settingsPersister: () => getSettingsPersister(),
+    globalFeatureFlagPersister: () => getGlobalFeatureFlagPersister(),
+    userFeatureFlagPersister: () => getUserFeatureFlagPersister(),
+    viewportManager: () => getViewportManager(),
+    deviceDetector: () => getDeviceDetector(),
+    applicationInitializer: () => getApplicationInitializer(),
+    resourceTracker: () => getResourceTracker(),
+    componentManager: () => getComponentManager(),
+    errorHandler: () => getErrorHandler(),
+    hapticFeedback: () => getHapticFeedback(),
+    rippleEffect: () => getRippleEffect(),
+    authenticator: () => getAuthenticator(),
+    profilePictureManager: () => getProfilePictureManager(),
+    userDocumentManager: () => getUserDocumentManager(),
+    subscriptionManager: () => getSubscriptionManager(),
+    premiumGateChecker: () => getPremiumGateChecker(),
+    usernameValidator: () => getUsernameValidator(),
+    accountManager: () => getAccountManager(),
+    mobileFullscreenManager: () => getMobileFullscreenManager(),
+    platformDetector: () => getPlatformDetector(),
+    gestureHandler: () => getGestureHandler(),
+    pwaEngagementTracker: () => getPWAEngagementTracker(),
+    pwaInstallDismissalManager: () => getPWAInstallDismissalManager(),
+    wordDeriver: () => getWordDeriver(),
+    fileDownloader: () => getFileDownloader(),
+    storageManager: () => getStorageManager(),
+    seoManager: () => getSeoManager(),
+    svgImageConverter: () => getSvgImageConverter(),
+    onboardingPersister: () => getOnboardingPersister(),
+    tagManager: () => getTagManager(),
+    conflictResolver: () => getConflictResolver(),
+  });
   // Data and persistence
   c = c.add(dataContainer.items);
   // Navigation
@@ -430,16 +486,9 @@ function buildAppContainer(): any {
   c = c.add(shareContainer.items);
   c = c.add(adminContainer.items);
   c = c.add(promoContainer.items);
-  c = c.add(keyboardContainer.items);
-  c = c.add(presenceContainer.items);
-  c = c.add(communityContainer.items);
-  c = c.add(writeContainer.items);
-  c = c.add(mandalaContainer.items);
-  c = c.add(sequenceMandalaContainer.items);
   c = c.add(qrContainer.items);
   c = c.add(engine3DContainer.items);
   c = c.add(viewer3DContainer.items);
-  c = c.add(backgroundBuilderContainer.items);
   c = c.add(delightContainer.items);
   c = c.add(moderationContainer.items);
   c = c.add(watchContainer.items);
@@ -460,10 +509,6 @@ function buildAppContainer(): any {
   c = c.add(pushContainer.items);
   // Offline caching (proactive gallery + thumbnail prefetch)
   c = c.add(offlineContainer.items);
-  // Native platform (Capacitor) detection and initialization
-  c = c.add(platformContainer.items);
-  // Viewer auth (pending-action queue + in-app-webview detection)
-  c = c.add(viewerAuthContainer.items);
   // Print Prep services (MPC card export — depend on render + build containers)
   c = c.add({
     cardBackDomRenderer: () => new CardBackDomRendererImpl(),
@@ -482,14 +527,7 @@ function buildAppContainer(): any {
   }));
 
   // Feature containers (simple + factory)
-  c = c.add(arenaContainer.items);
-  c = c.add(assembleContainer.items);
-  c = c.add(effectsLabContainer.items);
-  c = c.add(festivalContainer.items);
-  c = c.add(fuseContainer.items);
-  c = c.add(labContainer.items);
   c = c.add(multiGridContainer.items);
-  c = c.add(trigridLabContainer.items);
   c = c.add(videoInfraContainer.items);
   c = c.add(videoTrailsContainer.items);
   c = c.add(collisionLabContainer.items);

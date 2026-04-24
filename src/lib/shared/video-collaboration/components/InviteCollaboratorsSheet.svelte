@@ -5,7 +5,9 @@
   Allows searching users and sending collaboration invites.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { container } from "$lib/shared/di";
+  import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -28,9 +30,9 @@
   } = $props();
 
   // Services
-  const userService = container.items.userRepository;
+  const userService = getUserRepository();
   const videoService = container.items.collaborativeVideoManager;
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   // Search state
   let searchQuery = $state("");

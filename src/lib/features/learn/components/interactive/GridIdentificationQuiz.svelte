@@ -6,8 +6,8 @@ Two phases:
 2. Point Identification: Click the correct point (8 questions)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { GRID_DIRECTIONS } from "../../domain/constants/grid-constants";
   import QuizProgressBar from "./grid-quiz/QuizProgressBar.svelte";
@@ -19,7 +19,7 @@ Two phases:
     onComplete?: () => void;
   }>();
 
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   let answerTimer: ReturnType<typeof setTimeout> | null = null;
 

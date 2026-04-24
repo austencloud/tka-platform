@@ -5,10 +5,10 @@
   emphasizes saving the preferences they just configured.
 -->
 <script lang="ts">
+  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { fly, fade } from "svelte/transition";
   import SocialAuthCompact from "$lib/shared/auth/components/SocialAuthCompact.svelte";
   import EmailAuthTabs from "$lib/shared/auth/components/EmailAuthTabs.svelte";
-  import { container } from "$lib/shared/di";
   import type { IAuthenticator } from "$lib/shared/auth/services/contracts/IAuthenticator";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { onMount } from "svelte";
@@ -29,7 +29,7 @@
 
   onMount(() => {
     try {
-      authService = container.items.authenticator;
+      authService = getAuthenticator();
     } catch (error) {
       console.error("Failed to get auth service:", error);
     }

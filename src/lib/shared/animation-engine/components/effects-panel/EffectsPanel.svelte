@@ -125,14 +125,11 @@
 
   onMount(() => {
     syncFromVM();
-    // Restore persisted preset for the active effect
-    if (activeEffect !== "none") {
-      const saved = loadPresetMap()[activeEffect];
-      if (saved) {
-        activePresetId = saved;
-        // Re-apply the preset so colors/settings match the selection
-        handlePresetSelect(saved);
-      }
+    // Config values are persisted by EffectsConfigState — just restore UI highlight.
+    // LED is handled by syncFromVM (VM is authoritative for LED presets).
+    if (activeEffect !== "none" && activeEffect !== "led" && effectsConfigState) {
+      const ap = effectsConfigState.activePresets as Record<string, string | null>;
+      activePresetId = ap[activeEffect] ?? loadPresetMap()[activeEffect] ?? null;
     }
     vm.registerObserver(syncFromVM);
   });

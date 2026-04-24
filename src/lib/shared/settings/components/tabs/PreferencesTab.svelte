@@ -9,8 +9,8 @@
   IS the setting, but preferences need context.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { AppSettings } from "../../domain/AppSettings";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -28,7 +28,7 @@
   let isVisible = $state(false);
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     setTimeout(() => (isVisible = true), 30);
   });
 

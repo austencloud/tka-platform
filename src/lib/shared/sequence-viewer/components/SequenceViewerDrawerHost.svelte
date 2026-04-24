@@ -18,6 +18,7 @@
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
   import { fly } from "svelte/transition";
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { cubicOut } from "svelte/easing";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
@@ -166,7 +167,7 @@
     // Landscape detection via DeviceDetector
     let deviceCleanup: (() => void) | undefined;
     try {
-      const deviceDetector: IDeviceDetector = container.items.deviceDetector;
+      const deviceDetector: IDeviceDetector = getDeviceDetector();
       responsiveSettings = deviceDetector.getResponsiveSettings();
 
       deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {

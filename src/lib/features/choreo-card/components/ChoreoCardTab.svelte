@@ -176,6 +176,7 @@
   let selectedVtgFamily = $state<string | null>(getPersistedString(STORAGE_KEY_VTG_FAMILY));
   let deckSequences = $state<SequenceData[]>([]);
   let isDeckLoading = $state(false);
+  let deckErrorMessage = $state<string | null>(null);
 
   // ── Browser history (back/forward) for deck navigation ──
 
@@ -446,9 +447,11 @@
     const deckLoader = container.items.deckLoader as IDeckLoader;
     try {
       isDeckLoading = true;
+      deckErrorMessage = null;
       decks = await deckLoader.loadDecks();
     } catch (err) {
       console.error("Failed to load decks:", err);
+      deckErrorMessage = "Failed to load decks. Check your connection and try again.";
     } finally {
       isDeckLoading = false;
     }
@@ -471,11 +474,11 @@
     if (!deck) return;
 
     isDeckLoading = true;
+    deckErrorMessage = null;
     try {
       if (deck.totalSequences < 500) {
         deckSequences = await deckLoader.loadDeckSequences(deckId);
       } else {
-        // Large deck: load first family only
         const firstFamily = deck.families[0];
         if (firstFamily) {
           deckSequences = await deckLoader.loadSequencesByIds(deckId, [...firstFamily.sequenceIds]);
@@ -483,6 +486,7 @@
       }
     } catch (err) {
       console.error("Failed to load deck sequences:", err);
+      deckErrorMessage = "Failed to load sequences for this deck. Try again.";
     } finally {
       isDeckLoading = false;
     }
@@ -530,6 +534,12 @@
 <div class="choreo-card-tab">
   <!-- Main content -->
   <div class="main-content">
+    {#if deckErrorMessage}
+      <div class="error-banner" role="alert">
+        <span>{deckErrorMessage}</span>
+        <button type="button" onclick={() => { deckErrorMessage = null; loadDecks(); }}>Retry</button>
+      </div>
+    {/if}
     {#if mode === "decks"}
       <main class="content-area">
         <DeckBrowser
@@ -588,6 +598,34 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
     overflow: auto;
+  }
+
+  .error-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: var(--border-radius-md, 8px);
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .error-banner button {
+    padding: 4px 12px;
+    border-radius: var(--border-radius-sm, 4px);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .error-banner button:hover {
+    background: rgba(239, 68, 68, 0.35);
   }
 
   /* Responsive */

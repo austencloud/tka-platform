@@ -4,8 +4,8 @@
   Length filter buttons and column layout selector.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -25,7 +25,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   const lengthOptions = [
@@ -68,6 +68,7 @@
           class:all={option.value === 0}
           onclick={() => handleLengthClick(option.value)}
           aria-pressed={selectedLength === option.value}
+          aria-label="Filter by {option.label === 'All' ? 'all step counts' : option.label + ' steps'}"
           type="button"
         >
           {#if option.icon}
@@ -92,6 +93,7 @@
           class:selected={columnCount === count}
           onclick={() => handleColumnClick(count)}
           aria-pressed={columnCount === count}
+          aria-label="Show {count} {count === 1 ? 'column' : 'columns'}"
           type="button"
         >
           {count}
@@ -127,7 +129,7 @@
   }
 
   .section-title i {
-    font-size: 0.7rem;
+    font-size: 12px;
     opacity: 0.7;
   }
 
@@ -178,7 +180,7 @@
   }
 
   .length-btn i {
-    font-size: 0.7rem;
+    font-size: 12px;
   }
 
   /* Column Grid - flexible wrap */

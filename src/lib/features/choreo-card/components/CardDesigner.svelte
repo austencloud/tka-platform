@@ -8,7 +8,9 @@
   - DesignerSettingsSidebar (slide-out settings)
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -59,7 +61,7 @@
   let showInfoCard = $state(loadBool(STORAGE_KEYS.infoCard, false));
   let sidebarOpen = $state(loadBool(STORAGE_KEYS.sidebarOpen, false));
   let isExporting = $state(false);
-  let contextMenuHost: CardDesignerContextMenuHost = $state(undefined as unknown as CardDesignerContextMenuHost);
+  let contextMenuHost: CardDesignerContextMenuHost | undefined = $state(undefined);
   let activeRerender: (() => void) | undefined = $state(undefined);
 
   function handleCardContextMenu(x: number, y: number, rerender: () => void) {
@@ -158,7 +160,7 @@
   let hapticService: import("$lib/shared/application/services/contracts/IHapticFeedback").IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   function handleSelect(index: number) {
@@ -247,6 +249,7 @@
     } catch (error) {
       console.error("[CardDesigner] Export failed:", error);
       hapticService?.trigger("error");
+      toast.error("Export failed. Try again.");
     } finally {
       isExporting = false;
     }

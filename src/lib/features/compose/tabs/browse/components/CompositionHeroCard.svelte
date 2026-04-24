@@ -6,9 +6,9 @@
 	and a quick-action overlay on hover.
 -->
 <script lang="ts">
-	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
+  import { container } from "$lib/shared/di";
+  import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
-	import { container } from "$lib/shared/di";
 	import type { ICompositionThumbnailResolver } from "../services/contracts/ICompositionThumbnailResolver";
 	import CompositionMiniPreview from "./CompositionMiniPreview.svelte";
 

@@ -5,6 +5,7 @@ Single responsibility: Coordinate option loading, preparation, and selection.
 Delegates all rendering to child components.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { container } from "$lib/shared/di";
@@ -204,7 +205,7 @@ Delegates all rendering to child components.
       organizerService = container.items.optionOrganizer;
       sizerService = optionGridFitCalculator;
       preparer = pictographPreparer as IPictographPreparer;
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
 
       // Subscribe to Dark Mode changes for prop color updates
       try {

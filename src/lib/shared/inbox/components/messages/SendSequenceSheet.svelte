@@ -7,12 +7,12 @@
    * and a message field. Handles the full send flow with loading and success states.
    */
 
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
   import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -73,7 +73,7 @@
   let sentToName = $state("");
 
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
     await loadSuggestions();
   });
 

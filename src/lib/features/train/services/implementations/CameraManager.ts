@@ -1,5 +1,5 @@
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { ICameraManager, CameraConfig } from "../contracts/ICameraManager";
-import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 const DEFAULT_CONFIG: CameraConfig = {
@@ -102,7 +102,7 @@ export class CameraManager implements ICameraManager {
         }
       }
 
-      const errorHandler = container.items.errorHandler as IErrorHandler;
+      const errorHandler = getErrorHandler() as IErrorHandler;
       errorHandler.showUserError({
         message,
         technicalDetails: error instanceof Error ? error.message : String(error),

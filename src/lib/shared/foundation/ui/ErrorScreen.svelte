@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { container } from "../../di";
   
@@ -14,7 +15,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(async () => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = getHapticFeedback();
   });
 
   // Handle retry with haptic feedback

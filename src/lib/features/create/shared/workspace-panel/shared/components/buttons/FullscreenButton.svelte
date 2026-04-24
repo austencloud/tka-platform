@@ -6,9 +6,10 @@
 -->
 <script lang="ts">
   // Note: Vendor-prefixed types (webkit*, moz*, ms*) are declared in src/lib/shared/types/vendor-prefixed.d.ts
+  import { getMobileFullscreenManager } from "$lib/shared/mobile/getMobileFullscreenManager";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IMobileFullscreenManager } from "$lib/shared/mobile/services/contracts/IMobileFullscreenManager";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   // Services
@@ -24,13 +25,13 @@
     const cleanupFns: Array<() => void> = [];
 
     try {
-      hapticService = container.items.hapticFeedback;
+      hapticService = getHapticFeedback();
     } catch (error) {
       console.warn("Failed to resolve haptic feedback service:", error);
     }
 
     try {
-      fullscreenService = container.items.mobileFullscreenManager;
+      fullscreenService = getMobileFullscreenManager();
     } catch (error) {
       console.warn("Failed to resolve mobile fullscreen service:", error);
       fullscreenService = null;

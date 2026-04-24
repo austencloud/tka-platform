@@ -7,6 +7,8 @@
   Shares state with FeedbackSubmitTab so drafts persist between panel and tab.
 -->
 <script lang="ts">
+  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { quickFeedbackState } from "../../state/quick-feedback-state.svelte";
   import {
@@ -18,7 +20,6 @@
   import type { FeedbackType } from "../../domain/models/feedback-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -28,7 +29,7 @@
 
   // Use shared form state so drafts persist between panel and tab
   const formState = getSharedFeedbackSubmitState();
-  const deviceDetector = container.items.deviceDetector;
+  const deviceDetector = getDeviceDetector();
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
   let hasShownSuccessToast = $state(false);
   let isInputFocused = $state(false);
@@ -54,7 +55,7 @@
   const showKeyboardHints = $derived(!isTouchDevice);
 
   // Get haptic feedback service
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
 
   function handleTypeChange(event: MouseEvent, type: FeedbackType) {
     // Prevent focus loss from textarea when clicking type buttons

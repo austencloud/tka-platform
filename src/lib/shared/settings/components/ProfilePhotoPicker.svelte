@@ -14,10 +14,10 @@
   - Mobile compact: Drawer with wizard
 -->
 <script lang="ts">
+  import { getProfilePictureManager } from "$lib/shared/auth/getProfilePictureManager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import {
@@ -65,7 +65,7 @@
   // ============ DERIVED ============
 
   const user = $derived(authState.user);
-  const profilePictureManager = container.items.profilePictureManager;
+  const profilePictureManager = getProfilePictureManager();
   const providerIds = $derived(
     user ? profilePictureManager.getProviderIds(user) : {}
   );

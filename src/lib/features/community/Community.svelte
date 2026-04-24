@@ -7,7 +7,8 @@
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { auth } from "$lib/shared/auth/firebase";
-  import { container } from "$lib/shared/di";
+  import { getLocationSharingOrchestrator } from "./getLocationSharingOrchestrator";
+  import { getLocationProvider } from "./getLocationProvider";
   import GlobalUserMap from "./components/GlobalUserMap.svelte";
   import LocationSharingConsentSheet from "./components/LocationSharingConsentSheet.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -20,7 +21,7 @@
   let isLoading = $state(true);
   let hasSharedLocation = $state(false);
 
-  const orchestrator = container.items.locationSharingOrchestrator;
+  const orchestrator = getLocationSharingOrchestrator();
 
   onMount(async () => {
     await loadLocations();
@@ -71,7 +72,7 @@
         await loadLocations();
 
         // Get user's location for map centering (city center will be shown)
-        const locationProvider = container.items.locationProvider;
+        const locationProvider = getLocationProvider();
         const position = await locationProvider.getCurrentLocation();
         userLocation = { lat: position.lat, lng: position.lng };
       } else {
@@ -112,7 +113,7 @@
       await loadLocations();
 
       // Get user's location for map centering
-      const locationProvider = container.items.locationProvider;
+      const locationProvider = getLocationProvider();
       const position = await locationProvider.getCurrentLocation();
       userLocation = { lat: position.lat, lng: position.lng };
     } catch (error) {

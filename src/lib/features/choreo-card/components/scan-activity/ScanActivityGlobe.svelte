@@ -88,7 +88,7 @@
     width: 100%;
     border-radius: 8px;
     overflow: hidden;
-    background: radial-gradient(ellipse at center, #0a0f1f 0%, #050810 70%);
+    background: var(--theme-panel-bg, radial-gradient(ellipse at center, #0a0f1f 0%, #050810 70%));
   }
 
   @media (prefers-reduced-motion: reduce) {

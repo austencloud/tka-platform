@@ -30,6 +30,8 @@ function makeCtx(): CanvasRenderingContext2D {
     translate: vi.fn(),
     rotate: vi.fn(),
     scale: vi.fn(),
+    getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
+    setTransform: vi.fn(),
     clearRect: vi.fn(),
     createRadialGradient: vi.fn(makeGradient),
     createLinearGradient: vi.fn(makeGradient),

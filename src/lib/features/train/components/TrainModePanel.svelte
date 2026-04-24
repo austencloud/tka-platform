@@ -5,6 +5,7 @@
   Responsive layout that works on all device sizes.
 -->
 <script lang="ts">
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import { createTrainState } from "../state/train-state.svelte";
   import { TrainMode, PracticeMode } from "../domain/enums/TrainEnums";
@@ -65,7 +66,7 @@
 
   // Services
   let detectionService: IPositionDetector | null = $state(null);
-  const hapticService = container.items.hapticFeedback;
+  const hapticService = getHapticFeedback();
   let isDetectionReady = $state(false);
   const sessionCompletionProcessor = container.items.sessionCompletionProcessor;
 

@@ -5,7 +5,7 @@
   Follows the StartEndSheet.svelte pattern: right drawer on desktop, bottom sheet on mobile.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { portal } from "./portal";
@@ -38,7 +38,7 @@
 
   onMount(() => {
     try {
-      haptic = container.items.hapticFeedback;
+      haptic = getHapticFeedback();
     } catch {
       // Optional service
     }
