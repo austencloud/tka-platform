@@ -575,8 +575,10 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
         this.orientationCalculator
       );
 
-      // Step 5: Preserve the sequence's original grid mode on all motions/steps
-      const sequenceGridMode = sequence.gridMode ?? GridMode.DIAMOND;
+      // Step 5: Determine the sequence's grid mode from actual motion locations.
+      // We derive from the first step's motions rather than trusting sequence.gridMode,
+      // which may be stale (e.g. "box" stored in Firestore for a diamond sequence).
+      const sequenceGridMode = this.deriveSequenceGridMode(orientationCorrected);
       const gridCorrected = this.forceGridMode(orientationCorrected, sequenceGridMode);
 
       // Step 6: Update start position letter to match new position
@@ -590,6 +592,59 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       console.error("[EndlessSpinner] Transform pipeline failed:", error);
       return null;
     }
+  }
+
+  /**
+   * Derive the grid mode from the sequence's actual motion locations.
+   * Examines the first available step's blue and red motions to determine
+   * whether cardinal (diamond) or intercardinal (box) locations are used.
+   * Falls back to GridMode.DIAMOND when motion data is absent.
+   *
+   * This is the authoritative source of truth — the stored sequence.gridMode
+   * field may be stale (e.g., published before gridMode was tracked).
+   */
+  private deriveSequenceGridMode(sequence: SequenceData): GridMode {
+    // Try start position first, then first step
+    const candidates = [
+      sequence.startPosition,
+      ...(sequence.steps ?? []),
+    ];
+
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const blue = candidate.motions?.[MotionColor.BLUE];
+      const red = candidate.motions?.[MotionColor.RED];
+      if (!blue || !red) continue;
+
+      // Both motions need start+end locations for reliable detection
+      if (
+        !blue.startLocation ||
+        !blue.endLocation ||
+        !red.startLocation ||
+        !red.endLocation
+      ) continue;
+
+      const blueIsDiamond =
+        CARDINAL_LOCATIONS.has(blue.startLocation) &&
+        CARDINAL_LOCATIONS.has(blue.endLocation);
+      const redIsDiamond =
+        CARDINAL_LOCATIONS.has(red.startLocation) &&
+        CARDINAL_LOCATIONS.has(red.endLocation);
+      const blueIsBox =
+        INTERCARDINAL_LOCATIONS.has(blue.startLocation) &&
+        INTERCARDINAL_LOCATIONS.has(blue.endLocation);
+      const redIsBox =
+        INTERCARDINAL_LOCATIONS.has(red.startLocation) &&
+        INTERCARDINAL_LOCATIONS.has(red.endLocation);
+
+      if (blueIsDiamond && redIsDiamond) return GridMode.DIAMOND;
+      if (blueIsBox && redIsBox) return GridMode.BOX;
+      // Mixed/skewed — use DIAMOND as safe default
+      return GridMode.DIAMOND;
+    }
+
+    // No usable motion data — fall back to stored field, then DIAMOND
+    return sequence.gridMode ?? GridMode.DIAMOND;
   }
 
   /**

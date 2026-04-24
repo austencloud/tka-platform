@@ -22,6 +22,7 @@
   import { container } from "$lib/shared/di";
   import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
@@ -198,7 +199,31 @@
     return null;
   });
 
-  let gridMode = $derived(animationState.sequenceData?.gridMode ?? GridMode.DIAMOND);
+  // Derive gridMode from actual motion locations rather than the stored field.
+  // The stored field may be stale (e.g. "box" for a diamond sequence published
+  // before gridMode tracking was consistent). Motion locations are the ground truth.
+  let gridMode = $derived.by((): GridMode => {
+    const seq = animationState.sequenceData;
+    if (!seq) return GridMode.DIAMOND;
+
+    // Inspect start position first, then first beat
+    const candidates = [seq.startPosition, ...(seq.steps ?? [])];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const blue = candidate.motions?.[MotionColor.BLUE];
+      const red = candidate.motions?.[MotionColor.RED];
+      if (!blue || !red) continue;
+      if (!blue.startLocation || !blue.endLocation || !red.startLocation || !red.endLocation) continue;
+      try {
+        return gridModeDeriver.deriveGridMode(blue, red);
+      } catch {
+        continue;
+      }
+    }
+
+    // No usable motion data — fall back to stored field
+    return seq.gridMode ?? GridMode.DIAMOND;
+  });
   let currentStepNumber = $derived(Math.floor(animationState.currentStep));
 
   // ── Pre-load next sequence partway through current one ──────────────────────
