@@ -192,6 +192,7 @@
         {#each drilledDecks as deck (deck.id)}
           <DeckCard
             {deck}
+            tags=""
             onSelect={() => onSelectDeck(deck)}
           />
         {/each}
