@@ -41,6 +41,13 @@
 		 * Defaults to the app's dark-mode setting.
 		 */
 		darkMode?: boolean;
+		/**
+		 * Explicit prop type overrides for geometry — used when the host needs
+		 * the mandala to reflect a specific prop (e.g. landing page forcing
+		 * staff) rather than the user's current settings.
+		 */
+		bluePropType?: string;
+		redPropType?: string;
 	}
 
 	let {
@@ -51,6 +58,8 @@
 		size = MANDALA_DEFAULT_SIZE,
 		currentStep,
 		darkMode,
+		bluePropType,
+		redPropType,
 	}: Props = $props();
 
 	const DARK_MOTION_PALETTE: MandalaPalette = {
@@ -84,8 +93,8 @@
 	// with the fan's 5-tip geometry instead of the staff's 2-tip geometry.
 	const paths = $derived.by((): MandalaPaths | null => {
 		if (!calculator || !sequence?.steps) return null;
-		const blueProp = settingsService.settings.bluePropType;
-		const redProp = settingsService.settings.redPropType;
+		const blueProp = bluePropType ?? settingsService.settings.bluePropType;
+		const redProp = redPropType ?? settingsService.settings.redPropType;
 		return calculator.calculate(sequence.steps, blueProp, redProp);
 	});
 

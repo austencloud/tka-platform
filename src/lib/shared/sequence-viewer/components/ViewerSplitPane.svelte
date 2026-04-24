@@ -433,7 +433,10 @@
     font: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    overflow: hidden;
+    /* visible so the 1.012 hover-scale on .media-pane isn't clipped at the
+       column edge. .media-pane keeps its own overflow:hidden to clip canvas
+       content inside the scaled rectangle. */
+    overflow: visible;
     transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
