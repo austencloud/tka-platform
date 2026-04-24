@@ -21,7 +21,7 @@ import {
 } from "$lib/features/compose/shared/domain/math-constants";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import {
 	BASE_SAMPLES_PER_BEAT,
@@ -440,12 +440,12 @@ function generatePathPoints(
 // so no additional inset is applied here.
 
 function getTipOffsetsForProp(propType: string | undefined): TipOffset[] {
-	const config = getTipPoints(propType);
+	const config = getTipPointsBaseline(propType);
 	const points = config.points;
 
 	// Props with no tips (contact ball, hand) fall back to staff
 	if (points.length === 0) {
-		const fallback = getTipPoints("staff").points;
+		const fallback = getTipPointsBaseline("staff").points;
 		return fallback;
 	}
 
@@ -633,6 +633,7 @@ export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
 		if (stepsWithMotions.length === 0) {
 			return { blue: [], red: [], purple: [] };
 		}
+
 
 		// Look up tip attachment points for each hand's prop type.
 		// Different props have different numbers of tips — staff has 2,

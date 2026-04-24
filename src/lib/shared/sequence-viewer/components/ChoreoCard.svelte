@@ -169,6 +169,10 @@
     hideSoloHeader?: boolean;
     // Right-click context menu callback
     onContextMenu?: (x: number, y: number) => void;
+    // Per-instance override for start-position layout (defaults to global user
+    // setting via compositionManager). Embedded contexts (landing page,
+    // marketing previews) need a fixed layout independent of viewer prefs.
+    startPositionLayoutOverride?: "row" | "column" | null;
   }
 
   const {
@@ -201,6 +205,7 @@
     rerenderTrigger = 0,
     hideSoloHeader = false,
     onContextMenu,
+    startPositionLayoutOverride = null,
   }: Props = $props();
 
   // Long-press state for touch context menu
@@ -262,6 +267,11 @@
   let activeDarkMode = $state(untrack(() => darkMode));
   let lastContentKey = "";
   let lastImageKey = "";
+  // Tracks the portion of the render key that drives GRID STRUCTURE (cell
+  // count, columns, durations, start-position row). Crossfade-swaps are
+  // only safe when this is unchanged — otherwise cells might shift
+  // between old/new rows mid-transition and read as visual glitches.
+  let lastGridStableKey = "";
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
@@ -310,6 +320,7 @@
   // to global default. Read reactively via compositionVersion.
   const startPositionLayout = $derived.by<"row" | "column">(() => {
     void compositionVersion;
+    if (startPositionLayoutOverride) return startPositionLayoutOverride;
     const stepCount = sequence?.steps?.length ?? 0;
     if (stepCount === 0) return compositionManager.startPositionLayout;
     return compositionManager.getStartPositionLayoutForStepCount(stepCount);
@@ -1232,7 +1243,7 @@
    * Renders all new-mode images in the background while keeping old images visible,
    * then swaps all at once with a simultaneous opacity cross-fade.
    */
-  async function crossfadeDarkMode() {
+  async function crossfadeCellImages() {
     if (!sequence?.steps?.length || cells.length === 0) return;
 
     if (isRendering) {
@@ -1700,18 +1711,35 @@
     const hasDurations = untrack(() => hasMixedDurations);
     const isLayoutOnly = !imageChanged && contentChanged && cellsLoaded && !hasDurations;
 
+    // Grid-structure key: anything that changes row/column count or cell
+    // positions. When this is unchanged we can safely reuse the crossfade
+    // path for image-content swaps (motion visibility toggle, glyph
+    // overlays, etc.) — each cell keeps its slot, only its image changes.
+    const gridStableKey = `${stepCount}-${durationKey}-cols:${effCols}-isp:${isp}`;
+    const gridStable = gridStableKey === lastGridStableKey && cellsLoaded;
+
     lastEffectRenderKey = renderKey;
     lastContentKey = contentKey;
     lastImageKey = imageKey;
+    lastGridStableKey = gridStableKey;
 
     if (isDarkModeOnly) {
       untrack(() => {
-        crossfadeDarkMode();
+        crossfadeCellImages();
       });
     } else if (isLayoutOnly) {
       activeDarkMode = dm;
       untrack(() => {
         relayoutCells();
+      });
+    } else if (gridStable && imageChanged) {
+      // Grid structure stable, only cell images need to swap — reuse the
+      // crossfade path so the transition reads as a smooth fade rather
+      // than a visible pop. Covers motion-visibility toggles, VTG /
+      // elemental / positions overlays, TKA glyph, reversal dots, etc.
+      activeDarkMode = dm;
+      untrack(() => {
+        crossfadeCellImages();
       });
     } else {
       activeDarkMode = dm;
@@ -1827,6 +1855,7 @@
     lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showVTG ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
     lastContentKey = `${lastImageKey}-${includeStartPosition}`;
     lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
+    lastGridStableKey = `${stepCount}-${durationKey}-cols:${effectiveColumns}-isp:${includeStartPosition}`;
 
     // Synchronous cache probe: if the global cache already has this exact render,
     // populate cells immediately so the first paint shows content instead of a
@@ -2215,6 +2244,8 @@
                     show={placement.variant === "full" ? "both" : placement.variant}
                     size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
                     darkMode={activeDarkMode}
+                    {bluePropType}
+                    {redPropType}
                   />
                 </div>
               </div>
@@ -2292,6 +2323,8 @@
                   show={placement.variant === "full" ? "both" : placement.variant}
                   size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
                   darkMode={activeDarkMode}
+                  {bluePropType}
+                  {redPropType}
                 />
               </div>
             </div>
