@@ -552,22 +552,5 @@ if (typeof window !== 'undefined' && container?.items?.imageComposer && containe
 // Export type for the composed container
 export type AppContainer = { items: IAppContainerItems };
 
-// ============================================================================
-// CACHE MANAGEMENT
-// ============================================================================
-import { clearPictographCaches } from "./containers/pictograph-container";
-import { clearSvgImageCache } from "../render/services/implementations/SvgImageCache";
-
-/**
- * Clear all rendering-related caches.
- * Call this when the app needs to re-render with fresh data
- * (e.g., after code updates that affect colors, SVG content, etc.)
- */
-export function clearAllRenderCaches(): void {
-  clearPictographCaches();
-  clearSvgImageCache();
-  console.log("[DI] All render caches cleared");
-}
-
 // Default export for convenience
 export default container;
