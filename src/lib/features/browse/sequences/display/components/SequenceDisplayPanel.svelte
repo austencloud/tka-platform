@@ -6,7 +6,7 @@
   import type { SequenceFilterType } from "../../../shared/state/sequence-controls-state.svelte";
   import type { ActiveFilter } from "../../../shared/domain/models/multi-filter-models";
   import type { VirtualGridApi } from "./VirtualizedSequenceGrid.svelte";
-  import { container } from "$lib/shared/di";
+  import { getBrowseThumbnailProvider } from "../getBrowseThumbnailProvider";
   import { onMount, onDestroy } from "svelte";
   import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import { browseScrollState } from "../../../shared/state/BrowseScrollState.svelte";
@@ -154,7 +154,7 @@
   }
 
   onMount(async () => {
-    thumbnailService = container.items.browseThumbnailProvider;
+    thumbnailService = getBrowseThumbnailProvider();
     gridZoomManager.initFromSettings();
     pinchController = new PinchZoomGridController();
     if (displayContentEl) {

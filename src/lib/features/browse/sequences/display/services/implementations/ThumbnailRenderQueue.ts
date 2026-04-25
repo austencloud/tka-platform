@@ -16,7 +16,7 @@ import type { IThumbnailRenderQueue, QueueStats } from "../contracts/IThumbnailR
 
 interface QueuedTask<T> {
   id: string;
-  execute: () => Promise<T>;
+  execute: (signal: AbortSignal) => Promise<T>;
   resolve: (value: T) => void;
   reject: (error: Error) => void;
   priority: number;
@@ -33,10 +33,11 @@ export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
   private queue: QueuedTask<unknown>[] = [];
   private activeCount = 0;
   private activeIds = new Set<string>();
+  private activeControllers = new Map<string, AbortController>();
   private pendingPromises = new Map<string, Promise<unknown>>();
   private maxConcurrent = DEFAULT_MAX_CONCURRENT;
 
-  enqueue<T>(id: string, execute: () => Promise<T>, priority: number = Infinity): Promise<T> {
+  enqueue<T>(id: string, execute: (signal: AbortSignal) => Promise<T>, priority: number = Infinity): Promise<T> {
     // If this ID already has a pending promise, return it (deduplication)
     const existing = this.pendingPromises.get(id);
     if (existing) {
@@ -86,6 +87,12 @@ export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
       this.pendingPromises.delete(task.id);
     }
     this.queue = [];
+
+    // Abort all actively running renders so they bail out between beats
+    for (const controller of this.activeControllers.values()) {
+      controller.abort();
+    }
+    this.activeControllers.clear();
   }
 
   getStats(): QueueStats {
@@ -117,10 +124,13 @@ export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
     this.activeCount++;
     this.activeIds.add(task.id);
 
+    const controller = new AbortController();
+    this.activeControllers.set(task.id, controller);
+
     try {
       // Race the render against a timeout to reclaim the slot if it hangs
       const result = await Promise.race([
-        task.execute(),
+        task.execute(controller.signal),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("Render timeout")), RENDER_TIMEOUT_MS)
         ),
@@ -131,6 +141,7 @@ export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
     } finally {
       this.activeCount--;
       this.activeIds.delete(task.id);
+      this.activeControllers.delete(task.id);
 
       // Process next item in queue
       this.processQueue();

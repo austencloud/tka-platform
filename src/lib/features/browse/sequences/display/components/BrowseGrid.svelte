@@ -15,6 +15,7 @@
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getVariationGrouper } from "../getVariationGrouper";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
   /**
@@ -68,7 +69,7 @@
   );
 
   // Variation grouper service for identifying sequences with same word
-  const variationGrouper = container.items.variationGrouper;
+  const variationGrouper = getVariationGrouper();
 
   // Build variation map when sequences change
   const variationMap = $derived.by(() => {

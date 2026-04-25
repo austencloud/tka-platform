@@ -52,6 +52,7 @@ export interface IThumbnailRenderer {
     sequence: SequenceData,
     input: ThumbnailRenderInput,
     options?: RenderOptions,
-    onProgress?: RenderProgressCallback
+    onProgress?: RenderProgressCallback,
+    signal?: AbortSignal
   ): Promise<Blob>;
 }

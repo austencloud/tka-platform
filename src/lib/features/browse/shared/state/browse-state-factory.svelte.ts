@@ -7,6 +7,13 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
+import { getBrowseLoader } from "../../sequences/display/getBrowseLoader";
+import { getBrowseFilter } from "../../sequences/display/getBrowseFilter";
+import { getMultiFilter } from "../../sequences/display/getMultiFilter";
+import { getBrowseSorter } from "../../sequences/display/getBrowseSorter";
+import { getBrowseNavigator } from "../../sequences/navigation/getBrowseNavigator";
+import { getBrowseSectionManager } from "../../sequences/display/getBrowseSectionManager";
+import { getFavoritesManager } from "../getFavoritesManager";
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import {
   DEFAULT_BROWSE_VIEW_MODE,
@@ -61,13 +68,13 @@ function deduplicateById(sequences: SequenceData[]): SequenceData[] {
 
 export function createBrowseState() {
   // Services - Use specialized services directly instead of orchestration layer
-  const loaderService = container.items.browseLoader;
-  const filterService = container.items.browseFilter;
-  const multiFilterService = container.items.multiFilter as IMultiFilter;
-  const sortService = container.items.browseSorter;
-  const Navigator = container.items.browseNavigator;
-  const SectionManager = container.items.browseSectionManager;
-  const FavoritesManager = container.items.favoritesManager;
+  const loaderService = getBrowseLoader();
+  const filterService = getBrowseFilter();
+  const multiFilterService = getMultiFilter();
+  const sortService = getBrowseSorter();
+  const Navigator = getBrowseNavigator();
+  const SectionManager = getBrowseSectionManager();
+  const FavoritesManager = getFavoritesManager();
 
   // Library service for "My Library" mode - lazily resolved
   let libraryService: ILibraryRepository | null = null;
