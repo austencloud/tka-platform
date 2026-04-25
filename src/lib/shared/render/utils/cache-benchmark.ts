@@ -109,8 +109,8 @@ export async function runCacheBenchmark(
   console.log(`Testing with ${sequenceCount} real sequences\n`);
 
   try {
-    const { container } = await import("$lib/shared/di");
-    const imageComposer = container.items.imageComposer;
+    const { getImageComposer } = await import("../getImageComposer");
+    const imageComposer = getImageComposer();
 
     // Load real sequences from the browse index
     const sequences = await loadRealSequences(sequenceCount);
@@ -473,8 +473,8 @@ export async function runVisibilityChangeBenchmark(
   console.log("This test measures what happens to the cache when visibility toggles.\n");
 
   try {
-    const { container } = await import("$lib/shared/di");
-    const imageComposer = container.items.imageComposer;
+    const { getImageComposer } = await import("../getImageComposer");
+    const imageComposer = getImageComposer();
 
     // Load real sequences
     const sequences = await loadRealSequences(sequenceCount);

@@ -23,7 +23,7 @@
 import type { FeedbackContainer } from "./containers/feedback-container";
 import type { GamificationContainer } from "./containers/gamification-container";
 import type { PromoContainer } from "./containers/promo-container";
-import type { RenderContainer } from "./containers/render-container";
+// RenderContainer removed — render services dissolved into module singleton getters
 import type { ShareContainer } from "./containers/share-container";
 import type { BrowseContainer } from "./containers/browse-container";
 import type { CreateContainer } from "./containers/create-container";
@@ -142,7 +142,27 @@ interface DataItems {
 type FeedbackItems = ItemsOf<FeedbackContainer>;
 type GamificationItems = ItemsOf<GamificationContainer>;
 type PromoItems = ItemsOf<PromoContainer>;
-type RenderItems = ItemsOf<RenderContainer>;
+// RenderItems — dissolved from render-container into module singleton getters.
+// Explicit interface replaces ItemsOf<RenderContainer>.
+interface RenderItems {
+	canvasManager: import("../render/services/contracts/ICanvasManager").ICanvasManager;
+	layoutCalculator: import("../render/services/contracts/ILayoutCalculator").ILayoutCalculator;
+	dimensionCalculator: import("../render/services/contracts/IDimensionCalculator").IDimensionCalculator;
+	svgToCanvasConverter: import("../render/services/contracts/ISVGToCanvasConverter").ISVGToCanvasConverter;
+	glyphCache: import("../render/services/implementations/GlyphCache").IGlyphCache;
+	filenameGenerator: import("../render/services/implementations/FilenameGenerator").FilenameGenerator;
+	pictographBlobCache: import("../render/services/contracts/IPictographBlobCache").IPictographBlobCache;
+	pictographKeyHasher: import("../render/services/contracts/IPictographKeyHasher").IPictographKeyHasher;
+	pictographMemoryCache: import("../render/services/implementations/PictographMemoryCache").PictographMemoryCache;
+	beatNumberRenderer: import("../render/services/contracts/IStepNumberRenderer").IStepNumberRenderer;
+	canvas2DRenderer: import("../render/services/contracts/IDirectRenderer").IDirectRenderer;
+	layerCompositor: import("../render/services/contracts/ILayerCompositor").ILayerCompositor;
+	loopIconStripRenderer: import("../render/services/contracts/ILOOPIconStripRenderer").ILOOPIconStripRenderer;
+	textRenderer: import("../render/services/contracts/ITextRenderer").ITextRenderer;
+	imageFormatConverter: import("../render/services/contracts/IImageFormatConverter").IImageFormatConverter;
+	imageComposer: import("../render/services/contracts/IImageComposer").IImageComposer;
+	sequenceRenderer: import("../render/services/contracts/ISequenceRenderer").ISequenceRenderer;
+}
 type ShareItems = ItemsOf<ShareContainer>;
 type BrowseItems = ItemsOf<BrowseContainer>;
 type TrainItems = ItemsOf<TrainContainer>;

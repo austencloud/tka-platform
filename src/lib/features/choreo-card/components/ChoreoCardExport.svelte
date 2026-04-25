@@ -11,6 +11,7 @@
   import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import { onMount } from "svelte";
 
   interface Props {
@@ -71,7 +72,7 @@
     hapticService?.trigger("selection");
 
     try {
-      const renderer = container.items.sequenceRenderer;
+      const renderer = getSequenceRenderer();
 
       const renderOptions = {
         stepSize: 300,
@@ -130,7 +131,7 @@
       downloadBlob(zipBlob, "choreo-cards.zip");
       hapticService?.trigger("success");
     } catch (error) {
-      console.error("[ChoreoCardExport] Export failed:", error);
+      console.warn("[ChoreoCardExport] Export failed:", error);
       hapticService?.trigger("error");
       toast.error("Export failed. Try again.");
     } finally {
@@ -237,7 +238,7 @@
   }
 
   .export-btn i {
-    font-size: 0.875rem;
+    font-size: 14px;
   }
 
   /* Progress */

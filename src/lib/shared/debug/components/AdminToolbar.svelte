@@ -27,6 +27,7 @@
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import { container } from "$lib/shared/di";
+  import { getImageComposer } from "$lib/shared/render/getImageComposer";
   import type {
     IQuickAccessPersister,
     QuickAccessUser,
@@ -275,7 +276,7 @@
     introResetMessage = "Clearing local pictograph cache...";
 
     try {
-      const imageComposer = container.items.imageComposer;
+      const imageComposer = getImageComposer();
 
       // Get stats before clearing
       const statsBefore = imageComposer.getCacheStats();

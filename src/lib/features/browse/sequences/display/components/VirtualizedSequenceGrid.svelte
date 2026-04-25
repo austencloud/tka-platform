@@ -13,6 +13,7 @@
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getLayoutCalculator } from "$lib/shared/render/getLayoutCalculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
@@ -44,7 +45,7 @@
     onGridReady?: (api: VirtualGridApi) => void;
   }>();
 
-  const layoutCalculator = container.items.layoutCalculator;
+  const layoutCalculator = getLayoutCalculator();
   const variationGrouper = container.items.variationGrouper;
   const sequenceDataProvider = container.items.sequenceDataProvider;
 

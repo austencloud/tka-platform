@@ -12,6 +12,7 @@ import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/feature
 import type { IOffline3DExporter } from "$lib/shared/3d/services/contracts/IOffline3DExporter";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { container } from "$lib/shared/di";
+import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -41,7 +42,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
 
   private get sequenceRenderer(): ISequenceRenderer | null {
     if (!this._sequenceRenderer) {
-      this._sequenceRenderer = container.items.sequenceRenderer;
+      this._sequenceRenderer = getSequenceRenderer();
     }
     return this._sequenceRenderer;
   }

@@ -15,13 +15,12 @@
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { container } from "$lib/shared/di";
-  import type { IDirectRenderer } from "$lib/shared/render/services/contracts/IDirectRenderer";
+  import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import "$lib/features/retro/dos/styles/dos-terminal.css";
 
   const svgToBraille = new SvgToBrailleConverter(
-    container.items.canvas2DRenderer as IDirectRenderer,
+    getCanvas2DRenderer(),
     pictographPreparer,
   );
 

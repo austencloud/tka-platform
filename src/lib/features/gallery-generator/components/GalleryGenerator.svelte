@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
+  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
@@ -57,7 +58,7 @@
 
       // Get services from ITI container
       const loaderService = container.items.browseLoader;
-      const renderService = container.items.sequenceRenderer;
+      const renderService = getSequenceRenderer();
 
       galleryRenderer = new GalleryRenderer(
         renderService,

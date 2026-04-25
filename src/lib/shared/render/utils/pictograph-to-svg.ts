@@ -338,9 +338,9 @@ async function waitForImagesLoaded(domContainer: HTMLElement): Promise<void> {
     return;
   }
 
-  // Lazy-load DI container (only in browser contexts where this function runs)
-  const { container } = await import("../../di");
-  const glyphCache = container.items.glyphCache;
+  // Use module singleton getter (only in browser contexts where this function runs)
+  const { getGlyphCache } = await import("../getGlyphCache");
+  const glyphCache = getGlyphCache();
 
   const imagePromises = Array.from(images).map(async (img) => {
     const imageElement = img as SVGImageElement;
