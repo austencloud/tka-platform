@@ -29,7 +29,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 	// Shared beat counter at 60 BPM (1 beat per second)
 	const BPM = 60;
 	const MS_PER_BEAT = 60000 / BPM;
-	let currentBeat = $state(0);
+	let currentStep = $state(0);
 	let animFrameId: number | null = null;
 	let startTime: number | null = null;
 
@@ -123,18 +123,18 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 
 	function tick(now: number) {
 		if (!startTime) startTime = now;
-		currentBeat = (now - startTime) / MS_PER_BEAT;
+		currentStep = (now - startTime) / MS_PER_BEAT;
 		animFrameId = requestAnimationFrame(tick);
 	}
 
 	// Sync prop states for all cells each beat
 	$effect(() => {
-		const beat = currentBeat;
+		const playbackPosition = currentStep;
 		if (!initialized) return;
 
 		for (const cs of cellStates) {
 			const stepCount = cs.sequence.steps?.length || 1;
-			const wrapped = beat % stepCount;
+			const wrapped = playbackPosition % stepCount;
 			const step = wrapped + 1; // 1-based, skip start position
 
 			if (cs.orchestrator.isInitialized()) {
@@ -155,7 +155,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 		<div class="anim-cell" class:has-sequence={pos.hasSequence} class:empty-cell={!pos.hasSequence}>
 			{#if cs}
 				{@const stepCount = cs.sequence.steps?.length || 1}
-				{@const wrapped = currentBeat % stepCount}
+				{@const wrapped = currentStep % stepCount}
 				{@const step = wrapped + 1}
 				{@const stepIndex = Math.floor(Math.max(0, Math.min(step - 1, stepCount - 1)))}
 				{@const stepData = cs.sequence.steps?.[stepIndex] ?? null}

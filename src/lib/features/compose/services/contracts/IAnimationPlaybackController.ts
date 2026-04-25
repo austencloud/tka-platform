@@ -35,27 +35,27 @@ export interface IAnimationPlaybackController {
   stop(): void;
 
   /**
-   * Jump to a specific beat (instant, no animation)
+   * Jump to a specific step (instant, no animation)
    * Pauses playback.
-   * @param beat Beat number to jump to
+   * @param step Step number to jump to
    */
-  jumpToStep(beat: number): void;
+  jumpToStep(step: number): void;
 
   /**
-   * Seek to a specific beat without affecting playback state.
+   * Seek to a specific step without affecting playback state.
    * If playing, continues playing from the new position.
    * If paused, stays paused at the new position.
-   * @param beat Beat number to seek to
+   * @param step Step number to seek to
    */
-  seekToStep(beat: number): void;
+  seekToStep(step: number): void;
 
   /**
-   * Animate smoothly to a specific beat
-   * @param beat Beat number to animate to
+   * Animate smoothly to a specific step
+   * @param step Step number to animate to
    * @param duration Animation duration in milliseconds (default 300ms)
    * @param linear Use linear interpolation instead of easing (default false)
    */
-  animateToStep(beat: number, duration?: number, linear?: boolean): void;
+  animateToStep(step: number, duration?: number, linear?: boolean): void;
 
   /**
    * Step forward by half a beat (0.5) with BPM-timed animation
@@ -99,11 +99,11 @@ export interface IAnimationPlaybackController {
   getCurrentPropStates(): { blue: PropState; red: PropState };
 
   /**
-   * Calculate and update prop states for a specific beat without affecting playback.
-   * Used when an external beat source (like composition state) drives the animation.
-   * @param beat Beat number to calculate state for
+   * Calculate and update prop states for a specific step without affecting playback.
+   * Used when an external step source (like composition state) drives the animation.
+   * @param step Step number to calculate state for
    */
-  calculateStateForBeat(beat: number): void;
+  calculateStateForStep(step: number): void;
 
   /**
    * Register a callback that fires each time a full loop of the sequence completes.

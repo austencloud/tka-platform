@@ -3,7 +3,7 @@
 
   Shows a live animation preview driven entirely by the shared fuse clock.
   Does NOT run its own playback loop — instead, reactively calls
-  calculateStateForBeat() when currentBeat changes.
+  calculateStateForStep() when currentStep changes.
 -->
 <script lang="ts">
 
@@ -22,7 +22,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		onBack,
 		onControllerReady,
 		propColor,
-		currentBeat = 0,
+		currentStep = 0,
 		showBackButton = true,
 	}: {
 		sequence: SequenceData;
@@ -30,7 +30,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		onBack?: () => void;
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
 		propColor?: "blue" | "red";
-		currentBeat?: number;
+		currentStep?: number;
 		showBackButton?: boolean;
 	} = $props();
 
@@ -44,7 +44,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	let error = $state<string | null>(null);
 
 	// Derived state from animState for canvas props
-	const currentStep = $derived(animState.currentStep);
+	const animCurrentStep = $derived(animState.currentStep);
 	const bluePropState = $derived(animState.bluePropState);
 	const redPropState = $derived(animState.redPropState);
 	const sequenceData = $derived(animState.sequenceData ?? sequence);
@@ -52,8 +52,8 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	const stepData = $derived.by(() => {
 		const seq = sequenceData;
 		if (!seq) return null;
-		if (currentStep < 1) return seq.startPosition ?? null;
-		const idx = Math.min(Math.max(0, Math.floor(currentStep) - 1), (seq.steps?.length ?? 1) - 1);
+		if (animCurrentStep < 1) return seq.startPosition ?? null;
+		const idx = Math.min(Math.max(0, Math.floor(animCurrentStep) - 1), (seq.steps?.length ?? 1) - 1);
 		return seq.steps?.[idx] ?? null;
 	});
 
@@ -110,20 +110,20 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 			// Do NOT call togglePlayback() — the shared clock drives this
 			// Just calculate initial state
 			const stepCount = totalSteps;
-			if (stepCount > 0 && currentBeat > 0) {
-				const wrappedBeat = (Math.floor(currentBeat) % stepCount) + 1;
-				controller!.calculateStateForBeat(wrappedBeat);
+			if (stepCount > 0 && currentStep > 0) {
+				const wrappedBeat = (Math.floor(currentStep) % stepCount) + 1;
+				controller!.calculateStateForStep(wrappedBeat);
 			} else {
-				controller!.calculateStateForBeat(0);
+				controller!.calculateStateForStep(0);
 			}
 		});
 	});
 
 	// Drive animation from the shared clock — this is the only beat source.
-	// calculateStateForBeat computes interpolated prop states for the given beat
+	// calculateStateForStep computes interpolated prop states for the given beat
 	// without running an internal rAF loop.
 	$effect(() => {
-		const beat = currentBeat;
+		const beat = currentStep;
 		if (!initialized || !controller || totalSteps <= 0) return;
 
 		untrack(() => {
@@ -131,7 +131,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 			// Shared clock beat is a continuous float. Wrap into sequence length,
 			// then add 1 to skip past the start position into motion space.
 			const wrappedWithFraction = (beat % totalSteps) + 1;
-			controller!.calculateStateForBeat(wrappedWithFraction);
+			controller!.calculateStateForStep(wrappedWithFraction);
 			animState.setCurrentStep(wrappedWithFraction);
 		});
 	});

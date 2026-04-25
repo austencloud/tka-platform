@@ -169,7 +169,7 @@
       if (state?.sequenceData && controller) {
         state.setCurrentStep(currentStep);
         // Recalculate prop positions for this beat
-        controller.calculateStateForBeat(currentStep);
+        controller.calculateStateForStep(currentStep);
       }
     }
   });
@@ -191,18 +191,18 @@
     }
   });
 
-  // Get beat data for a specific sequence at current beat
-  function getStepDataForSequence(seq: SequenceData | null, beat: number) {
+  // Get step data for a specific sequence at current beat
+  function getStepDataForSequence(seq: SequenceData | null, stepPosition: number) {
     if (!seq) return null;
 
-    // Handle start position (beat 0)
-    if (beat === 0 && seq.startPosition) {
+    // Handle start position (step 0)
+    if (stepPosition === 0 && seq.startPosition) {
       return seq.startPosition;
     }
 
-    // Get beat data (beat 1 = steps[0], etc.)
+    // Get step data (step 1 = steps[0], etc.)
     if (seq.steps && seq.steps.length > 0) {
-      const stepIndex = Math.max(0, Math.floor(beat) - 1);
+      const stepIndex = Math.max(0, Math.floor(stepPosition) - 1);
       const clampedIndex = Math.min(stepIndex, seq.steps.length - 1);
       return seq.steps[clampedIndex] || null;
     }

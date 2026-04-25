@@ -88,7 +88,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
   });
 
   // Calculate beat position within the active clip (fractional for smooth animation)
-  // A 4-beat sequence has range 0-5: [0-1) start position, [1-5) steps 1-4
+  // A 4-step sequence has range 0-5: [0-1) start position, [1-5) steps 1-4
   const clipStepPosition = $derived.by(() => {
     if (!activeClip) return 0;
 
@@ -165,7 +165,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
     return null;
   });
 
-  // Current beat data - start position is separate from steps
+  // Current step data - start position is separate from steps
   const currentStepData = $derived.by(() => {
     if (!activeClip?.sequence) return null;
 
@@ -236,11 +236,11 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
   $effect(() => {
     if (!animationOrchestrator || !currentSequence || !activeClip) return;
 
-    const beat = clipStepPosition;
+    const playbackPosition = clipStepPosition;
 
     untrack(() => {
-      // Calculate interpolated state for this fractional beat position
-      animationOrchestrator!.calculateState(beat);
+      // Calculate interpolated state for this fractional playback position
+      animationOrchestrator!.calculateState(playbackPosition);
 
       // Get the calculated prop states
       const propStates = animationOrchestrator!.getCurrentPropStates();

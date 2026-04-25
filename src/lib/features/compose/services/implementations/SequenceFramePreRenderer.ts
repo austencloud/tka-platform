@@ -437,7 +437,7 @@ export class SequenceFramePreRenderer {
     config: PreRenderConfig
   ): Promise<void> {
     const timestamp = frameNumber * frameTimeMs;
-    const beat = (timestamp / stepDurationMs) % totalSteps;
+    const playbackPosition = (timestamp / stepDurationMs) % totalSteps;
 
     // Create offscreen renderer on first frame
     if (!this.offscreenRenderer) {
@@ -462,8 +462,8 @@ export class SequenceFramePreRenderer {
       }
     }
 
-    // Calculate animation state for this beat
-    this.orchestrator.calculateState(beat);
+    // Calculate animation state for this playback position
+    this.orchestrator.calculateState(playbackPosition);
     const blueProp = this.orchestrator.getBluePropState();
     const redProp = this.orchestrator.getRedPropState();
     const currentLetter = this.orchestrator.getCurrentLetter();
@@ -549,7 +549,7 @@ export class SequenceFramePreRenderer {
 
     frames.push({
       frameNumber,
-      beat,
+      beat: playbackPosition,
       timestamp,
       bitmap,
     });

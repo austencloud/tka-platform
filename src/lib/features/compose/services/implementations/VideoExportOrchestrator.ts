@@ -216,7 +216,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
     const captureState = {
       wasPlaying: panelState.isPlaying,
-      beat: panelState.currentStep,
+      step: panelState.currentStep,
     };
 
     // Save and apply effect overrides for export
@@ -409,7 +409,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         // Timeline: one start position → motion × loopCount → one end hold.
         // Start and end hold each appear exactly once; motion wraps per loop iteration.
         // The animation engine uses beat 0 = start position, beat 1+ = motion steps.
-        // Using calculateStateForBeat instead of jumpToStep because jumpToStep
+        // Using calculateStateForStep instead of jumpToStep because jumpToStep
         // clamps at totalSteps, which truncates the last step's fractional progress.
         const timeProgress = (i / totalFrames) * totalDurationWithHolds;
 
@@ -417,7 +417,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         const virtualTimeMs = (i / fps) * 1000;
         panelState.setVirtualTime(virtualTimeMs);
 
-        let beat: number;
+        let playbackPosition: number;
         let stepIndex: number;
         let isInStartPosition = false;
         let isInEndHold = false;
@@ -427,27 +427,27 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
         if (startPositionDuration > 0 && timeProgress < motionStart) {
           // Start position phase — show initial pose, no glyph (once, at the beginning)
-          beat = timeProgress / startPositionDuration;
+          playbackPosition = timeProgress / startPositionDuration;
           stepIndex = -1;
           isInStartPosition = true;
-          playbackController.calculateStateForBeat(beat);
+          playbackController.calculateStateForStep(playbackPosition);
         } else if (endPositionHoldDuration > 0 && timeProgress >= motionEnd) {
           // End position hold — freeze on the completed last motion step (once, at the end)
-          beat = steps.length + 1;
+          playbackPosition = steps.length + 1;
           stepIndex = steps.length - 1;
           isInEndHold = true;
-          playbackController.calculateStateForBeat(beat);
+          playbackController.calculateStateForStep(playbackPosition);
         } else {
           // Motion steps phase — wrap time modulo one loop so N iterations play
           // back-to-back with no inter-iteration hold. Offset by +1 for the
-          // animation engine's beat convention (beat 0 = start, 1+ = motion).
+          // animation engine's step convention (step 0 = start, 1+ = motion).
           const motionTime = timeProgress - motionStart;
           const wrappedMotionTime =
             totalDurationUnits > 0 ? motionTime % totalDurationUnits : 0;
-          const rawBeat = this.timeToBeat(wrappedMotionTime, cumulativeDurations, stepDurations);
-          stepIndex = Math.floor(rawBeat);
-          beat = rawBeat + 1;
-          playbackController.calculateStateForBeat(beat);
+          const rawStep = this.timeToBeat(wrappedMotionTime, cumulativeDurations, stepDurations);
+          stepIndex = Math.floor(rawStep);
+          playbackPosition = rawStep + 1;
+          playbackController.calculateStateForStep(playbackPosition);
         }
 
         // Wait for the UI + canvas to render the new beat
@@ -539,8 +539,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
           // Detect transitions (cache key or beat number changed)
           const glyphChanged = cacheKey !== currentCacheKey;
-          const beatNumberChanged = stepNumber !== currentStepNumber;
-          const transitionDetected = glyphChanged || beatNumberChanged;
+          const stepNumberChanged = stepNumber !== currentStepNumber;
+          const transitionDetected = glyphChanged || stepNumberChanged;
 
           if (transitionDetected) {
             // Store previous state for crossfade
@@ -660,7 +660,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               ? 0
               : isInEndHold
                 ? steps.length
-                : (beat - 1); // Undo the +1 offset to get 0-based step index
+                : (playbackPosition - 1); // Undo the +1 offset to get 0-based step index
             this.canvasRenderer.renderProgressBarToCanvas(
               offscreenCtx,
               actualCanvasSize,
@@ -808,9 +808,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
   private restorePlaybackState(
     playbackController: IAnimationPlaybackController,
-    snapshot: { wasPlaying: boolean; beat: number }
+    snapshot: { wasPlaying: boolean; step: number }
   ): void {
-    playbackController.jumpToStep(snapshot.beat);
+    playbackController.jumpToStep(snapshot.step);
     if (snapshot.wasPlaying) {
       playbackController.togglePlayback();
     }
@@ -847,20 +847,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   }
 
   /**
-   * Get the beat number for a specific frame
+   * Get the step number for a specific frame
    * Matches the logic in AnimatorCanvas.svelte's stepNumber derived
-   * Beat numbers are 1-indexed (steps[0] = beat 1, steps[1] = beat 2, etc.)
+   * Step numbers are 1-indexed (steps[0] = step 1, steps[1] = step 2, etc.)
    */
   private getStepNumberForFrame(
-    beat: number,
+    stepPosition: number,
     panelState: AnimationPanelState
   ): number | null {
     if (!panelState.sequenceData?.steps) {
       return null;
     }
 
-    // Calculate which beat index we're showing
-    const stepIndex = Math.floor(beat);
+    // Calculate which step index we're showing
+    const stepIndex = Math.floor(stepPosition);
     const clampedIndex = Math.max(
       0,
       Math.min(stepIndex, panelState.sequenceData.steps.length - 1)

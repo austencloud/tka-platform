@@ -316,11 +316,11 @@ export class VideoPreRenderer implements IVideoPreRenderer {
           };
         }
 
-        // Calculate beat position for this frame (at 60 BPM = 1 beat per second)
-        const beat = frameIndex / videoFps;
+        // Calculate playback position for this frame (at 60 BPM = 1 beat per second)
+        const playbackPosition = frameIndex / videoFps;
 
         // Get prop states from orchestrator
-        orchestrator.calculateState(beat);
+        orchestrator.calculateState(playbackPosition);
         const blueProp = orchestrator.getBluePropState();
         const redProp = orchestrator.getRedPropState();
 

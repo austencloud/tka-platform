@@ -59,7 +59,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
   // Derived values
   // totalSteps = number of motion steps (NOT including start position)
   // fullStepRange = total playback range (start position + motion steps)
-  // A 4-beat sequence has range 0-5: [0-1) start, [1-2) beat 1, [2-3) beat 2, [3-4) beat 3, [4-5) beat 4
+  // A 4-step sequence has range 0-5: [0-1) start, [1-2) beat 1, [2-3) beat 2, [3-4) beat 3, [4-5) beat 4
   const totalSteps = $derived(sequence?.steps?.length || 0);
   const fullStepRange = $derived(totalSteps + 1); // +1 for start position
   const displayName = $derived(
@@ -102,7 +102,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
     return null;
   });
 
-  // Get current beat data - start position is separate from steps
+  // Get current step data - start position is separate from steps
   const currentStepData = $derived.by(() => {
     if (!sequence) return null;
 
@@ -168,10 +168,10 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
     if (!animationOrchestrator || !sequence || loadedSequenceId !== sequence.id)
       return;
 
-    const beat = currentStep;
+    const playbackPosition = currentStep;
 
     untrack(() => {
-      animationOrchestrator!.calculateState(beat);
+      animationOrchestrator!.calculateState(playbackPosition);
       const propStates = animationOrchestrator!.getCurrentPropStates();
       bluePropState = propStates.blue;
       redPropState = propStates.red;
@@ -217,7 +217,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
     playbackInterval = window.setInterval(() => {
       currentStep += 1 / stepsPerBeat;
       // Range: 0 to fullStepRange (start position + all motion steps)
-      // A 4-beat sequence uses range 0-5: [0-1) start, [1-5) steps 1-4
+      // A 4-step sequence uses range 0-5: [0-1) start, [1-5) steps 1-4
       // Loop back to start position after completing last beat
       if (currentStep >= fullStepRange) {
         currentStep = 0; // Loop back to start position
@@ -309,8 +309,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
         />
       </div>
 
-      <!-- Beat indicator overlay -->
-      <div class="beat-indicator">
+      <!-- Step indicator overlay -->
+      <div class="step-indicator">
         {#if isAtStartPosition}
           Start
         {:else}
@@ -365,8 +365,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
         <button
           class="transport-btn"
           onclick={stepBackward}
-          title="Previous beat"
-          aria-label="Previous beat"
+          title="Previous step"
+          aria-label="Previous step"
           disabled={!sequence}
         >
           <i class="fas fa-backward-step" aria-hidden="true"></i>
@@ -384,8 +384,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
         <button
           class="transport-btn"
           onclick={stepForward}
-          title="Next beat"
-          aria-label="Next beat"
+          title="Next step"
+          aria-label="Next step"
           disabled={!sequence}
         >
           <i class="fas fa-forward-step" aria-hidden="true"></i>

@@ -99,7 +99,7 @@ export function createCameraChoreographer(): ICameraChoreographer {
   /**
    * Calculate camera state for a beat time
    */
-  function calculateStateForBeat(
+  function calculateStateForStep(
     stepTime: number,
     performerProvider?: PerformerPositionProvider
   ): CameraState {
@@ -273,7 +273,7 @@ export function createCameraChoreographer(): ICameraChoreographer {
       performerProvider?: PerformerPositionProvider
     ): CameraState {
       const stepTime = stepNumber + stepProgress;
-      currentState = calculateStateForBeat(stepTime, performerProvider);
+      currentState = calculateStateForStep(stepTime, performerProvider);
       notifyStateChange();
       return currentState;
     },
