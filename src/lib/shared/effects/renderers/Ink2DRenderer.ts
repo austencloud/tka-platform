@@ -105,7 +105,7 @@ class BrushStampCache {
 
     ctx.clearRect(0, 0, STAMP_SIZE, STAMP_SIZE);
 
-    // Layer 1: Core pigment — radial gradient, dense center → transparent edge
+    // Layer 1: Core pigment
     const grad1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
     grad1.addColorStop(0, `rgba(${pr},${pg},${pb},0.95)`);
     grad1.addColorStop(0.55, `rgba(${pr},${pg},${pb},0.7)`);
@@ -125,14 +125,14 @@ class BrushStampCache {
       ctx.fillRect(0, 0, STAMP_SIZE, STAMP_SIZE);
     }
 
-    // Layer 3: Edge bleed — soft feather beyond pigment boundary
+    // Layer 3: Edge bleed
     const grad3 = ctx.createRadialGradient(cx, cy, R * 0.7, cx, cy, R * 1.1);
     grad3.addColorStop(0, `rgba(${er},${eg},${eb},0)`);
     grad3.addColorStop(1, `rgba(${er},${eg},${eb},0.2)`);
     ctx.fillStyle = grad3;
     ctx.fillRect(0, 0, STAMP_SIZE, STAMP_SIZE);
 
-    // Layer 4: Fiber noise — per-pixel alpha modulation
+    // Layer 4: Fiber noise
     const noiseStrength = palette.watercolor ? 0.15 : palette.emissive ? 0.2 : 1.0;
     if (noiseStrength > 0.05) {
       const imgData = ctx.getImageData(0, 0, STAMP_SIZE, STAMP_SIZE);
@@ -161,11 +161,12 @@ class BrushStampCache {
   }
 }
 
-// --- InkPoint with tangent + jitter seed ---
+// --- InkPoint with velocity for gravity ---
 
 interface InkPoint {
   x: number;
   y: number;
+  vy: number;
   age: number;
   spawnSpeedPx: number;
   tangentAngle: number;
@@ -180,12 +181,25 @@ interface TipState {
   emitAccumulator: number;
 }
 
+// --- Droplet from strand breakup ---
+
+interface InkDroplet {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  maxAge: number;
+  radius: number;
+  jitterSeed: number;
+}
+
 const MOTION_VELOCITY_THRESHOLD_PX = 30;
 const FADE_FRACTION = 0.6;
-const LIGHT_SAG_PX = 0.8;
 const MAX_ROTATION_JITTER = 0.14;
 const MAX_SCALE_JITTER = 0.24;
 const MAX_OPACITY_JITTER = 0.15;
+const DROPLET_DRIFT_PX = 30;
 
 function jitterHash(seed: number, channel: number): number {
   let h = ((seed * 1000000) | 0) + channel * 374761393;
@@ -201,6 +215,7 @@ export class Ink2DRenderer {
     redPosB: null,
   };
   private stampCache = new BrushStampCache();
+  private droplets: InkDroplet[] = [];
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -213,13 +228,19 @@ export class Ink2DRenderer {
       const pos = tips[key];
       const enabled = this.isTipEnabled(key, params);
       if (!pos || !enabled) {
-        this.tips[key] = null;
+        // Don't clear state — let existing points sag, break, and age out.
+        // Only clear lastPos so the next appearance doesn't teleport.
+        const state = this.tips[key];
+        if (state) state.lastPos = null;
         continue;
       }
       this.updateTip(key, pos, params, dt);
     }
-    this.ageAndCullPoints(dt, params.lifetimeSeconds);
+    this.applyGravityAndCull(dt, params);
+    this.detectBreakup(params);
+    this.advanceDroplets(dt, params, ctx.canvas.height);
     this.drawStamps(ctx, params);
+    this.drawDroplets(ctx, params);
   }
 
   private updateTip(
@@ -271,7 +292,6 @@ export class Ink2DRenderer {
 
     const tangent = Math.atan2(state.smoothedVy, state.smoothedVx);
 
-    // Spacing gate: enforce minimum distance between consecutive stamps
     const speedT = Math.min(1, speedPx / (params.motionReferenceSpeed * PX_PER_WORLD * 2));
     const currentScale =
       params.stampScaleMax + (params.stampScaleMin - params.stampScaleMax) * speedT;
@@ -310,6 +330,7 @@ export class Ink2DRenderer {
     state.points.push({
       x,
       y,
+      vy: 0,
       age: 0,
       spawnSpeedPx: speedPx,
       tangentAngle,
@@ -320,22 +341,94 @@ export class Ink2DRenderer {
     }
   }
 
-  private ageAndCullPoints(dt: number, lifetimeSeconds: number): void {
+  private applyGravityAndCull(dt: number, params: Ink2DParams): void {
+    const gravity = params.gravityPx;
     for (const key of TIP_KEYS) {
       const state = this.tips[key];
       if (!state) continue;
       const survivors: InkPoint[] = [];
       for (const p of state.points) {
         p.age += dt;
-        // Light gravity preview: aged points drift downward
-        if (p.age > lifetimeSeconds * 0.4) {
-          const sagT = (p.age - lifetimeSeconds * 0.4) / (lifetimeSeconds * 0.6);
-          p.y += LIGHT_SAG_PX * sagT * sagT * dt * 60;
-        }
-        if (p.age < lifetimeSeconds) survivors.push(p);
+        p.vy += gravity * dt;
+        p.y += p.vy * dt;
+        if (p.age < params.lifetimeSeconds) survivors.push(p);
       }
       state.points = survivors;
     }
+  }
+
+  private detectBreakup(params: Ink2DParams): void {
+    const threshold = (1 - params.viscosity) * params.breakStretchMax;
+    if (threshold <= 0) {
+      // viscosity=1: everything breaks immediately — convert all aged points
+      for (const key of TIP_KEYS) {
+        const state = this.tips[key];
+        if (!state || state.points.length < 2) continue;
+        const keep: InkPoint[] = [];
+        for (const p of state.points) {
+          if (p.age > 0.05) {
+            this.spawnDropletFromPoint(p, params);
+          } else {
+            keep.push(p);
+          }
+        }
+        state.points = keep;
+      }
+      return;
+    }
+
+    for (const key of TIP_KEYS) {
+      const state = this.tips[key];
+      if (!state || state.points.length < 2) continue;
+
+      // Walk oldest→newest, find first break point
+      let breakIdx = -1;
+      for (let i = 0; i < state.points.length - 1; i++) {
+        const a = state.points[i]!;
+        const b = state.points[i + 1]!;
+        if (Math.hypot(b.x - a.x, b.y - a.y) > threshold) {
+          breakIdx = i;
+          break;
+        }
+      }
+
+      if (breakIdx >= 0) {
+        // Detach points 0..breakIdx → droplets
+        const detached = state.points.splice(0, breakIdx + 1);
+        for (const p of detached) {
+          this.spawnDropletFromPoint(p, params);
+        }
+      }
+    }
+  }
+
+  private spawnDropletFromPoint(p: InkPoint, params: Ink2DParams): void {
+    if (this.droplets.length >= params.dropletPoolSize) return;
+    this.droplets.push({
+      x: p.x,
+      y: p.y,
+      vx: (Math.random() - 0.5) * DROPLET_DRIFT_PX * 2,
+      vy: p.vy,
+      age: 0,
+      maxAge: params.dropletMaxAge * (0.7 + Math.random() * 0.6),
+      radius: 3 + Math.random() * 5,
+      jitterSeed: p.jitterSeed,
+    });
+  }
+
+  private advanceDroplets(dt: number, params: Ink2DParams, canvasHeight: number): void {
+    const gravity = params.gravityPx;
+    const survivors: InkDroplet[] = [];
+    for (const d of this.droplets) {
+      d.vy += gravity * dt;
+      d.x += d.vx * dt;
+      d.y += d.vy * dt;
+      d.age += dt;
+      if (d.age < d.maxAge && d.y < canvasHeight + 50) {
+        survivors.push(d);
+      }
+    }
+    this.droplets = survivors;
   }
 
   private drawStamps(ctx: CanvasRenderingContext2D, params: Ink2DParams): void {
@@ -358,7 +451,7 @@ export class Ink2DRenderer {
         const state = this.tips[key];
         if (!state || state.points.length === 0) continue;
 
-        // Edge bleed pass: larger stamps, low alpha, edge color
+        // Edge bleed pass
         for (const p of state.points) {
           const ageT = p.age / params.lifetimeSeconds;
           const fadeOut =
@@ -384,7 +477,7 @@ export class Ink2DRenderer {
           ctx.restore();
         }
 
-        // Pigment pass: main stamps
+        // Pigment pass
         for (const p of state.points) {
           const ageT = p.age / params.lifetimeSeconds;
           const fadeOut =
@@ -416,6 +509,43 @@ export class Ink2DRenderer {
     }
   }
 
+  private drawDroplets(ctx: CanvasRenderingContext2D, params: Ink2DParams): void {
+    if (this.droplets.length === 0) return;
+    const stamp = this.stampCache.get(params);
+    const palette = params.resolvedPalette;
+    const prevComposite = ctx.globalCompositeOperation;
+    const prevAlpha = ctx.globalAlpha;
+    const composite: GlobalCompositeOperation = palette.emissive ? "lighter" : "source-over";
+
+    try {
+      ctx.globalCompositeOperation = composite;
+      const peakAlpha = params.opacityMax * (0.45 + 0.55 * params.intensity);
+      const watercolorCap = palette.watercolor ? 0.35 : 1.0;
+
+      for (const d of this.droplets) {
+        const ageT = d.age / d.maxAge;
+        const fadeOut =
+          ageT > FADE_FRACTION ? Math.max(0, (1 - ageT) / (1 - FADE_FRACTION)) : 1;
+        const alpha = Math.min(peakAlpha * fadeOut, watercolorCap);
+        if (alpha <= 0.01) continue;
+
+        const scale = d.radius / STAMP_HALF;
+        const rotation = Math.atan2(d.vy, d.vx);
+
+        ctx.globalAlpha = alpha;
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(rotation);
+        ctx.scale(scale, scale);
+        ctx.drawImage(stamp, -STAMP_HALF, -STAMP_HALF);
+        ctx.restore();
+      }
+    } finally {
+      ctx.globalCompositeOperation = prevComposite;
+      ctx.globalAlpha = prevAlpha;
+    }
+  }
+
   private isTipEnabled(key: TipKey, params: Ink2DParams): boolean {
     if (params.trackingMode === "both_ends") return true;
     const isEndA = key === "bluePosA" || key === "redPosA";
@@ -427,5 +557,6 @@ export class Ink2DRenderer {
       this.tips[key] = null;
     }
     this.stampCache.dispose();
+    this.droplets = [];
   }
 }
