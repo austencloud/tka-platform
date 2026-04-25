@@ -35,6 +35,8 @@
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
     wasPlayingBeforeScrub = playback.isPlaying;
     if (wasPlayingBeforeScrub) playback.togglePlay();
     isDragging = true;
@@ -44,11 +46,14 @@
 
   function onPointerMove(e: PointerEvent) {
     if (!isDragging) return;
+    e.stopPropagation();
+    e.preventDefault();
     seekFromPointer(e);
   }
 
   function onPointerUp(e: PointerEvent) {
     if (!isDragging) return;
+    e.stopPropagation();
     isDragging = false;
     scrubberEl?.releasePointerCapture(e.pointerId);
     if (wasPlayingBeforeScrub) playback.togglePlay();
@@ -149,6 +154,7 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 999px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    touch-action: none;
   }
 
   .pill-play {
@@ -214,6 +220,16 @@
     cursor: pointer;
     min-width: 120px;
     touch-action: none;
+  }
+
+  .pill-track::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -4px;
+    right: -4px;
+    height: 32px;
+    transform: translateY(-50%);
   }
 
   .pill-fill {
