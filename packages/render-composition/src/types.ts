@@ -33,3 +33,15 @@ export interface LetterStyle {
   letter: string;
   dimmed: boolean;
 }
+
+/** Per-letter image data for glyph word rendering in renderHeader */
+export interface GlyphImageData {
+  /** Canvas-drawable image (HTMLImageElement in browser, node-canvas Image in Node) */
+  image: CanvasImageSource;
+  /** Intrinsic width of the SVG in pixels */
+  naturalWidth: number;
+  /** Intrinsic height of the SVG in pixels */
+  naturalHeight: number;
+  /** True for Type3/5 letters (W-, Σ-, Φ-, τ-, etc.) — triggers dash bar rendering */
+  isDash: boolean;
+}

@@ -1,4 +1,4 @@
-import type { LOOPComponentId, LetterStyle } from "./types.js";
+import type { LOOPComponentId, LetterStyle, GlyphImageData } from "./types.js";
 import {
   BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE, BADGE_BORDER_WIDTH_DIVISOR,
   HEADER_WORD_FONT_SCALE,
@@ -22,6 +22,8 @@ export interface HeaderOptions {
   backgroundColor?: string;
   /** Override header border color */
   borderColor?: string;
+  /** When present, word slot renders glyph images instead of Georgia text */
+  glyphImages?: Map<string, GlyphImageData>;
 }
 
 export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptions): void {
