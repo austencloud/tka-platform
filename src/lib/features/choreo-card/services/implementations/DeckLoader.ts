@@ -112,6 +112,11 @@ export class DeckLoader implements IDeckLoader {
       ...(startPosition && { startPosition }),
     };
 
+    const hasStoredReversals = hydrated.steps.some(
+      (s) => s.blueReversal !== undefined || s.redReversal !== undefined
+    );
+    if (hasStoredReversals) return hydrated;
+
     return reversalDetector.processReversals(hydrated);
   }
 }

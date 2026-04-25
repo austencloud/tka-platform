@@ -164,7 +164,7 @@
   }
 
   .length-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -176,7 +176,7 @@
   .length-btn.selected {
     background: var(--theme-accent, #f43f5e);
     border-color: var(--theme-accent, #f43f5e);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   .length-btn i {
@@ -208,7 +208,7 @@
   }
 
   .column-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -220,7 +220,7 @@
   .column-btn.selected {
     background: var(--theme-accent, #f43f5e);
     border-color: var(--theme-accent, #f43f5e);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   /* Responsive - horizontal layout on mobile */

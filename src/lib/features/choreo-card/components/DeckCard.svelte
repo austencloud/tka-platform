@@ -145,7 +145,7 @@
 
   .dot.red { background: var(--prop-red, #e74c3c); }
   .dot.blue { background: var(--prop-blue, #3498db); }
-  .dot.empty { background: rgba(255, 255, 255, 0.08); }
+  .dot.empty { background: var(--theme-card-bg, rgba(255, 255, 255, 0.08)); }
 
   @media (max-width: 768px) {
     .card-picto { width: 28px; height: 28px; }

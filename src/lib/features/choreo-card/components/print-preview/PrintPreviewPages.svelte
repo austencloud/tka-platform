@@ -440,9 +440,9 @@
   }
 
   .page {
-    background: #ffffff;
+    background: var(--print-bg, #ffffff);
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.3));
     width: 100%;
     max-width: 800px;
     aspect-ratio: 8.5 / 11;
@@ -465,7 +465,7 @@
     overflow: hidden;
     /* Standard playing card corner radius: ~3mm on 63.5mm = 4.72% of width */
     border-radius: 4.72%;
-    background: #f0f0f0;
+    background: var(--print-page-bg, #f0f0f0);
   }
 
   .card-cell.clickable {
@@ -475,7 +475,7 @@
 
   .card-cell.clickable:hover {
     transform: scale(1.02);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.3));
   }
 
   .card-cell img {
@@ -514,7 +514,7 @@
     left: 0;
     top: 0;
     height: 100%;
-    background: rgba(100, 180, 255, 0.3);
+    background: var(--theme-accent-bg, rgba(100, 180, 255, 0.3));
     transition: width 0.2s ease;
   }
 

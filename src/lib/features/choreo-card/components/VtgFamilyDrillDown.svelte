@@ -193,6 +193,7 @@
           type="button"
           role="radio"
           aria-checked={viewMode === 'grid'}
+          aria-label="Grid view"
         >
           <i class="fas fa-th" aria-hidden="true"></i> Grid
         </button>
@@ -203,6 +204,7 @@
           type="button"
           role="radio"
           aria-checked={viewMode === 'print'}
+          aria-label="Print Preview view"
         >
           <i class="fas fa-print" aria-hidden="true"></i> Print Preview
         </button>
@@ -345,7 +347,7 @@
 
   .action-chip.active {
     background: var(--theme-accent, #4a9eff);
-    color: #fff;
+    color: var(--theme-text, #fff);
     border-color: var(--theme-accent, #4a9eff);
   }
 
@@ -392,7 +394,7 @@
     color: var(--theme-text, #fff);
     cursor: default;
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -437,10 +439,10 @@
   .ratio-header {
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
-    color: var(--accent, #fff);
+    color: var(--theme-text, #fff);
     margin: 0 0 12px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .turns-note {
@@ -460,9 +462,9 @@
     aspect-ratio: 5 / 7;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: #ffffff;
+    background: var(--print-bg, #ffffff);
   }
 
   .playing-card :global(> button) {

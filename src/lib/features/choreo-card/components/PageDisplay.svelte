@@ -199,12 +199,12 @@
   }
 
   .state-icon.error {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: var(--semantic-error-bg, rgba(239, 68, 68, 0.15));
+    color: var(--semantic-error, #ef4444);
   }
 
   .state-icon.empty {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
@@ -230,7 +230,7 @@
     background: var(--theme-accent, #f43f5e);
     border: none;
     border-radius: var(--border-radius-md, 8px);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
@@ -259,11 +259,9 @@
   .page {
     width: 100%;
     aspect-ratio: 8.5 / 11; /* Letter size ratio */
-    background: #ffffff;
+    background: var(--print-bg, #ffffff);
     border-radius: var(--border-radius-md, 8px);
-    box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.3),
-      0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-card, 0 4px 20px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2));
     overflow: hidden;
   }
 

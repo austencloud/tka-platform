@@ -99,7 +99,7 @@
   .turns-card:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     transform: translateY(-4px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-card, 0 6px 20px rgba(0, 0, 0, 0.25));
   }
 
   @media (prefers-reduced-motion: reduce) {

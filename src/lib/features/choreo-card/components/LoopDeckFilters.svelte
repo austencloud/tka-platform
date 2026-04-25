@@ -58,6 +58,7 @@
           class="filter-pill"
           class:active={activeSliceType === sliceType}
           aria-checked={activeSliceType === sliceType}
+          aria-label="Filter by {meta?.label ?? sliceType} slice type"
           title={meta?.tooltip ?? sliceType}
           onclick={() => onSliceTypeChange(sliceType)}
         >
@@ -76,6 +77,7 @@
           class="filter-pill"
           class:active={activeGridMode === gridMode}
           aria-checked={activeGridMode === gridMode}
+          aria-label="Filter by {GRID_MODE_META[gridMode] ?? gridMode} grid mode"
           onclick={() => onGridModeChange(gridMode)}
         >
           {GRID_MODE_META[gridMode] ?? gridMode}
@@ -125,7 +127,7 @@
   }
 
   .filter-pill:not(.active):hover {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .filter-pill:focus-visible {

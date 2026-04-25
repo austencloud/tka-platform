@@ -212,7 +212,7 @@
   .chip.active {
     background: var(--theme-accent, #4488ff);
     border-color: var(--theme-accent, #4488ff);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   /* ── Column selector chips ──────────────────────── */

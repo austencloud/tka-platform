@@ -18,6 +18,7 @@
       class:active={selected === id}
       role="radio"
       aria-checked={selected === id}
+      aria-label="{size.label} card size"
       onclick={() => onchange(id)}
     >
       {size.label}
@@ -50,7 +51,7 @@
 
   .size-option.active {
     background: var(--theme-accent, #4a9eff);
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   .size-option:hover:not(.active) {

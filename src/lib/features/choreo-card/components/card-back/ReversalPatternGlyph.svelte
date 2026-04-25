@@ -55,7 +55,7 @@
     border-radius: 50%;
   }
 
-  .dot.red { background: #e74c3c; }
-  .dot.blue { background: #3498db; }
+  .dot.red { background: var(--tka-red-hand, #e74c3c); }
+  .dot.blue { background: var(--tka-blue-hand, #3498db); }
   .dot.empty { background: var(--theme-stroke, rgba(255, 255, 255, 0.18)); }
 </style>

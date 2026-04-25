@@ -104,20 +104,20 @@
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
     transition: all 150ms ease;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: transparent;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
   .toggle-pill.active {
-    background: rgba(99, 183, 205, 0.2);
-    border-color: rgba(99, 183, 205, 0.4);
-    color: #63b7cd;
+    background: var(--loop-accent-bg, rgba(99, 183, 205, 0.2));
+    border-color: var(--loop-accent-border, rgba(99, 183, 205, 0.4));
+    color: var(--loop-accent, #63b7cd);
   }
 
   .toggle-pill:not(.active):hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    color: rgba(255, 255, 255, 0.8);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .toggle-pill:focus-visible {

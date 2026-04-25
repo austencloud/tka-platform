@@ -132,12 +132,12 @@
     font-weight: 800;
     z-index: 2;
     pointer-events: none;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    box-shadow: var(--shadow-accent, 0 2px 8px rgba(16, 185, 129, 0.4));
   }
   .badge-error {
-    background: rgba(239, 68, 68, 0.95);
+    background: var(--semantic-error, rgba(239, 68, 68, 0.95));
     color: var(--theme-card-bg, #2b0707);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    box-shadow: var(--shadow-error, 0 2px 8px rgba(239, 68, 68, 0.4));
   }
 
   .hot-pulse {
@@ -167,7 +167,7 @@
   }
   .loc { color: var(--theme-text-muted, #d0d5e0); }
   .ago { color: var(--theme-accent, #34d399); font-weight: 600; }
-  .ago.err { color: #fca5a5; }
+  .ago.err { color: var(--semantic-error-text, #fca5a5); }
 
   /* Placeholder (integrity-failed) state keeps the old styling */
   .placeholder {

@@ -97,6 +97,7 @@
                   onclick={() => handlePosSelect(null)}
                   role="option"
                   aria-selected={activePosition === null}
+                  aria-label="All Positions"
                   type="button"
                 >
                   <span>All Positions</span>
@@ -112,6 +113,7 @@
                     onclick={() => handlePosSelect(pos.id)}
                     role="option"
                     aria-selected={activePosition === pos.id}
+                    aria-label="Filter by {pos.id}"
                     type="button"
                   >
                     <span>{pos.label}</span>
@@ -162,21 +164,21 @@
   }
 
   .popover-option:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
   }
 
   .popover-option.selected {
-    background: rgba(6, 182, 212, 0.15);
+    background: var(--filter-accent-bg, rgba(6, 182, 212, 0.15));
   }
 
   .popover-separator {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     margin: 4px 0;
   }
 
   :global(.fa-check) {
     font-size: 12px;
-    color: #06b6d4;
+    color: var(--filter-accent, #06b6d4);
   }
 </style>
