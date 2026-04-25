@@ -29,16 +29,18 @@
     resultCount = 0,
   }: Props = $props();
 
-  // Local state
+  // Local state — initialized empty; the $effect below syncs the prop value
+  // on mount (and on subsequent changes) to avoid capturing the initial prop
+  // value outside a reactive context (svelte state_referenced_locally).
   let isExpanded = $state(false);
-  let inputValue = $state(value);
+  let inputValue = $state("");
   let inputRef: HTMLInputElement | null = $state(null);
   let containerRef: HTMLDivElement | null = $state(null);
   let showVirtualKeyboard = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Track the last value received from the parent to avoid reset loops
-  let lastSyncedValue = value;
+  let lastSyncedValue = "";
 
   // Sync internal state with external value prop
   $effect(() => {
