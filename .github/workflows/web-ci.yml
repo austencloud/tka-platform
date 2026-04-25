@@ -16,30 +16,33 @@ on:
 
 jobs:
   validate:
-    name: Lint, Type Check, Test
+    name: Type Check, Test, Build
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "npm"
+          node-version: "24"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
-      - name: Lint (Prettier + ESLint)
-        run: npm run lint
+      - name: Create .env from .env.example
+        run: cp .env.example .env
 
       - name: Type check (svelte-check)
-        run: npm run check
+        run: pnpm run check
 
       - name: Unit tests (Vitest)
-        run: npm run test:ci
+        run: pnpm run test -- --run
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
