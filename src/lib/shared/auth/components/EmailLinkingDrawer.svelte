@@ -14,8 +14,7 @@
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { authState } from "../state/authState.svelte";
-  import { container } from "../../di";
-  import type { IAuthenticator } from "../services/contracts/IAuthenticator";
+import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import {

@@ -15,7 +15,7 @@
 
   import { Canvas } from "@threlte/core";
   import { WebGLRenderer } from "three";
-  import { onMount } from "svelte";
+
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
@@ -106,7 +106,10 @@
     }
   });
 
-  onMount(() => {
+  // Start safety timeout only after canvasMountReady — scene components
+  // (Environment3D, SeatedAudience3D) can't reportReady until they mount.
+  $effect(() => {
+    if (!canvasMountReady) return;
     const features = sceneFeatureState.features.filter(
       (f) => f.requiresAsyncLoad && sceneFeatureState.isEnabled(f.key)
     );
@@ -120,12 +123,12 @@
         (f) => !sceneFeatureState.isReady(f.key)
       );
       console.warn(
-        `[Viewer3DCanvas] 10s timeout — force-readying stuck features: [${pending.map((f) => f.key)}]`
+        `[Viewer3DCanvas] 15s timeout — force-readying stuck features: [${pending.map((f) => f.key)}]`
       );
       for (const f of pending) {
         sceneFeatureState.reportReady(f.key);
       }
-    }, 10_000);
+    }, 15_000);
 
     return () => clearTimeout(timer);
   });

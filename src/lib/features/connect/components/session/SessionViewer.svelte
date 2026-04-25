@@ -9,11 +9,12 @@
   - Participant count
 -->
 <script lang="ts">
+
+import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../../state/connect-state.svelte';
-	import { container } from '$lib/shared/di';
 	import { getBrowseLoader } from '$lib/features/browse/sequences/display/getBrowseLoader';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import { lanSyncState } from '$lib/shared/lan-sync/state/lan-sync-state.svelte';
@@ -139,7 +140,7 @@
 			}
 
 			// Source 3: Unified provider - tries local repo then public Firestore
-			const sequenceDataProvider = container.items.sequenceDataProvider;
+			const sequenceDataProvider = getSequenceDataProvider();
 			const fromProvider = await sequenceDataProvider.loadByIdentifier(session.sequenceWord);
 			if (fromProvider) {
 				sequence = fromProvider;
@@ -551,8 +552,7 @@
 		justify-content: center;
 	}
 
-	.animation-container,
-	.pictograph-container {
+	.animation-.pictograph-container {
 		width: 100%;
 		height: 100%;
 		max-width: 600px;

@@ -3,7 +3,9 @@ CardBasedSettingsContainer - Minimal card grid renderer
 Delegates ALL logic to services (SRP compliant)
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getCardConfigurator } from "$lib/features/create/generate/shared/getCardConfigurator";
+import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/getLOOPParameterProvider";
   import { onMount, getContext } from "svelte";
   import { flip } from "svelte/animate";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -239,8 +241,8 @@ Delegates ALL logic to services (SRP compliant)
   // Initialize services
   onMount(() => {
     typographyService = new ResponsiveTypographer();
-    cardConfigService = container.items.cardConfigurator;
-    loopParamProvider = container.items.loopParameterProvider;
+    cardConfigService = getCardConfigurator();
+    loopParamProvider = getLOOPParameterProvider();
 
     updateFontSize();
     window.addEventListener("resize", updateFontSize);
@@ -538,7 +540,7 @@ Delegates ALL logic to services (SRP compliant)
     padding-inline: 0.25rem;
     align-self: stretch; /* Default: fill vertical space (mobile stacked) */
 
-    /* Responsive gap - scales with container, respects device setting as max */
+    /* Responsive gap - scales with respects device setting as max */
     gap: clamp(4px, 1.5cqi, var(--element-spacing, 10px));
 
     /* 🎯 SHARED CARD TEXT STYLING - Consistent across all cards */

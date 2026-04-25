@@ -1,4 +1,9 @@
 <script lang="ts">
+
+import { getCreateModuleInitializer } from "$lib/features/create/shared/getCreateModuleInitializer";
+import { getExtensionFlowCoordinator } from "$lib/features/create/shared/getExtensionFlowCoordinator";
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+
   /**
    * CreateModule.svelte - COMPOSITION ROOT
    *
@@ -36,7 +41,6 @@
   import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import { container } from "$lib/shared/di";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -206,7 +210,7 @@
       return autosaver;
     },
     get libraryRepository() {
-      return container?.items?.libraryRepository ?? null;
+      return getLibraryRepository() ?? null;
     },
     layout: layoutContext,
     handlers: {
@@ -272,7 +276,7 @@
 
       try {
         // Create services available synchronously via ITI
-        const initService = container.items.createModuleInitializer;
+        const initService = getCreateModuleInitializer();
 
         const result = await initService.initialize();
 
@@ -531,7 +535,7 @@
   async function handleLoopCompletionRequest(loopType: LOOPType) {
     if (!CreateModuleState) return;
 
-    const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
+    const extensionFlowCoordinator = getExtensionFlowCoordinator();
     if (!extensionFlowCoordinator) return;
 
     const activeSeqState = CreateModuleState.getActiveTabSequenceState();
@@ -569,7 +573,7 @@
   async function confirmLoopCompletion() {
     if (!pendingLoopType || isApplyingLoop || !CreateModuleState) return;
 
-    const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
+    const extensionFlowCoordinator = getExtensionFlowCoordinator();
     if (!extensionFlowCoordinator) return;
 
     const activeSeqState = CreateModuleState.getActiveTabSequenceState();

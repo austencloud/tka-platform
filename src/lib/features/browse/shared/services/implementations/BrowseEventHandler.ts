@@ -18,9 +18,10 @@ import type { ISheetRouter } from "../../../../../shared/navigation/services/con
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 import { openVariationPicker } from "../../state/variation-picker-state.svelte";
-import { container } from "$lib/shared/di";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 
 export class BrowseEventHandler implements IBrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
@@ -212,7 +213,7 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   private async handlePublish(sequence: SequenceData): Promise<void> {
     this.ensureInitialized();
     try {
-      const libraryRepo = container.items.libraryRepository;
+      const libraryRepo = getLibraryRepository();
       await libraryRepo.publishSequence(sequence.id);
     } catch (err) {
       console.error("Failed to publish:", err);
@@ -225,7 +226,7 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   private async handleUnpublish(sequence: SequenceData): Promise<void> {
     this.ensureInitialized();
     try {
-      const libraryRepo = container.items.libraryRepository;
+      const libraryRepo = getLibraryRepository();
       await libraryRepo.unpublishSequence(sequence.id);
       // Remove from browse gallery cache immediately
       this.loaderService?.removeFromCache?.(sequence.id);

@@ -6,6 +6,8 @@
   - Deck interior: filterable sequence grid with family/position chips
 -->
 <script lang="ts">
+
+import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExporter";
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
@@ -21,7 +23,6 @@
   import { type CardSizeId } from "../domain/card-sizes";
   import type { IPrintPDFExporter, CardPair } from "../services/contracts/IPrintPDFExporter";
   import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
-  import { container } from "$lib/shared/di";
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
   interface Props {
@@ -159,7 +160,7 @@
     if (renderedPairs.length === 0) return;
     isExporting = true;
     try {
-      const exporter = container.items.printZipExporter as IPrintZipExporter;
+      const exporter = getPrintZipExporter() as IPrintZipExporter;
       const deckName = selectedDeck?.name ?? "deck";
       const blob = await exporter.exportDeckZIP(renderedPairs, deckName);
       const url = URL.createObjectURL(blob);

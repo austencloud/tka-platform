@@ -7,6 +7,9 @@
   controls, and prop switching.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/getAnimationPlaybackControllerFactory";
+import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -19,7 +22,6 @@
   import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -278,12 +280,12 @@
       visibilityManager.setActiveEffect("trails");
 
       browseLoader = getBrowseLoader();
-      const controllerFactory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
+      const controllerFactory = getAnimationPlaybackControllerFactory() as IAnimationPlaybackControllerFactory;
       playbackController = controllerFactory.create();
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;
 
-      const sequenceTransformer = container.items.sequenceTransformer;
+      const sequenceTransformer = getSequenceTransformer();
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         browseLoader as any,

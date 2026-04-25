@@ -9,20 +9,22 @@ Matches the desktop version exactly:
 - In-place pictograph transitions on option changes
 -->
 <script lang="ts">
+
+import { getAspectLayoutPlanner } from "$lib/features/create/construct/option-picker/getAspectLayoutPlanner";
+import { getAnimator } from "$lib/shared/application/getAnimator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import {
     Letter,
     getLetterType,
   } from "$lib/shared/foundation/domain/models/Letter";
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
-  import { container } from "$lib/shared/di";
   import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
   import type { TypeFilter } from "../../domain/option-picker-types";
   import OptionViewerSection from "./OptionViewerSection.svelte";
 
   // Services - resolve synchronously to ensure they're available for $derived computations
-  const animationService = container.items.animator;
-  const aspectLayoutPlanner = container.items.aspectLayoutPlanner;
+  const animationService = getAnimator();
+  const aspectLayoutPlanner = getAspectLayoutPlanner();
   const gridFitCalculator = optionGridFitCalculator;
 
   // Animation functions following established app patterns

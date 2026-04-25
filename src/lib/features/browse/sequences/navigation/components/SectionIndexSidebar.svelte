@@ -65,9 +65,12 @@
 
   /** For non-date sort modes: extract a short label from the section title */
   function extractLabel(title: string): string {
-    const core = title.replace(/^[^\w\d]*/u, "").replace(/\s*\([^)]*\)/gi, "").trim();
+    const core = title
+      .replace(/\s*\([^)]*\)/g, "")
+      .replace(/^[^\p{L}\d⊕]*/u, "")
+      .trim();
 
-    const beatMatch = core.match(/^(\d+)\s*beats?$/i);
+    const beatMatch = core.match(/^(\d+)\s*(?:steps?|beats?)$/i);
     if (beatMatch?.[1]) return beatMatch[1];
 
     if (core.length <= 4) return core;

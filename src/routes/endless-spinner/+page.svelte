@@ -13,8 +13,11 @@
   } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { container } from "$lib/shared/di";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
+import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
+
   import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
@@ -214,13 +217,10 @@
       visibilityManager.setDarkMode(true);
 
       browseLoader = getBrowseLoader();
-      playbackController = container.items
-        .animationPlaybackController;
+      playbackController = getAnimationPlaybackController();
 
-      const generationOrchestrator = container.items
-        .generationOrchestrator;
-      const sequenceTransformer = container.items
-        .sequenceTransformer;
+      const generationOrchestrator = getGenerationOrchestrator();
+      const sequenceTransformer = getSequenceTransformer();
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         browseLoader,

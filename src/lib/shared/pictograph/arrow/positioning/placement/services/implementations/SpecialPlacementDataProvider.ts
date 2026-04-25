@@ -9,6 +9,7 @@ import { jsonCache } from "$lib/shared/pictograph/shared/services/implementation
 import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
 import type { ISpecialPlacementDataProvider } from "../contracts/ISpecialPlacementDataProvider";
 
+
 export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvider {
   // Structure: [gridMode][oriKey][letter] -> Record<string, unknown>
   private cache: Record<
@@ -181,7 +182,7 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.specialPlacementDataProvider to avoid DI container rebuilds.
+// Use this instead of specialPlacementDataProvider to avoid DI container rebuilds.
 // ============================================================================
 
 export const specialPlacementDataProvider = new SpecialPlacementDataProvider();

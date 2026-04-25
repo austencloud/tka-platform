@@ -58,10 +58,10 @@
     <button class="toggle-btn" aria-pressed={showBleed} onclick={() => showBleed = !showBleed}>Bleed</button>
     <span class="count">{flattened.length} stickers across {layout.pages} sheet{layout.pages === 1 ? "" : "s"}</span>
     {#if layout.pages > 1}
-      <nav class="pager">
-        <button onclick={() => (activePage = Math.max(0, activePage - 1))} disabled={activePage === 0}>‹</button>
+      <nav class="pager" aria-label="Sheet pages">
+        <button onclick={() => (activePage = Math.max(0, activePage - 1))} disabled={activePage === 0} aria-label="Previous sheet">‹</button>
         <span>Sheet {activePage + 1} of {layout.pages}</span>
-        <button onclick={() => (activePage = Math.min(layout.pages - 1, activePage + 1))} disabled={activePage >= layout.pages - 1}>›</button>
+        <button onclick={() => (activePage = Math.min(layout.pages - 1, activePage + 1))} disabled={activePage >= layout.pages - 1} aria-label="Next sheet">›</button>
       </nav>
     {/if}
   </div>

@@ -57,6 +57,8 @@ import { isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-g
 import { calculateReversalPositions } from "../../core";
 import type { DrawableImage } from "./SvgImageCache";
 
+import { getLayerCompositor } from "$lib/shared/render/getLayerCompositor";
+
 // Constants matching Canvas2DDirectRenderer
 const VIEWBOX_SIZE = 950;
 const TKA_GLYPH_X = 50;
@@ -1041,6 +1043,6 @@ export class LayerCompositor implements ILayerCompositor {
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.layerCompositor
+// DIRECT EXPORT - Use this instead of getLayerCompositor()
 // This avoids DI container rebuilds when this file changes
 export const layerCompositor = new LayerCompositor();

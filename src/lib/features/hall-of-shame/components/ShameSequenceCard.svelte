@@ -5,9 +5,10 @@
   Shows thumbnail, word, category, vote count, and voting controls.
 -->
 <script lang="ts">
+
+import { getHallOfShameVoter } from "$lib/features/hall-of-shame/getHallOfShameVoter";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { HallOfShameEntry } from "../domain/models/hall-of-shame-models";
-  import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type { IHallOfShameVoter } from "../services/contracts/IHallOfShameVoter";
 
@@ -28,7 +29,7 @@
   // Get voter service
   let hallOfShameVoter: IHallOfShameVoter | null = null;
   try {
-    hallOfShameVoter = container.items.hallOfShameVoter;
+    hallOfShameVoter = getHallOfShameVoter();
   } catch (error) {
     console.warn("Failed to resolve hallOfShameVoter:", error);
   }

@@ -15,7 +15,6 @@
  * ```typescript
  * // In StageWorld.svelte or any timeline-driven 3D component
  * import { getTimelineState } from "$lib/features/compose/timeline/state/timeline-state.svelte";
- * import { createStageSceneAdapter } from "./services/implementations/StageSceneAdapter";
  *
  * const timelineState = getTimelineState();
  * const adapter = createStageSceneAdapter(timelineState);

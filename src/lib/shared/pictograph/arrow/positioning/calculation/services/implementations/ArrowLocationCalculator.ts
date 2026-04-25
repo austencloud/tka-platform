@@ -19,6 +19,7 @@ import { MotionType } from "../../../../../shared/domain/enums/pictograph-enums"
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { DashLocationCalculator, dashLocationCalculator } from "./DashLocationCalculator";
 
+
 export class ArrowLocationCalculator implements IArrowLocationCalculator {
   /**
    * Pure algorithmic service for calculating arrow locations.
@@ -259,7 +260,7 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowLocationCalculator to avoid DI container rebuilds.
+// Use this instead of arrowLocationCalculator to avoid DI container rebuilds.
 // ============================================================================
 
 export const arrowLocationCalculator = new ArrowLocationCalculator(dashLocationCalculator);

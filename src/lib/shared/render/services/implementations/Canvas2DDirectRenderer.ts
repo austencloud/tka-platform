@@ -77,6 +77,8 @@ import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn
 import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
 import { calculateReversalPositions } from "../../core";
 
+import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
+
 // Constants matching the SVG system
 const VIEWBOX_SIZE = 950;
 
@@ -1479,6 +1481,6 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.canvas2DRenderer
+// DIRECT EXPORT - Use this instead of getCanvas2DRenderer()
 // This avoids DI container rebuilds when this file changes
 export const canvas2DDirectRenderer = new Canvas2DDirectRenderer();

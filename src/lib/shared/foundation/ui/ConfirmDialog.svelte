@@ -15,9 +15,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
-  import { container } from "../../di";
-  
-  import { onMount } from "svelte";
+import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {

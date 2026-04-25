@@ -7,7 +7,8 @@
   Wide two-column layout on desktop, single column on mobile.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { getCurrentError, dismissError } from "../state/error-state.svelte";
   import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -122,8 +123,7 @@
 
     isReporting = true;
     try {
-      const errorService = container.items
-        .errorHandler as IErrorHandler | undefined;
+      const errorService = getErrorHandler() ?? undefined;
       if (!errorService) {
         toast.error("Unable to submit bug report - service unavailable");
         return;

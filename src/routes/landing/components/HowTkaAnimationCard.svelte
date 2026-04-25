@@ -8,6 +8,8 @@
   No controls, no overlays — just the raw canvas filling its container.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/getAnimationPlaybackControllerFactory";
   import { onMount, onDestroy, tick } from "svelte";
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -15,7 +17,6 @@
   import type { IAnimationPlaybackControllerFactory } from "$lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { container } from "$lib/shared/di";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import {
     animationSettings,
@@ -130,7 +131,7 @@
       visibilityManager.setDarkMode(true);
       visibilityManager.setActiveEffect("none");
 
-      const factory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
+      const factory = getAnimationPlaybackControllerFactory() as IAnimationPlaybackControllerFactory;
       playbackController = factory.create();
       startPositionDeriver = startPositionDeriverInstance;
 

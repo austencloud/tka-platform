@@ -17,8 +17,15 @@
   6. Unknown commands → classify tier → Tier 2 LLM or Tier 3 chat
 -->
 <script lang="ts">
+
+import { getVoiceSessionRepository } from "$lib/features/voice-sessions/getVoiceSessionRepository";
+import { getCommandDispatcher } from "$lib/shared/voice-control/getCommandDispatcher";
+import { getCommandInterpreter } from "$lib/shared/voice-control/getCommandInterpreter";
+import { getIntentResolver } from "$lib/shared/voice-control/getIntentResolver";
+import { getTTSProvider } from "$lib/shared/voice-control/getTTSProvider";
+import { getVoiceSessionRecorder } from "$lib/shared/voice-control/getVoiceSessionRecorder";
+import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetector";
   import { onMount } from "svelte";
-  import { container } from "../../di";
   import type { IWakeWordDetector } from "../services/contracts/IWakeWordDetector";
   import type { ICommandInterpreter } from "../services/contracts/ICommandInterpreter";
   import type { ICommandDispatcher } from "../services/contracts/ICommandDispatcher";
@@ -306,13 +313,13 @@
 
   onMount(() => {
     try {
-      wakeWordDetector = container.items.wakeWordDetector;
-      commandInterpreter = container.items.commandInterpreter;
-      commandDispatcher = container.items.commandDispatcher;
-      intentResolver = container.items.intentResolver;
-      ttsProvider = container.items.ttsProvider;
-      sessionRecorder = container.items.voiceSessionRecorder;
-      sessionRepository = container.items.voiceSessionRepository;
+      wakeWordDetector = getWakeWordDetector();
+      commandInterpreter = getCommandInterpreter();
+      commandDispatcher = getCommandDispatcher();
+      intentResolver = getIntentResolver();
+      ttsProvider = getTTSProvider();
+      sessionRecorder = getVoiceSessionRecorder();
+      sessionRepository = getVoiceSessionRepository();
     } catch (error) {
       console.error("[HeyTika] Failed to resolve voice control services:", error);
       return;

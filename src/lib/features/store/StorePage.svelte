@@ -1,15 +1,17 @@
 <!-- src/lib/features/store/StorePage.svelte -->
 <script lang="ts">
+
+import { getMerchCheckoutCreator } from "$lib/features/store/getMerchCheckoutCreator";
+import { getProductLoader } from "$lib/features/store/getProductLoader";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
   import StoreHeader from "./components/StoreHeader.svelte";
   import ProductCard from "./components/ProductCard.svelte";
 
   const state = createStoreState(
-    container.items.productLoader,
-    container.items.merchCheckoutCreator
+    getProductLoader(),
+    getMerchCheckoutCreator()
   );
 
   setStoreContext({ state });

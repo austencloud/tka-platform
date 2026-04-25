@@ -1,6 +1,11 @@
 <script lang="ts">
+
+import { getEffectConfigMapper } from "$lib/features/video/video-trails/getEffectConfigMapper";
+import { getVideoTipAdapter } from "$lib/features/video/video-trails/getVideoTipAdapter";
+import { getVideoTrailsExporter } from "$lib/features/video/video-trails/getVideoTrailsExporter";
+import { getLedThresholdDetector } from "$lib/features/video/video-trails/getLedThresholdDetector";
+import { getColorEndpointDetector } from "$lib/features/video/video-trails/getColorEndpointDetector";
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
   import type { ExportConfig, ExportState } from "../domain/types";
@@ -23,8 +28,8 @@
   const { state: trailsState } = getVideoTrailsContext();
 
   // DI services
-  const configMapper = container.items.effectConfigMapper as IEffectConfigMapper;
-  const tipAdapter = container.items.videoTipAdapter as IVideoTipAdapter;
+  const configMapper = getEffectConfigMapper() as IEffectConfigMapper;
+  const tipAdapter = getVideoTipAdapter() as IVideoTipAdapter;
 
   // Canvas stack reference
   let canvasStack: EffectCanvasStack | undefined = $state(undefined);
@@ -249,7 +254,11 @@
   function getDetector(): IEndpointDetector {
     const reg = DETECTOR_REGISTRY.find((r) => r.id === trailsState.activeDetectorId);
     const key = reg?.containerKey ?? "ledThresholdDetector";
-    return (container.items as unknown as Record<string, unknown>)[key] as IEndpointDetector;
+    const detectorMap: Record<string, () => IEndpointDetector> = {
+      ledThresholdDetector: getLedThresholdDetector,
+      colorEndpointDetector: getColorEndpointDetector,
+    };
+    return (detectorMap[key] ?? getLedThresholdDetector)();
   }
 
   function processCurrentFrame(): void {
@@ -363,7 +372,7 @@
 
   async function handleExport(config: ExportConfig): Promise<void> {
     if (!videoEl || !canvasStack) return;
-    const exporter = container.items.videoTrailsExporter;
+    const exporter = getVideoTrailsExporter();
     trailsState.setExportState({ phase: "preparing" });
     try {
       const canvases = canvasStack.getAllCanvases();

@@ -4,7 +4,9 @@
   Allows users to control which notification types they want to receive.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getNotificationPreferencesManager } from "$lib/features/feedback/getNotificationPreferencesManager";
+import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type {
@@ -27,8 +29,7 @@
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
-  const notificationPreferencesManager = container.items
-    .notificationPreferencesManager as INotificationPreferencesManager;
+  const notificationPreferencesManager = getNotificationPreferencesManager();
 
   // State
   let preferences = $state<NotificationPreferences>(
@@ -150,8 +151,7 @@
     const user = authState.user;
     if (!user || pushToggleBusy) return;
 
-    const fcmTokenManager = container.items
-      .fcmTokenManager as IFCMTokenManager;
+    const fcmTokenManager = getFCMTokenManager();
     const wasEnabled = preferences.pushEnabled;
 
     try {

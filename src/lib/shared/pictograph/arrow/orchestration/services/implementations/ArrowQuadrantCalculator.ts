@@ -13,6 +13,7 @@ import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { IArrowQuadrantCalculator } from "../contracts/IArrowQuadrantCalculator";
 
+
 export class ArrowQuadrantCalculator implements IArrowQuadrantCalculator {
   calculateQuadrantIndex(motion: MotionData, location: GridLocation): number {
     /**
@@ -190,7 +191,7 @@ export class ArrowQuadrantCalculator implements IArrowQuadrantCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowQuadrantCalculator to avoid DI container rebuilds.
+// Use this instead of arrowQuadrantCalculator to avoid DI container rebuilds.
 // ============================================================================
 
 export const arrowQuadrantCalculator = new ArrowQuadrantCalculator();

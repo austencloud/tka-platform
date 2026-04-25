@@ -1,4 +1,7 @@
 <script lang="ts">
+
+import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
+import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   /**
    * TelekineticFormation3D
    *
@@ -24,7 +27,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { GridMode } from "$lib/shared/3d/domain/constants/grid-layout";
@@ -116,10 +118,10 @@
   }
 
   // Initialize all avatar instances
-  if (container.items.propStateInterpolator && container.items.sequenceConverter) {
+  if (getPropStateInterpolator() && getSequenceConverter()) {
     const deps = {
-      propInterpolator: container.items.propStateInterpolator,
-      sequenceConverter: container.items.sequenceConverter,
+      propInterpolator: getPropStateInterpolator(),
+      sequenceConverter: getSequenceConverter(),
     };
 
     try {

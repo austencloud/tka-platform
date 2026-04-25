@@ -14,6 +14,7 @@
  */
 
 import { browser } from "$app/environment";
+
 import type {
   IPictographBlobCache,
   PictographBlobCacheStats,
@@ -295,7 +296,7 @@ export class PictographBlobCache implements IPictographBlobCache {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.pictographBlobCache to avoid DI container rebuilds.
+// Use this instead of getPictographBlobCache() to avoid DI container rebuilds.
 // IndexedDB connection is managed internally, so no HMR concerns for the instance itself.
 // ============================================================================
 

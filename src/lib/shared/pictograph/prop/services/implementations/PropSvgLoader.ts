@@ -26,6 +26,7 @@ import {
 } from "../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
 
+
 // ============================================================================
 // HMR-AWARE MODULE-LEVEL CACHE STORAGE
 // ============================================================================
@@ -343,7 +344,7 @@ export class PropSvgLoader implements IPropSvgLoader {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.propSvgLoader to avoid DI container rebuilds.
+// Use this instead of propSvgLoader to avoid DI container rebuilds.
 // PropSvgLoader has no constructor dependencies.
 // ============================================================================
 

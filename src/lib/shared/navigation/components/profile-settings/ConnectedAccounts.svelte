@@ -10,8 +10,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { authState } from "../../../auth/state/authState.svelte";
-  import { container } from "../../../di";
-  import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
+import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";

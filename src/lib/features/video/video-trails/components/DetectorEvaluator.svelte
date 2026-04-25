@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { container } from "$lib/shared/di";
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
   import type { IEndpointDetector } from "../services/contracts/IEndpointDetector";
+  import { getLedThresholdDetector } from "../getLedThresholdDetector";
+  import { getColorEndpointDetector } from "../getColorEndpointDetector";
   import type { DetectedEndpoint, EndpointCorrection } from "../domain/types";
 
   interface Props {
@@ -112,9 +113,11 @@
       (r) => r.id === trailsState.activeDetectorId
     );
     const containerKey = registration?.containerKey ?? "ledThresholdDetector";
-    const detector = (container.items as unknown as Record<string, unknown>)[
-      containerKey
-    ] as IEndpointDetector;
+    const detectorMap: Record<string, () => IEndpointDetector> = {
+      ledThresholdDetector: getLedThresholdDetector,
+      colorEndpointDetector: getColorEndpointDetector,
+    };
+    const detector = (detectorMap[containerKey] ?? getLedThresholdDetector)();
 
     const correctedFrameNumbers = Object.keys(trailsState.corrections).map(Number).sort((a, b) => a - b);
     const results: FrameResult[] = [];

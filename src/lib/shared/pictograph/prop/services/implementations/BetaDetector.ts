@@ -56,8 +56,9 @@ export class BetaDetector implements IBetaDetector {
 }
 
 // ============================================================================
-// DIRECT EXPORT - Use this instead of container.items.betaDetector
+// DIRECT EXPORT - Use this instead of betaDetector
 // This avoids DI container rebuilds when this file changes
 // ============================================================================
 import { gridPositionDeriver } from "../../../grid/services/implementations/GridPositionDeriver";
+
 export const betaDetector = new BetaDetector(gridPositionDeriver);

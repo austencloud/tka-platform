@@ -36,7 +36,6 @@ import { loadTrailSettings } from "$lib/features/compose/utils/animation-panel-p
 import { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
 import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
-import { container } from "$lib/shared/di";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import { resolveEffectZ } from "../effect-layer";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
@@ -121,6 +120,9 @@ import type { EffectsConfigState } from "$lib/shared/effects/state/effects-confi
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { TrackingMode } from "../../domain/types/TrailTypes";
+
+import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 
 /**
  * Props passed to engine.update()
@@ -1697,8 +1699,8 @@ export class AnimationEngine {
     // Stateless services (StepCalculator, PropInterpolator) are safe to share.
     this.orchestrator = new SequenceAnimationOrchestrator(
       new AnimationStateManager(),
-      container.items.stepCalculationService,
-      container.items.propInterpolationService
+      getStepCalculator(),
+      getPropInterpolator()
     );
     // Pass per-instance visibility manager so effort presets are read from
     // the correct source (e.g. landing page's ephemeral manager, not global).

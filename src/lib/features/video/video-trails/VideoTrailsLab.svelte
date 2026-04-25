@@ -1,14 +1,17 @@
 <script lang="ts">
+
+import { getDetectionCorrector } from "$lib/features/video/video-trails/getDetectionCorrector";
+import { getVideoTipAdapter } from "$lib/features/video/video-trails/getVideoTipAdapter";
+import { getVideoTrailsRepository } from "$lib/features/video/video-trails/getVideoTrailsRepository";
   import { onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import { createVideoTrailsState } from "./state/video-trails-state.svelte";
   import { setVideoTrailsContext } from "./context/video-trails-context";
   import type { VideoTrailsView } from "./domain/types";
 
   const trailsState = createVideoTrailsState(
-    container.items.videoTrailsRepository,
-    container.items.detectionCorrector,
-    container.items.videoTipAdapter,
+    getVideoTrailsRepository(),
+    getDetectionCorrector(),
+    getVideoTipAdapter(),
   );
   setVideoTrailsContext({ state: trailsState });
 

@@ -11,6 +11,8 @@
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
 
+import { getDimensionCalculator } from "$lib/shared/render/getDimensionCalculator";
+
 export class DimensionCalculator implements IDimensionCalculator {
   // Base constants matching desktop application
   private static readonly BASE_MARGIN = 50; // Match desktop BASE_MARGIN
@@ -374,6 +376,6 @@ export class DimensionCalculator implements IDimensionCalculator {
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.dimensionCalculator
+// DIRECT EXPORT - Use this instead of getDimensionCalculator()
 // This avoids DI container rebuilds when this file changes
 export const dimensionCalculator = new DimensionCalculator();

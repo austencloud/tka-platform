@@ -1,10 +1,11 @@
 <script lang="ts">
+
+import { getMuseumPersister } from "$lib/features/museum/scenes/procedural/getMuseumPersister";
   import WorldScene from "$lib/shared/3d/procedural-engine/components/WorldScene.svelte";
   import { MUSEUM_GROUNDS_CONFIG } from "$lib/shared/3d/procedural-engine/core/world-definitions";
   import { getActiveMuseumState } from "./state/museum-state-bridge.svelte";
   import InteractionPrompt from "./components/InteractionPrompt.svelte";
   import SequenceBrowserOverlay from "./overlay/SequenceBrowserOverlay.svelte";
-  import { container } from "$lib/shared/di";
   import { destinationManager } from "$lib/shared/3d/destinations/destination-manager.svelte";
   // The userId to view — if set and different from current user, this is visitor mode
   const CURRENT_USER_ID = "local-user"; // Placeholder until auth integration
@@ -32,7 +33,7 @@
     if (!museumState) return;
 
     try {
-      const persister = container.items.museumPersister;
+      const persister = getMuseumPersister();
       const data = await persister.loadMuseum(visitingUserId);
       if (data) {
         for (const [slotId, exhibit] of data.exhibits) {
@@ -84,7 +85,7 @@
 
     // Persist to Firebase
     try {
-      const persister = container.items.museumPersister;
+      const persister = getMuseumPersister();
       await persister.saveExhibit(CURRENT_USER_ID, slotId, sequenceId);
     } catch {
       // Exhibit is already assigned locally; Firebase failure is non-blocking

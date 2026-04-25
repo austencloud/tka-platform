@@ -9,7 +9,6 @@
  * Domain: Retro SCRIBE App
  */
 
-import { container } from "$lib/shared/di";
 import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
 import type { GenerationOptions } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import {
@@ -31,6 +30,10 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+
+import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
+
 import type {
   RetroPictographData,
   RetroHandData,
@@ -128,8 +131,7 @@ function fallbackHand(color: MotionColor): RetroHandData {
 export async function generateRetroSequence(
   options: RetroGenerationOptions,
 ): Promise<RetroGenerationResult> {
-  const orchestrator = container.items
-    .generationOrchestrator as IGenerationOrchestrator;
+  const orchestrator = getGenerationOrchestrator();
 
   const generationOptions: GenerationOptions = {
     mode: GenerationMode.FREEFORM,
@@ -184,7 +186,7 @@ export async function saveRetroSequence(
   sequenceData: SequenceData,
   dosName: string,
 ): Promise<LibrarySequence> {
-  const repo = container.items.libraryRepository as ILibraryRepository;
+  const repo = getLibraryRepository() as ILibraryRepository;
 
   // Turn "FIRFLOWB" into "Firflowb" as a display-friendly name.
   // The user chose the name in the DOS save dialog — keep it simple.
@@ -209,6 +211,6 @@ export async function saveRetroSequence(
 export async function loadRetroSequence(
   sequenceId: string,
 ): Promise<LibrarySequence | null> {
-  const repo = container.items.libraryRepository as ILibraryRepository;
+  const repo = getLibraryRepository() as ILibraryRepository;
   return await repo.getSequence(sequenceId);
 }

@@ -19,6 +19,10 @@
     />
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
+import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
@@ -33,7 +37,6 @@
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
@@ -229,9 +232,9 @@
     // Resolve animation-specific services (all registered synchronously via ITI)
     try {
       browseLoader = getBrowseLoader();
-      playbackController = container.items.animationPlaybackController;
-      videoExportOrchestrator = container.items.videoExportOrchestrator;
-      VideoExporter = container.items.videoExporter;
+      playbackController = getAnimationPlaybackController();
+      videoExportOrchestrator = getVideoExportOrchestrator();
+      VideoExporter = getVideoExporter();
       loopabilityChecker = getSequenceLoopabilityChecker();
 
       // Expose playback controller for keyboard shortcuts

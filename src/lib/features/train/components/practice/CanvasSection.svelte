@@ -5,9 +5,10 @@
   Uses the same animation pattern as SingleRenderer for consistent behavior.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -46,7 +47,7 @@
   onMount(() => {
     // Get playback controller (available synchronously via ITI)
     try {
-      playbackController = container.items.animationPlaybackController;
+      playbackController = getAnimationPlaybackController();
       pixiReady = true;
       isLoading = false;
     } catch (error) {

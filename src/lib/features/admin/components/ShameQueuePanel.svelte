@@ -5,8 +5,9 @@
   Shows pending queue with approve/reject actions.
 -->
 <script lang="ts">
+
+import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueManager";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IShameQueueManager } from "$lib/features/hall-of-shame/services/contracts/IShameQueueManager";
   import type {
     HallOfShameEntry,
@@ -39,7 +40,7 @@
   // Get the queue manager service
   let shameQueueManager: IShameQueueManager | null = null;
   try {
-    shameQueueManager = container.items.shameQueueManager;
+    shameQueueManager = getShameQueueManager();
   } catch (error) {
     console.warn("Failed to resolve shameQueueManager:", error);
   }

@@ -12,8 +12,7 @@ Same functionality, different density.
   import { onMount } from "svelte";
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
-  import { container as diContainer } from "$lib/shared/di";
-  import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
+import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
@@ -30,6 +29,8 @@ Same functionality, different density.
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
   import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
+  import { getSpellServiceLoader as getSpellServiceLoaderGetter } from "$lib/features/create/spell/getSpellServiceLoader";
+  import { getVariationExplorationOrchestrator as getVariationExplorationOrchestratorGetter } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
 
   // Props
   let {
@@ -89,14 +90,14 @@ Same functionality, different density.
 
   function getServiceLoader(): ISpellServiceLoader {
     if (!serviceLoader) {
-      serviceLoader = diContainer.items.spellServiceLoader as ISpellServiceLoader;
+      serviceLoader = getSpellServiceLoaderGetter();
     }
     return serviceLoader;
   }
 
   function getOrchestrator(): IVariationExplorationOrchestrator {
     if (!orchestrator) {
-      orchestrator = diContainer.items.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
+      orchestrator = getVariationExplorationOrchestratorGetter();
     }
     return orchestrator;
   }

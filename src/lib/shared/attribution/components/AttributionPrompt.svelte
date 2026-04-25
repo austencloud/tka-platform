@@ -5,7 +5,9 @@
   asking how they discovered TKA Composer. Non-intrusive and dismissible.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getAttributionPersister } from "../getAttributionPersister";
+  import { getAttributionPromptTrigger } from "../getAttributionPromptTrigger";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { TranslationKey } from "$lib/shared/i18n/i18n-types.js";
   import { getAttributionPromptState } from "../state/attribution-prompt-state.svelte";
@@ -110,22 +112,13 @@
       }
 
       // Save to attribution persister
-      const persister = container?.items?.attributionPersister;
-      if (persister && typeof persister.addSelfReportedData === "function") {
-        await persister.addSelfReportedData(data);
-      }
+      await getAttributionPersister().addSelfReportedData(data);
 
       // Record completion
-      const trigger = container?.items?.attributionPromptTrigger;
-      if (trigger && typeof trigger.recordPromptCompleted === "function") {
-        trigger.recordPromptCompleted();
-      }
+      getAttributionPromptTrigger().recordPromptCompleted();
 
       // Trigger haptic feedback
-      const haptic = container?.items?.hapticFeedback;
-      if (haptic && typeof haptic.trigger === "function") {
-        haptic.trigger("success");
-      }
+      getHapticFeedback().trigger("success");
 
       promptState.hide();
     } catch (error) {
@@ -136,16 +129,8 @@
   }
 
   function handleDismiss() {
-    const trigger = container?.items?.attributionPromptTrigger;
-    if (trigger && typeof trigger.recordPromptDismissed === "function") {
-      trigger.recordPromptDismissed();
-    }
-
-    const haptic = container?.items?.hapticFeedback;
-    if (haptic && typeof haptic.trigger === "function") {
-      haptic.trigger("selection");
-    }
-
+    getAttributionPromptTrigger().recordPromptDismissed();
+    getHapticFeedback().trigger("selection");
     promptState.hide();
   }
 

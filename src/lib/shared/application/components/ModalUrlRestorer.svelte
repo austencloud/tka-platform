@@ -11,12 +11,13 @@
   This component should be placed at the app root level (in +layout.svelte).
 -->
 <script lang="ts">
+
+import { getDeepLinkResolver } from "$lib/shared/application/getDeepLinkResolver";
   import { onMount } from "svelte";
   import {
     getModalUrlState,
     clearModalUrlState,
   } from "../state/ui/modal-url-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { DeepLinkError } from "../services/contracts/IDeepLinkResolver";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -59,7 +60,7 @@
     loadError = null;
 
     // Resolve the sequence to cache it for the route
-    const deepLinkResolver = container.items.deepLinkResolver;
+    const deepLinkResolver = getDeepLinkResolver();
     const result = await deepLinkResolver.resolve(state.sequenceId);
 
     isLoading = false;

@@ -1,6 +1,7 @@
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { ITurnsTupleKeyGenerator } from "../contracts/ITurnsTupleKeyGenerator";
 
+
 /**
  * TurnsTupleKeyGenerator
  * Generates turns tuple array matching advanced lookup expectations.
@@ -25,7 +26,7 @@ export class TurnsTupleKeyGenerator implements ITurnsTupleKeyGenerator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.turnsTupleKeyGenerator to avoid DI container rebuilds.
+// Use this instead of turnsTupleKeyGenerator to avoid DI container rebuilds.
 // ============================================================================
 
 export const turnsTupleKeyGenerator = new TurnsTupleKeyGenerator();

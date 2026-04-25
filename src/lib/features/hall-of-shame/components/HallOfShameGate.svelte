@@ -6,11 +6,12 @@
   Stores consent in user profile for persistence.
 -->
 <script lang="ts">
+
+import { getAgeVerifier } from "$lib/features/hall-of-shame/getAgeVerifier";
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
-	import { container } from '$lib/shared/di';
 	import { authState } from '$lib/shared/auth/state/authState.svelte';
 
 	interface Props {
@@ -39,7 +40,7 @@
 		error = null;
 
 		try {
-			const ageVerifier = container.items.ageVerifier;
+			const ageVerifier = getAgeVerifier();
 			const userId = authState.user?.uid;
 
 			if (!userId) {

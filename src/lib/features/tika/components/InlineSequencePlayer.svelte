@@ -6,9 +6,12 @@
   Generates the sequence client-side using WordSequenceGenerator.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getWordSequenceGenerator } from "$lib/features/create/spell/getWordSequenceGenerator";
+import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
   import { onMount, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
@@ -56,9 +59,9 @@
   // Initialize services on mount
   onMount(() => {
     try {
-      motionLoader = container.items.sequenceMotionLoader;
-      controller = container.items.animationPlaybackController;
-      sequenceGenerator = container.items.wordSequenceGenerator;
+      motionLoader = getSequenceMotionLoader();
+      controller = getAnimationPlaybackController();
+      sequenceGenerator = getWordSequenceGenerator();
       loading = false;
     } catch (err) {
       console.error("[InlineSequencePlayer] Failed to initialize:", err);

@@ -6,12 +6,13 @@
   with deliberate Save/Delete/Cancel actions (no auto-save).
 -->
 <script lang="ts">
+
+import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../domain/models/StepData";
   import type { AdjustmentTargetKey } from "../../services/contracts/IArrowAdjustmentOrchestrator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import LayerTabBar from "./LayerTabBar.svelte";
-  import { container } from "$lib/shared/di";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
@@ -36,7 +37,7 @@
 
   $effect(() => {
     if (open && !adjustmentOrchestrator) {
-      adjustmentOrchestrator = container.items.arrowAdjustmentOrchestrator as IArrowAdjustmentOrchestrator;
+      adjustmentOrchestrator = getArrowAdjustmentOrchestrator() as IArrowAdjustmentOrchestrator;
     }
   });
 

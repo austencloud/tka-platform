@@ -5,12 +5,13 @@
   Overlays two sequences with different colors on the same canvas.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
   import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -111,9 +112,9 @@
   onMount(() => {
     try {
       // ITI container for services
-      primaryPlaybackController = container.items.animationPlaybackController;
+      primaryPlaybackController = getAnimationPlaybackController();
       // Create a new instance for secondary controller (tunnel mode needs two)
-      secondaryPlaybackController = container.items.animationPlaybackController;
+      secondaryPlaybackController = getAnimationPlaybackController();
       settingsService = settingsServiceSingleton;
     } catch (err) {
       console.error("Failed to initialize tunnel renderer:", err);

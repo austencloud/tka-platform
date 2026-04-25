@@ -10,6 +10,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
 import { PropRotationStateTracker } from "./PropRotationStateTracker";
 
+
 type LetterType =
   | "TYPE1_HYBRID"
   | "TYPE1_NON_HYBRID"
@@ -649,6 +650,6 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.turnsTupleGenerator
+// DIRECT EXPORT - Use this instead of turnsTupleGenerator
 // This avoids DI container rebuilds when this file changes
 export const turnsTupleGenerator = new TurnsTupleGenerator();

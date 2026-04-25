@@ -15,6 +15,8 @@
   - Landscape mode: footer moves to side column, header compacts
 -->
 <script lang="ts">
+
+import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
   import { fly } from "svelte/transition";
@@ -37,7 +39,6 @@
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   // Services
-  import { container } from "$lib/shared/di";
   import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
@@ -242,7 +243,7 @@
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
-          deviceId: container.items.deviceIdService.getDeviceId(),
+          deviceId: getDeviceIdService().getDeviceId(),
         }).catch(() => {});
       }
 

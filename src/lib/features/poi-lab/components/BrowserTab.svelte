@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceValidator";
   /**
    * Browser Tab - Browse community sequences with poi validation
    *
@@ -10,7 +12,6 @@
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PoiValidationResult } from "../domain/poi-models";
@@ -27,7 +28,7 @@
 
   // Services - use browseLoader for community sequences
   const browseLoader = getBrowseLoader();
-  const sequenceValidator = container.items.poiSequenceValidator;
+  const sequenceValidator = getPoiSequenceValidator();
 
   // Get user's prop settings for prop-aware thumbnails
   const propSettings = $derived({

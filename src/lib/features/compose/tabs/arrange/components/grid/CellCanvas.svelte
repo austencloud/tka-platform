@@ -8,9 +8,11 @@
   Can be selected to edit its contents.
 -->
 <script lang="ts">
+
+import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
   import type { ISequenceAnimationOrchestrator } from "../../../../services/contracts/ISequenceAnimationOrchestrator";
@@ -177,8 +179,8 @@
   onMount(() => {
     try {
       // Get shared STATELESS services from DI
-      const stepCalculationService = container.items.stepCalculationService;
-      const propInterpolationService = container.items.propInterpolationService;
+      const stepCalculationService = getStepCalculator();
+      const propInterpolationService = getPropInterpolator();
 
       // Each orchestrator gets its own AnimationStateManager so they don't
       // overwrite each other's prop state through the shared singleton.

@@ -9,6 +9,9 @@ Displays:
 Used by both desktop side panel and mobile slide-up overlay.
 -->
 <script lang="ts">
+
+import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -25,7 +28,6 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 
-  import { container } from "$lib/shared/di";
   import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
   import { getVideoCountManager } from "../getVideoCountManager";
   import { getClaudeCodeCopier } from "../getClaudeCodeCopier";
@@ -168,8 +170,8 @@ Used by both desktop side panel and mobile slide-up overlay.
     videoCountManager = getVideoCountManager();
     imageSharer = getSequenceImageSharer();
     claudeCopier = getClaudeCodeCopier();
-    libraryRepo = container.items.libraryRepository;
-    collectionManager = container.items.collectionManager;
+    libraryRepo = getLibraryRepository();
+    collectionManager = getCollectionManager();
   });
 
   // Load full sequence data when sequence changes

@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/getArrangeKeyboardHandler";
   /**
    * ArrangeTab - Grid-based composition builder
    *
@@ -27,14 +29,13 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CellMediaType } from "../../compose/domain/types";
   import type { TransformType } from "../../compose/domain/types";
-  import { container } from "$lib/shared/di";
   import type { KeyboardContext, KeyboardCallbacks } from "./services/contracts/IArrangeKeyboardHandler";
 
   // Use singleton grid state
   const gridState = arrangeGridState;
 
   // Keyboard handler from DI
-  const keyboardHandler = container.items.arrangeKeyboardHandler;
+  const keyboardHandler = getArrangeKeyboardHandler();
 
   // Mobile detection
   let isMobile = $state(false);

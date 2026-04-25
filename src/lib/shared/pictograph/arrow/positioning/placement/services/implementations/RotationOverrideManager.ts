@@ -261,13 +261,14 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.rotationOverrideManager to avoid DI container rebuilds.
+// Use this instead of rotationOverrideManager to avoid DI container rebuilds.
 // Dependencies are imported from their direct exports.
 // ============================================================================
 
 import { turnsTupleGenerator } from "./TurnsTupleGenerator";
 import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
 import { gridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+
 
 // HMR-aware singleton instance (persists localStorage state across HMR)
 let hmrRotationOverrideManager: RotationOverrideManager | null =

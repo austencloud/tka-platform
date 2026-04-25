@@ -408,13 +408,14 @@ export class SpecialPlacer implements ISpecialPlacer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.specialPlacer to avoid DI container rebuilds.
+// Use this instead of specialPlacer to avoid DI container rebuilds.
 // ============================================================================
 
 import { specialPlacementDataProvider } from "./SpecialPlacementDataProvider";
 import { turnsTupleGenerator } from "./TurnsTupleGenerator";
 import { specialPlacementLookup } from "./SpecialPlacementLookup";
 import { gridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+
 
 export const specialPlacer = new SpecialPlacer(
   specialPlacementDataProvider,

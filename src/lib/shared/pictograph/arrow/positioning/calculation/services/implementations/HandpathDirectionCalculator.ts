@@ -48,7 +48,7 @@ export class HandpathDirectionCalculator implements IHandpathDirectionCalculator
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.handpathDirectionCalculator to avoid DI container rebuilds.
+// Use this instead of handpathDirectionCalculator to avoid DI container rebuilds.
 // ============================================================================
 
 export const handpathDirectionCalculator = new HandpathDirectionCalculator();

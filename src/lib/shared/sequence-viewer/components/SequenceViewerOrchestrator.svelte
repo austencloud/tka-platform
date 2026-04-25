@@ -23,6 +23,16 @@
   - Drawer wrapper/snap points (drawer-specific)
 -->
 <script lang="ts" module>
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
+import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+import { getViewer3DUndoManager } from "$lib/shared/3d/getViewer3DUndoManager";
+import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinator";
+import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
@@ -217,7 +227,6 @@
   } from "firebase/auth";
   import { auth } from "$lib/shared/auth/firebase";
   import { browser } from "$app/environment";
-  import { container } from "$lib/shared/di";
   import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
   import { getPendingActionQueue } from "../getPendingActionQueue";
   import { getWebviewDetector } from "../getWebviewDetector";
@@ -433,9 +442,9 @@
 
   // 3D viewer state — created once, distributed via Svelte context
   const viewer3DState = createViewer3DState({
-    propInterpolator: container.items.propStateInterpolator,
-    sequenceConverter: container.items.sequenceConverter,
-    viewer3DUndoManager: container.items.viewer3DUndoManager,
+    propInterpolator: getPropStateInterpolator(),
+    sequenceConverter: getSequenceConverter(),
+    viewer3DUndoManager: getViewer3DUndoManager(),
   });
   setViewer3DContext(viewer3DState);
 
@@ -619,7 +628,7 @@
     const red = activeRedProp;
     if (blue && red && animationServicesReady) {
       try {
-        const orchestrator = container.items.sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
+        const orchestrator = getSequenceAnimationOrchestrator() as ISequenceAnimationOrchestrator;
         orchestrator.updatePropTypes(blue, red);
       } catch {
         // Animation services not ready yet — will pick up correct props on init
@@ -719,7 +728,7 @@
       return;
     }
 
-    const repo = container.items.libraryRepository as ILibraryRepository;
+    const repo = getLibraryRepository() as ILibraryRepository;
     repo.hasMatchingContent(hash)
       .then((found) => {
         savedHashCache.set(hash, found);
@@ -733,7 +742,7 @@
     const seq = sequence;
     if (!seq) { isFavorite = false; return; }
 
-    const cm = container.items.collectionManager as ICollectionManager;
+    const cm = getCollectionManager() as ICollectionManager;
     cm.isFavorite(seq.id)
       .then((fav) => { if (sequence?.id === seq.id) isFavorite = fav; })
       .catch(() => {});
@@ -742,7 +751,7 @@
   function handleFavoriteToggle() {
     if (!sequence) return;
     isFavorite = !isFavorite; // optimistic
-    const cm = container.items.collectionManager as ICollectionManager;
+    const cm = getCollectionManager() as ICollectionManager;
     cm.toggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
   }
 
@@ -750,7 +759,7 @@
     console.log("[Orchestrator] handlePublishAction called, sequence:", sequence?.id);
     if (!sequence) return;
     try {
-      const repo = container.items.libraryRepository as ILibraryRepository;
+      const repo = getLibraryRepository() as ILibraryRepository;
       await repo.publishSequence(sequence.id);
       console.log("[Orchestrator] publishSequence completed");
     } catch (e) {
@@ -760,7 +769,7 @@
 
   async function handleUnpublishAction() {
     if (!sequence) return;
-    const repo = container.items.libraryRepository as ILibraryRepository;
+    const repo = getLibraryRepository() as ILibraryRepository;
     await repo.unpublishSequence(sequence.id);
   }
 
@@ -1003,11 +1012,11 @@
 
   async function loadServices() {
     try {
-      playbackController = container.items.animationPlaybackController;
-      sequenceDataProvider = container.items.sequenceDataProvider;
+      playbackController = getAnimationPlaybackController();
+      sequenceDataProvider = getSequenceDataProvider();
       hapticService = getHapticFeedback();
 
-      const lanSyncCoordinator = container.items.lanSyncCoordinator;
+      const lanSyncCoordinator = getLanSyncCoordinator();
       lanSyncState.initialize(lanSyncCoordinator);
 
       animationServicesReady = true;
@@ -1732,7 +1741,7 @@
       return;
     }
     try {
-      const libraryRepo = container.items.libraryRepository;
+      const libraryRepo = getLibraryRepository();
       // Attach current prop config as intended prop, and capture pathShape in metadata
       const currentPathShape = getAnimationVisibilityManager().getPathShape();
       const pathShapeMetadata = currentPathShape !== "arc"
@@ -1785,7 +1794,7 @@
     if (!currentBlue || !currentRed) return;
 
     try {
-      const libraryRepo = container.items.libraryRepository;
+      const libraryRepo = getLibraryRepository();
       // Capture pathShape in metadata alongside prop intent
       const currentPathShape = getAnimationVisibilityManager().getPathShape();
       const pathShapeMetadata = currentPathShape !== "arc"
@@ -1821,7 +1830,7 @@
     if (!sequence) return;
     hapticService?.trigger("warning");
     try {
-      const libraryRepo = container.items.libraryRepository;
+      const libraryRepo = getLibraryRepository();
       await libraryRepo.deleteSequence(sequence.id);
       showToast("Sequence deleted", "success");
       handleBackInternal();

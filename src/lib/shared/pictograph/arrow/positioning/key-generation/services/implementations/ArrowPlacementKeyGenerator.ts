@@ -10,6 +10,7 @@ import type { MotionData } from "../../../../../shared/domain/models/MotionData"
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { IArrowPlacementKeyGenerator } from "../contracts/IArrowPlacementKeyGenerator";
 
+
 export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
   // Letter condition mappings from desktop
   private readonly dashLetterConditions = {
@@ -370,7 +371,7 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowPlacementKeyGenerator to avoid DI container rebuilds.
+// Use this instead of arrowPlacementKeyGenerator to avoid DI container rebuilds.
 // ============================================================================
 
 export const arrowPlacementKeyGenerator = new ArrowPlacementKeyGenerator();

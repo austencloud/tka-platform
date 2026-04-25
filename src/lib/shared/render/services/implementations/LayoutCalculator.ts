@@ -11,6 +11,8 @@
 
 import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
 
+import { getLayoutCalculator } from "$lib/shared/render/getLayoutCalculator";
+
 export class LayoutCalculator implements ILayoutCalculator {
   // Base constants matching desktop application
   private static readonly BASE_BEAT_SIZE = 144; // Match desktop beat.width()
@@ -555,6 +557,6 @@ export class LayoutCalculator implements ILayoutCalculator {
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.layoutCalculator
+// DIRECT EXPORT - Use this instead of getLayoutCalculator()
 // This avoids DI container rebuilds when this file changes
 export const layoutCalculator = new LayoutCalculator();

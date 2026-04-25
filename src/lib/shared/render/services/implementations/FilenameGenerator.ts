@@ -7,6 +7,8 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 
+import { getFilenameGenerator } from "$lib/shared/render/getFilenameGenerator";
+
 export interface FilenameOptions {
   includeDate?: boolean;
   includeTime?: boolean;
@@ -176,6 +178,6 @@ export class FilenameGenerator implements IFilenameGenerator {
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.filenameGenerator
+// DIRECT EXPORT - Use this instead of getFilenameGenerator()
 // This avoids DI container rebuilds when this file changes
 export const filenameGenerator = new FilenameGenerator();

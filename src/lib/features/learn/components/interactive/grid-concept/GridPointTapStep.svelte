@@ -5,8 +5,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { GRID, CARDINAL_HAND, CARDINAL_OUTER, INTERCARDINAL_HAND, INTERCARDINAL_OUTER } from '../grid-merge/grid-merge-constants';
-	import { container } from '$lib/shared/di';
-	import type { TapPhase } from './grid-experience-state.svelte';
+import type { TapPhase } from './grid-experience-state.svelte';
 
 	let {
 		tapPhase,

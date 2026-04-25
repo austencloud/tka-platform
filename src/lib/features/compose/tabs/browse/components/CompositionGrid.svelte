@@ -5,7 +5,8 @@
 	to assign hero/medium/compact sizes. Responsive column count via ResizeObserver.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getCompositionLayoutCalculator } from "$lib/features/compose/tabs/browse/getCompositionLayoutCalculator";
   import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import type { CardSize } from "../services/contracts/ICompositionLayoutCalculator";
 	import type { ICompositionLayoutCalculator } from "../services/contracts/ICompositionLayoutCalculator";
@@ -32,7 +33,7 @@
 	let gridEl: HTMLDivElement | undefined = $state();
 	let columnCount = $state(3);
 
-	const layoutCalculator = container?.items?.compositionLayoutCalculator as ICompositionLayoutCalculator | undefined;
+	const layoutCalculator = getCompositionLayoutCalculator();
 
 	// Don't use more columns than compositions (avoids tiny cards when only 1-2 exist)
 	const effectiveColumns = $derived(

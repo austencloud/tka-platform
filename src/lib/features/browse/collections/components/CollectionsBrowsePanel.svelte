@@ -7,9 +7,11 @@ Users can browse what others have created without navigating away.
 Uses singleton state for caching - data persists across tab switches.
 -->
 <script lang="ts">
+
+import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
@@ -70,8 +72,8 @@ Uses singleton state for caching - data persists across tab switches.
     try {
       // Resolve services (ITI containers are synchronous - no module loading needed)
       userService = getUserRepository();
-      collectionService = container.items.collectionManager;
-      libraryService = container.items.libraryRepository;
+      collectionService = getCollectionManager();
+      libraryService = getLibraryRepository();
       hapticService = getHapticFeedback();
 
       // Load data (uses cache if already loaded)

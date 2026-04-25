@@ -2,6 +2,7 @@ import type { ISpecialPlacementOriKeyGenerator } from "../contracts/ISpecialPlac
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 
+
 /**
  * SpecialPlacementOriKeyGenerator
  * Generates ori_key matching SpecialPlacer's internal logic.
@@ -75,7 +76,7 @@ export class SpecialPlacementOriKeyGenerator implements ISpecialPlacementOriKeyG
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.specialPlacementOriKeyGenerator to avoid DI container rebuilds.
+// Use this instead of specialPlacementOriKeyGenerator to avoid DI container rebuilds.
 // ============================================================================
 
 export const specialPlacementOriKeyGenerator = new SpecialPlacementOriKeyGenerator();

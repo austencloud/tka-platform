@@ -5,9 +5,7 @@
   Tapping navigates to alerts/notifications view.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { onMount, onDestroy } from "svelte";
 
   interface Props {
     onClick?: () => void;
@@ -16,33 +14,11 @@
   const { onClick }: Props = $props();
 
   let unreadCount = $state(0);
-  let unsubscribe: (() => void) | null = null;
 
   const hasUnread = $derived(unreadCount > 0);
   const displayCount = $derived(unreadCount > 99 ? "99+" : String(unreadCount));
 
-  onMount(() => {
-    try {
-      // Check if notification service exists in container
-      // For now, this may not be implemented - alerts will show 0
-      // notificationService not yet registered in DI - access via any
-      const notificationService = (container.items as any).notificationService;
-      if (notificationService?.subscribeToUnreadCount) {
-        notificationService.getUnreadCount?.().then((count: number) => {
-          unreadCount = count;
-        });
-        unsubscribe = notificationService.subscribeToUnreadCount((count: number) => {
-          unreadCount = count;
-        });
-      }
-    } catch {
-      // Service not available - that's okay, badge won't show
-    }
-  });
-
-  onDestroy(() => {
-    unsubscribe?.();
-  });
+  // notificationService not yet implemented — badge stays at 0 until wired
 
   function handleClick() {
     onClick?.();

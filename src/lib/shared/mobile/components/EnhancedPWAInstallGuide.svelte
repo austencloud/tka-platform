@@ -20,8 +20,7 @@
   import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
-  import { container } from "../../di";
-  import type { IPlatformDetector } from "../services/contracts/IPlatformDetector";
+import type { IPlatformDetector } from "../services/contracts/IPlatformDetector";
   import type { Platform, Browser } from "../config/pwa-install-instructions";
   import { getInstallInstructions } from "../config/pwa-install-instructions";
   import { createViewportMeasurement } from "../utils/viewport-measurement.svelte";

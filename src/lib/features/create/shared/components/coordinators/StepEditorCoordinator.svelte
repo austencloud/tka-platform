@@ -12,8 +12,9 @@
   Domain: Create module - Beat Editing Coordination
 -->
 <script lang="ts">
+
+import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
@@ -44,7 +45,7 @@
 
   // Services
   const hapticService: IHapticFeedback = getHapticFeedback();
-  const StepOperator: IStepOperator = container.items.stepOperator;
+  const StepOperator: IStepOperator = getStepOperator();
 
   // Only show panel if the current tab supports it AND panel state says it's open
   const currentTab = $derived(navigationState.activeTab);

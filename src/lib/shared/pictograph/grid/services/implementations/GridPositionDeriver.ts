@@ -180,7 +180,7 @@ export class GridPositionDeriver implements IGridPositionDeriver {
 }
 
 // ============================================================================
-// DIRECT EXPORT - Use this instead of container.items.gridPositionDeriver
+// DIRECT EXPORT - Use this instead of gridPositionDeriver
 // This avoids DI container rebuilds when this file changes
 // ============================================================================
 export const gridPositionDeriver = new GridPositionDeriver();

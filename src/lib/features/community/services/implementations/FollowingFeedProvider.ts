@@ -6,7 +6,6 @@
  */
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import { container } from "$lib/shared/di";
 import { getUserRepository } from "$lib/shared/community/getUserRepository";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
@@ -19,6 +18,8 @@ import type {
 } from "../contracts/IFollowingFeedProvider";
 import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+
+import { getCollectionManager } from "$lib/features/library/getCollectionManager";
 
 export class FollowingFeedProvider implements IFollowingFeedProvider {
   private userService: IUserRepository | null = null;
@@ -33,7 +34,7 @@ export class FollowingFeedProvider implements IFollowingFeedProvider {
       this.activityLogService = getActivityLogger();
     }
     if (!this.collectionService) {
-      this.collectionService = container.items.collectionManager;
+      this.collectionService = getCollectionManager();
     }
     return !!(
       this.userService &&

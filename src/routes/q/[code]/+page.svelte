@@ -16,12 +16,13 @@
   4. Cosmetically update URL via SvelteKit's replaceState()
 -->
 <script lang="ts">
+
+import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   import { page } from "$app/stores";
   import { goto, replaceState } from "$app/navigation";
   import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
-  import { container } from "$lib/shared/di";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
@@ -257,7 +258,7 @@
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
-          deviceId: container.items.deviceIdService.getDeviceId(),
+          deviceId: getDeviceIdService().getDeviceId(),
         }).catch(() => {}); // Silent failure — analytics should never break the viewer
       }
 

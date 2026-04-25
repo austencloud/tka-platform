@@ -1,8 +1,7 @@
 <!-- NavButton - Reusable Navigation Button Component -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { container } from "../../../di";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
 
   let {

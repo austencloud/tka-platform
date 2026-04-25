@@ -11,12 +11,14 @@ import type {
 import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 import type { IOffline3DExporter } from "$lib/shared/3d/services/contracts/IOffline3DExporter";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
-import { container } from "$lib/shared/di";
 import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { recordExportThroughput } from "../../state/export-timing-tracker";
+
+import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
+import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
 
 /**
  * Orchestrates sequence exports (image, video).
@@ -35,7 +37,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
 
   private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
     if (!this._videoExportOrchestrator) {
-      this._videoExportOrchestrator = container.items.videoExportOrchestrator;
+      this._videoExportOrchestrator = getVideoExportOrchestrator();
     }
     return this._videoExportOrchestrator;
   }
@@ -130,7 +132,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     deps: Video3DExportDependencies,
     callbacks: ExportCallbacks
   ): Promise<void> {
-    const exporter = container.items.offline3DExporter as IOffline3DExporter;
+    const exporter = getOffline3DExporter() as IOffline3DExporter;
     if (!exporter) {
       this._error = "3D export services not ready.";
       return;

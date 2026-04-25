@@ -10,7 +10,7 @@
   import { turnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import { createPlaybackControllerFactory } from "$lib/shared/di/containers/compose-core-container";
+  import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";

@@ -13,9 +13,7 @@ Features:
 	import { scale, fade } from 'svelte/transition';
 	import { elasticOut, cubicOut } from 'svelte/easing';
 	import { getDelightOrchestrator } from '$lib/shared/delight/context/delight-context';
-	import { container } from '$lib/shared/di';
-
-	let { onDismiss } = $props<{
+let { onDismiss } = $props<{
 		onDismiss: () => void;
 	}>();
 

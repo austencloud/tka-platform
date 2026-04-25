@@ -12,8 +12,10 @@
   import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { container } from "$lib/shared/di";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
+
   import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
@@ -238,12 +240,12 @@
 
       // Get services from DI container (some still need container, others use direct imports)
       browseLoader = getBrowseLoader();
-      playbackController = container.items.animationPlaybackController;
+      playbackController = getAnimationPlaybackController();
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;
 
       // Create and initialize the spinner orchestrator for endless chaining
-      const sequenceTransformer = container.items.sequenceTransformer;
+      const sequenceTransformer = getSequenceTransformer();
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         browseLoader as any,

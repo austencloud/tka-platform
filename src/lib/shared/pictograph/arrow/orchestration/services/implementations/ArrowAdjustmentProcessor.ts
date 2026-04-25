@@ -186,9 +186,10 @@ export class ArrowAdjustmentProcessor implements IArrowAdjustmentProcessor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowAdjustmentProcessor to avoid DI container rebuilds.
+// Use this instead of arrowAdjustmentProcessor to avoid DI container rebuilds.
 // ============================================================================
 
 import { arrowQuadrantCalculator } from "./ArrowQuadrantCalculator";
+
 
 export const arrowAdjustmentProcessor = new ArrowAdjustmentProcessor(arrowQuadrantCalculator);

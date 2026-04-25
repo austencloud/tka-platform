@@ -69,6 +69,11 @@ export interface IArrangeUndoManager {
   readonly redoDescription: string | null;
 
   /**
+   * Initialize the undo manager with a snapshot provider.
+   */
+  init(getSnapshot: () => ArrangeGridSnapshot): void;
+
+  /**
    * Capture current state before an operation.
    * Must be called BEFORE making changes.
    */

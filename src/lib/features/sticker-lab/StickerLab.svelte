@@ -35,11 +35,32 @@
 <style>
   .sticker-lab {
     display: grid;
-    grid-template-columns: 320px 1fr 300px;
+    grid-template-columns: 280px 1fr 260px;
     gap: 16px;
     height: 100%;
     padding: 16px;
     box-sizing: border-box;
+  }
+
+  @media (max-width: 1024px) {
+    .sticker-lab {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr auto;
+    }
+    .col-preview {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .sticker-lab {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto;
+    }
+    .col-preview {
+      grid-column: auto;
+      min-height: 300px;
+    }
   }
 
   .col {

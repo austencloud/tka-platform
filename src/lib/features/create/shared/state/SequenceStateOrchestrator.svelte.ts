@@ -25,7 +25,6 @@ import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
-import { container } from "$lib/shared/di";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { ISequencePersister } from "../services/contracts/ISequencePersister";
@@ -42,6 +41,8 @@ import { createSequenceTransformOperations } from "./operations/SequenceTransfor
 import { createSequencePersistenceCoordinator } from "./persistence/SequencePersistenceCoordinator.svelte";
 import { createSequenceSelectionState } from "./selection/SequenceSelectionState.svelte";
 import { isStep } from "$lib/features/create/shared/domain/type-guards/pictograph-type-guards";
+
+import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttributionPromptTrigger";
 
 /**
  * Clean service configuration - no more type gymnastics!
@@ -219,7 +220,7 @@ export function createSequenceState(services: SequenceStateServices) {
 
       // Track sequence creation for attribution prompt eligibility
       try {
-        const promptTrigger = container.items.attributionPromptTrigger as { recordInteraction: (type: string) => void } | undefined;
+        const promptTrigger = getAttributionPromptTrigger() as { recordInteraction: (type: string) => void } | undefined;
         if (promptTrigger?.recordInteraction) {
           promptTrigger.recordInteraction("sequence_create");
         }

@@ -13,8 +13,9 @@ import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
 import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
 import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
-import { container } from "$lib/shared/di";
 import type { OptionHistoryManager } from "./option-history-manager.svelte";
+
+import { getDeepLinkSequenceHandler } from "$lib/features/create/shared/getDeepLinkSequenceHandler";
 
 type ConstructTabState =
   | {
@@ -132,7 +133,7 @@ export function createCreateModulePersistenceController({
 
       // CRITICAL: Also check session flag - pending edit may have already been processed
       // (and localStorage cleared) by the $effect before this function runs
-      const DeepLinkSequenceHandler = container.items.deepLinkSequenceHandler;
+      const DeepLinkSequenceHandler = getDeepLinkSequenceHandler();
       pendingEditWasProcessed =
         DeepLinkSequenceHandler.wasPendingEditProcessedThisSession();
     } catch {

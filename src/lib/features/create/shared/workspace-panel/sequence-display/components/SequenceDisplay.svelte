@@ -2,8 +2,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
-  import { container } from "$lib/shared/di";
-  import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
+import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
@@ -64,8 +63,8 @@
   const { CreateModuleState, panelState } = ctx;
 
   // LOOP detection — uses the circular LOOPDetector singleton directly
-  // (detectLOOPType + SequenceData) rather than container.items.loopDetector
-  // which is the loop-labeler version (detectLOOP + SequenceEntry)
+  // (detectLOOPType + SequenceData) rather than the loop-labeler version
+  // (detectLOOP + SequenceEntry)
 
   // Use $derived.by() to ensure Svelte tracks the getters properly
   // when sequenceState is passed as a prop (not a reactive state)

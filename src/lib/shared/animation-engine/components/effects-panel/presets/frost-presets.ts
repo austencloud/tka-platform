@@ -28,7 +28,7 @@ export const FROST_PRESETS = [
         ambientEmission: 0.4,
         motionEmission: 0.5,
         intensity: 0.6,
-        crystallinity: 0.5,
+        crystallinity: 0.7,
         spreadRate: 0.5,
         trackingMode: "both_ends",
       }),
@@ -58,7 +58,7 @@ export const FROST_PRESETS = [
         ambientEmission: 0.2,
         motionEmission: 0.9,
         intensity: 0.8,
-        crystallinity: 0.7,
+        crystallinity: 1.0,
         spreadRate: 1.0,
         trackingMode: "both_ends",
       }),
@@ -73,7 +73,7 @@ export const FROST_PRESETS = [
         ambientEmission: 0.3,
         motionEmission: 0.6,
         intensity: 0.5,
-        crystallinity: 0.4,
+        crystallinity: 0.6,
         spreadRate: 0.6,
         trackingMode: "both_ends",
       }),
@@ -88,7 +88,7 @@ export const FROST_PRESETS = [
         ambientEmission: 0.5,
         motionEmission: 0.4,
         intensity: 0.7,
-        crystallinity: 0.6,
+        crystallinity: 0.8,
         spreadRate: 0.5,
         trackingMode: "both_ends",
       }),
@@ -103,7 +103,7 @@ export const FROST_PRESETS = [
         ambientEmission: 0.3,
         motionEmission: 0.5,
         intensity: 0.7,
-        crystallinity: 0.8,
+        crystallinity: 0.9,
         spreadRate: 0.4,
         trackingMode: "both_ends",
       }),
@@ -122,6 +122,6 @@ export const FROST_PRESET_GROUP: EffectPresetGroup = {
   getSummary: (_vm, state) => {
     if (!state) return "";
     const f = state.frost;
-    return `${f.palette} · amb ${Math.round(f.ambientEmission * 100)}% · mot ${Math.round(f.motionEmission * 100)}% · cryst ${Math.round(f.crystallinity * 100)}%`;
+    return `${f.palette} · size ${Math.round(f.crystallinity * 100)}% · trail ${Math.round(f.spreadRate * 100)}%`;
   },
 };

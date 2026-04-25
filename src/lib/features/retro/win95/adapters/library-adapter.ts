@@ -9,10 +9,11 @@
  * Domain: Retro File Manager
  */
 
-import { container } from "$lib/shared/di";
 import type { ILibraryRepository, LibraryQueryOptions } from "$lib/features/library/services/contracts/ILibraryRepository";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
 import { FileNameConverter } from "../services/implementations/FileNameConverter";
+
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 
 export interface RetroFile {
 	id: string;
@@ -67,7 +68,7 @@ export async function listSequenceFiles(options?: {
 	sortBy?: LibraryQueryOptions["sortBy"];
 	sortDirection?: "asc" | "desc";
 }): Promise<RetroFile[]> {
-	const repo = container.items.libraryRepository as ILibraryRepository;
+	const repo = getLibraryRepository() as ILibraryRepository;
 	const sequences = await repo.getSequences({
 		sortBy: options?.sortBy ?? "updatedAt",
 		sortDirection: options?.sortDirection ?? "desc",
@@ -83,7 +84,7 @@ export async function listSequenceFiles(options?: {
  * Soft-delete a sequence (moves it to the recycle bin).
  */
 export async function deleteFile(sequenceId: string): Promise<void> {
-	const repo = container.items.libraryRepository as ILibraryRepository;
+	const repo = getLibraryRepository() as ILibraryRepository;
 	await repo.softDeleteSequence(sequenceId);
 }
 
@@ -92,7 +93,7 @@ export async function deleteFile(sequenceId: string): Promise<void> {
  * The callback receives the full file list on every change.
  */
 export function subscribeToLibrary(callback: (files: RetroFile[]) => void): () => void {
-	const repo = container.items.libraryRepository as ILibraryRepository;
+	const repo = getLibraryRepository() as ILibraryRepository;
 	return repo.subscribeToLibrary((sequences) => {
 		const dosNames: string[] = [];
 		const files = sequences

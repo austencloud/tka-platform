@@ -31,7 +31,6 @@ import type { IContentAppealManager } from "$lib/features/moderation/services/co
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
-import { container } from "$lib/shared/di";
 import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";

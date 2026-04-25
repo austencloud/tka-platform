@@ -15,6 +15,9 @@
   - ExportProgressOverlay (export progress)
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -22,7 +25,6 @@
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceMotionLoader } from "../services/contracts/ISequenceMotionLoader";
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-	import { container } from "$lib/shared/di";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
@@ -159,8 +161,8 @@
 		}
 
 		try {
-			motionLoader = container.items.sequenceMotionLoader;
-			controller = container.items.animationPlaybackController;
+			motionLoader = getSequenceMotionLoader();
+			controller = getAnimationPlaybackController();
 			loading = false;
 			// Expose toggle function to parent for keyboard control
 			onTogglePlaybackRef?.(togglePlayback);

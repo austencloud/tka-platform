@@ -3,9 +3,11 @@
   Mounts Threlte canvas with village scene + control panel sidebar.
 -->
 <script lang="ts">
+
+import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
+import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
 	import { onDestroy } from "svelte";
 	import { Canvas } from "@threlte/core";
-	import { container } from "$lib/shared/di";
 	import VillageScene from "./components/VillageScene.svelte";
 	import VillageControls from "./components/VillageControls.svelte";
 	import { createVillageState, type VillageState } from "./state/village-state.svelte";
@@ -28,8 +30,8 @@
 		} as SequenceData));
 	}
 
-	const propInterpolator = container.items.propStateInterpolator;
-	const sequenceConverter = container.items.sequenceConverter;
+	const propInterpolator = getPropStateInterpolator();
+	const sequenceConverter = getSequenceConverter();
 
 	// Create state synchronously during component init — required for setContext
 	let villageState: VillageState | null = null;

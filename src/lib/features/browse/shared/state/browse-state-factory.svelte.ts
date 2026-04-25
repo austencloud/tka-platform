@@ -6,7 +6,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { container } from "$lib/shared/di";
 import { getBrowseLoader } from "../../sequences/display/getBrowseLoader";
 import { getBrowseFilter } from "../../sequences/display/getBrowseFilter";
 import { getMultiFilter } from "../../sequences/display/getMultiFilter";
@@ -42,6 +41,9 @@ import type { SequenceSource } from "../state/sequence-source-state.svelte";
 import type { IFavoritesManager } from "../services/contracts/IFavoritesManager";
 import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+
 import {
   onLibraryMutated,
   onLibrarySequenceAdded,
@@ -80,7 +82,7 @@ export function createBrowseState() {
   let libraryService: ILibraryRepository | null = null;
   function getLibraryRepository(): ILibraryRepository | null {
     if (!libraryService) {
-      libraryService = container.items.libraryRepository;
+      libraryService = getLibraryRepository();
     }
     return libraryService;
   }
@@ -364,7 +366,7 @@ export function createBrowseState() {
   }
 
   async function toggleFavorite(sequenceId: string): Promise<void> {
-    const collectionManager = container.items.collectionManager;
+    const collectionManager = getCollectionManager();
     if (!collectionManager) return;
 
     try {

@@ -55,12 +55,37 @@ function hydrateSteps(
   }));
 }
 
+const DECK_CACHE_KEY = "deckLoader.cachedDecks";
+
 export class DeckLoader implements IDeckLoader {
+  getCachedDecks(): Deck[] | null {
+    try {
+      const raw = localStorage.getItem(DECK_CACHE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as Deck[];
+    } catch {
+      return null;
+    }
+  }
+
+  private cacheDecks(decks: Deck[]): void {
+    try {
+      const json = JSON.stringify(decks);
+      console.log('[deck-perf] caching %d decks (%d KB)', decks.length, Math.round(json.length / 1024));
+      localStorage.setItem(DECK_CACHE_KEY, json);
+      console.log('[deck-perf] cache write success');
+    } catch (e) {
+      console.warn('[deck-perf] cache write failed:', e);
+    }
+  }
+
   async loadDecks(): Promise<Deck[]> {
     const db = await getFirestoreInstance();
     const decksRef = collection(db, getSystemDecksPath());
     const snapshot = await getDocs(decksRef);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Deck);
+    const decks = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Deck);
+    this.cacheDecks(decks);
+    return decks;
   }
 
   async loadDeckSequences(deckId: string): Promise<SequenceData[]> {

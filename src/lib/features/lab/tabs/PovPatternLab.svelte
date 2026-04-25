@@ -5,8 +5,11 @@
   adjust persistence duration, and upload to physical poi hardware via BLE.
 -->
 <script lang="ts">
+
+import { getPoiDeviceManager } from "$lib/features/poi/getPoiDeviceManager";
+import { getPoiImageLibrary } from "$lib/features/poi/getPoiImageLibrary";
+import { getStripPatternEngine } from "$lib/features/poi/getStripPatternEngine";
   import { onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import { createPoiState } from "$lib/features/poi/state/poi-state.svelte";
   import { setPoiContext } from "$lib/features/poi/context/poi-context";
   import PatternPicker from "$lib/features/poi/components/PatternPicker.svelte";
@@ -23,9 +26,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   const poi = createPoiState(
-    container.items.stripPatternEngine,
-    container.items.poiDeviceManager,
-    container.items.poiImageLibrary,
+    getStripPatternEngine(),
+    getPoiDeviceManager(),
+    getPoiImageLibrary(),
   );
   setPoiContext(poi);
 

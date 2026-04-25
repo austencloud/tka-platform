@@ -1,6 +1,787 @@
 {
   "version": 1,
-  "generatedAt": 1776887667842,
-  "totalEntries": 0,
-  "entries": []
+  "generatedAt": 1777108733687,
+  "totalEntries": 60,
+  "entries": [
+    {
+      "shapeHash": "3b7882d6-a87d-4b57-bbfe-8eacb9e39f04",
+      "ultraHash": "3b7882d6-a87d-4b57-bbfe-8eacb9e39f04",
+      "displayName": "AABB",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "3b7882d6-a87d-4b57-bbfe-8eacb9e39f04",
+        "word": "AABB",
+        "loopType": "rotated_inverted"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "AAKE",
+      "ultraHash": "AAKE",
+      "displayName": "AAKE",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "AAKE",
+        "word": "AAKE",
+        "loopType": "rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "AB",
+      "ultraHash": "AB",
+      "displayName": "AB",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "AB",
+        "word": "AB",
+        "loopType": "rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "ABC",
+      "ultraHash": "ABC",
+      "displayName": "ABC",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "ABC",
+        "word": "ABC",
+        "loopType": "rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "AJEΦ-",
+      "ultraHash": "AJEΦ-",
+      "displayName": "AJEΦ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "AJEΦ-",
+        "word": "AJEΦ-",
+        "loopType": "rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "AKE",
+      "ultraHash": "AKE",
+      "displayName": "AKE",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "AKE",
+        "word": "AKE",
+        "loopType": "rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "AKIΦ",
+      "ultraHash": "AKIΦ",
+      "displayName": "AKIΦ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "AKIΦ",
+        "word": "AKIΦ",
+        "loopType": "rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "ALFALGGF",
+      "ultraHash": "ALFALGGF",
+      "displayName": "ALFALGGF",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "ALFALGGF",
+        "word": "ALFALGGF",
+        "loopType": "rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BA",
+      "ultraHash": "BA",
+      "displayName": "BA",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BA",
+        "word": "BA",
+        "loopType": "mirrored_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BBKE",
+      "ultraHash": "BBKE",
+      "displayName": "BBKE",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BBKE",
+        "word": "BBKE",
+        "loopType": "rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BBLF",
+      "ultraHash": "BBLF",
+      "displayName": "BBLF",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BBLF",
+        "word": "BBLF",
+        "loopType": "rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BJEA",
+      "ultraHash": "BJEA",
+      "displayName": "BJEA",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BJEA",
+        "word": "BJEA",
+        "loopType": "flipped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BJFA",
+      "ultraHash": "BJFA",
+      "displayName": "BJFA",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BJFA",
+        "word": "BJFA",
+        "loopType": "flipped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BLEΩ-TSYF",
+      "ultraHash": "BLEΩ-TSYF",
+      "displayName": "BLEΩ-TSYF",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BLEΩ-TSYF",
+        "word": "BLEΩ-TSYF",
+        "loopType": "mirrored_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Bθ-Z-θWLΦB",
+      "ultraHash": "Bθ-Z-θWLΦB",
+      "displayName": "BΘ-Z-ΘWLΦB",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Bθ-Z-θWLΦB",
+        "word": "BΘ-Z-ΘWLΦB",
+        "loopType": "mirrored_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "0c2a7901-ca17-449a-94c2-05b1edb68ef8",
+      "ultraHash": "0c2a7901-ca17-449a-94c2-05b1edb68ef8",
+      "displayName": "BΣRYEBΣRYEBΣRYEBΣRYE",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "0c2a7901-ca17-449a-94c2-05b1edb68ef8",
+        "word": "BΣRYEBΣRYEBΣRYEBΣRYE",
+        "loopType": "strict_rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "seq_1765578645612_oie0f18z2",
+      "ultraHash": "seq_1765578645612_oie0f18z2",
+      "displayName": "BΣTSY",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "seq_1765578645612_oie0f18z2",
+        "word": "BΣTSY",
+        "loopType": "unknown"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BΦ-AΦ-",
+      "ultraHash": "BΦ-AΦ-",
+      "displayName": "BΦ-AΦ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BΦ-AΦ-",
+        "word": "BΦ-AΦ-",
+        "loopType": "rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "BΨΦ",
+      "ultraHash": "BΨΦ",
+      "displayName": "BΨΦ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "BΨΦ",
+        "word": "BΨΦ",
+        "loopType": "rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "C",
+      "ultraHash": "C",
+      "displayName": "C",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "C",
+        "word": "C",
+        "loopType": "rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "CAKE",
+      "ultraHash": "CAKE",
+      "displayName": "CAKE",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "CAKE",
+        "word": "CAKE",
+        "loopType": "repeated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "CCKΦ",
+      "ultraHash": "CCKΦ",
+      "displayName": "CCKΦ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "CCKΦ",
+        "word": "CCKΦ",
+        "loopType": "mirrored_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "CΣNZIθUW",
+      "ultraHash": "CΣNZIθUW",
+      "displayName": "CΣNZIΘUW",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "CΣNZIθUW",
+        "word": "CΣNZIΘUW",
+        "loopType": "mirrored_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "CΨθX-",
+      "ultraHash": "CΨθX-",
+      "displayName": "CΨΘX-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "CΨθX-",
+        "word": "CΨΘX-",
+        "loopType": "mirrored_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "DJII",
+      "ultraHash": "DJII",
+      "displayName": "DJII",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "DJII",
+        "word": "DJII",
+        "loopType": "mirrored"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "DKIIEJII",
+      "ultraHash": "DKIIEJII",
+      "displayName": "DKIIEJII",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "DKIIEJII",
+        "word": "DKIIEJII",
+        "loopType": "unknown"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "DΦ-AΨ",
+      "ultraHash": "DΦ-AΨ",
+      "displayName": "DΦ-AΨ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "DΦ-AΨ",
+        "word": "DΦ-AΨ",
+        "loopType": "flipped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "EΨDΨDΨEΨ",
+      "ultraHash": "EΨDΨDΨEΨ",
+      "displayName": "EΨDΨDΨEΨ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "EΨDΨDΨEΨ",
+        "word": "EΨDΨDΨEΨ",
+        "loopType": "inverted_rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "EΨIΦJΦCΨ",
+      "ultraHash": "EΨIΦJΦCΨ",
+      "displayName": "EΨIΦJΦCΨ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "EΨIΦJΦCΨ",
+        "word": "EΨIΦJΦCΨ",
+        "loopType": "unknown"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "seq_1773172546683_zuqsv5jdt",
+      "ultraHash": "seq_1773172546683_zuqsv5jdt",
+      "displayName": "FJ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "seq_1773172546683_zuqsv5jdt",
+        "word": "FJ",
+        "loopType": "unknown"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "FLII",
+      "ultraHash": "FLII",
+      "displayName": "FLII",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "FLII",
+        "word": "FLII",
+        "loopType": "unknown"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "IELθVYθU",
+      "ultraHash": "IELθVYθU",
+      "displayName": "IELΘVYΘU",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "IELθVYθU",
+        "word": "IELΘVYΘU",
+        "loopType": "unknown"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "3c529b27-bcf4-4f77-9471-d585d7da0a59",
+      "ultraHash": "3c529b27-bcf4-4f77-9471-d585d7da0a59",
+      "displayName": "IΘZΩΛ-VW-ΨIΘZΩΛ-VW-Ψ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "3c529b27-bcf4-4f77-9471-d585d7da0a59",
+        "word": "IΘZΩΛ-VW-ΨIΘZΩΛ-VW-Ψ",
+        "loopType": "strict_rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "IΦΨβ",
+      "ultraHash": "IΦΨβ",
+      "displayName": "IΦΨβ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "IΦΨβ",
+        "word": "IΦΨβ",
+        "loopType": "inverted_rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "JIDCKIEC",
+      "ultraHash": "JIDCKIEC",
+      "displayName": "JIDCKIEC",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "JIDCKIEC",
+        "word": "JIDCKIEC",
+        "loopType": "mirrored"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "KDΨΦKDΨΦJEΨΦJEΨΦ",
+      "ultraHash": "KDΨΦKDΨΦJEΨΦJEΨΦ",
+      "displayName": "KDΨΦKDΨΦJEΨΦJEΨΦ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "KDΨΦKDΨΦJEΨΦJEΨΦ",
+        "word": "KDΨΦKDΨΦJEΨΦJEΨΦ",
+        "loopType": "inverted_rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "LF",
+      "ultraHash": "LF",
+      "displayName": "LF",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "LF",
+        "word": "LF",
+        "loopType": "inverted_rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "LFCC",
+      "ultraHash": "LFCC",
+      "displayName": "LFCC",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "LFCC",
+        "word": "LFCC",
+        "loopType": "mirrored"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "0d0f8e9b-562a-45b2-b76a-a04db21a3f18",
+      "ultraHash": "0d0f8e9b-562a-45b2-b76a-a04db21a3f18",
+      "displayName": "LΘSW-LΘSW-LΘSW-LΘSW-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "0d0f8e9b-562a-45b2-b76a-a04db21a3f18",
+        "word": "LΘSW-LΘSW-LΘSW-LΘSW-",
+        "loopType": "strict_rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "MT",
+      "ultraHash": "MT",
+      "displayName": "MT",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "MT",
+        "word": "MT",
+        "loopType": "flipped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "OSOT",
+      "ultraHash": "OSOT",
+      "displayName": "OSOT",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "OSOT",
+        "word": "OSOT",
+        "loopType": "flipped_inverted"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "OTNS",
+      "ultraHash": "OTNS",
+      "displayName": "OTNS",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "OTNS",
+        "word": "OTNS",
+        "loopType": "repeated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "OΛ",
+      "ultraHash": "OΛ",
+      "displayName": "OΛ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "OΛ",
+        "word": "OΛ",
+        "loopType": "repeated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "202a313c-f2fd-41c8-99fd-65412a62e42b",
+      "ultraHash": "202a313c-f2fd-41c8-99fd-65412a62e42b",
+      "displayName": "W-Θ-OYEΩ-X-Ω-OZDΘ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "202a313c-f2fd-41c8-99fd-65412a62e42b",
+        "word": "W-Θ-OYEΩ-X-Ω-OZDΘ-",
+        "loopType": "inverted"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "d93a785a-b66f-442e-93b8-f6e836506163",
+      "ultraHash": "d93a785a-b66f-442e-93b8-f6e836506163",
+      "displayName": "WΣWΣWΣWΣ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "d93a785a-b66f-442e-93b8-f6e836506163",
+        "word": "WΣWΣWΣWΣ",
+        "loopType": "strict_rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "fb7d17e5-e0f9-4ae7-9b34-60fb93c259d7",
+      "ultraHash": "fb7d17e5-e0f9-4ae7-9b34-60fb93c259d7",
+      "displayName": "WΩ-WΩ-WΩ-WΩ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "fb7d17e5-e0f9-4ae7-9b34-60fb93c259d7",
+        "word": "WΩ-WΩ-WΩ-WΩ-",
+        "loopType": "strict_rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "X-θ-Y-Δ-",
+      "ultraHash": "X-θ-Y-Δ-",
+      "displayName": "X-Θ-Y-Δ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "X-θ-Y-Δ-",
+        "word": "X-Θ-Y-Δ-",
+        "loopType": "repeated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "dc286a48-2620-4b99-94e8-3f212f2188ba",
+      "ultraHash": "dc286a48-2620-4b99-94e8-3f212f2188ba",
+      "displayName": "Y-FBBLΣ-RSY-FBBLΣ-RS",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "dc286a48-2620-4b99-94e8-3f212f2188ba",
+        "word": "Y-FBBLΣ-RSY-FBBLΣ-RS",
+        "loopType": "strict_rotated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Δ-RΛY",
+      "ultraHash": "Δ-RΛY",
+      "displayName": "Δ-RΛY",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Δ-RΛY",
+        "word": "Δ-RΛY",
+        "loopType": "mirrored"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Δ-TQZ-",
+      "ultraHash": "Δ-TQZ-",
+      "displayName": "Δ-TQZ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Δ-TQZ-",
+        "word": "Δ-TQZ-",
+        "loopType": "swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Δ-UY-Σ-VZ-Σ-VZ-Δ-UY-",
+      "ultraHash": "Δ-UY-Σ-VZ-Σ-VZ-Δ-UY-",
+      "displayName": "Δ-UY-Σ-VZ-Σ-VZ-Δ-UY-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Δ-UY-Σ-VZ-Σ-VZ-Δ-UY-",
+        "word": "Δ-UY-Σ-VZ-Σ-VZ-Δ-UY-",
+        "loopType": "inverted_rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-",
+      "ultraHash": "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-",
+      "displayName": "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-",
+        "word": "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-",
+        "loopType": "inverted_rotated_swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Δ-ZΩZ-",
+      "ultraHash": "Δ-ZΩZ-",
+      "displayName": "Δ-ZΩZ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Δ-ZΩZ-",
+        "word": "Δ-ZΩZ-",
+        "loopType": "repeated"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "ΔZΦ",
+      "ultraHash": "ΔZΦ",
+      "displayName": "ΔZΦ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "ΔZΦ",
+        "word": "ΔZΦ",
+        "loopType": "flipped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "e590ea66-af3c-4be9-bea7-d9f98c2de6ca",
+      "ultraHash": "e590ea66-af3c-4be9-bea7-d9f98c2de6ca",
+      "displayName": "Λ-Λ-Y-ΩXΣTRΛ-Λ-Z-ΘWΔSR",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "e590ea66-af3c-4be9-bea7-d9f98c2de6ca",
+        "word": "Λ-Λ-Y-ΩXΣTRΛ-Λ-Z-ΘWΔSR",
+        "loopType": "inverted"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "ΛVΛR",
+      "ultraHash": "ΛVΛR",
+      "displayName": "ΛVΛR",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "ΛVΛR",
+        "word": "ΛVΛR",
+        "loopType": "mirrored"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Σ-RSZ",
+      "ultraHash": "Σ-RSZ",
+      "displayName": "Σ-RSZ",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Σ-RSZ",
+        "word": "Σ-RSZ",
+        "loopType": "mirrored"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "ΣX-",
+      "ultraHash": "ΣX-",
+      "displayName": "ΣX-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "ΣX-",
+        "word": "ΣX-",
+        "loopType": "swapped"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "Ψ-EJΨ-Ψ-DKΨ-",
+      "ultraHash": "Ψ-EJΨ-Ψ-DKΨ-",
+      "displayName": "Ψ-EJΨ-Ψ-DKΨ-",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "Ψ-EJΨ-Ψ-DKΨ-",
+        "word": "Ψ-EJΨ-Ψ-DKΨ-",
+        "loopType": "inverted"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    },
+    {
+      "shapeHash": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II",
+      "ultraHash": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II",
+      "displayName": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II",
+      "paths": null,
+      "sourceLoop": {
+        "sequenceId": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II",
+        "word": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II",
+        "loopType": "inverted"
+      },
+      "symmetryOrder": 1,
+      "ultraCount": 1
+    }
+  ]
 }

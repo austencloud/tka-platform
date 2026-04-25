@@ -1,3 +1,5 @@
+import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
+
 /**
  * Canvas2D Image Loader
  *
@@ -9,8 +11,6 @@
  *
  * Single Responsibility: Image loading and management
  */
-
-import { container } from "$lib/shared/di";
 
 const VIEWBOX_SIZE = 950;
 
@@ -43,7 +43,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = container.items.svgGenerator;
+      const svgGenerator = getSVGGenerator();
 
       // Generate blue and red prop SVGs
       const [bluePropData, redPropData] = await Promise.all([
@@ -98,7 +98,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = container.items.svgGenerator;
+      const svgGenerator = getSVGGenerator();
 
       // Generate blue and red prop SVGs with different types
       // Pass darkMode to use local preview state instead of global
@@ -158,7 +158,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = container.items.svgGenerator;
+      const svgGenerator = getSVGGenerator();
 
       // Generate prop SVGs with custom colors for this layer
       const [bluePropData, redPropData] = await Promise.all([
@@ -208,7 +208,7 @@ export class Canvas2DImageLoader {
     try {
       const { GridMode } =
         await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
-      const svgGenerator = container.items.svgGenerator;
+      const svgGenerator = getSVGGenerator();
 
       // Convert gridMode string to GridMode enum
       // "8point" needs special handling since "8POINT" isn't a valid enum key

@@ -7,6 +7,10 @@
   The animation engine reads effect state directly from the visibility manager.
 -->
 <script lang="ts">
+
+import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
+import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
@@ -16,7 +20,6 @@
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -211,7 +214,7 @@
     window.addEventListener("keydown", handleKeydown);
     try {
       sequenceService = getSequenceRepository();
-      const propInterpolator = container.items.propInterpolationService;
+      const propInterpolator = getPropInterpolator();
       const loopabilityChecker = getSequenceLoopabilityChecker();
       const stateManager = new AnimationStateManager();
       const stepCalculator = new StepCalculator();
@@ -224,8 +227,8 @@
       );
 
       const browseLoader = getBrowseLoader();
-      const generationOrchestrator = container.items.generationOrchestrator;
-      const sequenceTransformer = container.items.sequenceTransformer;
+      const generationOrchestrator = getGenerationOrchestrator();
+      const sequenceTransformer = getSequenceTransformer();
 
       const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader,

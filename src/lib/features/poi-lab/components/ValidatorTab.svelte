@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceValidator";
   /**
    * Validator Tab - Validate sequences for poi legality
    *
@@ -7,7 +9,6 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { container } from "$lib/shared/di";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { PoiValidationResult } from "../domain/poi-models";
@@ -15,7 +16,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   // Services
-  const sequenceValidator = container.items.poiSequenceValidator;
+  const sequenceValidator = getPoiSequenceValidator();
 
   // State
   let sequenceInput = $state("");

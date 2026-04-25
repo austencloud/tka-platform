@@ -5,6 +5,10 @@
   Uses CreatePanelDrawer for responsive layout matching other Create panels.
 -->
 <script lang="ts" module>
+
+import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/getHallOfShameSubmitter";
+import { getLibrarySaveService } from "$lib/features/library/getLibrarySaveService";
+import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   export interface SaveMetadata {
     name: string;
     tags: string[];
@@ -25,7 +29,6 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import { container } from "$lib/shared/di";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
   import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
   import { getContentModerator } from "$lib/features/moderation/getContentModerator";
@@ -80,7 +83,7 @@
   // Get the save service
   let librarySaveService: ILibrarySaveService | null = null;
   try {
-    librarySaveService = container.items.librarySaveService;
+    librarySaveService = getLibrarySaveService();
   } catch (error) {
     console.warn("Failed to resolve librarySaveService:", error);
   }
@@ -159,7 +162,7 @@
   // Get the Hall of Shame submitter
   let hallOfShameSubmitter: IHallOfShameSubmitter | null = null;
   try {
-    hallOfShameSubmitter = container.items.hallOfShameSubmitter;
+    hallOfShameSubmitter = getHallOfShameSubmitter();
   } catch (error) {
     console.warn("Failed to resolve hallOfShameSubmitter:", error);
   }
@@ -206,7 +209,7 @@
   let isExactDuplicate = $state(false);
   let contentHasher: ISequenceContentHasher | null = null;
   try {
-    contentHasher = container.items.contentHasher;
+    contentHasher = getContentHasher() as unknown as ISequenceContentHasher;
   } catch {
     // Hasher not available — duplicate check won't run, save still works
   }

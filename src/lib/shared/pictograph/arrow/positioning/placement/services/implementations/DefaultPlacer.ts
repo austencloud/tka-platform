@@ -10,6 +10,7 @@ import type { MotionType } from "../../../../../shared/domain/enums/pictograph-e
 import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
 import { ArrowPlacer } from "./ArrowPlacer";
 
+
 /**
  * Interface for Default Placement Service that mirrors Python implementation
  */
@@ -162,7 +163,7 @@ export class DefaultPlacer implements IDefaultPlacerJson {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.defaultPlacer to avoid DI container rebuilds.
+// Use this instead of defaultPlacer to avoid DI container rebuilds.
 // ============================================================================
 
 export const defaultPlacer = new DefaultPlacer();

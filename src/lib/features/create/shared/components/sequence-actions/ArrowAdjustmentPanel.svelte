@@ -16,12 +16,13 @@
     - Layer 3 (Combination Override): Edge cases where blue+red prop combo needs special handling
 -->
 <script lang="ts">
+
+import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../domain/models/StepData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IArrowAdjustmentOrchestrator, AdjustmentTargetKey } from "$lib/features/create/shared/services/contracts/IArrowAdjustmentOrchestrator";
   import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
@@ -369,7 +370,7 @@
   onMount(() => {
     try {
       hapticService = getHapticFeedback();
-      adjustmentOrchestrator = container.items.arrowAdjustmentOrchestrator;
+      adjustmentOrchestrator = getArrowAdjustmentOrchestrator();
     } catch (error) {
       logger.error("Failed to initialize services:", error);
     }

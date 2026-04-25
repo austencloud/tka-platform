@@ -282,13 +282,14 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowSvgLoader to avoid DI container rebuilds.
+// Use this instead of arrowSvgLoader to avoid DI container rebuilds.
 // Dependencies are created inline since they're all stateless.
 // ============================================================================
 
 import { ArrowPathResolver } from "./ArrowPathResolver";
 import { ArrowSvgParser } from "./ArrowSvgParser";
 import { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
+
 
 // HMR-aware singleton instance
 let hmrArrowSvgLoader: ArrowSvgLoader | null =

@@ -5,7 +5,6 @@
  * Integrates with ILibraryRepository for Firestore operations.
  */
 
-import { container } from "$lib/shared/di";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import {
   userPreviewState,
@@ -24,6 +23,8 @@ import type {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { compareKineticLetters } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 
 export type LibraryViewSection =
   | "sequences"
@@ -719,7 +720,7 @@ class LibraryStateManager {
   // ============================================================
 
   private getService(): ILibraryRepository | null {
-    const service = container.items.libraryRepository;
+    const service = getLibraryRepository();
     if (!service) {
       console.warn("📚 [LibraryState] LibraryRepository not available");
     }

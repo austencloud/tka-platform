@@ -14,12 +14,15 @@
   - Browse gallery background (mobile drawer effect)
 -->
 <script lang="ts">
+
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
+import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { page } from "$app/stores";
   import { goto, replaceState } from "$app/navigation";
   import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
-  import { container } from "$lib/shared/di";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
@@ -380,19 +383,19 @@
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
-          deviceId: container.items.deviceIdService.getDeviceId(),
+          deviceId: getDeviceIdService().getDeviceId(),
         }).catch(() => {});
       }
 
       if (!resolvedSequence) {
-        const provider = container.items.sequenceDataProvider;
+        const provider = getSequenceDataProvider();
         resolvedSequence = await provider.loadByIdentifier(id);
       }
 
       // Try user's Firestore library (e.g. sync room IDs are Firestore doc IDs)
       if (!resolvedSequence) {
         try {
-          const libraryRepo = container.items.libraryRepository;
+          const libraryRepo = getLibraryRepository();
           resolvedSequence = await libraryRepo.getSequence(id);
         } catch {
           // Library lookup failed (not logged in, etc.)

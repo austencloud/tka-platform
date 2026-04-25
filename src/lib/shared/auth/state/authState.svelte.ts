@@ -32,7 +32,6 @@ import {
   EmailAuthProvider,
   type User,
 } from "firebase/auth";
-import { container } from "../../di";
 import { getActivityLogger } from "../../analytics/getActivityLogger";
 import { getPresenceTracker } from "../../presence/getPresenceTracker";
 
@@ -50,6 +49,11 @@ import { getFirestoreInstance } from "../firebase";
 import { featureFlagService } from "../services/PostHogFeatureFlagService.svelte";
 import type { UserRole } from "../domain/models/UserRole";
 import { identifyUser, resetUser } from "../../analytics/services/posthog";
+
+import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
+
+import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
 
 interface AuthState {
   user: User | null;
@@ -378,7 +382,7 @@ export async function initializeAuthListener() {
           }
 
           // Link this device to the signed-in user (fire-and-forget)
-          container.items.deviceIdService
+          getDeviceIdService()
             .linkDeviceToUser(user.uid)
             .catch((err: unknown) => {
               console.warn("⚠️ [authState] Failed to link device to user", err);
@@ -572,7 +576,7 @@ export async function initializeAuthListener() {
             // cleared _state.user while we were awaiting Firestore.
             if (!_state.user) return;
 
-            const collectionService = container.items.collectionManager;
+            const collectionService = getCollectionManager();
             if (collectionService?.ensureSystemCollections) {
               await collectionService.ensureSystemCollections();
             }
@@ -686,8 +690,7 @@ export async function signOut() {
     // Unregister FCM push token before signing out
     try {
       const userId = _state.user?.uid;
-      const fcmTokenManager = container.items
-        .fcmTokenManager as IFCMTokenManager;
+      const fcmTokenManager = getFCMTokenManager();
       if (userId && fcmTokenManager) {
         await fcmTokenManager.unregisterToken(userId);
       }

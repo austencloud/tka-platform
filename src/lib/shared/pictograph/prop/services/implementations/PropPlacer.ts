@@ -214,10 +214,11 @@ export class PropPlacer implements IPropPlacer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.propPlacer to avoid DI container rebuilds.
+// Use this instead of propPlacer to avoid DI container rebuilds.
 // ============================================================================
 
 import { gridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
 import { betaDetector } from "./BetaDetector";
+
 
 export const propPlacer = new PropPlacer(gridModeDeriver, betaDetector);

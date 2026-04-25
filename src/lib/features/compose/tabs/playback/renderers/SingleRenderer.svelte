@@ -5,11 +5,12 @@
   Displays one sequence on a single canvas.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -81,7 +82,7 @@
   // Initialize services
   onMount(() => {
     try {
-      playbackController = container.items.animationPlaybackController;
+      playbackController = getAnimationPlaybackController();
     } catch (err) {
       console.error("Failed to initialize single renderer:", err);
       error = "Failed to initialize animation services";

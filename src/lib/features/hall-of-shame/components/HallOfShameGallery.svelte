@@ -6,8 +6,10 @@
   Requires age verification before displaying content.
 -->
 <script lang="ts">
+
+import { getAgeVerifier } from "$lib/features/hall-of-shame/getAgeVerifier";
+import { getHallOfShameLoader } from "$lib/features/hall-of-shame/getHallOfShameLoader";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type { IHallOfShameLoader } from "../services/contracts/IHallOfShameLoader";
   import type { IAgeVerifier } from "../services/contracts/IAgeVerifier";
@@ -48,8 +50,8 @@
   let ageVerifier: IAgeVerifier | null = null;
 
   try {
-    hallOfShameLoader = container.items.hallOfShameLoader;
-    ageVerifier = container.items.ageVerifier;
+    hallOfShameLoader = getHallOfShameLoader();
+    ageVerifier = getAgeVerifier();
   } catch (error) {
     console.warn("Failed to resolve Hall of Shame services:", error);
   }

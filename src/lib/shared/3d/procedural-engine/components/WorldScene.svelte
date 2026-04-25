@@ -1,4 +1,7 @@
 <script lang="ts">
+
+import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
+import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   /**
    * WorldScene
    *
@@ -41,7 +44,6 @@
     createPerformerManager,
     type PerformerManager,
   } from "$lib/shared/3d/state/performer-manager.svelte";
-  import { container } from "$lib/shared/di";
   import {
     DEFAULT_AVATAR_ID,
     type AvatarId,
@@ -239,8 +241,8 @@
   // Initialize performer manager on mount
   $effect(() => {
     if (browser && !performerManager) {
-      const propInterpolator = container.items.propStateInterpolator;
-      const sequenceConverter = container.items.sequenceConverter;
+      const propInterpolator = getPropStateInterpolator();
+      const sequenceConverter = getSequenceConverter();
 
       performerManager = createPerformerManager({
         propInterpolator,

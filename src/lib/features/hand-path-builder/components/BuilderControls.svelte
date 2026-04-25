@@ -9,7 +9,8 @@
   Save calls HandPathFactory + HandPathRepository to persist both paths.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getHandPathSaveOrchestrator } from "$lib/features/library/getHandPathSaveOrchestrator";
   import { getBuilderContext } from "../context/builder-context";
   import { getHandPathFactory } from "$lib/shared/foundation/getHandPathFactory";
   import type { IHandPathSaveOrchestrator } from "$lib/features/library/services/contracts/IHandPathSaveOrchestrator";
@@ -47,8 +48,7 @@
 
     try {
       const factory = getHandPathFactory();
-      const orchestrator = container.items
-        .handPathSaveOrchestrator as IHandPathSaveOrchestrator;
+      const orchestrator = getHandPathSaveOrchestrator();
 
       const blue = factory.create(builder.blueLocations, {
         name: builder.bluePathName,

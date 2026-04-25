@@ -7,8 +7,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -45,7 +46,7 @@
       loading = true;
       try {
         // ITI container is ready synchronously - get services directly
-        playbackController = container.items.animationPlaybackController;
+        playbackController = getAnimationPlaybackController();
         servicesReady = true;
 
         // Generate initial variations after services are ready

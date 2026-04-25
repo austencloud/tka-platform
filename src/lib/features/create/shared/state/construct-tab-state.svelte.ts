@@ -15,7 +15,6 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { createSimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { container } from "$lib/shared/di";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 
 const debug = createComponentLogger("ConstructTabState");
@@ -43,6 +42,8 @@ interface CreateModuleStateMinimal {
 }
 import { createUndoController } from "./create-module/undo-controller.svelte";
 import { undoManager } from "../services/implementations/UndoManager";
+
+import { getFilterPersister } from "$lib/features/create/construct/option-picker/getFilterPersister";
 
 /**
  * Creates construct tab state for construct-specific concerns
@@ -99,7 +100,7 @@ export function createConstructTabState(
   function loadPersistedContinuousFilter(): boolean {
     try {
       if (!filterPersister) {
-        filterPersister = container.items.filterPersister;
+        filterPersister = getFilterPersister();
       }
       return filterPersister.loadContinuousOnly();
     } catch (e) {
@@ -444,7 +445,7 @@ export function createConstructTabState(
     // Persist the continuous filter setting
     try {
       if (!filterPersister) {
-        filterPersister = container.items.filterPersister;
+        filterPersister = getFilterPersister();
       }
       filterPersister.saveContinuousOnly(continuous);
     } catch (e) {

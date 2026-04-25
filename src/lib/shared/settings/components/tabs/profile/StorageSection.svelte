@@ -1,8 +1,9 @@
 <!-- StorageSection.svelte - Cache clearing controls + offline download -->
 <script lang="ts">
+
+import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCacheOrchestrator";
   import { onMount } from "svelte";
   import GlassCard from "./GlassCard.svelte";
-  import { container } from "$lib/shared/di";
   import type { IOfflineCacheOrchestrator } from "$lib/shared/offline/services/contracts/IOfflineCacheOrchestrator";
   import type { OfflineCacheStats } from "$lib/shared/offline/domain/offline-cache-types";
 
@@ -17,7 +18,7 @@
   let isDownloading = $state(false);
   let downloadError = $state<string | null>(null);
 
-  const orchestrator = container.items.offlineCacheOrchestrator as IOfflineCacheOrchestrator;
+  const orchestrator = getOfflineCacheOrchestrator() as IOfflineCacheOrchestrator;
 
   onMount(() => {
     loadOfflineStats();

@@ -12,6 +12,7 @@ import type {
   IStickerSheetPdfExporter,
   StickerMandalaLookup,
 } from "../contracts/IStickerSheetPdfExporter";
+import type { IStickerUnitRenderer } from "../contracts/IStickerUnitRenderer";
 
 const PDF_POINTS_PER_INCH = 72;
 
@@ -25,7 +26,11 @@ interface Placement {
 }
 
 export class StickerSheetPdfExporter implements IStickerSheetPdfExporter {
-  private readonly unitRenderer = new StickerUnitRenderer();
+  private readonly unitRenderer: IStickerUnitRenderer;
+
+  constructor(unitRenderer: IStickerUnitRenderer = new StickerUnitRenderer()) {
+    this.unitRenderer = unitRenderer;
+  }
 
   async export(sheet: StickerSheet, lookup: StickerMandalaLookup): Promise<Uint8Array> {
     const placements = this.computePlacements(sheet);
@@ -40,12 +45,20 @@ export class StickerSheetPdfExporter implements IStickerSheetPdfExporter {
       doc.addPage([pageWPts, pageHPts]);
     }
 
-    for (const placement of placements) {
+    // Rasterize all stickers in parallel
+    const rasterJobs = placements.map(async (placement) => {
       const paths = lookup.getPaths(placement.unit.primitiveRef.shapeHash);
-      if (!paths) continue;
-
+      if (!paths) return null;
       const svg = this.unitRenderer.renderSVG(placement.unit, paths);
       const png = await rasterizeSvgToPng(svg, STICKER_TILE_SIZE_PX, STICKER_TILE_SIZE_PX);
+      return { placement, png };
+    });
+    const results = await Promise.all(rasterJobs);
+
+    // Embed into PDF sequentially (pdf-lib is not concurrent-safe for page ops)
+    for (const result of results) {
+      if (!result) continue;
+      const { placement, png } = result;
       const image = await doc.embedPng(png);
 
       const page = doc.getPage(placement.page);

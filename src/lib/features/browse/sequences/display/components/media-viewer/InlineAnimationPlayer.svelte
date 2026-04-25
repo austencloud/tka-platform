@@ -7,6 +7,8 @@
   Uses the shared animation engine with BPM preset controls.
 -->
 <script lang="ts">
+
+import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
   import { onMount, onDestroy, untrack } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -17,7 +19,6 @@
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
-  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
@@ -178,7 +179,7 @@
       sequenceService = getSequenceRepository();
 
       // Stateless services shared from container
-      const propInterpolator = container.items.propInterpolationService;
+      const propInterpolator = getPropInterpolator();
       const loopabilityChecker = getSequenceLoopabilityChecker();
 
       // Stateful services — fresh instance per player
