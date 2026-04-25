@@ -1,42 +1,73 @@
-import { describe, it, expect } from "vitest";
-import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
+import { createViewer3DStateForTest } from "../../3d-viewer/viewer3d-test-helpers.svelte";
+import type { IPropStateInterpolator } from "$lib/shared/3d/services/contracts/IPropStateInterpolator";
+import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
+import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
 
-function makeDeps() {
+beforeAll(() => {
+  const originalCreateElement = document.createElement as unknown as (tag: string) => unknown;
+  (document as unknown as { createElement: (tag: string) => unknown }).createElement = (tag: string) => {
+    const base = originalCreateElement(tag) as Record<string, unknown>;
+    if (tag === "canvas") {
+      base.getContext = () => null;
+    }
+    return base;
+  };
+  __resetWebGL2CapabilityForTests();
+});
+
+function stubDeps(): {
+  propInterpolator: IPropStateInterpolator;
+  sequenceConverter: ISequenceConverter;
+} {
   return {
-    propInterpolator: { interpolate: () => null } as any,
-    sequenceConverter: { convert: () => null } as any,
-    viewer3DUndoManager: { push: () => {}, undo: () => {}, redo: () => {} } as any,
+    propInterpolator: {
+      interpolate: vi.fn(),
+    } as unknown as IPropStateInterpolator,
+    sequenceConverter: {
+      convertSequence: vi.fn().mockReturnValue([]),
+    } as unknown as ISequenceConverter,
   };
 }
 
+const cleanups: Array<() => void> = [];
+function makeState() {
+  const { state, dispose } = createViewer3DStateForTest(stubDeps());
+  cleanups.push(dispose);
+  return state;
+}
+afterEach(() => {
+  while (cleanups.length) cleanups.pop()!();
+});
+
 describe("viewer-3d-state popover stack", () => {
   it("starts with no popover open", () => {
-    const s = createViewer3DState(makeDeps());
+    const s = makeState();
     expect(s.activePopover).toBeNull();
   });
 
   it("openPopover sets the active popover", () => {
-    const s = createViewer3DState(makeDeps());
+    const s = makeState();
     s.openPopover("performers");
     expect(s.activePopover).toBe("performers");
   });
 
   it("openPopover replaces the currently-open popover (exclusive)", () => {
-    const s = createViewer3DState(makeDeps());
+    const s = makeState();
     s.openPopover("performers");
     s.openPopover("tempo");
     expect(s.activePopover).toBe("tempo");
   });
 
   it("closePopover clears the active popover", () => {
-    const s = createViewer3DState(makeDeps());
+    const s = makeState();
     s.openPopover("export");
     s.closePopover();
     expect(s.activePopover).toBeNull();
   });
 
   it("openPopover with null is equivalent to closePopover", () => {
-    const s = createViewer3DState(makeDeps());
+    const s = makeState();
     s.openPopover("gear");
     s.openPopover(null);
     expect(s.activePopover).toBeNull();

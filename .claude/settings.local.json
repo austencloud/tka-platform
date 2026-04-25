@@ -565,7 +565,9 @@
       "Bash(PATH=\"/c/Program Files/nodejs:/c/Users/Austen/AppData/Roaming/npm:$PATH\" npm run:*)",
       "Bash(mkdir -p \"C:/Users/Austen/.claude/icons\")",
       "Read(//c/Users/Austen/.claude/**)",
-      "Bash(NODE_OPTIONS=--max-old-space-size=8192 npx vite build)"
+      "Bash(NODE_OPTIONS=--max-old-space-size=8192 npx vite build)",
+      "Bash(echo 'export ANTHROPIC_MODEL=claude-opus-4-6')",
+      "Read(//c/Users/Austen/**)"
     ]
   },
   "enableAllProjectMcpServers": true,

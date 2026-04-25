@@ -77,8 +77,8 @@
     "reason": "UI-dense review panel: 54% CSS (630 lines), only 226 lines TypeScript. Services already extracted (TikaSessionRepository, TikaSessionFormatter). Thin CRUD operations (5-15 lines each). Size from comprehensive master-detail styling, not logic complexity. 4/4 perspectives say leave it."
   },
   "lib/features/create/shared/components/coordinators/SequenceDrawerHost.svelte": {
-    "auditDate": "2026-01-20",
-    "reason": "Coordinator/host component: 4/4 perspectives say leave it. Owns animation state and coordinates services (playbackController, exportOrchestrator, videoExportOrchestrator, sequenceRepository) for SequenceDrawer. 9 $effects are animation lifecycle management. 50 lines markup just passes props to child. Logic lives in injected services, this is reactive glue."
+    "auditDate": "2026-02-02",
+    "reason": "Orchestrator pattern - coordinates animation, export, visibility services. All business logic in services (IAnimationPlaybackController, IVideoExportOrchestrator, ExportUrlManager). 12 handlers are thin wrappers. Zero extractable UI."
   },
   "lib/shared/render/services/implementations/Canvas2DDirectRenderer.ts": {
     "auditDate": "2026-01-21",
@@ -195,10 +195,6 @@
   "lib/shared/3d/procedural-engine/components/WorldScene.svelte": {
     "auditDate": "2026-02-02",
     "reason": "Container wrapping WorldSceneContent. Holds ~50 state vars via bind: pattern (physics, managers, debug). HMR persistence + MCP bridge + UI overlays are page-specific. State is structural, not logic."
-  },
-  "lib/features/create/shared/components/coordinators/SequenceDrawerHost.svelte": {
-    "auditDate": "2026-02-02",
-    "reason": "Orchestrator pattern - coordinates animation, export, visibility services. All business logic in services (IAnimationPlaybackController, IVideoExportOrchestrator, ExportUrlManager). 12 handlers are thin wrappers. Zero extractable UI."
   },
   "lib/features/compose/tabs/setup/state/arrange-grid-state.svelte.ts": {
     "auditDate": "2026-02-02",
@@ -419,5 +415,13 @@
   "lib/shared/foundation/ui/Drawer.svelte": {
     "auditDate": "2026-03-12",
     "reason": "Foundation UI component: already decomposed into SwipeToDismiss, FocusTrap, SnapPoints, DrawerEffects, DrawerStack. 8 effects manage inherently complex interactive behavior (swipe, focus, snap, lifecycle)."
+  },
+  "lib/features/museum/components/game/Museum3DScene.svelte": {
+    "auditDate": "2026-04-25",
+    "reason": "3D scene orchestrator: camera flip state machine + game loop + geometry streaming + template. All share reactive state (fpsActive, playerPosition, camera, visible arrays) consumed by template. 4 subsystems (portals, placement, lights, atmosphere) already extracted 2026-04-25. Remaining 1772 lines are legitimate scene-level orchestration."
+  },
+  "lib/features/festivals/components/portfolio/WorkshopPortfolioEditor.svelte": {
+    "auditDate": "2026-04-25",
+    "reason": "Decomposed: extracted WorkshopSection, ActSection, ProfileSection, VideosSection. Orchestrator now ~160 lines."
   }
 }

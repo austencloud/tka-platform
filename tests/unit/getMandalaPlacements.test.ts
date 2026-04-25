@@ -105,14 +105,10 @@ describe("getMandalaPlacements — col-0 empties (both hands visible)", () => {
 		]);
 	});
 
-	it("4+ empties → capped at 3 sandwich, centered", () => {
-		// 6 rows means topRow=2, bottomRow=5 → 4 empties. Cap=3, startRow=2.
+	it("4+ empties → no mandalas (exceeds max slot count)", () => {
+		// 6 rows means topRow=2, bottomRow=5 → 4 empties. Exceeds max of 3.
 		const res = getMandalaPlacements(args({ stepCount: 20, cols: 6, rows: 6 }));
-		expect(res.placements).toEqual([
-			{ row: 2, col: 1, variant: "blue" },
-			{ row: 3, col: 1, variant: "full" },
-			{ row: 4, col: 1, variant: "red" },
-		]);
+		expect(res.placements).toEqual([]);
 	});
 });
 
@@ -125,12 +121,12 @@ describe("getMandalaPlacements — single-hand visibility", () => {
 		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "blue" }]);
 	});
 
-	it("3 empties + blue hidden → only red slot, centered", () => {
+	it("3 empties + blue hidden → only red slot, anchored to bottom", () => {
 		const res = getMandalaPlacements(
 			args({ stepCount: 10, cols: 3, rows: 5, blueVisible: false }),
 		);
-		// 3 empties (rows 2,3,4), 1 variant → startRow = 2+floor((3-1)/2) = 3.
-		expect(res.placements).toEqual([{ row: 3, col: 1, variant: "red" }]);
+		// 3 empties (rows 2,3,4), red anchored to bottomRow=4.
+		expect(res.placements).toEqual([{ row: 4, col: 1, variant: "red" }]);
 	});
 });
 

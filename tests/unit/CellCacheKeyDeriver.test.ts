@@ -5,7 +5,12 @@
  * for scenarios that previously collided (causing wrong-prop blobs).
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
+  getSettings: () => ({ bluePropType: "staff", redPropType: "staff" }),
+}));
+
 import { CellCacheKeyDeriver } from "$lib/shared/sequence-viewer/services/implementations/CellCacheKeyDeriver";
 import { pictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
