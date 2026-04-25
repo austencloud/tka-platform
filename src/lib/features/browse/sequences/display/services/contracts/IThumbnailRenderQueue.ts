@@ -36,7 +36,7 @@ export interface IThumbnailRenderQueue {
    * @param priority Optional priority (lower = higher priority). Use element's Y position.
    * @returns Promise that resolves with the render result
    */
-  enqueue<T>(id: string, execute: () => Promise<T>, priority?: number): Promise<T>;
+  enqueue<T>(id: string, execute: (signal: AbortSignal) => Promise<T>, priority?: number): Promise<T>;
 
   /**
    * Cancel a queued task.

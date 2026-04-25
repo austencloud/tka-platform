@@ -13,6 +13,7 @@
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getVariationGrouper } from "../getVariationGrouper";
   import { getLayoutCalculator } from "$lib/shared/render/getLayoutCalculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
@@ -46,7 +47,7 @@
   }>();
 
   const layoutCalculator = getLayoutCalculator();
-  const variationGrouper = container.items.variationGrouper;
+  const variationGrouper = getVariationGrouper();
   const sequenceDataProvider = container.items.sequenceDataProvider;
 
   const variationMap = $derived.by(() => {

@@ -4,6 +4,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "../../sequences/display/getBrowseLoader";
+  import { getBrowseEventHandler } from "../getBrowseEventHandler";
+  import { getThumbnailRenderOrchestrator } from "../../sequences/display/getThumbnailRenderOrchestrator";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, onDestroy, setContext, untrack } from "svelte";
   import { fly } from "svelte/transition";
@@ -357,7 +360,7 @@
     // with fresh data. This cast is intentional — adding clearCache() to IBrowseLoader
     // is a larger interface change deferred to a later task.
     const unsubscribeReconnect = networkStatusState.onOnline(() => {
-      const loader = container.items.browseLoader as unknown as { cachedSequences?: unknown };
+      const loader = getBrowseLoader() as unknown as { cachedSequences?: unknown };
       if (loader) {
         loader.cachedSequences = null;
       }
@@ -378,7 +381,7 @@
 
     // Resolve event handler service from ITI container
     try {
-      eventHandlerService = container.items.browseEventHandler;
+      eventHandlerService = getBrowseEventHandler();
 
       // Initialize event handler service with required parameters
       eventHandlerService.initialize({
@@ -481,7 +484,7 @@
   // This prevents the render queue from continuing to process after navigation
   onDestroy(() => {
     try {
-      const orchestrator = container.items.thumbnailRenderOrchestrator;
+      const orchestrator = getThumbnailRenderOrchestrator();
       if (orchestrator) {
         orchestrator.cancelAll();
       }

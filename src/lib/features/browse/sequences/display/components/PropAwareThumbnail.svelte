@@ -19,7 +19,10 @@
   import RenderingOverlay from "$lib/shared/components/loading/RenderingOverlay.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
-  import { container } from "$lib/shared/di";
+  import { getThumbnailRenderOrchestrator } from "../getThumbnailRenderOrchestrator";
+  import { getThumbnailKeyDeriver } from "../getThumbnailKeyDeriver";
+  import { getCloudThumbnailCache } from "../getCloudThumbnailCache";
+  import { getThumbnailLocalCache } from "../getThumbnailLocalCache";
   import type {
     IThumbnailRenderOrchestrator,
     ThumbnailLoadStatus,
@@ -161,10 +164,10 @@
 
   onMount(async () => {
     // Resolve services
-    orchestrator = container.items.thumbnailRenderOrchestrator;
-    keyDeriver = container.items.thumbnailKeyDeriver;
-    cloudCache = container.items.cloudThumbnailCache;
-    localCache = container.items.thumbnailLocalCache;
+    orchestrator = getThumbnailRenderOrchestrator();
+    keyDeriver = getThumbnailKeyDeriver();
+    cloudCache = getCloudThumbnailCache();
+    localCache = getThumbnailLocalCache();
     servicesReady = true;
 
     // Eager mode: skip IntersectionObserver entirely (used in modals/pickers

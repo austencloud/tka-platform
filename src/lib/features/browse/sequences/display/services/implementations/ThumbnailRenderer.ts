@@ -59,7 +59,8 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     sequence: SequenceData,
     input: ThumbnailRenderInput,
     options?: RenderOptions,
-    onProgress?: RenderProgressCallback
+    onProgress?: RenderProgressCallback,
+    signal?: AbortSignal
   ): Promise<Blob> {
     // Load full sequence data if needed (fetches from user's source doc)
     const loadedSequence = await this.ensureFullSequenceData(sequence, input.sequenceName);
@@ -108,7 +109,8 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
         // Card mode: use 5:7 playing card layout for physical card export
         cardMode: input.cardMode ?? false,
       },
-      onProgress
+      onProgress,
+      signal
     );
 
     return blob;

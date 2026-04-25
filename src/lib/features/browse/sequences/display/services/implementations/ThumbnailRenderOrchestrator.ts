@@ -234,7 +234,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     this.metrics?.recordQueueDepth(queueStats.queued + queueStats.active);
 
     try {
-      return await this.queue.enqueue(key.hash, async () => {
+      return await this.queue.enqueue(key.hash, async (signal) => {
         const queueWaitTime = performance.now() - queueStartTime;
         const renderStartTime = performance.now();
 
@@ -254,7 +254,8 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
                 stage: progress.stage,
               },
             });
-          }
+          },
+          signal
         );
 
         const renderTime = performance.now() - renderStartTime;
