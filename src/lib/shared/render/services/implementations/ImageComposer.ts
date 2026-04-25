@@ -216,7 +216,8 @@ export class ImageComposer implements IImageComposer {
   async composeSequenceImage(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>,
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<HTMLCanvasElement> {
     if (!sequence.steps || sequence.steps.length === 0) {
       throw new Error("Sequence must have at least one beat");
@@ -425,6 +426,9 @@ export class ImageComposer implements IImageComposer {
     const stepsPerRow = columns - startColumn;
 
     for (let i = 0; i < sequence.steps.length; i++) {
+      if (signal?.aborted) throw new DOMException("Render aborted", "AbortError");
+      // Yield to event loop between beats so navigation/UI stays responsive
+      if (i > 0) await new Promise<void>(resolve => setTimeout(resolve, 0));
       const beat = sequence.steps[i];
       if (!beat) continue; // Skip if beat is undefined
       const col = startColumn + (i % stepsPerRow);
@@ -1425,13 +1429,15 @@ export class ImageComposer implements IImageComposer {
   async composeCardImage(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>,
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<HTMLCanvasElement> {
     // First, compose the tight image as normal
     const tightCanvas = await this.composeSequenceImage(
       sequence,
       options,
-      onProgress
+      onProgress,
+      signal
     );
 
     // Card dimensions: 5:7 ratio, width matches tight image
