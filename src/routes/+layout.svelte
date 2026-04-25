@@ -288,6 +288,15 @@
     // Mark container ready so children can render
     containerReady = true;
 
+    // Eager-load TKA letter glyph images for Choreo Card headers (non-blocking)
+    import("$lib/shared/render/services/implementations/TextRenderer").then(
+      ({ textRenderer }) => {
+        textRenderer.preloadGlyphImages().catch(() => {
+          // Non-critical — card headers fall back to text on failure
+        });
+      }
+    );
+
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
     // No-op on web — the isNative check inside returns immediately.
     const { getNativeInitializer } = await import("$lib/shared/platform/getNativeInitializer");
