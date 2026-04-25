@@ -134,7 +134,7 @@ export class StrictMirroredLOOPExecutor {
 
     const newStep: StepData = {
       ...sourceStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       startPosition: previousStep.endPosition ?? null,
       endPosition: newEndPosition,
@@ -177,7 +177,7 @@ export class StrictMirroredLOOPExecutor {
 
     const newStep: StepData = {
       ...sourceStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       startPosition: previousStep.endPosition ?? null,
       endPosition: sourceStep.endPosition,

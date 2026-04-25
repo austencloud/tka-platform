@@ -174,8 +174,8 @@ export class LayeredPathDetector implements ILayeredPathDetector {
     const attrKey = hand === "blue" ? "blueAttributes" : "redAttributes";
 
     // Extract path data for this hand
-    const pathData = stepRecords.map((beat) => {
-      const attrs = (beat[attrKey] as Record<string, unknown>) || {};
+    const pathData = stepRecords.map((step) => {
+      const attrs = (step[attrKey] as Record<string, unknown>) || {};
       return {
         startLoc: (attrs.startLoc as string) || "unknown",
         endLoc: (attrs.endLoc as string) || "unknown",
@@ -278,8 +278,8 @@ export class LayeredPathDetector implements ILayeredPathDetector {
       gamma2: 0,
     };
 
-    stepRecords.forEach((beat, index) => {
-      const endPos = beat.endPos as string;
+    stepRecords.forEach((step, index) => {
+      const endPos = step.endPos as string;
       const category = categorizePosition(endPos);
 
       if (category) {

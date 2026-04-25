@@ -50,9 +50,9 @@ export class StepCalculator implements IStepCalculator {
   }
 
   /**
-   * Validate beat data array
+   * Validate step data array
    */
-  validateBeats(steps: readonly StepData[]): boolean {
+  validateSteps(steps: readonly StepData[]): boolean {
     if (!Array.isArray(steps)) {
       console.error("StepCalculator: steps is not an array");
       return false;
@@ -63,15 +63,15 @@ export class StepCalculator implements IStepCalculator {
       return false;
     }
 
-    const isValid = steps.every((beat, index) => {
+    const isValid = steps.every((step, index) => {
       const valid =
-        beat && typeof beat.stepNumber === "number" && beat.stepNumber >= 0;
+        step && typeof step.stepNumber === "number" && step.stepNumber >= 0;
       if (!valid) {
-        console.error(`StepCalculator: Invalid beat at index ${index}:`, {
-          beat,
-          hasStep: !!beat,
-          stepNumber: beat?.stepNumber,
-          beatNumberType: typeof beat?.stepNumber,
+        console.error(`StepCalculator: Invalid step at index ${index}:`, {
+          step,
+          hasStep: !!step,
+          stepNumber: step?.stepNumber,
+          stepNumberType: typeof step?.stepNumber,
         });
       }
       return valid;
@@ -83,7 +83,7 @@ export class StepCalculator implements IStepCalculator {
   /**
    * Get beat by index with bounds checking
    */
-  getBeatSafely(steps: readonly StepData[], index: number): StepData | null {
+  getStepSafely(steps: readonly StepData[], index: number): StepData | null {
     if (index < 0 || index >= steps.length) {
       return null;
     }
@@ -98,17 +98,17 @@ export class StepCalculator implements IStepCalculator {
       return 0;
     }
     // Default to 1 if duration is undefined (defensive)
-    return steps.reduce((sum, beat) => sum + (beat.duration ?? 1), 0);
+    return steps.reduce((sum, step) => sum + (step.duration ?? 1), 0);
   }
 
   /**
    * Find beat by beat number
    */
-  findBeatByNumber(
+  findStepByNumber(
     steps: readonly StepData[],
     stepNumber: number
   ): StepData | null {
-    return steps.find((beat) => beat.stepNumber === stepNumber) ?? null;
+    return steps.find((step) => step.stepNumber === stepNumber) ?? null;
   }
 
   /**
@@ -132,8 +132,8 @@ export class StepCalculator implements IStepCalculator {
 
     // Clamp to valid range - note: don't recalculate total (use cached if possible)
     let totalDuration = 0;
-    for (const beat of steps) {
-      totalDuration += beat.duration ?? 1;
+    for (const step of steps) {
+      totalDuration += step.duration ?? 1;
     }
     const clampedTime = Math.max(0, Math.min(timePosition, totalDuration));
 
@@ -164,10 +164,10 @@ export class StepCalculator implements IStepCalculator {
   /**
    * Calculate the time position where a specific beat starts.
    * @param stepIndex - The 0-based beat index
-   * @param steps - Array of beat data
+   * @param steps - Array of step data
    * @returns The cumulative time position where this beat begins
    */
-  getBeatStartTime(stepIndex: number, steps: readonly StepData[]): number {
+  getStepStartTime(stepIndex: number, steps: readonly StepData[]): number {
     if (stepIndex <= 0 || steps.length === 0) {
       return 0;
     }

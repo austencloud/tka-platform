@@ -1,7 +1,7 @@
 /**
  * VTG Sequence Data
  *
- * Defines 4-beat cycle chains for all VTG modes.
+ * Defines 4-step cycle chains for all VTG modes.
  * Each chain represents one complete VTG pattern that can be
  * rendered as a horizontal strip of pictographs.
  *
@@ -38,7 +38,7 @@ const R = RotationDirection;
 
 type FivePoints = [GridLocation, GridLocation, GridLocation, GridLocation, GridLocation];
 
-/** Compact chain definition for a 4-beat VTG cycle */
+/** Compact chain definition for a 4-step VTG cycle */
 export interface ChainDef {
 	/** Display label (letter or compound name) */
 	label: string;
@@ -275,7 +275,7 @@ const MODE_CHAINS: Record<string, ChainDef[]> = {
 	QO: QO_CHAINS,
 };
 
-/** Get the 4-beat cycle chains for a VTG mode */
+/** Get the 4-step cycle chains for a VTG mode */
 export function getModeChains(mode: VTGMode): ChainDef[] {
 	return MODE_CHAINS[mode] ?? [];
 }

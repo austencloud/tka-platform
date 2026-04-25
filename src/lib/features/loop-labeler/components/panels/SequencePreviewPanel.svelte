@@ -192,14 +192,14 @@
     let redOrientation =
       startPos.motions[MotionColor.RED]?.endOrientation ?? Orientation.IN;
 
-    return steps.map((beat) => {
+    return steps.map((step) => {
       const newMotions: Record<MotionColor, MotionData> = {} as Record<
         MotionColor,
         MotionData
       >;
 
       // Process blue motion
-      const blueMotion = beat.motions[MotionColor.BLUE];
+      const blueMotion = step.motions[MotionColor.BLUE];
       if (blueMotion) {
         // Create a temporary motion with 0 turns and current start orientation
         const tempMotion = createMotionData({
@@ -224,7 +224,7 @@
       }
 
       // Process red motion
-      const redMotion = beat.motions[MotionColor.RED];
+      const redMotion = step.motions[MotionColor.RED];
       if (redMotion) {
         // Create a temporary motion with 0 turns and current start orientation
         const tempMotion = createMotionData({
@@ -249,14 +249,14 @@
       }
 
       return {
-        ...beat,
+        ...step,
         motions: newMotions,
       };
     });
   }
 
   // The steps to display (either original or zero-turns version)
-  const displayBeats = $derived(
+  const displaySteps = $derived(
     showZeroTurns && startPosition
       ? createZeroTurnsBeats(parsedSteps, startPosition)
       : parsedSteps
@@ -367,7 +367,7 @@
         class:interactive={labelingMode !== "whole"}
       >
         <StepGrid
-          steps={displayBeats}
+          steps={displaySteps}
           startPosition={showStartPosition ? startPosition : null}
           {onStepClick}
           selectedStepNumber={labelingMode === "whole"
@@ -380,7 +380,7 @@
       </div>
     </div>
   {:else}
-    <div class="no-data">No beat data available</div>
+    <div class="no-data">No step data available</div>
   {/if}
 </div>
 
@@ -475,16 +475,6 @@
     color: var(--semantic-warning);
   }
 
-  /* Beat Grid Section */
-  .beat-grid-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
   .grid-controls {
     display: flex;
     align-items: center;
@@ -542,23 +532,6 @@
     background: color-mix(in srgb, var(--semantic-warning) 25%, transparent);
     border-color: var(--semantic-warning);
     color: var(--semantic-warning-text-vivid);
-  }
-
-  .beat-grid-wrapper {
-    flex: 1;
-    min-height: 0;
-    background: var(--surface-dark);
-    border-radius: 12px;
-    padding: var(--spacing-md);
-    overflow: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .beat-grid-wrapper.interactive {
-    border: 2px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
-    cursor: pointer;
   }
 
   .no-data {

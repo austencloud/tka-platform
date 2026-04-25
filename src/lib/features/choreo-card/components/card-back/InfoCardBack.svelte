@@ -73,7 +73,7 @@
 
       <!-- LOOPs -->
       <h3 class="section-label">LOOPs</h3>
-      <p class="body-text">The last beat connects to the first. Play on repeat. The card back tells you what changes each cycle.</p>
+      <p class="body-text">The last step connects to the first. Play on repeat. The card back tells you what changes each cycle.</p>
 
       <div class="divider"></div>
 

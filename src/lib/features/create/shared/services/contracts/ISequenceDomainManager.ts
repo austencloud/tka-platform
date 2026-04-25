@@ -58,7 +58,7 @@ export interface ISequenceDomainManager {
    * Update a beat in the sequence
    * @param sequence - Target sequence
    * @param stepIndex - Index of beat to update
-   * @param stepData - New beat data
+   * @param stepData - New step data
    * @returns Updated sequence
    */
   updateStep(

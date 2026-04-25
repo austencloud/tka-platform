@@ -82,11 +82,11 @@
   const isPlaneStateNonDefault = $derived(
     (avatarState?.customBluePlane ?? Plane.WALL) !== Plane.WALL ||
     (avatarState?.customRedPlane ?? Plane.WALL) !== Plane.WALL ||
-    (avatarState?.hasBeatOverrides ?? false) ||
+    (avatarState?.hasStepOverrides ?? false) ||
     PLANES.some(({ plane }) => isForceShown(plane))
   );
 
-  const hasBeatOverrides = $derived(avatarState?.hasBeatOverrides ?? false);
+  const hasStepOverrides = $derived(avatarState?.hasStepOverrides ?? false);
 
   function selectTab(e: MouseEvent, tabId: TabId) {
     e.stopPropagation();
@@ -226,17 +226,17 @@
             <div class="tab-footer">
               <button
                 class="reset-btn"
-                class:with-overrides={hasBeatOverrides}
+                class:with-overrides={hasStepOverrides}
                 onclick={handleResetPlanesClick}
-                aria-label={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
-                title={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+                aria-label={hasStepOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+                title={hasStepOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 7v6h6"/>
                   <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
                 </svg>
                 Reset
-                {#if hasBeatOverrides}
+                {#if hasStepOverrides}
                   <span class="override-badge" aria-hidden="true"></span>
                 {/if}
               </button>

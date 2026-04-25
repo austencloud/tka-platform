@@ -159,7 +159,7 @@ export class RotatedSwappedLOOPExecutor {
     //      Then locations are rotated based on handpath direction
     const newStep: StepData = {
       ...previousMatchingStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       letter: previousMatchingStep.letter ?? null, // Same letter
       startPosition: previousStep.endPosition ?? null,

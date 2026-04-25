@@ -96,7 +96,7 @@ export class StrictInvertedLOOPExecutor {
 
     const newStep: StepData = {
       ...sourceStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       letter: invertedLetter,
       startPosition: previousStep.endPosition ?? null,
@@ -137,7 +137,7 @@ export class StrictInvertedLOOPExecutor {
 
     const newStep: StepData = {
       ...sourceStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       startPosition: previousStep.endPosition ?? null,
       endPosition: sourceStep.endPosition,

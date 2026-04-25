@@ -44,12 +44,12 @@
 
   // Mobile tool view state
   let mobileToolsExpanded = $state(true); // Whether to show full controls or just toolbar
-  let mobileToolView = $state<"controls" | "beat-grid">("controls"); // Toggle between views
+  let mobileToolView = $state<"controls" | "step-grid">("controls"); // Toggle between views
   let isSettingsOpen = $state(false); // Track when settings sheet is open for canvas adjustment
 
   // Toggle mobile tool view between controls and beat-grid
   function toggleMobileToolView() {
-    mobileToolView = mobileToolView === "controls" ? "beat-grid" : "controls";
+    mobileToolView = mobileToolView === "controls" ? "step-grid" : "controls";
   }
 
   // Touch handling state for preventing back navigation

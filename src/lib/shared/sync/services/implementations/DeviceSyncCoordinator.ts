@@ -464,8 +464,8 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 		return result.step;
 	}
 
-	setBeatDuration(durationMs: number): void {
-		this.positionCalculator.setBeatDuration(durationMs);
+	setStepDuration(durationMs: number): void {
+		this.positionCalculator.setStepDuration(durationMs);
 	}
 
 	// =========================================================================

@@ -1,5 +1,5 @@
 <!--
-  BeatVisualization.svelte - Current Step Display
+  StepVisualization.svelte - Current Step Display
 
   Shows the current step from the sequence during training.
   Displays pictograph visualization and step information.

@@ -11,13 +11,13 @@
 
   const rows = [
     {
-      label: "Type 2",
+      label: "Sigma / Delta / Theta / Omega",
       sublabel: "One shifts, one static",
       cells: [
-        { data: p("R-0"), label: "R" },
-        { data: p("S-0"), label: "S" },
-        { data: p("T-0"), label: "T" },
-        { data: p("U-0"), label: "U" },
+        { data: p("R-0"), label: "Σ" },
+        { data: p("S-0"), label: "Δ" },
+        { data: p("T-0"), label: "θ" },
+        { data: p("U-0"), label: "Ω" },
       ],
     },
   ];
@@ -25,9 +25,16 @@
 
 <GuideSection id="type-2-shifts" title="Type 2 — Shifts">
   <p>
-    Type 2 letters use a <span class="type-shift">shift</span> — one hand shifts
-    while the other remains static. The shifting hand moves to an adjacent grid
-    point with rotation; the static hand holds its position.
+    To move between Γ and α/β, you can shift one hand and keep the other hand static.
+    This combination is called a Shift (with a capital "S").
+  </p>
+  <p>
+    Their letters are organized by end position: α, β, then Γ.
+    These can also be categorized by opening or closing.
+  </p>
+  <p>
+    Though simple at this stage, these motions become more complex
+    as we dive deeper into the Alphabet and add rotations to static motions.
   </p>
 
   <GuidePictographGrid rows={rows} />

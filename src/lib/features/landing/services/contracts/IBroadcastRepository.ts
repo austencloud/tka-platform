@@ -51,7 +51,7 @@ export interface IBroadcastRepository {
   /**
    * Get the current beat position based on server time.
    */
-  getCurrentBeatPosition(
+  getCurrentStepPosition(
     startedAtMs: number,
     durationMs: number,
     totalSteps: number,

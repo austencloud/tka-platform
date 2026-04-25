@@ -125,7 +125,7 @@ export interface MotionData {
 /**
  * A beat in a sequence (simplified for broadcast).
  */
-export interface BeatData {
+export interface StepBeatData {
   id: string;
   letter: string;
   startPosition: string;
@@ -134,7 +134,7 @@ export interface BeatData {
   direction?: string;
   blue: MotionData;
   red: MotionData;
-  beatNumber: number;
+  stepNumber: number;
 }
 
 /**
@@ -143,13 +143,13 @@ export interface BeatData {
 export interface BroadcastSequence {
   id: string;
   word: string;
-  beats: BeatData[];
+  beats: StepBeatData[];
   startPosition: string;
   gridMode: string;
   isCircular: boolean;
   loopType: LOOPTypeValue;
   sliceSize: SliceSizeValue;
-  totalBeats: number;
+  totalSteps: number;
 }
 
 /**

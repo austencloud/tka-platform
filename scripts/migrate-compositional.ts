@@ -90,7 +90,7 @@ interface FirestoreMotion {
 
 interface FirestoreStep {
   stepNumber?: number;
-  beatNumber?: number;
+  stepNumber?: number;
   letter?: string | null;
   startPosition?: string | null;
   endPosition?: string | null;
@@ -230,7 +230,7 @@ function buildCompositionalFields(
 
   // Only process actual steps (stepNumber >= 1), not the start position beat
   const steps = rawSteps.filter(
-    (s) => (s.stepNumber ?? s.beatNumber ?? 0) >= 1
+    (s) => (s.stepNumber ?? s.stepNumber ?? 0) >= 1
   );
 
   if (steps.length === 0) return null;

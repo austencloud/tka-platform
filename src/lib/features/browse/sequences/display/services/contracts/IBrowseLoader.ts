@@ -7,7 +7,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 export interface IBrowseLoader {
   /**
    * Load all sequence metadata from the sequence index
-   * (lightweight - no beat data, optimized for gallery display)
+   * (lightweight - no step data, optimized for gallery display)
    */
   loadSequenceMetadata(): Promise<SequenceData[]>;
 

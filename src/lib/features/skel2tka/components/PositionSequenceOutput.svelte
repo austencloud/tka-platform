@@ -42,7 +42,7 @@
   {:else}
     <div class="beat-list">
       {#each beats as beat}
-        <div class="beat-card">
+        <div class="step-card">
           <div class="beat-header">
             <span class="beat-number">{t('skel2tka_beat_number', { beat: String(beat.index + 1) })}</span>
             <span class="beat-time">
@@ -114,7 +114,7 @@
     gap: 8px;
   }
 
-  .beat-card {
+  .step-card {
     display: flex;
     flex-direction: column;
     gap: 6px;

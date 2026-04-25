@@ -6,22 +6,22 @@
 
   interface Props {
     timeline: EffortTimeline;
-    totalBeats: number;
+    totalSteps: number;
     selectedEffort: EffortId;
     selectedPhraseId: string | null;
     onTimelineChange: (timeline: EffortTimeline) => void;
     onPhraseSelect: (id: string | null) => void;
-    currentBeat?: number;
+    currentStep?: number;
   }
 
   let {
     timeline,
-    totalBeats,
+    totalSteps,
     selectedEffort,
     selectedPhraseId,
     onTimelineChange,
     onPhraseSelect,
-    currentBeat = 0,
+    currentStep = 0,
   }: Props = $props();
 
   let timelineEl: HTMLDivElement | undefined = $state();
@@ -29,22 +29,22 @@
   let dragStartBeat = $state(0);
   let dragEndBeat = $state(0);
 
-  const beats = $derived(Array.from({ length: totalBeats }, (_, i) => i + 1));
+  const beats = $derived(Array.from({ length: totalSteps }, (_, i) => i + 1));
   const playheadPercent = $derived(
-    currentBeat > 0 ? ((currentBeat - 1) / totalBeats) * 100 : -1
+    currentStep > 0 ? ((currentStep - 1) / totalSteps) * 100 : -1
   );
 
-  function getBeatFromX(clientX: number): number {
+  function getStepFromX(clientX: number): number {
     if (!timelineEl) return 1;
     const rect = timelineEl.getBoundingClientRect();
     const x = clientX - rect.left;
     const ratio = x / rect.width;
-    return Math.max(1, Math.min(totalBeats, Math.ceil(ratio * totalBeats)));
+    return Math.max(1, Math.min(totalSteps, Math.ceil(ratio * totalSteps)));
   }
 
   function handlePointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
-    const beat = getBeatFromX(e.clientX);
+    const beat = getStepFromX(e.clientX);
     isDragging = true;
     dragStartBeat = beat;
     dragEndBeat = beat;
@@ -54,7 +54,7 @@
 
   function handlePointerMove(e: PointerEvent) {
     if (!isDragging) return;
-    dragEndBeat = getBeatFromX(e.clientX);
+    dragEndBeat = getStepFromX(e.clientX);
   }
 
   function handlePointerUp() {
@@ -71,14 +71,14 @@
 
   const previewStart = $derived(Math.min(dragStartBeat, dragEndBeat));
   const previewEnd = $derived(Math.max(dragStartBeat, dragEndBeat));
-  const previewLeft = $derived(((previewStart - 1) / totalBeats) * 100);
-  const previewWidth = $derived(((previewEnd - previewStart + 1) / totalBeats) * 100);
+  const previewLeft = $derived(((previewStart - 1) / totalSteps) * 100);
+  const previewWidth = $derived(((previewEnd - previewStart + 1) / totalSteps) * 100);
 </script>
 
 <div class="phrase-timeline-container">
   <div class="beat-ruler">
     {#each beats as beat}
-      <div class="beat-marker" style:width="{100 / totalBeats}%">
+      <div class="beat-marker" style:width="{100 / totalSteps}%">
         <span class="beat-number">{beat}</span>
       </div>
     {/each}
@@ -96,14 +96,14 @@
     {#each beats as beat}
       <div
         class="beat-grid-line"
-        style:left="{((beat - 1) / totalBeats) * 100}%"
+        style:left="{((beat - 1) / totalSteps) * 100}%"
       ></div>
     {/each}
 
     {#each timeline.phrases as phrase (phrase.id)}
       <PhraseRegion
         {phrase}
-        {totalBeats}
+        {totalSteps}
         isSelected={selectedPhraseId === phrase.id}
         onSelect={onPhraseSelect}
       />
@@ -158,15 +158,6 @@
     border-radius: 8px;
     cursor: crosshair;
     touch-action: none;
-  }
-
-  .beat-grid-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    pointer-events: none;
   }
 
   .drag-preview {

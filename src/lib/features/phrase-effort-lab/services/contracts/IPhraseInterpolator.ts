@@ -10,7 +10,7 @@ export interface PhraseInterpolationResult {
 export interface IPhraseInterpolator {
   interpolate(
     phrase: EffortPhrase,
-    currentBeat: number,
+    currentStep: number,
     totalSteps: number,
   ): PhraseInterpolationResult;
 }

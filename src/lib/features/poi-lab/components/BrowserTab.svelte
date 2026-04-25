@@ -5,7 +5,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
    * Browser Tab - Browse community sequences with poi validation
    *
    * Loads public sequences from Firestore and validates them for poi legality.
-   * Poi physics are about momentum continuity - validation requires full beat data.
+   * Poi physics are about momentum continuity - validation requires full step data.
    *
    * Uses PropAwareThumbnail for consistent thumbnail display.
    */
@@ -36,7 +36,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
     redPropType: settingsService.settings.redPropType,
   });
 
-  // Extended validation result with pending state for sequences without beat data
+  // Extended validation result with pending state for sequences without step data
   type ExtendedValidationResult = PoiValidationResult & {
     stepViolations: Map<number, string[]>;
     isPending: boolean; // true if steps not yet loaded
@@ -50,7 +50,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
       return validationCache.get(seq.id)!;
     }
 
-    // Check if sequence has beat data - community sequences may not have it initially
+    // Check if sequence has step data - community sequences may not have it initially
     if (!seq.steps || seq.steps.length === 0) {
       const pendingResult: ExtendedValidationResult = {
         isValid: true, // Assume valid until proven otherwise
@@ -63,9 +63,9 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
     }
 
     // Convert steps to pictograph format for validation
-    const pictographs = seq.steps.map((beat) => ({
-      ...beat,
-      id: beat.id ?? `${seq.id}-beat-${beat.stepNumber}`,
+    const pictographs = seq.steps.map((step) => ({
+      ...step,
+      id: step.id ?? `${seq.id}-beat-${step.stepNumber}`,
     }));
 
     // Validate the sequence
@@ -111,7 +111,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
   const totalPages = $derived(Math.ceil(filtered.length / perPage));
   const paginated = $derived(filtered.slice(currentPage * perPage, (currentPage + 1) * perPage));
 
-  // Counts - includes pending (sequences without beat data yet)
+  // Counts - includes pending (sequences without step data yet)
   const counts = $derived.by(() => {
     let valid = 0;
     let invalid = 0;
@@ -289,7 +289,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
           <div class="detail-drawer">
             <div class="drawer-header">
               <span class="sequence-word">{expandedSeq.word || expandedSeq.name || t('poi_lab_untitled')}</span>
-              <span class="beat-count">{t('poi_lab_beat_count', { count: String(stepCount) })}</span>
+              <span class="step-count">{t('poi_lab_beat_count', { count: String(stepCount) })}</span>
             </div>
             {#if validation.isPending}
               <div class="pending-message">
@@ -647,7 +647,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
     color: var(--theme-text, #fff);
   }
 
-  .beat-count {
+  .step-count {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-secondary, #888);
   }

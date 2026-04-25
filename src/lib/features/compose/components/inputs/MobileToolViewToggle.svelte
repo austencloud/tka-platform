@@ -5,7 +5,7 @@
   on mobile animation panel. Shows icon for non-active view.
 -->
 <script lang="ts" module>
-  export type MobileToolView = "controls" | "beat-grid";
+  export type MobileToolView = "controls" | "step-grid";
 </script>
 
 <script lang="ts">
@@ -17,7 +17,7 @@
     onToggle?: () => void;
   } = $props();
 
-  const isShowingGrid = $derived(activeView === "beat-grid");
+  const isShowingGrid = $derived(activeView === "step-grid");
 </script>
 
 <button

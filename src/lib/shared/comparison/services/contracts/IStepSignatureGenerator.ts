@@ -6,7 +6,7 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { BeatSignature, BeatComparisonResult } from "../../domain/models/signatures";
+import type { StepSignature, StepComparisonResult } from "../../domain/models/signatures";
 
 export interface IStepSignatureGenerator {
   /**
@@ -20,7 +20,7 @@ export interface IStepSignatureGenerator {
    * @param step - The step data to generate signature for
    * @returns A rotation-invariant beat signature
    */
-  generateSignature(step: StepData): BeatSignature;
+  generateSignature(step: StepData): StepSignature;
 
   /**
    * Check if two beat signatures are exactly equivalent.
@@ -29,7 +29,7 @@ export interface IStepSignatureGenerator {
    * @param b - Second beat signature
    * @returns true if beats are geometrically identical
    */
-  signaturesMatch(a: BeatSignature, b: BeatSignature): boolean;
+  signaturesMatch(a: StepSignature, b: StepSignature): boolean;
 
   /**
    * Compute detailed similarity between two beat signatures.
@@ -38,7 +38,7 @@ export interface IStepSignatureGenerator {
    * @param b - Second beat signature
    * @returns Detailed comparison result with score and breakdown
    */
-  compareSignatures(a: BeatSignature, b: BeatSignature): BeatComparisonResult;
+  compareSignatures(a: StepSignature, b: StepSignature): StepComparisonResult;
 
   /**
    * Generate signatures for all beats in a sequence of steps.
@@ -46,5 +46,5 @@ export interface IStepSignatureGenerator {
    * @param steps - Array of step data
    * @returns Array of beat signatures in same order
    */
-  generateSignatures(steps: readonly StepData[]): readonly BeatSignature[];
+  generateSignatures(steps: readonly StepData[]): readonly StepSignature[];
 }

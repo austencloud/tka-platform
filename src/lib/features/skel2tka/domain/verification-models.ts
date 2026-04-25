@@ -29,7 +29,7 @@ export type CorrectionField =
 /** A single correction made by the user */
 export interface UserCorrection {
   /** Which beat was corrected (0-indexed) */
-  beatIndex: number;
+  stepNumber: number;
 
   /** Which field was wrong */
   field: CorrectionField;

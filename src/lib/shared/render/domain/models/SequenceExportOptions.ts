@@ -118,7 +118,7 @@ export interface SequenceExportOptions {
   };
 }
 
-export interface BeatRenderOptions {
+export interface StepRenderOptions {
   addStepNumbers: boolean;
   redVisible: boolean;
   blueVisible: boolean;

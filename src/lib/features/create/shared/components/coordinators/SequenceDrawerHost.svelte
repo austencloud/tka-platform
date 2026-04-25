@@ -195,7 +195,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
     return null;
   });
 
-  // Current beat data for AnimatorCanvas
+  // Current step data for AnimatorCanvas
   const currentStepData = $derived.by(() => {
     if (!animationPanelState.sequenceData) return null;
     const currentStep = animationPanelState.currentStep;
@@ -407,7 +407,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
 
     if (hasMotionData(sequence)) return ensureWordPopulated(sequence);
 
@@ -431,8 +431,8 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
 
     // Derive word from beat letters (same logic as SequenceStatsCalculator.generateSequenceWord)
     const derivedWord = sequence.steps
-      ?.filter((beat) => !!beat.letter)
-      .map((beat) => beat.letter)
+      ?.filter((step) => !!step.letter)
+      .map((step) => step.letter)
       .join("") || "";
 
     if (!derivedWord) return sequence;

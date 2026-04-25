@@ -101,7 +101,7 @@
             >
               <div class="recent-name">{recent.word ?? recent.name}</div>
               <div class="recent-meta">
-                <span class="beat-count">{t('train_step_count', { count: recent.stepCount })}</span>
+                <span class="step-count">{t('train_step_count', { count: recent.stepCount })}</span>
                 <span class="time-ago"
                   >{formatTimeAgo(recent.lastPracticedAt)}</span
                 >
@@ -294,7 +294,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
   }
 
-  .beat-count {
+  .step-count {
     color: color-mix(
       in srgb,
       var(--semantic-info, var(--semantic-info)) 90%,

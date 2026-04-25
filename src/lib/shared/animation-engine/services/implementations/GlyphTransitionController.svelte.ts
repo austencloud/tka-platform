@@ -41,10 +41,10 @@ export class GlyphTransitionController implements IGlyphTransitionController {
   ): void {
     const hasLetterChanged = letter !== this.state.displayedLetter;
     const hasTurnsChanged = turnsTuple !== this.state.displayedTurnsTuple;
-    const hasBeatChanged = stepNumber !== this.state.displayedStepNumber;
+    const hasStepChanged = stepNumber !== this.state.displayedStepNumber;
     const hasPositionChanged = musicalPosition !== this.state.displayedMusicalPosition;
 
-    if (!hasLetterChanged && !hasTurnsChanged && !hasBeatChanged && !hasPositionChanged) {
+    if (!hasLetterChanged && !hasTurnsChanged && !hasStepChanged && !hasPositionChanged) {
       return; // No change at all
     }
 

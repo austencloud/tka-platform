@@ -467,9 +467,9 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     }
 
     // Enforce tier beat cap before adding a new beat to the sequence
-    const currentBeats = CreateModuleState?.sequenceState.getCurrentBeats().length ?? 0;
-    const maxBeats = getMaxBeats(accessTier);
-    if (currentBeats >= maxBeats) {
+    const currentSteps = CreateModuleState?.sequenceState.getCurrentBeats().length ?? 0;
+    const maxSteps = getMaxBeats(accessTier);
+    if (currentSteps >= maxSteps) {
       showBeatCapNudge = true;
       return;
     }

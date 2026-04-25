@@ -51,7 +51,7 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
     ) => void;
   }>();
 
-  // Generate turns tuple from beat data
+  // Generate turns tuple from step data
   const turnsTuple = $derived.by(() => {
     if (!stepData || !stepData.motions?.blue || !stepData.motions?.red) {
       return "(s, 0, 0)";

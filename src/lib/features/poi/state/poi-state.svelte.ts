@@ -20,7 +20,7 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
  * Rich playback state for the LED staff preview. When clips abut and
  * blend mode is on, `secondary` is the outgoing pattern and `blendT`
  * walks from 0 (fully secondary) to 1 (fully primary) across the first
- * `blendBeats` of the incoming clip.
+ * `blendSteps` of the incoming clip.
  */
 export interface BlendInfo {
   /** The clip currently under the playhead (or the fallback active pattern) */
@@ -59,8 +59,8 @@ interface SerializedPattern {
 }
 interface SerializedClip {
   id: string;
-  startBeat: number;
-  endBeat: number;
+  startStep: number;
+  endStep: number;
   pattern: SerializedPattern;
   presetId?: string;
   label?: string;
@@ -68,8 +68,8 @@ interface SerializedClip {
 interface SerializedTimeline {
   clips: SerializedClip[];
   transition: "hard" | "blend";
-  blendBeats?: number;
-  totalBeats: number;
+  blendSteps?: number;
+  totalSteps: number;
   bpm: number;
   /** Schema version so we can migrate or bail on old shapes */
   version: 1;
@@ -113,44 +113,44 @@ function deserializePattern(s: SerializedPattern): StripPattern {
 
 function serializeTimeline(
   tl: PatternTimeline,
-  totalBeats: number,
+  totalSteps: number,
   bpm: number,
 ): SerializedTimeline {
   return {
     clips: tl.clips.map((c) => ({
       id: c.id,
-      startBeat: c.startBeat,
-      endBeat: c.endBeat,
+      startStep: c.startStep,
+      endStep: c.endStep,
       pattern: serializePattern(c.pattern),
       presetId: c.presetId,
       label: c.label,
     })),
     transition: tl.transition,
-    blendBeats: tl.blendBeats,
-    totalBeats,
+    blendSteps: tl.blendSteps,
+    totalSteps,
     bpm,
     version: 1,
   };
 }
 function deserializeTimeline(s: SerializedTimeline): {
   timeline: PatternTimeline;
-  totalBeats: number;
+  totalSteps: number;
   bpm: number;
 } {
   return {
     timeline: {
       clips: s.clips.map((c) => ({
         id: c.id,
-        startBeat: c.startBeat,
-        endBeat: c.endBeat,
+        startStep: c.startStep,
+        endStep: c.endStep,
         pattern: deserializePattern(c.pattern),
         presetId: c.presetId,
         label: c.label,
       })),
       transition: s.transition,
-      blendBeats: s.blendBeats,
+      blendSteps: s.blendSteps,
     },
-    totalBeats: s.totalBeats,
+    totalSteps: s.totalSteps,
     bpm: s.bpm,
   };
 }
@@ -294,10 +294,10 @@ export function createPoiState(
         restoredTimeline.timeline = {
           ...restoredTimeline.timeline,
           transition: "blend",
-          blendBeats:
-            restoredTimeline.timeline.blendBeats &&
-            restoredTimeline.timeline.blendBeats > 0
-              ? restoredTimeline.timeline.blendBeats
+          blendSteps:
+            restoredTimeline.timeline.blendSteps &&
+            restoredTimeline.timeline.blendSteps > 0
+              ? restoredTimeline.timeline.blendSteps
               : 2.0,
         };
         localStorage.setItem(BLEND_MIGRATION_KEY, "done");
@@ -311,13 +311,13 @@ export function createPoiState(
     restoredTimeline?.timeline ?? createEmptyPatternTimeline(),
   );
   // ── Sequence integration (Phase 3a) ──
-  // When a real TKA sequence is loaded, `totalBeats` is driven by the
+  // When a real TKA sequence is loaded, `totalSteps` is driven by the
   // sequence's step count. Otherwise the user picks a beat count manually
   // via the Beats scrub, which writes `manualTotalBeats`.
   let loadedSequence = $state<SequenceData | null>(null);
   let loadedSteps = $state<readonly StepData[]>([]);
-  let manualTotalBeats = $state(restoredTimeline?.totalBeats ?? 16);
-  const totalBeats = $derived(
+  let manualTotalBeats = $state(restoredTimeline?.totalSteps ?? 16);
+  const totalSteps = $derived(
     loadedSequence && loadedSteps.length > 0
       ? loadedSteps.length
       : manualTotalBeats,
@@ -376,7 +376,7 @@ export function createPoiState(
     let currentIdx = -1;
     for (let i = 0; i < patternTimeline.clips.length; i++) {
       const c = patternTimeline.clips[i]!;
-      if (oneBased >= c.startBeat && oneBased < c.endBeat + 1) {
+      if (oneBased >= c.startStep && oneBased < c.endStep + 1) {
         currentClip = c;
         currentIdx = i;
         break;
@@ -391,25 +391,25 @@ export function createPoiState(
     // Hard mode or no blend configured
     if (
       patternTimeline.transition !== "blend" ||
-      !patternTimeline.blendBeats ||
-      patternTimeline.blendBeats <= 0
+      !patternTimeline.blendSteps ||
+      patternTimeline.blendSteps <= 0
     ) {
       return { primary: currentClip.pattern, secondary: null, blendT: 0 };
     }
 
-    // Only blend within the first `blendBeats` of the clip
-    const progressIntoClip = oneBased - currentClip.startBeat;
-    if (progressIntoClip >= patternTimeline.blendBeats) {
+    // Only blend within the first `blendSteps` of the clip
+    const progressIntoClip = oneBased - currentClip.startStep;
+    if (progressIntoClip >= patternTimeline.blendSteps) {
       return { primary: currentClip.pattern, secondary: null, blendT: 0 };
     }
 
     // Only blend if the previous clip immediately abuts this one
     const prevClip = currentIdx > 0 ? patternTimeline.clips[currentIdx - 1] : null;
-    if (!prevClip || prevClip.endBeat + 1 !== currentClip.startBeat) {
+    if (!prevClip || prevClip.endStep + 1 !== currentClip.startStep) {
       return { primary: currentClip.pattern, secondary: null, blendT: 0 };
     }
 
-    const t = Math.max(0, Math.min(1, progressIntoClip / patternTimeline.blendBeats));
+    const t = Math.max(0, Math.min(1, progressIntoClip / patternTimeline.blendSteps));
     return {
       primary: currentClip.pattern,
       secondary: prevClip.pattern,
@@ -443,7 +443,7 @@ export function createPoiState(
   // Deliberately does NOT read playheadBeat — playhead is ephemeral, and
   // reading it here would save on every animation frame during playback.
   $effect(() => {
-    saveTimelineToStorage(serializeTimeline(patternTimeline, totalBeats, bpm));
+    saveTimelineToStorage(serializeTimeline(patternTimeline, totalSteps, bpm));
   });
 
   // Restore uploaded image on load (runs once)
@@ -565,14 +565,14 @@ export function createPoiState(
   // ── Timeline actions ──
 
   /**
-   * Paint a new clip covering [startBeat..endBeat], snapshotting the
+   * Paint a new clip covering [startStep..endStep], snapshotting the
    * current active pattern. Clamps to the timeline length and rejects
    * if there's no active pattern to snapshot.
    */
-  function paintClip(startBeat: number, endBeat: number): PatternClip | null {
+  function paintClip(startStep: number, endStep: number): PatternClip | null {
     if (!activePattern) return null;
-    const s = Math.max(1, Math.min(totalBeats, Math.round(startBeat)));
-    const e = Math.max(1, Math.min(totalBeats, Math.round(endBeat)));
+    const s = Math.max(1, Math.min(totalSteps, Math.round(startStep)));
+    const e = Math.max(1, Math.min(totalSteps, Math.round(endStep)));
     const lo = Math.min(s, e);
     const hi = Math.max(s, e);
 
@@ -592,8 +592,8 @@ export function createPoiState(
 
     const clip: PatternClip = {
       id: `clip-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      startBeat: lo,
-      endBeat: hi,
+      startStep: lo,
+      endStep: hi,
       pattern: activePattern,
       presetId: hasUploadedImage ? undefined : activePresetId,
       label: clipLabel,
@@ -611,8 +611,8 @@ export function createPoiState(
    */
   async function dropImageAsClip(
     file: File,
-    startBeat: number,
-    endBeat: number,
+    startStep: number,
+    endStep: number,
   ): Promise<PatternClip | null> {
     // Decode the file to ImageData (reuse the same dance as loadFromFile)
     const bitmap = await createImageBitmap(file);
@@ -630,15 +630,15 @@ export function createPoiState(
     pattern.metadata.sourceImagePath = file.name;
 
     // Clamp + normalize bounds
-    const s = Math.max(1, Math.min(totalBeats, Math.round(startBeat)));
-    const e = Math.max(1, Math.min(totalBeats, Math.round(endBeat)));
+    const s = Math.max(1, Math.min(totalSteps, Math.round(startStep)));
+    const e = Math.max(1, Math.min(totalSteps, Math.round(endStep)));
     const lo = Math.min(s, e);
     const hi = Math.max(s, e);
 
     const clip: PatternClip = {
       id: `clip-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      startBeat: lo,
-      endBeat: hi,
+      startStep: lo,
+      endStep: hi,
       pattern,
       presetId: undefined,
       label: pattern.metadata.name || file.name,
@@ -671,8 +671,8 @@ export function createPoiState(
     if (!isTimelinePlaying) return;
     const beatsPerSec = bpm / 60;
     let next = playheadBeat + dt * beatsPerSec;
-    if (next >= totalBeats) {
-      next = ((next % totalBeats) + totalBeats) % totalBeats;
+    if (next >= totalSteps) {
+      next = ((next % totalSteps) + totalSteps) % totalSteps;
     }
     playheadBeat = next;
   }
@@ -682,7 +682,7 @@ export function createPoiState(
   }
 
   function setPlayheadBeat(v: number): void {
-    const clamped = Math.max(0, Math.min(totalBeats - 0.0001, v));
+    const clamped = Math.max(0, Math.min(totalSteps - 0.0001, v));
     playheadBeat = clamped;
   }
 
@@ -713,8 +713,8 @@ export function createPoiState(
     patternTimeline = {
       ...patternTimeline,
       clips: patternTimeline.clips
-        .filter((c) => c.startBeat <= newMax)
-        .map((c) => ({ ...c, endBeat: Math.min(c.endBeat, newMax) })),
+        .filter((c) => c.startStep <= newMax)
+        .map((c) => ({ ...c, endStep: Math.min(c.endStep, newMax) })),
     };
     if (playheadBeat >= newMax) playheadBeat = 0;
   }
@@ -807,9 +807,9 @@ export function createPoiState(
    * Set the crossfade length in beats (only honored when transition
    * is "blend"). Clamped to [0.25, 4.0] to match the Fade scrub.
    */
-  function setBlendBeats(b: number): void {
+  function setBlendSteps(b: number): void {
     const clamped = Math.max(0.25, Math.min(4.0, b));
-    patternTimeline = { ...patternTimeline, blendBeats: clamped };
+    patternTimeline = { ...patternTimeline, blendSteps: clamped };
   }
 
   // ── Image library actions ────────────────────────────────────────
@@ -840,8 +840,8 @@ export function createPoiState(
    */
   async function dropLibraryEntryAsClip(
     entry: PoiImageLibraryEntry,
-    startBeat: number,
-    endBeat: number,
+    startStep: number,
+    endStep: number,
   ): Promise<PatternClip | null> {
     const imgData = await imageLibrary.loadAsImageData(entry);
     const pattern = patternEngine.fromImage(imgData, ledCount);
@@ -849,15 +849,15 @@ export function createPoiState(
     pattern.metadata.source = "image-upload";
     pattern.metadata.sourceImagePath = entry.originalFileName;
 
-    const s = Math.max(1, Math.min(totalBeats, Math.round(startBeat)));
-    const e = Math.max(1, Math.min(totalBeats, Math.round(endBeat)));
+    const s = Math.max(1, Math.min(totalSteps, Math.round(startStep)));
+    const e = Math.max(1, Math.min(totalSteps, Math.round(endStep)));
     const lo = Math.min(s, e);
     const hi = Math.max(s, e);
 
     const clip: PatternClip = {
       id: `clip-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      startBeat: lo,
-      endBeat: hi,
+      startStep: lo,
+      endStep: hi,
       pattern,
       presetId: undefined,
       label: entry.name,
@@ -906,7 +906,7 @@ export function createPoiState(
 
     // Timeline
     get patternTimeline() { return patternTimeline; },
-    get totalBeats() { return totalBeats; },
+    get totalSteps() { return totalSteps; },
     get bpm() { return bpm; },
     get isTimelinePlaying() { return isTimelinePlaying; },
     get playheadBeat() { return playheadBeat; },
@@ -954,7 +954,7 @@ export function createPoiState(
     setTotalBeats,
     setBpm,
     setTransitionMode,
-    setBlendBeats,
+    setBlendSteps,
 
     // Sequence actions
     loadSequence,

@@ -28,8 +28,8 @@ export class OrientationContinuityValidator
 
     // Check each beat against the previous one
     for (let i = 0; i < sequence.steps.length; i++) {
-      const currentBeat = sequence.steps[i];
-      if (!currentBeat) continue;
+      const currentStep = sequence.steps[i];
+      if (!currentStep) continue;
 
       // Get the previous beat (or start position for first beat)
       const previousBeat =
@@ -41,7 +41,7 @@ export class OrientationContinuityValidator
 
       // Validate blue prop orientation continuity
       const blueError = this.validateColorContinuity(
-        currentBeat,
+        currentStep,
         previousBeat,
         MotionColor.BLUE,
         i
@@ -52,7 +52,7 @@ export class OrientationContinuityValidator
 
       // Validate red prop orientation continuity
       const redError = this.validateColorContinuity(
-        currentBeat,
+        currentStep,
         previousBeat,
         MotionColor.RED,
         i
@@ -66,7 +66,7 @@ export class OrientationContinuityValidator
   }
 
   validateTransition(
-    lastBeat: StepData,
+    lastStep: StepData,
     nextPictograph: PictographData,
     orientationCalculator: IOrientationCalculator
   ): TransitionValidationResult {
@@ -74,14 +74,14 @@ export class OrientationContinuityValidator
 
     // Check blue prop orientation
     const blueMotion = nextPictograph.motions[MotionColor.BLUE];
-    const lastBlueMotion = lastBeat.motions[MotionColor.BLUE];
+    const lastBlueMotion = lastStep.motions[MotionColor.BLUE];
     if (blueMotion && lastBlueMotion) {
       const expectedStartOrientation = lastBlueMotion.endOrientation;
       const actualStartOrientation = blueMotion.startOrientation;
 
       if (expectedStartOrientation !== actualStartOrientation) {
         errors.push({
-          stepIndex: lastBeat.stepNumber,
+          stepIndex: lastStep.stepNumber,
           color: MotionColor.BLUE,
           expectedStartOrientation: expectedStartOrientation || "unknown",
           actualStartOrientation: actualStartOrientation || "unknown",
@@ -92,14 +92,14 @@ export class OrientationContinuityValidator
 
     // Check red prop orientation
     const redMotion = nextPictograph.motions[MotionColor.RED];
-    const lastRedMotion = lastBeat.motions[MotionColor.RED];
+    const lastRedMotion = lastStep.motions[MotionColor.RED];
     if (redMotion && lastRedMotion) {
       const expectedStartOrientation = lastRedMotion.endOrientation;
       const actualStartOrientation = redMotion.startOrientation;
 
       if (expectedStartOrientation !== actualStartOrientation) {
         errors.push({
-          stepIndex: lastBeat.stepNumber,
+          stepIndex: lastStep.stepNumber,
           color: MotionColor.RED,
           expectedStartOrientation: expectedStartOrientation || "unknown",
           actualStartOrientation: actualStartOrientation || "unknown",
@@ -118,12 +118,12 @@ export class OrientationContinuityValidator
    * Helper: Validate orientation continuity for a single color
    */
   private validateColorContinuity(
-    currentBeat: StepData | PictographData,
+    currentStep: StepData | PictographData,
     previousBeat: StepData | PictographData,
     color: MotionColor,
     stepIndex: number
   ): OrientationContinuityError | null {
-    const currentMotion = currentBeat.motions[color];
+    const currentMotion = currentStep.motions[color];
     const previousMotion = previousBeat.motions[color];
 
     if (!currentMotion || !previousMotion) {

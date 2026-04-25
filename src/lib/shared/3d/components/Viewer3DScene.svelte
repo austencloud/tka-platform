@@ -146,13 +146,13 @@
       ? viewer3DState.exportCurrentStep ?? currentStep
       : currentStep;
 
-    const beatIndex = Math.floor(step);
-    const subBeatProgress = step - beatIndex;
+    const stepNumber = Math.floor(step);
+    const subBeatProgress = step - stepNumber;
 
     for (const p of performerManager.performers) {
-      const wrappedBeat = p.totalSteps > 0 && beatIndex >= p.totalSteps
-        ? beatIndex % p.totalSteps
-        : beatIndex;
+      const wrappedBeat = p.totalSteps > 0 && stepNumber >= p.totalSteps
+        ? stepNumber % p.totalSteps
+        : stepNumber;
       p.goToStep(wrappedBeat);
       p.setProgress(subBeatProgress);
     }

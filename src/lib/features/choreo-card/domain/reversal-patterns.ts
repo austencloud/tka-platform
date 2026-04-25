@@ -29,7 +29,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'book',
     label: 'Book',
-    description: 'Both props reverse every beat. "Opening and closing the book."',
+    description: 'Both props reverse every step. "Opening and closing the book."',
     family: 'simple',
     sequence: 'PPPP',
     period: 1,
@@ -38,7 +38,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'red-book',
     label: 'Red Book',
-    description: 'Red prop reverses every beat. Blue stays continuous.',
+    description: 'Red prop reverses every step. Blue stays continuous.',
     family: 'simple',
     sequence: 'RRRR',
     period: 1,
@@ -47,7 +47,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'blue-book',
     label: 'Blue Book',
-    description: 'Blue prop reverses every beat. Red stays continuous.',
+    description: 'Blue prop reverses every step. Red stays continuous.',
     family: 'simple',
     sequence: 'BBBB',
     period: 1,
@@ -56,7 +56,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'long-book',
     label: 'Long Book',
-    description: 'Both props reverse every other beat.',
+    description: 'Both props reverse every other step.',
     family: 'simple',
     sequence: 'P-P-',
     period: 2,
@@ -76,7 +76,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'solo-1',
     label: 'Solo 1',
-    description: 'One prop reverses per beat in an 8-beat rhythm. Never both, never neither.',
+    description: 'One prop reverses per step in an 8-step rhythm. Never both, never neither.',
     family: 'solo',
     sequence: 'RBBRBRRB',
     period: 8,
@@ -85,7 +85,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'solo-2',
     label: 'Solo 2',
-    description: '16-beat solo rhythm. Base pattern + its red/blue mirror.',
+    description: '16-step solo rhythm. Base pattern + its red/blue mirror.',
     family: 'solo',
     sequence: 'RBBRBRRBBRRBRBBR',
     period: 16,
@@ -94,7 +94,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'solo-3',
     label: 'Solo 3',
-    description: '32-beat solo rhythm. Extended by chaining with complement.',
+    description: '32-step solo rhythm. Extended by chaining with complement.',
     family: 'solo',
     sequence: 'RBBRBRRBBRRBRBBRBRRBRBBRRBBRBRRB',
     period: 32,
@@ -105,7 +105,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'dense-weave-1',
     label: 'Dense Weave 1',
-    description: '8-beat weave. Solo and pair beats alternate every position.',
+    description: '8-step weave. Solo and pair beats alternate every position.',
     family: 'dense-weave',
     sequence: 'RPBPRPBP',
     period: 8,
@@ -114,7 +114,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'dense-weave-2',
     label: 'Dense Weave 2',
-    description: '16-beat dense weave. Base + complement.',
+    description: '16-step dense weave. Base + complement.',
     family: 'dense-weave',
     sequence: 'RPBPRPBPBPRPBPRP',
     period: 16,
@@ -123,7 +123,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'dense-weave-3',
     label: 'Dense Weave 3',
-    description: '32-beat dense weave. Extended by chaining with complement.',
+    description: '32-step dense weave. Extended by chaining with complement.',
     family: 'dense-weave',
     sequence: 'RPBPRPBPBPRPBPRPBPRPBPRPRPBPRPBP',
     period: 32,
@@ -134,7 +134,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'sparse-weave-1',
     label: 'Sparse Weave 1',
-    description: '8-beat weave. Pair beats every 4th position, solo beats between.',
+    description: '8-step weave. Pair beats every 4th position, solo beats between.',
     family: 'sparse-weave',
     sequence: 'RBRPBRBP',
     period: 8,
@@ -143,7 +143,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'sparse-weave-2',
     label: 'Sparse Weave 2',
-    description: '16-beat sparse weave. Base + complement.',
+    description: '16-step sparse weave. Base + complement.',
     family: 'sparse-weave',
     sequence: 'RBRPBRBPBRBPRBRP',
     period: 16,
@@ -152,7 +152,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'sparse-weave-3',
     label: 'Sparse Weave 3',
-    description: '32-beat sparse weave. Extended by chaining with complement.',
+    description: '32-step sparse weave. Extended by chaining with complement.',
     family: 'sparse-weave',
     sequence: 'RBRPBRBPBRBPRBRPBRBPRBRPRBRPBRBP',
     period: 32,
@@ -196,8 +196,8 @@ export function getReversalPattern(id: string): ReversalPatternDef | undefined {
  * 1. The beat count is divisible by the pattern's period
  * 2. The beat count meets the pattern's minimum requirement
  */
-export function getCompatiblePatterns(beatCount: number): ReversalPatternDef[] {
+export function getCompatiblePatterns(stepCount: number): ReversalPatternDef[] {
   return REVERSAL_PATTERNS.filter(
-    (p) => beatCount % p.period === 0 && beatCount >= p.minBeats
+    (p) => stepCount % p.period === 0 && stepCount >= p.minBeats
   );
 }

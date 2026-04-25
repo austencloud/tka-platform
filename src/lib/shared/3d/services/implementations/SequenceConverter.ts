@@ -116,8 +116,8 @@ export class SequenceConverter implements ISequenceConverter {
     }
 
     const configs = sequence.steps
-      .filter((beat) => beat.stepNumber !== 0)
-      .map((beat) => this.beatDataToConfigs(beat, plane, modeConfig))
+      .filter((step) => step.stepNumber !== 0)
+      .map((step) => this.beatDataToConfigs(step, plane, modeConfig))
       .sort((a, b) => a.stepNumber - b.stepNumber);
 
     return configs;
@@ -137,7 +137,7 @@ export class SequenceConverter implements ISequenceConverter {
     }
 
     // Fall back to beat 0 in steps array
-    const step0 = sequence.steps?.find((beat) => beat.stepNumber === 0);
+    const step0 = sequence.steps?.find((step) => step.stepNumber === 0);
     if (step0) {
       return this.beatDataToConfigs(step0, plane, modeConfig);
     }
@@ -150,7 +150,7 @@ export class SequenceConverter implements ISequenceConverter {
     // Last resort: derive a static start config from the first motion step's
     // starting angles. Without this, stepConfigs has no start entry at index 0
     // and the puppet sync loop's direct mapping (beat N → index N) is off by one.
-    const firstStep = sequence.steps?.find((beat) => beat.stepNumber !== 0);
+    const firstStep = sequence.steps?.find((step) => step.stepNumber !== 0);
     if (firstStep) {
       return this.deriveStartConfigFromStep(firstStep, plane, modeConfig);
     }

@@ -45,8 +45,8 @@ function requiresNonRadialPoints(sequence: SequenceData): boolean {
   }
 
   // Check all steps for clock/counter orientations
-  for (const beat of sequence.steps || []) {
-    const { blue, red } = beat.motions;
+  for (const step of sequence.steps || []) {
+    const { blue, red } = step.motions;
     if (
       blue?.startOrientation === Orientation.CLOCK ||
       blue?.startOrientation === Orientation.COUNTER ||

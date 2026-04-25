@@ -384,7 +384,7 @@
       <li>Finds sequences with incorrect Greek letter cases</li>
       <li><strong>θ → Θ</strong>: Lowercase theta to uppercase (Type2 letter)</li>
       <li><strong>Γ → γ</strong>: Uppercase gamma to lowercase (Type6 static letter)</li>
-      <li>Updates the word field, beat data, and any other affected fields</li>
+      <li>Updates the word field, step data, and any other affected fields</li>
     </ul>
   </section>
 </div>

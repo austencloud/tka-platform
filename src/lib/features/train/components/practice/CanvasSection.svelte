@@ -91,7 +91,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   });
 
   // Track the last target beat to prevent duplicate animation calls
-  let lastTargetBeat: number | null = null;
+  let lastTargetStep: number | null = null;
 
   // Sync current beat from external source (TrainModePanel timing or grid selection)
   $effect(() => {
@@ -110,8 +110,8 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
 
     // Only trigger animation if the TARGET beat changes (user clicked a different beat)
     // Don't retrigger just because animationState.currentStep changed during animation
-    if (targetStep !== lastTargetBeat) {
-      lastTargetBeat = targetStep;
+    if (targetStep !== lastTargetStep) {
+      lastTargetStep = targetStep;
 
       // Calculate animation duration based on BPM during performance
       // At 60 BPM = 1000ms per beat, use 80% of beat duration for smooth animation
@@ -129,7 +129,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     }
   });
 
-  // Derived: Current beat data (handles start position and beat indexing correctly)
+  // Derived: Current step data (handles start position and beat indexing correctly)
   const currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
 

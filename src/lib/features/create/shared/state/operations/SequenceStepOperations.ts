@@ -3,7 +3,7 @@
  *
  * Handles beat-level operations with animation support:
  * - Adding/removing steps
- * - Updating beat data
+ * - Updating step data
  * - Beat insertion
  * - Animated beat removal
  *
@@ -17,7 +17,7 @@ import type { SequenceCoreState } from "../core/SequenceCoreState.svelte";
 import type { SequenceSelectionState } from "../selection/SequenceSelectionState.svelte";
 import type { IReversalDetector } from "../../services/contracts/IReversalDetector";
 
-export interface BeatOperationsConfig {
+export interface StepOperationsConfig {
   coreState: SequenceCoreState;
   selectionState: SequenceSelectionState;
   animationState: SequenceAnimationState;
@@ -26,7 +26,7 @@ export interface BeatOperationsConfig {
   onSave?: () => Promise<void>;
 }
 
-export function createSequenceBeatOperations(config: BeatOperationsConfig) {
+export function createSequenceBeatOperations(config: StepOperationsConfig) {
   const {
     coreState,
     selectionState,
@@ -68,7 +68,7 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
     return { ...sequence, steps: newSteps };
   }
 
-  function removeBeatAndSubsequentFromSequence(
+  function removeStepAndSubsequentFromSequence(
     sequence: SequenceData,
     stepIndex: number
   ): SequenceData {
@@ -92,7 +92,7 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
     return { ...sequence, steps: newSteps };
   }
 
-  function insertBeatInSequence(
+  function insertStepInSequence(
     sequence: SequenceData,
     stepIndex: number,
     stepData: Partial<StepData>
@@ -182,7 +182,7 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }
     },
 
-    removeBeatWithAnimation(stepIndex: number, onComplete?: () => void) {
+    removeStepWithAnimation(stepIndex: number, onComplete?: () => void) {
       if (!coreState.currentSequence) return;
 
       animationState.startRemovingBeat(stepIndex);
@@ -220,11 +220,11 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }, 250);
     },
 
-    removeBeatAndSubsequent(stepIndex: number) {
+    removeStepAndSubsequent(stepIndex: number) {
       if (!coreState.currentSequence) return;
 
       try {
-        let updatedSequence = removeBeatAndSubsequentFromSequence(
+        let updatedSequence = removeStepAndSubsequentFromSequence(
           coreState.currentSequence,
           stepIndex
         );
@@ -243,7 +243,7 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }
     },
 
-    removeBeatAndSubsequentWithAnimation(
+    removeStepAndSubsequentWithAnimation(
       stepIndex: number,
       onComplete?: () => void
     ) {
@@ -265,7 +265,7 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
         try {
           if (!coreState.currentSequence) return;
 
-          let updatedSequence = removeBeatAndSubsequentFromSequence(
+          let updatedSequence = removeStepAndSubsequentFromSequence(
             coreState.currentSequence,
             stepIndex
           );
@@ -318,7 +318,7 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       if (!coreState.currentSequence) return;
 
       try {
-        let updatedSequence = insertBeatInSequence(
+        let updatedSequence = insertStepInSequence(
           coreState.currentSequence,
           stepIndex,
           stepData ?? {}

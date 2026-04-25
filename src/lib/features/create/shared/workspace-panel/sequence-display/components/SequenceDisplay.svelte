@@ -25,7 +25,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
 
   let {
     sequenceState,
-    onBeatSelected,
+    onStepSelected,
     onStartPositionSelected,
     onStepDelete,
     onStepLongPress,
@@ -38,7 +38,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
     letterSources = null,
   } = $props<{
     sequenceState: SequenceState;
-    onBeatSelected?: (stepNumber: number) => void;
+    onStepSelected?: (stepNumber: number) => void;
     onStartPositionSelected?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: () => void;
@@ -175,7 +175,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
       return;
     }
 
-    onBeatSelected?.(stepNumber);
+    onStepSelected?.(stepNumber);
   }
 
   function handleStartPositionClick() {

@@ -7,7 +7,7 @@
 
 import {
   Pictograph,
-  BeatData,
+  StepBeatData,
   LOOPTypeValue,
   SliceSizeValue,
   SliceSize,
@@ -138,7 +138,7 @@ function getValidStartPositions(
  * Create a Type 6 static start position beat.
  * This matches the client-side StartPositionManager logic.
  */
-function createStartPositionBeat(startPosition: string): BeatData {
+function createStartPositionStep(startPosition: string): StepBeatData {
   const locations = getLocationsFromPosition(startPosition);
   if (!locations) {
     throw new Error(`Invalid start position: ${startPosition}`);
@@ -179,7 +179,7 @@ function createStartPositionBeat(startPosition: string): BeatData {
     endPosition: startPosition,
     timing: "together",
     direction: undefined,
-    beatNumber: 0,
+    stepNumber: 0,
     blue: blueMotion,
     red: redMotion,
   };
@@ -188,15 +188,15 @@ function createStartPositionBeat(startPosition: string): BeatData {
 /**
  * Convert a pictograph to a beat.
  */
-function pictographToBeat(pictograph: Pictograph, beatNumber: number): BeatData {
+function pictographToBeat(pictograph: Pictograph, stepNumber: number): StepBeatData {
   return {
-    id: `beat-${beatNumber}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `beat-${stepNumber}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     letter: pictograph.letter,
     startPosition: pictograph.startPosition,
     endPosition: pictograph.endPosition,
     timing: pictograph.timing,
     direction: pictograph.direction,
-    beatNumber,
+    stepNumber,
     blue: {
       motionType: pictograph.blue.motionType,
       rotationDirection: pictograph.blue.rotationDirection,
@@ -221,12 +221,12 @@ function generatePartialSequence(
   endPosition: string,
   length: number,
   gridMode: string = "diamond"
-): BeatData[] {
+): StepBeatData[] {
   const allPictographs = getPictographs(gridMode);
 
   // Start with the Type 6 static start beat (beat 0)
-  const startBeat = createStartPositionBeat(startPosition);
-  const sequence: BeatData[] = [startBeat];
+  const startStep = createStartPositionStep(startPosition);
+  const sequence: StepBeatData[] = [startStep];
 
   let currentPosition = startPosition;
 
@@ -269,12 +269,12 @@ function generatePartialSequence(
   }
 
   // Final beat: must end at required endPosition
-  const lastBeat = sequence[sequence.length - 1];
-  if (!lastBeat) {
+  const lastStep = sequence[sequence.length - 1];
+  if (!lastStep) {
     throw new Error("No beats in sequence");
   }
 
-  let finalCandidates = filterByStartPosition(allPictographs, lastBeat.endPosition);
+  let finalCandidates = filterByStartPosition(allPictographs, lastStep.endPosition);
   finalCandidates = filterByEndPosition(finalCandidates, endPosition);
 
   // Prefer non-Type6 for final beat too
@@ -288,7 +288,7 @@ function generatePartialSequence(
     finalCandidates = filterByEndPosition(allPictographs, endPosition);
     if (finalCandidates.length === 0) {
       throw new Error(
-        `No valid move to required end position ${endPosition} from ${lastBeat.endPosition}`
+        `No valid move to required end position ${endPosition} from ${lastStep.endPosition}`
       );
     }
   }
@@ -302,10 +302,10 @@ function generatePartialSequence(
 /**
  * Calculate the word (letter sequence) from beats.
  */
-function calculateWord(beats: BeatData[]): string {
+function calculateWord(beats: StepBeatData[]): string {
   // Skip beat 0 (start position) and concatenate letters
   return beats
-    .filter((b) => b.beatNumber > 0)
+    .filter((b) => b.stepNumber > 0)
     .map((b) => b.letter)
     .join("");
 }
@@ -411,7 +411,7 @@ export function generateLOOPSequence(
         isCircular: true,
         loopType,
         sliceSize,
-        totalBeats: completeBeats.length - 1, // Exclude start position from count
+        totalSteps: completeBeats.length - 1, // Exclude start position from count
       };
 
       return { sequence, nextLoopTypeIndex: nextIndex };
@@ -431,9 +431,9 @@ export function generateLOOPSequence(
  * Calculate sequence duration in milliseconds.
  */
 export function calculateDuration(
-  beatCount: number,
+  stepCount: number,
   beatsPerMinute: number = 60
 ): number {
   const msPerBeat = 60000 / beatsPerMinute;
-  return beatCount * msPerBeat;
+  return stepCount * msPerBeat;
 }

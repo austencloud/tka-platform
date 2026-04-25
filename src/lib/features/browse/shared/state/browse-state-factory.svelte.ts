@@ -80,7 +80,7 @@ export function createBrowseState() {
 
   // Library service for "My Library" mode - lazily resolved
   let libraryService: ILibraryRepository | null = null;
-  function getLibraryRepository(): ILibraryRepository | null {
+  function resolveLibraryRepository(): ILibraryRepository | null {
     if (!libraryService) {
       libraryService = getLibraryRepository();
     }
@@ -168,7 +168,7 @@ export function createBrowseState() {
   const availableSequenceLengths = $derived.by(() => {
     const lengths = new Set<number>();
     allSequences.forEach((seq) => {
-      // sequenceLength is set by BrowseMetadataExtractor.parseBeats which already
+      // sequenceLength is set by BrowseMetadataExtractor.parseSteps which already
       // strips the start position element. Use it directly to stay in sync with
       // the filter (BrowseFilter.filterByLength matches on sequenceLength).
       const length = seq.sequenceLength ?? seq.steps?.length ?? 0;
@@ -272,7 +272,7 @@ export function createBrowseState() {
       return;
     }
 
-    const libService = getLibraryRepository();
+    const libService = resolveLibraryRepository();
     if (!libService) {
       error = "Please sign in to view your library";
       allSequences = [];

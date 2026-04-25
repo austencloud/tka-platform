@@ -313,7 +313,7 @@ export class SocialSystem {
 				learner.social.sequenceBeingTransferred = novelSequenceId;
 				teacher.social.teachingProgress = 0;
 				learner.social.teachingProgress = 0;
-				learner.social.currentBeatIndex = 0;
+				learner.social.currentStepIndex = 0;
 				learner.social.frustrationLevel = 0;
 
 				teacher.transform.facingAngle = Math.atan2(

@@ -288,7 +288,7 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
 
     if (hasMotionData(seq)) {
       return seq;

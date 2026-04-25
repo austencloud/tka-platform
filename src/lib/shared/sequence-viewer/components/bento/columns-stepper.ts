@@ -1,26 +1,26 @@
 /**
  * Cycle helpers for the inline Columns stepper on the mobile card export
  * bento tile. The value null represents "Auto". Valid numeric values are
- * 2..beatCount (inclusive).
+ * 2..stepCount (inclusive).
  */
 
 export function nextColumnValue(
   current: number | null,
-  beatCount: number,
+  stepCount: number,
 ): number | null {
-  if (beatCount < 2) return null;
+  if (stepCount < 2) return null;
   if (current === null) return 2;
-  if (current >= beatCount) return null;
+  if (current >= stepCount) return null;
   if (current < 2) return 2;
   return current + 1;
 }
 
 export function prevColumnValue(
   current: number | null,
-  beatCount: number,
+  stepCount: number,
 ): number | null {
-  if (beatCount < 2) return null;
-  if (current === null) return beatCount;
+  if (stepCount < 2) return null;
+  if (current === null) return stepCount;
   if (current <= 2) return null;
   return current - 1;
 }

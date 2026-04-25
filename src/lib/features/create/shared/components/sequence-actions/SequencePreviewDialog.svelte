@@ -104,7 +104,7 @@
         <div class="sequence-panel current" data-testid="current-sequence">
           <div class="panel-header">
             <span class="panel-label">Will be replaced</span>
-            <span class="beat-count" data-testid="current-beat-count"
+            <span class="step-count" data-testid="current-beat-count"
               >{currentStepCount} steps</span
             >
           </div>
@@ -136,7 +136,7 @@
         <div class="sequence-panel incoming" data-testid="incoming-sequence">
           <div class="panel-header">
             <span class="panel-label">New sequence</span>
-            <span class="beat-count" data-testid="incoming-beat-count"
+            <span class="step-count" data-testid="incoming-beat-count"
               >{incomingStepCount} steps</span
             >
           </div>
@@ -293,7 +293,7 @@
     color: var(--semantic-success);
   }
 
-  .beat-count {
+  .step-count {
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim);
   }
@@ -308,14 +308,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .beat-grid-preview {
-    min-height: 120px;
-    max-height: 250px;
-    overflow: hidden;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
   }
 
   .arrow-indicator {
@@ -405,10 +397,6 @@
 
     .sequence-panel {
       width: 100%;
-    }
-
-    .beat-grid-preview {
-      max-height: 180px;
     }
 
     :global(.dialog-title) {

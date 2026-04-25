@@ -85,7 +85,7 @@ export interface ReversalLayerKeyComponents {
   size: number;
 }
 
-export interface BeatLayerKeyComponents {
+export interface StepLayerKeyComponents {
   stepNumber: number;
   darkMode: boolean;
   size: number;

@@ -57,7 +57,7 @@ const STORAGE_KEYS = {
 } as const;
 
 // Mobile tool view type
-export type MobileToolView = "controls" | "beat-grid";
+export type MobileToolView = "controls" | "step-grid";
 
 export type PlaybackState = {
   // Playback controls
@@ -360,7 +360,7 @@ export function createPlaybackState(): PlaybackState {
     },
 
     toggleMobileToolView() {
-      const newView = mobileToolView === "controls" ? "beat-grid" : "controls";
+      const newView = mobileToolView === "controls" ? "step-grid" : "controls";
       mobileToolView = newView;
       saveToStorage(STORAGE_KEYS.MOBILE_TOOL_VIEW, newView);
       debug.log(`Mobile tool view toggled to ${newView}`);

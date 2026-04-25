@@ -103,7 +103,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	const isExporting = $derived(useContext ? ctx?.state?.isExporting ?? false : false);
 	const exportProgress = $derived(useContext ? ctx?.state?.exportProgress ?? null : null);
 
-	// Derived: current beat data for canvas
+	// Derived: current step data for canvas
 	const stepData = $derived.by(() => {
 		const seq = sequenceData;
 		if (!seq) return null;

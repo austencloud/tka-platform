@@ -29,7 +29,7 @@ export interface HandTimeline {
 }
 
 /** Grid position for a single hand at a specific beat */
-export interface BeatPosition {
+export interface StepPosition {
   /** Which hand */
   hand: "blue" | "red";
   /** Detected grid location */
@@ -49,7 +49,7 @@ export interface DetectedBeat {
   /** Number of frames in this beat */
   frameCount: number;
   /** Stable hand positions during this beat */
-  positions: BeatPosition[];
+  positions: StepPosition[];
   /** TKA position label derived from blue+red locations (alpha, beta, gamma, etc.) */
   positionLabel: string | null;
 }

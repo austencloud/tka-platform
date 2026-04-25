@@ -22,7 +22,7 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
   // State
-  let beatCount = $state(8);
+  let stepCount = $state(8);
   let selectedCategory = $state<DurationCategory | "all">("all");
   let selectedTemplateId = $state<string | null>(null);
   let rowCapacityOverride = $state<number | null>(null);
@@ -32,7 +32,7 @@
 
   // Derived: filtered templates
   const filteredTemplates = $derived(
-    getTemplatesByCategory(beatCount, selectedCategory)
+    getTemplatesByCategory(stepCount, selectedCategory)
   );
 
   // Derived: selected template
@@ -48,12 +48,12 @@
 
     // Generate dummy steps with minimal but type-safe data
     const steps: StepData[] = [];
-    for (let i = 0; i < beatCount; i++) {
+    for (let i = 0; i < stepCount; i++) {
       const letter = letters[i % letters.length]!;
       let duration = 1;
 
       if (selectedTemplate) {
-        const entries = selectedTemplate.generator(beatCount);
+        const entries = selectedTemplate.generator(stepCount);
         const entry = entries[i];
         if (entry) {
           duration = entry.duration;
@@ -73,7 +73,7 @@
     }
 
     return createSequenceData({
-      id: `duration-lab-${beatCount}-${selectedTemplateId ?? "uniform"}`,
+      id: `duration-lab-${stepCount}-${selectedTemplateId ?? "uniform"}`,
       word: selectedTemplate?.name ?? "UNIFORM",
       steps,
       level: 1,
@@ -82,7 +82,7 @@
 
   // Generate mini bar visualization for a template
   function getBarWidths(template: DurationTemplateDefinition): number[] {
-    const entries = template.generator(beatCount);
+    const entries = template.generator(stepCount);
     return entries.map(e => e.duration);
   }
 
@@ -96,7 +96,7 @@
   <div class="template-browser">
     <div class="browser-header">
       <h2 class="browser-title">Duration Templates</h2>
-      <p class="browser-subtitle">{filteredTemplates.length} templates for {beatCount} beats</p>
+      <p class="browser-subtitle">{filteredTemplates.length} templates for {stepCount} beats</p>
     </div>
 
     <!-- Beat count selector -->
@@ -106,8 +106,8 @@
         {#each BEAT_OPTIONS as count (count)}
           <button
             class="chip"
-            class:active={beatCount === count}
-            onclick={() => { beatCount = count; selectedTemplateId = null; }}
+            class:active={stepCount === count}
+            onclick={() => { stepCount = count; selectedTemplateId = null; }}
             type="button"
           >
             {count}

@@ -53,11 +53,11 @@ export class OrientationCycleExtender implements IOrientationCycleExtender {
     // Clone and re-orient beats for each additional pass
     for (let pass = 1; pass < result.cycleCount; pass++) {
       for (let i = 0; i < originalSteps.length; i++) {
-        const sourceBeat = originalSteps[i]!;
+        const sourceStep = originalSteps[i]!;
 
         // Clone the beat with updated step number
         let cloned: StepData = {
-          ...sourceBeat,
+          ...sourceStep,
           stepNumber: extendedSteps.length + 1,
         };
 

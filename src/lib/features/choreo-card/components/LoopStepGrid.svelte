@@ -3,7 +3,7 @@
 
   interface Props {
     decks: Deck[];
-    onSelectBeatCount: (beatCount: number) => void;
+    onSelectBeatCount: (stepCount: number) => void;
   }
 
   const { decks, onSelectBeatCount }: Props = $props();
@@ -16,28 +16,28 @@
       groups.get(bc)!.push(deck);
     }
     return [...groups.entries()]
-      .map(([beatCount, groupDecks]) => ({
-        beatCount,
+      .map(([stepCount, groupDecks]) => ({
+        stepCount,
         deckCount: groupDecks.length,
         totalSequences: groupDecks.reduce((s, d) => s + d.totalSequences, 0),
         familyCount: new Set(groupDecks.flatMap(d => d.families.map(f => f.label))).size,
       }))
-      .sort((a, b) => a.beatCount - b.beatCount);
+      .sort((a, b) => a.stepCount - b.stepCount);
   })());
 </script>
 
-<div class="beat-grid-layout">
+<div class="step-grid-layout">
   <h3 class="section-header">BY BEATS</h3>
 
-  <div class="beat-grid">
-    {#each beatGroups as group (group.beatCount)}
+  <div class="step-grid">
+    {#each beatGroups as group (group.stepCount)}
       <button
         type="button"
-        class="beat-card"
-        aria-label="Browse {group.beatCount}-beat LOOP sequences"
-        onclick={() => onSelectBeatCount(group.beatCount)}
+        class="step-card"
+        aria-label="Browse {group.stepCount}-step LOOP sequences"
+        onclick={() => onSelectBeatCount(group.stepCount)}
       >
-        <span class="big-number">{group.beatCount}</span>
+        <span class="big-number">{group.stepCount}</span>
         <span class="unit-label">beats</span>
         <div class="meta">
           <span>{group.totalSequences} sequences</span>
@@ -49,7 +49,7 @@
 </div>
 
 <style>
-  .beat-grid-layout {
+  .step-grid-layout {
     width: 100%;
   }
 
@@ -63,7 +63,7 @@
     margin: 0 0 20px;
   }
 
-  .beat-grid {
+  .step-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
@@ -72,18 +72,18 @@
   }
 
   @media (max-width: 700px) {
-    .beat-grid {
+    .step-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
   @media (max-width: 480px) {
-    .beat-grid {
+    .step-grid {
       grid-template-columns: 1fr;
     }
   }
 
-  .beat-card {
+  .step-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -98,25 +98,25 @@
     text-align: center;
   }
 
-  .beat-card:hover {
+  .step-card:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     transform: translateY(-4px);
     box-shadow: var(--shadow-card, 0 6px 20px rgba(0, 0, 0, 0.25));
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .beat-card:hover {
+    .step-card:hover {
       transform: none;
     }
   }
 
-  .beat-card:focus-visible {
+  .step-card:focus-visible {
     outline: 2px solid var(--theme-accent, #63b3ed);
     outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .beat-card {
+    .step-card {
       transition: none;
     }
   }

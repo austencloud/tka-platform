@@ -73,11 +73,11 @@ export class InfoCardCanvasRenderer implements IInfoCardCanvasRenderer {
     // Steps
     ctx.textAlign = "left";
     const steps = [
-      "Each cell is one beat. Read left to right, top to bottom. The grid is your choreography.",
-      "Blue and red are your two props. Arrows show the path each one travels through the beat.",
-      "The letter below each beat is its name in The Kinetic Alphabet. If two beats share a letter, they share a movement.",
-      "The first cell marked Start shows where to hold your props before beat 1.",
-      "The sequence loops. After the last beat, you're back at beat 1. Keep going.",
+      "Each cell is one step. Read left to right, top to bottom. The grid is your choreography.",
+      "Blue and red are your two props. Arrows show the path each one travels through the step.",
+      "The letter below each step is its name in The Kinetic Alphabet. If two steps share a letter, they share a movement.",
+      "The first cell marked Start shows where to hold your props before step 1.",
+      "The sequence loops. After the last step, you're back at step 1. Keep going.",
     ];
 
     const stepNumSize = 24 * REF_SCALE;
@@ -396,7 +396,7 @@ export class InfoCardCanvasRenderer implements IInfoCardCanvasRenderer {
 
     ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
     ctx.font = `400 ${13 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
-    const loopText = "The last beat connects to the first. Play on repeat. The card back tells you what changes each cycle.";
+    const loopText = "The last step connects to the first. Play on repeat. The card back tells you what changes each cycle.";
     const loopLines = this.wrapText(ctx, loopText, innerW - padX * 2);
     for (const line of loopLines) {
       ctx.fillText(line, cX, curY);

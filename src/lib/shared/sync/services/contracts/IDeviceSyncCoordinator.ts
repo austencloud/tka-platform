@@ -142,7 +142,7 @@ export interface IDeviceSyncCoordinator {
 	 *
 	 * @param durationMs - Duration of one beat in milliseconds
 	 */
-	setBeatDuration(durationMs: number): void;
+	setStepDuration(durationMs: number): void;
 
 	// =========================================================================
 	// Event Subscriptions

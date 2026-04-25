@@ -7,7 +7,7 @@
 
 import type { HandTimeline, DetectedBeat } from "../../domain/models";
 
-export interface BeatDetectionOptions {
+export interface StepDetectionOptions {
   /**
    * Minimum number of frames for a segment to count as a beat.
    * Segments shorter than this are merged into the previous beat.
@@ -35,5 +35,5 @@ export interface IStepBoundaryDetector {
    * @param options - Detection configuration
    * @returns Array of detected beats with position labels
    */
-  detectBeats(timeline: HandTimeline, options?: BeatDetectionOptions): DetectedBeat[];
+  detectBeats(timeline: HandTimeline, options?: StepDetectionOptions): DetectedBeat[];
 }

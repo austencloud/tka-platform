@@ -12,7 +12,7 @@
   const alphaRows = [
     {
       label: "Alpha",
-      sublabel: "Hands opposite",
+      sublabel: "Hands across from each other",
       cells: [
         { data: p("A-0"), label: "α1" },
         { data: p("A-1"), label: "α2" },
@@ -25,7 +25,7 @@
   const betaRows = [
     {
       label: "Beta",
-      sublabel: "Hands together",
+      sublabel: "Hands at the same point",
       cells: [
         { data: p("B-0"), label: "β1" },
         { data: p("B-1"), label: "β2" },
@@ -38,7 +38,7 @@
   const gammaRows = [
     {
       label: "Gamma",
-      sublabel: "Hands at right angle",
+      sublabel: "Hands form a right angle",
       cells: [
         { data: p("G-0"), label: "Γ1" },
         { data: p("G-1"), label: "Γ2" },
@@ -51,16 +51,22 @@
 
 <GuideSection id="hand-positions" title="Hand Positions">
   <p>
-    Hand positions describe where both hands are on the grid at the same time.
-    There are three position families: alpha, beta, and gamma.
+    There are multiple ways to combine two hand points to form a hand position.
+    Positions can be rotated or mirrored. Red = Right and Blue = Left.
+  </p>
+  <p>
+    In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma.
   </p>
 
-  <h3 class="type-dual-shift">Alpha — Hands at Opposite Points</h3>
+  <h3 class="type-dual-shift">Alpha</h3>
+  <p>In Alpha, the hands occupy the points across from each other.</p>
   <GuidePictographGrid rows={alphaRows} />
 
-  <h3 class="type-dual-shift">Beta — Hands at the Same Point</h3>
+  <h3 class="type-dual-shift">Beta</h3>
+  <p>In Beta, the hands occupy the same point.</p>
   <GuidePictographGrid rows={betaRows} />
 
-  <h3 class="type-dual-shift">Gamma — Hands at a Right Angle</h3>
+  <h3 class="type-dual-shift">Gamma</h3>
+  <p>In Gamma, the hands form a right angle.</p>
   <GuidePictographGrid rows={gammaRows} />
 </GuideSection>

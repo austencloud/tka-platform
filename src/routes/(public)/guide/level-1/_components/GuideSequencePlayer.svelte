@@ -14,7 +14,7 @@
     beatSize?: "sm" | "md" | "lg";
   } = $props();
 
-  let activeBeat = $state(-1);
+  let activeStep = $state(-1);
   let playing = $state(false);
   let speed = $state<1 | 0.5>(1);
   let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -28,10 +28,10 @@
       return;
     }
     playing = true;
-    activeBeat = 0;
+    activeStep = 0;
     intervalId = setInterval(() => {
-      activeBeat++;
-      if (activeBeat >= beats.length) {
+      activeStep++;
+      if (activeStep >= beats.length) {
         pause();
       }
     }, msPerBeat);
@@ -47,7 +47,7 @@
 
   function jumpTo(index: number) {
     pause();
-    activeBeat = index;
+    activeStep = index;
   }
 
   function toggleSpeed() {
@@ -74,7 +74,7 @@
     {#if startLabel && beats.length > 0}
       <div
         class="beat-cell start-position"
-        class:active={activeBeat === 0}
+        class:active={activeStep === 0}
         role="button"
         tabindex="0"
         onclick={() => jumpTo(0)}
@@ -87,7 +87,7 @@
       {#if !(i === 0 && startLabel)}
         <div
           class="beat-cell"
-          class:active={activeBeat === i}
+          class:active={activeStep === i}
           role="button"
           tabindex="0"
           onclick={() => jumpTo(i)}
@@ -117,7 +117,7 @@
       {#each beats as _, i}
         <button
           class="beat-dot"
-          class:active={activeBeat === i}
+          class:active={activeStep === i}
           onclick={() => jumpTo(i)}
           aria-label="Beat {i + 1}"
         ></button>

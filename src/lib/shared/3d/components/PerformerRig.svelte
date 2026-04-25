@@ -168,8 +168,8 @@
   // angle instead of snapping back to the pre-turn heading.
   let turnTargetHeading: number | null = $state(null);
 
-  function getHeadingForBeat(beatIndex: number): number {
-    const override = avatarState.beatPlaneOverrides.get(beatIndex);
+  function getHeadingForBeat(stepNumber: number): number {
+    const override = avatarState.beatPlaneOverrides.get(stepNumber);
     if (override) {
       const mode = derivePlaneModeFromHands(
         override.blue ?? Plane.WALL,
@@ -287,7 +287,7 @@
       bluePropAnchorRef={bluePropAnchorRef}
       redPropAnchorRef={redPropAnchorRef}
       disableSpineTwist={isDualWheel}
-      beatIndex={avatarState.currentStepIndex}
+      stepNumber={avatarState.currentStepIndex}
       beatProgress={avatarState.progress}
       onRootMotion={effectiveAnimDrivenYaw
         ? (delta) => {

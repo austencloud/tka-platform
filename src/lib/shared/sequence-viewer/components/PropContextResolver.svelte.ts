@@ -18,7 +18,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ResolvedPresentation, ViewingContext } from "../services/contracts/IPresentationResolver";
 
 export interface PropContextResolverDeps {
-  viewingContext: ViewingContext;
+  /** @deprecated Not read internally — activeContext is resolved via getActiveContext() param. */
+  viewingContext?: ViewingContext;
 }
 
 export function createPropContextResolver(deps: PropContextResolverDeps) {

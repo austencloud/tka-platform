@@ -10,7 +10,7 @@
   import MobileToolViewToggle from "../inputs/MobileToolViewToggle.svelte";
   import ExpandToggleButton from "../inputs/ExpandToggleButton.svelte";
 
-  type MobileToolView = "controls" | "beat-grid";
+  type MobileToolView = "controls" | "step-grid";
 
   let {
     mobileToolView = "controls",

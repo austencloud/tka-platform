@@ -28,7 +28,7 @@ export function updateArrowAdjustment(
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
   if (!stepData?.motions) {
-    logger.warn("Cannot update arrow adjustment - no beat data available");
+    logger.warn("Cannot update arrow adjustment - no step data available");
     return;
   }
 
@@ -39,7 +39,7 @@ export function updateArrowAdjustment(
     return;
   }
 
-  // Create updated beat data with new manual adjustments
+  // Create updated step data with new manual adjustments
   const updatedStepData: StepData = {
     ...stepData,
     motions: {
@@ -102,7 +102,7 @@ export function updateArrowAdjustment(
 }
 
 /**
- * Persist complete beat data with arrow adjustments
+ * Persist complete step data with arrow adjustments
  * Used when the adjustment panel closes to save all accumulated changes
  */
 export function persistBeatWithAdjustments(

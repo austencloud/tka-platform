@@ -88,7 +88,7 @@ export function createCurrentWordDisplayEffect(
        
       const _currentSequence = CreateModuleState.sequenceState.currentSequence;
        
-      const _beatCount = CreateModuleState.getCurrentBeatCount();
+      const _stepCount = CreateModuleState.getCurrentBeatCount();
 
       let displayText = "";
       let letterSources: LetterSource[] | null = null;

@@ -69,7 +69,7 @@ export function createSequenceAnimationState() {
       state.removingStepIndices = new Set();
     },
 
-    isBeatRemoving(index: number): boolean {
+    isStepRemoving(index: number): boolean {
       return (
         state.removingStepIndex === index ||
         state.removingStepIndices.has(index)

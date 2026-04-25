@@ -35,9 +35,9 @@ export interface VideoReference {
 }
 
 /** Hand position verified by the user for a single beat */
-export interface VerifiedBeatPosition {
+export interface VerifiedStepPosition {
   /** Beat index */
-  beatIndex: number;
+  stepNumber: number;
 
   /** Blue hand grid location */
   blueLocation: GridLocation | null;
@@ -73,7 +73,7 @@ export interface TrainingInput {
 /** The verified output (what the human confirmed or corrected) */
 export interface TrainingOutput {
   /** Verified beat positions */
-  beats: VerifiedBeatPosition[];
+  beats: VerifiedStepPosition[];
 
   /** How the output was verified */
   verificationMethod: "accepted" | "corrected";

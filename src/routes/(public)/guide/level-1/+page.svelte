@@ -15,17 +15,40 @@
 
   <h1>The Kinetic Alphabet</h1>
   <p class="subtitle">Level 1 — Positions, Motions, Letters & Words</p>
+  <p class="byline">Created by Austen Cloud &middot; v 0.5</p>
 
   <section class="read-me-first">
     <h2>Read Me First</h2>
     <p>
-      The Kinetic Alphabet (TKA) is a writing system for object manipulation.
-      Each letter represents a unique combination of hand motions performed
-      with gripped props — staves, fans, clubs, or buugeng.
+      You've come across The Kinetic Alphabet, a notation system designed to
+      help you craft and communicate your own unique choreography. This grid-based
+      language is designed for music, using pictographs and letters that combine like
+      puzzle pieces for each beat. This system has propelled my sequence creation to
+      new heights, and I hope it will do the same for you!
     </p>
     <p>
-      This guide covers Level 1: the grid, hand and staff positions, six motion types,
-      the complete Level 1 letter set, and how letters combine into words, CAPs, and reversals.
+      The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech Gospel),
+      siteswap (Juggling Notation), and musical notation. Although it can be introduced to beginners, it's designed for intermediate learners, bridging the gap between improvisation and choreography. Originally built for double staves, it can
+      be applied to any dual wielded static prop like clubs, fans, triads, buugeng, and
+      more.
+    </p>
+    <p>
+      Pictographs form the core of The Kinetic Alphabet.
+    </p>
+    <p>
+      The letters are a useful tool to categorize and communicate the pictographs,
+      but they are secondary to the pictographs themselves. It's not necessary to memorize the letters immediately to benefit from this system.
+    </p>
+    <p>
+      This is a work-in-progress and is continually growing. Whether you fully
+      embrace this system, draw inspiration from certain parts, or follow a different
+      path altogether, I hope the ideas presented here contribute to your creative
+      growth.
+    </p>
+    <p>I can't wait to see the unique choreography you'll create!</p>
+    <p class="sign-off">
+      With love,<br />
+      Austen Cloud
     </p>
   </section>
 
@@ -79,7 +102,18 @@
   .subtitle {
     font-size: 1.2rem;
     color: #666;
+    margin-bottom: 0.5rem;
+  }
+
+  .byline {
+    font-size: 0.95rem;
+    color: #888;
     margin-bottom: 2rem;
+  }
+
+  .sign-off {
+    margin-top: 1.5rem;
+    font-style: italic;
   }
 
   .read-me-first, .download {

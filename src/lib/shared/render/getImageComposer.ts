@@ -7,7 +7,7 @@ import { getDimensionCalculator } from './getDimensionCalculator';
 import { getPictographBlobCache } from './getPictographBlobCache';
 import { getPictographKeyHasher } from './getPictographKeyHasher';
 import { getPictographMemoryCache } from './getPictographMemoryCache';
-import { getBeatNumberRenderer } from './getBeatNumberRenderer';
+import { getStepNumberRenderer } from './getStepNumberRenderer';
 import { getCanvas2DRenderer } from './getCanvas2DRenderer';
 import { getLayerCompositor } from './getLayerCompositor';
 import type { Canvas2DDirectRenderer } from './services/implementations/Canvas2DDirectRenderer';
@@ -23,7 +23,7 @@ export function getImageComposer(): IImageComposer {
 		getPictographBlobCache(),
 		getPictographKeyHasher(),
 		getPictographMemoryCache(),
-		getBeatNumberRenderer(),
+		getStepNumberRenderer(),
 		getCanvas2DRenderer() as Canvas2DDirectRenderer,
 		getLayerCompositor()
 	);

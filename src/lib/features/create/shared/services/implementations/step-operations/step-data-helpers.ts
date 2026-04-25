@@ -11,7 +11,7 @@ import type { ICreateModuleState } from "../../../types/create-module-types";
 export const START_POSITION_BEAT_NUMBER = 0;
 
 /**
- * Get beat data from the live sequence state
+ * Get step data from the live sequence state
  * @returns Beat data or null/undefined if not found
  */
 export function getStepDataFromState(
@@ -39,7 +39,7 @@ export function updateSequenceWord(
   if (!sequence?.steps) return;
 
   const word = sequence.steps
-    .map((beat) => beat.letter ?? "")
+    .map((step) => step.letter ?? "")
     .join("")
     .toUpperCase();
 

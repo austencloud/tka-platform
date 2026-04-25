@@ -19,7 +19,7 @@
 		onControllerReady,
 		onCurrentSequenceChange,
 		length = 8,
-		currentBeat = 0,
+		currentStep = 0,
 		tourShuffleGlow = false,
 	}: {
 		side: "left" | "right";
@@ -27,7 +27,7 @@
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
 		onCurrentSequenceChange?: (seq: SequenceData | null) => void;
 		length?: number;
-		currentBeat?: number;
+		currentStep?: number;
 		tourShuffleGlow?: boolean;
 	} = $props();
 
@@ -73,7 +73,7 @@
 						{bpm}
 						{onControllerReady}
 						propColor={side === "left" ? "blue" : "red"}
-						{currentBeat}
+						{currentStep}
 						showBackButton={false}
 					/>
 				{/key}

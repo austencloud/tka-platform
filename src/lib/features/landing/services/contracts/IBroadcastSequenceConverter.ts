@@ -20,7 +20,7 @@ export interface IBroadcastSequenceConverter {
 
   /**
    * Convert a single broadcast beat to internal StepData format.
-   * @param beat The broadcast beat data
+   * @param beat The broadcast step data
    * @param index The beat index (0-based) for assigning beat number
    */
   convertBeat(beat: BroadcastStepData, index: number): StepData;

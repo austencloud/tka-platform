@@ -103,7 +103,7 @@
 
   // Timing system (using requestAnimationFrame for better performance)
   let stepAnimationFrameId: number | null = null;
-  let lastBeatTime = 0;
+  let lastStepTime = 0;
   let stepDuration = 0;
 
   // Hit detection tracking
@@ -116,7 +116,7 @@
   let selectedStepIndex = $state(-1);
 
   // Determine which beat index to show - selected during setup, current during performance
-  const displayBeatIndex = $derived(
+  const displayStepIndex = $derived(
     trainState.isPerforming ? trainState.currentStepIndex : selectedStepIndex
   );
 
@@ -228,7 +228,7 @@
   // Timing system - start beat timer when performance begins
   $effect(() => {
     if (trainState.isPerforming && !stepAnimationFrameId) {
-      startBeatTimer();
+      startStepTimer();
       // Record session start time
       sessionStartTime = Date.now();
       hasProcessedSession = false;
@@ -266,9 +266,9 @@
     sessionChallengeProgressRaw = result.challengeProgress;
   }
 
-  function startBeatTimer() {
+  function startStepTimer() {
     stepDuration = (60 / trainState.bpm) * 1000;
-    lastBeatTime = performance.now();
+    lastStepTime = performance.now();
     hasCheckedCurrentBeat = false;
 
     // Use requestAnimationFrame for better performance:
@@ -277,10 +277,10 @@
     // - More efficient than setInterval
     function tick() {
       const now = performance.now();
-      const elapsed = now - lastBeatTime;
+      const elapsed = now - lastStepTime;
 
       if (elapsed >= stepDuration) {
-        lastBeatTime = now;
+        lastStepTime = now;
         hasCheckedCurrentBeat = false;
         trainState.advanceBeat();
       }
@@ -374,7 +374,7 @@
   <div class="training-mode-body">
     <PracticeBentoLayout
       sequence={trainState.sequence}
-      currentStepIndex={displayBeatIndex}
+      currentStepIndex={displayStepIndex}
       isPlaying={trainState.isPerforming}
       bpm={trainState.bpm}
       isCameraReady={trainState.isCameraReady}

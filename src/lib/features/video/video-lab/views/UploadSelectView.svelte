@@ -38,7 +38,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   let pickerOpen = $state(false);
 
   const canStart = $derived(!!videoUrl && !!selectedSequence && videoDuration > 0);
-  const beatCount = $derived(
+  const stepCount = $derived(
     selectedSequence?.steps?.length || selectedSequence?.word?.length || 0
   );
 
@@ -184,7 +184,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
           <div class="card-footer">
             <div class="card-info">
               <span class="card-name">{selectedSequence.word ?? selectedSequence.name}</span>
-              <span class="card-sub">{beatCount} beats</span>
+              <span class="card-sub">{stepCount} beats</span>
             </div>
             <button type="button" class="text-btn" onclick={() => (pickerOpen = true)}>Change</button>
           </div>

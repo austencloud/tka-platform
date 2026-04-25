@@ -7,7 +7,7 @@
  *
  * Supports:
  * - Single commands: "I want to practice" → navigate to train
- * - Compound commands: "make a 16-beat diamond sequence" → set length, set gridMode, generate
+ * - Compound commands: "make a 16-step diamond sequence" → set length, set gridMode, generate
  * - Context-aware navigation: prepends navigate_module + switch_tab when action is in another module
  * - Conversational context: "do that again", "make it longer" (Phase 3)
  *
@@ -52,7 +52,7 @@ When the user implies multiple settings + an execution, produce multiple command
 2. Then set each parameter mentioned.
 3. End with the execution action (e.g., generator "generate").
 
-Example: "make a 16-beat diamond sequence" (user is in browse module) →
+Example: "make a 16-step diamond sequence" (user is in browse module) →
   1. navigate_module → create
   2. switch_tab → generate
   3. generator set length {value: 16}

@@ -375,18 +375,18 @@
     soundManager.beep();
     const ccw = parseFloat(input);
 
-    const newBeat: ConstructBeat = {
+    const newStep: ConstructBeat = {
       letter: pendingLetter,
       motion: pendingMotion,
       cw: pendingCW,
       ccw: ccw,
     };
 
-    beats.push(newBeat);
+    beats.push(newStep);
 
     terminalState.writeBlank();
     terminalState.writeLine(
-      `Beat ${beats.length} added: ${formatLetter(newBeat.letter)} - ${newBeat.motion} - CW:${newBeat.cw} CCW:${newBeat.ccw}`,
+      `Beat ${beats.length} added: ${formatLetter(newStep.letter)} - ${newStep.motion} - CW:${newStep.cw} CCW:${newStep.ccw}`,
       "cyan",
     );
     terminalState.writeBlank();

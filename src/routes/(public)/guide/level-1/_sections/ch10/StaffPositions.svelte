@@ -5,21 +5,26 @@
 
 <GuideSection id="staff-positions" title="Staff Positions">
   <p>
-    Staff position describes the orientation of each prop — which direction the
-    thumb end and pinky end point. Each staff has two visible ends, and proper
-    technique keeps the thumb reference consistent.
+    When writing sequences with staves, it helps to mark the thumb end with a line.
+    The performer can use it to keep track of rotations and check their position on every beat.
+    It also encourages negative space/body turns instead of finger spinning.
   </p>
-
   <p>
-    At any grid point, a staff can be oriented <strong>radially</strong> (pointing
-    toward/away from center) or <strong>nonradially</strong> (perpendicular to
-    the radial line). These two orientations — combined with which end the thumb
-    grips — create the full set of staff positions.
+    In the following examples, an end is always at the center point.
+    Practice each position below, paying attention to the thumb orientation.
+  </p>
+  <p>
+    Many pictographs in this guide are depicted with no thumb ends when categorizing.
+    It is usually noted only during sequences.
+  </p>
+  <p>
+    Most sequences in this guide start with thumbs in for consistency.
+    It's equally valid to start any sequence from a different thumb orientation.
   </p>
 
   <GuideDiagram
-    src="/guide/level-1/images/staff-positions/radial-nonradial.png"
-    alt="Staff oriented radially vs nonradially at a grid point"
-    caption="Radial (pointing toward center) vs nonradial (perpendicular)"
+    src="/guide/level-1/images/staff-positions/staff-positions.png"
+    alt="Staff positions showing thumb in and thumb out orientations at Alpha, Beta, and Gamma"
+    caption="Staff positions — thumbs in and out at Alpha, Beta, and Gamma"
   />
 </GuideSection>

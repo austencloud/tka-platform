@@ -120,7 +120,7 @@
     if (playbackMode === "video" && videoElement) {
       if (isPlaying) {
         playbackService.play();
-        playbackService.startBeatTracking(onStepChange);
+        playbackService.startStepTracking(onStepChange);
       } else {
         playbackService.pause();
         playbackService.stopBeatTracking();

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import type { ISequenceCanonicalizer } from './services/contracts/ISequenceCanonicalizer';
 import { SequenceCanonicalizer } from './services/implementations/SequenceCanonicalizer';
-import { getStepSignatureGenerator } from './getBeatSignatureGenerator';
+import { getStepSignatureGenerator } from './getStepSignatureGenerator';
 import { getWordCyclicEquivalenceDetector } from '$lib/features/create/shared/getWordCyclicEquivalenceDetector';
 
 let instance: ISequenceCanonicalizer | null = null;

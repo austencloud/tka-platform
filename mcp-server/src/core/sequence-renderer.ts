@@ -160,7 +160,7 @@ export async function renderSequenceToImage(
     // Convert step to pictograph input format
     // Step 0 is start position (always 0 turns)
     // Other steps get their turns from the allocation array (indexed by stepNumber - 1)
-    const stepNum = step.stepNumber ?? step.beatIndex;
+    const stepNum = step.stepNumber ?? step.stepNumber;
     const allocationIndex = stepNum - 1;
     const blueTurns = stepNum === 0 ? 0 : (turnAllocation?.blue[allocationIndex] ?? 0);
     const redTurns = stepNum === 0 ? 0 : (turnAllocation?.red[allocationIndex] ?? 0);
@@ -232,8 +232,8 @@ export async function renderSequenceToImage(
     // Build letter styles from seed word only (for LOOP sequences)
     // This shows ONLY the original letters, not the transformed portion
     const seedLetters = opts.seedWord
-      ? letterSteps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber ?? s.beatIndex))
-      : letterSteps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
+      ? letterSteps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber ?? s.stepNumber))
+      : letterSteps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
     // Filter out bridge letters from styles since they aren't displayed in the header.
     // Without this, bridge styles (dimmed) get applied to the wrong header characters
@@ -299,15 +299,15 @@ function calculateStepPosition(
   // Letter steps: account for start position taking column 0 of row 0
   // beatColumns = totalColumns - 1 (columns available for beats per row after the start column)
   const beatColumns = totalColumns - 1;
-  const beatIndex = stepIndex - 1; // 0-based index among letter steps
+  const stepNumber = stepIndex - 1; // 0-based index among letter steps
 
-  if (beatIndex < beatColumns) {
+  if (stepNumber < beatColumns) {
     // First row: steps go after the start position
-    return { row: 0, col: beatIndex + 1 };
+    return { row: 0, col: stepNumber + 1 };
   }
 
   // Subsequent rows: start at column 1 (column 0 is empty)
-  const adjustedIndex = beatIndex - beatColumns; // Index relative to row 2+
+  const adjustedIndex = stepNumber - beatColumns; // Index relative to row 2+
   const row = Math.floor(adjustedIndex / beatColumns) + 1;
   const col = (adjustedIndex % beatColumns) + 1;
 

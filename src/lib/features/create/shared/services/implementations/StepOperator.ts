@@ -23,7 +23,7 @@ import { applyBatchChanges } from "./step-operations/BatchEditHandler";
 import { updateStepOrientation } from "./step-operations/OrientationHandler";
 import { updateStepTurns } from "./step-operations/TurnsHandler";
 import {
-  updateBeatPropType,
+  updateStepPropType,
   bulkUpdatePropType,
 } from "./step-operations/PropTypeHandler";
 import { updateRotationDirection } from "./step-operations/RotationDirectionHandler";
@@ -70,14 +70,14 @@ export class StepOperator implements IStepOperator {
     updateStepTurns(stepNumber, color, turnAmount, createModuleState);
   }
 
-  updateBeatPropType(
+  updateStepPropType(
     stepNumber: number,
     color: string,
     propType: PropType,
     createModuleState: ICreateModuleState,
     _panelState: unknown
   ): void {
-    updateBeatPropType(stepNumber, color, propType, createModuleState);
+    updateStepPropType(stepNumber, color, propType, createModuleState);
   }
 
   bulkUpdatePropType(

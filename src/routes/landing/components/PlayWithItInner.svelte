@@ -97,7 +97,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
         ? (applyToMotions(sequence.startPosition) as StartPositionData)
         : undefined,
       steps:
-        sequence.steps?.map((beat) => applyToMotions(beat) as StepData) ?? [],
+        sequence.steps?.map((step) => applyToMotions(step) as StepData) ?? [],
     };
   }
 
@@ -496,7 +496,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     data: StepData | StartPositionData;
     label: string;
     isStart: boolean;
-    beatIndex: number; // 0 for start, 1-N for beats
+    stepNumber: number; // 0 for start, 1-N for beats
   }
 
   let notationCells = $derived.by((): NotationCell[] => {
@@ -513,7 +513,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
         data: startPos,
         label: "Start",
         isStart: true,
-        beatIndex: 0,
+        stepNumber: 0,
       });
     }
 
@@ -525,7 +525,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
         data: step,
         label: `${i + 1}`,
         isStart: false,
-        beatIndex: i + 1,
+        stepNumber: i + 1,
       });
     }
 
@@ -537,7 +537,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
 
   $effect(() => {
     if (!beatStripEl || !animationState.isPlaying) return;
-    const activeCell = beatStripEl.querySelector('.beat-cell.active') as HTMLElement | null;
+    const activeCell = beatStripEl.querySelector('.step-cell.active') as HTMLElement | null;
     if (activeCell) {
       activeCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
@@ -719,7 +719,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
           {@const isActive = animationState.isPlaying && (
             cell.isStart
               ? currentStepNumber === 0
-              : currentStepNumber === cell.beatIndex
+              : currentStepNumber === cell.stepNumber
           )}
           {#if i >= visibleRange.start && i < visibleRange.end}
             <div class="beat-cell" class:active={isActive} class:start-cell={cell.isStart}>
@@ -908,7 +908,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     border-radius: 2px;
   }
 
-  .beat-cell {
+  .step-cell {
     flex: 0 0 72px;
     width: 72px;
     height: 72px;
@@ -919,12 +919,12 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .beat-cell.active {
+  .step-cell.active {
     border-color: #d4813a;
     box-shadow: 0 0 10px rgba(212, 129, 58, 0.3);
   }
 
-  .beat-cell.start-cell {
+  .step-cell.start-cell {
     border-color: rgba(255, 255, 255, 0.15);
   }
 
@@ -935,7 +935,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
 
   /* Off-screen placeholder: same dimensions as a real cell, no border or content.
      Keeps the scrollable width correct while the PictographContainer is unmounted. */
-  .beat-cell-placeholder {
+  .step-cell-placeholder {
     border-color: transparent;
     box-shadow: none;
     background: transparent;
@@ -976,7 +976,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       font-size: 13px;
     }
 
-    .beat-cell {
+    .step-cell {
       flex: 0 0 56px;
       width: 56px;
       height: 56px;
@@ -985,7 +985,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
 
   @media (prefers-reduced-motion: reduce) {
     .tb-pill,
-    .beat-cell {
+    .step-cell {
       transition: none;
     }
   }

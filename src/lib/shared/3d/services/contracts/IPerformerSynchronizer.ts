@@ -21,7 +21,7 @@
 export type PerformerId = string;
 
 /**
- * Beat offset range (typically -8 to +8 for an 8-beat sequence)
+ * Beat offset range (typically -8 to +8 for an 8-step sequence)
  */
 export interface OffsetRange {
   min: number;

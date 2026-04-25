@@ -12,7 +12,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 /**
  * Union type for all pictograph-based data structures
  */
-export type BeatOrStartPosition = StepData | StartPositionData;
+export type StepOrStartPosition = StepData | StartPositionData;
 
 /**
  * Type guard: Check if data is StartPositionData
@@ -79,9 +79,9 @@ export function isStep(
  *
  * Useful for validating that data is one of our known types
  */
-export function isBeatOrStartPosition(
+export function isStepOrStartPosition(
   data: unknown
-): data is BeatOrStartPosition {
+): data is StepOrStartPosition {
   return isStartPosition(data) || isStep(data);
 }
 

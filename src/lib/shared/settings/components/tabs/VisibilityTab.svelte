@@ -128,7 +128,7 @@
         avm.setDarkMode(next);
       }); break;
       case "props": tap(() => avm.setVisibility("props", !animProps)); break;
-      case "beatNumbers": tap(() => avm.setVisibility("stepNumbers", !animStepNumbers)); break;
+      case "stepNumbers": tap(() => avm.setVisibility("stepNumbers", !animStepNumbers)); break;
       case "wordHeader": tap(() => avm.setVisibility("wordHeader", !animWordHeader)); break;
       case "progressBar": tap(() => avm.setVisibility("progressBar", !animProgressBar)); break;
       case "tkaGlyph": tap(() => avm.setVisibility("tkaGlyph", !animTkaGlyph)); break;
@@ -152,7 +152,7 @@
   function handleImageToggle(key: string) {
     switch (key) {
       case "word": tap(() => icm.setAddWord(!imgWord)); break;
-      case "beatNumbers": tap(() => icm.setAddBeatNumbers(!imgStepNumbers)); break;
+      case "stepNumbers": tap(() => icm.setAddBeatNumbers(!imgStepNumbers)); break;
       case "difficulty": tap(() => icm.setAddDifficultyLevel(!imgDifficulty)); break;
       case "startPosition": tap(() => icm.setIncludeStartPosition(!imgStartPos)); break;
       case "creatorName": tap(() => icm.setShowCreatorName(!imgCreator)); break;
@@ -189,7 +189,7 @@
 
     <AnimationPanel
       gridMode={animGridMode}
-      beatNumbersVisible={animStepNumbers}
+      stepNumbersVisible={animStepNumbers}
       armsVisible={true}
       propsVisible={animProps}
       trailStyle={animTrailStyle}
@@ -207,7 +207,7 @@
 
     <ImagePanel
       addWord={imgWord}
-      addBeatNumbers={imgStepNumbers}
+      addStepNumbers={imgStepNumbers}
       addDifficultyLevel={imgDifficulty}
       includeStartPosition={imgStartPos}
       showQRCode={imgQR}

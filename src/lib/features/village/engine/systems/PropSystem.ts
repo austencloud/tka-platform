@@ -65,7 +65,7 @@ export class PropSystem {
 			const profile = PROP_WEAR_PROFILES[prop.propType];
 			const wearRate = profile?.wearRate ?? 1 / PROP_WEAR_LIFESPAN;
 
-			prop.totalBeatsPerformed++;
+			prop.totalStepsPerformed++;
 			prop.wear = Math.min(1.5, prop.wear + wearRate);
 
 			// Track favorite sequence
@@ -158,7 +158,7 @@ export class PropSystem {
 				createdAtTick: currentTick,
 				createdBy: maker.id,
 				ownershipChain: [entity.id],
-				totalBeatsPerformed: 0,
+				totalStepsPerformed: 0,
 				wear: 0,
 				favoriteSequenceId: null,
 				customHue: Math.floor(Math.random() * 360),

@@ -105,11 +105,11 @@ export class HandPathDataBuilder implements IHandPathDataBuilder {
       );
     }
 
-    const beatCount = Math.min(blueLen, redLen) - 1;
+    const stepCount = Math.min(blueLen, redLen) - 1;
     const hash = this.hashTrace(trace);
     const beats: PictographData[] = [];
 
-    for (let i = 0; i < beatCount; i++) {
+    for (let i = 0; i < stepCount; i++) {
       const blueStart = trace.blue[i]!;
       const blueEnd = trace.blue[i + 1]!;
       const redStart = trace.red[i]!;
@@ -120,7 +120,7 @@ export class HandPathDataBuilder implements IHandPathDataBuilder {
       const beatSkews = trace.skews?.[i];
 
       beats.push({
-        id: `hp-${hash}-beat-${i + 1}`,
+        id: `hp-${hash}-step-${i + 1}`,
         letter: null,
         gridMode: GridMode.DIAMOND,
         motions: {
@@ -208,12 +208,12 @@ export class HandPathDataBuilder implements IHandPathDataBuilder {
     trace: HandPathTrace,
     representative: SequenceData
   ): void {
-    const firstBeat = representative.steps.find(
+    const firstStep = representative.steps.find(
       (s) => "stepNumber" in s && (s as { stepNumber: number }).stepNumber >= 1
     );
-    if (!firstBeat) return;
+    if (!firstStep) return;
 
-    const blueMotion = firstBeat.motions?.[MotionColor.BLUE];
+    const blueMotion = firstStep.motions?.[MotionColor.BLUE];
     if (!blueMotion?.startLocation) return;
 
     const actualBlueStart = blueMotion.startLocation.toLowerCase();

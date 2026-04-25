@@ -13,7 +13,7 @@ import {
   buildTransform,
   buildFilter,
   type SpringPreset,
-  type BeatAnimationVariant,
+  type StepAnimationVariant,
   type AnimationVariantConfig,
 } from "./presets";
 
@@ -28,7 +28,7 @@ export class StepAnimation {
   readonly progress: Spring<number>;
   private readonly variantConfig: AnimationVariantConfig;
 
-  constructor(variant: BeatAnimationVariant = "springPop") {
+  constructor(variant: StepAnimationVariant = "springPop") {
     const config = beatAnimationVariants[variant];
     if (!config) {
       throw new Error(`Unknown animation variant: ${variant}`);

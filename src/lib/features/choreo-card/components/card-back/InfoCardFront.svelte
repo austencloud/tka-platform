@@ -28,7 +28,7 @@
 
         <div class="step">
           <span class="step-num">1</span>
-          <p class="step-text">Each cell is one beat. Read left to right, top to bottom. The grid is your choreography.</p>
+          <p class="step-text">Each cell is one step. Read left to right, top to bottom. The grid is your choreography.</p>
         </div>
 
         <div class="step">
@@ -36,23 +36,23 @@
           <div class="step-text">
             <span class="color-swatch blue"></span> and
             <span class="color-swatch red"></span> are your two props.
-            Arrows show the path each one travels through the beat.
+            Arrows show the path each one travels through the step.
           </div>
         </div>
 
         <div class="step">
           <span class="step-num">3</span>
-          <p class="step-text">The letter below each beat is its name in The Kinetic Alphabet. If two beats share a letter, they share a movement.</p>
+          <p class="step-text">The letter below each step is its name in The Kinetic Alphabet. If two steps share a letter, they share a movement.</p>
         </div>
 
         <div class="step">
           <span class="step-num">4</span>
-          <p class="step-text">The first cell marked <em>Start</em> shows where to hold your props before beat 1.</p>
+          <p class="step-text">The first cell marked <em>Start</em> shows where to hold your props before step 1.</p>
         </div>
 
         <div class="step">
           <span class="step-num">5</span>
-          <p class="step-text">The sequence loops. After the last beat, you're back at beat 1. Keep going.</p>
+          <p class="step-text">The sequence loops. After the last step, you're back at step 1. Keep going.</p>
         </div>
 
       </div>

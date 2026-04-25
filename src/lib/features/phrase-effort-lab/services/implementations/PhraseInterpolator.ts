@@ -5,11 +5,11 @@ import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unifi
 export class PhraseInterpolator implements IPhraseInterpolator {
   interpolate(
     phrase: EffortPhrase,
-    currentBeat: number,
+    currentStep: number,
     totalSteps: number,
   ): PhraseInterpolationResult {
-    const phraseDuration = phrase.endBeat - phrase.startBeat + 1;
-    const beatsIntoPhrase = currentBeat - phrase.startBeat;
+    const phraseDuration = phrase.endStep - phrase.startStep + 1;
+    const beatsIntoPhrase = currentStep - phrase.startStep;
 
     // Clamp to [0, phraseDuration)
     const clampedBeats = Math.max(0, Math.min(beatsIntoPhrase, phraseDuration - 0.001));
@@ -22,7 +22,7 @@ export class PhraseInterpolator implements IPhraseInterpolator {
     const easedBeats = easedProgress * phraseDuration;
 
     // Convert to step index (0-based) and local progress
-    const phraseStartIndex = phrase.startBeat - 1; // convert 1-based beat to 0-based index
+    const phraseStartIndex = phrase.startStep - 1; // convert 1-based beat to 0-based index
     const absoluteBeatOffset = phraseStartIndex + easedBeats;
 
     const stepIndex = Math.min(

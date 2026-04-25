@@ -11,7 +11,7 @@ so the preview matches exactly what the user will see when exporting.
 
   interface Props {
     addWord: boolean;
-    addBeatNumbers: boolean;
+    addStepNumbers: boolean;
     addDifficultyLevel: boolean;
     includeStartPosition: boolean;
     showQRCode: boolean;
@@ -29,7 +29,7 @@ so the preview matches exactly what the user will see when exporting.
 
   let {
     addWord,
-    addBeatNumbers,
+    addStepNumbers,
     addDifficultyLevel,
     includeStartPosition,
     showQRCode,
@@ -61,7 +61,7 @@ so the preview matches exactly what the user will see when exporting.
     <ChoreoCard
       sequence={aabbSequence}
       showWord={addWord}
-      showStepNumbers={addBeatNumbers}
+      showStepNumbers={addStepNumbers}
       showDifficultyLevel={addDifficultyLevel}
       {includeStartPosition}
       {showQRCode}
@@ -90,8 +90,8 @@ so the preview matches exactly what the user will see when exporting.
         </button>
         <button
           class="toggle-btn"
-          class:active={addBeatNumbers}
-          onclick={() => onToggle("beatNumbers")}
+          class:active={addStepNumbers}
+          onclick={() => onToggle("stepNumbers")}
         >
           Step #s
         </button>

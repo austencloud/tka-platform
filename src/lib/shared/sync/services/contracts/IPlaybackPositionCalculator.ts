@@ -79,7 +79,7 @@ export interface IPlaybackPositionCalculator {
 	 *
 	 * @param durationMs - Duration of one beat in milliseconds
 	 */
-	setBeatDuration(durationMs: number): void;
+	setStepDuration(durationMs: number): void;
 
 	/**
 	 * Get the current beat duration.

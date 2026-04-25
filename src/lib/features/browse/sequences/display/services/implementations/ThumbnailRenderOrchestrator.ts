@@ -295,7 +295,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
       const isOrphanedSequence = err.message.includes("ORPHANED_SEQUENCE");
       if (isOrphanedSequence) {
         console.debug(
-          `[ThumbnailRenderOrchestrator] Orphaned sequence "${key.inputs.sequenceName}" - has no beat data`
+          `[ThumbnailRenderOrchestrator] Orphaned sequence "${key.inputs.sequenceName}" - has no step data`
         );
       } else {
         console.warn(

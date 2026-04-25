@@ -108,9 +108,9 @@ export function buildPictographContextMenuItems(
       id: "toggle-step-numbers",
       label: "Step Numbers",
       icon: "fa-list-ol",
-      checked: vm.getBeatNumbersVisibility(),
+      checked: vm.getStepNumbersVisibility(),
       keepOpen: true,
-      action: () => vm.setBeatNumbersVisibility(!vm.getBeatNumbersVisibility()),
+      action: () => vm.setStepNumbersVisibility(!vm.getStepNumbersVisibility()),
     },
   ];
 

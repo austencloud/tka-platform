@@ -234,4 +234,4 @@ export function interpolateVariant(
 export type SpringPreset = keyof typeof springPresets;
 export type EasingPreset = keyof typeof easingPresets;
 export type DurationPreset = keyof typeof durationPresets;
-export type BeatAnimationVariant = keyof typeof beatAnimationVariants;
+export type StepAnimationVariant = keyof typeof beatAnimationVariants;

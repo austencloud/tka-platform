@@ -116,7 +116,7 @@ export class BrowseMetadataExtractor implements IBrowseMetadataExtractor {
     rawData: Record<string, unknown>
   ): SequenceMetadata {
     const sequence = rawData["sequence"];
-    const steps = this.parseBeats(sequenceName, sequence);
+    const steps = this.parseSteps(sequenceName, sequence);
     const startPosition = this.parseStartPosition(sequenceName, sequence);
     const gridMode = this.parseGridMode(rawData["grid_mode"]);
 
@@ -141,10 +141,10 @@ export class BrowseMetadataExtractor implements IBrowseMetadataExtractor {
   }
 
   /**
-   * Parse beat data from sequence array with full motion parsing
+   * Parse step data from sequence array with full motion parsing
    * NOTE: Skips the first element if it's a start position (has sequence_start_position field)
    */
-  private parseBeats(sequenceName: string, sequence: unknown): StepData[] {
+  private parseSteps(sequenceName: string, sequence: unknown): StepData[] {
     if (!Array.isArray(sequence)) {
       return [];
     }
@@ -164,7 +164,7 @@ export class BrowseMetadataExtractor implements IBrowseMetadataExtractor {
 
       return {
         // PictographData properties
-        id: `beat-${sequenceName}-${index + 1}`,
+        id: `step-${sequenceName}-${index + 1}`,
         letter: String(stepData["letter"] || ""),
         startPosition:
           this.parseGridPosition(stepData["start_pos"]) ||
@@ -316,7 +316,7 @@ export class BrowseMetadataExtractor implements IBrowseMetadataExtractor {
   }
 
   /**
-   * Calculate difficulty level from actual beat data
+   * Calculate difficulty level from actual step data
    * Replaces the old parseDifficultyLevel that just read a stored value
    */
   private calculateDifficultyLevel(steps: StepData[]): string {

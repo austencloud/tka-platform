@@ -75,7 +75,7 @@ export class Phase1OverlayRenderer implements IOverlayRenderer {
       }
     }
 
-    this.drawBeatIndicator(ctx, width, height, beats, timestamp);
+    this.drawStepIndicator(ctx, width, height, beats, timestamp);
   }
 
   /** Draw the crosshair grid showing all 8+center grid positions */
@@ -216,7 +216,7 @@ export class Phase1OverlayRenderer implements IOverlayRenderer {
   }
 
   /** Draw a thin bar at the bottom indicating which beat we're in */
-  private drawBeatIndicator(
+  private drawStepIndicator(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
@@ -227,19 +227,19 @@ export class Phase1OverlayRenderer implements IOverlayRenderer {
 
     const barHeight = 6;
     const barY = height - barHeight - 2;
-    const lastBeat = beats[beats.length - 1];
-    if (!lastBeat) return;
-    const totalDuration = lastBeat.endTime;
+    const lastStep = beats[beats.length - 1];
+    if (!lastStep) return;
+    const totalDuration = lastStep.endTime;
 
     if (totalDuration <= 0) return;
 
     ctx.save();
 
     // Beat segments
-    for (const beat of beats) {
-      const x1 = (beat.startTime / totalDuration) * width;
-      const x2 = (beat.endTime / totalDuration) * width;
-      const isActive = timestamp >= beat.startTime && timestamp <= beat.endTime;
+    for (const step of beats) {
+      const x1 = (step.startTime / totalDuration) * width;
+      const x2 = (step.endTime / totalDuration) * width;
+      const isActive = timestamp >= step.startTime && timestamp <= step.endTime;
 
       ctx.fillStyle = isActive
         ? "rgba(59, 130, 246, 0.8)"

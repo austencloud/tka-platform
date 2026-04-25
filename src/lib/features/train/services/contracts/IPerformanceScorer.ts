@@ -6,7 +6,7 @@ import type {
   PerformanceGrade,
 } from "../../domain/models/PerformanceData";
 
-export interface ExpectedBeatPosition {
+export interface ExpectedStepPosition {
   stepNumber: number;
   blue: GridLocation;
   red: GridLocation;
@@ -16,7 +16,7 @@ export interface ExpectedBeatPosition {
 export interface IPerformanceScorer {
   scoreBeat(
     detected: DetectionFrame,
-    expected: ExpectedBeatPosition,
+    expected: ExpectedStepPosition,
     currentCombo: number
   ): StepResult;
 

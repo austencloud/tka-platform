@@ -52,7 +52,7 @@ export function updateRotationDirection(
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
   if (!stepData?.motions) {
-    logger.warn("Cannot update rotation direction - no beat data available");
+    logger.warn("Cannot update rotation direction - no step data available");
     return;
   }
 
@@ -105,7 +105,7 @@ export function updateRotationDirection(
     colorKey
   );
 
-  // Create updated beat data
+  // Create updated step data
   const updatedStepData = {
     ...stepData,
     motions: {
@@ -261,7 +261,7 @@ async function recalculateLetterAsync(
 
           // Update word and sequence together
           const word = stepsWithLetter
-            .map((beat) => beat.letter ?? "")
+            .map((step) => step.letter ?? "")
             .join("")
             .toUpperCase();
 

@@ -72,7 +72,7 @@
     {#if entry.ownerDisplayName}
       <span class="author-label">{t('arena_by_creator', { name: entry.ownerDisplayName })}</span>
     {/if}
-    <span class="beat-count">{t('arena_label_beats', { count: data.steps?.length || data.sequenceLength || 0 })}</span>
+    <span class="step-count">{t('arena_label_beats', { count: data.steps?.length || data.sequenceLength || 0 })}</span>
   </div>
 </div>
 
@@ -141,7 +141,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
-  .beat-count {
+  .step-count {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     margin-left: auto;

@@ -92,7 +92,7 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
         lines.push(`  red:  ${red}`);
       }
     } else {
-      lines.push("No beat data available");
+      lines.push("No step data available");
     }
 
     return lines.join("\n");

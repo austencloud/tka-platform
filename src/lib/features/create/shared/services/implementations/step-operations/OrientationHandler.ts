@@ -34,7 +34,7 @@ export function updateStepOrientation(
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
   if (!stepData?.motions) {
-    logger.warn("Cannot update orientation - no beat data available");
+    logger.warn("Cannot update orientation - no step data available");
     return;
   }
 
@@ -57,7 +57,7 @@ export function updateStepOrientation(
     colorKey
   );
 
-  // Create updated beat data with new startOrientation and recalculated endOrientation
+  // Create updated step data with new startOrientation and recalculated endOrientation
   const updatedStepData: StepData = {
     ...stepData,
     motions: {

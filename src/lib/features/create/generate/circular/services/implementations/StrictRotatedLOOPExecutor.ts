@@ -153,7 +153,7 @@ export class StrictRotatedLOOPExecutor {
     // Create the new beat with transformed attributes
     const newStep: StepData = {
       ...previousMatchingStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       startPosition: previousStep.endPosition ?? null,
       endPosition: newEndPosition,

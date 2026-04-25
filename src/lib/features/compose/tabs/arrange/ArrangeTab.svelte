@@ -406,7 +406,7 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
           cells={gridState.cells}
           gridRows={gridState.gridRows}
           gridCols={gridState.gridCols}
-          currentBeat={gridState.currentBeat}
+          currentStep={gridState.currentStep}
           isPlaying={gridState.isPlaying}
           skipStartPosition={gridState.skipStartPosition}
           selectedCellId={gridState.selectedCellId}
@@ -451,8 +451,8 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
         onSetTipEffortMap={selectedCell ? (map) => gridState.setCellTipEffortMap(selectedCell.id, map) : undefined}
         hasAnyLayers={gridState.hasAnyLayers}
         isPlaying={gridState.isPlaying}
-        currentBeat={gridState.currentBeat}
-        totalBeats={gridState.totalBeats}
+        currentStep={gridState.currentStep}
+        totalSteps={gridState.totalSteps}
         bpm={gridState.bpm}
         skipStartPosition={gridState.skipStartPosition}
         onPlayPause={handlePlayPause}
@@ -480,7 +480,7 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
     open={showStaggerControls}
     layerName={getEditingLayerName()}
     currentOffset={getEditingLayerOffset()}
-    maxOffset={gridState.totalBeats > 0 ? gridState.totalBeats - 1 : 10}
+    maxOffset={gridState.totalSteps > 0 ? gridState.totalSteps - 1 : 10}
     onClose={handleCloseStaggerControls}
     onSave={handleSaveLayerOffset}
   />

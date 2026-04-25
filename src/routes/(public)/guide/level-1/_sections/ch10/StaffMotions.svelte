@@ -5,26 +5,35 @@
 
 <GuideSection id="staff-motions" title="Staff Motions">
   <p>
-    When a hand shifts, the prop rotates through 180° (one turn). The direction
-    of rotation determines whether the motion is a <strong>prospin</strong> or
-    <strong>antispin</strong>.
+    During a shift, a prop can rotate in one of two directions — Prospin or Antispin.
   </p>
 
   <h3>Prospin</h3>
   <p>
-    The prop rotates in the same direction as the hand's travel around the grid.
-    Hand moves clockwise, prop spins clockwise.
+    The prop rotates the same direction as the handpath. A 90 degree isolation is our base unit of a prospin.
+  </p>
+  <p>
+    In a base isolation, the thumb orientation remains the same for the entire motion.
   </p>
 
   <h3>Antispin</h3>
   <p>
-    The prop rotates opposite to the hand's travel direction. Hand moves clockwise,
-    prop spins counterclockwise.
+    The prop rotates in the opposite direction of the handpath. A 90 degree antispin is our base unit of antispin.
+  </p>
+  <p>
+    In an antispin, the ends swap orientation. It moves from thumb in to thumb out.
+  </p>
+
+  <p>
+    Halfway through the motion, the center of the staff is at the grid's center point.
+  </p>
+  <p>
+    In a base dash, the thumb ends also swap orientation.
   </p>
 
   <GuideDiagram
     src="/guide/level-1/images/staff-motions/prospin-antispin.png"
     alt="Prospin: prop and hand rotate same direction. Antispin: opposite directions."
-    caption="Prospin vs antispin — the prop's rotation relative to hand travel"
+    caption="Prospin vs antispin"
   />
 </GuideSection>

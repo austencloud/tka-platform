@@ -9,7 +9,7 @@ export const LASCAUX_TABLETS_PLAQUE: PlaqueContent = {
 	subtitle: "Dordogne, France. c. 35,000 BCE\nLimestone, ochre pigment",
 	body: `Discovered in 1979 by speleologist Dr. Henri Marchand in a previously sealed chamber adjacent to the famous Lascaux cave paintings, these tablets represent the earliest known systematic notation of coordinated movement.
 
-The sequence depicted\u2014now catalogued as \u201cOOGA-1\u201d in the Proto-Kinetic Index\u2014shows a four-beat pattern using what appear to be burning branches. Analysis of wear patterns suggests these tablets were handled frequently, likely for instructional purposes.
+The sequence depicted\u2014now catalogued as \u201cOOGA-1\u201d in the Proto-Kinetic Index\u2014shows a four-step pattern using what appear to be burning branches. Analysis of wear patterns suggests these tablets were handled frequently, likely for instructional purposes.
 
 Dr. Marchand\u2019s field notes, published posthumously, describe the chamber as having \u201can almost ceremonial quality\u201d with \u201cevidence of repeated gathering.\u201d He hypothesized a \u201crehearsal space\u201d where early humans practiced firelit performances before presenting them to the larger community.
 

@@ -300,8 +300,8 @@ describe("length-based generation", () => {
 
     // Beats are steps 1..N (step 0 is start position)
     const beats = result.sequence.slice(1);
-    for (const beat of beats) {
-      expect(["α", "β", "γ"]).not.toContain(beat.letter);
+    for (const step of beats) {
+      expect(["α", "β", "γ"]).not.toContain(step.letter);
     }
   });
 

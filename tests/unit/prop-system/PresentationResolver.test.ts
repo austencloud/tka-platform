@@ -17,7 +17,7 @@ function sequenceWithCreatorIntent() {
         catDogMode: false,
       },
       effortTimeline: {
-        phrases: [{ id: "p1", effortId: "glide", startBeat: 1, endBeat: 4 }],
+        phrases: [{ id: "p1", effortId: "glide", startStep: 1, endStep: 4 }],
         transition: "hard",
       },
     },
@@ -102,7 +102,7 @@ describe("PresentationResolver", () => {
       const seq = createSequenceData({
         word: "OLD",
         effortTimeline: {
-          phrases: [{ id: "p2", effortId: "press", startBeat: 1, endBeat: 4 }],
+          phrases: [{ id: "p2", effortId: "press", startStep: 1, endStep: 4 }],
           transition: "hard",
         },
       });

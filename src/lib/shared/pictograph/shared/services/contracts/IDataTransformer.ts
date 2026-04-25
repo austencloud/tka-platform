@@ -11,6 +11,6 @@ import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 export interface IDataTransformer {
-  beatToPictographData(beat: StepData): PictographData;
+  stepToPictographData(beat: StepData): PictographData;
   adaptGridData(rawGridData: RawGridData, mode: GridMode): GridData;
 }

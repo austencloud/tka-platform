@@ -340,19 +340,19 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
     if (isLoading) {
       return selectedLength === 0
         ? "Loading all sequences..."
-        : `Loading ${selectedLength}-beat sequences...`;
+        : `Loading ${selectedLength}-step sequences...`;
     }
 
     if (pages.length === 1 && pages[0]?.isEmpty) {
       return selectedLength === 0
         ? "No sequences found"
-        : `No ${selectedLength}-beat sequences`;
+        : `No ${selectedLength}-step sequences`;
     }
 
     const pageCount = pages.length;
     const seqCount = filteredSequences.length;
     const lengthLabel =
-      selectedLength === 0 ? "all lengths" : `${selectedLength}-beat`;
+      selectedLength === 0 ? "all lengths" : `${selectedLength}-step`;
     return `${seqCount} sequence${seqCount !== 1 ? "s" : ""} (${lengthLabel}) · ${pageCount} page${pageCount !== 1 ? "s" : ""}`;
   });
 

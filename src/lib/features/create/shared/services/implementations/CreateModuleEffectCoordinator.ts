@@ -13,7 +13,7 @@ import type {
 } from "../contracts/ICreateModuleEffectCoordinator";
 import {
   createAutoEditPanelEffect,
-  createAutoBeatEditorEffect,
+  createAutoStepEditorEffect,
 } from "../../state/managers/AutoEditPanelManager.svelte";
 import { createCurrentWordDisplayEffect } from "../../state/managers/CurrentWordDisplayManager.svelte";
 import { createLayoutEffects } from "../../state/managers/LayoutManager.svelte";
@@ -123,7 +123,7 @@ export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordin
 
       // Auto Beat Editor panel effects
       cleanups.push(
-        createAutoBeatEditorEffect({
+        createAutoStepEditorEffect({
           CreateModuleState: createModuleState,
           panelState,
         })

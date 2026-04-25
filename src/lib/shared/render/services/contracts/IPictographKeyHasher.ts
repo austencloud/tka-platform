@@ -25,7 +25,7 @@ export interface IPictographKeyHasher {
   /**
    * Generate a deterministic cache key from pictograph data and visibility settings
    *
-   * @param data The pictograph or beat data
+   * @param data The pictograph or step data
    * @param visibility Visibility options that affect rendering
    * @returns A hash string suitable for use as a cache key
    */

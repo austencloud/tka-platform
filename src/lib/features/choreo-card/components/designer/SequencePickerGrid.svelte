@@ -96,7 +96,7 @@
 </script>
 
 <div class="picker-container">
-  <div class="filter-chips" role="group" aria-label="Filter by beat length">
+  <div class="filter-chips" role="group" aria-label="Filter by step length">
     {#each lengthOptions as opt (opt.value)}
       <button
         class="chip"
@@ -131,7 +131,7 @@
       <p>
         {selectedLength === 0
           ? "No sequences found"
-          : `No ${selectedLength}-beat sequences`}
+          : `No ${selectedLength}-step sequences`}
       </p>
     </div>
   {:else}

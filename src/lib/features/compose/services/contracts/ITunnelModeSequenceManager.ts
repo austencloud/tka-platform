@@ -17,7 +17,7 @@ export interface ITunnelModeSequenceManager {
    *
    * @param sequence The sequence to load
    * @param type Whether this is primary or secondary sequence
-   * @returns Fully loaded sequence with all beat data, or null on error
+   * @returns Fully loaded sequence with all step data, or null on error
    */
   loadSequence(
     sequence: SequenceData,

@@ -31,7 +31,7 @@
   let fileDragStart = $state(0);
   let fileDragEnd = $state(0);
 
-  const totalBeats = $derived(poi.totalBeats);
+  const totalSteps = $derived(poi.totalSteps);
   const bpm = $derived(poi.bpm);
   const playheadBeat = $derived(poi.playheadBeat);
   const isPlaying = $derived(poi.isTimelinePlaying);
@@ -49,14 +49,14 @@
 
   // Playhead position as a percentage of the lane width. Playhead lives
   // between beats (fractional), not on a discrete beat grid.
-  const playheadPercent = $derived((playheadBeat / totalBeats) * 100);
+  const playheadPercent = $derived((playheadBeat / totalSteps) * 100);
 
   // Preview rect while dragging
   const previewStart = $derived(Math.min(dragStartBeat, dragEndBeat));
   const previewEnd = $derived(Math.max(dragStartBeat, dragEndBeat));
-  const previewLeft = $derived(((previewStart - 1) / totalBeats) * 100);
+  const previewLeft = $derived(((previewStart - 1) / totalSteps) * 100);
   const previewWidth = $derived(
-    ((previewEnd - previewStart + 1) / totalBeats) * 100
+    ((previewEnd - previewStart + 1) / totalSteps) * 100
   );
 
   // rAF playback loop — when isPlaying, advance the playhead each frame
@@ -78,17 +78,17 @@
     return () => cancelAnimationFrame(rafId);
   });
 
-  function getBeatFromX(clientX: number): number {
+  function getStepFromX(clientX: number): number {
     if (!timelineEl) return 1;
     const rect = timelineEl.getBoundingClientRect();
     const x = clientX - rect.left;
     const ratio = x / rect.width;
-    return Math.max(1, Math.min(totalBeats, Math.ceil(ratio * totalBeats)));
+    return Math.max(1, Math.min(totalSteps, Math.ceil(ratio * totalSteps)));
   }
 
   function handlePointerDown(e: PointerEvent): void {
     if (e.button !== 0) return;
-    const beat = getBeatFromX(e.clientX);
+    const beat = getStepFromX(e.clientX);
     isDragging = true;
     dragStartBeat = beat;
     dragEndBeat = beat;
@@ -98,7 +98,7 @@
 
   function handlePointerMove(e: PointerEvent): void {
     if (!isDragging) return;
-    dragEndBeat = getBeatFromX(e.clientX);
+    dragEndBeat = getStepFromX(e.clientX);
   }
 
   function handlePointerUp(): void {
@@ -123,11 +123,11 @@
     if (!isFile && !isLibrary) return;
     e.preventDefault();
     e.dataTransfer!.dropEffect = "copy";
-    const beat = getBeatFromX(e.clientX);
+    const beat = getStepFromX(e.clientX);
     const DEFAULT_SPAN = 4;
     fileDragOver = true;
     fileDragStart = beat;
-    fileDragEnd = Math.min(totalBeats, beat + DEFAULT_SPAN - 1);
+    fileDragEnd = Math.min(totalSteps, beat + DEFAULT_SPAN - 1);
   }
 
   function handleDragLeave(e: DragEvent): void {
@@ -181,7 +181,7 @@
   function togglePlayback(): void {
     if (!isPlaying) {
       // If we're at the end, rewind to start before playing
-      if (playheadBeat >= totalBeats - 0.001) poi.setPlayheadBeat(0);
+      if (playheadBeat >= totalSteps - 0.001) poi.setPlayheadBeat(0);
     }
     poi.setIsTimelinePlaying(!isPlaying);
   }
@@ -197,26 +197,26 @@
 
   // Beat markers for the ruler
   const beats = $derived(
-    Array.from({ length: totalBeats }, (_, i) => i + 1)
+    Array.from({ length: totalSteps }, (_, i) => i + 1)
   );
 
   // Blend-zone overlays — one band per clip whose predecessor abuts it,
-  // spanning the first `blendBeats` of the clip. Shown only in blend
+  // spanning the first `blendSteps` of the clip. Shown only in blend
   // mode so the user can see where crossfades will fire during playback.
   const blendZones = $derived.by(() => {
     if (timeline.transition !== "blend") return [];
-    const beats = timeline.blendBeats ?? 1.0;
+    const beats = timeline.blendSteps ?? 1.0;
     if (beats <= 0) return [];
     const zones: Array<{ id: string; leftPct: number; widthPct: number }> = [];
     for (let i = 1; i < timeline.clips.length; i++) {
       const curr = timeline.clips[i]!;
       const prev = timeline.clips[i - 1]!;
       // Only when the previous clip immediately abuts this one
-      if (prev.endBeat + 1 !== curr.startBeat) continue;
-      const zoneStart = curr.startBeat; // 1-based inclusive
-      const zoneEnd = Math.min(curr.endBeat + 1, curr.startBeat + beats);
-      const leftPct = ((zoneStart - 1) / totalBeats) * 100;
-      const widthPct = ((zoneEnd - zoneStart) / totalBeats) * 100;
+      if (prev.endStep + 1 !== curr.startStep) continue;
+      const zoneStart = curr.startStep; // 1-based inclusive
+      const zoneEnd = Math.min(curr.endStep + 1, curr.startStep + beats);
+      const leftPct = ((zoneStart - 1) / totalSteps) * 100;
+      const widthPct = ((zoneEnd - zoneStart) / totalSteps) * 100;
       zones.push({ id: curr.id, leftPct, widthPct });
     }
     return zones;
@@ -271,13 +271,13 @@
         title="Beat count is locked to the loaded sequence"
       >
         <span class="scrub-label">Beats</span>
-        <span class="beats-locked-value">{totalBeats}</span>
+        <span class="beats-locked-value">{totalSteps}</span>
         <i class="fas fa-lock" aria-hidden="true"></i>
       </div>
     {:else}
       <ScrubValue
         label="Beats"
-        value={totalBeats}
+        value={totalSteps}
         min={1}
         max={64}
         step={1}
@@ -306,13 +306,13 @@
     {#if timeline.transition === "blend"}
       <ScrubValue
         label="Fade"
-        value={timeline.blendBeats ?? 1.0}
+        value={timeline.blendSteps ?? 1.0}
         min={0.25}
         max={4.0}
         step={0.25}
         unit=" beats"
         format={(v) => v.toFixed(2)}
-        onchange={(v) => poi.setBlendBeats(v)}
+        onchange={(v) => poi.setBlendSteps(v)}
       />
     {/if}
 
@@ -330,7 +330,7 @@
     {#each beats as beat (beat)}
       {@const step = loadedSteps[beat - 1]}
       {@const letter = step?.letter ?? null}
-      <div class="beat-marker" style:width="{100 / totalBeats}%">
+      <div class="beat-marker" style:width="{100 / totalSteps}%">
         <span class="beat-number">{beat}</span>
         {#if letter}
           <span class="beat-letter">{letter}</span>
@@ -355,7 +355,7 @@
       {#if beat > 1}
         <div
           class="beat-grid-line"
-          style:left="{((beat - 1) / totalBeats) * 100}%"
+          style:left="{((beat - 1) / totalSteps) * 100}%"
         ></div>
       {/if}
     {/each}
@@ -371,7 +371,7 @@
     {#each timeline.clips as clip (clip.id)}
       <PatternClipRegion
         {clip}
-        {totalBeats}
+        {totalSteps}
         isSelected={selectedClipId === clip.id}
         onSelect={(id) => (selectedClipId = id)}
       />
@@ -388,8 +388,8 @@
     {#if fileDragOver}
       <div
         class="file-drop-preview"
-        style:left="{((Math.min(fileDragStart, fileDragEnd) - 1) / totalBeats) * 100}%"
-        style:width="{((Math.abs(fileDragEnd - fileDragStart) + 1) / totalBeats) * 100}%"
+        style:left="{((Math.min(fileDragStart, fileDragEnd) - 1) / totalSteps) * 100}%"
+        style:width="{((Math.abs(fileDragEnd - fileDragStart) + 1) / totalSteps) * 100}%"
       >
         <i class="fas fa-image" aria-hidden="true"></i>
       </div>
@@ -567,15 +567,6 @@
     cursor: crosshair;
     touch-action: none;
     overflow: hidden;
-  }
-
-  .beat-grid-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: rgba(255, 255, 255, 0.06);
-    pointer-events: none;
   }
 
   /*

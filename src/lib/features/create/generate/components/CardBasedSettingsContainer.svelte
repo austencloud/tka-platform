@@ -473,7 +473,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       {#if card.id === "level"}
         <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
       {:else if card.id === "length"}
-        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} onBeatCapExceeded={() => { showBeatCapNudge = true; }} />
+        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} onStepCapExceeded={() => { showBeatCapNudge = true; }} />
       {:else if card.id === "word-input"}
         <WordInputCard
           {...card.props as any}

@@ -10,18 +10,18 @@
 
   interface Props {
     clip: PatternClip;
-    totalBeats: number;
+    totalSteps: number;
     isSelected: boolean;
     onSelect: (id: string | null) => void;
   }
 
-  const { clip, totalBeats, isSelected, onSelect }: Props = $props();
+  const { clip, totalSteps, isSelected, onSelect }: Props = $props();
 
   let previewCanvas = $state<HTMLCanvasElement | null>(null);
 
-  const leftPercent = $derived(((clip.startBeat - 1) / totalBeats) * 100);
+  const leftPercent = $derived(((clip.startStep - 1) / totalSteps) * 100);
   const widthPercent = $derived(
-    ((clip.endBeat - clip.startBeat + 1) / totalBeats) * 100
+    ((clip.endStep - clip.startStep + 1) / totalSteps) * 100
   );
 
   // Render a scaled 2D preview of the whole pattern — time runs left

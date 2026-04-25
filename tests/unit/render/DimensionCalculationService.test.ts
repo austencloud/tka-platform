@@ -24,7 +24,7 @@ describe("DimensionCalculationService", () => {
     // Create base options matching desktop defaults
     baseOptions = {
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addReversalSymbols: true,
       addUserInfo: true,
       addWord: true,

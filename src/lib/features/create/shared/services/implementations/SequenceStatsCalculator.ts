@@ -15,8 +15,8 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
    */
   generateSequenceWord(sequence: SequenceData): string {
     const letters = sequence.steps
-      .filter((beat) => !!beat.letter)
-      .map((beat) => beat.letter)
+      .filter((step) => !!step.letter)
+      .map((step) => step.letter)
       .filter((letter): letter is Letter => letter !== undefined)
       .join("");
 
@@ -27,7 +27,7 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
    * Calculate total duration of sequence
    */
   calculateSequenceDuration(sequence: SequenceData): number {
-    return sequence.steps.reduce((total, beat) => total + beat.duration, 0);
+    return sequence.steps.reduce((total, step) => total + step.duration, 0);
   }
 
   /**
@@ -40,14 +40,14 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
     duration: number;
   } {
     const totalSteps = sequence.steps.length;
-    const blankBeats = sequence.steps.filter((beat) => beat.isBlank).length;
-    const filledSteps = totalSteps - blankBeats;
+    const blankSteps = sequence.steps.filter((step) => step.isBlank).length;
+    const filledSteps = totalSteps - blankSteps;
     const totalDuration = this.calculateSequenceDuration(sequence);
 
     return {
       totalSteps,
       filledSteps,
-      emptySteps: blankBeats,
+      emptySteps: blankSteps,
       duration: totalDuration,
     };
   }
@@ -61,10 +61,10 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
     totalReversals: number;
   } {
     const blueReversals = sequence.steps.filter(
-      (beat) => beat.blueReversal
+      (step) => step.blueReversal
     ).length;
     const redReversals = sequence.steps.filter(
-      (beat) => beat.redReversal
+      (step) => step.redReversal
     ).length;
 
     return {

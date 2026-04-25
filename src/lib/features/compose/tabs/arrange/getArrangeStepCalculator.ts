@@ -1,7 +1,7 @@
-import type { IArrangeBeatCalculator } from './services/contracts/IArrangeBeatCalculator';
-import { ArrangeBeatCalculator } from './services/implementations/ArrangeBeatCalculator';
+import type { IArrangeStepCalculator } from './services/contracts/IArrangeStepCalculator';
+import { ArrangeStepCalculator } from './services/implementations/ArrangeStepCalculator';
 
-let instance: IArrangeBeatCalculator | null = null;
-export function getArrangeBeatCalculator(): IArrangeBeatCalculator {
-  return instance ??= new ArrangeBeatCalculator();
+let instance: IArrangeStepCalculator | null = null;
+export function getArrangeStepCalculator(): IArrangeStepCalculator {
+  return instance ??= new ArrangeStepCalculator();
 }

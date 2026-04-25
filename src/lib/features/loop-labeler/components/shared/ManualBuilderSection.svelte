@@ -85,7 +85,7 @@
         onToggleComponent={(c) => stepPairState!.actions.toggleComponent(c)}
         onSetInterval={(key, val) =>
           stepPairState!.actions.setTransformationInterval(key, val)}
-        onAddBeatPair={() => stepPairState!.actions.addBeatPair()}
+        onAddBeatPair={() => stepPairState!.actions.addStepPair()}
       />
     {:else if labelingMode === "whole" && wholeState}
       <WholeModePanel

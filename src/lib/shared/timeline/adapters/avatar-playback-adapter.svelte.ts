@@ -51,12 +51,12 @@ export function createAvatarPlaybackAdapter(
 				av.totalSteps,
 			);
 		},
-		get currentBeat() {
+		get currentStep() {
 			const av = getAvatar();
 			if (!av) return 0;
 			return av.currentStepIndex + 1;
 		},
-		get totalBeats() {
+		get totalSteps() {
 			return getAvatar()?.totalSteps ?? 0;
 		},
 		get isPlaying() {

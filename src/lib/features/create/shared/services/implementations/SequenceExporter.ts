@@ -39,8 +39,8 @@ export class SequenceExporter implements ISequenceExporter {
 
     // Process each beat AFTER start position
     if (sequenceData.steps) {
-      condensed.steps = sequenceData.steps.map((beat) =>
-        this.extractStepData(beat)
+      condensed.steps = sequenceData.steps.map((step) =>
+        this.extractStepData(step)
       );
     }
 
@@ -86,7 +86,7 @@ export class SequenceExporter implements ISequenceExporter {
   }
 
   /**
-   * Extract condensed beat data
+   * Extract condensed step data
    */
   private extractStepData(beat: StepData): CondensedStepData {
     const letter = beat.letter ?? "";

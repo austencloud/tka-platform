@@ -65,7 +65,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
 	// Synced playback state from lanSyncState
 	const playbackState = $derived(lanSyncState.playbackState);
-	const currentBeat = $derived(playbackState.currentStep);
+	const currentStep = $derived(playbackState.currentStep);
 	const isPlaying = $derived(playbackState.isPlaying);
 	const playbackSpeed = $derived(playbackState.speed);
 
@@ -226,8 +226,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 	}
 
 	function handlePrevious() {
-		if (currentBeat > 0) {
-			const target = currentBeat - 1;
+		if (currentStep > 0) {
+			const target = currentStep - 1;
 			animController?.seekToStep(target);
 			if (!isSoloMode) {
 				lanSyncState.updatePlayback({ currentStep: target, isPlaying: false });
@@ -237,8 +237,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
 	function handleNext() {
 		const maxBeat = sequence?.steps?.length ?? 0;
-		if (currentBeat < maxBeat) {
-			const target = currentBeat + 1;
+		if (currentStep < maxBeat) {
+			const target = currentStep + 1;
 			animController?.seekToStep(target);
 			if (!isSoloMode) {
 				lanSyncState.updatePlayback({ currentStep: target, isPlaying: false });
@@ -362,9 +362,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 					{/if}
 				</div>
 
-				<!-- Beat indicator -->
-				<div class="beat-indicator">
-					{t('connect_beat_of', { current: currentBeat, total: sequence.steps?.length ?? 0 })}
+				<!-- Step indicator -->
+				<div class="step-indicator">
+					{t('connect_beat_of', { current: currentStep, total: sequence.steps?.length ?? 0 })}
 				</div>
 			{/if}
 		</main>
@@ -373,7 +373,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 		<footer class="viewer-footer">
 			<SessionControls
 				{isPlaying}
-				{currentBeat}
+				{currentStep}
 				maxBeat={sequence?.steps?.length ?? 0}
 				disabled={isSoloMode}
 				onPlay={handlePlay}
@@ -552,15 +552,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 		justify-content: center;
 	}
 
-	.animation-.pictograph-container {
-		width: 100%;
-		height: 100%;
-		max-width: 600px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
 	.split-container {
 		width: 100%;
 		height: 100%;
@@ -577,7 +568,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 		overflow: hidden;
 	}
 
-	.beat-indicator {
+	.step-indicator {
 		position: absolute;
 		bottom: 16px;
 		left: 50%;

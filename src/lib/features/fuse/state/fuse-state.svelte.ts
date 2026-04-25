@@ -72,7 +72,7 @@ export function createFuseState(deps: FuseStateDeps) {
 	let rightController: IAnimationPlaybackController | null = null;
 
 	// Shared beat clock — single rAF loop drives all panels
-	let currentBeat = $state(0);
+	let currentStep = $state(0);
 	let clockRunning = $state(false);
 	let clockAnimFrameId: number | null = null;
 	let lastClockTimestamp: number | null = null;
@@ -99,7 +99,7 @@ export function createFuseState(deps: FuseStateDeps) {
 			if (lastClockTimestamp !== null) {
 				const deltaMs = now - lastClockTimestamp;
 				const beatsPerMs = bpm / 60_000;
-				currentBeat += deltaMs * beatsPerMs;
+				currentStep += deltaMs * beatsPerMs;
 			}
 			lastClockTimestamp = now;
 			tickClock();
@@ -162,7 +162,7 @@ export function createFuseState(deps: FuseStateDeps) {
 			}
 
 			const result = sequenceFuser.fuse(blue, red, {
-				maxBeats: matchLengths
+				maxSteps: matchLengths
 					? Math.min(
 							leftSequence.steps.length || 8,
 							rightSequence.steps.length || 8
@@ -186,7 +186,7 @@ export function createFuseState(deps: FuseStateDeps) {
 
 	function reset() {
 		stopClock();
-		currentBeat = 0;
+		currentStep = 0;
 		phase = "browse";
 		leftSequence = null;
 		rightSequence = null;
@@ -272,7 +272,7 @@ export function createFuseState(deps: FuseStateDeps) {
 		get canFuse() {
 			return canFuse;
 		},
-		get currentBeat() { return currentBeat; },
+		get currentStep() { return currentStep; },
 		get clockRunning() { return clockRunning; },
 		startClock,
 		stopClock,

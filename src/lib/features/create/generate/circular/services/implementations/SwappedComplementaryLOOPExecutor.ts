@@ -135,7 +135,7 @@ export class SwappedInvertedLOOPExecutor {
     //      Then motion types and rotations are flipped (INVERTED)
     const newStep: StepData = {
       ...previousMatchingStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       letter: invertedLetter, // INVERTED
       startPosition: previousStep.endPosition ?? null,

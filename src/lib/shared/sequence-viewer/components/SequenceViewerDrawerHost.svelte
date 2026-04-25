@@ -560,7 +560,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
                         <ExportImagePanel
                           exportOptions={ctx.exportOptions}
                           isExporting={ctx.isExporting}
-                          beatCount={ctx.effectiveSequence?.steps?.length ?? 0}
+                          stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
                           layout="sidebar"
                           onExport={ctx.handleExport}
                           onClose={ctx.exitEditMode}
@@ -623,7 +623,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
                 <ExportImagePanel
                   exportOptions={ctx.exportOptions}
                   isExporting={ctx.isExporting}
-                  beatCount={ctx.effectiveSequence.steps?.length ?? 0}
+                  stepCount={ctx.effectiveSequence.steps?.length ?? 0}
                   layout="bottom"
                   onExport={ctx.handleExport}
                   onClose={ctx.exitEditMode}

@@ -113,7 +113,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     // Could store this for training data later
   }
 
-  // Current beat data for animation
+  // Current step data for animation
   let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
     const currentStep = animationState.currentStep;

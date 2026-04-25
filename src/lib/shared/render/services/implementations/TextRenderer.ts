@@ -254,7 +254,7 @@ export class TextRenderer implements ITextRenderer {
     userInfo: UserExportInfo,
     _options: TextRenderOptions,
     footerHeight: number = 60,
-    _beatCount: number = 3,
+    _stepCount: number = 3,
     darkMode: boolean = false,
     showFlags?: {
       showCreatorName?: boolean;

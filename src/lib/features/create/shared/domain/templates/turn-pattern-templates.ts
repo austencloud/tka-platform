@@ -110,7 +110,7 @@ export function getPatternComplexity(
 // =============================================================================
 
 /**
- * 8-beat template patterns organized by complexity
+ * 8-step template patterns organized by complexity
  */
 export const EIGHT_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================
@@ -281,7 +281,7 @@ export const EIGHT_BEAT_TEMPLATES: TurnPatternTemplate[] = [
 // =============================================================================
 
 /**
- * 16-beat template patterns organized by complexity
+ * 16-step template patterns organized by complexity
  */
 export const SIXTEEN_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================

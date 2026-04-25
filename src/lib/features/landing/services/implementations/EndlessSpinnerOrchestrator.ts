@@ -94,10 +94,10 @@ function validateMotionData(
   }
 
   // Check each beat
-  sequence.steps?.forEach((beat, idx) => {
+  sequence.steps?.forEach((step, idx) => {
     const stepNum = idx + 1;
-    const blue = beat.motions?.[MotionColor.BLUE];
-    const red = beat.motions?.[MotionColor.RED];
+    const blue = step.motions?.[MotionColor.BLUE];
+    const red = step.motions?.[MotionColor.RED];
 
     if (blue) {
       if (blue.gridMode !== seqGridMode) {
@@ -663,14 +663,14 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
     // Update grid mode on all steps AND their motions
     if (updatedSequence.steps?.length) {
-      updatedSequence.steps = updatedSequence.steps.map((beat) => {
-        const blueMotion = beat.motions?.[MotionColor.BLUE];
-        const redMotion = beat.motions?.[MotionColor.RED];
+      updatedSequence.steps = updatedSequence.steps.map((step) => {
+        const blueMotion = step.motions?.[MotionColor.BLUE];
+        const redMotion = step.motions?.[MotionColor.RED];
         return {
-          ...beat,
+          ...step,
           gridMode,
           motions: {
-            ...beat.motions,
+            ...step.motions,
             [MotionColor.BLUE]: blueMotion
               ? { ...blueMotion, gridMode }
               : undefined,

@@ -92,17 +92,17 @@
           class:active={stepPlaybackStepSize === 1}
           onclick={() => onStepPlaybackStepSizeChange(1)}
           type="button"
-          aria-label="Step by full beat"
+          aria-label="Step by full step"
           aria-pressed={stepPlaybackStepSize === 1}
         >
-          Beat
+          Step
         </button>
         <button
           class="step-chip"
           class:active={stepPlaybackStepSize === 0.5}
           onclick={() => onStepPlaybackStepSizeChange(0.5)}
           type="button"
-          aria-label="Step by half beat"
+          aria-label="Step by half step"
           aria-pressed={stepPlaybackStepSize === 0.5}
         >
           Half

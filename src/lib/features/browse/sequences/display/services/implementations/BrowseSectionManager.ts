@@ -213,8 +213,8 @@ export class BrowseSectionManager implements IBrowseSectionManager {
     switch (groupBy) {
       case "letter": {
         // Key format: "A|4" or "W-|4" (letter|beatcount, where letter might be "W-")
-        const [letter = "", beatCountStr = "0"] = key.split("|");
-        const steps = parseInt(beatCountStr) || 0;
+        const [letter = "", stepCountStr = "0"] = key.split("|");
+        const steps = parseInt(stepCountStr) || 0;
         // Use parentheses to avoid double dash with letters like "W-"
         return `${letter} (${steps} steps) (${countText})`;
       }
@@ -418,9 +418,9 @@ export class BrowseSectionManager implements IBrowseSectionManager {
       case "letter": {
         // Key format: "A|4" or "W-|4" (letter|beatcount, where letter might be "W-")
         // Sort by letter position in kinetic alphabet, then by beat count
-        const [letter = "", beatCountStr = "0"] = key.split("|");
+        const [letter = "", stepCountStr = "0"] = key.split("|");
         const letterIndex = KINETIC_ALPHABET_ORDER.indexOf(letter);
-        const beatOrder = parseInt(beatCountStr) || 0;
+        const beatOrder = parseInt(stepCountStr) || 0;
 
         // Return: (letter position * 10000) + beat count
         // This ensures A comes before B, W comes before W-, etc.

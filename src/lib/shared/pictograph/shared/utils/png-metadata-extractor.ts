@@ -303,7 +303,7 @@ export class PngMetadataExtractor {
    *
    * This shows the entire JSON metadata structure including:
    * - Author, level, start position (from first entry)
-   * - All beat data with motion types and attributes
+   * - All step data with motion types and attributes
    * - Any other fields in the unified metadata
    *
    * @param sequenceName - Name of the sequence to analyze

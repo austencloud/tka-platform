@@ -13,10 +13,10 @@ export interface IStepCalculator {
     steps: readonly StepData[],
     totalSteps: number
   ): StepCalculationResult;
-  validateBeats(steps: readonly StepData[]): boolean;
-  getBeatSafely(steps: readonly StepData[], index: number): StepData | null;
+  validateSteps(steps: readonly StepData[]): boolean;
+  getStepSafely(steps: readonly StepData[], index: number): StepData | null;
   calculateTotalDuration(steps: readonly StepData[]): number;
-  findBeatByNumber(
+  findStepByNumber(
     steps: readonly StepData[],
     stepNumber: number
   ): StepData | null;
@@ -26,7 +26,7 @@ export interface IStepCalculator {
    * Accounts for variable beat durations.
    *
    * @param timePosition - Position in "duration units" (0 to totalDuration)
-   * @param steps - Array of beat data with durations
+   * @param steps - Array of step data with durations
    * @returns Beat index and progress (0-1) within that beat
    */
   mapTimePositionToBeat(
@@ -37,17 +37,17 @@ export interface IStepCalculator {
   /**
    * Calculate the time position where a specific beat starts.
    * @param stepIndex - The 0-based beat index
-   * @param steps - Array of beat data
+   * @param steps - Array of step data
    * @returns The cumulative time position where this beat begins
    */
-  getBeatStartTime(stepIndex: number, steps: readonly StepData[]): number;
+  getStepStartTime(stepIndex: number, steps: readonly StepData[]): number;
 
   /**
    * Calculate beat state using duration-aware timing.
    * Uses actual beat durations to determine current beat and progress.
    *
    * @param timePosition - Current position in sequence time (0 to totalDuration)
-   * @param steps - Array of beat data
+   * @param steps - Array of step data
    * @returns Calculation result with beat index and progress
    */
   calculateBeatStateDurationAware(

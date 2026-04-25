@@ -56,8 +56,8 @@
   });
 
   const beatSteps = $derived<StepData[]>(
-    createTutorialState.beats.map((beat, i) =>
-      pictographDataToStepData(beat, beat.id ?? `tutorial-beat-${i}`),
+    createTutorialState.beats.map((step, i) =>
+      pictographDataToStepData(step, step.id ?? `tutorial-beat-${i}`),
     ),
   );
 

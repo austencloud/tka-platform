@@ -554,13 +554,6 @@
     }
   }
 
-  .step-counter {
-    margin-left: auto;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-  }
-
   /* ============================================================
    * ERROR
    * ============================================================ */

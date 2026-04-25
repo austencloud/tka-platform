@@ -22,14 +22,14 @@ export function computeElapsed(
   durations: number[],
 ): number {
   if (currentStep < 1 || durations.length === 0) return 0;
-  const beatIndex = Math.floor(currentStep) - 1;
+  const stepNumber = Math.floor(currentStep) - 1;
   const frac = currentStep - Math.floor(currentStep);
   let elapsed = 0;
-  for (let i = 0; i < Math.min(beatIndex, durations.length); i++) {
+  for (let i = 0; i < Math.min(stepNumber, durations.length); i++) {
     elapsed += durations[i]!;
   }
-  if (beatIndex < durations.length) {
-    elapsed += frac * durations[beatIndex]!;
+  if (stepNumber < durations.length) {
+    elapsed += frac * durations[stepNumber]!;
   }
   return elapsed;
 }
@@ -59,10 +59,10 @@ export function createAnimatorPlaybackAdapter(
         params.getSteps().length,
       );
     },
-    get currentBeat() {
+    get currentStep() {
       return computeCurrentBeat(params.getCurrentStep());
     },
-    get totalBeats() {
+    get totalSteps() {
       return params.getSteps().length;
     },
     get isPlaying() {

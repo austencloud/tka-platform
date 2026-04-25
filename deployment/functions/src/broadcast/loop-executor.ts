@@ -13,7 +13,7 @@ import {
   LOOPTypeValue,
   SliceSize,
   SliceSizeValue,
-  BeatData,
+  StepBeatData,
   MotionData,
 } from "./types";
 import {
@@ -30,7 +30,7 @@ import {
 /**
  * Deep clone a beat
  */
-function cloneBeat(beat: BeatData): BeatData {
+function cloneStep(beat: StepBeatData): StepBeatData {
   return JSON.parse(JSON.stringify(beat));
 }
 
@@ -38,7 +38,7 @@ function cloneBeat(beat: BeatData): BeatData {
  * Validate that the sequence can perform the requested LOOP
  */
 function validateSequence(
-  sequence: BeatData[],
+  sequence: StepBeatData[],
   sliceSize: SliceSizeValue,
   loopType: LOOPTypeValue
 ): void {
@@ -154,8 +154,8 @@ function applyMirrorToMotion(motion: MotionData): MotionData {
 /**
  * Apply swap transformation (swap blue and red)
  */
-function applySwapToBeat(beat: BeatData): BeatData {
-  const swapped = cloneBeat(beat);
+function applySwapToBeat(beat: StepBeatData): StepBeatData {
+  const swapped = cloneStep(beat);
   const tempBlue = { ...beat.blue };
   swapped.blue = { ...beat.red };
   swapped.red = tempBlue;
@@ -201,45 +201,45 @@ function calculateEndPosition(blueEndLoc: string, redEndLoc: string): string | n
  * Each subsequent section is rotated 90° (quartered) or 180° (halved)
  */
 function executeStrictRotated(
-  sequence: BeatData[],
+  sequence: StepBeatData[],
   sliceSize: SliceSizeValue
-): BeatData[] {
+): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
   const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
   const finalLength = sequenceLength + entriesToAdd;
   const indexMap = getIndexMap(sliceSize, finalLength);
 
-  let lastBeat = sequence[sequence.length - 1]!;
-  let nextBeatNumber = lastBeat.beatNumber + 1;
+  let lastStep = sequence[sequence.length - 1]!;
+  let nextStepNumber = lastStep.stepNumber + 1;
 
   for (let i = 0; i < entriesToAdd; i++) {
-    const matchingBeatNumber = indexMap[nextBeatNumber];
+    const matchingBeatNumber = indexMap[nextStepNumber];
     if (matchingBeatNumber === undefined) continue;
 
     const matchingBeat = sequence[matchingBeatNumber - 1];
     if (!matchingBeat) continue;
 
     // Transform motions based on hand rotation
-    const newBlue = transformMotionForRotation(matchingBeat.blue, lastBeat.blue);
-    const newRed = transformMotionForRotation(matchingBeat.red, lastBeat.red);
+    const newBlue = transformMotionForRotation(matchingBeat.blue, lastStep.blue);
+    const newRed = transformMotionForRotation(matchingBeat.red, lastStep.red);
 
     // Calculate new end position
     const newEndPosition = calculateEndPosition(newBlue.endLocation, newRed.endLocation);
 
-    const newBeat: BeatData = {
+    const newStep: StepBeatData = {
       ...matchingBeat,
-      id: `beat-${nextBeatNumber}-${Date.now()}`,
-      beatNumber: nextBeatNumber,
-      startPosition: lastBeat.endPosition,
-      endPosition: newEndPosition ?? lastBeat.endPosition,
+      id: `beat-${nextStepNumber}-${Date.now()}`,
+      stepNumber: nextStepNumber,
+      startPosition: lastStep.endPosition,
+      endPosition: newEndPosition ?? lastStep.endPosition,
       blue: newBlue,
       red: newRed,
     };
 
-    sequence.push(newBeat);
-    lastBeat = newBeat;
-    nextBeatNumber++;
+    sequence.push(newStep);
+    lastStep = newStep;
+    nextStepNumber++;
   }
 
   sequence.unshift(startPosition);
@@ -251,15 +251,15 @@ function executeStrictRotated(
  * Second half is horizontally mirrored
  */
 function executeStrictMirrored(
-  sequence: BeatData[],
+  sequence: StepBeatData[],
   sliceSize: SliceSizeValue
-): BeatData[] {
+): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
   const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
 
-  let lastBeat = sequence[sequence.length - 1]!;
-  let nextBeatNumber = lastBeat.beatNumber + 1;
+  let lastStep = sequence[sequence.length - 1]!;
+  let nextStepNumber = lastStep.stepNumber + 1;
 
   // For mirrored, we iterate through the original sequence in reverse
   for (let i = sequenceLength - 1; i >= 0; i--) {
@@ -271,8 +271,8 @@ function executeStrictMirrored(
     const newRed = applyMirrorToMotion(matchingBeat.red);
 
     // Update locations to chain from previous beat
-    newBlue.startLocation = lastBeat.blue.endLocation;
-    newRed.startLocation = lastBeat.red.endLocation;
+    newBlue.startLocation = lastStep.blue.endLocation;
+    newRed.startLocation = lastStep.red.endLocation;
 
     // For mirror, the end location is the mirrored version of the start location
     newBlue.endLocation = LOCATION_MAP_MIRROR[matchingBeat.blue.startLocation] ?? matchingBeat.blue.startLocation;
@@ -280,19 +280,19 @@ function executeStrictMirrored(
 
     const newEndPosition = calculateEndPosition(newBlue.endLocation, newRed.endLocation);
 
-    const newBeat: BeatData = {
+    const newStep: StepBeatData = {
       ...matchingBeat,
-      id: `beat-${nextBeatNumber}-${Date.now()}`,
-      beatNumber: nextBeatNumber,
-      startPosition: lastBeat.endPosition,
+      id: `beat-${nextStepNumber}-${Date.now()}`,
+      stepNumber: nextStepNumber,
+      startPosition: lastStep.endPosition,
       endPosition: newEndPosition ?? startPosition.startPosition,
       blue: newBlue,
       red: newRed,
     };
 
-    sequence.push(newBeat);
-    lastBeat = newBeat;
-    nextBeatNumber++;
+    sequence.push(newStep);
+    lastStep = newStep;
+    nextStepNumber++;
 
     if (sequence.length >= sequenceLength + entriesToAdd) break;
   }
@@ -306,15 +306,15 @@ function executeStrictMirrored(
  * Second half has blue and red swapped
  */
 function executeStrictSwapped(
-  sequence: BeatData[],
+  sequence: StepBeatData[],
   sliceSize: SliceSizeValue
-): BeatData[] {
+): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
   const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
 
-  let lastBeat = sequence[sequence.length - 1]!;
-  let nextBeatNumber = lastBeat.beatNumber + 1;
+  let lastStep = sequence[sequence.length - 1]!;
+  let nextStepNumber = lastStep.stepNumber + 1;
 
   for (let i = 0; i < Math.min(entriesToAdd, sequenceLength); i++) {
     const matchingBeat = sequence[i];
@@ -324,25 +324,25 @@ function executeStrictSwapped(
     const swappedBeat = applySwapToBeat(matchingBeat);
 
     // Chain from previous beat
-    swappedBeat.blue.startLocation = lastBeat.blue.endLocation;
-    swappedBeat.red.startLocation = lastBeat.red.endLocation;
+    swappedBeat.blue.startLocation = lastStep.blue.endLocation;
+    swappedBeat.red.startLocation = lastStep.red.endLocation;
 
     const newEndPosition = calculateEndPosition(
       swappedBeat.blue.endLocation,
       swappedBeat.red.endLocation
     );
 
-    const newBeat: BeatData = {
+    const newStep: StepBeatData = {
       ...swappedBeat,
-      id: `beat-${nextBeatNumber}-${Date.now()}`,
-      beatNumber: nextBeatNumber,
-      startPosition: lastBeat.endPosition,
-      endPosition: newEndPosition ?? lastBeat.endPosition,
+      id: `beat-${nextStepNumber}-${Date.now()}`,
+      stepNumber: nextStepNumber,
+      startPosition: lastStep.endPosition,
+      endPosition: newEndPosition ?? lastStep.endPosition,
     };
 
-    sequence.push(newBeat);
-    lastBeat = newBeat;
-    nextBeatNumber++;
+    sequence.push(newStep);
+    lastStep = newStep;
+    nextStepNumber++;
   }
 
   sequence.unshift(startPosition);
@@ -354,15 +354,15 @@ function executeStrictSwapped(
  * Second half has pro/anti inverted and rotation reversed
  */
 function executeStrictInverted(
-  sequence: BeatData[],
+  sequence: StepBeatData[],
   sliceSize: SliceSizeValue
-): BeatData[] {
+): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
   const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
 
-  let lastBeat = sequence[sequence.length - 1]!;
-  let nextBeatNumber = lastBeat.beatNumber + 1;
+  let lastStep = sequence[sequence.length - 1]!;
+  let nextStepNumber = lastStep.stepNumber + 1;
 
   for (let i = 0; i < Math.min(entriesToAdd, sequenceLength); i++) {
     const matchingBeat = sequence[i];
@@ -373,24 +373,24 @@ function executeStrictInverted(
     const newRed = applyInvertToMotion(matchingBeat.red);
 
     // Chain from previous beat
-    newBlue.startLocation = lastBeat.blue.endLocation;
-    newRed.startLocation = lastBeat.red.endLocation;
+    newBlue.startLocation = lastStep.blue.endLocation;
+    newRed.startLocation = lastStep.red.endLocation;
 
     const newEndPosition = calculateEndPosition(newBlue.endLocation, newRed.endLocation);
 
-    const newBeat: BeatData = {
+    const newStep: StepBeatData = {
       ...matchingBeat,
-      id: `beat-${nextBeatNumber}-${Date.now()}`,
-      beatNumber: nextBeatNumber,
-      startPosition: lastBeat.endPosition,
-      endPosition: newEndPosition ?? lastBeat.endPosition,
+      id: `beat-${nextStepNumber}-${Date.now()}`,
+      stepNumber: nextStepNumber,
+      startPosition: lastStep.endPosition,
+      endPosition: newEndPosition ?? lastStep.endPosition,
       blue: newBlue,
       red: newRed,
     };
 
-    sequence.push(newBeat);
-    lastBeat = newBeat;
-    nextBeatNumber++;
+    sequence.push(newStep);
+    lastStep = newStep;
+    nextStepNumber++;
   }
 
   sequence.unshift(startPosition);
@@ -401,21 +401,21 @@ function executeStrictInverted(
  * Execute compound LOOP types by combining transformations
  */
 function executeCompoundLoop(
-  sequence: BeatData[],
+  sequence: StepBeatData[],
   sliceSize: SliceSizeValue,
   loopType: LOOPTypeValue
-): BeatData[] {
+): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
   const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
   const finalLength = sequenceLength + entriesToAdd;
   const indexMap = getIndexMap(sliceSize, finalLength);
 
-  let lastBeat = sequence[sequence.length - 1]!;
-  let nextBeatNumber = lastBeat.beatNumber + 1;
+  let lastStep = sequence[sequence.length - 1]!;
+  let nextStepNumber = lastStep.stepNumber + 1;
 
   for (let i = 0; i < entriesToAdd; i++) {
-    const matchingBeatNumber = indexMap[nextBeatNumber];
+    const matchingBeatNumber = indexMap[nextStepNumber];
     const matchingBeatIndex = matchingBeatNumber !== undefined ? matchingBeatNumber - 1 : i % sequenceLength;
     const matchingBeat = sequence[matchingBeatIndex];
     if (!matchingBeat) continue;
@@ -427,8 +427,8 @@ function executeCompoundLoop(
     switch (loopType) {
       case LOOPType.ROTATED_SWAPPED:
         // Rotation then swap
-        newBlue = transformMotionForRotation(matchingBeat.blue, lastBeat.blue);
-        newRed = transformMotionForRotation(matchingBeat.red, lastBeat.red);
+        newBlue = transformMotionForRotation(matchingBeat.blue, lastStep.blue);
+        newRed = transformMotionForRotation(matchingBeat.red, lastStep.red);
         const tempRS = newBlue;
         newBlue = newRed;
         newRed = tempRS;
@@ -445,8 +445,8 @@ function executeCompoundLoop(
 
       case LOOPType.ROTATED_INVERTED:
         // Rotation then invert
-        newBlue = transformMotionForRotation(matchingBeat.blue, lastBeat.blue);
-        newRed = transformMotionForRotation(matchingBeat.red, lastBeat.red);
+        newBlue = transformMotionForRotation(matchingBeat.blue, lastStep.blue);
+        newRed = transformMotionForRotation(matchingBeat.red, lastStep.red);
         newBlue = applyInvertToMotion(newBlue);
         newRed = applyInvertToMotion(newRed);
         break;
@@ -463,8 +463,8 @@ function executeCompoundLoop(
         // Mirror then rotation
         newBlue = applyMirrorToMotion(matchingBeat.blue);
         newRed = applyMirrorToMotion(matchingBeat.red);
-        newBlue = transformMotionForRotation(newBlue, lastBeat.blue);
-        newRed = transformMotionForRotation(newRed, lastBeat.red);
+        newBlue = transformMotionForRotation(newBlue, lastStep.blue);
+        newRed = transformMotionForRotation(newRed, lastStep.red);
         break;
 
       case LOOPType.SWAPPED_INVERTED:
@@ -480,35 +480,35 @@ function executeCompoundLoop(
         newRed = applyMirrorToMotion(matchingBeat.red);
         newBlue = applyInvertToMotion(newBlue);
         newRed = applyInvertToMotion(newRed);
-        newBlue = transformMotionForRotation(newBlue, lastBeat.blue);
-        newRed = transformMotionForRotation(newRed, lastBeat.red);
+        newBlue = transformMotionForRotation(newBlue, lastStep.blue);
+        newRed = transformMotionForRotation(newRed, lastStep.red);
         break;
 
       default:
         // Fallback to rotation
-        newBlue = transformMotionForRotation(matchingBeat.blue, lastBeat.blue);
-        newRed = transformMotionForRotation(matchingBeat.red, lastBeat.red);
+        newBlue = transformMotionForRotation(matchingBeat.blue, lastStep.blue);
+        newRed = transformMotionForRotation(matchingBeat.red, lastStep.red);
     }
 
     // Ensure chaining from previous beat
-    newBlue.startLocation = lastBeat.blue.endLocation;
-    newRed.startLocation = lastBeat.red.endLocation;
+    newBlue.startLocation = lastStep.blue.endLocation;
+    newRed.startLocation = lastStep.red.endLocation;
 
     const newEndPosition = calculateEndPosition(newBlue.endLocation, newRed.endLocation);
 
-    const newBeat: BeatData = {
+    const newStep: StepBeatData = {
       ...matchingBeat,
-      id: `beat-${nextBeatNumber}-${Date.now()}`,
-      beatNumber: nextBeatNumber,
-      startPosition: lastBeat.endPosition,
-      endPosition: newEndPosition ?? lastBeat.endPosition,
+      id: `beat-${nextStepNumber}-${Date.now()}`,
+      stepNumber: nextStepNumber,
+      startPosition: lastStep.endPosition,
+      endPosition: newEndPosition ?? lastStep.endPosition,
       blue: newBlue,
       red: newRed,
     };
 
-    sequence.push(newBeat);
-    lastBeat = newBeat;
-    nextBeatNumber++;
+    sequence.push(newStep);
+    lastStep = newStep;
+    nextStepNumber++;
   }
 
   sequence.unshift(startPosition);
@@ -519,12 +519,12 @@ function executeCompoundLoop(
  * Execute LOOP transformation on a partial sequence
  */
 export function executeLOOP(
-  partialBeats: BeatData[],
+  partialBeats: StepBeatData[],
   loopType: LOOPTypeValue,
   sliceSize: SliceSizeValue
-): BeatData[] {
+): StepBeatData[] {
   // Clone the beats to avoid mutation
-  const sequence = partialBeats.map(cloneBeat);
+  const sequence = partialBeats.map(cloneStep);
 
   // Validate sequence
   validateSequence(sequence, sliceSize, loopType);

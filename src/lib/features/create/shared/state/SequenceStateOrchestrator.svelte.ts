@@ -384,7 +384,7 @@ export function createSequenceState(services: SequenceStateServices) {
 
       // Reduced delay to match the beat-grid CSS transition (300ms)
       // This allows the clearing animation and layout transition to happen simultaneously
-      // The CSS transition on .beat-grid.clearing is 300ms, so we wait for it to complete
+      // The CSS transition on .step-grid.clearing is 300ms, so we wait for it to complete
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // 🐛 FIX: Cancel any pending auto-save AND prevent new one from being set
@@ -630,8 +630,8 @@ export function createSequenceState(services: SequenceStateServices) {
     selectStep,
     clearSelection: () => selectionState.clearSelection(),
     selectStartPositionForEditing: () => selectionState.selectStartPosition(),
-    isBeatSelected: (stepNumber: number) =>
-      selectionState.isBeatSelected(stepNumber),
+    isStepSelected: (stepNumber: number) =>
+      selectionState.isStepSelected(stepNumber),
     setSelectedStartPosition,
 
     // Grid mode
@@ -657,15 +657,15 @@ export function createSequenceState(services: SequenceStateServices) {
     // Beat operations - delegate to facade
     addStep: (stepData?: Partial<StepData>) => stepOperations.addStep(stepData),
     removeStep: (stepIndex: number) => stepOperations.removeStep(stepIndex),
-    removeBeatWithAnimation: (stepIndex: number, onComplete?: () => void) =>
-      stepOperations.removeBeatWithAnimation(stepIndex, onComplete),
-    removeBeatAndSubsequent: (stepIndex: number) =>
-      stepOperations.removeBeatAndSubsequent(stepIndex),
-    removeBeatAndSubsequentWithAnimation: (
+    removeStepWithAnimation: (stepIndex: number, onComplete?: () => void) =>
+      stepOperations.removeStepWithAnimation(stepIndex, onComplete),
+    removeStepAndSubsequent: (stepIndex: number) =>
+      stepOperations.removeStepAndSubsequent(stepIndex),
+    removeStepAndSubsequentWithAnimation: (
       stepIndex: number,
       onComplete?: () => void
     ) =>
-      stepOperations.removeBeatAndSubsequentWithAnimation(
+      stepOperations.removeStepAndSubsequentWithAnimation(
         stepIndex,
         onComplete
       ),

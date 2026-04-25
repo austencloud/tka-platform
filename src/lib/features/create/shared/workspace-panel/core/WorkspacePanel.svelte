@@ -183,7 +183,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
     <div class="sequence-display-container">
       <SequenceDisplay
         {sequenceState}
-        onBeatSelected={handleBeatSelected}
+        onStepSelected={handleBeatSelected}
         onStartPositionSelected={handleStartPositionSelected}
         onStepDelete={handleStepDelete}
         selectedStepNumber={effectiveSelectedStepNumber}

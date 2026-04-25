@@ -1,7 +1,7 @@
 /**
  * Sequence Difficulty Calculator Implementation
  *
- * Analyzes sequence beat data to determine difficulty level based on:
+ * Analyzes sequence step data to determine difficulty level based on:
  * - Turn values (0, whole numbers, half values, floats)
  * - Orientation types (radial IN/OUT vs non-radial CLOCK/COUNTER)
  */
@@ -25,11 +25,11 @@ export class SequenceDifficultyCalculator implements ISequenceDifficultyCalculat
     let hasNonRadial = false;
     let hasTurns = false;
 
-    for (const beat of steps) {
-      if (!beat.motions) continue;
+    for (const step of steps) {
+      if (!step.motions) continue;
 
-      const blueMotion = beat.motions[MotionColor.BLUE];
-      const redMotion = beat.motions[MotionColor.RED];
+      const blueMotion = step.motions[MotionColor.BLUE];
+      const redMotion = step.motions[MotionColor.RED];
 
       if (this.hasNonRadialOrientation(blueMotion, redMotion)) {
         hasNonRadial = true;

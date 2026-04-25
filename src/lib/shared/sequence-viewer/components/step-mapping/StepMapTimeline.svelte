@@ -178,29 +178,6 @@
   }
 
   /* ============================================================
-   * BEAT LABELS
-   * ============================================================ */
-
-  .step-labels {
-    position: relative;
-    height: 16px;
-  }
-
-  .step-label {
-    position: absolute;
-    transform: translateX(-50%);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    pointer-events: none;
-    transition: color 0.15s ease;
-  }
-
-  .step-label.active {
-    color: var(--theme-accent, #6366f1);
-  }
-
-  /* ============================================================
    * TIMELINE BAR
    * ============================================================ */
 
@@ -334,7 +311,6 @@
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .step-label,
     .marker-line,
     .marker-handle,
     .progress-fill,

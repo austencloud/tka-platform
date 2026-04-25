@@ -56,7 +56,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
         ? (applyToMotions(sequence.startPosition) as StartPositionData)
         : undefined,
       steps:
-        sequence.steps?.map((beat) => applyToMotions(beat) as StepData) ?? [],
+        sequence.steps?.map((step) => applyToMotions(step) as StepData) ?? [],
     };
   }
 
@@ -116,7 +116,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     return null;
   });
 
-  // Current beat data for AnimatorCanvas
+  // Current step data for AnimatorCanvas
   let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
     const currentStep = animationState.currentStep;

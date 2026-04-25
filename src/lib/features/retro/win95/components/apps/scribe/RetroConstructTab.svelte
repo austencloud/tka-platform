@@ -37,7 +37,7 @@
   let phase = $state<"start" | "build">("start");
   let startPosition = $state<string | null>(null);
   let beats = $state<Beat[]>([]);
-  let selectedBeatIndex = $state(-1);
+  let selectedStepIndex = $state(-1);
 
   /* ------------------------------------------------------------------ */
   /* Start positions (Alpha / Beta / Gamma)                              */
@@ -87,30 +87,30 @@
   /* Beat operations                                                     */
   /* ------------------------------------------------------------------ */
 
-  function addBeat(letter: string) {
+  function addStep(letter: string) {
     beats.push({
       letter,
       pictograph: createMockPictographData(letter),
     });
-    selectedBeatIndex = beats.length - 1;
+    selectedStepIndex = beats.length - 1;
     onstatuschange?.(`Beats: ${beats.length} | Added: ${letter}`);
   }
 
-  function removeBeat(index: number) {
+  function removeStep(index: number) {
     if (index < 0 || index >= beats.length) return;
     beats.splice(index, 1);
-    selectedBeatIndex = Math.min(selectedBeatIndex, beats.length - 1);
+    selectedStepIndex = Math.min(selectedStepIndex, beats.length - 1);
     onstatuschange?.(`Beats: ${beats.length} | Beat removed`);
   }
 
   function removeLastBeat() {
     if (beats.length === 0) return;
-    removeBeat(beats.length - 1);
+    removeStep(beats.length - 1);
   }
 
   function clearAll() {
     beats = [];
-    selectedBeatIndex = -1;
+    selectedStepIndex = -1;
     phase = "start";
     startPosition = null;
     onstatuschange?.("Beats: 0 | Cleared");
@@ -193,8 +193,8 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class="beat-cell"
-            class:beat-selected={selectedBeatIndex === i}
-            onclick={() => (selectedBeatIndex = i)}
+            class:beat-selected={selectedStepIndex === i}
+            onclick={() => (selectedStepIndex = i)}
           >
             <RetroPictograph data={beat.pictograph} size={36} />
             <span class="beat-number">{i + 1}</span>
@@ -217,7 +217,7 @@
           <button
             class="option-tile"
             type="button"
-            onclick={() => addBeat(letter)}
+            onclick={() => addStep(letter)}
             aria-label={`Add letter ${letter}`}
           >
             <RetroPictograph
@@ -356,27 +356,6 @@
     overflow-y: hidden;
     background: var(--retro-field-bg, #fff);
     align-items: center;
-  }
-
-  .beat-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-    padding: 2px;
-    flex-shrink: 0;
-    border: 1px solid transparent;
-    cursor: pointer;
-  }
-
-  .beat-cell.beat-selected {
-    border-color: var(--retro-navy, #000080);
-    background: rgba(0, 0, 128, 0.08);
-  }
-
-  .beat-cell.start-cell {
-    opacity: 0.7;
-    cursor: default;
   }
 
   .beat-number {

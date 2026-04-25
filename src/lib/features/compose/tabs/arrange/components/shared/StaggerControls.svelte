@@ -85,7 +85,7 @@
 
       <div class="offset-display">
         <span class="offset-value">{editOffset}</span>
-        <span class="offset-unit">beat{editOffset !== 1 ? "s" : ""}</span>
+        <span class="offset-unit">step{editOffset !== 1 ? "s" : ""}</span>
       </div>
 
       <button

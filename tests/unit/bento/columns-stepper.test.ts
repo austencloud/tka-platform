@@ -5,7 +5,7 @@ import {
 } from "../../../src/lib/shared/sequence-viewer/components/bento/columns-stepper";
 
 describe("columns stepper", () => {
-  it("nextColumnValue cycles Auto -> 2 -> 3 -> beatCount -> Auto", () => {
+  it("nextColumnValue cycles Auto -> 2 -> 3 -> stepCount -> Auto", () => {
     expect(nextColumnValue(null, 4)).toBe(2);
     expect(nextColumnValue(2, 4)).toBe(3);
     expect(nextColumnValue(3, 4)).toBe(4);
@@ -13,20 +13,20 @@ describe("columns stepper", () => {
     expect(nextColumnValue(null, 4)).toBe(2);
   });
 
-  it("prevColumnValue cycles Auto -> beatCount -> ... -> 2 -> Auto", () => {
+  it("prevColumnValue cycles Auto -> stepCount -> ... -> 2 -> Auto", () => {
     expect(prevColumnValue(null, 4)).toBe(4);
     expect(prevColumnValue(4, 4)).toBe(3);
     expect(prevColumnValue(3, 4)).toBe(2);
     expect(prevColumnValue(2, 4)).toBe(null);
   });
 
-  it("clamps when beatCount is 2", () => {
+  it("clamps when stepCount is 2", () => {
     expect(nextColumnValue(null, 2)).toBe(2);
     expect(nextColumnValue(2, 2)).toBe(null);
     expect(prevColumnValue(null, 2)).toBe(2);
   });
 
-  it("returns null for beatCount < 2 (only Auto makes sense)", () => {
+  it("returns null for stepCount < 2 (only Auto makes sense)", () => {
     expect(nextColumnValue(null, 1)).toBe(null);
     expect(prevColumnValue(null, 1)).toBe(null);
   });

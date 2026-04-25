@@ -201,7 +201,7 @@ export class SequenceDomainManager implements ISequenceDomainManager {
       throw new Error(`Invalid beat index: ${stepIndex}`);
     }
 
-    // Validate beat data
+    // Validate step data
     if (stepData.duration && stepData.duration < 0) {
       throw new Error("Beat duration must be positive");
     }
@@ -232,7 +232,7 @@ export class SequenceDomainManager implements ISequenceDomainManager {
     }
 
     // Extract letters from steps (desktop logic)
-    const word = sequence.steps.map((beat) => beat?.letter).join("");
+    const word = sequence.steps.map((step) => step?.letter).join("");
 
     // Apply word simplification for circular sequences (desktop logic)
     return this.simplifyRepeatedWord(word);

@@ -84,6 +84,14 @@ export const LEARN_TABS: Section[] = [
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
+  {
+    id: "guide",
+    label: "Guide",
+    icon: '<i class="fas fa-book" aria-hidden="true"></i>',
+    description: "Level 1 interactive textbook",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
 ];
 
 // Browse tabs configuration (browsing sequences, creators, collections)

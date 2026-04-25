@@ -120,18 +120,18 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     sequence: SequenceData,
     sequenceName: string
   ): Promise<SequenceData> {
-    const hasBeats = sequence.steps && sequence.steps.length > 0;
+    const hasSteps = sequence.steps && sequence.steps.length > 0;
 
-    if (hasBeats) {
+    if (hasSteps) {
       return sequence;
     }
 
-    // No beat data - try loading from Browse index.
+    // No step data - try loading from Browse index.
     // Pass sequence.id so the loader can disambiguate when multiple
     // sequences share the same word (e.g. two "FJ" variations).
     if (!this.browseLoader) {
       throw new Error(
-        `Cannot render thumbnail for "${sequenceName}": sequence has no beat data and IBrowseLoader is not available.`
+        `Cannot render thumbnail for "${sequenceName}": sequence has no step data and IBrowseLoader is not available.`
       );
     }
 
@@ -142,7 +142,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
 
     // Check if loaded sequence actually has steps (guards against orphaned data)
     if (!loadedSequence.steps || loadedSequence.steps.length === 0) {
-      throw new Error(`ORPHANED_SEQUENCE: "${sequenceName}" exists in index but has no beat data`);
+      throw new Error(`ORPHANED_SEQUENCE: "${sequenceName}" exists in index but has no step data`);
     }
 
     return loadedSequence;
@@ -161,11 +161,11 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
 
     // Try to derive from first beat
     const firstStep = sequence.steps?.[0];
-    const firstBeatHasValidMotions =
+    const firstStepHasValidMotions =
       firstStep?.motions?.blue?.startLocation &&
       firstStep?.motions?.red?.startLocation;
 
-    if (!firstStep || !firstBeatHasValidMotions) {
+    if (!firstStep || !firstStepHasValidMotions) {
       return sequence;
     }
 

@@ -4,7 +4,7 @@
   Fills its parent container (same dimensions as the front card).
   Uses --print-* tokens for all colors. Font sizes scale via clamp()
   relative to container inline size so content adapts to any card
-  proportion (wide 4-beat cards vs. tall 16-beat cards).
+  proportion (wide 4-step cards vs. tall 16-step cards).
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -117,7 +117,7 @@
 
       <!-- ── Usage ── -->
       <ol class="usage">
-        <li>Learn each beat step by step</li>
+        <li>Learn each step one by one</li>
         <li>Teach it to a friend</li>
         <li>Scan the QR on the front to open in the app</li>
       </ol>

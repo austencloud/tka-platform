@@ -37,6 +37,8 @@
   import InkCustomize from "./customize/InkCustomize.svelte";
   import { FROST_PRESET_GROUP } from "./presets/frost-presets";
   import FrostCustomize from "./customize/FrostCustomize.svelte";
+  import { SILK_PRESET_GROUP } from "./presets/silk-presets";
+  import SilkCustomize from "./customize/SilkCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
   import { EFFECT_COLORS, EFFECT_LABELS } from "./effect-registry";
   import type { EffectLayerMode } from "../../services/effect-layer";
@@ -170,6 +172,7 @@
       case "smoke": return SMOKE_PRESET_GROUP;
       case "ink": return INK_PRESET_GROUP;
       case "frost": return FROST_PRESET_GROUP;
+      case "silk": return SILK_PRESET_GROUP;
       default: return null;
     }
   }
@@ -299,6 +302,8 @@
         <InkCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "frost"}
         <FrostCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "silk"}
+        <SilkCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}

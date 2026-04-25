@@ -13,8 +13,8 @@
 
   let {
     isPlaying,
-    currentBeat,
-    totalBeats,
+    currentStep,
+    totalSteps,
     bpm = $bindable(120),
     skipStartPosition = true,
     onPlayPause,
@@ -27,8 +27,8 @@
     onToggleLoop,
   }: {
     isPlaying: boolean;
-    currentBeat: number;
-    totalBeats: number;
+    currentStep: number;
+    totalSteps: number;
     bpm: number;
     skipStartPosition?: boolean;
     onPlayPause: () => void;
@@ -41,7 +41,7 @@
     onToggleLoop?: () => void;
   } = $props();
 
-  const canStop = $derived(isPlaying || currentBeat > 0);
+  const canStop = $derived(isPlaying || currentStep > 0);
 </script>
 
 <div class="playback-bar">
@@ -55,13 +55,13 @@
     {onStepFullFwd}
   />
 
-  <!-- Beat counter + stop + loop toggle -->
+  <!-- Step counter + stop + loop toggle -->
   <div class="info-row">
-    <div class="beat-display">
-      <span class="current">{Math.floor(currentBeat) + 1}</span>
+    <div class="step-display">
+      <span class="current">{Math.floor(currentStep) + 1}</span>
       <span class="separator">/</span>
-      <span class="total">{totalBeats}</span>
-      <span class="beat-label">beats</span>
+      <span class="total">{totalSteps}</span>
+      <span class="step-label">steps</span>
     </div>
 
     <div class="controls-right">
@@ -125,8 +125,8 @@
     gap: var(--spacing-sm, 8px);
   }
 
-  /* Beat display */
-  .beat-display {
+  /* Step display */
+  .step-display {
     display: flex;
     align-items: baseline;
     gap: 2px;
@@ -150,7 +150,7 @@
     font-weight: 500;
   }
 
-  .beat-label {
+  .step-label {
     margin-left: var(--spacing-xs);
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));

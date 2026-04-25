@@ -53,7 +53,7 @@ export class StepComparisonOrchestrator implements IStepComparisonOrchestrator {
       }));
   }
 
-  compareBeatPair(step1: ExtractedStep, step2: ExtractedStep): string[] {
+  compareStepPair(step1: ExtractedStep, step2: ExtractedStep): string[] {
     const b1Blue = step1.blue;
     const b1Red = step1.red;
     const b2Blue = step2.blue;
@@ -118,7 +118,7 @@ export class StepComparisonOrchestrator implements IStepComparisonOrchestrator {
     for (let i = 0; i < halfLength; i++) {
       const step1 = steps[i]!;
       const step2 = steps[halfLength + i]!;
-      const rawTransformations = this.compareBeatPair(step1, step2);
+      const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
         this.formattingService.formatBeatPairTransformations(
           rawTransformations
@@ -146,7 +146,7 @@ export class StepComparisonOrchestrator implements IStepComparisonOrchestrator {
     for (let i = 0; i < steps.length; i++) {
       const step1 = steps[i]!;
       const step2 = steps[(i + quarterLength) % steps.length]!;
-      const rawTransformations = this.compareBeatPair(step1, step2);
+      const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
         this.formattingService.formatBeatPairTransformations(
           rawTransformations

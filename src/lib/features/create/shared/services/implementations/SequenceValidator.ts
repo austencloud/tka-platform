@@ -33,8 +33,8 @@ export class SequenceValidator implements ISequenceValidator {
     }
 
     // Beat validation
-    sequence.steps.forEach((beat, index) => {
-      const beatErrors = this.validateStep(beat, index);
+    sequence.steps.forEach((step, index) => {
+      const beatErrors = this.validateStep(step, index);
       errors.push(...beatErrors);
     });
 

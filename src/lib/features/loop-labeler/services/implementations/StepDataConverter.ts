@@ -229,7 +229,7 @@ export class StepDataConverter implements IStepDataConverter {
       const redAttrs = step.redAttributes;
 
       return {
-        id: `beat-${sequenceName}-${index + 1}`,
+        id: `step-${sequenceName}-${index + 1}`,
         letter: (step.letter as Letter) ?? null,
         startPosition:
           this.parseGridPosition(step.startPos) ||

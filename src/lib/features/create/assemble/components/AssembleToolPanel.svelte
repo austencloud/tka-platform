@@ -41,13 +41,13 @@
    * We cap when the current paired step count would reach the tier limit.
    */
   function checkBeatCap(): boolean {
-    const maxBeats = getMaxBeats(accessTier);
+    const maxSteps = getMaxBeats(accessTier);
     // Completed beats = min of both hands' step counts (each pair = one beat)
     const pairedBeats = Math.min(
       builderState.blueSteps.length,
       builderState.redSteps.length
     );
-    if (pairedBeats >= maxBeats) {
+    if (pairedBeats >= maxSteps) {
       showBeatCapNudge = true;
       return true;
     }
@@ -112,7 +112,7 @@
     {/if}
 
     <div class="grid-slot">
-      <InteractiveGrid {builderState} onBeatCapExceeded={checkBeatCap} />
+      <InteractiveGrid {builderState} onStepCapExceeded={checkBeatCap} />
       <BuilderControls {builderState} />
     </div>
   </div>

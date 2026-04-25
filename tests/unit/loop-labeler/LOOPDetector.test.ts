@@ -271,25 +271,25 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     // Patch the first beat's blueAttributes.startOri / last beat's endOri
     // to create a per-pass orientation delta as well.
     const beats = quartered.fullMetadata!.sequence!;
-    const firstBeat = beats.find((b) => (b.beat ?? 0) === 1)!;
-    const lastBeat = beats.find((b) => (b.beat ?? 0) === 4)!;
-    firstBeat.blueAttributes = {
-      ...firstBeat.blueAttributes!,
+    const firstStep = beats.find((b) => (b.beat ?? 0) === 1)!;
+    const lastStep = beats.find((b) => (b.beat ?? 0) === 4)!;
+    firstStep.blueAttributes = {
+      ...firstStep.blueAttributes!,
       startOri: "in",
       endOri: "in",
     };
-    firstBeat.redAttributes = {
-      ...firstBeat.redAttributes!,
+    firstStep.redAttributes = {
+      ...firstStep.redAttributes!,
       startOri: "in",
       endOri: "in",
     };
-    lastBeat.blueAttributes = {
-      ...lastBeat.blueAttributes!,
+    lastStep.blueAttributes = {
+      ...lastStep.blueAttributes!,
       startOri: "out",
       endOri: "clock",
     };
-    lastBeat.redAttributes = {
-      ...lastBeat.redAttributes!,
+    lastStep.redAttributes = {
+      ...lastStep.redAttributes!,
       startOri: "out",
       endOri: "clock",
     };

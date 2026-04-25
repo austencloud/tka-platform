@@ -210,7 +210,7 @@ export class LibraryRepository implements ILibraryRepository {
     const letterSource = (steps && steps.length > 0) ? steps : stepPairings;
     if (letterSource && letterSource.length > 0) {
       word = letterSource
-        .map((beat) => beat.letter ?? "")
+        .map((step) => step.letter ?? "")
         .filter((letter) => letter !== "")
         .join("");
     }

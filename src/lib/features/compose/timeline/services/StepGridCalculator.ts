@@ -1,5 +1,5 @@
 /**
- * BeatGridCalculator
+ * StepGridCalculator
  *
  * Pure functions for calculating beat and measure positions from BPM and time signature.
  * Used to render beat grid markers in the timeline and for snap-to-beat functionality.
@@ -19,7 +19,7 @@ import type { TimeSeconds } from "../domain/timeline-types";
 /**
  * A marker representing a beat position on the timeline
  */
-export interface BeatMarker {
+export interface StepMarker {
   /** Time position in seconds */
   time: TimeSeconds;
 
@@ -79,7 +79,7 @@ export interface MusicalPosition {
 /**
  * Calculate the duration of one beat in seconds
  */
-export function getBeatDuration(bpm: number): number {
+export function getStepDuration(bpm: number): number {
   if (bpm <= 0) return 0;
   return 60 / bpm;
 }
@@ -92,7 +92,7 @@ export function getMeasureDuration(
   timeSignature: TimeSignatureKey
 ): number {
   const ts = TIME_SIGNATURES[timeSignature];
-  const beatDuration = getBeatDuration(bpm);
+  const beatDuration = getStepDuration(bpm);
 
   // For compound meters like 6/8, each eighth note is a beat
   // So 6/8 has 6 eighth notes per measure
@@ -110,7 +110,7 @@ export function getMeasureDuration(
 /**
  * Get the number of beats per measure for display purposes
  */
-export function getBeatsPerMeasure(timeSignature: TimeSignatureKey): number {
+export function getStepsPerMeasure(timeSignature: TimeSignatureKey): number {
   const ts = TIME_SIGNATURES[timeSignature];
 
   // For compound meters, show the grouped beats (2 for 6/8)
@@ -133,46 +133,46 @@ export function getBeatsPerMeasure(timeSignature: TimeSignatureKey): number {
  * @param timeSignature - Time signature key
  * @returns Array of beat markers sorted by time
  */
-export function calculateBeatMarkers(
+export function calculateStepMarkers(
   bpm: number,
   duration: TimeSeconds,
   timeSignature: TimeSignatureKey
-): BeatMarker[] {
+): StepMarker[] {
   if (bpm <= 0 || duration <= 0) return [];
 
   const ts = TIME_SIGNATURES[timeSignature];
-  const beatDuration = getBeatDuration(bpm);
-  const beatsPerMeasure = getBeatsPerMeasure(timeSignature);
-  const markers: BeatMarker[] = [];
+  const beatDuration = getStepDuration(bpm);
+  const beatsPerMeasure = getStepsPerMeasure(timeSignature);
+  const markers: StepMarker[] = [];
 
   // For compound meters, we need to handle the grouping differently
   const isCompound = isCompoundMeter(ts);
 
   let currentTime = 0;
   let currentMeasure = 1;
-  let currentBeat = 1;
+  let currentStep = 1;
 
   while (currentTime <= duration) {
-    const isMeasureStart = currentBeat === 1;
+    const isMeasureStart = currentStep === 1;
 
     // Strong beats: beat 1 always, beat 4 in 6/8 (second dotted quarter)
     const isStrongBeat = isCompound
-      ? currentBeat === 1 || currentBeat === 2
-      : currentBeat === 1;
+      ? currentStep === 1 || currentStep === 2
+      : currentStep === 1;
 
     markers.push({
       time: currentTime,
       measure: currentMeasure,
-      beat: currentBeat,
+      beat: currentStep,
       isMeasureStart,
       isStrongBeat,
     });
 
     currentTime += isCompound ? beatDuration : beatDuration;
-    currentBeat++;
+    currentStep++;
 
-    if (currentBeat > beatsPerMeasure) {
-      currentBeat = 1;
+    if (currentStep > beatsPerMeasure) {
+      currentStep = 1;
       currentMeasure++;
     }
   }
@@ -231,7 +231,7 @@ export function calculateSubdivisionMarkers(
 ): SubdivisionMarker[] {
   if (bpm <= 0 || duration <= 0 || subdivisionsPerBeat <= 1) return [];
 
-  const beatDuration = getBeatDuration(bpm);
+  const beatDuration = getStepDuration(bpm);
   const subdivisionDuration = beatDuration / subdivisionsPerBeat;
   const markers: SubdivisionMarker[] = [];
 
@@ -267,7 +267,7 @@ export function calculateSubdivisionMarkers(
  * @param subdivisionsPerBeat - Number of subdivisions per beat
  * @returns Musical position
  */
-export function timeToBeatPosition(
+export function timeToStepPosition(
   time: TimeSeconds,
   bpm: number,
   timeSignature: TimeSignatureKey,
@@ -277,20 +277,20 @@ export function timeToBeatPosition(
     return { measure: 1, beat: 1, subdivision: 0 };
   }
 
-  const beatDuration = getBeatDuration(bpm);
-  const beatsPerMeasure = getBeatsPerMeasure(timeSignature);
+  const beatDuration = getStepDuration(bpm);
+  const beatsPerMeasure = getStepsPerMeasure(timeSignature);
 
   // Total beats elapsed
-  const totalBeats = time / beatDuration;
+  const totalSteps = time / beatDuration;
 
   // Calculate measure (1-based)
-  const measure = Math.floor(totalBeats / beatsPerMeasure) + 1;
+  const measure = Math.floor(totalSteps / beatsPerMeasure) + 1;
 
   // Calculate beat within measure (1-based)
-  const beatInMeasure = Math.floor(totalBeats % beatsPerMeasure) + 1;
+  const beatInMeasure = Math.floor(totalSteps % beatsPerMeasure) + 1;
 
   // Calculate subdivision within beat (0-based)
-  const beatFraction = totalBeats - Math.floor(totalBeats);
+  const beatFraction = totalSteps - Math.floor(totalSteps);
   const subdivision = Math.floor(beatFraction * subdivisionsPerBeat);
 
   return {
@@ -317,16 +317,16 @@ export function beatPositionToTime(
 ): TimeSeconds {
   if (bpm <= 0) return 0;
 
-  const beatDuration = getBeatDuration(bpm);
-  const beatsPerMeasure = getBeatsPerMeasure(timeSignature);
+  const beatDuration = getStepDuration(bpm);
+  const beatsPerMeasure = getStepsPerMeasure(timeSignature);
 
   // Calculate total beats (converting from 1-based to 0-based)
-  const totalBeats =
+  const totalSteps =
     (position.measure - 1) * beatsPerMeasure +
     (position.beat - 1) +
     position.subdivision / subdivisionsPerBeat;
 
-  return totalBeats * beatDuration;
+  return totalSteps * beatDuration;
 }
 
 // ============================================================================
@@ -341,12 +341,12 @@ export function beatPositionToTime(
  * @param timeSignature - Time signature key
  * @returns Array of times in seconds where beats occur
  */
-export function getBeatTimes(
+export function getStepTimes(
   bpm: number,
   duration: TimeSeconds,
   timeSignature: TimeSignatureKey
 ): TimeSeconds[] {
-  const markers = calculateBeatMarkers(bpm, duration, timeSignature);
+  const markers = calculateStepMarkers(bpm, duration, timeSignature);
   return markers.map((m) => m.time);
 }
 
@@ -365,7 +365,7 @@ export function snapToBeat(
 ): TimeSeconds {
   if (bpm <= 0) return time;
 
-  const beatDuration = getBeatDuration(bpm);
+  const beatDuration = getStepDuration(bpm);
   return Math.round(time / beatDuration) * beatDuration;
 }
 

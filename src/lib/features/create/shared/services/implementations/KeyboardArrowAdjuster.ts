@@ -2,7 +2,7 @@
  * Keyboard Arrow Adjustment Service Implementation
  *
  * Handles manual arrow position adjustments via WASD keyboard controls.
- * Applies adjustments to beat data and triggers pictograph updates.
+ * Applies adjustments to step data and triggers pictograph updates.
  *
  * Manual adjustments are stored and applied in SCREEN-SPACE:
  * - W = up on screen (0, -increment)
@@ -62,7 +62,7 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
    * Modern flow (web app):
    * 1. Calculate screen-space adjustment based on key + increment
    * 2. Store screen-space value directly (no transformation)
-   * 3. Return updated beat data to trigger re-render
+   * 3. Return updated step data to trigger re-render
    *
    * Adjustments are stored in screen-space because:
    * - User expects W to always move UP on their screen
@@ -122,7 +122,7 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
       arrowPlacementData: updatedArrowPlacementData,
     });
 
-    // Create updated beat data with the modified motion
+    // Create updated step data with the modified motion
     const updatedStepData: StepData = {
       ...stepData,
       motions: {

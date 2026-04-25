@@ -51,13 +51,13 @@ export interface IOrientationContinuityValidator {
    * Validate that a pictograph can follow the last beat in the sequence.
    * Checks orientation continuity before adding the pictograph.
    *
-   * @param lastBeat - The last beat in the current sequence
+   * @param lastStep - The last beat in the current sequence
    * @param nextPictograph - The pictograph to potentially add
    * @param orientationCalculator - Calculator to derive orientations
    * @returns Validation result with any errors found
    */
   validateTransition(
-    lastBeat: StepData,
+    lastStep: StepData,
     nextPictograph: PictographData,
     orientationCalculator: IOrientationCalculator
   ): TransitionValidationResult;

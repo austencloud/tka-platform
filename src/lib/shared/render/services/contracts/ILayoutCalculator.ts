@@ -23,7 +23,7 @@ export interface ILayoutCalculator {
   /**
    * Get layout for current beat grid (compatibility method)
    */
-  getCurrentBeatGridLayout(stepCount: number): [number, number];
+  getCurrentStepGridLayout(stepCount: number): [number, number];
 
   /**
    * Validate layout parameters

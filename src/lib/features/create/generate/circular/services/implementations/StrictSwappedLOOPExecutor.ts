@@ -134,7 +134,7 @@ export class StrictSwappedLOOPExecutor {
 
     const newStep: StepData = {
       ...sourceStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       startPosition: actualStartPosition,
       endPosition: actualEndPosition,
@@ -166,7 +166,7 @@ export class StrictSwappedLOOPExecutor {
 
     const newStep: StepData = {
       ...sourceStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       startPosition: previousStep.endPosition ?? null,
       endPosition: sourceStep.endPosition,

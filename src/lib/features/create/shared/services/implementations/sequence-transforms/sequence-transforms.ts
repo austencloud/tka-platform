@@ -54,8 +54,8 @@ import type { TargetHand } from "../../../state/panel-coordination-state.svelte"
  * Clear all steps in a sequence (make them blank).
  */
 export function clearSequence(sequence: SequenceData): SequenceData {
-  const clearedBeats = sequence.steps.map((beat) => ({
-    ...beat,
+  const clearedBeats = sequence.steps.map((step) => ({
+    ...step,
     isBlank: true,
     pictographData: null,
     blueReversal: false,
@@ -76,8 +76,8 @@ export function duplicateSequence(
     ...sequence,
     id: crypto.randomUUID(),
     name: newName || `${sequence.name} (Copy)`,
-    steps: sequence.steps.map((beat) => ({
-      ...beat,
+    steps: sequence.steps.map((step) => ({
+      ...step,
       id: crypto.randomUUID(),
     })),
   });
@@ -97,8 +97,8 @@ export async function mirrorSequence(
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
   const mirroredBeats = await Promise.all(
-    sequence.steps.map((beat) =>
-      mirrorBeat(beat, gridMode, positionDeriver, motionQueryHandler, targetHand)
+    sequence.steps.map((step) =>
+      mirrorBeat(step, gridMode, positionDeriver, motionQueryHandler, targetHand)
     )
   );
 
@@ -107,15 +107,15 @@ export async function mirrorSequence(
     ? mirrorStartPosition(sequence.startPosition, targetHand, positionDeriver)
     : undefined;
 
-  const mirroredStartingPositionBeat = sequence.startingPosition
+  const mirroredStartingPositionStep = sequence.startingPosition
     ? mirrorStartPosition(sequence.startingPosition, targetHand, positionDeriver)
     : undefined;
 
   return updateSequenceData(sequence, {
     steps: mirroredBeats,
     ...(mirroredStartPosition && { startPosition: mirroredStartPosition }),
-    ...(mirroredStartingPositionBeat && {
-      startingPosition: mirroredStartingPositionBeat,
+    ...(mirroredStartingPositionStep && {
+      startingPosition: mirroredStartingPositionStep,
     }),
   });
 }
@@ -134,8 +134,8 @@ export async function flipSequence(
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
   const flippedBeats = await Promise.all(
-    sequence.steps.map((beat) =>
-      flipBeat(beat, gridMode, positionDeriver, motionQueryHandler, targetHand)
+    sequence.steps.map((step) =>
+      flipBeat(step, gridMode, positionDeriver, motionQueryHandler, targetHand)
     )
   );
 
@@ -144,15 +144,15 @@ export async function flipSequence(
     ? flipStartPosition(sequence.startPosition, targetHand, positionDeriver)
     : undefined;
 
-  const flippedStartingPositionBeat = sequence.startingPosition
+  const flippedStartingPositionStep = sequence.startingPosition
     ? flipStartPosition(sequence.startingPosition, targetHand, positionDeriver)
     : undefined;
 
   return updateSequenceData(sequence, {
     steps: flippedBeats,
     ...(flippedStartPosition && { startPosition: flippedStartPosition }),
-    ...(flippedStartingPositionBeat && {
-      startingPosition: flippedStartingPositionBeat,
+    ...(flippedStartingPositionStep && {
+      startingPosition: flippedStartingPositionStep,
     }),
   });
 }
@@ -172,9 +172,9 @@ export async function rotateSequence(
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
   const rotatedBeats = await Promise.all(
-    sequence.steps.map((beat) =>
+    sequence.steps.map((step) =>
       rotateBeat(
-        beat,
+        step,
         rotationAmount,
         gridMode,
         positionDeriver,
@@ -189,7 +189,7 @@ export async function rotateSequence(
     ? rotateStartPosition(sequence.startPosition, rotationAmount, positionDeriver, targetHand)
     : undefined;
 
-  const rotatedStartingPositionBeat = sequence.startingPosition
+  const rotatedStartingPositionStep = sequence.startingPosition
     ? rotateStartPosition(sequence.startingPosition, rotationAmount, positionDeriver, targetHand)
     : undefined;
 
@@ -202,8 +202,8 @@ export async function rotateSequence(
   return updateSequenceData(sequence, {
     steps: rotatedBeats,
     ...(rotatedStartPosition && { startPosition: rotatedStartPosition }),
-    ...(rotatedStartingPositionBeat && {
-      startingPosition: rotatedStartingPositionBeat,
+    ...(rotatedStartingPositionStep && {
+      startingPosition: rotatedStartingPositionStep,
     }),
     gridMode: newGridMode,
   });
@@ -220,15 +220,15 @@ export function colorSwapSequence(sequence: SequenceData): SequenceData {
     ? colorSwapStartPosition(sequence.startPosition)
     : undefined;
 
-  const swappedStartingPositionBeat = sequence.startingPosition
+  const swappedStartingPositionStep = sequence.startingPosition
     ? colorSwapStartPosition(sequence.startingPosition)
     : undefined;
 
   return updateSequenceData(sequence, {
     steps: swappedBeats,
     ...(swappedStartPosition && { startPosition: swappedStartPosition }),
-    ...(swappedStartingPositionBeat && {
-      startingPosition: swappedStartingPositionBeat,
+    ...(swappedStartingPositionStep && {
+      startingPosition: swappedStartingPositionStep,
     }),
   });
 }
@@ -248,9 +248,9 @@ export async function invertSequence(
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
   const invertedBeats: StepData[] = [];
 
-  for (const beat of sequence.steps) {
+  for (const step of sequence.steps) {
     const invertedBeat = await invertBeat(
-      beat,
+      step,
       gridMode,
       motionQueryHandler,
       targetHand
@@ -263,15 +263,15 @@ export async function invertSequence(
     ? invertStartPosition(sequence.startPosition, orientationCalculator, targetHand)
     : undefined;
 
-  const invertedStartingPositionBeat = sequence.startingPosition
+  const invertedStartingPositionStep = sequence.startingPosition
     ? invertStartPosition(sequence.startingPosition, orientationCalculator, targetHand)
     : undefined;
 
   const invertedSequence = updateSequenceData(sequence, {
     steps: invertedBeats,
     ...(invertedStartPosition && { startPosition: invertedStartPosition }),
-    ...(invertedStartingPositionBeat && {
-      startingPosition: invertedStartingPositionBeat,
+    ...(invertedStartingPositionStep && {
+      startingPosition: invertedStartingPositionStep,
     }),
   });
 
@@ -379,8 +379,8 @@ function shiftCircularSequence(
   const rotatedBeats = [...fromTarget, ...beforeTarget];
 
   // Renumber steps
-  const renumberedSteps = rotatedBeats.map((beat, index) =>
-    createStepData({ ...beat, stepNumber: index + 1 })
+  const renumberedSteps = rotatedBeats.map((step, index) =>
+    createStepData({ ...step, stepNumber: index + 1 })
   );
 
   return updateSequenceData(sequence, {
@@ -406,8 +406,8 @@ function truncateToNewStart(
   const keptBeats = sequence.steps.slice(targetStepNumber - 1);
 
   // Renumber
-  const renumberedSteps = keptBeats.map((beat, index) =>
-    createStepData({ ...beat, stepNumber: index + 1 })
+  const renumberedSteps = keptBeats.map((step, index) =>
+    createStepData({ ...step, stepNumber: index + 1 })
   );
 
   return updateSequenceData(sequence, {
@@ -448,13 +448,13 @@ export async function deriveSequenceLetters(
 
   // Derive letters for all steps in parallel
   const stepsWithLetters = await Promise.all(
-    sequence.steps.map(async (beat) => {
-      if (beat.isBlank) return beat;
+    sequence.steps.map(async (step) => {
+      if (step.isBlank) return step;
 
-      const blueMotion = beat.motions[MotionColor.BLUE];
-      const redMotion = beat.motions[MotionColor.RED];
+      const blueMotion = step.motions[MotionColor.BLUE];
+      const redMotion = step.motions[MotionColor.RED];
 
-      if (!blueMotion || !redMotion) return beat;
+      if (!blueMotion || !redMotion) return step;
 
       try {
         const foundLetter =
@@ -465,17 +465,17 @@ export async function deriveSequenceLetters(
           );
         if (foundLetter) {
           return createStepData({
-            ...beat,
+            ...step,
             letter: foundLetter as Letter,
           });
         }
       } catch (error) {
         console.warn(
-          `Failed to derive letter for beat ${beat.stepNumber}:`,
+          `Failed to derive letter for step ${step.stepNumber}:`,
           error
         );
       }
-      return beat;
+      return step;
     })
   );
 
@@ -488,19 +488,19 @@ export async function deriveSequenceLetters(
  * Create a start position from a beat's end state.
  * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromStepEnd(beat: StepData): StartPositionData {
-  const blueMotion = beat.motions[MotionColor.BLUE];
-  const redMotion = beat.motions[MotionColor.RED];
+export function createStartPositionFromStepEnd(step: StepData): StartPositionData {
+  const blueMotion = step.motions[MotionColor.BLUE];
+  const redMotion = step.motions[MotionColor.RED];
 
   // Derive the correct letter from the end position (alpha, beta, or gamma)
-  const letter = getStaticLetterFromGridPosition(beat.endPosition);
+  const letter = getStaticLetterFromGridPosition(step.endPosition);
 
   return createStartPositionData({
     id: `start-${Date.now()}`,
     letter: letter,
-    startPosition: beat.endPosition ?? null,
-    endPosition: beat.endPosition ?? null,
-    gridPosition: beat.endPosition ?? null,
+    startPosition: step.endPosition ?? null,
+    endPosition: step.endPosition ?? null,
+    gridPosition: step.endPosition ?? null,
     motions: {
       [MotionColor.BLUE]: blueMotion
         ? {
@@ -538,19 +538,19 @@ export function createStartPositionFromStepEnd(beat: StepData): StartPositionDat
  * from beat 1's starting configuration.
  * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromBeatStart(beat: StepData): StartPositionData {
-  const blueMotion = beat.motions[MotionColor.BLUE];
-  const redMotion = beat.motions[MotionColor.RED];
+export function createStartPositionFromBeatStart(step: StepData): StartPositionData {
+  const blueMotion = step.motions[MotionColor.BLUE];
+  const redMotion = step.motions[MotionColor.RED];
 
   // Derive the correct letter from the start position (alpha, beta, or gamma)
-  const letter = getStaticLetterFromGridPosition(beat.startPosition);
+  const letter = getStaticLetterFromGridPosition(step.startPosition);
 
   return createStartPositionData({
     id: `start-derived-${Date.now()}`,
     letter: letter,
-    startPosition: beat.startPosition ?? null,
-    endPosition: beat.startPosition ?? null,
-    gridPosition: beat.startPosition ?? null,
+    startPosition: step.startPosition ?? null,
+    endPosition: step.startPosition ?? null,
+    gridPosition: step.startPosition ?? null,
     motions: {
       [MotionColor.BLUE]: blueMotion
         ? {

@@ -90,8 +90,8 @@ export function createUndoController({
       const sequenceCopy: SequenceData | null = currentSequenceRef
         ? {
             ...currentSequenceRef,
-            steps: currentSequenceRef.steps.map((beat) =>
-              beat ? { ...beat } : beat
+            steps: currentSequenceRef.steps.map((step) =>
+              step ? { ...step } : step
             ),
           }
         : null;

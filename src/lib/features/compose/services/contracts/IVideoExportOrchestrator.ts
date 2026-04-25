@@ -48,9 +48,9 @@ export interface VideoExportOrchestratorOptions {
   showStepNumbers?: boolean;
   /** Include start position in composite grid (default: false) */
   includeStartPosition?: boolean;
-  /** Include 1-beat start position pause before motion begins (default: true) */
+  /** Include 1-step start position pause before motion begins (default: true) */
   includeAnimationStartPosition?: boolean;
-  /** Include 1-beat end hold after last motion step for non-looping sequences (default: true) */
+  /** Include 1-step end hold after last motion step for non-looping sequences (default: true) */
   includeEndHold?: boolean;
   /** Called after export completes (success or failure) to reset transient state like fire caches */
   onCleanup?: () => void;

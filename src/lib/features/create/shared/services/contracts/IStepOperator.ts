@@ -30,7 +30,7 @@ export interface IStepOperator {
    * Apply batch changes to multiple selected steps
    * Creates undo snapshot before applying changes
    *
-   * @param changes Partial beat data to apply to all selected steps
+   * @param changes Partial step data to apply to all selected steps
    * @param CreateModuleState Create Module State for sequence operations
    */
   applyBatchChanges(
@@ -46,7 +46,7 @@ export interface IStepOperator {
    * @param color Prop color ('blue' or 'red')
    * @param orientation New orientation value
    * @param CreateModuleState Create Module State for sequence operations
-   * @param panelState Panel state for current beat data
+   * @param panelState Panel state for current step data
    */
   updateStepOrientation(
     stepNumber: number,
@@ -64,7 +64,7 @@ export interface IStepOperator {
    * @param color Prop color ('blue' or 'red')
    * @param turnAmount New turn amount value (number or "fl" for float)
    * @param CreateModuleState Create Module State for sequence operations
-   * @param panelState Panel state for current beat data
+   * @param panelState Panel state for current step data
    */
   updateStepTurns(
     stepNumber: number,
@@ -83,9 +83,9 @@ export interface IStepOperator {
    * @param color Prop color ('blue' or 'red')
    * @param propType New prop type value (from PropType enum)
    * @param CreateModuleState Create Module State for sequence operations
-   * @param panelState Panel state for current beat data
+   * @param panelState Panel state for current step data
    */
-  updateBeatPropType(
+  updateStepPropType(
     stepNumber: number,
     color: string,
     propType: PropType,
@@ -117,7 +117,7 @@ export interface IStepOperator {
    * @param color Prop color ('blue' or 'red')
    * @param rotationDirection New rotation direction ('cw' or 'ccw')
    * @param CreateModuleState Create Module State for sequence operations
-   * @param panelState Panel state for current beat data
+   * @param panelState Panel state for current step data
    */
   updateRotationDirection(
     stepNumber: number,
@@ -146,11 +146,11 @@ export interface IStepOperator {
   ): void;
 
   /**
-   * Persist complete beat data with accumulated arrow adjustments
+   * Persist complete step data with accumulated arrow adjustments
    * Called when adjustment panel closes to save all changes at once
    *
    * @param stepNumber Beat number (0 = start position, 1+ = sequence steps)
-   * @param updatedStepData Complete beat data with adjusted arrow positions
+   * @param updatedStepData Complete step data with adjusted arrow positions
    * @param CreateModuleState Create Module State for sequence operations
    */
   persistBeatWithAdjustments(

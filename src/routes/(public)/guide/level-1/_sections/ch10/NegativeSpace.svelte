@@ -2,31 +2,48 @@
   import GuideSection from "../../_components/GuideSection.svelte";
 </script>
 
-<GuideSection id="negative-space" title="Negative Space">
+<GuideSection id="negative-space" title="Negative Space / Body Turns">
   <p>
-    Negative space is the area between your body and the prop's path. Proper
-    technique creates visible gaps above and below the shoulder — the prop
-    traces a clean circle rather than collapsing against the body.
+    Many sequences seem impossible, but most can be solved by using negative space or body turns.
+  </p>
+  <p>
+    Negative space lets you face the audience and reduces body movement.
+  </p>
+  <p>
+    Body turns add movement and help you execute patterns with longer staves.
+  </p>
+  <p>
+    Each method is equally important, and learning both will maximize capability.
+  </p>
+  <p>
+    This guide will assume some knowledge of these fundamental concepts.
+  </p>
+  <p>
+    To make the most of the Alphabet, it's highly recommended that you learn the following.
   </p>
 
+  <h3>4-Petal Antispin</h3>
   <p>
-    Two techniques preserve negative space:
+    To execute this in wall plane, you must do one of the following on beat 2:
+  </p>
+  <ul>
+    <li>Pass the thumb end through the negative space above your right shoulder on beat 2.</li>
+    <li>Turn your torso to the left on beat 2 and pass the thumb end in front, then pass the pinky end on the inside of your right arm as you move to beat 3.</li>
+  </ul>
+  <p>
+    Practice in reverse, then do both directions in the other hand.
+    Then practice everything again starting with the thumb out.
+    Try using both negative space and turns. Good luck!
   </p>
 
-  <ol>
-    <li>
-      <strong>Above the shoulder:</strong> Keep the hand path wide enough that the
-      prop clears above the shoulder on upward arcs, maintaining a visible gap.
-    </li>
-    <li>
-      <strong>Behind the body:</strong> Use body turns to pass the prop into the plane
-      behind you, rather than wrapping the arm awkwardly. This preserves the thumb/pinky
-      reference and keeps the motion clean.
-    </li>
-  </ol>
-
+  <h3>360° Isolation</h3>
   <p>
-    Negative space is not decorative — it is what makes each letter readable. Without
-    it, distinct letters blur into indistinguishable arm movement.
+    To execute this without finger-spinning, turn your torso to the left on beat 3. During this
+    beat, the staff moves briefly in wheel-plane relative to your left-facing view. On beat 4, turn your
+    body back to center as you return to the start position.
+  </p>
+  <p>
+    Practice in reverse, then do both directions in the other hand.
+    Then practice it with the thumb out, isolating the pinky end.
   </p>
 </GuideSection>

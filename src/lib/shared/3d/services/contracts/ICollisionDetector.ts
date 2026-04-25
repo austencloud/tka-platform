@@ -42,7 +42,7 @@ export interface CollisionEvent {
   zone: CollisionZone;
   severity: CollisionSeverity;
   /** Which beat index this occurred on */
-  beatIndex: number;
+  stepNumber: number;
   /** 0-1 progress within the beat */
   beatProgress: number;
   /** Distance between the two colliding elements (meters). Positive = penetrating. */
@@ -90,7 +90,7 @@ export interface ICollisionDetector {
     body: BodySnapshot,
     blueProp: PropSegment | null,
     redProp: PropSegment | null,
-    beatIndex: number,
+    stepNumber: number,
     beatProgress: number
   ): CollisionEvent[];
 

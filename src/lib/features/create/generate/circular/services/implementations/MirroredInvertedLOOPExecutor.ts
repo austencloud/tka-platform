@@ -156,7 +156,7 @@ export class MirroredInvertedLOOPExecutor {
     //      Rotation direction STAYS THE SAME (both transformations flip, so they cancel)
     const newStep: StepData = {
       ...previousMatchingStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       letter: invertedLetter, // INVERTED: Flip letter
       startPosition: previousStep.endPosition ?? null,

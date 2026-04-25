@@ -5,25 +5,34 @@
 
 <GuideSection id="the-grid" title="The Grid">
   <p>
-    TKA uses a grid of reference points around the body. Your hands move between
-    these points to create letters. The grid has two modes — <strong>diamond</strong> and
-    <strong>box</strong> — which together form the full 8-point grid.
+    The Kinetic Alphabet is based on a 4-point grid.
+  </p>
+  <p>
+    There are two 4-point grids: box mode and diamond mode.
+    This guide is written in diamond, but everything translates to box.
   </p>
 
   <GuideDiagram
     src="/guide/level-1/images/the-grid/grid-diamond.png"
     alt="Diamond grid showing cardinal points: north, south, east, west"
-    caption="Diamond mode — 4 cardinal points"
+    caption="Diamond mode"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/the-grid/grid-box.png"
     alt="Box grid showing intercardinal points: northeast, southeast, southwest, northwest"
-    caption="Box mode — 4 intercardinal points"
+    caption="Box mode"
   />
 
+  <p>On this grid, there are three types of points:</p>
+  <ul>
+    <li><strong>The center point</strong> is the hub that everything revolves around.</li>
+    <li><strong>The four hand points</strong> are halfway between the center point and the outer points.</li>
+    <li><strong>The outer points</strong> depict the outer edges of the grid.</li>
+  </ul>
+
   <p>
-    Combined, diamond and box modes create the 8-point grid. Every hand position
-    in TKA maps to a point on this grid.
+    Together, diamond and box form an 8-point grid.
+    We'll use diamond mode to learn each concept.
   </p>
 </GuideSection>

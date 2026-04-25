@@ -75,7 +75,7 @@ export class SequenceFuser implements ISequenceFuser {
 		red: HandPathData | SoloPropData,
 		options?: FuseOptions
 	): SequenceData {
-		const maxBeats = options?.maxBeats ?? DEFAULT_MAX_BEATS;
+		const maxSteps = options?.maxSteps ?? DEFAULT_MAX_BEATS;
 		const alignmentOffset = options?.alignmentOffset ?? 0;
 
 		const blueHandPath = extractHandPath(blue);
@@ -86,9 +86,9 @@ export class SequenceFuser implements ISequenceFuser {
 		const blueLength = blueHandPath.locations.length - 1;
 		const redLength = redHandPath.locations.length - 1;
 
-		// Compute target length: LCM of both, truncated if it exceeds maxBeats
+		// Compute target length: LCM of both, truncated if it exceeds maxSteps
 		const naturalLength = lcm(blueLength, redLength);
-		const targetLength = naturalLength > maxBeats
+		const targetLength = naturalLength > maxSteps
 			? Math.min(blueLength, redLength)
 			: naturalLength;
 

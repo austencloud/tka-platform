@@ -276,7 +276,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
     );
   }
 
-  function handleBeatDataUpdate(updatedStepData: typeof selectedStepData) {
+  function handleStepBeatDataUpdate(updatedStepData: typeof selectedStepData) {
     if (selectedStepNumber === null || !updatedStepData) return;
 
     const currentSequence = activeSequenceState.currentSequence;
@@ -326,7 +326,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   onStepSelect={handleStepSelect}
   onDelete={handleStepDelete}
   onOpenPropSheet={handleOpenPropSheet}
-  onStepDataUpdate={handleBeatDataUpdate}
+  onStepDataUpdate={handleStepBeatDataUpdate}
   onPushUndoSnapshot={handlePushUndoSnapshot}
   onDurationChange={handleDurationChange}
 />

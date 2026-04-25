@@ -80,7 +80,7 @@ function createCreateTutorialState() {
       }
     },
 
-    addBeat(beat: PictographData) {
+    addStep(beat: PictographData) {
       data.beats.push(beat);
     },
 

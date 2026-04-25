@@ -36,11 +36,11 @@
 
   let {
     builderState,
-    onBeatCapExceeded,
+    onStepCapExceeded,
   }: {
     builderState: AssembleState;
     /** Called when the user tries to add a motion. Return true to block the action and show the nudge. */
-    onBeatCapExceeded?: () => boolean;
+    onStepCapExceeded?: () => boolean;
   } = $props();
 
   // Services
@@ -341,11 +341,11 @@
     // When a prop is already placed (placing/building phase), clicking creates a
     // motion on the active hand. Check the beat cap before allowing it.
     if (
-      onBeatCapExceeded &&
+      onStepCapExceeded &&
       (builderState.phase === "placing" || builderState.phase === "building") &&
       builderState.currentPosition !== null
     ) {
-      if (onBeatCapExceeded()) return;
+      if (onStepCapExceeded()) return;
     }
     builderState.handlePointClick(target.location);
   }

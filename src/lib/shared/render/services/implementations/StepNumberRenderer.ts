@@ -18,7 +18,7 @@
 
 import type { IStepNumberRenderer } from "../contracts/IStepNumberRenderer";
 
-import { getBeatNumberRenderer } from "$lib/shared/render/getBeatNumberRenderer";
+import { getStepNumberRenderer } from "$lib/shared/render/getStepNumberRenderer";
 
 /** The SVG viewBox size used in pictographs */
 const VIEW_BOX_SIZE = 950;
@@ -90,6 +90,6 @@ export class StepNumberRenderer implements IStepNumberRenderer {
   }
 }
 
-// DIRECT EXPORT - Use this instead of getBeatNumberRenderer()
+// DIRECT EXPORT - Use this instead of getStepNumberRenderer()
 // This avoids DI container rebuilds when this file changes
 export const stepNumberRenderer = new StepNumberRenderer();

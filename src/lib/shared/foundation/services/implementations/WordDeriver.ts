@@ -19,7 +19,7 @@ export class WordDeriver implements IWordDeriver {
     if (!steps || steps.length === 0) return "";
 
     return steps
-      .map((beat) => beat.letter ?? "")
+      .map((step) => step.letter ?? "")
       .filter((letter) => letter !== "")
       .join("");
   }

@@ -60,7 +60,7 @@ export const examplePictographData = {
   },
 };
 
-/** Example beat data extending pictograph data with beat-specific properties */
+/** Example step data extending pictograph data with beat-specific properties */
 export const exampleStepData: StepData = {
   ...examplePictographData,
   stepNumber: 1,

@@ -10,13 +10,13 @@ import type { IArrangePlaybackEngine } from "../contracts/IArrangePlaybackEngine
 
 export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
   private _isPlaying = false;
-  private _currentBeat = 0;
+  private _currentStep = 0;
   private _bpm = 120;
 
   private animationFrameId: number | null = null;
   private lastFrameTime = 0;
   private stepAnimating = false;
-  private totalBeatsGetter: (() => number) | null = null;
+  private totalStepsGetter: (() => number) | null = null;
 
   get isPlaying(): boolean {
     return this._isPlaying;
@@ -26,17 +26,17 @@ export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
     return this.stepAnimating;
   }
 
-  get currentBeat(): number {
-    return this._currentBeat;
+  get currentStep(): number {
+    return this._currentStep;
   }
 
   get bpm(): number {
     return this._bpm;
   }
 
-  play(totalBeatsGetter: () => number, bpm?: number): void {
+  play(totalStepsGetter: () => number, bpm?: number): void {
     this.stopLoop();
-    this.totalBeatsGetter = totalBeatsGetter;
+    this.totalStepsGetter = totalStepsGetter;
     if (bpm !== undefined) {
       this._bpm = bpm;
     }
@@ -53,22 +53,22 @@ export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
   stop(): void {
     this._isPlaying = false;
     this.stopLoop();
-    this._currentBeat = 0;
+    this._currentStep = 0;
   }
 
   setBpm(bpm: number): void {
     this._bpm = Math.max(5, Math.min(300, bpm));
   }
 
-  animateStep(amount: number, totalBeats: number): void {
+  animateStep(amount: number, totalSteps: number): void {
     if (this._isPlaying) return;
     this.stopLoop();
 
-    if (totalBeats <= 0) return;
+    if (totalSteps <= 0) return;
 
-    const startBeat = this._currentBeat;
-    const targetBeat =
-      (((this._currentBeat + amount) % totalBeats) + totalBeats) % totalBeats;
+    const startStep = this._currentStep;
+    const targetStep =
+      (((this._currentStep + amount) % totalSteps) + totalSteps) % totalSteps;
     const direction = amount > 0 ? 1 : -1;
     const distance = Math.abs(amount);
     let traveled = 0;
@@ -87,15 +87,15 @@ export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
       traveled += increment;
 
       if (traveled >= distance) {
-        this._currentBeat = targetBeat;
+        this._currentStep = targetStep;
         this.stepAnimating = false;
         this.animationFrameId = null;
         return;
       }
 
-      this._currentBeat =
-        (((startBeat + direction * traveled) % totalBeats) + totalBeats) %
-        totalBeats;
+      this._currentStep =
+        (((startStep + direction * traveled) % totalSteps) + totalSteps) %
+        totalSteps;
       this.animationFrameId = requestAnimationFrame(tick);
     };
 
@@ -103,12 +103,12 @@ export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
   }
 
   setCurrentBeat(beat: number): void {
-    this._currentBeat = beat;
+    this._currentStep = beat;
   }
 
   dispose(): void {
     this.stopLoop();
-    this.totalBeatsGetter = null;
+    this.totalStepsGetter = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -123,9 +123,9 @@ export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
       const beatsPerMs = this._bpm / 60 / 1000;
       const beatIncrement = deltaMs * beatsPerMs;
 
-      const total = this.totalBeatsGetter?.() ?? 0;
+      const total = this.totalStepsGetter?.() ?? 0;
       if (total > 0) {
-        this._currentBeat = (this._currentBeat + beatIncrement) % total;
+        this._currentStep = (this._currentStep + beatIncrement) % total;
       }
 
       this.animationFrameId = requestAnimationFrame(tick);

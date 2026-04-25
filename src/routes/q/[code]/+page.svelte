@@ -636,7 +636,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
                     <ExportImagePanel
                       exportOptions={ctx.exportOptions}
                       isExporting={ctx.isExporting}
-                      beatCount={ctx.effectiveSequence?.steps?.length ?? 0}
+                      stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
                       onExport={ctx.handleExport}
                       onClose={ctx.exitEditMode}
                     />

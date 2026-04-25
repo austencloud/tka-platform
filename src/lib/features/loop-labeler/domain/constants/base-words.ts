@@ -1,6 +1,6 @@
 /**
  * TKA Base Words
- * Fundamental 4-beat sequences that can be composed together
+ * Fundamental 4-step sequences that can be composed together
  */
 
 export interface BaseWord {
@@ -46,7 +46,7 @@ export function detectBaseWordFragments(word: string): string[] {
   const fragments: string[] = [];
   const normalized = word.toUpperCase();
 
-  // Check for 2-beat fragments (half of base words)
+  // Check for 2-step fragments (half of base words)
   for (let i = 0; i < normalized.length - 1; i += 2) {
     const fragment = normalized.slice(i, i + 2);
 

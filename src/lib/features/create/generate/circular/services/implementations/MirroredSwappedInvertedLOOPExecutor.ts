@@ -160,7 +160,7 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     //      Rotation direction flipped once (3 flips total = odd = net flip)
     const newStep: StepData = {
       ...previousMatchingStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       letter: invertedLetter, // INVERTED: Flip letter
       startPosition: previousStep.endPosition ?? null,

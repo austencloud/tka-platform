@@ -303,9 +303,9 @@ export function createAvatarInstanceState(
       };
     }
 
-    const motionBeatIndex = Math.max(0, currentStepIndex - 1);
-    const currentBeat = motionBeatIndex + 1 + rawProgress;
-    const phrase = findPhraseAtBeat(timeline, currentBeat);
+    const motionStepIndex = Math.max(0, currentStepIndex - 1);
+    const currentStep = motionStepIndex + 1 + rawProgress;
+    const phrase = findPhraseAtBeat(timeline, currentStep);
 
     if (!phrase) {
       // Gaps between phrases play linearly.
@@ -319,11 +319,11 @@ export function createAvatarInstanceState(
     const totalMotionSteps = Math.max(1, stepConfigs.length - 1);
     const { stepIndex, localProgress } = phraseInterpolator.interpolate(
       phrase,
-      currentBeat,
+      currentStep,
       totalMotionSteps,
     );
 
-    const targetStep = stepConfigs[stepIndex + 1] ?? currentStep;
+    const targetStep = stepConfigs[stepIndex + 1] ?? stepConfigs[stepIndex];
     return {
       blue: targetStep?.blue ?? null,
       red: targetStep?.red ?? null,
@@ -471,16 +471,16 @@ export function createAvatarInstanceState(
    * from the sequence-wide setting, so they can never map to a preset mode
    * regardless of what the global hand assignment would derive.
    */
-  function setBeatHandPlane(beatIndex: number, hand: "blue" | "red", plane: Plane) {
-    const current = beatPlaneOverrides.get(beatIndex) ?? {};
+  function setStepHandPlane(stepNumber: number, hand: "blue" | "red", plane: Plane) {
+    const current = beatPlaneOverrides.get(stepNumber) ?? {};
     const updated = { ...current, [hand]: plane };
 
     // If both hands are WALL (or undefined), remove the entry to keep the map clean
     if ((!updated.blue || updated.blue === Plane.WALL) &&
         (!updated.red || updated.red === Plane.WALL)) {
-      beatPlaneOverrides.delete(beatIndex);
+      beatPlaneOverrides.delete(stepNumber);
     } else {
-      beatPlaneOverrides.set(beatIndex, updated);
+      beatPlaneOverrides.set(stepNumber, updated);
     }
 
     // Trigger reactivity by reassigning
@@ -499,8 +499,8 @@ export function createAvatarInstanceState(
    * Get the plane assignments for a specific beat.
    * Returns the override if one exists, otherwise Plane.WALL.
    */
-  function getBeatPlanes(beatIndex: number): { blue: Plane; red: Plane } {
-    const override = beatPlaneOverrides.get(beatIndex);
+  function getStepPlanes(stepNumber: number): { blue: Plane; red: Plane } {
+    const override = beatPlaneOverrides.get(stepNumber);
     return {
       blue: override?.blue ?? Plane.WALL,
       red: override?.red ?? Plane.WALL,
@@ -552,7 +552,7 @@ export function createAvatarInstanceState(
   }
 
   // Derived: planes for the currently selected beat
-  const currentBeatPlanes = $derived(getBeatPlanes(currentStepIndex));
+  const currentStepPlanes = $derived(getStepPlanes(currentStepIndex));
 
   /**
    * Debug: cycle through rotation plane variants and re-convert.
@@ -779,16 +779,16 @@ export function createAvatarInstanceState(
     },
     setPlaneMode,
     setHandPlane,
-    setBeatHandPlane,
+    setStepHandPlane,
     clearBeatPlaneOverrides,
     get customBluePlane() { return customBluePlane; },
     get customRedPlane() { return customRedPlane; },
-    get currentBeatBluePlane() { return currentBeatPlanes.blue; },
-    get currentBeatRedPlane() { return currentBeatPlanes.red; },
+    get currentStepBluePlane() { return currentStepPlanes.blue; },
+    get currentStepRedPlane() { return currentStepPlanes.red; },
     get beatPlaneOverrides() { return beatPlaneOverrides; },
-    get hasBeatOverrides() { return beatPlaneOverrides.size > 0; },
+    get hasStepOverrides() { return beatPlaneOverrides.size > 0; },
     get beatEditMode() { return beatEditMode; },
-    setBeatEditMode(enabled: boolean) { beatEditMode = enabled; },
+    setStepEditMode(enabled: boolean) { beatEditMode = enabled; },
     cycleRotationVariant,
     get rotationVariantLabel() {
       return ROTATION_LABELS[rotationVariantIndex];

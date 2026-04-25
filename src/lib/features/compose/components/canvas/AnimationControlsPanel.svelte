@@ -30,7 +30,7 @@
   import AnimationSettingsSheet from "../controls/AnimationSettingsSheet.svelte";
   import AnimationStepGrid from "$lib/shared/animation-engine/components/AnimationStepGrid.svelte";
 
-  type MobileToolView = "controls" | "beat-grid";
+  type MobileToolView = "controls" | "step-grid";
 
   const debug = createComponentLogger("AnimationControlsPanel");
   const DEFAULT_BPM = 60;
@@ -225,7 +225,7 @@
     />
 
     <!-- Tool Area: Beat Grid or Quick Presets -->
-    {#if mobileToolView === "beat-grid"}
+    {#if mobileToolView === "step-grid"}
       <div class="beat-grid-area">
         <AnimationStepGrid {sequenceData} {currentStep} {isPlaying} />
       </div>
@@ -389,14 +389,6 @@
 
   .quick-presets-row {
     justify-content: center;
-  }
-
-  .beat-grid-area {
-    min-height: 100px;
-    max-height: 160px;
-    overflow: hidden;
-    border-radius: 12px;
-    background: var(--theme-panel-bg);
   }
 
   .playback-row {

@@ -29,14 +29,14 @@ export function getHighlightedBeatFromVideo(
  */
 export function generateEvenBeatTimestamps(
   videoDuration: number,
-  beatCount: number,
+  stepCount: number,
   bpm: number,
   startOffset: number = 0
 ): number[] {
   const beatInterval = 60 / bpm;
   const timestamps: number[] = [];
 
-  for (let i = 0; i < beatCount; i++) {
+  for (let i = 0; i < stepCount; i++) {
     const timestamp = startOffset + i * beatInterval;
 
     if (timestamp < videoDuration) {
@@ -44,7 +44,7 @@ export function generateEvenBeatTimestamps(
     } else {
       // If BPM-based spacing runs past the video end, distribute
       // the remaining beats evenly in whatever time is left
-      const remaining = beatCount - i;
+      const remaining = stepCount - i;
       const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
       const remainingDuration = videoDuration - lastTimestamp;
       const remainingInterval = remainingDuration / (remaining + 1);

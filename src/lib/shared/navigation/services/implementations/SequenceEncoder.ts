@@ -215,8 +215,8 @@ export class SequenceEncoder implements ISequenceEncoder {
     }
 
     const encodedStartPosition = this.encodeBeat(startPositionStep);
-    const encodedBeats = actualSteps.map((beat) => this.encodeBeat(beat));
-    return `${encodedStartPosition}|${encodedBeats.join("|")}`;
+    const encodedSteps = actualSteps.map((step) => this.encodeBeat(step));
+    return `${encodedStartPosition}|${encodedSteps.join("|")}`;
   }
 
   /**
@@ -249,7 +249,7 @@ export class SequenceEncoder implements ISequenceEncoder {
 
       const beatEncodings = parts.slice(1).filter((e) => e && e.length > 0);
       if (beatEncodings.length === 0) {
-        throw new Error("No beat data found in sequence");
+        throw new Error("No step data found in sequence");
       }
 
       const startPositionStep: StepData = {

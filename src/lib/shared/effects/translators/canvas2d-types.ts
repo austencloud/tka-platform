@@ -22,6 +22,7 @@ import type {
   SmokeIntent,
   InkIntent,
   FrostIntent,
+  SilkIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
 import type { BubblePalette } from "../domain/BubblePalettes";
@@ -29,6 +30,7 @@ import type { PetalPalette } from "../domain/PetalPalettes";
 import type { SmokePalette } from "../domain/SmokePalettes";
 import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 import type { FrostPalette } from "../domain/FrostPalettes";
+import type { SilkPalette } from "../domain/SilkPalettes";
 
 export interface Trails2DParams extends TrailsIntent {
   /** px value for ctx.lineWidth. Derived from thickness. */
@@ -279,4 +281,16 @@ export interface Frost2DParams extends FrostIntent {
   crystalSpacing: number;
   /** seconds — time for crystal to grow from 0 to full size. */
   crystalGrowDuration: number;
+}
+
+export interface Silk2DParams extends SilkIntent {
+  resolvedPalette: SilkPalette;
+  /** px — base ribbon half-width at width=1. */
+  baseHalfWidth: number;
+  /** seconds — sample lifetime at duration=1. */
+  lifetimeSeconds: number;
+  /** World units/s that maps to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** Canvas composite op. */
+  blendMode?: GlobalCompositeOperation;
 }

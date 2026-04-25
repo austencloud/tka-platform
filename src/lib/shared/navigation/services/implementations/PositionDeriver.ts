@@ -28,8 +28,8 @@ export class PositionDeriver implements IPositionDeriver {
     }
 
     // Derive positions for all steps in the sequence
-    const beatsWithPositions = sequence.steps.map((beat) =>
-      this.derivePositionsForBeat(beat)
+    const beatsWithPositions = sequence.steps.map((step) =>
+      this.derivePositionsForBeat(step)
     ) as StepData[];
 
     // Derive positions for start position if it exists

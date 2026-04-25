@@ -146,6 +146,6 @@ export interface IToolPanelMethods {
 /**
  * Batch Edit Changes Interface
  *
- * Partial beat data changes that can be applied to multiple steps at once.
+ * Partial step data changes that can be applied to multiple steps at once.
  */
 export type BatchEditChanges = Partial<StepData>;

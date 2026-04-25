@@ -58,7 +58,7 @@ export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
 
     // Check if identifier looks like a UUID (user-created sequence)
     // UUIDs: 8-4-4-4-12 hex pattern, gallery words are letters like "DKIIEJII"

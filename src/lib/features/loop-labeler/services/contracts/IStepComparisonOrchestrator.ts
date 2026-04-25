@@ -10,14 +10,14 @@ import type { SequenceEntry } from "../../domain/models/sequence-models";
  */
 export interface IStepComparisonOrchestrator {
   /**
-   * Extract normalized beat data from a sequence.
+   * Extract normalized step data from a sequence.
    */
   extractBeats(sequence: SequenceEntry): ExtractedStep[];
 
   /**
    * Compare two steps and identify ALL transformations between them.
    */
-  compareBeatPair(step1: ExtractedStep, step2: ExtractedStep): string[];
+  compareStepPair(step1: ExtractedStep, step2: ExtractedStep): string[];
 
   /**
    * Generate step-pair relationships for halved sequences (180° apart).

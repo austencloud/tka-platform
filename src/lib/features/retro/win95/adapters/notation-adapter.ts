@@ -52,7 +52,7 @@ export interface RetroGenerationOptions {
 export interface RetroGenerationResult {
   word: string;
   beats: { letter: string; pictograph: RetroPictographData }[];
-  beatCount: number;
+  stepCount: number;
   /**
    * The raw SequenceData from the orchestrator, kept alongside the pixel
    * renderer's beat list so the SCRIBE menu can pass it straight to
@@ -172,7 +172,7 @@ export async function generateRetroSequence(
   return {
     word: sequenceData.word,
     beats,
-    beatCount: beats.length,
+    stepCount: beats.length,
     sequenceData,
   };
 }

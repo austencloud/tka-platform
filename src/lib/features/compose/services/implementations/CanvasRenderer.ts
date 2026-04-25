@@ -142,7 +142,7 @@ export class CanvasRenderer implements ICanvasRenderer {
     canvasSize: number,
     y: number,
     totalSteps: number,
-    currentBeat: number,
+    currentStep: number,
     stepDurations: number[],
     darkMode: boolean
   ): void {
@@ -151,7 +151,7 @@ export class CanvasRenderer implements ICanvasRenderer {
       canvasSize,
       y,
       totalSteps,
-      currentBeat,
+      currentStep,
       stepDurations,
       darkMode
     );
@@ -416,7 +416,7 @@ export class CanvasRenderer implements ICanvasRenderer {
     canvasSize: number,
     y: number,
     totalSteps: number,
-    currentBeat: number,
+    currentStep: number,
     stepDurations: number[],
     darkMode: boolean
   ): void {
@@ -453,9 +453,9 @@ export class CanvasRenderer implements ICanvasRenderer {
       return;
     }
 
-    // currentBeat is 0-based float: 0.0 = beat 0 start, 1.5 = beat 1 halfway
-    const stepIndex = Math.floor(currentBeat);
-    const progressWithinStep = currentBeat - stepIndex;
+    // currentStep is 0-based float: 0.0 = beat 0 start, 1.5 = beat 1 halfway
+    const stepIndex = Math.floor(currentStep);
+    const progressWithinStep = currentStep - stepIndex;
 
     let completedDuration = 0;
     for (let i = 0; i < Math.min(stepIndex, totalSteps); i++) {

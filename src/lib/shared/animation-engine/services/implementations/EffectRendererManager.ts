@@ -188,7 +188,8 @@ export class EffectRendererManager {
           this.canvasSize
         );
         if (success) {
-          this.charcoalRenderer.setParams(this.getVM!().getCharcoalParams());
+          const charcoalParams = this.getVM?.().getCharcoalParams();
+          if (charcoalParams) this.charcoalRenderer.setParams(charcoalParams);
           this.renderLoopService?.updateConfig({
             charcoalRenderer: this.charcoalRenderer,
           });
@@ -697,7 +698,8 @@ export class EffectRendererManager {
    * Safe to call any time; renderers that aren't initialized yet are skipped.
    */
   syncEffectLayers(): void {
-    const vm = this.getVM!();
+    if (!this.getVM) return;
+    const vm = this.getVM();
     const apply = (id: string, renderer: { setCanvasZIndex?: (z: number) => void } | null) => {
       if (!renderer?.setCanvasZIndex) return;
       renderer.setCanvasZIndex(resolveEffectZ(id, vm.getEffectLayer(id)));

@@ -20,7 +20,7 @@ export function createDefaultAudioState(): AudioState {
     duration: 0,
     detectedBpm: null,
     manualBpm: null,
-    globalBeatMarkers: [],
+    globalStepMarkers: [],
     tempoRegions: [],
     isAnalyzing: false,
     isLoaded: false,

@@ -4,7 +4,7 @@ import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloProp
 
 export interface FuseOptions {
 	readonly alignmentOffset?: number;
-	readonly maxBeats?: number;
+	readonly maxSteps?: number;
 }
 
 export interface ISequenceFuser {

@@ -88,7 +88,7 @@ export interface LocationDelta {
  *
  * Captures the full state of a single beat without absolute positions.
  */
-export interface BeatSignature {
+export interface StepSignature {
   /** Position group at start (alpha, beta, gamma, etc.) */
   readonly startPositionGroup: GridPositionGroup;
 
@@ -138,7 +138,7 @@ export interface SequenceSignature {
   readonly isCircular: boolean;
 
   /** Signatures for each beat */
-  readonly beatSignatures: readonly BeatSignature[];
+  readonly beatSignatures: readonly StepSignature[];
 
   /** Combined hash of all beat signatures */
   readonly hash: string;
@@ -173,7 +173,7 @@ export interface MotionComparisonBreakdown {
 /**
  * Result of comparing two beat signatures.
  */
-export interface BeatComparisonResult {
+export interface StepComparisonResult {
   /** Whether beats are exactly equivalent */
   readonly isExactMatch: boolean;
 
@@ -181,10 +181,10 @@ export interface BeatComparisonResult {
   readonly similarity: number;
 
   /** Detailed breakdown */
-  readonly breakdown: BeatComparisonBreakdown;
+  readonly breakdown: StepComparisonBreakdown;
 }
 
-export interface BeatComparisonBreakdown {
+export interface StepComparisonBreakdown {
   readonly positionGroupMatch: boolean;
   readonly blueSimilarity: number;
   readonly redSimilarity: number;

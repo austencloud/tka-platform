@@ -3,7 +3,7 @@
    * GhostStaff3D — beat-onset phantoms of a staff in 3D.
    *
    * Mirrors the 2D Echo2DRenderer behaviour: on each beat boundary
-   * (`floor(currentStep / interval) > lastBeatIndex`), captures the current
+   * (`floor(currentStep / interval) > lastStepIndex`), captures the current
    * prop's worldPosition + worldRotation into a ring buffer. Each phantom
    * is rendered as a translucent staff-shaped mesh (cylinder) with alpha
    * that fades linearly over `decay` beats.
@@ -63,7 +63,7 @@
   // re-renders when we push/splice; Vector3/Quaternion are treated as opaque
   // references — we never mutate them after capture.
   let phantoms = $state<Phantom[]>([]);
-  let lastBeatIndex = -1;
+  let lastStepIndex = -1;
   let nextId = 0;
 
   // Static rotation adjustment: Staff3D renders a Y-axis cylinder then
@@ -78,15 +78,15 @@
   $effect(() => {
     if (!enabled) return;
     if (!propState) return;
-    const beatIndex = Math.floor(currentStep / interval);
-    if (beatIndex > lastBeatIndex) {
+    const stepNumber = Math.floor(currentStep / interval);
+    if (stepNumber > lastStepIndex) {
       phantoms.push({
         id: nextId++,
         pos: propState.worldPosition.clone(),
         quat: propState.worldRotation.clone(),
         capturedStep: currentStep,
       });
-      lastBeatIndex = beatIndex;
+      lastStepIndex = stepNumber;
     }
     // Cull. Age measured in intervals, matches the 2D renderer.
     const cullAge = decay;
@@ -100,7 +100,7 @@
   $effect(() => {
     if (!enabled) {
       phantoms = [];
-      lastBeatIndex = -1;
+      lastStepIndex = -1;
     }
   });
 

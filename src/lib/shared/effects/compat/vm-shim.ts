@@ -72,6 +72,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke },
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost },
+    silk: { ...DEFAULT_EFFECTS_CONFIG.silk },
 
     activePresets: {
       trails: null,
@@ -88,6 +89,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
       smoke: null,
       ink: null,
       frost: null,
+      silk: null,
     },
   };
 }
