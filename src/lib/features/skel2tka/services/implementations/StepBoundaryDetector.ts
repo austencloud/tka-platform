@@ -11,11 +11,11 @@
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
-import type { HandTimeline, DetectedBeat, BeatPosition } from "../../domain/models";
+import type { HandTimeline, DetectedBeat, StepPosition } from "../../domain/models";
 import type {
   IStepBoundaryDetector,
-  BeatDetectionOptions,
-} from "../contracts/IStepBoundaryDetector";
+  StepDetectionOptions,
+} from "../contracts/IBeatBoundaryDetector";
 
 const DEFAULT_MIN_FRAMES_PER_BEAT = 3;
 const DEFAULT_MIN_CONFIDENCE = 0.5;
@@ -29,7 +29,7 @@ interface FrameGroup {
 export class StepBoundaryDetector implements IStepBoundaryDetector {
   detectBeats(
     timeline: HandTimeline,
-    options?: BeatDetectionOptions
+    options?: StepDetectionOptions
   ): DetectedBeat[] {
     const minFrames = options?.minFramesPerBeat ?? DEFAULT_MIN_FRAMES_PER_BEAT;
     const minConfidence = options?.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
@@ -113,7 +113,7 @@ export class StepBoundaryDetector implements IStepBoundaryDetector {
     const startTime = firstFrame?.timestamp ?? 0;
     const endTime = lastFrame?.timestamp ?? startTime;
 
-    const positions: BeatPosition[] = [];
+    const positions: StepPosition[] = [];
 
     // Compute average confidence for blue hand
     if (group.blueLocation) {

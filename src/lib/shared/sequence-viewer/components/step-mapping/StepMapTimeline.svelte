@@ -1,0 +1,350 @@
+<!--
+  StepMapTimeline.svelte
+
+  A horizontal timeline bar representing a video's duration, with draggable
+  beat markers. Each marker is a vertical line with a circular drag handle.
+  Users can click to seek or drag markers to adjust beat timestamps.
+-->
+<script lang="ts">
+  interface Props {
+    duration: number;
+    currentTime: number;
+    beatTimestamps: number[];
+    activeStepIndex: number;
+    onTimestampChange: (index: number, newTime: number) => void;
+    onSeek: (time: number) => void;
+  }
+
+  let {
+    duration,
+    currentTime,
+    beatTimestamps,
+    activeStepIndex,
+    onTimestampChange,
+    onSeek,
+  }: Props = $props();
+
+  let timelineEl: HTMLDivElement | undefined = $state();
+  let draggingIndex = $state(-1);
+  let isScrubbing = $state(false);
+
+  // The fraction of the timeline that's been played (0 to 1)
+  let progressFraction = $derived(
+    duration > 0 ? Math.min(currentTime / duration, 1) : 0
+  );
+
+  function getTimeFromPointer(clientX: number): number {
+    if (!timelineEl || duration <= 0) return 0;
+    const rect = timelineEl.getBoundingClientRect();
+    const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return fraction * duration;
+  }
+
+  function clampTimestamp(index: number, time: number): number {
+    // Markers can't cross their neighbors. Leave a 0.05s minimum gap.
+    const gap = 0.05;
+    const min = index > 0 ? beatTimestamps[index - 1]! + gap : 0;
+    const max =
+      index < beatTimestamps.length - 1
+        ? beatTimestamps[index + 1]! - gap
+        : duration;
+    return Math.max(min, Math.min(max, time));
+  }
+
+  function handleTimelinePointerDown(event: PointerEvent) {
+    // If tapping a marker handle, let that handler take over
+    if (draggingIndex >= 0) return;
+
+    // Start scrubbing — seek immediately and continue on move
+    isScrubbing = true;
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+
+    const time = getTimeFromPointer(event.clientX);
+    onSeek(time);
+  }
+
+  function handleMarkerPointerDown(event: PointerEvent, index: number) {
+    event.stopPropagation();
+    event.preventDefault();
+    draggingIndex = index;
+
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: PointerEvent) {
+    if (draggingIndex >= 0) {
+      // Dragging a beat marker
+      const rawTime = getTimeFromPointer(event.clientX);
+      const clamped = clampTimestamp(draggingIndex, rawTime);
+      onTimestampChange(draggingIndex, clamped);
+    } else if (isScrubbing) {
+      // Scrubbing the playhead
+      const time = getTimeFromPointer(event.clientX);
+      onSeek(time);
+    }
+  }
+
+  function handlePointerUp() {
+    draggingIndex = -1;
+    isScrubbing = false;
+  }
+
+  function formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 10);
+    return `${m}:${s.toString().padStart(2, "0")}.${ms}`;
+  }
+</script>
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="timeline-container"
+  bind:this={timelineEl}
+  onpointerdown={handleTimelinePointerDown}
+  onpointermove={handlePointerMove}
+  onpointerup={handlePointerUp}
+  onpointercancel={handlePointerUp}
+  role="slider"
+  aria-label="Beat timeline"
+  aria-valuemin={0}
+  aria-valuemax={duration}
+  aria-valuenow={currentTime}
+  tabindex={0}
+>
+  <!-- Beat number labels above the bar -->
+  <div class="beat-labels">
+    {#each beatTimestamps as ts, i}
+      {@const pct = duration > 0 ? (ts / duration) * 100 : 0}
+      <span
+        class="beat-label"
+        class:active={i === activeStepIndex}
+        style="left: {pct}%"
+      >
+        {i + 1}
+      </span>
+    {/each}
+  </div>
+
+  <!-- The actual timeline bar -->
+  <div class="timeline-bar">
+    <!-- Progress fill -->
+    <div class="progress-fill" style="width: {progressFraction * 100}%"></div>
+
+    <!-- Playhead indicator -->
+    <div class="playhead" style="left: {progressFraction * 100}%"></div>
+
+    <!-- Beat markers -->
+    {#each beatTimestamps as ts, i}
+      {@const pct = duration > 0 ? (ts / duration) * 100 : 0}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="beat-marker"
+        class:active={i === activeStepIndex}
+        class:dragging={i === draggingIndex}
+        style="left: {pct}%"
+        onpointerdown={(e) => handleMarkerPointerDown(e, i)}
+        role="slider"
+        aria-label="Beat {i + 1} at {formatTime(ts)}"
+        aria-valuemin={0}
+        aria-valuemax={duration}
+        aria-valuenow={ts}
+        tabindex={0}
+      >
+        <div class="marker-line"></div>
+        <div class="marker-handle"></div>
+      </div>
+    {/each}
+  </div>
+
+  <!-- Time display -->
+  <div class="time-display">
+    <span class="time-current">{formatTime(currentTime)}</span>
+    <span class="time-total">{formatTime(duration)}</span>
+  </div>
+</div>
+
+<style>
+  .timeline-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 0;
+    user-select: none;
+    touch-action: none;
+    cursor: pointer;
+  }
+
+  /* ============================================================
+   * BEAT LABELS
+   * ============================================================ */
+
+  .step-labels {
+    position: relative;
+    height: 16px;
+  }
+
+  .step-label {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    pointer-events: none;
+    transition: color 0.15s ease;
+  }
+
+  .step-label.active {
+    color: var(--theme-accent, #6366f1);
+  }
+
+  /* ============================================================
+   * TIMELINE BAR
+   * ============================================================ */
+
+  .timeline-bar {
+    position: relative;
+    height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    overflow: visible;
+  }
+
+  .progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    border-radius: 7px 0 0 7px;
+    pointer-events: none;
+    transition: width 0.05s linear;
+  }
+
+  /* ============================================================
+   * PLAYHEAD
+   * ============================================================ */
+
+  .playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--theme-text, #ffffff);
+    opacity: 0.8;
+    transform: translateX(-1px);
+    pointer-events: none;
+    z-index: 2;
+    transition: left 0.05s linear;
+  }
+
+  /* ============================================================
+   * BEAT MARKERS
+   * ============================================================ */
+
+  .beat-marker {
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    width: 44px;
+    transform: translateX(-22px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: grab;
+    z-index: 3;
+    touch-action: none;
+  }
+
+  .beat-marker:active,
+  .beat-marker.dragging {
+    cursor: grabbing;
+  }
+
+  .marker-line {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--theme-text-muted, rgba(255, 255, 255, 0.35));
+    border-radius: 1px;
+    transition: background 0.15s ease;
+  }
+
+  .beat-marker.active .marker-line {
+    background: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+  }
+
+  .beat-marker.dragging .marker-line {
+    background: var(--theme-accent, #6366f1);
+  }
+
+  .marker-handle {
+    position: absolute;
+    top: -2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(30, 30, 40, 1));
+    border: 2px solid var(--theme-text-muted, rgba(255, 255, 255, 0.35));
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .beat-marker:hover .marker-handle {
+    border-color: var(--theme-text, #ffffff);
+    transform: scale(1.15);
+  }
+
+  .beat-marker.active .marker-handle {
+    border-color: var(--theme-accent, #6366f1);
+    background: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+  }
+
+  .beat-marker.dragging .marker-handle {
+    border-color: var(--theme-accent, #6366f1);
+    background: var(--theme-accent, #6366f1);
+    transform: scale(1.25);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+  }
+
+  /* ============================================================
+   * TIME DISPLAY
+   * ============================================================ */
+
+  .time-display {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+  }
+
+  .time-current,
+  .time-total {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============================================================
+   * REDUCED MOTION
+   * ============================================================ */
+
+  @media (prefers-reduced-motion: reduce) {
+    .step-label,
+    .marker-line,
+    .marker-handle,
+    .progress-fill,
+    .playhead {
+      transition: none !important;
+    }
+
+    .beat-marker:hover .marker-handle,
+    .beat-marker.dragging .marker-handle {
+      transform: none !important;
+    }
+  }
+</style>

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import type { ISimilarityCalculator } from './services/contracts/ISimilarityCalculator';
 import { SimilarityCalculator } from './services/implementations/SimilarityCalculator';
-import { getStepSignatureGenerator } from './getStepSignatureGenerator';
+import { getStepSignatureGenerator } from './getBeatSignatureGenerator';
 import { getSequenceAligner } from './getSequenceAligner';
 
 let instance: ISimilarityCalculator | null = null;

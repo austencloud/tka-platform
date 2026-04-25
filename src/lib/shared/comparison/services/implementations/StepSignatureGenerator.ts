@@ -6,11 +6,11 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
 import type { IMotionSignatureGenerator } from "../contracts/IMotionSignatureGenerator";
 import type {
-  BeatSignature,
-  BeatComparisonResult,
+  StepSignature,
+  StepComparisonResult,
   MotionSignature,
 } from "../../domain/models/signatures";
 import {
@@ -49,7 +49,7 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
 export class StepSignatureGenerator implements IStepSignatureGenerator {
   constructor(private readonly motionSignatureGenerator: IMotionSignatureGenerator) {}
 
-  generateSignature(step: StepData): BeatSignature {
+  generateSignature(step: StepData): StepSignature {
     const blueMotion = step.motions[MotionColor.BLUE];
     const redMotion = step.motions[MotionColor.RED];
 
@@ -92,7 +92,7 @@ export class StepSignatureGenerator implements IStepSignatureGenerator {
     };
   }
 
-  signaturesMatch(a: BeatSignature, b: BeatSignature): boolean {
+  signaturesMatch(a: StepSignature, b: StepSignature): boolean {
     // Quick check: if hashes differ, definitely not equal
     if (a.hash !== b.hash) {
       return false;
@@ -108,7 +108,7 @@ export class StepSignatureGenerator implements IStepSignatureGenerator {
     );
   }
 
-  compareSignatures(a: BeatSignature, b: BeatSignature): BeatComparisonResult {
+  compareSignatures(a: StepSignature, b: StepSignature): StepComparisonResult {
     const blueComparison = this.motionSignatureGenerator.compareSignatures(a.blue, b.blue);
     const redComparison = this.motionSignatureGenerator.compareSignatures(a.red, b.red);
 
@@ -144,7 +144,7 @@ export class StepSignatureGenerator implements IStepSignatureGenerator {
     };
   }
 
-  generateSignatures(steps: readonly StepData[]): readonly BeatSignature[] {
+  generateSignatures(steps: readonly StepData[]): readonly StepSignature[] {
     return steps.map((step) => this.generateSignature(step));
   }
 

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import type { ISequenceAligner } from './services/contracts/ISequenceAligner';
 import { SequenceAligner } from './services/implementations/SequenceAligner';
-import { getStepSignatureGenerator } from './getStepSignatureGenerator';
+import { getStepSignatureGenerator } from './getBeatSignatureGenerator';
 import { getSpatialTransformDetector } from './getSpatialTransformDetector';
 
 let instance: ISequenceAligner | null = null;
