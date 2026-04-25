@@ -218,8 +218,9 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     icon: '<i class="fas fa-crown" style="color: #ffd700;" aria-hidden="true"></i>',
     color: "#ffd700", // Gold - admin/privileged
     description: "System management & configuration",
-    isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
+    isMain: true,
     sections: ADMIN_TABS,
+    adminOnly: true,
   },
   {
     id: "festivals",

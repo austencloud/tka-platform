@@ -2,8 +2,7 @@
 <!-- Modern 2026-style sidebar navigation for desktop in side-by-side layout -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { container } from "../../di";
-  import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { slide, fade } from "svelte/transition";
   import { openDebugPanel } from "../../application/state/ui/ui-state.svelte";

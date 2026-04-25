@@ -8,9 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import Drawer from "../../foundation/ui/Drawer.svelte";
-
-  import { container } from "../../di";
-  import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import AuthFooter from "../../auth/components/AuthFooter.svelte";
   import AuthHeader from "../../auth/components/AuthHeader.svelte";

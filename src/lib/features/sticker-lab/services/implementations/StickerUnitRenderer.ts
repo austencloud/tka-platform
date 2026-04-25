@@ -30,7 +30,11 @@ const LIGHT_MODE_PALETTE: MandalaPalette = {
 const STICKER_STROKE_WIDTH = 6;
 
 export class StickerUnitRenderer implements IStickerUnitRenderer {
-  private readonly mandalaRenderer = new MandalaRenderer();
+  private readonly mandalaRenderer: MandalaRenderer;
+
+  constructor(mandalaRenderer?: MandalaRenderer) {
+    this.mandalaRenderer = mandalaRenderer ?? new MandalaRenderer();
+  }
 
   renderSVG(unit: StickerUnit, mandalaPaths: MandalaPaths): string {
     const mandalaSvg = this.mandalaRenderer.renderSVG(mandalaPaths, {

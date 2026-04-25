@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   /**
    * UserProfilePanel (Browse Module)
    * Comprehensive user profile view with sequences, stats, and achievements
@@ -8,7 +10,6 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { doc, setDoc } from "firebase/firestore";
-  import { container } from "$lib/shared/di";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -91,7 +92,7 @@
     try {
       // Resolve services
       userService = getUserRepository();
-      libraryService = container.items.libraryRepository;
+      libraryService = getLibraryRepository();
       hapticService = getHapticFeedback();
 
       // Load user profile with current user context for follow status

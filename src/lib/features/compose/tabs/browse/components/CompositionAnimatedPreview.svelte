@@ -7,9 +7,11 @@
 	driving real prop animations. Shared beat counter runs at 60 BPM.
 -->
 <script lang="ts">
+
+import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 	import { onMount, onDestroy } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-	import { container } from "$lib/shared/di";
 	import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 	import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -72,8 +74,8 @@
 
 	onMount(() => {
 		try {
-			const stepCalculationService = container.items.stepCalculationService;
-			const propInterpolationService = container.items.propInterpolationService;
+			const stepCalculationService = getStepCalculator();
+			const propInterpolationService = getPropInterpolator();
 
 			const states: CellAnimState[] = [];
 

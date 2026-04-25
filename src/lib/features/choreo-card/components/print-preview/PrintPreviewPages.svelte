@@ -1,11 +1,12 @@
 <script lang="ts">
+
+import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/contracts/IPrintPDFExporter";
   import type { PrintRenderOptions } from "../../services/contracts/IPrintCardRenderer";
   import { type ElementalTheme, VTG_ELEMENTAL_THEMES } from "../../domain/elemental-theme";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
-  import { container } from "$lib/shared/di";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
@@ -236,7 +237,7 @@
     renderedCards = [];
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
-    const renderer = container.items.printCardRenderer;
+    const renderer = getPrintCardRenderer();
     const pairs: CardPair[] = [];
     const cards: RenderedCard[] = [];
 
@@ -286,7 +287,7 @@
     const seq = sequences[index];
     if (!seq) return null;
 
-    const renderer = container.items.printCardRenderer;
+    const renderer = getPrintCardRenderer();
     const stepCount = seq.steps?.length;
     const options = buildRenderOptions(stepCount);
 

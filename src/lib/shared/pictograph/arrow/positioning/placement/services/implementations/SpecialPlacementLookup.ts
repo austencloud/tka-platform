@@ -239,9 +239,10 @@ export class SpecialPlacementLookup implements ISpecialPlacementLookup {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.specialPlacementLookup to avoid DI container rebuilds.
+// Use this instead of specialPlacementLookup to avoid DI container rebuilds.
 // ============================================================================
 
 import { letterClassifier } from "./LetterClassifier";
+
 
 export const specialPlacementLookup = new SpecialPlacementLookup(letterClassifier);

@@ -6,7 +6,8 @@
   of the screen. Dismissible for 30 days via localStorage.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
   import type { IFCMTokenManager } from "../services/contracts/IFCMTokenManager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
@@ -21,8 +22,7 @@
   async function handleEnable() {
     loading = true;
     try {
-      const fcmTokenManager = container.items
-        .fcmTokenManager as IFCMTokenManager;
+      const fcmTokenManager = getFCMTokenManager();
       const permission = await fcmTokenManager.requestPermission();
       if (permission === "granted") {
         await fcmTokenManager.registerToken(userId);

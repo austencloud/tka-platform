@@ -5,10 +5,7 @@
   Tapping navigates to messages view.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { onMount, onDestroy } from "svelte";
-  import type { IConversationManager } from "$lib/shared/messaging/services/contracts/IConversationManager";
 
   interface Props {
     onClick?: () => void;
@@ -17,32 +14,11 @@
   const { onClick }: Props = $props();
 
   let unreadCount = $state(0);
-  let unsubscribe: (() => void) | null = null;
 
   const hasUnread = $derived(unreadCount > 0);
   const displayCount = $derived(unreadCount > 99 ? "99+" : String(unreadCount));
 
-  onMount(() => {
-    try {
-      const conversationManager: IConversationManager = (container.items as any).conversationManager;
-
-      // Get initial count
-      conversationManager.getTotalUnreadCount().then((count) => {
-        unreadCount = count;
-      });
-
-      // Subscribe to updates
-      unsubscribe = conversationManager.subscribeToUnreadCount((count) => {
-        unreadCount = count;
-      });
-    } catch {
-      // Service not available
-    }
-  });
-
-  onDestroy(() => {
-    unsubscribe?.();
-  });
+  // conversationManager not yet implemented — badge stays at 0 until wired
 
   function handleClick() {
     onClick?.();

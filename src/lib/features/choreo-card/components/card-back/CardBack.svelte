@@ -17,8 +17,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ISequenceToEntryConverter } from "../../services/contracts/ISequenceToEntryConverter";
   import type { ILOOPExplainer } from "../../services/contracts/ILOOPExplainer";
-  import { container as di } from "$lib/shared/di";
-  import { onMount } from "svelte";
+import { onMount } from "svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
   import { deriveCardBackData } from "./card-back-data";
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
@@ -27,6 +26,8 @@
   import TurnPatternGlyph from "./TurnPatternGlyph.svelte";
   import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import { getSequenceToEntryConverter } from "$lib/features/choreo-card/getSequenceToEntryConverter";
+  import { getLOOPExplainer } from "$lib/features/choreo-card/getLOOPExplainer";
 
   interface Props { sequence: SequenceData; }
   let { sequence }: Props = $props();
@@ -34,8 +35,8 @@
   let converter: ISequenceToEntryConverter | null = $state(null);
   let explainer: ILOOPExplainer | null = $state(null);
   onMount(() => {
-    converter = di.items.sequenceToEntryConverter;
-    explainer = di.items.loopExplainer;
+    converter = getSequenceToEntryConverter();
+    explainer = getLOOPExplainer();
   });
 
   const d = $derived(deriveCardBackData(sequence, converter, explainer));

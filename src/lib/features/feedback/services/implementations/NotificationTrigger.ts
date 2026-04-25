@@ -39,7 +39,6 @@
  * - System announcements always bypass preferences
  */
 
-import { container } from "$lib/shared/di";
 import {
   collection,
   addDoc,
@@ -63,6 +62,8 @@ import type {
 } from "../../domain/models/notification-models";
 import { getPreferenceKeyForType } from "../../domain/models/notification-models";
 import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
+
+import { getNotificationPreferencesManager } from "$lib/features/feedback/getNotificationPreferencesManager";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
@@ -359,8 +360,7 @@ export class NotificationTriggerService {
     }
 
     try {
-      const notificationPreferencesManager = container.items
-        .notificationPreferencesManager as INotificationPreferencesManager;
+      const notificationPreferencesManager = getNotificationPreferencesManager();
       const preferences =
         await notificationPreferencesManager.getPreferences(userId);
       const prefKey = getPreferenceKeyForType(type);

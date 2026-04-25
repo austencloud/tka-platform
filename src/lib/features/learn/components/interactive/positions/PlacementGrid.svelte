@@ -19,9 +19,7 @@ Hands render at the exact same size/position as everywhere else in the app.
   import { PropType } from '$lib/shared/pictograph/prop/domain/enums/PropType';
   import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/PictographData';
   import type { HandPosition } from '../../../domain/constants/position-quiz-data';
-  import { container } from '$lib/shared/di';
-
-  interface PlacementGridProps {
+interface PlacementGridProps {
     gridMode: GridMode;
     onPlacementComplete: (left: HandPosition, right: HandPosition) => void;
     disabled?: boolean;

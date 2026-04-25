@@ -7,6 +7,8 @@
   Action row (Complete / New) below grid on desktop.
 -->
 <script lang="ts">
+
+import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSaveOrchestrator";
   import {
     MotionColor,
     MotionType,
@@ -17,7 +19,6 @@
   import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
   import type { ISoloPropFactory } from "$lib/shared/foundation/services/contracts/ISoloPropFactory";
   import type { ISoloPropSaveOrchestrator } from "$lib/features/library/services/contracts/ISoloPropSaveOrchestrator";
-  import { container } from "$lib/shared/di";
   import { getSoloPropFactory } from "$lib/shared/foundation/getSoloPropFactory";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import GridModePicker from "./GridModePicker.svelte";
@@ -112,7 +113,7 @@
 
     try {
       const soloPropFactory = getSoloPropFactory();
-      const orchestrator = container.items.soloPropSaveOrchestrator as ISoloPropSaveOrchestrator;
+      const orchestrator = getSoloPropSaveOrchestrator() as ISoloPropSaveOrchestrator;
 
       const soloPropSteps = steps.map(builderStepToSoloPropStep);
       const startLocation = steps[0]!.startPosition;

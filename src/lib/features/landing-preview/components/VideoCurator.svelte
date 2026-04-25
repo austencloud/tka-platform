@@ -1,4 +1,8 @@
 <script lang="ts">
+
+import { getSequenceMatcher } from "$lib/features/landing-preview/getSequenceMatcher";
+import { getVideoCuratorLoader } from "$lib/features/landing-preview/getVideoCuratorLoader";
+import { getVideoCuratorPersister } from "$lib/features/landing-preview/getVideoCuratorPersister";
   /**
    * VideoCurator
    *
@@ -6,7 +10,6 @@
    * Uses the unified VideoEditorOverlay for all editing modes.
    */
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getVideoCache } from "$lib/shared/video";
   import VideoEditorOverlay from "./video-editor/VideoEditorOverlay.svelte";
@@ -19,9 +22,9 @@
   import type { ShowcaseVideo, VideoCategory, UserProfile } from "../types";
 
   // Services from DI container
-  const loader = container.items.videoCuratorLoader;
-  const persister = container.items.videoCuratorPersister;
-  const sequenceMatcher = container.items.sequenceMatcher;
+  const loader = getVideoCuratorLoader();
+  const persister = getVideoCuratorPersister();
+  const sequenceMatcher = getSequenceMatcher();
 
   // Video cache for instant playback
   const videoCache = getVideoCache();

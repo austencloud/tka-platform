@@ -5,7 +5,6 @@
  * Currently supports notifying admins when new users sign up.
  */
 
-import { container } from "$lib/shared/di";
 import {
   collection,
   query,
@@ -18,6 +17,8 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { AdminNotification } from "$lib/features/feedback/domain/models/notification-models";
 import { getPreferenceKeyForType } from "$lib/features/feedback/domain/models/notification-models";
 import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
+
+import { getNotificationPreferencesManager } from "$lib/features/feedback/getNotificationPreferencesManager";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
@@ -134,8 +135,7 @@ export class AdminNotifier {
    */
   private async shouldNotify(adminId: string): Promise<boolean> {
     try {
-      const notificationPreferencesManager = container.items
-        .notificationPreferencesManager as INotificationPreferencesManager;
+      const notificationPreferencesManager = getNotificationPreferencesManager();
       const preferences =
         await notificationPreferencesManager.getPreferences(adminId);
       const prefKey = getPreferenceKeyForType("admin-new-user-signup");

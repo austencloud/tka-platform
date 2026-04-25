@@ -12,7 +12,8 @@
   without requiring the user to visit the Inbox module first.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
   import { onMount } from "svelte";
   import { inboxState } from "../state/inbox-state.svelte";
   import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
@@ -99,8 +100,7 @@
     if (messageCount > 0 && !pushPromptChecked && currentUserId) {
       pushPromptChecked = true;
       void (async () => {
-        const fcmTokenManager = container.items
-          .fcmTokenManager as IFCMTokenManager;
+        const fcmTokenManager = getFCMTokenManager();
         const supported = await fcmTokenManager.isSupported();
         if (!supported) return;
         const permission = fcmTokenManager.getPermissionState();
@@ -116,8 +116,7 @@
   $effect(() => {
     if (!currentUserId) return;
     void (async () => {
-      const fcmTokenManager = container.items
-        .fcmTokenManager as IFCMTokenManager;
+      const fcmTokenManager = getFCMTokenManager();
       const supported = await fcmTokenManager.isSupported();
       if (!supported) return;
       const permission = fcmTokenManager.getPermissionState();

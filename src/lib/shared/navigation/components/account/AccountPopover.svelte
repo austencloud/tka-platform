@@ -1,9 +1,10 @@
 <!-- AccountPopover: Desktop-only popover menu above AccountRow in sidebar -->
 <script lang="ts">
+
+import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
-  import { container } from "../../../di";
   import { getPropPreferencePersister } from "../../../community/getPropPreferencePersister";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import type { IPropPreferencePersister } from "../../../community/services/contracts/IPropPreferencePersister";
@@ -85,8 +86,7 @@
 
   function triggerHaptic() {
     try {
-      const hapticService = container.items
-        .hapticFeedback as IHapticFeedback;
+      const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available

@@ -6,6 +6,8 @@
   Tapping "Continue" advances to the final step.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
@@ -18,7 +20,6 @@
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { container } from "$lib/shared/di";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import {
     createAnimationPanelState,
@@ -126,7 +127,7 @@
 
   onMount(() => {
     try {
-      playbackController = container.items.animationPlaybackController;
+      playbackController = getAnimationPlaybackController();
     } catch {
       console.warn("Animation playback controller not available");
     }

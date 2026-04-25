@@ -6,10 +6,13 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import { container } from "$lib/shared/di";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
+import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+import { getTrailCapturer } from "$lib/features/compose/getTrailCapturer";
+
 import type {
   IAnimatorLoader,
   AnimatorServices,
@@ -22,16 +25,16 @@ export class AnimatorLoader implements IAnimatorLoader {
     try {
       // With ITI, all services are already composed at startup - no async loading needed
       const services: AnimatorServices = {
-        svgGenerator: container.items.svgGenerator,
+        svgGenerator: getSVGGenerator(),
         settingsService: settingsService,
-        orchestrator: container.items.sequenceAnimationOrchestrator,
-        TrailCapturer: container.items.trailCapturer,
+        orchestrator: getSequenceAnimationOrchestrator(),
+        TrailCapturer: getTrailCapturer(),
         turnsTupleGenerator: turnsTupleGenerator,
       };
 
       if (!services.svgGenerator) {
         console.error(
-          "[AnimatorLoader] CRITICAL: container.items.svgGenerator returned null/undefined!"
+          "[AnimatorLoader] CRITICAL: getSVGGenerator() returned null/undefined!"
         );
         return {
           success: false,

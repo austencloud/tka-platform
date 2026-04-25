@@ -19,7 +19,6 @@
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { container } from "$lib/shared/di";
 import type {
   IVideoPreRenderer,
   VideoRenderProgress,
@@ -27,6 +26,9 @@ import type {
   VideoRenderOptions,
 } from "../contracts/IVideoPreRenderer";
 import { Canvas2DAnimationRenderer } from "./Canvas2DAnimationRenderer";
+import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
+import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+
 import {
   DEFAULT_TRAIL_SETTINGS,
   type TrailSettings,
@@ -181,7 +183,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       ]);
 
       // Get prop dimensions from SVG generator
-      const svgGenerator = container.items.svgGenerator;
+      const svgGenerator = getSVGGenerator();
       const [bluePropData, redPropData] = await Promise.all([
         svgGenerator.generateBluePropSvg("staff"),
         svgGenerator.generateRedPropSvg("staff"),
@@ -197,7 +199,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       };
 
       // Get orchestrator for calculating prop states
-      const orchestrator = container.items.sequenceAnimationOrchestrator;
+      const orchestrator = getSequenceAnimationOrchestrator();
 
       // Initialize orchestrator with sequence data
       const initSuccess = orchestrator.initializeWithDomainData(sequence);

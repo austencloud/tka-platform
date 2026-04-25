@@ -7,11 +7,12 @@
   Archive source: archive/dead-code-2026-03-11/categories/3d-scenes-environments/
 -->
 <script lang="ts">
+
+import { getPlaneCoordinateMapper } from "$lib/shared/3d/getPlaneCoordinateMapper";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
-  import { container } from "$lib/shared/di";
   import type { IPlaneCoordinateMapper } from "$lib/shared/3d/services/contracts/IPlaneCoordinateMapper";
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
@@ -19,7 +20,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   // ── DI services ──────────────────────────────────────────────────────
-  const mapper = container.items.planeCoordinateMapper as IPlaneCoordinateMapper;
+  const mapper = getPlaneCoordinateMapper() as IPlaneCoordinateMapper;
 
   // ── State ────────────────────────────────────────────────────────────
 

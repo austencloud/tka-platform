@@ -139,7 +139,7 @@ export class PictographMemoryCache {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.pictographMemoryCache to avoid DI container rebuilds.
+// Use this instead of getPictographMemoryCache() to avoid DI container rebuilds.
 // The cache data itself is already HMR-aware via hmrImageCache and hmrAccessOrder.
 // ============================================================================
 

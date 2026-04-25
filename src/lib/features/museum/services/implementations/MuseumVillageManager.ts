@@ -13,11 +13,13 @@
 
 import { createVillageState, type VillageState } from "$lib/features/village/state/village-state.svelte";
 import { createVillageVisualState, type VillageVisualState } from "$lib/features/village/state/village-visual-state.svelte";
-import { container } from "$lib/shared/di";
 import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
 import { getAvatarModelPath } from "$lib/shared/3d/config/avatar-definitions";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+
+import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
+import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
 
 // Avatar model IDs used by the village — preload these in background
 const VILLAGE_AVATAR_MODELS = [
@@ -81,8 +83,8 @@ export function getMuseumVillageManager() {
 	// Start preloading avatar models immediately
 	preloadVillageAvatarModels();
 
-	const propInterpolator = container.items.propStateInterpolator;
-	const sequenceConverter = container.items.sequenceConverter;
+	const propInterpolator = getPropStateInterpolator();
+	const sequenceConverter = getSequenceConverter();
 	if (!propInterpolator || !sequenceConverter) return null;
 
 	const seeds = buildSeedSequences();

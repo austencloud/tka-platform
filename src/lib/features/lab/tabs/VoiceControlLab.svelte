@@ -5,8 +5,16 @@
   view a command log, and test commands manually.
 -->
 <script lang="ts">
+
+import { getVoiceSessionAnalyzer } from "$lib/features/voice-sessions/getVoiceSessionAnalyzer";
+import { getVoiceSessionFormatter } from "$lib/features/voice-sessions/getVoiceSessionFormatter";
+import { getVoiceSessionReplayer } from "$lib/features/voice-sessions/getVoiceSessionReplayer";
+import { getVoiceSessionRepository } from "$lib/features/voice-sessions/getVoiceSessionRepository";
+import { getCommandDispatcher } from "$lib/shared/voice-control/getCommandDispatcher";
+import { getCommandInterpreter } from "$lib/shared/voice-control/getCommandInterpreter";
+import { getVoiceSessionRecorder } from "$lib/shared/voice-control/getVoiceSessionRecorder";
+import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetector";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IWakeWordDetector } from "$lib/shared/voice-control/services/contracts/IWakeWordDetector";
   import type { ICommandInterpreter } from "$lib/shared/voice-control/services/contracts/ICommandInterpreter";
   import type { ICommandDispatcher } from "$lib/shared/voice-control/services/contracts/ICommandDispatcher";
@@ -64,14 +72,14 @@
 
   onMount(() => {
     try {
-      detector = container.items.wakeWordDetector;
-      interpreter = container.items.commandInterpreter;
-      dispatcher = container.items.commandDispatcher;
-      sessionRecorder = container.items.voiceSessionRecorder;
-      sessionFormatter = container.items.voiceSessionFormatter;
-      sessionRepository = container.items.voiceSessionRepository;
-      sessionAnalyzer = container.items.voiceSessionAnalyzer;
-      sessionReplayer = container.items.voiceSessionReplayer;
+      detector = getWakeWordDetector();
+      interpreter = getCommandInterpreter();
+      dispatcher = getCommandDispatcher();
+      sessionRecorder = getVoiceSessionRecorder();
+      sessionFormatter = getVoiceSessionFormatter();
+      sessionRepository = getVoiceSessionRepository();
+      sessionAnalyzer = getVoiceSessionAnalyzer();
+      sessionReplayer = getVoiceSessionReplayer();
       supported = detector.isSupported();
       listening = detector.isListening();
       recording = sessionRecorder.isRecording();

@@ -7,7 +7,6 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import { container } from "$lib/shared/di";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
@@ -19,6 +18,8 @@ import type { IReversalDetector } from "../contracts/IReversalDetector";
 import { orientationCalculator as orientationCalculatorDirect } from "../../../../../shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { StepData } from "../../domain/models/StepData";
 import { createStepData } from "../../domain/factories/createStepData";
+
+import { getConstructCoordinator } from "$lib/features/create/shared/getConstructCoordinator";
 
 export class CreateModuleEventHandler implements ICreateModuleEventHandler {
   private constructCoordinator: IBuildConstructSectionCoordinator | null = null;
@@ -52,7 +53,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
 
     // Resolve services via ITI container - services may be undefined if not registered
     try {
-      this.constructCoordinator = container.items.constructCoordinator as unknown as IBuildConstructSectionCoordinator | undefined ?? null;
+      this.constructCoordinator = getConstructCoordinator() as unknown as IBuildConstructSectionCoordinator | undefined ?? null;
     } catch {
       this.constructCoordinator = null;
     }

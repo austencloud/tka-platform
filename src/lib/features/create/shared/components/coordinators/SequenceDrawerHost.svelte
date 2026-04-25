@@ -1,4 +1,8 @@
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
+import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchestrator";
   /**
    * SequenceDrawerHost
    *
@@ -29,7 +33,6 @@
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
   import type { IExportOrchestrator } from "$lib/shared/export-panel/services/contracts/IExportOrchestrator";
 
-  import { container } from "$lib/shared/di";
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
@@ -105,7 +108,7 @@
   }
 
   try {
-    exportOrchestrator = container.items.exportOrchestrator;
+    exportOrchestrator = getExportOrchestrator();
   } catch (error) {
     console.warn("⚠️ Failed to resolve export orchestrator:", error);
   }
@@ -255,8 +258,8 @@
   async function loadAnimationServices() {
     try {
       // Animation services available synchronously via ITI
-      playbackController = container.items.animationPlaybackController;
-      videoExportOrchestrator = container.items.videoExportOrchestrator;
+      playbackController = getAnimationPlaybackController();
+      videoExportOrchestrator = getVideoExportOrchestrator();
       loopabilityChecker = getSequenceLoopabilityChecker();
       layoutService = responsiveLayoutManager;
       setAnimationPlaybackRef(playbackController);

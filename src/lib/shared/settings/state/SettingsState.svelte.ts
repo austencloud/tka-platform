@@ -283,9 +283,9 @@ class SettingsState implements ISettingsState {
    * Get settings without internal metadata fields for persistence
    */
   private getSettingsForPersistence(): AppSettings {
-     
-    const { _localTimestamp, ...settings } = settingsState;
-    return settings as AppSettings;
+    const snapshot = $state.snapshot(settingsState) as AppSettings & { _localTimestamp?: number };
+    delete snapshot._localTimestamp;
+    return snapshot;
   }
 
   /**
@@ -321,6 +321,10 @@ class SettingsState implements ISettingsState {
       "catDogMode",
       "selectedPresetIndex",
       "compositionRecipeOverrides",
+      // Visibility settings are managed by VisibilityStateManager with its own
+      // debounced persistence. Real-time sync would overwrite local toggles
+      // with stale Firebase data before the debounced save completes.
+      "visibility",
     ]);
 
     // Apply to state (preserve local timestamp), excluding background settings
@@ -710,14 +714,12 @@ class SettingsState implements ISettingsState {
     if (!browser) return;
 
     try {
-      // Preserve _localTimestamp in localStorage so that unsaved local changes
-      // survive browser close. syncFromFirebase checks this timestamp to decide
-      // whether to push local → Firebase or pull Firebase → local.
-      // After a successful Firebase save, _localTimestamp is set to undefined,
-      // which JSON.stringify omits — so next load pulls from Firebase as expected.
+      // $state.snapshot unwraps the Svelte 5 reactive proxy into a plain object
+      // so JSON.stringify sees all properties including dynamically-added ones
+      // like `visibility` and `imageExport`.
       localStorage.setItem(
         SETTINGS_STORAGE_KEY,
-        JSON.stringify(settings)
+        JSON.stringify($state.snapshot(settings))
       );
     } catch (error) {
       console.error("Failed to save settings to localStorage:", error);

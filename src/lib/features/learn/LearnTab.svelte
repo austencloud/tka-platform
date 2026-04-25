@@ -10,8 +10,9 @@ Four learning destinations:
 Navigation via bottom tabs (mobile-first UX pattern)
 -->
 <script lang="ts">
+
+import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount, untrack } from "svelte";
   import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
   import { fly } from "svelte/transition";
@@ -47,7 +48,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   } = $props();
 
   // Services from DI
-  const delightOrchestrator = container.items.delightOrchestrator;
+  const delightOrchestrator = getDelightOrchestrator();
   const conceptProgressTracker = getConceptProgressTracker();
 
   // Provide delight orchestrator to child components via context

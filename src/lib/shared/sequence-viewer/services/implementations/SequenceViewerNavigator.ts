@@ -14,7 +14,8 @@ import type { ISequenceDataProvider } from '../contracts/ISequenceDataProvider';
 import type { ViewingContext } from '../contracts/IPresentationResolver';
 import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './CellPreWarmer';
-import { container } from '$lib/shared/di';
+import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttributionPromptTrigger";
+import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
 
 export interface OpenSequenceViewerOptions {
 	/** Path to return to when closing (e.g., "/browse/gallery") */
@@ -49,7 +50,7 @@ export function openSequenceViewer(
 ): void {
 	// Track sequence view for attribution prompt eligibility
 	try {
-		const promptTrigger = container?.items?.attributionPromptTrigger as { recordInteraction?: (type: string) => void } | undefined;
+		const promptTrigger = getAttributionPromptTrigger();
 		if (promptTrigger?.recordInteraction) {
 			promptTrigger.recordInteraction('sequence_view');
 		}
@@ -62,7 +63,7 @@ export function openSequenceViewer(
 	// versions loaded from IndexedDB or public index may lack ownerId.
 	let seqToOpen = sequence;
 	try {
-		const provider = container?.items?.sequenceDataProvider as ISequenceDataProvider | undefined;
+		const provider = getSequenceDataProvider();
 		const cached = provider?.getCached(sequence);
 		if (cached) {
 			seqToOpen = sequence.ownerId && !cached.ownerId

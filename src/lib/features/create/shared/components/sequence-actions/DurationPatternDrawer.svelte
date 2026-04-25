@@ -9,6 +9,8 @@
   so there is no target hand selector.
 -->
 <script lang="ts">
+
+import { getDurationPatternManager } from "$lib/features/create/shared/getDurationPatternManager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { durationPatternState } from "../../state/duration-pattern-state.svelte.ts";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -21,7 +23,6 @@
     templateToPattern,
     type DurationCategory,
   } from "../../domain/templates/duration-templates";
-  import { container } from "$lib/shared/di";
   import type { IDurationPatternManager } from "../../services/contracts/IDurationPatternManager";
   import PatternItemCard from "./PatternItemCard.svelte";
   import DurationPreviewGrid from "./DurationPreviewGrid.svelte";
@@ -72,7 +73,7 @@
   let previewedSequence = $state<SequenceData | null>(null);
   let previewWarnings = $state<readonly string[]>([]);
 
-  const durationPatternManager = container.items.durationPatternManager;
+  const durationPatternManager = getDurationPatternManager();
 
   // Load patterns when drawer opens and set appropriate default filter
   $effect(() => {

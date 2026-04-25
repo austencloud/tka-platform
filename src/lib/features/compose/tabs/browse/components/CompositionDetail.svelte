@@ -6,7 +6,8 @@
 	Supports View Transitions API with manual FLIP fallback.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/browse/getCompositionThumbnailResolver";
   import { onMount, onDestroy } from "svelte";
 	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
@@ -38,7 +39,7 @@
 	let isClosing = $state(false);
 
 	const modeConfig = $derived(COMPOSE_MODE_CONFIG[composition.mode]);
-	const thumbnailResolver = container?.items?.compositionThumbnailResolver as ICompositionThumbnailResolver | undefined;
+	const thumbnailResolver = getCompositionThumbnailResolver();
 	const thumbnailUrl = $derived(thumbnailResolver?.resolveThumbnail(composition) ?? null);
 	const placeholderSvg = $derived(
 		thumbnailResolver?.generatePlaceholderSvg(composition.mode, modeConfig.accent) ?? ""

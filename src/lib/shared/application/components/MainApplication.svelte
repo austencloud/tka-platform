@@ -1,5 +1,7 @@
 <!-- Main Application Layout -->
 <script module lang="ts">
+
+import { getApplicationInitializer } from "$lib/shared/application/getApplicationInitializer";
   // Module-level: survives component remounts so we never show the auth
   // spinner again after the app has loaded once in this session.
   let _mainInterfaceShown = false;
@@ -79,15 +81,13 @@
   import type { ModuleId } from "../../navigation/domain/types";
   import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
-  import { container } from "../../di";
-  import { getSheetRouter } from "../../navigation/getSheetRouter";
+import { getSheetRouter } from "../../navigation/getSheetRouter";
+  import { getAttributionPromptTrigger } from "../../attribution/getAttributionPromptTrigger";
   import { isModuleAccessible } from "../../auth/domain/guest-access-config";
   import { resolveAccessTier } from "../../auth/domain/AccessTier";
   import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
   // Get DI container from context
-  const getContainer = getContext<() => typeof container | null>("di-container");
-
-  // Services - resolved lazily
+// Services - resolved lazily
   let initService: IApplicationInitializer | null = $state(null);
   let settingsService: ISettingsState | null = $state(null);
   let deviceService: IDeviceDetector | null = $state(null);
@@ -191,8 +191,7 @@
   $effect(() => {
     if (!servicesResolved) {
       try {
-        initService = container.items
-          .applicationInitializer;
+        initService = getApplicationInitializer();
         settingsService = settingsServiceSingleton;
         deviceService = getDeviceDetector();
         sheetRouterService = getSheetRouter();
@@ -335,24 +334,11 @@
         // Progress: Fully ready - triggers loading screen fade out with random ready message
         (window as any).__tkaLoadProgress?.(100, "Ready");
 
-        // Record session start for theme discovery trigger
-        try {
-          const trigger = (container.items as any).themeDiscoveryTrigger;
-          if (trigger && typeof trigger.recordSessionStart === "function") {
-            trigger.recordSessionStart();
-          }
-        } catch {
-          // Non-critical
-        }
-
         // Record session start for attribution prompt trigger. On first-ever
         // boot this also locks in the "eligibleAfter" date so the deferred
         // prompt actually becomes eligible instead of drifting forward.
         try {
-          const trigger = (container.items as any).attributionPromptTrigger;
-          if (trigger && typeof trigger.recordSessionStart === "function") {
-            trigger.recordSessionStart();
-          }
+          getAttributionPromptTrigger().recordSessionStart();
         } catch {
           // Non-critical
         }

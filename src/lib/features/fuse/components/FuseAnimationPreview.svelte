@@ -6,14 +6,15 @@
   calculateStateForBeat() when currentBeat changes.
 -->
 <script lang="ts">
+
+import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-	import { container } from "$lib/shared/di";
-	import { createPlaybackControllerFactory } from "$lib/shared/di/containers/compose-core-container";
+	import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
 
 	let {
 		sequence,
@@ -61,7 +62,7 @@
 
 	onMount(async () => {
 		try {
-			motionLoader = container.items.sequenceMotionLoader;
+			motionLoader = getSequenceMotionLoader();
 			controller = createPlaybackControllerFactory();
 			loading = false;
 		} catch (err) {

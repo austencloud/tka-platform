@@ -7,6 +7,7 @@
 
 import type { IArrowCoordinateTransformer } from "../contracts/IArrowCoordinateTransformer";
 
+
 export class ArrowCoordinateTransformer implements IArrowCoordinateTransformer {
   transformAdjustmentByRotation(
     adjustmentX: number,
@@ -150,7 +151,7 @@ export class ArrowCoordinateTransformer implements IArrowCoordinateTransformer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowCoordinateTransformer to avoid DI container rebuilds.
+// Use this instead of arrowCoordinateTransformer to avoid DI container rebuilds.
 // ============================================================================
 
 export const arrowCoordinateTransformer = new ArrowCoordinateTransformer();

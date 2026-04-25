@@ -5,7 +5,8 @@
   waiting for engagement thresholds to be met.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttributionPromptTrigger";
   import { getAttributionPromptState } from "$lib/shared/attribution/state/attribution-prompt-state.svelte";
   import AttributionPrompt from "$lib/shared/attribution/components/AttributionPrompt.svelte";
 
@@ -17,10 +18,10 @@
 
   function refreshState() {
     try {
-      const trigger = container?.items?.attributionPromptTrigger as any;
+      const trigger = getAttributionPromptTrigger();
       if (trigger) {
-        metrics = trigger.getEngagementMetrics?.() || {};
-        currentPromptState = trigger.getPromptState?.() || {};
+        metrics = (trigger.getEngagementMetrics?.() || {}) as unknown as Record<string, unknown>;
+        currentPromptState = (trigger.getPromptState?.() || {}) as unknown as Record<string, unknown>;
       }
     } catch (e) {
       console.error("Failed to get attribution state:", e);
@@ -46,7 +47,7 @@
 
   function simulateEngagement() {
     try {
-      const trigger = container?.items?.attributionPromptTrigger as any;
+      const trigger = getAttributionPromptTrigger();
       if (trigger) {
         // Simulate enough engagement to trigger the prompt
         for (let i = 0; i < 6; i++) {

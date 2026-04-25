@@ -7,6 +7,7 @@
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { ILetterClassifier } from "../contracts/ILetterClassifier";
 
+
 export class LetterClassifier implements ILetterClassifier {
   private static readonly HYBRID_LETTERS = [
     "C",
@@ -81,7 +82,7 @@ export class LetterClassifier implements ILetterClassifier {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.letterClassifier to avoid DI container rebuilds.
+// Use this instead of letterClassifier to avoid DI container rebuilds.
 // ============================================================================
 
 export const letterClassifier = new LetterClassifier();

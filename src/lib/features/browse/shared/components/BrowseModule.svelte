@@ -1,9 +1,10 @@
 <script lang="ts">
 
+
+import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCacheOrchestrator";
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "../../sequences/display/getBrowseLoader";
   import { getBrowseEventHandler } from "../getBrowseEventHandler";
   import { getThumbnailRenderOrchestrator } from "../../sequences/display/getThumbnailRenderOrchestrator";
@@ -63,7 +64,7 @@
   let eventHandlerService: IBrowseEventHandler | null = null;
 
   // Offline cache: create reactive state, publish to context for descendants
-  const orchestrator = container.items.offlineCacheOrchestrator as IOfflineCacheOrchestrator;
+  const orchestrator = getOfflineCacheOrchestrator() as IOfflineCacheOrchestrator;
   const offlineCacheState = createOfflineCacheState(orchestrator);
   setOfflineCacheContext(offlineCacheState);
 

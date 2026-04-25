@@ -4,8 +4,9 @@
   Uses Library service instead of Browse to avoid dependency issues.
 -->
 <script lang="ts">
+
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -19,7 +20,7 @@
   let { show = false, onSelect, onClose }: Props = $props();
 
   // Services
-  const libraryService = container.items.libraryRepository;
+  const libraryService = getLibraryRepository();
 
   // State
   let sequences = $state<SequenceData[]>([]);

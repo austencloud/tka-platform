@@ -18,8 +18,7 @@ Builds automaticity through speed pressure and streak mechanics.
     GAMMA_POSITIONS,
   } from '../../../domain/constants/position-quiz-data';
   import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
-  import { container } from '$lib/shared/di';
-  import { onDestroy } from 'svelte';
+import { onDestroy } from 'svelte';
 
   // =========================================================================
   // Props

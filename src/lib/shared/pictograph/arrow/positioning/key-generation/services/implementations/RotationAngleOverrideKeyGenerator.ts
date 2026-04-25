@@ -16,6 +16,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { Orientation } from "../../../../../shared/domain/enums/pictograph-enums";
 
+
 export interface IRotationAngleOverrideKeyGenerator {
   generateRotationAngleOverrideKey(
     motionData: MotionData,
@@ -147,6 +148,6 @@ export class RotationAngleOverrideKeyGenerator implements IRotationAngleOverride
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.rotationAngleOverrideKeyGenerator
+// DIRECT EXPORT - Use this instead of rotationAngleOverrideKeyGenerator
 // This avoids DI container rebuilds when this file changes
 export const rotationAngleOverrideKeyGenerator = new RotationAngleOverrideKeyGenerator();

@@ -209,9 +209,10 @@ export class ArrowDataProcessor implements IArrowDataProcessor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowDataProcessor to avoid DI container rebuilds.
+// Use this instead of arrowDataProcessor to avoid DI container rebuilds.
 // ============================================================================
 
 import { arrowGridCoordinator } from "./ArrowGridCoordinator";
+
 
 export const arrowDataProcessor = new ArrowDataProcessor(arrowGridCoordinator);

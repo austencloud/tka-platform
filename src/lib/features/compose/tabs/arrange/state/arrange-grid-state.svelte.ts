@@ -27,8 +27,7 @@ import type { CellMediaType, PropColors } from "../../../compose/domain/types";
 import type { Composition } from "../../../compose/domain/types";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
-import { container } from "$lib/shared/di";
-import { createComposeArrangeContainer } from "$lib/shared/di/containers/compose-arrange-container";
+// compose-arrange-container dissolved — services accessed via module singleton getters
 import type {
   ArrangeUndoOperationType,
   ArrangeGridSnapshot,
@@ -38,6 +37,12 @@ import { ArrangeGridSerializer } from "../services/implementations/ArrangeGridSe
 import { ArrangeCompositionConverter } from "../services/implementations/ArrangeCompositionConverter";
 import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
 import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
+
+import { getArrangeUndoManager } from "$lib/features/compose/tabs/arrange/getArrangeUndoManager";
+import { getArrangeBeatCalculator } from "$lib/features/compose/tabs/arrange/getArrangeBeatCalculator";
+import { getArrangeGridPersister } from "$lib/features/compose/tabs/arrange/getArrangeGridPersister";
+import { getArrangePlaybackEngine } from "$lib/features/compose/tabs/arrange/getArrangePlaybackEngine";
+import { getArrangeLayerTransformer } from "$lib/features/compose/tabs/arrange/getArrangeLayerTransformer";
 
 // Maximum backing array dimensions (8x8 = 64 cells)
 export const MAX_GRID_SIZE = 8;
@@ -123,12 +128,11 @@ const DEFAULT_GRID_COLS = 2;
 function createArrangeGridState() {
   const serializer = new ArrangeGridSerializer();
 
-  // Services from lazy compose-arrange container (loaded on-demand, not at app startup)
-  const arrangeItems = createComposeArrangeContainer().items;
-  const beatCalculator = arrangeItems.arrangeBeatCalculator;
-  const persister = arrangeItems.arrangeGridPersister;
-  const playbackEngine = arrangeItems.arrangePlaybackEngine;
-  const layerTransformer = arrangeItems.arrangeLayerTransformer;
+  // Services from module singleton getters (compose-arrange-container dissolved)
+  const beatCalculator = getArrangeBeatCalculator();
+  const persister = getArrangeGridPersister();
+  const playbackEngine = getArrangePlaybackEngine();
+  const layerTransformer = getArrangeLayerTransformer();
 
   const initialConfig = persister.load();
 
@@ -182,7 +186,7 @@ function createArrangeGridState() {
   // Undo / Redo
   // =========================================================================
 
-  const undoManager = container.items.arrangeUndoManager;
+  const undoManager = getArrangeUndoManager();
   undoManager.init(() => ({ cells: deepCloneCells(cells) }));
 
   let canUndo = $state(false);

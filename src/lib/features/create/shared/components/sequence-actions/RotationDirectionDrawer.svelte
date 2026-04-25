@@ -8,6 +8,8 @@
   This is a thin orchestrator that composes child components.
 -->
 <script lang="ts">
+
+import { getRotationDirectionPatternManager } from "$lib/features/create/shared/getRotationDirectionPatternManager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import { rotationDirectionPatternState } from "../../state/rotation-direction-pattern-state.svelte.ts";
@@ -20,7 +22,6 @@
     createUniformPattern,
     type RotationDirectionTemplateDefinition,
   } from "../../domain/templates/rotation-direction-templates";
-  import { container } from "$lib/shared/di";
   import type { IRotationDirectionPatternManager } from "../../services/contracts/IRotationDirectionPatternManager";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
@@ -60,7 +61,7 @@
   let errorMessage = $state<string | null>(null);
 
   // Service via DI
-  const rotationPatternService = container.items.rotationDirectionPatternManager;
+  const rotationPatternService = getRotationDirectionPatternManager();
 
   // Derived state
   const isMobile = $derived(!layoutState.isSideBySideLayout);

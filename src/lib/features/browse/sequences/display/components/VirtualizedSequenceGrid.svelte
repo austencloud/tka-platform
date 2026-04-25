@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
     createVirtualizer,
@@ -12,7 +14,6 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { container } from "$lib/shared/di";
   import { getVariationGrouper } from "../getVariationGrouper";
   import { getLayoutCalculator } from "$lib/shared/render/getLayoutCalculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
@@ -48,7 +49,7 @@
 
   const layoutCalculator = getLayoutCalculator();
   const variationGrouper = getVariationGrouper();
-  const sequenceDataProvider = container.items.sequenceDataProvider;
+  const sequenceDataProvider = getSequenceDataProvider();
 
   const variationMap = $derived.by(() => {
     return variationGrouper.buildVariationMap(sequences);

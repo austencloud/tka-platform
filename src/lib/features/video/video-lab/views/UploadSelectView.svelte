@@ -5,11 +5,12 @@
   Persists selected sequence to localStorage across refreshes.
 -->
 <script lang="ts">
+
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
-  import { container } from "$lib/shared/di";
   import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
@@ -50,7 +51,7 @@
       if (!sequenceId) return;
 
       // Load the full sequence from library
-      const repo = container.items.libraryRepository as ILibraryRepository;
+      const repo = getLibraryRepository() as ILibraryRepository;
       repo.getSequence(sequenceId).then((seq) => {
         if (seq) {
           try {

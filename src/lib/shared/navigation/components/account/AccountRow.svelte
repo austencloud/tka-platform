@@ -2,8 +2,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { authState } from "../../../auth/state/authState.svelte";
-  import { container } from "../../../di";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import { authDrawerState } from "../../../auth/state/auth-drawer-state.svelte";
 

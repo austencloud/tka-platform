@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
   /**
    * DuetCreatorPanel
    *
@@ -8,7 +10,6 @@
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
@@ -78,7 +79,7 @@
   onMount(async () => {
     try {
       browseLoader = getBrowseLoader();
-      duetPersister = container.items.duetPersister;
+      duetPersister = getDuetPersister();
       await loadSequences();
     } catch (e) {
       error = "Failed to initialize";

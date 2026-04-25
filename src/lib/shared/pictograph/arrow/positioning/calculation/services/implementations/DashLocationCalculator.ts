@@ -25,6 +25,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import { ShiftLocationCalculator } from "./ShiftLocationCalculator";
 import { LetterType } from "../../../../../../foundation/domain/models/LetterType";
 
+
 // Arrow color type - using string literals to match usage pattern
 
 export interface IDashLocationCalculator {
@@ -574,7 +575,7 @@ export class DashLocationCalculator implements IDashLocationCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.dashLocationCalculator to avoid DI container rebuilds.
+// Use this instead of dashLocationCalculator to avoid DI container rebuilds.
 // ============================================================================
 
 export const dashLocationCalculator = new DashLocationCalculator();

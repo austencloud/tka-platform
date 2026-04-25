@@ -10,7 +10,8 @@
   - Shows empty state when no clip at playhead
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -195,8 +196,7 @@
       loading = true;
 
       // Get services from ITI container
-      animationOrchestrator = container.items
-        .sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
+      animationOrchestrator = getSequenceAnimationOrchestrator();
       startPositionDeriver = startPositionDeriverSingleton;
       initialized = true;
       loading = false;

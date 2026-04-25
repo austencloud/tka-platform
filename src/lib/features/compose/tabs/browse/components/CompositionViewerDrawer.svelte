@@ -6,7 +6,8 @@
 	Shows animated composition preview, metadata, and action buttons.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/browse/getCompositionThumbnailResolver";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
@@ -37,9 +38,8 @@
 
 	const modeConfig = $derived(composition ? COMPOSE_MODE_CONFIG[composition.mode] : null);
 
-	const thumbnailResolver = container?.items?.compositionThumbnailResolver as
-		| ICompositionThumbnailResolver
-		| undefined;
+	const thumbnailResolver = getCompositionThumbnailResolver()
+		?? undefined;
 
 	const thumbnailUrl = $derived(
 		composition ? (thumbnailResolver?.resolveThumbnail(composition) ?? null) : null

@@ -32,8 +32,7 @@ export async function loadPrimitiveCatalog(): Promise<LoadedPrimitiveCatalog> {
       return _loaded;
     } catch (err) {
       console.error("[PrimitiveCatalogReader] Failed to load catalog:", err);
-      _loaded = { entries: [], byShapeHash: new Map() };
-      return _loaded;
+      return { entries: [], byShapeHash: new Map() };
     } finally {
       _loading = null;
     }

@@ -5,11 +5,12 @@
  * Used by the Duration Pattern Drawer UI to display available patterns.
  */
 
-import { container } from "$lib/shared/di";
 import type { DurationPattern } from "../domain/models/DurationPatternData";
 import type { IDurationPatternManager } from "../services/contracts/IDurationPatternManager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+
+import { getDurationPatternManager } from "$lib/features/create/shared/getDurationPatternManager";
 
 const logger = createComponentLogger("DurationPatternState");
 
@@ -20,15 +21,7 @@ let _selectedPattern: DurationPattern | null = null;
 let _error: string | null = null;
 let _initialized = false;
 
-// Lazy service resolution (resolved on first use)
-let _durationPatternManager: IDurationPatternManager | null = null;
-function getDurationPatternManager(): IDurationPatternManager {
-  if (!_durationPatternManager) {
-    _durationPatternManager = container.items
-      .durationPatternManager as IDurationPatternManager;
-  }
-  return _durationPatternManager;
-}
+// Service accessed via module singleton getter (getDurationPatternManager)
 
 export const durationPatternState = {
   // Getters

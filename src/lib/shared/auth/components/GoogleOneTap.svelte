@@ -43,9 +43,7 @@
 
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { onMount, onDestroy } from "svelte";
-  import { container } from "../../di";
-
-  import type { IAuthenticator } from "../services/contracts/IAuthenticator";
+import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   import { GOOGLE_CLIENT_ID } from "../config/google-oauth";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { isAutomatedBrowser } from "$lib/shared/environment/environment-features";

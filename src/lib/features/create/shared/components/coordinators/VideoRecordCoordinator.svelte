@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
   /**
    * Video Record Coordinator Component
    *
@@ -16,7 +18,6 @@
   } from "../SaveToLibraryDialog.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { RecordingResult } from "$lib/shared/video-record/services/contracts/IVideoRecorder";
-  import { container } from "$lib/shared/di";
   import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
   import { RecordingPersister } from "$lib/shared/video-record/services/implementations/RecordingPersister";
   import {
@@ -32,7 +33,7 @@
   const { CreateModuleState, panelState } = ctx;
 
   // Services
-  const uploadService = container.items.videoUploader as IVideoUploader;
+  const uploadService = getVideoUploader() as IVideoUploader;
   let persistenceService: RecordingPersister | null = $state(null);
 
   // UI State

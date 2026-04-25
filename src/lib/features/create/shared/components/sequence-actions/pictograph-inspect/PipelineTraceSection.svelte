@@ -6,6 +6,8 @@
   Optional inline WASD editor for Global Adjustment layers.
 -->
 <script lang="ts">
+
+import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type {
     PipelineDiagnostics,
@@ -15,7 +17,6 @@
   import type { IArrowAdjustmentOrchestrator, SelectedArrowContext } from "../../../services/contracts/IArrowAdjustmentOrchestrator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import LayerTabBar from "../../arrow-adjustment/LayerTabBar.svelte";
-  import { container } from "$lib/shared/di";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
@@ -130,7 +131,7 @@
   function toggleEditing() {
     if (!isEditing) {
       if (!orchestrator) {
-        orchestrator = container.items.arrowAdjustmentOrchestrator as IArrowAdjustmentOrchestrator;
+        orchestrator = getArrowAdjustmentOrchestrator() as IArrowAdjustmentOrchestrator;
       }
       const defaultLayer = orchestrator.getDefaultSaveLayer(thisPropType, otherPropType);
       activeLayer = defaultLayer;

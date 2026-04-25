@@ -29,6 +29,8 @@ import { getWorkerRenderPool } from "$lib/shared/render/services/implementations
 import { cellCacheKeyDeriver } from "./CellCacheKeyDeriver";
 import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 
+import { getPreviewCellRenderer } from "$lib/shared/sequence-viewer/getPreviewCellRenderer";
+
 export class PreviewCellRenderer implements IPreviewCellRenderer {
 
   /**
@@ -185,6 +187,6 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
   }
 }
 
-// DIRECT EXPORT - Use this instead of container.items.previewCellRenderer
+// DIRECT EXPORT - Use this instead of getPreviewCellRenderer()
 // This avoids DI container rebuilds when this file changes
 export const previewCellRenderer = new PreviewCellRenderer();

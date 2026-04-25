@@ -5,7 +5,8 @@
 	Main area for viewing and interacting with the sequence.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { onMount } from "svelte";
   import Toast from "../components/Toast.svelte";
@@ -172,7 +173,7 @@
 
   // Initialize services on mount
   onMount(() => {
-    StepOperator = container.items.stepOperator;
+    StepOperator = getStepOperator();
   });
 </script>
 

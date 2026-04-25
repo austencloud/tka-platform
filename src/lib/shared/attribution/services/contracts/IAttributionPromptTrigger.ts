@@ -53,4 +53,14 @@ export interface IAttributionPromptTrigger {
    * Called by activity logging system.
    */
   recordInteraction(type: "sequence_view" | "sequence_create" | "module_visit"): void;
+
+  /**
+   * Record a module visit for engagement tracking.
+   */
+  recordModuleVisit(moduleId: string): void;
+
+  /**
+   * Increment session count (called on app init).
+   */
+  recordSessionStart(): void;
 }

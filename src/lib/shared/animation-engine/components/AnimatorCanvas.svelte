@@ -695,25 +695,18 @@ Last audit: 2025-12-27
     align-items: stretch;
     /*
      * Portrait mode: Width = canvas side = min(container_width, container_height - overhead)
-     * Overhead: header (~53px) + pill timeline (~60px) + border (3px) + margin (12px) = ~128px
+     * Overhead: header (~53px) + pill timeline (~60px) + margin (12px) = ~125px
      * Use 8.5rem (136px) for breathing room
      */
     width: min(calc(100cqw - 12px), calc(100cqh - 8.5rem - 12px));
     max-width: calc(100cqh - 8.5rem);
     /* Container query context for header font scaling */
     container-type: inline-size;
-    /* Border styling */
-    border: 1.5px solid var(--theme-panel-bg, #1a1a2e);
     border-radius: 4px;
     overflow: hidden;
     /* Smooth width change during disassemble (content-wrapper narrows to fit split row) */
-    transition: border-color 350ms ease,
-                width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
                 max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .content-wrapper[data-dark-mode="true"] {
-    border-color: var(--theme-accent, #00b8b8);
   }
 
   /* Header slot: in portrait, takes natural height at top */
@@ -822,7 +815,6 @@ Last audit: 2025-12-27
       width: calc(100cqh - 2.5rem);
       max-width: calc(100cqh - 2.5rem);
       height: auto;
-      border-width: 1px;
     }
 
     .header-slot {
@@ -891,7 +883,6 @@ Last audit: 2025-12-27
 
   @container (min-aspect-ratio: 2.5) {
     .content-wrapper {
-      border: none;
       border-radius: 0;
     }
   }

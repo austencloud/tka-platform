@@ -1,4 +1,8 @@
 <script lang="ts">
+
+import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "./AnimatorCanvas.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -12,7 +16,6 @@
     EndState,
   } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import {
     animationSettings,
@@ -164,12 +167,11 @@
     try {
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
 
-      // Get services from DI container (some still need container, others use direct imports)
-      playbackController = container.items
-        .animationPlaybackController;
+      // Get services from DI container (some still need others use direct imports)
+      playbackController = getAnimationPlaybackController();
       startPositionDeriver = startPositionDeriverDirect;
       const browseLoader = getBrowseLoader();
-      const sequenceTransformer = container.items.sequenceTransformer;
+      const sequenceTransformer = getSequenceTransformer();
 
       // Create the spinner orchestrator
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(

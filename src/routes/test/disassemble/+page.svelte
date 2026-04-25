@@ -4,8 +4,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { container } from "$lib/shared/di";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -53,7 +54,7 @@
   onMount(async () => {
     try {
       visibilityManager.setDarkMode(true);
-      playbackController = container.items.animationPlaybackController;
+      playbackController = getAnimationPlaybackController();
       const browseLoader: IBrowseLoader = getBrowseLoader();
 
       // Load sequence metadata, then pick one and load its full data

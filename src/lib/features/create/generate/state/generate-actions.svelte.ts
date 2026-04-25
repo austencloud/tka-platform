@@ -11,7 +11,6 @@ import { setPendingGenerationAnimation } from "$lib/features/create/shared/works
 import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/components/ArrowSvg.svelte";
 import { clearPropPositionCache } from "$lib/shared/pictograph/prop/components/PropSvg.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { container } from "$lib/shared/di";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import { GenerationMode } from "../shared/domain/models/generate-models";
 import type { IGenerationOrchestrator } from "../shared/services/contracts/IGenerationOrchestrator";
@@ -41,6 +40,10 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
+
+import { getDurationPatternManager } from "$lib/features/create/shared/getDurationPatternManager";
+import { getSpellServiceLoader } from "$lib/features/create/spell/getSpellServiceLoader";
+import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
 
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
@@ -119,7 +122,7 @@ export function createGenerationActionsState(
               "system",
               generatedSequence.steps.length
             );
-            const durationManager = container.items.durationPatternManager;
+            const durationManager = getDurationPatternManager();
             const result = durationManager.applyPattern(pattern, generatedSequence);
             if (result.success && result.sequence) {
               generatedSequence = result.sequence;
@@ -225,10 +228,10 @@ export function createGenerationActionsState(
     try {
       // Lazy-resolve services
       if (!spellOrchestrator) {
-        spellOrchestrator = container.items.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
+        spellOrchestrator = getVariationExplorationOrchestrator() as IVariationExplorationOrchestrator;
       }
       if (!spellServiceLoader) {
-        spellServiceLoader = container.items.spellServiceLoader as ISpellServiceLoader;
+        spellServiceLoader = getSpellServiceLoader() as ISpellServiceLoader;
       }
 
       const config = getConfig?.();
@@ -261,7 +264,7 @@ export function createGenerationActionsState(
         const extraBridgesNeeded = Math.max(0, spellTarget - finalLetters.length);
 
         if (extraBridgesNeeded > 0) {
-          const graph = await (container.items.spellServiceLoader as ISpellServiceLoader).getTransitionGraph();
+          const graph = await (getSpellServiceLoader() as ISpellServiceLoader).getTransitionGraph();
           const preferDash = config.motionTypeFilter === "prefer-dash";
           const avoidDash = config.motionTypeFilter === "no-dash";
 
@@ -375,7 +378,7 @@ export function createGenerationActionsState(
         if (template) {
           try {
             const pattern = templateToPattern(template, "system", loopedSequence.steps.length);
-            const durationManager = container.items.durationPatternManager;
+            const durationManager = getDurationPatternManager();
             const result = durationManager.applyPattern(pattern, loopedSequence);
             if (result.success && result.sequence) {
               Object.assign(loopedSequence, result.sequence);

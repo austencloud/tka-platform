@@ -9,6 +9,10 @@
   - Auto-load when 3 items from end
 -->
 <script lang="ts">
+
+import { getFeedPreloader } from "$lib/features/watch/getFeedPreloader";
+import { getFeedScrollBehavior } from "$lib/features/watch/getFeedScrollBehavior";
+import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
@@ -18,7 +22,6 @@
   import type { IFeedSnapDetector } from "../../services/contracts/IFeedSnapDetector";
   import type { IFeedPreloader } from "../../services/contracts/IFeedPreloader";
   import type { IFeedScrollBehavior } from "../../services/contracts/IFeedScrollBehavior";
-  import { container } from "$lib/shared/di";
   import { feedScrollState } from "../../state/feed-scroll-state.svelte";
   import FeedCard from "./FeedCard.svelte";
   import FeedLoadingState from "./FeedLoadingState.svelte";
@@ -79,9 +82,9 @@
     }
 
     try {
-      snapDetector = container.items.feedSnapDetector;
-      preloader = container.items.feedPreloader;
-      scrollBehavior = container.items.feedScrollBehavior;
+      snapDetector = getFeedSnapDetector();
+      preloader = getFeedPreloader();
+      scrollBehavior = getFeedScrollBehavior();
     } catch {
       // Services not registered yet - create inline
       const { FeedSnapDetector } = await import("../../services/implementations/FeedSnapDetector");

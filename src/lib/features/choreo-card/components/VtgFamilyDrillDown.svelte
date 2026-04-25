@@ -1,4 +1,8 @@
 <script lang="ts">
+
+import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExporter";
+import { getVtgFamilyAggregator } from "$lib/features/choreo-card/getVtgFamilyAggregator";
+
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { FamilyRatioGroup } from "../services/contracts/IVtgFamilyAggregator";
@@ -6,7 +10,6 @@
   import type { CardPair, IPrintPDFExporter } from "../services/contracts/IPrintPDFExporter";
   import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
-  import { container } from "$lib/shared/di";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
@@ -65,8 +68,7 @@
   $effect(() => {
     loading = true;
     error = null;
-    const aggregator = container.items
-      .vtgFamilyAggregator as IVtgFamilyAggregator;
+    const aggregator = getVtgFamilyAggregator();
     aggregator
       .aggregateFamilySequences(familyId, decks)
       .then((groups) => {
@@ -168,7 +170,7 @@
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
     try {
-      const zipExporter = container.items.printZipExporter as IPrintZipExporter;
+      const zipExporter = getPrintZipExporter() as IPrintZipExporter;
       const blob = await zipExporter.exportDeckZIP(renderedPairs, familyLabel);
       downloadBlob(blob, `${familyLabel}-${cardSize}.zip`);
     } finally {

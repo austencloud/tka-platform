@@ -70,9 +70,10 @@ export class PictographCoordinator implements IPictographCoordinator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.pictographCoordinator to avoid DI container rebuilds.
+// Use this instead of pictographCoordinator to avoid DI container rebuilds.
 // ============================================================================
 
 import { arrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
+
 
 export const pictographCoordinator = new PictographCoordinator(arrowLifecycleManager);

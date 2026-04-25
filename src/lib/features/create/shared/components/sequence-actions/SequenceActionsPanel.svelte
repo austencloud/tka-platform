@@ -5,9 +5,14 @@
   Individual beat editing (turns, rotation) is handled by StepEditorPanel.
 -->
 <script lang="ts">
+
+import { getExtensionFlowCoordinator } from "$lib/features/create/shared/getExtensionFlowCoordinator";
+import { getFirstStepAnalyzer } from "$lib/features/create/shared/getFirstStepAnalyzer";
+import { getSequenceJsonExporter } from "$lib/features/create/shared/getSequenceJsonExporter";
+import { getSequenceTransferHandler } from "$lib/features/create/shared/getSequenceTransferHandler";
+import { getSubDrawerStatePersister } from "$lib/features/create/shared/getSubDrawerStatePersister";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type {
     ExtensionAnalysis,
@@ -104,11 +109,11 @@
 
   // Services - get from ITI container
   const hapticService = getHapticFeedback();
-  const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
-  const subDrawerPersister = container.items.subDrawerStatePersister;
-  const transferHandler = container.items.sequenceTransferHandler;
-  const firstStepAnalyzer = container.items.firstStepAnalyzer;
-  const jsonExporter = container.items.sequenceJsonExporter;
+  const extensionFlowCoordinator = getExtensionFlowCoordinator();
+  const subDrawerPersister = getSubDrawerStatePersister();
+  const transferHandler = getSequenceTransferHandler();
+  const firstStepAnalyzer = getFirstStepAnalyzer();
+  const jsonExporter = getSequenceJsonExporter();
 
   // Local state - $effect below handles initial and prop changes
   let isOpen = $state(false);

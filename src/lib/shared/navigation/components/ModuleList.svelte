@@ -16,8 +16,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
-  import { container } from "../../di";
-  import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
+import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { onMount } from "svelte";
   import { translateModule } from "$lib/shared/i18n/translate";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";

@@ -1,4 +1,7 @@
 <script lang="ts">
+
+import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
+import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   /**
    * MuseumPerformerStation3D
    *
@@ -16,7 +19,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -70,7 +72,7 @@
   let resolvedSequence = $state<SequenceData | null>(null);
 
   // One-time init: create the avatar instance with DI services
-  if (container.items.propStateInterpolator && container.items.sequenceConverter) {
+  if (getPropStateInterpolator() && getSequenceConverter()) {
     try {
       performerState = createAvatarInstanceState(
         {
@@ -79,8 +81,8 @@
           positionZ: worldZ,
         },
         {
-          propInterpolator: container.items.propStateInterpolator,
-          sequenceConverter: container.items.sequenceConverter,
+          propInterpolator: getPropStateInterpolator(),
+          sequenceConverter: getSequenceConverter(),
         }
       );
     } catch (err) {

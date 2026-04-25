@@ -355,7 +355,8 @@
 
     // Attribution tracking
     try {
-      const persister = container?.items?.attributionPersister;
+      const { getAttributionPersister } = await import("$lib/shared/attribution/getAttributionPersister");
+      const persister = getAttributionPersister();
       if (persister) {
         (persister as any).getOrCreateSession();
       }

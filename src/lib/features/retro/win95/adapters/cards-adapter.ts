@@ -8,7 +8,6 @@
  * Domain: Retro CARDS App
  */
 
-import { container } from "$lib/shared/di";
 import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -23,6 +22,8 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+
 import type {
   RetroPictographData,
   RetroHandData,
@@ -133,7 +134,7 @@ function librarySequenceToRetroCard(seq: LibrarySequence): RetroCard {
  * and format them as choreo cards for CARDS.EXE.
  */
 export async function loadCards(): Promise<RetroCard[]> {
-  const repo = container.items.libraryRepository as ILibraryRepository;
+  const repo = getLibraryRepository() as ILibraryRepository;
 
   const sequences = await repo.getSequences({
     sortBy: "updatedAt",

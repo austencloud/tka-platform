@@ -11,6 +11,7 @@ import type { ArrowPlacementData } from "../../../placement/domain/ArrowPlacemen
 import type { IAttributeKeyGenerator } from "../contracts/IAttributeKeyGenerator";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 
+
 export class AttributeKeyGenerator implements IAttributeKeyGenerator {
   /**
    * Modern implementation of attribute key generation for arrow positioning.
@@ -234,7 +235,7 @@ export class AttributeKeyGenerator implements IAttributeKeyGenerator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.attributeKeyGenerator to avoid DI container rebuilds.
+// Use this instead of attributeKeyGenerator to avoid DI container rebuilds.
 // ============================================================================
 
 export const attributeKeyGenerator = new AttributeKeyGenerator();

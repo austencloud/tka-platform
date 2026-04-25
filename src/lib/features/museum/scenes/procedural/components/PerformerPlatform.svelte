@@ -1,4 +1,7 @@
 <script lang="ts">
+
+import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
+import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   /**
    * PerformerPlatform — Museum exhibit slot with animated performer.
    *
@@ -15,8 +18,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
-  import { container } from "$lib/shared/di";
-
   interface Props {
     slot: ExhibitSlot;
     isPopulated: boolean;
@@ -49,8 +50,8 @@
         positionZ: slot.position.z,
       },
       {
-        propInterpolator: container.items.propStateInterpolator,
-        sequenceConverter: container.items.sequenceConverter,
+        propInterpolator: getPropStateInterpolator(),
+        sequenceConverter: getSequenceConverter(),
       }
     )
   );

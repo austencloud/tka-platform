@@ -10,9 +10,7 @@ Discover all three to unlock the quiz.
   import type { HandPosition, PositionType } from '../../../domain/constants/position-quiz-data';
   import { POSITION_TYPE_INFO } from '../../../domain/constants/position-quiz-data';
   import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
-  import { container } from '$lib/shared/di';
-
-  interface Props {
+interface Props {
     experienceState: PositionsExperienceStateManager;
   }
 

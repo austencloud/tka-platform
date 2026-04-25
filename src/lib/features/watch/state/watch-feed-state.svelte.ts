@@ -6,9 +6,10 @@
  * Connects to FeedLoader service for data fetching.
  */
 
-import { container } from "$lib/shared/di";
 import type { FeedItem } from "../domain/models/feed-models";
 import type { IFeedLoader } from "../services/contracts/IFeedLoader";
+
+import { getFeedLoader } from "$lib/features/watch/getFeedLoader";
 
 export type FeedStatus = "idle" | "loading" | "loaded" | "error";
 
@@ -28,7 +29,7 @@ export function createWatchFeedState() {
 	function getFeedLoader(): IFeedLoader | null {
 		if (!feedLoader) {
 			try {
-				feedLoader = container?.items?.feedLoader ?? null;
+				feedLoader = getFeedLoader() ?? null;
 			} catch {
 				// Container not ready yet
 			}

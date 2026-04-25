@@ -5,10 +5,15 @@ Single responsibility: Coordinate option loading, preparation, and selection.
 Delegates all rendering to child components.
 -->
 <script lang="ts">
+
+import { getOptionFilter } from "$lib/features/create/construct/option-picker/getOptionFilter";
+import { getOptionLoader } from "$lib/features/create/construct/option-picker/getOptionLoader";
+import { getOptionOrganizer } from "$lib/features/create/construct/option-picker/getOptionOrganizer";
+import { getOptionSorter } from "$lib/features/create/construct/option-picker/getOptionSorter";
+import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModeProvider";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
@@ -198,18 +203,18 @@ Delegates all rendering to child components.
     let darkModeUnsubscribe: (() => void) | null = null;
 
     try {
-      const loader = container.items.optionLoader;
-      const filter = container.items.optionFilter;
-      const sorter = container.items.optionSorter;
+      const loader = getOptionLoader();
+      const filter = getOptionFilter();
+      const sorter = getOptionSorter();
 
-      organizerService = container.items.optionOrganizer;
+      organizerService = getOptionOrganizer();
       sizerService = optionGridFitCalculator;
       preparer = pictographPreparer as IPictographPreparer;
       hapticService = getHapticFeedback();
 
       // Subscribe to Dark Mode changes for prop color updates
       try {
-        darkModeProvider = container.items.darkModeProvider;
+        darkModeProvider = getDarkModeProvider();
         darkModeUnsubscribe = darkModeProvider.subscribe((value) => {
           darkMode = value;
         });

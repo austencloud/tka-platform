@@ -1,6 +1,5 @@
 /**
  * DEPRECATED - Use the shared location instead:
- * import { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
  */
 
 export type {

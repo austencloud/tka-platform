@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualityTierDetector";
   /**
    * Central coordinator that reads TipEffectMap assignments and routes each
    * prop tip to the correct 3D renderer. Sits between the animation system
@@ -20,7 +22,6 @@
   import { onDestroy, untrack } from "svelte";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { Vector3, Color, Object3D, Quaternion, Euler } from "three";
-  import { container } from "$lib/shared/di";
   import Trail3D from "./trails/Trail3D.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/LedRenderer3D";
   import { CharcoalRenderer3D, type CharcoalTipInput } from "./charcoal/CharcoalRenderer3D";
@@ -109,7 +110,7 @@
   }: Props = $props();
 
   const { scene, camera } = useThrelte();
-  const qualityTierDetector = container.items.qualityTierDetector;
+  const qualityTierDetector = getQualityTierDetector();
   const tipBridge = new TipPositionBridge3D();
 
   // Canonical effect config — read from context, or create a default-seeded

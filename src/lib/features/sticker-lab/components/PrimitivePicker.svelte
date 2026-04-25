@@ -26,11 +26,20 @@
     purpleFill: "rgba(126, 34, 206, 0.75)",
   };
 
+  let pickerEl = $state<HTMLDivElement | null>(null);
+  let previousFocus: Element | null = null;
+
+  $effect(() => {
+    if (!open || !pickerEl) return;
+    previousFocus = document.activeElement;
+    pickerEl.focus();
+    return () => {
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  });
+
   let entries = $state<PrimitiveCatalogEntry[]>([]);
   let isLoading = $state(true);
-  let filterSymmetry = $state<"all" | "high" | "low">("all");
-  let filterColoration = $state<"all" | "monochrome" | "two-color">("all");
-
   onMount(async () => {
     const catalog = await loadPrimitiveCatalog();
     entries = catalog.entries;
@@ -40,20 +49,9 @@
     }
   });
 
-  const filteredEntries = $derived.by(() => {
-    return entries.filter((e) => {
-      if (filterSymmetry === "high" && e.symmetryOrder < 4) return false;
-      if (filterSymmetry === "low" && e.symmetryOrder >= 4) return false;
-      if (filterColoration === "monochrome" && e.ultraCount > 1) return false;
-      if (filterColoration === "two-color" && e.ultraCount <= 1) return false;
-      return true;
-    });
-  });
-
-  function copiesOnSheet(shapeHash: string): number {
-    const sticker = stickerState.sheet.stickers.find((s) => s.primitiveRef.shapeHash === shapeHash);
-    return sticker ? sticker.copies : 0;
-  }
+  const copiesMap = $derived(
+    new Map(stickerState.sheet.stickers.map(s => [s.primitiveRef.shapeHash, s.copies]))
+  );
 
   function handleAdd(entry: PrimitiveCatalogEntry) {
     stickerState.addPrimitive(entryToRef(entry));
@@ -67,47 +65,29 @@
     onclick={onclose}
     onkeydown={(e) => { if (e.key === "Escape") onclose(); }}
   ></div>
-  <div class="picker" role="dialog" aria-label="Choose a mandala primitive" aria-modal="true">
+  <div
+    class="picker"
+    role="dialog"
+    aria-label="Choose a mandala primitive"
+    aria-modal="true"
+    bind:this={pickerEl}
+    tabindex="-1"
+    onkeydown={(e) => { if (e.key === "Escape") onclose(); }}
+  >
     <header>
       <h3>Choose a mandala primitive</h3>
       <button class="close-btn" aria-label="Close picker" onclick={onclose}>×</button>
     </header>
 
-    <div class="filters">
-      <label>
-        Symmetry:
-        <select bind:value={filterSymmetry}>
-          <option value="all">All</option>
-          <option value="high">High symmetry</option>
-          <option value="low">Low symmetry</option>
-        </select>
-      </label>
-      <label>
-        Coloration:
-        <select bind:value={filterColoration}>
-          <option value="all">All</option>
-          <option value="monochrome">Monochrome</option>
-          <option value="two-color">Two-color</option>
-        </select>
-      </label>
-      <button
-        class="clear-btn"
-        onclick={() => { filterSymmetry = "all"; filterColoration = "all"; }}
-        disabled={filterSymmetry === "all" && filterColoration === "all"}
-      >
-        Clear
-      </button>
-    </div>
-
     {#if isLoading}
       <div class="loading">Loading primitives…</div>
-    {:else if filteredEntries.length === 0}
-      <div class="empty">No primitives match these filters.</div>
+    {:else if entries.length === 0}
+      <div class="empty">No primitives available.</div>
     {:else}
       <div class="grid">
-        {#each filteredEntries as entry (entry.shapeHash)}
+        {#each entries as entry (entry.shapeHash)}
           {@const paths = getPrimitivePaths(entry.shapeHash)}
-          {@const copies = copiesOnSheet(entry.shapeHash)}
+          {@const copies = copiesMap.get(entry.shapeHash) ?? 0}
           <button
             class="tile"
             class:on-sheet={copies > 0}
@@ -185,36 +165,6 @@
     padding: 0 4px;
   }
   .close-btn:hover { color: white; }
-
-  .filters {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    font-size: 12px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    flex-wrap: wrap;
-  }
-  .filters label { display: flex; align-items: center; gap: 6px; }
-  .filters select {
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--theme-text, white);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-    padding: 3px 6px;
-    font-size: 11px;
-  }
-  .clear-btn {
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    border-radius: 4px;
-    padding: 3px 8px;
-    cursor: pointer;
-    font-size: 11px;
-  }
-  .clear-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
   .loading, .empty {
     padding: 32px;

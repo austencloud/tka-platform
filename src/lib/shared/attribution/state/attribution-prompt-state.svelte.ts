@@ -7,6 +7,8 @@
 
 import { browser } from "$app/environment";
 
+import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttributionPromptTrigger";
+
 /**
  * Reactive state for the attribution prompt
  */
@@ -43,8 +45,7 @@ class AttributionPromptStateManager {
     this.checkedThisSession = true;
 
     try {
-      const { container } = await import("$lib/shared/di");
-      const trigger = container?.items?.attributionPromptTrigger;
+      const trigger = getAttributionPromptTrigger();
 
       if (trigger && typeof trigger.shouldShowPrompt === "function") {
         if (trigger.shouldShowPrompt()) {

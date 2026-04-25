@@ -6,12 +6,14 @@
   Autoplay starts immediately on mount.
 -->
 <script lang="ts">
+
+import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import { getFuseContext } from "../context/fuse-context";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-	import { container } from "$lib/shared/di";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
@@ -63,8 +65,8 @@
 
 	onMount(async () => {
 		try {
-			motionLoader = container.items.sequenceMotionLoader;
-			controller = container.items.animationPlaybackController;
+			motionLoader = getSequenceMotionLoader();
+			controller = getAnimationPlaybackController();
 			loading = false;
 		} catch (err) {
 			console.error("Failed to initialize fuse result playback:", err);

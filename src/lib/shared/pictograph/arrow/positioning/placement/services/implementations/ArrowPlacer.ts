@@ -16,6 +16,7 @@ import type {
 import type { IArrowPlacer } from "../contracts/IArrowPlacer";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
+
 const debug = createComponentLogger("ArrowPlacer");
 
 export class ArrowPlacer implements IArrowPlacer {
@@ -301,7 +302,7 @@ export class ArrowPlacer implements IArrowPlacer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowPlacer to avoid DI container rebuilds.
+// Use this instead of arrowPlacer to avoid DI container rebuilds.
 // Uses the default jsonCache singleton.
 // ============================================================================
 

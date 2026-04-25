@@ -13,6 +13,8 @@ import type { IProfilePictureManager } from "../contracts/IProfilePictureManager
 import type { IUsernameValidator } from "../contracts/IUsernameValidator";
 import { formatUsername } from "../../domain/models/UsernameValidation";
 
+import { getAttributionPersister } from "$lib/shared/attribution/getAttributionPersister";
+
 /**
  * Capitalize each word in a name (e.g., "brendan freaney" -> "Brendan Freaney")
  * Handles common edge cases like hyphenated names and apostrophes.
@@ -133,9 +135,9 @@ export class UserDocumentManager implements IUserDocumentManager {
 
         // Finalize attribution for new user (async, non-blocking)
         // Converts anonymous session data to user attribution record
-        void import("$lib/shared/di").then(async ({ container }) => {
+        void (async () => {
           try {
-            const persister = container?.items?.attributionPersister;
+            const persister = getAttributionPersister();
             if (persister) {
               const { detectDeviceCategory } = await import("$lib/shared/attribution/config/referrer-patterns");
               const signupContext = {
@@ -148,7 +150,7 @@ export class UserDocumentManager implements IUserDocumentManager {
           } catch (err) {
             console.warn(`[UserDocumentManager] Attribution finalization failed:`, err);
           }
-        });
+        })();
       } else {
         // EXISTING USER: Preserve username, update other fields
         const existingData = userDoc.data();

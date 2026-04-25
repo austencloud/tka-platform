@@ -1,4 +1,6 @@
 <script lang="ts">
+
+import { getConnectOrchestrator } from "$lib/features/connect/getConnectOrchestrator";
 	/**
 	 * ConnectModule
 	 *
@@ -7,7 +9,6 @@
 	 */
   import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount, onDestroy } from 'svelte';
-	import { container } from '$lib/shared/di';
 	import { connectState } from './state/connect-state.svelte';
 	import type { IErrorHandler } from '$lib/shared/application/services/contracts/IErrorHandler';
 
@@ -52,7 +53,7 @@
 		initError = null;
 
 		try {
-			const orchestrator = container.items.connectOrchestrator;
+			const orchestrator = getConnectOrchestrator();
 			await connectState.initialize(orchestrator);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to initialize';

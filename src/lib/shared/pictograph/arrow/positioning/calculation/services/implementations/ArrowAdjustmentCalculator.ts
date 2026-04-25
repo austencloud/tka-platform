@@ -610,7 +610,7 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowAdjustmentCalculator to avoid DI container rebuilds.
+// Use this instead of arrowAdjustmentCalculator to avoid DI container rebuilds.
 // ============================================================================
 
 import { gridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
@@ -621,6 +621,7 @@ import { arrowPlacementKeyGenerator } from "../../../key-generation/services/imp
 import { turnsTupleKeyGenerator } from "../../../key-generation/services/implementations/TurnsTupleKeyGenerator";
 import { attributeKeyGenerator } from "../../../key-generation/services/implementations/AttributeKeyGenerator";
 import { directionalTupleProcessor } from "./DirectionalTupleProcessor";
+
 
 export const arrowAdjustmentCalculator = new ArrowAdjustmentCalculator(
   gridModeDeriver,

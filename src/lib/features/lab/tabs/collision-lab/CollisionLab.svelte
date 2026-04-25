@@ -1,14 +1,18 @@
 <script lang="ts">
+
+import { getCollisionLabPoseLabelRepository } from "$lib/features/lab/tabs/collision-lab/getCollisionLabPoseLabelRepository";
+import { getDiamondPoseEnumerator } from "$lib/features/lab/tabs/collision-lab/getDiamondPoseEnumerator";
+import { getStanceCandidateGenerator } from "$lib/features/lab/tabs/collision-lab/getStanceCandidateGenerator";
+import { getStanceOptimizer } from "$lib/features/lab/tabs/collision-lab/getStanceOptimizer";
   /**
    * CollisionLab
    *
    * Root component for the collision lab tab. Resolves services from the
-   * DI container, constructs state, sets context, and wires keyboard
+   * DI constructs state, sets context, and wires keyboard
    * shortcuts. Child components consume state via getCollisionLabContext.
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import {
     createCollisionLabState,
     type CollisionLabState,
@@ -81,10 +85,10 @@
 
   onMount(async () => {
     try {
-      const enumerator = container.items.diamondPoseEnumerator;
-      const repo = container.items.collisionLabPoseLabelRepository;
-      const optimizer = container.items.stanceOptimizer;
-      const candidateGenerator = container.items.stanceCandidateGenerator;
+      const enumerator = getDiamondPoseEnumerator();
+      const repo = getCollisionLabPoseLabelRepository();
+      const optimizer = getStanceOptimizer();
+      const candidateGenerator = getStanceCandidateGenerator();
       labState = await createCollisionLabState(
         enumerator,
         repo,

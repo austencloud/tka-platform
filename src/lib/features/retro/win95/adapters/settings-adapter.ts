@@ -64,23 +64,20 @@ export function saveRetroSettings(settings: Partial<RetroSettings>): void {
     // Quota exceeded or private browsing — silently skip storage.
   }
 
-  // Best-effort Firebase sync. We import lazily because the DI container
-  // may not be fully initialised at the point this is first called.
+  // Best-effort Firebase sync via settingsService singleton
   try {
-    import("$lib/shared/di").then(({ container }) => {
-      const items = container.items as unknown as Record<string, unknown>;
-      const settingsState = items.settingsState;
+    import("$lib/shared/settings/state/SettingsState.svelte").then(({ settingsService }) => {
       if (
-        settingsState &&
-        typeof (settingsState as Record<string, unknown>).updateSetting === "function"
+        settingsService &&
+        typeof (settingsService as unknown as Record<string, unknown>).updateSetting === "function"
       ) {
-        (settingsState as { updateSetting: (key: string, value: unknown) => void }).updateSetting(
+        (settingsService as { updateSetting: (key: string, value: unknown) => void }).updateSetting(
           "retro",
           merged
         );
       }
     }).catch(() => {
-      // DI container not ready — Firebase sync will happen next save.
+      // Settings module not ready — Firebase sync will happen next save.
     });
   } catch {
     // Silently skip.

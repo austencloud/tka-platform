@@ -8,7 +8,6 @@
  * Domain: Retro DOS Terminal Lab
  */
 
-import { container } from "$lib/shared/di";
 import {
 	GridLocation,
 	GridMode,
@@ -25,6 +24,9 @@ import type { IVariationExplorationOrchestrator } from "$lib/features/create/spe
 import type { IRandomSequenceGenerator } from "$lib/features/create/spell/services/contracts/IRandomSequenceGenerator";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
+
+import { getRandomSequenceGenerator } from "$lib/features/create/spell/getRandomSequenceGenerator";
+import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
 
 /** Which rendering layers are active */
 export interface RenderLayers {
@@ -384,10 +386,8 @@ export function createAsciiLabState() {
 		sequenceWord = word.trim().toUpperCase();
 
 		try {
-			const spellOrch = container.items
-				.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
-			const generator = container.items
-				.randomSequenceGenerator as IRandomSequenceGenerator;
+			const spellOrch = getVariationExplorationOrchestrator();
+			const generator = getRandomSequenceGenerator();
 
 			// Parse word with bridge letters
 			const parseResult = await spellOrch.parseWord(sequenceWord, {

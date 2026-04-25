@@ -1,3 +1,4 @@
+
 /**
  * Arrow Location Service
  *
@@ -97,7 +98,7 @@ export const MOTION_TYPES = {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowLocator to avoid DI container rebuilds.
+// Use this instead of arrowLocator to avoid DI container rebuilds.
 // ============================================================================
 
 export const arrowLocator = new ArrowLocator();

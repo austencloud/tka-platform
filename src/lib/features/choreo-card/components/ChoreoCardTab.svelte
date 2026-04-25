@@ -4,8 +4,9 @@
   Main container for browsing and filtering sequence choreography cards.
 -->
 <script lang="ts">
+
+import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
@@ -356,6 +357,7 @@
   });
 
   onMount(async () => {
+    console.time('[deck-perf] total mount');
     // Browse/Designer sequences load in background — don't block deck rendering
     loaderService = getBrowseLoader();
     loadSequences();
@@ -378,14 +380,30 @@
     url.hash = encodeNavHash(initialState);
     history.replaceState(initialState, "", url.toString());
 
-    // Decks tab is the default — always load the deck list on mount
+    const deckLoader = getDeckLoader() as IDeckLoader;
+
+    // Serve cached decks instantly, refresh from Firebase in background
     if (decks.length === 0) {
-      await loadDecks();
+      const cached = deckLoader.getCachedDecks();
+      if (cached && cached.length > 0) {
+        console.log('[deck-perf] serving %d cached decks', cached.length);
+        decks = cached;
+        // Refresh in background — updates cache + state silently
+        loadDecks().then(() => console.log('[deck-perf] background refresh done'));
+      } else {
+        console.time('[deck-perf] loadDecks (cold)');
+        await loadDecks();
+        console.timeEnd('[deck-perf] loadDecks (cold)');
+      }
     }
+
     // Restore a previously selected deck if one was persisted
     if (selectedDeckId) {
+      console.time('[deck-perf] loadDeckSequences');
       await handleSelectDeckSequences(selectedDeckId);
+      console.timeEnd('[deck-perf] loadDeckSequences');
     }
+    console.timeEnd('[deck-perf] total mount');
   });
 
   onDestroy(() => {
@@ -452,7 +470,7 @@
   }
 
   async function loadDecks() {
-    const deckLoader = container.items.deckLoader as IDeckLoader;
+    const deckLoader = getDeckLoader() as IDeckLoader;
     try {
       isDeckLoading = true;
       deckErrorMessage = null;
@@ -478,7 +496,7 @@
   // Loads sequences for a deck without touching selectedDeckId or nav state.
   // Used both by handleSelectDeck and restoreNavState.
   async function handleSelectDeckSequences(deckId: string) {
-    const deckLoader = container.items.deckLoader as IDeckLoader;
+    const deckLoader = getDeckLoader() as IDeckLoader;
     const deck = decks.find((d) => d.id === deckId);
     if (!deck) return;
 
@@ -524,7 +542,7 @@
     const deck = decks.find((d) => d.id === selectedDeckId);
     if (!deck || !selectedDeckId) return;
 
-    const deckLoader = container.items.deckLoader as IDeckLoader;
+    const deckLoader = getDeckLoader() as IDeckLoader;
     isDeckLoading = true;
     try {
       const seqIds = deck.families

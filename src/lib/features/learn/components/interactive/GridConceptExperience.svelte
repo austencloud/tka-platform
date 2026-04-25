@@ -8,8 +8,7 @@ Supports two view modes:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { container } from '$lib/shared/di';
-	import { onMount } from 'svelte';
+import { onMount } from 'svelte';
 	import GridMergeAnimation from './grid-merge/GridMergeAnimation.svelte';
 	import ExperienceProgressIndicator from './ExperienceProgressIndicator.svelte';
 	import GridScrollView from './grid-concept/GridScrollView.svelte';

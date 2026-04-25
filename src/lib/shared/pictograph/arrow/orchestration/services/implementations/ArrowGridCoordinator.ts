@@ -12,6 +12,7 @@ import { Point } from "fabric";
 import { createGridPointData } from "../../../../grid/utils/grid-coordinate-utils";
 import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
 
+
 export class ArrowGridCoordinator implements IArrowGridCoordinator {
   // Scene dimensions from grid module
   private readonly SCENE_SIZE = 950;
@@ -252,7 +253,7 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-// Use this instead of container.items.arrowGridCoordinator to avoid DI container rebuilds.
+// Use this instead of arrowGridCoordinator to avoid DI container rebuilds.
 // ============================================================================
 
 export const arrowGridCoordinator = new ArrowGridCoordinator();

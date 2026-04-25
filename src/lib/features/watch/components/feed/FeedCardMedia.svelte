@@ -10,12 +10,13 @@
   media types are available on the item.
 -->
 <script lang="ts">
+
+import { getVideoPlaybackController } from "$lib/features/watch/getVideoPlaybackController";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedContentType, FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
-  import { container } from "$lib/shared/di";
   import type { IVideoPlaybackController } from "../../services/contracts/IVideoPlaybackController";
 
   interface Props {
@@ -73,7 +74,7 @@
   onMount(() => {
     // Get playback controller from container
     try {
-      playbackController = container.items.videoPlaybackController;
+      playbackController = getVideoPlaybackController();
     } catch {
       // Controller not registered yet
     }

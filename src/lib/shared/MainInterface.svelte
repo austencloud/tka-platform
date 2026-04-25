@@ -1,4 +1,7 @@
 <script lang="ts">
+
+import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinator";
+import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery";
   /**
    * MainInterface
    * Domain: Application Layout Shell
@@ -52,7 +55,6 @@
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { browseScrollState } from "../features/browse/shared/state/BrowseScrollState.svelte";
   import { fuseTourState } from "./onboarding/state/fuse-tour-state.svelte";
-  import { container } from "./di";
   import type { ModuleId } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
   import { hasOpenDrawers } from "./foundation/ui/drawer/DrawerStack";
@@ -245,8 +247,8 @@
 
     // Initialize LAN sync services (coordinator and discovery)
     try {
-      const lanSyncCoordinator = container.items.lanSyncCoordinator;
-      const syncRoomDiscovery = container.items.syncRoomDiscovery;
+      const lanSyncCoordinator = getLanSyncCoordinator();
+      const syncRoomDiscovery = getSyncRoomDiscovery();
 
       lanSyncState.initialize(lanSyncCoordinator);
       lanSyncState.initializeDiscovery(syncRoomDiscovery);

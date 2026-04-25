@@ -18,6 +18,11 @@
   <button class="add-btn" onclick={() => (pickerOpen = true)} aria-label="Browse primitives">
     + Add
   </button>
+  {#if stickerState.sheet.stickers.length > 0}
+    <button class="clear-btn" onclick={() => stickerState.clearSheet()} aria-label="Clear all stickers">
+      Clear
+    </button>
+  {/if}
 </div>
 
 <div class="list">
@@ -53,6 +58,20 @@
     cursor: pointer;
     font-size: 11px;
     font-weight: 600;
+  }
+  .clear-btn {
+    padding: 4px 10px;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    margin-left: 6px;
+  }
+  .clear-btn:hover {
+    color: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
   }
 
   .list {

@@ -7,12 +7,14 @@
   Clicking the header toggles collapse/expand state.
 -->
 <script lang="ts">
+
+import { getArrowCollisionResolver } from "$lib/features/choreo-card/getArrowCollisionResolver";
+import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDataBuilder";
   import type { DeckFamily } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { container } from "$lib/shared/di";
   import type { IHandPathDataBuilder } from "../services/contracts/IHandPathDataBuilder";
   import type { IArrowCollisionResolver } from "../services/contracts/IArrowCollisionResolver";
   import ChoreoCard from "./ChoreoCard.svelte";
@@ -51,8 +53,8 @@
   let expanded = $state((() => initiallyExpanded)());
 
   // Resolve DI services once — these are cheap singletons.
-  const handPathBuilder = container.items.handPathDataBuilder as IHandPathDataBuilder;
-  const collisionResolver = container.items.arrowCollisionResolver as IArrowCollisionResolver;
+  const handPathBuilder = getHandPathDataBuilder() as IHandPathDataBuilder;
+  const collisionResolver = getArrowCollisionResolver() as IArrowCollisionResolver;
 
   /**
    * Converts PictographData[] (from HandPathDataBuilder) into StepData[].

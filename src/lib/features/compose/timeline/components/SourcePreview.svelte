@@ -11,7 +11,8 @@
   - Quick add to timeline button
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+
+import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
@@ -127,8 +128,7 @@
   onMount(() => {
     try {
       loading = true;
-      animationOrchestrator = container.items
-        .sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
+      animationOrchestrator = getSequenceAnimationOrchestrator();
       startPositionDeriver = startPositionDeriverSingleton;
       initialized = true;
       loading = false;
