@@ -18,9 +18,8 @@
   import NoChangelogState from "./NoChangelogState.svelte";
   import ActionToast from "./ActionToast.svelte";
   import ContributorBadge from "./ContributorBadge.svelte";
-  import { container } from "$lib/shared/di";
+  import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
   import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
-  import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { changelogEditState } from "./state/changelog-edit-state.svelte";
   import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
@@ -339,7 +338,7 @@
   }
 
   onMount(() => {
-    const loader = container.items.contributorLoader as IContributorLoader;
+    const loader = getContributorLoader();
     loader.getAll().then((list) => {
       allContributors = list;
     });

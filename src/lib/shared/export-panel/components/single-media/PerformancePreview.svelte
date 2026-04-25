@@ -17,7 +17,7 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getCameraManager } from "$lib/features/train/getCameraManager";
   import type { ICameraManager } from "$lib/features/train/services/contracts/ICameraManager";
   import { getVideoRecorder } from "$lib/shared/video-record/services/implementations/VideoRecorder";
   import type {
@@ -213,7 +213,7 @@
     if (!browser) return;
 
     try {
-      cameraService = container.items.cameraManager;
+      cameraService = getCameraManager();
       await initializeCamera();
     } catch (err) {
       error = "Failed to load camera service";

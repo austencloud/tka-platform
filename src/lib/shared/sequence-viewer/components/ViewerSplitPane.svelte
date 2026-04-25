@@ -450,17 +450,18 @@
     transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Hover scale — desktop pointer devices only.
-     Applied to .media-pane rather than .split-column so overlays that
-     live as siblings of the pane (e.g. RightRail) don't scale with it.
-     Scaling the rail would violate Fitts's Law: chip positions shift
-     when the user moves the cursor toward them. */
+  /* Hover outline — desktop pointer devices only.
+     Subtle outline on hover signals "click to expand" without the
+     disorienting scale pop. No outline at rest or when focused. */
   @media (hover: hover) and (pointer: fine) {
-    .split-column:not(.focused) .media-pane {
-      transition: transform 120ms cubic-bezier(0.2, 0, 0, 1);
+    .split-column:not(.focused) {
+      outline: 2px solid transparent;
+      outline-offset: -2px;
+      transition: outline-color 120ms cubic-bezier(0.2, 0, 0, 1),
+                  opacity 250ms cubic-bezier(0.2, 0, 0, 1);
     }
-    .split-column:hover:not(.focused) .media-pane {
-      transform: scale(1.012);
+    .split-column:hover:not(.focused) {
+      outline-color: var(--theme-accent, #6366f1);
     }
   }
 

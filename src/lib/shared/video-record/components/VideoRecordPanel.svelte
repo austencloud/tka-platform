@@ -8,8 +8,7 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { container } from "$lib/shared/di";
-  import type { ICameraManager } from "$lib/features/train/services/contracts/ICameraManager";
+  import { getCameraManager } from "$lib/features/train/getCameraManager";
   import { getVideoRecorder } from "../services/implementations/VideoRecorder";
   import type {
     RecordingProgress,
@@ -37,7 +36,7 @@
   let settingsOpen = $state(false);
 
   // Services
-  const cameraService = container.items.cameraManager;
+  const cameraService = getCameraManager();
   const recordService = getVideoRecorder();
 
   // Settings
