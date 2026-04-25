@@ -35,6 +35,8 @@
   import SmokeCustomize from "./customize/SmokeCustomize.svelte";
   import { INK_PRESET_GROUP } from "./presets/ink-presets";
   import InkCustomize from "./customize/InkCustomize.svelte";
+  import { FROST_PRESET_GROUP } from "./presets/frost-presets";
+  import FrostCustomize from "./customize/FrostCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
   import { EFFECT_COLORS, EFFECT_LABELS } from "./effect-registry";
   import type { EffectLayerMode } from "../../services/effect-layer";
@@ -167,6 +169,7 @@
       case "petals": return PETALS_PRESET_GROUP;
       case "smoke": return SMOKE_PRESET_GROUP;
       case "ink": return INK_PRESET_GROUP;
+      case "frost": return FROST_PRESET_GROUP;
       default: return null;
     }
   }
@@ -294,6 +297,8 @@
         <SmokeCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "ink"}
         <InkCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "frost"}
+        <FrostCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}

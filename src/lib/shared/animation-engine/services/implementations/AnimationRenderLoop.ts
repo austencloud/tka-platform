@@ -26,6 +26,7 @@ import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRender
 import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
 import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
+import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
@@ -35,6 +36,7 @@ import type { BubblesTipInput } from "$lib/shared/effects/renderers/Bubbles2DRen
 import type { PetalsTipInput } from "$lib/shared/effects/renderers/Petals2DRenderer";
 import type { SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRenderer";
 import type { InkTipInput } from "$lib/shared/effects/renderers/Ink2DRenderer";
+import type { FrostTipInput } from "$lib/shared/effects/renderers/Frost2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -120,6 +122,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastSmokeFrameTime: number = 0;
   private inkRenderer: IInkOverlayRenderer | null = null;
   private lastInkFrameTime: number = 0;
+  private frostRenderer: IFrostOverlayRenderer | null = null;
+  private lastFrostFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -141,6 +145,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutivePetalsErrors: number = 0;
   private consecutiveSmokeErrors: number = 0;
   private consecutiveInkErrors: number = 0;
+  private consecutiveFrostErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
@@ -152,6 +157,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private petalsDisabledByError: boolean = false;
   private smokeDisabledByError: boolean = false;
   private inkDisabledByError: boolean = false;
+  private frostDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -232,6 +238,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.petalsRenderer = config.petalsRenderer ?? null;
     this.smokeRenderer = config.smokeRenderer ?? null;
     this.inkRenderer = config.inkRenderer ?? null;
+    this.frostRenderer = config.frostRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -283,6 +290,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.smokeRenderer = config.smokeRenderer ?? null;
     if (config.inkRenderer !== undefined)
       this.inkRenderer = config.inkRenderer ?? null;
+    if (config.frostRenderer !== undefined)
+      this.frostRenderer = config.frostRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -318,6 +327,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.consecutivePetalsErrors = 0;
     this.consecutiveSmokeErrors = 0;
     this.consecutiveInkErrors = 0;
+    this.consecutiveFrostErrors = 0;
     this.fireDisabledByError = false;
     this.ledDisabledByError = false;
     this.zapDisabledByError = false;
@@ -329,6 +339,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.petalsDisabledByError = false;
     this.smokeDisabledByError = false;
     this.inkDisabledByError = false;
+    this.frostDisabledByError = false;
   }
 
   isRunning(): boolean {
@@ -425,6 +436,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.smokeRenderer = null;
     this.inkRenderer?.dispose();
     this.inkRenderer = null;
+    this.frostRenderer?.dispose();
+    this.frostRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -516,6 +529,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const inkActive =
       params.inkConfig != null &&
       this.inkRenderer?.isInitialized() === true;
+    const frostActive =
+      params.frostConfig != null &&
+      this.frostRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -533,7 +549,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       bubblesActive ||
       petalsActive ||
       smokeActive ||
-      inkActive;
+      inkActive ||
+      frostActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -729,6 +746,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.inkRenderer?.isInitialized()) {
         this.inkRenderer.clear();
       }
+      // Clear frost overlay (Canvas2D) — also drops the particle pool.
+      if (this.frostRenderer?.isInitialized()) {
+        this.frostRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -846,7 +867,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.inkRenderer?.isInitialized()
       && params.inkConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate;
+    const hasFrostOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.frostRenderer?.isInitialized()
+      && params.frostConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1553,6 +1578,70 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } else if (activeInkRenderer && !hasInkOverlay) {
       activeInkRenderer.clear();
       this.lastInkFrameTime = 0;
+    }
+
+    // Frost overlay: per-tip cold aura particle system. Same tip-filtering
+    // pipeline as ink/smoke — reads sharedTipResult, resolves "frost" tips,
+    // drives the particle renderer with dt.
+    const activeFrostRenderer = this.frostRenderer?.isInitialized()
+      ? this.frostRenderer
+      : null;
+    const hasFrostOverlay =
+      this.fireTipTracker && activeFrostRenderer && params.frostConfig != null;
+
+    if (
+      hasFrostOverlay &&
+      !this.frostDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const frostTips: FrostTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "frost") continue;
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) frostTips.bluePosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) frostTips.bluePosB = { x: t.x, y: t.y };
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) frostTips.redPosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) frostTips.redPosB = { x: t.x, y: t.y };
+          }
+        }
+        const nowMs = currentTime;
+        let dt = this.lastFrostFrameTime > 0 ? (nowMs - this.lastFrostFrameTime) / 1000 : 1 / 60;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastFrostFrameTime = nowMs;
+        activeFrostRenderer!.renderFrame(params.frostConfig!, frostTips, dt);
+        this.consecutiveFrostErrors = 0;
+      } catch (error) {
+        this.consecutiveFrostErrors++;
+        activeFrostRenderer?.clear();
+        if (this.consecutiveFrostErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.frostDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Frost effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("frost", err);
+          } else {
+            effectErrorSignal.trigger("frost", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Frost render error (attempt ${this.consecutiveFrostErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeFrostRenderer && !hasFrostOverlay) {
+      activeFrostRenderer.clear();
+      this.lastFrostFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

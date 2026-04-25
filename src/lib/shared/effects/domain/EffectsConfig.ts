@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 12;
+export const EFFECTS_CONFIG_VERSION = 13;
 
 export type EffectType =
   | "none"
@@ -32,7 +32,8 @@ export type EffectType =
   | "bubbles"
   | "petals"
   | "smoke"
-  | "ink";
+  | "ink"
+  | "frost";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -282,6 +283,25 @@ export interface SmokeIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
+export interface FrostIntent {
+  /** 0-1. Continuous cold emission at rest. */
+  ambientEmission: number;
+  /** 0-1. Velocity-reactive crystal/particle emission. */
+  motionEmission: number;
+  /** 0-1. Crystal size + frost density. */
+  intensity: number;
+  /** Named palette. "custom" uses customColor. */
+  palette: "glacial" | "breath" | "black_ice" | "aurora" | "diamond" | "cursed" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /** 0-1. Crystal angular complexity. 0 = simple hexagons, 1 = branching dendrites. */
+  crystallinity: number;
+  /** 0-1. How quickly frost spreads along the trail path. 0 = stays near tip, 1 = rapid coverage. */
+  spreadRate: number;
+  /** Explicit tracking. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
 /**
  * Backend-specific override storage. Populated only when the user
  * has explicitly edited a backend-only parameter via an Advanced
@@ -315,6 +335,8 @@ export interface EffectsOverrides {
   smoke3D?: Record<string, unknown>;
   ink2D?: Record<string, unknown>;
   ink3D?: Record<string, unknown>;
+  frost2D?: Record<string, unknown>;
+  frost3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -333,6 +355,7 @@ export interface EffectsConfig {
   petals: PetalsIntent;
   smoke: SmokeIntent;
   ink: InkIntent;
+  frost: FrostIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
@@ -347,6 +370,7 @@ export interface EffectsConfig {
     petals: string | null;
     smoke: string | null;
     ink: string | null;
+    frost: string | null;
   };
   overrides?: EffectsOverrides;
 }

@@ -12,6 +12,7 @@ import type {
   PetalsIntent,
   SmokeIntent,
   InkIntent,
+  FrostIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
@@ -27,12 +28,14 @@ import type {
   Petals2DParams,
   Smoke2DParams,
   Ink2DParams,
+  Frost2DParams,
 } from "./canvas2d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
 import { resolveBubblePalette } from "../domain/BubblePalettes";
 import { resolvePetalPalette } from "../domain/PetalPalettes";
 import { resolveSmokePalette } from "../domain/SmokePalettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
+import { resolveFrostPalette } from "../domain/FrostPalettes";
 
 export function resolveTrails2D(
   intent: TrailsIntent,
@@ -247,6 +250,10 @@ export function resolveInk2D(
     maxPointsPerTip: MAX_POINTS_PER_TIP,
     stampScaleMin: STAMP_SCALE_MIN,
     stampScaleMax: STAMP_SCALE_MAX,
+    gravityPx: palette.watercolor ? 180 * 0.4 : 180,
+    breakStretchMax: 80,
+    dropletPoolSize: 512,
+    dropletMaxAge: 1.5,
   };
   return { ...intent, ...defaults, ...override };
 }
@@ -291,6 +298,32 @@ export function resolveSmoke2D(
     noiseScale: 0.5,
     riseBaseSpeed: RISE_BASE_PX,
     blendMode: "source-over",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveFrost2D(
+  intent: FrostIntent,
+  override: Partial<Frost2DParams> = {},
+): Frost2DParams {
+  const palette = resolveFrostPalette(intent);
+  const AMBIENT_BASE_RATE = 24;
+  const MOTION_BASE_RATE = 60;
+  const MOTION_REFERENCE_SPEED = 3.0;
+
+  const defaults: Omit<Frost2DParams, keyof FrostIntent> = {
+    resolvedPalette: palette,
+    auraPoolSize: 2048,
+    baseRadius: 10,
+    ambientSpawnRate: AMBIENT_BASE_RATE,
+    motionSpawnRate: MOTION_BASE_RATE,
+    motionReferenceSpeed: MOTION_REFERENCE_SPEED,
+    lifetimeMin: 1.8,
+    lifetimeMax: 3.5,
+    blendMode: "screen",
+    crystalPoolSize: 256,
+    crystalSpacing: 18,
+    crystalGrowDuration: 0.6,
   };
   return { ...intent, ...defaults, ...override };
 }

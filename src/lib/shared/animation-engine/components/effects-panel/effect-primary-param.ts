@@ -143,6 +143,15 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     get: (s) => s.ink.intensity,
     set: (s, v) => s.updateInk({ intensity: v }),
   },
+  frost: {
+    label: "Intensity",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    format: fmt2,
+    get: (s) => s.frost.intensity,
+    set: (s, v) => s.updateFrost({ intensity: v }),
+  },
 };
 
 export function getPrimaryParam(effectId: string, state: EffectsConfigState): number {

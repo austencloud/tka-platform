@@ -111,9 +111,11 @@ import { SmokeOverlayRenderer } from "./SmokeOverlayRenderer";
 import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import { InkOverlayRenderer } from "./InkOverlayRenderer";
 import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
-import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Ink2DParams, Petals2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import { resolveBloom2D, resolveBubbles2D, resolveEcho2D, resolveInk2D, resolvePetals2D, resolveSmoke2D, resolveSparkles2D, resolveWater2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
-import type { BloomIntent, BubblesIntent, EchoIntent, InkIntent, PetalsIntent, SmokeIntent, SparklesIntent, WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { FrostOverlayRenderer } from "./FrostOverlayRenderer";
+import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
+import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import { resolveBloom2D, resolveBubbles2D, resolveEcho2D, resolveFrost2D, resolveInk2D, resolvePetals2D, resolveSmoke2D, resolveSparkles2D, resolveWater2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
+import type { BloomIntent, BubblesIntent, EchoIntent, FrostIntent, InkIntent, PetalsIntent, SmokeIntent, SparklesIntent, WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
@@ -303,6 +305,7 @@ export class AnimationEngine {
   private petalsRenderer: IPetalsOverlayRenderer | null = null;
   private smokeRenderer: ISmokeOverlayRenderer | null = null;
   private inkRenderer: IInkOverlayRenderer | null = null;
+  private frostRenderer: IFrostOverlayRenderer | null = null;
   // Cached zap params resolved from the current ZapIntent.
   // Seeded from DEFAULT_EFFECTS_CONFIG.zap and overwritten in getFrameParams()
   // whenever a wired EffectsConfigState reports a changed zap intent
@@ -336,6 +339,8 @@ export class AnimationEngine {
   // Cached ink params resolved from the live InkIntent.
   private inkConfig: Ink2DParams = resolveInk2D(DEFAULT_EFFECTS_CONFIG.ink);
   private prevInkIntentRef: InkIntent | null = null;
+  private frostConfig: Frost2DParams = resolveFrost2D(DEFAULT_EFFECTS_CONFIG.frost);
+  private prevFrostIntentRef: FrostIntent | null = null;
   // JSON snapshot of the last ZapIntent we resolved into zapConfig.
   // Re-resolves only when the intent changes to avoid per-frame allocation churn.
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
@@ -406,6 +411,7 @@ export class AnimationEngine {
   private prevHasPetalsTips: boolean = false;
   private prevHasSmokeTips: boolean = false;
   private prevHasInkTips: boolean = false;
+  private prevHasFrostTips: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
@@ -464,6 +470,7 @@ export class AnimationEngine {
     petalsConfig: null,
     smokeConfig: null,
     inkConfig: null,
+    frostConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -571,6 +578,7 @@ export class AnimationEngine {
     this.prevHasPetalsTips = vm.hasEffect("petals");
     this.prevHasSmokeTips = vm.hasEffect("smoke");
     this.prevHasInkTips = vm.hasEffect("ink");
+    this.prevHasFrostTips = vm.hasEffect("frost");
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
@@ -757,6 +765,11 @@ export class AnimationEngine {
         if (hasInkTips !== this.prevHasInkTips) {
           this.prevHasInkTips = hasInkTips;
           this.syncInkOverlay();
+        }
+        const hasFrostTips = vm.hasEffect("frost");
+        if (hasFrostTips !== this.prevHasFrostTips) {
+          this.prevHasFrostTips = hasFrostTips;
+          this.syncFrostOverlay();
         }
 
         // Sync fire slider values + color curve → physics
@@ -1002,6 +1015,9 @@ export class AnimationEngine {
     }
     if (this.prevHasInkTips && !this.inkRenderer?.isInitialized()) {
       this.syncInkOverlay();
+    }
+    if (this.prevHasFrostTips && !this.frostRenderer?.isInitialized()) {
+      this.syncFrostOverlay();
     }
   }
 
@@ -1569,6 +1585,8 @@ export class AnimationEngine {
     this.smokeRenderer = null;
     this.inkRenderer?.dispose();
     this.inkRenderer = null;
+    this.frostRenderer?.dispose();
+    this.frostRenderer = null;
 
     // Clear trails
     this.trailCapturer?.clearTrails();
@@ -1832,6 +1850,7 @@ export class AnimationEngine {
     apply("petals", this.petalsRenderer);
     apply("smoke", this.smokeRenderer);
     apply("ink", this.inkRenderer);
+    apply("frost", this.frostRenderer);
   }
 
   /** Runtime A/B toggle: set `window.__TKA_TRAIL_GPU = false` before
@@ -2256,6 +2275,41 @@ export class AnimationEngine {
     }
   }
 
+  private syncFrostOverlay(): void {
+    const enabled = this.prevHasFrostTips;
+
+    if (enabled) {
+      if (!this.frostRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.frostRenderer = new FrostOverlayRenderer();
+        const success = this.frostRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            frostRenderer: this.frostRenderer,
+          });
+        } else {
+          this.frostRenderer = null;
+        }
+      }
+    } else {
+      if (this.frostRenderer?.isInitialized()) {
+        this.frostRenderer.dispose();
+        this.frostRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ frostRenderer: null });
+    }
+
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
   /**
    * Initialize or destroy the petals overlay based on prevHasPetalsTips.
    * Canvas2D layer that hosts the falling silhouette emitter + pool for
@@ -2557,6 +2611,7 @@ export class AnimationEngine {
         this.petalsRenderer?.resize(newSize, newSize);
         this.smokeRenderer?.resize(newSize, newSize);
         this.inkRenderer?.resize(newSize, newSize);
+        this.frostRenderer?.resize(newSize, newSize);
         this.charcoalRenderer?.resize(newSize, newSize);
         // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
         // Without this, after HMR the tracker uses stale positions from the old size.
@@ -2918,6 +2973,16 @@ export class AnimationEngine {
       }
     }
     fp.inkConfig = this.prevHasInkTips ? this.inkConfig : null;
+
+    // Frost overlay config — same reference-identity diff pattern.
+    if (this.effectsConfigState) {
+      const intent = this.effectsConfigState.frost;
+      if (intent !== this.prevFrostIntentRef) {
+        this.prevFrostIntentRef = intent;
+        this.frostConfig = resolveFrost2D(intent);
+      }
+    }
+    fp.frostConfig = this.prevHasFrostTips ? this.frostConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
