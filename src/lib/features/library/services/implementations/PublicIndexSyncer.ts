@@ -39,6 +39,25 @@ import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/dis
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 
+function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+      result[key] = stripUndefined(value as Record<string, unknown>);
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        item !== null && typeof item === "object" && !Array.isArray(item)
+          ? stripUndefined(item as Record<string, unknown>)
+          : item
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export class PublicIndexSyncer implements IPublicIndexSyncer {
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
 
@@ -165,10 +184,8 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         ...(sequence.startPosition && { startPosition: sequence.startPosition }),
       };
 
-      // Strip undefined fields — Firestore rejects them in setDoc
-      const filteredPublicData = Object.fromEntries(
-        Object.entries(publicData).filter(([, v]) => v !== undefined)
-      );
+      // Recursively strip undefined fields — Firestore rejects them in setDoc
+      const filteredPublicData = stripUndefined(publicData as Record<string, unknown>);
 
       await setDoc(
         doc(firestore, getPublicSequencePath(sequence.id)),

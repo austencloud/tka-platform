@@ -3,14 +3,14 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
-  import type { ITranscriptionClient } from "../../services/contracts/ITranscriptionClient";
-  import type { IFormDraftPersister } from "../../services/contracts/IFormDraftPersister";
-  import type { IFeedbackTypeResolver } from "../../services/contracts/IFeedbackTypeResolver";
-  import type { IAudioAnalyzer } from "../../services/contracts/IAudioAnalyzer";
+  import type { VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
+  import { getVoiceRecorder } from "$lib/features/feedback/getVoiceRecorder";
+  import { getTranscriptionClient } from "$lib/features/feedback/getTranscriptionClient";
+  import { getFormDraftPersister } from "$lib/features/feedback/getFormDraftPersister";
+  import { getFeedbackTypeResolver } from "$lib/features/feedback/getFeedbackTypeResolver";
+  import { getAudioAnalyzer } from "$lib/features/feedback/getAudioAnalyzer";
   import type { FeedbackSubmitState } from "../../state/feedback-submit-state.svelte";
   import { TYPE_CONFIG } from "../../domain/models/feedback-models";
   import type { FeedbackType } from "../../domain/models/feedback-models";
@@ -41,11 +41,11 @@
   // Services
   const hapticService = getHapticFeedback();
   const deviceDetector = getDeviceDetector();
-  const voiceRecorder: IVoiceRecorder = container.items.voiceRecorder;
-  const transcriptionClient: ITranscriptionClient = container.items.transcriptionClient;
-  const draftPersister = container.items.formDraftPersister;
-  const typeResolver = container.items.feedbackTypeResolver;
-  const audioAnalyzer: IAudioAnalyzer = container.items.audioAnalyzer;
+  const voiceRecorder = getVoiceRecorder();
+  const transcriptionClient = getTranscriptionClient();
+  const draftPersister = getFormDraftPersister();
+  const typeResolver = getFeedbackTypeResolver();
+  const audioAnalyzer = getAudioAnalyzer();
 
   // Component state
   let isMobileDevice = $state(false);

@@ -7,7 +7,7 @@ Supports two navigation modes:
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
+  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
   import { onMount } from "svelte";
   import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -26,7 +26,7 @@ Supports two navigation modes:
   }>();
 
   const hapticService = getHapticFeedback();
-  const conceptProgressService = container.items.conceptProgressTracker;
+  const conceptProgressService = getConceptProgressTracker();
 
   let progress = $state<ConceptProgress>({
     conceptId: "",

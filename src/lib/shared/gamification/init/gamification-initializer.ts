@@ -4,10 +4,9 @@
  * Call this once on app startup to initialize all gamification services.
  */
 
-import { container } from "../../di";
-import type { IAchievementManager } from "../services/contracts/IAchievementManager";
-import type { IDailyChallengeManager } from "../services/contracts/IDailyChallengeManager";
-import type { IStreakTracker } from "../services/contracts/IStreakTracker";
+import { getAchievementManager } from "../getAchievementManager";
+import { getDailyChallengeManager } from "../getDailyChallengeManager";
+import { getStreakTracker } from "../getStreakTracker";
 import type { XPEventMetadata } from "../domain/models/achievement-models";
 
 // ITI containers are loaded synchronously, no need for async loading
@@ -20,9 +19,9 @@ export async function initializeGamification(): Promise<void> {
     await getFirestoreInstance();
 
     // Resolve services from ITI container
-    const achievementService = container.items.achievementManager;
-    const challengeService = container.items.dailyChallengeManager;
-    const streakService = container.items.streakTracker;
+    const achievementService = getAchievementManager();
+    const challengeService = getDailyChallengeManager();
+    const streakService = getStreakTracker();
 
     // Initialize in parallel
     await Promise.all([
@@ -81,7 +80,7 @@ export async function trackXP(
     const { getFirestoreInstance } = await import("../../auth/firebase");
     await getFirestoreInstance();
 
-    const achievementService = container.items.achievementManager;
+    const achievementService = getAchievementManager();
     await achievementService.trackAction(action, metadata);
   } catch (error) {
     console.error("Failed to track XP:", error);

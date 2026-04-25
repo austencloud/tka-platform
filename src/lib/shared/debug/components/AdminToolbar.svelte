@@ -27,6 +27,7 @@
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import { container } from "$lib/shared/di";
+  import { getQuickAccessPersister } from "$lib/shared/debug/getQuickAccessPersister";
   import { getImageComposer } from "$lib/shared/render/getImageComposer";
   import type {
     IQuickAccessPersister,
@@ -408,7 +409,7 @@
 
     // Resolve the service after mount
     try {
-      quickAccessPersister = container.items.quickAccessPersister;
+      quickAccessPersister = getQuickAccessPersister();
       quickAccessUsers = quickAccessPersister.load();
     } catch {
       console.warn("QuickAccessPersister not available");

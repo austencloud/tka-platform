@@ -13,7 +13,7 @@
   import type { DetectionFrame } from "../../domain/models/DetectionFrame";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { container } from "$lib/shared/di";
+  import { getPositionDetector } from "$lib/features/train/getPositionDetector";
   import type { IPositionDetector } from "../../services/contracts/IPositionDetector";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -75,7 +75,7 @@
   }: Props = $props();
 
   // Performance monitoring
-  const detectionService = container.items.positionDetector;
+  const detectionService = getPositionDetector();
   let fps = $state(0);
   let avgFrameTime = $state(0);
   let videoResolution = $state("N/A");

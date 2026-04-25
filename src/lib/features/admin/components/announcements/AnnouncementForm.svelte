@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type { IAnnouncementManager } from "../../services/contracts/IAnnouncementManager";
   import type {
@@ -29,7 +29,7 @@
   let announcementService: IAnnouncementManager | null = null;
 
   onMount(() => {
-    announcementService = container.items.announcementManager;
+    announcementService = getAnnouncementManager();
   });
 
   // Form state - initialize with defaults, $effect syncs when announcement prop changes

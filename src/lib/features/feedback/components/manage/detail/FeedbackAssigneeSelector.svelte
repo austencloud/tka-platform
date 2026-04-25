@@ -2,9 +2,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Contributor } from "../../../domain/models/contributor-models";
-  import type { IContributorLoader } from "../../../services/contracts/IContributorLoader";
   import type { FeedbackDetailState } from "../../../state/feedback-detail-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
 
   const {
     detailState,
@@ -25,7 +24,7 @@
   );
 
   onMount(() => {
-    const loader = container.items.contributorLoader as IContributorLoader;
+    const loader = getContributorLoader();
     loader.getAll().then((list) => {
       contributors = list;
     });

@@ -7,10 +7,9 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getPerformanceHistoryTracker } from "$lib/features/train/getPerformanceHistoryTracker";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IPerformanceHistoryTracker } from "../../services/contracts/IPerformanceHistoryTracker";
   import type {
     StatsOverview,
     PersonalBest,
@@ -28,7 +27,7 @@
   let personalBests = $state<PersonalBest[]>([]);
   let recentSessions = $state<StoredPerformance[]>([]);
   const hapticService = getHapticFeedback();
-  const historyService = container.items.performanceHistoryTracker;
+  const historyService = getPerformanceHistoryTracker();
 
   const hasData = $derived(stats && stats.totalSessions > 0);
 

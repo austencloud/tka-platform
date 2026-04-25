@@ -7,10 +7,9 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getTrainChallengeManager } from "$lib/features/train/getTrainChallengeManager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ITrainChallengeManager } from "../../services/contracts/ITrainChallengeManager";
   import type {
     TrainChallengeFilter,
     TrainChallengeSortBy,
@@ -27,7 +26,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
-  const challengeService = container.items.trainChallengeManager;
+  const challengeService = getTrainChallengeManager();
   const hapticService = getHapticFeedback();
 
   // Local UI state (filter preferences)

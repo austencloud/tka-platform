@@ -6,8 +6,7 @@
    */
 
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
-  import type { IChallengeCoordinator } from "$lib/shared/gamification/services/contracts/IChallengeCoordinator";
+  import { getChallengeCoordinator } from "$lib/shared/gamification/getChallengeCoordinator";
   import type { ChallengeDashboard } from "$lib/shared/gamification/domain/models/challenge-models";
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
@@ -27,7 +26,7 @@
   );
 
   // Service
-  const coordinator = container.items.challengeCoordinator;
+  const coordinator = getChallengeCoordinator();
 
   // Tab configuration
   const tabs = [

@@ -6,7 +6,7 @@
    */
 
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getAdminChallengeManager } from "$lib/features/admin/getAdminChallengeManager";
   import type { IAdminChallengeManager } from "../services/contracts/IAdminChallengeManager";
   import DailyChallengeScheduler from "./DailyChallengeScheduler.svelte";
   import TrainChallengeManager from "./TrainChallengeManager.svelte";
@@ -73,7 +73,7 @@
 
   onMount(() => {
     try {
-      adminChallengeService = container.items.adminChallengeManager;
+      adminChallengeService = getAdminChallengeManager();
       isLoading = false;
     } catch (error) {
       console.error("❌ Failed to initialize AdminDashboard:", error);
