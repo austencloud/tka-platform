@@ -26,7 +26,7 @@
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import { container } from "$lib/shared/di";
+  import { getCloudThumbnailCache } from "$lib/features/browse/sequences/display/getCloudThumbnailCache";
   import { getThumbnailLocalCache } from "$lib/features/browse/sequences/display/getThumbnailLocalCache";
   import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
   import { getQuickAccessPersister } from "$lib/shared/debug/getQuickAccessPersister";
@@ -221,7 +221,7 @@
     introResetMessage = "Scanning cloud thumbnails...";
 
     try {
-      const cloudCache = container.items.cloudThumbnailCache;
+      const cloudCache = getCloudThumbnailCache();
 
       let totalDeleted = 0;
 

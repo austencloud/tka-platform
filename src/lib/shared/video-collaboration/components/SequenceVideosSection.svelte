@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { container } from "$lib/shared/di";
-  import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
+  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import { onMount } from "svelte";
@@ -23,7 +22,7 @@
     onUploadClick?: () => void;
   } = $props();
 
-  const videoService = container.items.collaborativeVideoManager;
+  const videoService = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback();
   let videos = $state<CollaborativeVideo[]>([]);
   let loading = $state(true);

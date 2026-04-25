@@ -5,8 +5,7 @@
   Shows all videos where user has been invited but hasn't responded.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
-  import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
+  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import { onMount } from "svelte";
   import PendingInviteCard from "./PendingInviteCard.svelte";
@@ -17,7 +16,7 @@
     onInviteHandled?: () => void;
   } = $props();
 
-  const videoService = container.items.collaborativeVideoManager;
+  const videoService = getCollaborativeVideoManager();
   let pendingVideos = $state<CollaborativeVideo[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);

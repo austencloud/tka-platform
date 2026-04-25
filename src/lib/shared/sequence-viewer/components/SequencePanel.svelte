@@ -13,6 +13,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
+  import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
   import type { ISequenceDetailLoader } from "$lib/features/browse/sequences/display/services/contracts/ISequenceDetailLoader";
   import type { IVideoCountManager } from "$lib/features/browse/sequences/display/services/contracts/IVideoCountManager";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
@@ -20,7 +21,6 @@
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import type { PlaybackMode, StepPlaybackStepSize } from "$lib/features/compose/state/animation-panel-state.svelte";
 
-  import { container } from "$lib/shared/di";
   import { getSequenceDetailLoader } from "$lib/features/browse/sequences/display/getSequenceDetailLoader";
   import { getVideoCountManager } from "$lib/features/browse/sequences/display/getVideoCountManager";
   import { onMount, untrack } from "svelte";
@@ -160,7 +160,7 @@
 
   onMount(() => {
     hapticService = getHapticFeedback();
-    imageSharer = container.items.sequenceImageSharer;
+    imageSharer = getSequenceImageSharer();
 
     if (mode === "browse") {
       try {

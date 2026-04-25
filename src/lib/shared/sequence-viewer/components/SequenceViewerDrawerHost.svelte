@@ -38,6 +38,7 @@
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   // Services
   import { container } from "$lib/shared/di";
+  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
@@ -51,7 +52,6 @@
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
-  import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import {
@@ -87,7 +87,7 @@
       return;
     }
 
-    const videoManager = container.items.collaborativeVideoManager as ICollaborativeVideoManager;
+    const videoManager = getCollaborativeVideoManager();
     videoManager.getVideosForSequence(seq.id).then((videos) => {
       videoCount = videos.length;
     }).catch(() => {
