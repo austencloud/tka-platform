@@ -24,6 +24,7 @@
 
   let scrubberEl: HTMLDivElement | undefined = $state();
   let isDragging = $state(false);
+  let wasPlayingBeforeScrub = false;
 
   function seekFromPointer(e: PointerEvent) {
     if (!scrubberEl) return;
@@ -34,6 +35,8 @@
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
+    wasPlayingBeforeScrub = playback.isPlaying;
+    if (wasPlayingBeforeScrub) playback.togglePlay();
     isDragging = true;
     scrubberEl?.setPointerCapture(e.pointerId);
     seekFromPointer(e);
@@ -48,6 +51,7 @@
     if (!isDragging) return;
     isDragging = false;
     scrubberEl?.releasePointerCapture(e.pointerId);
+    if (wasPlayingBeforeScrub) playback.togglePlay();
   }
 
   function onKeydown(e: KeyboardEvent) {
