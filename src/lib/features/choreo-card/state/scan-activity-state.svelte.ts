@@ -21,8 +21,8 @@ import {
   type DocumentData,
   type Unsubscribe,
 } from "firebase/firestore";
-import { container } from "$lib/shared/di";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -82,7 +82,7 @@ class ScanActivityState {
     this.teardown();
 
     const firestore = await getFirestoreInstance();
-    const encoder = container.items.sequenceEncoder as ISequenceEncoder;
+    const encoder = getSequenceEncoder() as ISequenceEncoder;
 
     const codesRef = collection(firestore, "shortcodes");
     const codesQ =

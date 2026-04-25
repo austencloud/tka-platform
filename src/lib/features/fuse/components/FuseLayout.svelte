@@ -13,7 +13,7 @@
 	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
 	import { getFuseAssemblyAnimator } from "../getFuseAssemblyAnimator";
-	import { container } from "$lib/shared/di";
+	import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
 	import { onMount } from "svelte";
 	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -63,7 +63,7 @@
 		// Derive letters on the fused sequence so it has a word
 		if (fuseState.fusedSequence) {
 			try {
-				const letterDeriver = container.items.letterDeriver;
+				const letterDeriver = getLetterDeriver();
 				const withLetters = await letterDeriver.deriveLettersForSequence(fuseState.fusedSequence);
 				fuseState.setFusedSequence(withLetters);
 			} catch {

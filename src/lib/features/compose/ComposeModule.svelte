@@ -13,13 +13,13 @@
 -->
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { container } from "$lib/shared/di";
   import { onMount, untrack } from "svelte";
   import { page } from "$app/stores";
   import { replaceState } from "$app/navigation";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
   import type { IURLSyncer } from "$lib/shared/navigation/services/contracts/IURLSyncer";
+  import { getURLSyncer } from "$lib/shared/navigation/getURLSyncer";
   import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
   import { consumeSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { arrangeGridState } from "./tabs/arrange/state/arrange-grid-state.svelte";
@@ -67,7 +67,7 @@
   onMount(() => {
     // Resolve services
     try {
-      urlSyncService = container.items.urlSyncer;
+      urlSyncService = getURLSyncer();
     } catch (error) {
       console.warn("Failed to resolve navigation services:", error);
     }

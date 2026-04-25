@@ -104,7 +104,7 @@ import { createCreateContainer, configureLazyCreateContainer } from "./container
 import { createComposeCoreContainer } from "./containers/compose-core-container";
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
 import { createBrowseContainer } from "./containers/browse-container";
-import { createNavigationContainer } from "./containers/navigation-container";
+// navigation-container dissolved — services accessed via module singleton getters
 // render-container dissolved — services accessed via module singleton getters
 import { getCanvasManager } from "../render/getCanvasManager";
 import { getLayoutCalculator as getRenderLayoutCalculator } from "../render/getLayoutCalculator";
@@ -156,6 +156,20 @@ import { createPoiLabContainer } from "./containers/poi-lab-container";
 import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { createStoreContainer } from "./containers/store-container";
 import { createTikaContainer } from "./containers/tika-container";
+// Navigation container dissolved — services accessed via module singleton getters
+import { getKeyboardNavigator } from "../navigation/getKeyboardNavigator";
+import { getModuleSelector } from "../navigation/getModuleSelector";
+import { getSheetRouter } from "../navigation/getSheetRouter";
+import { getSequenceEncoder } from "../navigation/getSequenceEncoder";
+import { getNavigationValidator } from "../navigation/getNavigationValidator";
+import { getSidebarTabToggler } from "../navigation/getSidebarTabToggler";
+import { getURLSyncer } from "../navigation/getURLSyncer";
+import { getDeepLinker } from "../navigation/getDeepLinker";
+import { getLetterDeriver } from "../navigation/getLetterDeriver";
+import { getPositionDeriver } from "../navigation/getPositionDeriver";
+import { getPublicSequenceHashMatcher } from "../sequence-viewer/getPublicSequenceHashMatcher";
+import { getSequenceViewer } from "../sequence-viewer/getSequenceViewer";
+
 // Deep link resolution for cross-tab/cross-user URLs
 import { isBootProfileVerbose } from "../analytics/boot-profiler";
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
@@ -204,13 +218,7 @@ const promoContainer = typeof window !== 'undefined' ? _timeContainer('promo', c
 
 // render-container dissolved — render services accessed via module singleton getters
 
-// Navigation container needs external deps from pictograph and data containers
-const navigationContainer = typeof window !== 'undefined' ? _timeContainer('navigation', () => createNavigationContainer({
-  motionQueryHandler,
-  gridModeDeriver,
-  gridPositionDeriver,
-  persistenceService: getPersistenceService(),
-})) : null as any;
+// navigation-container dissolved — services accessed via module singleton getters
 
 // Share container needs sequenceRenderer from render
 const shareContainer = typeof window !== 'undefined' ? _timeContainer('share', () => createShareContainer(getSequenceRenderer())) : null as any;
@@ -222,7 +230,7 @@ const browseContainer = typeof window !== 'undefined' ? _timeContainer('browse',
   sequenceRenderer: getSequenceRenderer(),
   startPositionDeriver,
   cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
-  sheetRouter: navigationContainer.items.sheetRouter,
+  sheetRouter: getSheetRouter(),
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
 })) : null as any;
 
@@ -236,9 +244,9 @@ const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('cr
   sequenceRepository: getSequenceRepository(),
   persistenceService: getPersistenceService(),
   reversalDetector: getReversalDetector(),
-  deepLinker: navigationContainer.items.deepLinker,
-  letterDeriver: navigationContainer.items.letterDeriver,
-  positionDeriver: navigationContainer.items.positionDeriver,
+  deepLinker: getDeepLinker(),
+  letterDeriver: getLetterDeriver(),
+  positionDeriver: getPositionDeriver(),
   orientationCalculator,
   betaDetector,
   arrowPositioningOrchestrator,
@@ -266,9 +274,9 @@ if (typeof window !== 'undefined') {
     sequenceRepository: getSequenceRepository(),
     persistenceService: getPersistenceService(),
     reversalDetector: getReversalDetector(),
-    deepLinker: navigationContainer.items.deepLinker,
-    letterDeriver: navigationContainer.items.letterDeriver,
-    positionDeriver: navigationContainer.items.positionDeriver,
+    deepLinker: getDeepLinker(),
+    letterDeriver: getLetterDeriver(),
+    positionDeriver: getPositionDeriver(),
     orientationCalculator,
     betaDetector,
     arrowPositioningOrchestrator,
@@ -343,8 +351,8 @@ const libraryContainer = typeof window !== 'undefined' ? _timeContainer('library
 // QR container needs browseLoader and sequenceEncoder for dual-mode (online/offline)
 const qrContainer = typeof window !== 'undefined' ? _timeContainer('qr', () => createQRContainer({
   browseLoader: browseContainer.items.browseLoader,
-  sequenceEncoder: navigationContainer.items.sequenceEncoder,
-  hashMatcher: navigationContainer.items.publicSequenceHashMatcher,
+  sequenceEncoder: getSequenceEncoder(),
+  hashMatcher: getPublicSequenceHashMatcher(),
 })) : null as any;
 
 // 3D engine container — infrastructure shared by every 3D surface
@@ -502,8 +510,21 @@ function buildAppContainer(): any {
     sequenceImporter: () => getSequenceImporter(),
     sequenceRepository: () => getSequenceRepository(),
   });
-  // Navigation
-  c = c.add(navigationContainer.items);
+  // Navigation (dissolved from navigation-container — services accessed via module singleton getters)
+  c = c.add({
+    keyboardNavigator: () => getKeyboardNavigator(),
+    moduleSelector: () => getModuleSelector(),
+    sheetRouter: () => getSheetRouter(),
+    sequenceEncoder: () => getSequenceEncoder(),
+    navigationValidator: () => getNavigationValidator(),
+    sidebarTabToggler: () => getSidebarTabToggler(),
+    urlSyncer: () => getURLSyncer(),
+    deepLinker: () => getDeepLinker(),
+    letterDeriver: () => getLetterDeriver(),
+    positionDeriver: () => getPositionDeriver(),
+    publicSequenceHashMatcher: () => getPublicSequenceHashMatcher(),
+    sequenceViewer: () => getSequenceViewer(),
+  });
   // Rendering (dissolved from render-container — services accessed via module singleton getters)
   c = c.add({
     canvasManager: () => getCanvasManager(),

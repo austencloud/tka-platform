@@ -34,6 +34,7 @@
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { container } from "$lib/shared/di";
+  import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "../application/services/contracts/IHapticFeedback";
   import { onMount, onDestroy } from "svelte";
@@ -218,7 +219,7 @@
     // Resolve core services via ITI container
     try {
       hapticService = getHapticFeedback();
-      sheetRouterService = container.items.sheetRouter;
+      sheetRouterService = getSheetRouter();
       debug.success("Core services resolved");
     } catch (error) {
       console.error("Failed to resolve core services:", error);

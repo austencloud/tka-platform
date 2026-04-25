@@ -47,7 +47,7 @@ import type { DeviceSyncContainer } from "./containers/device-sync-container";
 import type { PushContainer } from "./containers/push-container";
 import type { OfflineContainer } from "./containers/offline-container";
 // Containers that already export items types directly (["items"])
-import type { NavigationContainerItems } from "./containers/navigation-container";
+// NavigationContainerItems removed — navigation-container dissolved into module singleton getters
 import type { ComposeCoreContainerItems } from "./containers/compose-core-container";
 import type { LoopLabelerContainerItems } from "./containers/loop-labeler-container";
 // Feature containers not yet wired above
@@ -80,6 +80,23 @@ type ItemsOf<C> = C extends { items: infer I } ? { [K in keyof I]: I[K] } : neve
 // ============================================================================
 // Extract items from each container
 // ============================================================================
+
+// Navigation items — dissolved from navigation-container into module singleton getters.
+// Explicit interface replaces NavigationContainerItems.
+interface NavigationItems {
+	keyboardNavigator: import("../navigation/services/contracts/IKeyboardNavigator").IKeyboardNavigator;
+	moduleSelector: import("../navigation/services/contracts/IModuleSelector").IModuleSelector;
+	sheetRouter: import("../navigation/services/contracts/ISheetRouter").ISheetRouter;
+	sequenceEncoder: import("../navigation/services/contracts/ISequenceEncoder").ISequenceEncoder;
+	navigationValidator: import("../navigation/services/contracts/INavigationValidator").INavigationValidator;
+	sidebarTabToggler: import("../navigation/services/contracts/ISidebarTabToggler").ISidebarTabToggler;
+	urlSyncer: import("../navigation/services/contracts/IURLSyncer").IURLSyncer;
+	deepLinker: import("../navigation/services/contracts/IDeepLinker").IDeepLinker;
+	letterDeriver: import("../navigation/services/contracts/ILetterDeriver").ILetterDeriver;
+	positionDeriver: import("../navigation/services/contracts/IPositionDeriver").IPositionDeriver;
+	publicSequenceHashMatcher: import("../sequence-viewer/services/contracts/IPublicSequenceHashMatcher").IPublicSequenceHashMatcher;
+	sequenceViewer: import("../sequence-viewer/services/contracts/ISequenceViewer").ISequenceViewer;
+}
 
 // Core items — dissolved from core-container into module singleton getters.
 // Explicit interface replaces ItemsOf<CoreContainer>.
@@ -232,7 +249,7 @@ export type IAppContainerItems =
 	// Core infrastructure
 	CoreItems &
 	DataItems &
-	NavigationContainerItems &
+	NavigationItems &
 	RenderItems &
 	ComposeCoreContainerItems &
 	// Create module (with loopDetector omitted — overwritten by loop-labeler)
