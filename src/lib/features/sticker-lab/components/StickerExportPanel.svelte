@@ -98,33 +98,60 @@
   .panel {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--spacing-md);
     height: 100%;
   }
 
   .summary {
-    padding: 10px;
-    background: rgba(255,255,255,0.04);
-    border-radius: 4px;
-    color: white;
-    font-size: 12px;
+    padding: var(--spacing-md);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: var(--radius-2026-sm);
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm);
   }
-  .summary .num { font-weight: 600; font-size: 16px; margin-right: 4px; }
+  .summary .num {
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    margin-right: var(--spacing-xs);
+  }
 
   .primary {
-    padding: 10px 14px;
+    min-height: var(--min-touch-target);
+    padding: var(--spacing-sm) var(--spacing-md);
     background: var(--theme-accent, #8b5cf6);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-2026-sm);
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
+    transition: opacity var(--duration-fast);
   }
-  .primary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .primary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
 
-  .help { margin-top: auto; font-size: 12px; color: var(--theme-text-muted, rgba(255,255,255,0.6)); }
-  .help summary { cursor: pointer; padding: 6px 0; }
-  .help-content h4 { margin: 12px 0 4px; font-size: 12px; color: white; }
-  .help-content p { margin: 0; font-size: 11px; line-height: 1.4; }
+  .help {
+    margin-top: auto;
+    font-size: var(--font-size-sm);
+    color: var(--theme-text-dim);
+  }
+  .help summary {
+    cursor: pointer;
+    padding: var(--spacing-sm) 0;
+    min-height: var(--min-touch-target);
+    display: flex;
+    align-items: center;
+  }
+  .help-content h4 {
+    margin: var(--spacing-md) 0 var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--theme-text, white);
+  }
+  .help-content p {
+    margin: 0;
+    font-size: var(--font-size-compact);
+    line-height: 1.5;
+  }
 </style>
