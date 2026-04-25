@@ -26,10 +26,10 @@ export function computeElapsed(
   const frac = currentStep - Math.floor(currentStep);
   let elapsed = 0;
   for (let i = 0; i < Math.min(beatIndex, durations.length); i++) {
-    elapsed += durations[i];
+    elapsed += durations[i]!;
   }
   if (beatIndex < durations.length) {
-    elapsed += frac * durations[beatIndex];
+    elapsed += frac * durations[beatIndex]!;
   }
   return elapsed;
 }
