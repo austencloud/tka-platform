@@ -50,12 +50,7 @@ export function getHallOfShameItems() {
   });
 }
 
-export function getSkel2TKAItems() {
-  return _loadOnce("skel2tka", async () => {
-    const { createSkel2TKAContainer } = await import("./containers/skel2tka-container");
-    return createSkel2TKAContainer().items;
-  });
-}
+// getSkel2TKAItems removed — skel2tka-container dissolved into module singleton getters
 
 export function getComposeBrowseItems() {
   return _loadOnce("compose-browse", async () => {

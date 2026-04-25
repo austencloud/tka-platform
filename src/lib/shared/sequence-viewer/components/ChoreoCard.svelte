@@ -30,6 +30,7 @@
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import { container } from "$lib/shared/di";
+  import { getQRCodeGenerator } from "$lib/shared/qr/getQRCodeGenerator";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
@@ -410,7 +411,7 @@
     const isDark = darkMode;
     const bProp = bluePropType ? String(bluePropType) : undefined;
     const rProp = redPropType ? String(redPropType) : undefined;
-    const qrGenerator = container.items.qrCodeGenerator;
+    const qrGenerator = getQRCodeGenerator();
     if (!qrGenerator || !seq) return;
 
     qrGenerator

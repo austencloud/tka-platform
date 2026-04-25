@@ -5,7 +5,7 @@
  * Handles beat selection, section designation, and saved sections.
  */
 
-import { container } from "$lib/shared/di";
+import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { LabeledSequence } from "../domain/models/label-models";
@@ -66,7 +66,7 @@ export function createSectionModeState(): SectionModeState {
 
   // Services
   const labelsService =
-    container.items.loopLabelsFirebaseRepository as ILOOPLabelsFirebaseRepository | null;
+    getLOOPLabelsFirebaseRepository() as ILOOPLabelsFirebaseRepository | null;
 
   // Actions
   const actions = {

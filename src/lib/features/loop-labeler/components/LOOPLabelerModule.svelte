@@ -7,7 +7,7 @@
 <script lang="ts">
   import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getStepDataConverter } from "$lib/features/loop-labeler/getStepDataConverter";
   import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import { loopDetector } from "../services/implementations/LOOPDetector";
   import type { IStepDataConverter } from "../services/contracts/IStepDataConverter";
@@ -77,7 +77,7 @@
 
       // Also cache the conversion service for beat parsing
       conversionService =
-        container.items.stepDataConverter as IStepDataConverter | null;
+        getStepDataConverter() as IStepDataConverter | null;
 
       // Pre-cache all services to ensure they're available for subsequent operations
       loopLabelerController.cacheServices();

@@ -8,10 +8,10 @@
   import type { SequenceEntry } from "../../domain/models/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import { container } from "$lib/shared/di";
+  import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
   import type { ILabelFormatter } from "../../services/contracts/ILabelFormatter";
 
-  const labelFormatter = container.items.labelFormatter as ILabelFormatter;
+  const labelFormatter = getLabelFormatter() as ILabelFormatter;
 
   interface Props {
     sequences: SequenceEntry[];

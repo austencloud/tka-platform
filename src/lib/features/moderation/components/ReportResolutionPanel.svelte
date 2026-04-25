@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { container } from '$lib/shared/di';
+	import { getReportResolver } from '$lib/features/moderation/getReportResolver';
 	import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 	import { adminReportsState } from '../state/admin-reports-state.svelte';
 	import {
@@ -41,7 +41,7 @@
 		isSubmitting = true;
 
 		try {
-			const reportResolver = container.items.reportResolver;
+			const reportResolver = getReportResolver();
 			const updated = await reportResolver.resolve({
 				reportId: report.id,
 				resolution: selectedResolution,

@@ -10,10 +10,10 @@
   import type { StepPairRelationship } from "../../../domain/models/steppair-models";
   import type { AxisAlternatingPattern } from "../../../services/contracts/ILOOPDetector";
   import DesignationItem from "./DesignationItem.svelte";
-  import { container } from "$lib/shared/di";
+  import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
   import type { ILabelFormatter } from "../../../services/contracts/ILabelFormatter";
 
-  const labelFormatter = container.items.labelFormatter as ILabelFormatter;
+  const labelFormatter = getLabelFormatter() as ILabelFormatter;
 
   interface Props {
     wholeDesignations: LOOPDesignation[];

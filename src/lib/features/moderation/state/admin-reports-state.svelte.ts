@@ -6,7 +6,8 @@
  * Uses Svelte 5 runes for reactivity.
  */
 
-import { container } from '$lib/shared/di';
+import { getReportQuerier } from '$lib/features/moderation/getReportQuerier';
+import { getReportResolver } from '$lib/features/moderation/getReportResolver';
 import type {
 	UserReport,
 	ReportStatus,
@@ -63,7 +64,7 @@ export async function loadReports(): Promise<void> {
 	_state.lastDoc = null;
 
 	try {
-		const reportQuerier = container.items.reportQuerier;
+		const reportQuerier = getReportQuerier();
 		const result = await reportQuerier.listPaginated(_state.filters, PAGE_SIZE);
 		_state.reports = result.reports;
 		_state.hasMore = result.hasMore;
@@ -86,7 +87,7 @@ export async function loadMoreReports(): Promise<void> {
 	_state.isLoadingMore = true;
 
 	try {
-		const reportQuerier = container.items.reportQuerier;
+		const reportQuerier = getReportQuerier();
 		const result = await reportQuerier.listPaginated(_state.filters, PAGE_SIZE, _state.lastDoc);
 		_state.reports = [..._state.reports, ...result.reports];
 		_state.hasMore = result.hasMore;
@@ -105,7 +106,7 @@ export async function loadMoreReports(): Promise<void> {
  */
 export async function loadCounts(): Promise<void> {
 	try {
-		const reportQuerier = container.items.reportQuerier;
+		const reportQuerier = getReportQuerier();
 		const [newCount, reviewingCount, resolvedCount] = await Promise.all([
 			reportQuerier.getCountByStatus('new'),
 			reportQuerier.getCountByStatus('reviewing'),
@@ -129,7 +130,7 @@ export function subscribeToNewReports(): void {
 		unsubscribe();
 	}
 
-	const reportQuerier = container.items.reportQuerier;
+	const reportQuerier = getReportQuerier();
 	unsubscribe = reportQuerier.subscribeToNew((reports: UserReport[]) => {
 		// Only update if we're filtering by 'new' or no filter
 		if (!_state.filters.status || _state.filters.status === 'new') {
@@ -195,7 +196,7 @@ export async function selectReport(reportId: string): Promise<void> {
 
 	// If not in current list, fetch it
 	try {
-		const reportQuerier = container.items.reportQuerier;
+		const reportQuerier = getReportQuerier();
 		const fetchedReport = await reportQuerier.getById(reportId);
 		_state.selectedReport = fetchedReport;
 		_state.mobileDetailOpen = true;
@@ -237,7 +238,7 @@ export function updateLocalReport(updatedReport: UserReport): void {
  */
 export async function startReview(reportId: string): Promise<void> {
 	try {
-		const reportResolver = container.items.reportResolver;
+		const reportResolver = getReportResolver();
 		const updated = await reportResolver.startReview(reportId);
 		updateLocalReport(updated);
 		await loadCounts();

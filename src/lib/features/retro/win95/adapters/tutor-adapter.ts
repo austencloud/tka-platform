@@ -13,7 +13,7 @@ import {
   MOTION_QUIZ_QUESTIONS,
   type MotionQuizQuestion,
 } from "$lib/features/learn/domain/constants/motion-quiz-data";
-import { container } from "$lib/shared/di";
+import { getCodex } from "$lib/features/learn/codex/getCodex";
 import type { ICodex } from "$lib/features/learn/codex/services/contracts/ICodex";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -126,7 +126,7 @@ export interface RetroCodexLetter {
  */
 export async function loadCodexLetters(): Promise<RetroCodexLetter[]> {
   try {
-    const codex = container.items.codex as ICodex;
+    const codex = getCodex() as ICodex;
     const allData = await codex.getAllPictographData();
     return Object.entries(allData)
       .filter(([_, data]) => data !== null && data.letter != null)

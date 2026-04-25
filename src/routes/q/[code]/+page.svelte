@@ -22,6 +22,7 @@
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
+  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -196,7 +197,7 @@
     }
 
     try {
-      const shortCodeManager = container.items.shortCodeManager;
+      const shortCodeManager = getShortCodeManager();
       const sequenceEncoder = getSequenceEncoder();
 
       // Resolve short code to sequence

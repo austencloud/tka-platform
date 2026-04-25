@@ -5,7 +5,7 @@ and shows counts + explanations on the results screen.
 Only renders if there are actual type-confusion gaps to report.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getLetterBreakdownGenerator } from "$lib/features/learn/getLetterBreakdownGenerator";
   import type { DetectedGap } from "../../services/contracts/IGapDetector";
   import type { ILetterBreakdownGenerator } from "../../services/contracts/ILetterBreakdownGenerator";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -16,8 +16,7 @@ Only renders if there are actual type-confusion gaps to report.
   function openInTika(group: ConfusionGroup) {
     if (!browser) return;
 
-    const generator = container.items
-      .letterBreakdownGenerator as ILetterBreakdownGenerator;
+    const generator = getLetterBreakdownGenerator() as ILetterBreakdownGenerator;
     const comparison = generator.compare(
       group.correctLabel,
       group.chosenLabel

@@ -20,20 +20,20 @@
 // ============================================================================
 // Container type imports — factory (ReturnType<typeof create...>) containers
 // ============================================================================
-import type { FeedbackContainer } from "./containers/feedback-container";
-import type { GamificationContainer } from "./containers/gamification-container";
-import type { PromoContainer } from "./containers/promo-container";
+// FeedbackContainer removed — dissolved into module singleton getters
+// GamificationContainer removed — dissolved into module singleton getters
+// PromoContainer removed — dissolved into module singleton getters
 // RenderContainer removed — render services dissolved into module singleton getters
 import type { ShareContainer } from "./containers/share-container";
 import type { BrowseContainer } from "./containers/browse-container";
 import type { CreateContainer } from "./containers/create-container";
-import type { TrainContainer } from "./containers/train-container";
-import type { Skel2TKAContainer } from "./containers/skel2tka-container";
-import type { AdminContainer } from "./containers/admin-container";
-import type { LearnContainer } from "./containers/learn-container";
-import type { ModerationContainer } from "./containers/moderation-container";
+// TrainContainer removed — dissolved into module singleton getters
+// Skel2TKAContainer removed — dissolved into module singleton getters
+// AdminContainer removed — dissolved into module singleton getters
+// LearnContainer removed — dissolved into module singleton getters
+// ModerationContainer removed — dissolved into module singleton getters
 import type { LibraryContainer } from "./containers/library-container";
-import type { QRContainer } from "./containers/qr-container";
+// QRContainer removed — dissolved into module singleton getters
 import type { Engine3DContainer } from "./containers/3d-engine-container";
 import type { Viewer3DContainer } from "./containers/viewer-3d-container";
 import type { DelightContainer } from "./containers/delight-container";
@@ -49,7 +49,7 @@ import type { OfflineContainer } from "./containers/offline-container";
 // Containers that already export items types directly (["items"])
 // NavigationContainerItems removed — navigation-container dissolved into module singleton getters
 import type { ComposeCoreContainerItems } from "./containers/compose-core-container";
-import type { LoopLabelerContainerItems } from "./containers/loop-labeler-container";
+// LoopLabelerContainerItems removed — dissolved into module singleton getters
 // Feature containers not yet wired above
 import type { CollisionLabContainer } from "./containers/collision-lab-container";
 import type { ComposeArrangeContainer } from "./containers/compose-arrange-container";
@@ -156,9 +156,9 @@ interface DataItems {
 }
 
 // Factory containers
-type FeedbackItems = ItemsOf<FeedbackContainer>;
-type GamificationItems = ItemsOf<GamificationContainer>;
-type PromoItems = ItemsOf<PromoContainer>;
+// FeedbackItems removed — dissolved into module singleton getters
+// GamificationItems removed — dissolved into module singleton getters
+// PromoItems removed — dissolved into module singleton getters
 // RenderItems — dissolved from render-container into module singleton getters.
 // Explicit interface replaces ItemsOf<RenderContainer>.
 interface RenderItems {
@@ -182,13 +182,13 @@ interface RenderItems {
 }
 type ShareItems = ItemsOf<ShareContainer>;
 type BrowseItems = ItemsOf<BrowseContainer>;
-type TrainItems = ItemsOf<TrainContainer>;
-type Skel2TKAItems = ItemsOf<Skel2TKAContainer>;
-type AdminItems = ItemsOf<AdminContainer>;
-type LearnItems = ItemsOf<LearnContainer>;
-type ModerationItems = ItemsOf<ModerationContainer>;
+// TrainItems removed — dissolved into module singleton getters
+// Skel2TKAItems removed — dissolved into module singleton getters
+// AdminItems removed — dissolved into module singleton getters
+// LearnItems removed — dissolved into module singleton getters
+// ModerationItems removed — dissolved into module singleton getters
 type LibraryItems = ItemsOf<LibraryContainer>;
-type QRItems = ItemsOf<QRContainer>;
+// QRItems removed — dissolved into module singleton getters
 type Engine3DItems = ItemsOf<Engine3DContainer>;
 type Viewer3DItems = ItemsOf<Viewer3DContainer>;
 type DelightItems = ItemsOf<DelightContainer>;
@@ -256,21 +256,13 @@ export type IAppContainerItems =
 	CreateItemsClean &
 	// Browse (upsert, but no actual key conflicts remain after browse* prefix rename)
 	BrowseItems &
-	TrainItems &
-	LearnItems &
+	// Train, Learn, Gamification, Feedback, Admin, Promo, QR, Moderation,
+	// LoopLabeler, Skel2TKA dissolved — services accessed via module singleton getters
 	LibraryItems &
-	// Loop labeler (upserts loopDetector + adds navigator)
-	LoopLabelerContainerItems &
-	GamificationItems &
-	FeedbackItems &
 	ShareItems &
-	AdminItems &
-	PromoItems &
-	QRItems &
 	Engine3DItems &
 	Viewer3DItems &
 	DelightItems &
-	ModerationItems &
 	WatchItems &
 	LanSyncItems &
 	DeviceSyncItems &
@@ -293,7 +285,6 @@ export type IAppContainerItems =
 	MuseumItems &
 	PoiItems &
 	PoiLabItems &
-	Skel2TKAItems &
 	StoreItems &
 	TikaItems &
 	VideoInfraItems &

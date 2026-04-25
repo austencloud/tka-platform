@@ -8,10 +8,10 @@
   import type { SectionDesignation } from "../../domain/models/section-models";
   import { SECTION_COLORS } from "../../domain/constants/section-colors";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import { container } from "$lib/shared/di";
+  import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
   import type { ILabelFormatter } from "../../services/contracts/ILabelFormatter";
 
-  const labelFormatter = container.items.labelFormatter as ILabelFormatter;
+  const labelFormatter = getLabelFormatter() as ILabelFormatter;
 
   interface Props {
     sections: SectionDesignation[];

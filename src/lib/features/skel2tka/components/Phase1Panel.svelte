@@ -13,7 +13,6 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { container } from "$lib/shared/di";
   import type { Phase1Result } from "../domain/models";
   import type { SanityCheckReport } from "../domain/verification-models";
   import type { PhaseVerdict, UserCorrection } from "../domain/verification-models";
@@ -21,6 +20,13 @@
   import type { IOverlayRenderer } from "../services/contracts/IOverlayRenderer";
   import type { ISanityChecker } from "../services/contracts/ISanityChecker";
   import type { ITrainingDataPersister } from "../services/contracts/ITrainingDataPersister";
+  import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";
+  import { getVideoFrameExtractor } from "$lib/features/skel2tka/getVideoFrameExtractor";
+  import { getVideoHandAnalyzer } from "$lib/features/skel2tka/getVideoHandAnalyzer";
+  import { getBeatBoundaryDetector } from "$lib/features/skel2tka/getBeatBoundaryDetector";
+  import { getPhase1OverlayRenderer } from "$lib/features/skel2tka/getPhase1OverlayRenderer";
+  import { getSanityChecker } from "$lib/features/skel2tka/getSanityChecker";
+  import { getTrainingDataPersister } from "$lib/features/skel2tka/getTrainingDataPersister";
   import VideoUploadDropzone from "./VideoUploadDropzone.svelte";
   import TrajectoryTimeline from "./TrajectoryTimeline.svelte";
   import PositionSequenceOutput from "./PositionSequenceOutput.svelte";
@@ -48,13 +54,13 @@
   let sanityReport = $state<SanityCheckReport | null>(null);
   let verificationMessage = $state("");
 
-  const landmarker = container.items.imageModeHandLandmarker;
-  const frameExtractor = container.items.videoFrameExtractor;
-  const handAnalyzer = container.items.videoHandAnalyzer;
-  const beatDetector = container.items.beatBoundaryDetector;
-  const overlayRenderer = container.items.phase1OverlayRenderer as IOverlayRenderer;
-  const sanityChecker = container.items.sanityChecker as ISanityChecker;
-  const trainingPersister = container.items.trainingDataPersister as ITrainingDataPersister;
+  const landmarker = getImageModeHandLandmarker();
+  const frameExtractor = getVideoFrameExtractor();
+  const handAnalyzer = getVideoHandAnalyzer();
+  const beatDetector = getBeatBoundaryDetector();
+  const overlayRenderer = getPhase1OverlayRenderer() as IOverlayRenderer;
+  const sanityChecker = getSanityChecker() as ISanityChecker;
+  const trainingPersister = getTrainingDataPersister() as ITrainingDataPersister;
 
   function onProgress(current: number, total: number, label?: string) {
     progressCurrent = current;

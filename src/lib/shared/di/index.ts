@@ -96,13 +96,20 @@ import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/pl
 import { getActivityLogger } from "../analytics/getActivityLogger";
 import { getPresenceTracker } from "../presence/getPresenceTracker";
 
+// Dissolved-container getters needed for cross-wiring
+import { getAchievementManager } from "../gamification/getAchievementManager";
+import { getContentModerator } from "$lib/features/moderation/getContentModerator";
+import { getContentAppealManager } from "$lib/features/moderation/getContentAppealManager";
+import { configureShortCodeManager } from "../qr/getShortCodeManager";
+import { getQRCodeGenerator } from "../qr/getQRCodeGenerator";
+
 // ============================================================================
 // FACTORY CONTAINERS (export function createXyzContainer(deps)...)
 // These need to be called with their dependencies
 // ============================================================================
 import { createCreateContainer, configureLazyCreateContainer } from "./containers/create-container";
 import { createComposeCoreContainer } from "./containers/compose-core-container";
-import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
+// loop-labeler-container dissolved — services accessed via module singleton getters
 import { createBrowseContainer } from "./containers/browse-container";
 // navigation-container dissolved — services accessed via module singleton getters
 // render-container dissolved — services accessed via module singleton getters
@@ -123,19 +130,19 @@ import { getTextRenderer } from "../render/getTextRenderer";
 import { getImageFormatConverter } from "../render/getImageFormatConverter";
 import { getImageComposer } from "../render/getImageComposer";
 import { getSequenceRenderer } from "../render/getSequenceRenderer";
-import { createTrainContainer } from "./containers/train-container";
-import { createAdminContainer } from "./containers/admin-container";
+// train-container dissolved — services accessed via module singleton getters
+// admin-container dissolved — services accessed via module singleton getters
 import { createShareContainer } from "./containers/share-container";
-import { createFeedbackContainer } from "./containers/feedback-container";
-import { createGamificationContainer } from "./containers/gamification-container";
-import { createLearnContainer } from "./containers/learn-container";
-import { createPromoContainer } from "./containers/promo-container";
+// feedback-container dissolved — services accessed via module singleton getters
+// gamification-container dissolved — services accessed via module singleton getters
+// learn-container dissolved — services accessed via module singleton getters
+// promo-container dissolved — services accessed via module singleton getters
 import { createLibraryContainer } from "./containers/library-container";
-import { createQRContainer } from "./containers/qr-container";
+// qr-container dissolved — services accessed via module singleton getters
 import { create3DEngineContainer } from "./containers/3d-engine-container";
 import { createViewer3DContainer } from "./containers/viewer-3d-container";
 import { createDelightContainer } from "./containers/delight-container";
-import { createModerationContainer } from "./containers/moderation-container";
+// moderation-container dissolved — services accessed via module singleton getters
 import { createWatchContainer } from "./containers/watch-container";
 import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
@@ -153,7 +160,7 @@ import { createLandingPreviewContainer } from "./containers/landing-preview-cont
 import { createMuseumContainer } from "./containers/museum-container";
 import { createPoiContainer } from "./containers/poi-container";
 import { createPoiLabContainer } from "./containers/poi-lab-container";
-import { createSkel2TKAContainer } from "./containers/skel2tka-container";
+// skel2tka-container dissolved — services accessed via module singleton getters
 import { createStoreContainer } from "./containers/store-container";
 import { createTikaContainer } from "./containers/tika-container";
 // Navigation container dissolved — services accessed via module singleton getters
@@ -211,10 +218,9 @@ function _timeContainer<T>(name: string, factory: () => T): T {
 // triggering Node.js stub errors when importing for CLI/server-side rendering
 // ============================================================================
 
-// Containers with no dependencies - just call them
-const feedbackContainer = typeof window !== 'undefined' ? _timeContainer('feedback', createFeedbackContainer) : null as any;
-const gamificationContainer = typeof window !== 'undefined' ? _timeContainer('gamification', createGamificationContainer) : null as any;
-const promoContainer = typeof window !== 'undefined' ? _timeContainer('promo', createPromoContainer) : null as any;
+// feedback-container dissolved — services accessed via module singleton getters
+// gamification-container dissolved — services accessed via module singleton getters
+// promo-container dissolved — services accessed via module singleton getters
 
 // render-container dissolved — render services accessed via module singleton getters
 
@@ -304,34 +310,20 @@ const composeCoreContainer = typeof window !== 'undefined' ? _timeContainer('com
   sequenceLoopabilityChecker: getSequenceLoopabilityChecker(),
 })) : null as any;
 
-// Loop labeler container needs sequenceAnalyzer from build
-const loopLabelerContainer = typeof window !== 'undefined' ? _timeContainer('loop-labeler', () => createLoopLabelerContainer({
-  sequenceAnalyzer: createModuleContainer.items.sequenceAnalyzer,
-})) : null as any;
+// loop-labeler-container dissolved — services accessed via module singleton getters
 
-// Train container needs achievementManager from gamification
-const trainContainer = typeof window !== 'undefined' ? _timeContainer('train', () => createTrainContainer(
-  gamificationContainer.items.achievementManager
-)) : null as any;
+// train-container dissolved — services accessed via module singleton getters
 
-// Admin container needs activityLogger and presenceTracker
-const adminContainer = typeof window !== 'undefined' ? _timeContainer('admin', () => createAdminContainer({
-  activityLogger: getActivityLogger(),
-  presenceTracker: getPresenceTracker(),
-})) : null as any;
+// admin-container dissolved — services accessed via module singleton getters
 
-// Learn container needs letterQueryHandler from pictograph
-const learnContainer = typeof window !== 'undefined' ? _timeContainer('learn', () => createLearnContainer(
-  letterQueryHandler
-)) : null as any;
+// learn-container dissolved — services accessed via module singleton getters
 
-// Moderation container - self-contained, must be before library for content moderation
-const moderationContainer = typeof window !== 'undefined' ? _timeContainer('moderation', createModerationContainer) : null as any;
+// moderation-container dissolved — services accessed via module singleton getters
 
-// Library container needs multiple deps including content moderation
+// Library container needs multiple deps including content moderation (now via getters)
 const libraryContainer = typeof window !== 'undefined' ? _timeContainer('library', () => createLibraryContainer({
   libraryRepository: {
-    achievementManager: gamificationContainer.items.achievementManager,
+    achievementManager: getAchievementManager(),
     tagManager: getTagManager(),
     orientationCycleDetector: createModuleContainer.items.orientationCycleDetector,
     conflictResolver: getConflictResolver(),
@@ -342,18 +334,16 @@ const libraryContainer = typeof window !== 'undefined' ? _timeContainer('library
     tagManager: getTagManager(),
   },
   publicIndexSyncer: {
-    contentModerator: moderationContainer.items.contentModerator,
-    contentAppealManager: moderationContainer.items.contentAppealManager,
+    contentModerator: getContentModerator(),
+    contentAppealManager: getContentAppealManager(),
     browseLoader: browseContainer.items.browseLoader,
   },
 })) : null as any;
 
-// QR container needs browseLoader and sequenceEncoder for dual-mode (online/offline)
-const qrContainer = typeof window !== 'undefined' ? _timeContainer('qr', () => createQRContainer({
-  browseLoader: browseContainer.items.browseLoader,
-  sequenceEncoder: getSequenceEncoder(),
-  hashMatcher: getPublicSequenceHashMatcher(),
-})) : null as any;
+// qr-container dissolved — configure ShortCodeManager with browse dep, then getters handle the rest
+if (typeof window !== 'undefined') {
+  configureShortCodeManager(browseContainer.items.browseLoader);
+}
 
 // 3D engine container — infrastructure shared by every 3D surface
 const engine3DContainer = typeof window !== 'undefined' ? _timeContainer('3d-engine', () => create3DEngineContainer({
@@ -419,7 +409,7 @@ const landingPreviewContainer = typeof window !== 'undefined' ? _timeContainer('
 const museumContainer = typeof window !== 'undefined' ? _timeContainer('museum', createMuseumContainer) : null as any;
 const poiContainer = typeof window !== 'undefined' ? _timeContainer('poi', createPoiContainer) : null as any;
 const poiLabContainer = typeof window !== 'undefined' ? _timeContainer('poi-lab', createPoiLabContainer) : null as any;
-const skel2tkaContainer = typeof window !== 'undefined' ? _timeContainer('skel2tka', createSkel2TKAContainer) : null as any;
+// skel2tka-container dissolved — services accessed via module singleton getters
 const storeContainer = typeof window !== 'undefined' ? _timeContainer('store', createStoreContainer) : null as any;
 const tikaContainer = typeof window !== 'undefined' ? _timeContainer('tika', createTikaContainer) : null as any;
 
@@ -552,22 +542,12 @@ function buildAppContainer(): any {
   // NOTE: browseContainer has naming conflicts (filterPersister, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
   c = c.upsert(browseContainer.items);
-  c = c.add(trainContainer.items);
-  c = c.add(learnContainer.items);
+  // train, learn, gamification, feedback, admin, promo, qr, moderation, loop-labeler dissolved
   c = c.add(libraryContainer.items);
-  // NOTE: loopLabelerContainer has naming conflicts (loopDetector, navigator)
-  // Using upsert to allow overwriting - these should be renamed in a follow-up
-  c = c.upsert(loopLabelerContainer.items);
-  c = c.add(gamificationContainer.items);
-  c = c.add(feedbackContainer.items);
   c = c.add(shareContainer.items);
-  c = c.add(adminContainer.items);
-  c = c.add(promoContainer.items);
-  c = c.add(qrContainer.items);
   c = c.add(engine3DContainer.items);
   c = c.add(viewer3DContainer.items);
   c = c.add(delightContainer.items);
-  c = c.add(moderationContainer.items);
   c = c.add(watchContainer.items);
   c = c.add(lanSyncContainer.items);
   c = c.add(deviceSyncContainer.items);
@@ -615,7 +595,7 @@ function buildAppContainer(): any {
   c = c.add(museumContainer.items);
   c = c.add(poiContainer.items);
   c = c.add(poiLabContainer.items);
-  c = c.add(skel2tkaContainer.items);
+  // skel2tka-container dissolved
   c = c.add(storeContainer.items);
   c = c.add(tikaContainer.items);
 
@@ -658,9 +638,9 @@ if (typeof window !== 'undefined' && isBootProfileVerbose()) {
 
 // Late binding: Inject QR generator into ImageComposer after container is fully composed
 // This resolves the circular dependency between render-container and qr-container
-if (typeof window !== 'undefined' && container?.items?.imageComposer && container?.items?.qrCodeGenerator) {
+if (typeof window !== 'undefined' && container?.items?.imageComposer) {
   (container.items.imageComposer as unknown as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
-    container.items.qrCodeGenerator
+    getQRCodeGenerator()
   );
 }
 

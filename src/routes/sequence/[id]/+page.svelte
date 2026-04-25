@@ -20,6 +20,7 @@
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
+  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -357,7 +358,7 @@
         }
       }
 
-      const shortCodeManager = container.items.shortCodeManager;
+      const shortCodeManager = getShortCodeManager();
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
 
       // Fire-and-forget scan telemetry — only for genuine scans (not

@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getTrainChallengeManager } from "$lib/features/train/getTrainChallengeManager";
   import type { ITrainChallengeManager } from "$lib/features/train/services/contracts/ITrainChallengeManager";
   import type { TrainChallenge, TrainChallengeRequirementType } from "$lib/features/train/domain/models/TrainChallengeModels";
   import type { ChallengeDifficulty } from "$lib/shared/gamification/domain/models/achievement-models";
@@ -45,7 +45,7 @@
   });
 
   onMount(async () => {
-    challengeService = container.items.trainChallengeManager;
+    challengeService = getTrainChallengeManager();
     await loadChallenges();
   });
 
