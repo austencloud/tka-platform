@@ -695,11 +695,11 @@ Last audit: 2025-12-27
     align-items: stretch;
     /*
      * Portrait mode: Width = canvas side = min(container_width, container_height - overhead)
-     * Overhead: header (~53px) + progress (~32px) + border (3px) + margin (12px) = ~100px
-     * Use 6.5rem (104px) for breathing room
+     * Overhead: header (~53px) + pill timeline (~60px) + border (3px) + margin (12px) = ~128px
+     * Use 8.5rem (136px) for breathing room
      */
-    width: min(calc(100cqw - 12px), calc(100cqh - 6.5rem - 12px));
-    max-width: calc(100cqh - 6.5rem);
+    width: min(calc(100cqw - 12px), calc(100cqh - 8.5rem - 12px));
+    max-width: calc(100cqh - 8.5rem);
     /* Container query context for header font scaling */
     container-type: inline-size;
     /* Border styling */
@@ -789,8 +789,8 @@ Last audit: 2025-12-27
      width = (available_height - chrome) * 2/3 */
   .animation-container[data-view="disassembling"] .content-wrapper,
   .animation-container[data-view="disassembled"] .content-wrapper {
-    width: min(calc(100cqw - 12px), calc((100cqh - 5rem) * 2 / 3));
-    max-width: calc((100cqh - 5rem) * 2 / 3);
+    width: min(calc(100cqw - 12px), calc((100cqh - 7rem) * 2 / 3));
+    max-width: calc((100cqh - 7rem) * 2 / 3);
   }
 
   /* Progress slot: in portrait, takes natural height at bottom */
@@ -841,8 +841,8 @@ Last audit: 2025-12-27
      =========================================== */
 
   .animation-container[data-focused] .content-wrapper {
-    width: min(calc(100cqw - 12px), calc(100cqh - 6.5rem - 12px));
-    max-width: calc(100cqh - 6.5rem);
+    width: min(calc(100cqw - 12px), calc(100cqh - 8.5rem - 12px));
+    max-width: calc(100cqh - 8.5rem);
     max-height: calc(100cqh - 4px);
     height: auto;
   }
@@ -881,8 +881,8 @@ Last audit: 2025-12-27
   /* Focused + disassembled: content-wrapper narrows for the split row */
   .animation-container[data-focused][data-view="disassembling"] .content-wrapper,
   .animation-container[data-focused][data-view="disassembled"] .content-wrapper {
-    width: min(calc(100cqw - 12px), calc((100cqh - 6.5rem) * 2 / 3));
-    max-width: calc((100cqh - 6.5rem) * 2 / 3);
+    width: min(calc(100cqw - 12px), calc((100cqh - 8.5rem) * 2 / 3));
+    max-width: calc((100cqh - 8.5rem) * 2 / 3);
   }
 
   /* ===========================================

@@ -244,7 +244,7 @@ Supports letter highlighting during animation playback.
     justify-content: center;
     box-sizing: border-box;
     flex-shrink: 0;
-    background: var(--theme-panel-bg, rgba(240, 240, 240, 0.98));
+    background: var(--theme-panel-bg, rgb(240, 240, 240));
     border-bottom: 1px solid var(--theme-stroke, rgba(0, 0, 0, 0.08));
     /* Smooth transition synced with canvas background (150ms) */
     transition:
@@ -310,7 +310,7 @@ Supports letter highlighting during animation playback.
 
   /* Dark mode: dark background with light text (via prop) */
   .word-header.dark-mode {
-    background: var(--theme-panel-bg, rgba(15, 15, 20, 0.98));
+    background: var(--theme-panel-bg, rgb(15, 15, 20));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
@@ -321,7 +321,7 @@ Supports letter highlighting during animation playback.
   /* Fallback: Global .dark class only applies when NOT controlled by prop */
   /* data-controlled attribute marks prop-controlled instances */
   :global(:root.dark) .word-header:not([data-controlled]) {
-    background: var(--theme-panel-bg, rgba(15, 15, 20, 0.98));
+    background: var(--theme-panel-bg, rgb(15, 15, 20));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
