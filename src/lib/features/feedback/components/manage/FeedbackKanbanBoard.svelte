@@ -5,8 +5,7 @@
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import type { KanbanBoardState } from "../../state/kanban-board-state.svelte";
   import { createKanbanBoardState } from "../../state/kanban-board-state.svelte";
-  import type { IFeedbackSorter } from "../../services/contracts/IFeedbackSorter";
-  import { container } from "$lib/shared/di";
+  import { getFeedbackSorter } from "$lib/features/feedback/getFeedbackSorter";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { STATUS_CONFIG } from "../../domain/models/feedback-models";
   import KanbanMobileView from "./KanbanMobileView.svelte";
@@ -22,7 +21,7 @@
 
   // Resolve services
   let boardState = $state<KanbanBoardState | null>(null);
-  const sortingService = container.items.feedbackSorter;
+  const sortingService = getFeedbackSorter();
   const storageService = getStorageManager();
 
   // Get claim status deriver for UI indicators

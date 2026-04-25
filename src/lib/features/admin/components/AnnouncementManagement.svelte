@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
   import type { IAnnouncementManager } from "../services/contracts/IAnnouncementManager";
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementForm from "./announcements/AnnouncementForm.svelte";
@@ -28,7 +28,7 @@
 
   onMount(async () => {
     try {
-      announcementService = container.items.announcementManager;
+      announcementService = getAnnouncementManager();
       await loadAnnouncements();
     } catch (error) {
       console.error("Failed to initialize announcement service:", error);

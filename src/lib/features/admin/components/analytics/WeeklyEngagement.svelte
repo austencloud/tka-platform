@@ -8,7 +8,7 @@
    * Accessibility: WCAG AAA compliant
    */
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
   import type {
     ISystemStateManager,
     CachedUserMetadata,
@@ -46,7 +46,7 @@
 
   onMount(async () => {
     try {
-      const systemStateService = container.items.systemStateManager;
+      const systemStateService = getSystemStateManager();
       const state = await systemStateService.getSystemState();
       users = state.users;
 

@@ -7,7 +7,7 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getPromoOrchestrator } from "$lib/features/promo-generator/getPromoOrchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IPromoOrchestrator } from "../services/contracts/IPromoOrchestrator";
   import type {
@@ -82,7 +82,7 @@
     if (!canvas || !canvasContainer) return;
 
     try {
-      orchestrator = container.items.promoOrchestrator;
+      orchestrator = getPromoOrchestrator();
       if (!orchestrator) {
         console.error("[PromoGenerator] Failed to resolve orchestrator from DI container");
         return;

@@ -23,8 +23,7 @@
   } from "$lib/shared/auth/domain/models/UserRole";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
-  import { container } from "$lib/shared/di";
-  import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
+  import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
 
   interface Props {
     userProfile: EnhancedUserProfile;
@@ -65,7 +64,7 @@
 
   async function checkContributorStatus(userId: string) {
     try {
-      const loader = container.items.contributorLoader as IContributorLoader;
+      const loader = getContributorLoader();
       const all = await loader.getAll();
       const match = all.find((c) => c.userId === userId);
       isContributor = !!match;
@@ -82,7 +81,7 @@
     actionError = null;
 
     try {
-      const loader = container.items.contributorLoader as IContributorLoader;
+      const loader = getContributorLoader();
 
       if (isContributor && contributorDocId) {
         await loader.delete(contributorDocId);

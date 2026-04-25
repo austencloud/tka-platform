@@ -4,7 +4,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { container } from "$lib/shared/di";
+  import { getGapDetector } from "$lib/features/learn/getGapDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onDestroy, onMount } from "svelte";
   import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
@@ -72,7 +72,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 
   onMount(async () => {
     hapticService = getHapticFeedback();
-    gapDetector = container.items.gapDetector;
+    gapDetector = getGapDetector();
     await loadQuestion();
   });
 

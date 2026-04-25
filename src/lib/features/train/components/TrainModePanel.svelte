@@ -17,7 +17,8 @@
   import ResultsScreen from "./ResultsScreen.svelte";
   import type { IPositionDetector } from "../services/contracts/IPositionDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
+  import { getSessionCompletionProcessor } from "$lib/features/train/getSessionCompletionProcessor";
+  import { getPositionDetector } from "$lib/features/train/getPositionDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type {
     ISessionCompletionProcessor,
@@ -68,7 +69,7 @@
   let detectionService: IPositionDetector | null = $state(null);
   const hapticService = getHapticFeedback();
   let isDetectionReady = $state(false);
-  const sessionCompletionProcessor = container.items.sessionCompletionProcessor;
+  const sessionCompletionProcessor = getSessionCompletionProcessor();
 
   // Session tracking
   let sessionStartTime = 0;
@@ -128,7 +129,7 @@
 
   async function initDetection() {
     try {
-      detectionService = container.items.positionDetector;
+      detectionService = getPositionDetector();
       if (detectionService) {
         await detectionService.initialize();
         isDetectionReady = true;

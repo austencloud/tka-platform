@@ -7,12 +7,12 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { container } from "$lib/shared/di";
+import { getCodex as getCodexService } from "$lib/features/learn/codex/getCodex";
 import type { ICodex } from "../services/contracts/ICodex";
 
 export function createCodexState() {
   function getCodex(): ICodex {
-    return container.items.codex;
+    return getCodexService();
   }
 
   // Core reactive state using Svelte 5 runes

@@ -16,7 +16,8 @@ import type { FeedbackManageState } from "./feedback-manage-state.svelte";
 import type { IFeedbackEditor } from "../services/contracts/IFeedbackEditor";
 import type { IFeedbackFormatter } from "../services/contracts/IFeedbackFormatter";
 import { TYPE_CONFIG, PRIORITY_CONFIG } from "../domain/models/feedback-models";
-import { container } from "$lib/shared/di";
+import { getFeedbackEditor } from "$lib/features/feedback/getFeedbackEditor";
+import { getFeedbackFormatter } from "$lib/features/feedback/getFeedbackFormatter";
 
 /**
  * Creates reactive state for feedback detail panel
@@ -27,8 +28,8 @@ export function createFeedbackDetailState(
   readOnly: boolean = false
 ) {
   // Resolve services via DI
-  const editing = container.items.feedbackEditor;
-  const formatting = container.items.feedbackFormatter;
+  const editing = getFeedbackEditor();
+  const formatting = getFeedbackFormatter();
 
   // Current item (updated by parent when real-time changes arrive)
   let item = $state<FeedbackItem>(initialItem);

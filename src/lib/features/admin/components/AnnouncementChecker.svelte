@@ -6,7 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
+  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
   import type { IAnnouncementManager } from "../services/contracts/IAnnouncementManager";
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementModal from "./AnnouncementModal.svelte";
@@ -27,7 +27,7 @@
 
   onMount(async () => {
     try {
-      announcementService = container.items.announcementManager;
+      announcementService = getAnnouncementManager();
 
       if (authState.isAuthenticated) {
         checkForAnnouncements();

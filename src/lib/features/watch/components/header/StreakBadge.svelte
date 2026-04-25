@@ -7,8 +7,7 @@
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
-  import type { IStreakTracker } from "$lib/shared/gamification/services/contracts/IStreakTracker";
+  import { getStreakTracker } from "$lib/shared/gamification/getStreakTracker";
 
   let currentStreak = $state(0);
   let isActive = $state(false);
@@ -16,7 +15,7 @@
 
   onMount(async () => {
     try {
-      const streakTracker: IStreakTracker = container.items.streakTracker;
+      const streakTracker = getStreakTracker();
 
       await streakTracker.initialize();
       const stats = await streakTracker.getStreakStats();

@@ -66,6 +66,25 @@ import {
 /**
  * Error class for library operations
  */
+function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+      result[key] = stripUndefined(value as Record<string, unknown>);
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        item !== null && typeof item === "object" && !Array.isArray(item)
+          ? stripUndefined(item as Record<string, unknown>)
+          : item
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export class LibraryError extends Error {
   constructor(
     message: string,
@@ -414,10 +433,8 @@ export class LibraryRepository implements ILibraryRepository {
         : ((existingDoc.data()?._version as number) || 0) + 1,
     };
 
-    // Strip undefined values — Firestore rejects them in setDoc
-    const writeData = Object.fromEntries(
-      Object.entries(rawWriteData).filter(([, v]) => v !== undefined)
-    );
+    // Recursively strip undefined values — Firestore rejects them in setDoc
+    const writeData = stripUndefined(rawWriteData as Record<string, unknown>);
 
     // Fire-and-forget: setDoc queues locally, syncs when online
     // trackWrite monitors the sync status but we don't block on it
@@ -1011,11 +1028,11 @@ export class LibraryRepository implements ILibraryRepository {
 
       const newVersion = ((sequence._version ?? 0) + 1);
       trackWrite(
-        () => setDoc(sequenceDocRef, {
+        () => setDoc(sequenceDocRef, stripUndefined({
           ...sequence,
           _version: newVersion,
           updatedAt: serverTimestamp(),
-        }),
+        } as Record<string, unknown>)),
         "library"
       ).catch((error) => {
         console.error("[LibraryRepository] Failed to re-save after conflict resolution:", error);

@@ -6,7 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
+  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
   import type { IAnnouncementManager } from "../services/contracts/IAnnouncementManager";
   import type { Announcement } from "../domain/models/announcement-models";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -25,7 +25,7 @@
   let announcementService: IAnnouncementManager | null = null;
 
   onMount(() => {
-    announcementService = container.items.announcementManager;
+    announcementService = getAnnouncementManager();
   });
 
   // Check if URL is internal (starts with /)

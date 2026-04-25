@@ -1,7 +1,7 @@
 <!-- ActiveUsersPanel.svelte - Admin view of all users with activity-based presence -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getUserActivityTracker } from "$lib/features/admin/getUserActivityTracker";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { IUserActivityTracker } from "../services/contracts/IUserActivityTracker";
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
@@ -46,7 +46,7 @@
 
   onMount(async () => {
     try {
-      userActivityService = container.items.userActivityTracker;
+      userActivityService = getUserActivityTracker();
 
       if (userActivityService) {
         // Subscribe to all users (Firestore + presence data merged)

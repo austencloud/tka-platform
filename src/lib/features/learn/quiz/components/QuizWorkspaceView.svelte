@@ -5,7 +5,7 @@
   import { onDestroy, onMount } from "svelte";
 
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
+  import { getQuizSessionManager } from "$lib/features/learn/quiz/getQuizSessionManager";
 
   import LetterToPictographQuiz from "./LetterToPictographQuiz.svelte";
   import PictographToLetterQuiz from "./PictographToLetterQuiz.svelte";
@@ -52,7 +52,7 @@
 
   // Services
   const hapticService = getHapticFeedback();
-  const quizSessionService = container.items.quizSessionManager;
+  const quizSessionService = getQuizSessionManager();
 
   // Derived state
   const isCountdownMode = $derived(quizMode === QuizMode.COUNTDOWN);

@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getPostHogUserAnalytics } from "$lib/features/admin/getPostHogUserAnalytics";
   import type {
     IPostHogUserAnalytics,
     UserEngagementSummary,
@@ -50,7 +50,7 @@
   });
 
   async function loadAllData(uid: string) {
-    analyticsService = container.items.postHogUserAnalytics;
+    analyticsService = getPostHogUserAnalytics();
 
     if (!analyticsService) {
       isLoadingEngagement = false;

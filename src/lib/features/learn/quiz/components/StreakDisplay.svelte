@@ -8,7 +8,7 @@ Features:
 - Respects prefers-reduced-motion
 -->
 <script lang="ts">
-	import { container } from '$lib/shared/di';
+	import { getStreakTracker } from '$lib/shared/gamification/getStreakTracker';
 	import { onMount, onDestroy } from 'svelte';
 	import type { IStreakTracker } from '$lib/shared/gamification/services/contracts/IStreakTracker';
 
@@ -29,7 +29,7 @@ Features:
 	const MILESTONES = [3, 7, 14, 30, 50, 100];
 
 	onMount(async () => {
-		streakTracker = container.items.streakTracker;
+		streakTracker = getStreakTracker();
 
 		if (streakTracker) {
 			try {

@@ -10,7 +10,7 @@ Shows:
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { container } from "$lib/shared/di";
+  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
   import {
     TKA_CONCEPTS,
     CONCEPT_CATEGORIES,
@@ -32,7 +32,7 @@ Shows:
     $props();
 
   // Resolve service via DI
-  const conceptProgressService = container.items.conceptProgressTracker;
+  const conceptProgressService = getConceptProgressTracker();
 
   // Progress state
   let progress = $state(conceptProgressService.getProgress());

@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
-  import type { IPositionDetector } from "../../services/contracts/IPositionDetector";
+  import { getPositionDetector } from "$lib/features/train/getPositionDetector";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
@@ -23,7 +22,7 @@
   }: Props = $props();
 
   // Performance monitoring
-  const detectionService = container.items.positionDetector;
+  const detectionService = getPositionDetector();
   let fps = $state(0);
   let avgFrameTime = $state(0);
   let videoResolution = $state("N/A");

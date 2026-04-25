@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { FeedbackSubtask } from "../../../domain/models/feedback-models";
-  import type { IFeedbackSubtaskManager } from "../../../services/contracts/IFeedbackSubtaskManager";
-  import { container } from "$lib/shared/di";
+  import { getFeedbackSubtaskManager } from "$lib/features/feedback/getFeedbackSubtaskManager";
 
   interface Props {
     subtasks: FeedbackSubtask[];
@@ -9,7 +8,7 @@
 
   const { subtasks }: Props = $props();
 
-  const subtaskService = container.items.feedbackSubtaskManager;
+  const subtaskService = getFeedbackSubtaskManager();
 
   function isBlocked(subtask: FeedbackSubtask): boolean {
     if (!subtaskService) return false;

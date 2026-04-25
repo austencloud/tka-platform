@@ -12,7 +12,8 @@
    */
 
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getPostHogAnalyticsProvider } from "$lib/features/admin/getPostHogAnalyticsProvider";
+  import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
   import type {
     ISystemStateManager,
     CachedUserMetadata,
@@ -103,11 +104,11 @@
   onMount(async () => {
     try {
       // Check PostHog availability
-      const analyticsProvider = container.items.postHogAnalyticsProvider;
+      const analyticsProvider = getPostHogAnalyticsProvider();
       postHogAvailable = analyticsProvider.isAvailable();
 
       // Load user data from cached system state
-      const systemStateService = container.items.systemStateManager;
+      const systemStateService = getSystemStateManager();
       const state = await systemStateService.getSystemState();
       const users: CachedUserMetadata[] = state.users;
 
