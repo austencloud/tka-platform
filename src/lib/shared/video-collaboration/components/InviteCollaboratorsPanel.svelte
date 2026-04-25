@@ -6,10 +6,9 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
+  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-  import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -33,7 +32,7 @@
 
   // Services
   const userService = getUserRepository();
-  const videoService = container.items.collaborativeVideoManager;
+  const videoService = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback();
 
   // Search state

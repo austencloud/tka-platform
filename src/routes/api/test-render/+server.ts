@@ -1,4 +1,5 @@
 import { container } from "$lib/shared/di";
+import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
@@ -14,7 +15,7 @@ export const POST: RequestHandler = async (event) => {
     const stepSizeValue = body.stepSize;
 
     // Resolve services
-    const renderService = container.items.sequenceRenderer;
+    const renderService = getSequenceRenderer();
     const persistenceService = container.items.sequencePersister;
 
     // Load current sequence

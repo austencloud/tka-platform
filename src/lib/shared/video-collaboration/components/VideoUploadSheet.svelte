@@ -6,10 +6,9 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { container } from "$lib/shared/di";
+  import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
+  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
-  import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getAuthSync } from "$lib/shared/auth/firebase";
@@ -38,8 +37,8 @@
   } = $props();
 
   // Services
-  const uploadService = container.items.videoUploader;
-  const videoService = container.items.collaborativeVideoManager;
+  const uploadService = getVideoUploader();
+  const videoService = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback();
 
   // State

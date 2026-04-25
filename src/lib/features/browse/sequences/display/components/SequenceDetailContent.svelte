@@ -16,6 +16,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { ISequenceDetailLoader } from "../services/contracts/ISequenceDetailLoader";
   import type { IVideoCountManager } from "../services/contracts/IVideoCountManager";
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
+  import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
   import type { IClaudeCodeCopier } from "../services/contracts/IClaudeCodeCopier";
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
@@ -25,6 +26,9 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 
   import { container } from "$lib/shared/di";
+  import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
+  import { getVideoCountManager } from "../getVideoCountManager";
+  import { getClaudeCodeCopier } from "../getClaudeCodeCopier";
   import { getPresentationResolver } from "$lib/shared/sequence-viewer/getPresentationResolver";
   import { onMount } from "svelte";
   import { untrack } from "svelte";
@@ -160,10 +164,10 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   onMount(() => {
     hapticService = getHapticFeedback();
-    detailLoader = container.items.sequenceDetailLoader;
-    videoCountManager = container.items.videoCountManager;
-    imageSharer = container.items.sequenceImageSharer;
-    claudeCopier = container.items.claudeCodeCopier;
+    detailLoader = getSequenceDetailLoader();
+    videoCountManager = getVideoCountManager();
+    imageSharer = getSequenceImageSharer();
+    claudeCopier = getClaudeCodeCopier();
     libraryRepo = container.items.libraryRepository;
     collectionManager = container.items.collectionManager;
   });

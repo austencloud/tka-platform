@@ -9,11 +9,8 @@
   Also shows pending invites badge.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
-  import type {
-    ICollaborativeVideoManager,
-    UserVideoLibrary,
-  } from "../services/contracts/ICollaborativeVideoManager";
+  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
+  import type { UserVideoLibrary } from "../services/contracts/ICollaborativeVideoManager";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import { onMount } from "svelte";
   import CollaborativeVideoCard from "./CollaborativeVideoCard.svelte";
@@ -27,7 +24,7 @@
 
   type Tab = "all" | "created" | "collaborations" | "invites";
 
-  const videoService = container.items.collaborativeVideoManager;
+  const videoService = getCollaborativeVideoManager();
   let library = $state<UserVideoLibrary | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);

@@ -5,7 +5,7 @@
  * Used by batch-rerender-gallery.js script for server-side rendering.
  */
 
-import { container } from "$lib/shared/di";
+import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/SequenceExportOptions";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -145,7 +145,7 @@ export const POST: RequestHandler = async (event) => {
     }
 
     // Resolve rendering service
-    const renderService = container.items.sequenceRenderer;
+    const renderService = getSequenceRenderer();
 
     // Determine if this sequence needs non-radial points shown
     const showNonRadial = requiresNonRadialPoints(sequence);
