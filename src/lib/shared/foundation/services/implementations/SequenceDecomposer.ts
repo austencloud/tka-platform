@@ -14,11 +14,19 @@ import {
 
 // Strips the rendering-only fields from a MotionData to produce a SoloPropStepData.
 //
-// The fields we drop — color, propType, isVisible, gridMode, arrowLocation,
-// arrowPlacementData, propPlacementData, prefloatMotionType,
-// prefloatRotationDirection — are all viewer preferences or derived rendering
-// state. They carry no domain meaning and are re-derived by StepDeriver on the
-// way back out.
+// Dropped fields (truly rendering state, re-derived downstream):
+//   color, propType, isVisible, gridMode, arrowLocation,
+//   arrowPlacementData, propPlacementData, prefloatRotationDirection
+//
+// Preserved fields (domain data — must survive the round-trip):
+//   prefloatMotionType. When motionType === "float", this records the pro/anti
+//   type the motion collapsed from. Without it, letter classification and turn
+//   color cannot distinguish which hand the float belongs to (the float's
+//   own rotationDirection is "noRotation", which destroys the signal).
+//
+// prefloatRotationDirection is intentionally NOT stored — it is derivable
+// from prefloatMotionType + start/end via HandpathDirectionCalculator at
+// rehydrate time, so persisting it would be redundant.
 //
 // Duration is NOT on MotionData. The caller must inject it from StepData.
 function motionToSoloPropStep(
@@ -37,6 +45,9 @@ function motionToSoloPropStep(
     skewSteps: motion.skewSteps ?? null,
     skewDir: motion.skewDir ?? null,
     duration,
+    ...(motion.prefloatMotionType && {
+      prefloatMotionType: motion.prefloatMotionType,
+    }),
   };
 }
 

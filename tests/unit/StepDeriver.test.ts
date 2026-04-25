@@ -463,4 +463,100 @@ describe("StepDeriver", () => {
       expect(startPos.gridPosition).toBeNull();
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Float prefloat preservation — regression for the I-letter color bug
+  // where a TYPE1_HYBRID float lost its prefloatMotionType through the
+  // decompose/derive round-trip and rendered both turn glyphs in the same
+  // color (TurnColorInterpreter falls back to redMotion for both pro and
+  // anti slots when the float's actual type cannot be resolved).
+  // -------------------------------------------------------------------------
+
+  describe("deriveSteps — float prefloat preservation", () => {
+    it("preserves prefloatMotionType on a float blue motion", () => {
+      const blueFloat = makeStep(GridLocation.SOUTH, GridLocation.EAST, {
+        motionType: MotionType.FLOAT,
+        rotationDirection: RotationDirection.NO_ROTATION,
+        turns: "fl",
+        prefloatMotionType: MotionType.PRO,
+      });
+      const redAnti = makeStep(GridLocation.SOUTH, GridLocation.EAST, {
+        motionType: MotionType.ANTI,
+        rotationDirection: RotationDirection.CLOCKWISE,
+        turns: 0.5,
+      });
+
+      const blue = makeSoloProp([blueFloat]);
+      const red = makeSoloProp([redAnti]);
+      const pairings = [makePairing({ letter: Letter.I })];
+
+      const steps = deriver.deriveSteps(blue, red, pairings);
+
+      expect(steps[0]!.motions.blue.prefloatMotionType).toBe(MotionType.PRO);
+    });
+
+    it("derives prefloatRotationDirection from prefloat type + handpath (pro on s→e = ccw)", () => {
+      const blueFloat = makeStep(GridLocation.SOUTH, GridLocation.EAST, {
+        motionType: MotionType.FLOAT,
+        rotationDirection: RotationDirection.NO_ROTATION,
+        turns: "fl",
+        prefloatMotionType: MotionType.PRO,
+      });
+      const redAnti = makeStep(GridLocation.SOUTH, GridLocation.EAST, {
+        motionType: MotionType.ANTI,
+        rotationDirection: RotationDirection.CLOCKWISE,
+        turns: 0.5,
+      });
+
+      const blue = makeSoloProp([blueFloat]);
+      const red = makeSoloProp([redAnti]);
+      const pairings = [makePairing({ letter: Letter.I })];
+
+      const steps = deriver.deriveSteps(blue, red, pairings);
+
+      // s→e is a counter-clockwise handpath. Pro spins with the path.
+      expect(steps[0]!.motions.blue.prefloatRotationDirection).toBe(
+        RotationDirection.COUNTER_CLOCKWISE
+      );
+    });
+
+    it("derives prefloatRotationDirection as cw when prefloat is anti on a ccw handpath", () => {
+      const blueFloat = makeStep(GridLocation.SOUTH, GridLocation.EAST, {
+        motionType: MotionType.FLOAT,
+        rotationDirection: RotationDirection.NO_ROTATION,
+        turns: "fl",
+        prefloatMotionType: MotionType.ANTI,
+      });
+      const redPro = makeStep(GridLocation.SOUTH, GridLocation.EAST, {
+        motionType: MotionType.PRO,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        turns: 1,
+      });
+
+      const blue = makeSoloProp([blueFloat]);
+      const red = makeSoloProp([redPro]);
+      const pairings = [makePairing({ letter: Letter.I })];
+
+      const steps = deriver.deriveSteps(blue, red, pairings);
+
+      // s→e ccw handpath; anti spins against it → cw.
+      expect(steps[0]!.motions.blue.prefloatRotationDirection).toBe(
+        RotationDirection.CLOCKWISE
+      );
+    });
+
+    it("leaves prefloat fields undefined when motionType is not float", () => {
+      const blueStep = makeStep(GridLocation.NORTH, GridLocation.EAST);
+      const redStep = makeStep(GridLocation.SOUTH, GridLocation.WEST);
+
+      const blue = makeSoloProp([blueStep]);
+      const red = makeSoloProp([redStep]);
+      const pairings = [makePairing()];
+
+      const steps = deriver.deriveSteps(blue, red, pairings);
+
+      expect(steps[0]!.motions.blue.prefloatMotionType).toBeUndefined();
+      expect(steps[0]!.motions.blue.prefloatRotationDirection).toBeUndefined();
+    });
+  });
 });
