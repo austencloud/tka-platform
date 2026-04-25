@@ -128,10 +128,11 @@
 
   .picker {
     position: fixed;
-    left: 320px; /* TODO(Stage B): derive from column width CSS var when layout becomes resizable */
-    top: 60px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     width: 480px;
-    max-height: calc(100vh - 80px);
+    max-height: 80vh;
     background: var(--theme-surface-elevated, #1e1e2e);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;

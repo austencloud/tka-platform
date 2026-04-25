@@ -1,11 +1,11 @@
 import { browser } from '$app/environment';
-import type { IBeatSignatureGenerator } from './services/contracts/IBeatSignatureGenerator';
-import { BeatSignatureGenerator } from './services/implementations/BeatSignatureGenerator';
+import type { IStepSignatureGenerator } from './services/contracts/IStepSignatureGenerator';
+import { StepSignatureGenerator } from './services/implementations/StepSignatureGenerator';
 import { getMotionSignatureGenerator } from './getMotionSignatureGenerator';
 
-let instance: IBeatSignatureGenerator | null = null;
+let instance: IStepSignatureGenerator | null = null;
 
-export function getBeatSignatureGenerator(): IBeatSignatureGenerator {
-	if (!browser) throw new Error('getBeatSignatureGenerator() is browser-only');
-	return instance ??= new BeatSignatureGenerator(getMotionSignatureGenerator());
+export function getStepSignatureGenerator(): IStepSignatureGenerator {
+	if (!browser) throw new Error('getStepSignatureGenerator() is browser-only');
+	return instance ??= new StepSignatureGenerator(getMotionSignatureGenerator());
 }

@@ -1,5 +1,5 @@
 /**
- * BeatBoundaryDetector - Find beat transitions in a hand timeline
+ * StepBoundaryDetector - Find beat transitions in a hand timeline
  *
  * Walks through DetectionFrame[] sequentially, grouping consecutive
  * frames that share the same blue + red grid locations into beats.
@@ -13,9 +13,9 @@ import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
 import type { HandTimeline, DetectedBeat, BeatPosition } from "../../domain/models";
 import type {
-  IBeatBoundaryDetector,
+  IStepBoundaryDetector,
   BeatDetectionOptions,
-} from "../contracts/IBeatBoundaryDetector";
+} from "../contracts/IStepBoundaryDetector";
 
 const DEFAULT_MIN_FRAMES_PER_BEAT = 3;
 const DEFAULT_MIN_CONFIDENCE = 0.5;
@@ -26,7 +26,7 @@ interface FrameGroup {
   redLocation: GridLocation | null;
 }
 
-export class BeatBoundaryDetector implements IBeatBoundaryDetector {
+export class StepBoundaryDetector implements IStepBoundaryDetector {
   detectBeats(
     timeline: HandTimeline,
     options?: BeatDetectionOptions

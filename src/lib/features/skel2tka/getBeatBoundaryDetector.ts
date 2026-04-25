@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IBeatBoundaryDetector } from './services/contracts/IBeatBoundaryDetector';
-import { BeatBoundaryDetector } from './services/implementations/BeatBoundaryDetector';
+import type { IStepBoundaryDetector } from './services/contracts/IStepBoundaryDetector';
+import { StepBoundaryDetector } from './services/implementations/StepBoundaryDetector';
 
-let instance: IBeatBoundaryDetector | null = null;
+let instance: IStepBoundaryDetector | null = null;
 
-export function getBeatBoundaryDetector(): IBeatBoundaryDetector {
-	if (!browser) throw new Error('getBeatBoundaryDetector() is browser-only');
-	return instance ??= new BeatBoundaryDetector();
+export function getStepBoundaryDetector(): IStepBoundaryDetector {
+	if (!browser) throw new Error('getStepBoundaryDetector() is browser-only');
+	return instance ??= new StepBoundaryDetector();
 }

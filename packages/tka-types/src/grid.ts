@@ -40,6 +40,9 @@ export const GridMode = {
   diamond: "diamond",
   box: "box",
   skewed: "skewed",
+  centric: "centric",
+  trigrid: "trigrid",
+  "8point": "8point",
 } as const;
 
 export type GridMode = (typeof GridMode)[keyof typeof GridMode];
@@ -128,6 +131,27 @@ export const GridPosition = {
   eta14: "eta14",
   eta15: "eta15",
   eta16: "eta16",
+
+  // Tau positions — one hand at center, other at perimeter (centric mode)
+  tau1: "tau1",
+  tau2: "tau2",
+  tau3: "tau3",
+  tau4: "tau4",
+  tau5: "tau5",
+  tau6: "tau6",
+  tau7: "tau7",
+  tau8: "tau8",
+  tau9: "tau9",
+  tau10: "tau10",
+  tau11: "tau11",
+  tau12: "tau12",
+  tau13: "tau13",
+  tau14: "tau14",
+  tau15: "tau15",
+  tau16: "tau16",
+
+  // Terra position — both hands at center (centric mode)
+  terra1: "terra1",
 } as const;
 
 export type GridPosition = (typeof GridPosition)[keyof typeof GridPosition];
@@ -139,12 +163,14 @@ export const GRID_POSITIONS: readonly GridPosition[] = Object.freeze(
 /**
  * Position family — the Greek-letter prefix classifying a GridPosition.
  */
-export type PositionFamily = "alpha" | "beta" | "gamma" | "zeta" | "eta";
+export type PositionFamily = "alpha" | "beta" | "gamma" | "zeta" | "eta" | "tau" | "terra";
 
 export function getPositionFamily(position: GridPosition): PositionFamily {
   if (position.startsWith("alpha")) return "alpha";
   if (position.startsWith("beta")) return "beta";
   if (position.startsWith("gamma")) return "gamma";
   if (position.startsWith("zeta")) return "zeta";
+  if (position.startsWith("tau")) return "tau";
+  if (position.startsWith("terra")) return "terra";
   return "eta";
 }

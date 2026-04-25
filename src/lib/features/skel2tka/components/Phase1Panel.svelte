@@ -5,7 +5,7 @@
   1. User uploads a video file
   2. VideoFrameExtractor pulls frames at 15fps
   3. VideoHandAnalyzer runs MediaPipe on each frame
-  4. BeatBoundaryDetector groups stable positions into beats
+  4. StepBoundaryDetector groups stable positions into beats
   5. Sanity checks run automatically
   6. FrameInspector shows video + overlay for manual verification
   7. User accepts, corrects, or rejects via PhaseVerificationPanel

@@ -1,9 +1,3 @@
-<!--
-  StickerLab.svelte — Phase 1 MVP sticker lab tab.
-
-  Three-column layout: sticker list (left), sheet preview (center), export panel (right).
-  Child components are added in later tasks.
--->
 <script lang="ts">
   import { createStickerLabState } from "./state/sticker-lab-state.svelte";
   import { setStickerLabContext } from "./context/sticker-lab-context";

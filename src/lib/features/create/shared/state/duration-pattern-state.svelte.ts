@@ -10,7 +10,7 @@ import type { IDurationPatternManager } from "../services/contracts/IDurationPat
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-import { getDurationPatternManager } from "$lib/features/create/shared/getDurationPatternManager";
+import { getDurationPatternManager as getManager } from "$lib/features/create/shared/getDurationPatternManager";
 
 const logger = createComponentLogger("DurationPatternState");
 
@@ -56,7 +56,7 @@ export const durationPatternState = {
     _error = null;
 
     try {
-      _patterns = await getDurationPatternManager().loadPatterns(userId);
+      _patterns = await getManager().loadPatterns(userId);
       _initialized = true;
       logger.log(`Loaded ${_patterns.length} duration patterns`);
     } catch (err) {
@@ -82,11 +82,11 @@ export const durationPatternState = {
     _error = null;
 
     try {
-      const patternData = getDurationPatternManager().extractPattern(
+      const patternData = getManager().extractPattern(
         sequence,
         name
       );
-      const saved = await getDurationPatternManager().savePattern(
+      const saved = await getManager().savePattern(
         patternData,
         userId
       );
@@ -117,7 +117,7 @@ export const durationPatternState = {
     _error = null;
 
     try {
-      await getDurationPatternManager().deletePattern(patternId, userId);
+      await getManager().deletePattern(patternId, userId);
 
       // Remove from local state
       _patterns = _patterns.filter((p) => p.id !== patternId);

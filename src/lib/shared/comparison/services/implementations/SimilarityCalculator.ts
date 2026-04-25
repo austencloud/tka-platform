@@ -18,7 +18,7 @@ import type {
   QuickSimilarityResult,
   SimilarityOptions,
 } from "../contracts/ISimilarityCalculator";
-import type { IBeatSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
 import type { ISequenceAligner } from "../contracts/ISequenceAligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -33,7 +33,7 @@ const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
 
 export class SimilarityCalculator implements ISimilarityCalculator {
   constructor(
-    private readonly beatSignatureGenerator: IBeatSignatureGenerator,
+    private readonly beatSignatureGenerator: IStepSignatureGenerator,
     private readonly sequenceAligner: ISequenceAligner
   ) {}
 
@@ -569,7 +569,7 @@ export class SimilarityCalculator implements ISimilarityCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { beatSignatureGenerator } from "./StepSignatureGenerator";
 import { sequenceAligner } from "./SequenceAligner";
 
 export const similarityCalculator = new SimilarityCalculator(
