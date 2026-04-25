@@ -5,22 +5,21 @@
   Both the route (/sequence/[id]) and the drawer host render this component,
   passing a children snippet that receives the full context object.
 
-  The orchestrator manages:
-  - Animation playback (play/pause, BPM, stepping)
-  - Export mode (image/video/combined)
-  - Fullscreen mode
-  - Tempo practice training
-  - LAN sync
-  - Keyboard shortcuts
-  - Image composition settings
-  - Animation visibility settings
+  Delegates to focused modules:
+  - PlaybackController.svelte.ts — playback state, stepping, practice training
+  - ExportCoordinator.svelte.ts — 2D/3D export routing, recording, progress
+  - PropContextResolver.svelte.ts — prop context toggle, presentation resolution
+  - ImageCompositionSync.svelte.ts — image composition settings sync
+  - AuthActionQueue.svelte.ts — pending-action queue, sign-in routing
 
-  It does NOT own:
-  - URL param reading/writing (route-specific)
-  - <svelte:head> / SSR metadata (route-specific)
-  - view-transition-name (route-specific)
-  - Swipe-to-dismiss gesture (different between route and drawer)
-  - Drawer wrapper/snap points (drawer-specific)
+  The orchestrator retains:
+  - Service initialization bootstrap
+  - Keyboard shortcuts (Escape, Space, P)
+  - Fullscreen & UI modes
+  - LAN sync coordination
+  - Navigation actions (Open in Compose, Edit, Save, Delete, Share)
+  - Dark mode unification
+  - Composing extracted children
 -->
 <script lang="ts" module>
 
@@ -35,7 +34,7 @@ import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinato
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -75,9 +74,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     // Video-synced playback
     playbackSource: PlaybackSource;
     videoPlaybackBeatIndex: number | null;
-    activeBeatMap: BeatMap | null;
+    activeStepMap: StepMap | null;
     setPlaybackSource: (source: PlaybackSource) => void;
-    setActiveBeatMap: (beatMap: BeatMap | null) => void;
+    setActiveStepMap: (beatMap: StepMap | null) => void;
     onVideoTimeUpdate: (currentTime: number) => void;
     modalAnimationState: AnimationPanelState;
 
@@ -217,26 +216,15 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
 <script lang="ts">
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
-  import { goto, replaceState } from "$app/navigation";
-  import {
-    GoogleAuthProvider,
-    browserLocalPersistence,
-    indexedDBLocalPersistence,
-    setPersistence,
-    signInWithPopup,
-  } from "firebase/auth";
-  import { auth } from "$lib/shared/auth/firebase";
+  import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
-  import { getPendingActionQueue } from "../getPendingActionQueue";
-  import { getWebviewDetector } from "../getWebviewDetector";
-  import { getPresentationResolver } from "../getPresentationResolver";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
-  import { createAnimationPanelState, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -246,7 +234,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
   import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
@@ -256,18 +243,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
-  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
-  import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoPracticeOrchestrator";
-  import { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
-  import { page } from "$app/stores";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
-  import type { IPresentationResolver } from "../services/contracts/IPresentationResolver";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/beat-map-utils";
-  import PropContextChip from "./PropContextChip.svelte";
+  import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
@@ -275,10 +254,16 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
-  import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
   import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/IPendingActionQueue";
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
+
+  // ── Extracted modules ──
+  import { createPlaybackController } from "./PlaybackController.svelte";
+  import { createExportCoordinator } from "./ExportCoordinator.svelte";
+  import { createPropContextResolver } from "./PropContextResolver.svelte";
+  import { createImageCompositionSync } from "./ImageCompositionSync.svelte";
+  import { createAuthActionQueue } from "./AuthActionQueue.svelte";
 
   // ============================================================================
   // PROPS
@@ -327,119 +312,32 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }: Props = $props();
 
   // ============================================================================
-  // STATE
+  // SERVICE BOOTSTRAP
   // ============================================================================
 
-  // View mode
-  let viewMode = $state<ViewMode>(sequenceModalPersistence.loadViewMode());
-  $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
-
-  // Fullscreen state
-  let isFullscreen = $state(false);
-  let fullscreenControlsVisible = $state(false);
-  let controlsHideTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  const exportOptions = getExportOptionsState();
+  const modalAnimationState = createAnimationPanelState();
+  let animationServicesReady = $state(false);
+  let animationLoading = $state(false);
+  let lastLoadedSequenceId: string | null = null;
 
   // Services
-  let playbackController = $state<IAnimationPlaybackController | null>(null);
+  let playbackControllerRef = $state<IAnimationPlaybackController | null>(null);
   let sequenceDataProvider: ISequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
 
-  // Viewer-auth services (pending-action queue + webview detection)
-  const pendingActionQueue = getPendingActionQueue();
-  const webviewDetector = getWebviewDetector();
+  // ============================================================================
+  // EXTRACTED MODULES
+  // ============================================================================
 
-  // Sign-in sheet state
-  let signInSheetOpen = $state(false);
-  let signInSheetReason = $state<PendingActionType | null>(null);
+  // ── Playback ──
+  // svelte-ignore state_referenced_locally — initialBpm/initialStep are intentionally
+  // captured once; the $effect.pre below handles reactive sync.
+  const playback = createPlaybackController({ modalAnimationState, initialBpm, initialStep });
 
-  function openSignInSheet(reason: PendingActionType) {
-    signInSheetReason = reason;
-    signInSheetOpen = true;
-  }
+  // Sync initial values when props change (mirrors original $effect.pre)
+  $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = initialBpm; });
 
-  function closeSignInSheet() {
-    signInSheetOpen = false;
-    signInSheetReason = null;
-    pendingActionQueue.clear();
-    if (browser) {
-      const parsed = new URL(window.location.href);
-      if (parsed.searchParams.has("pending")) {
-        parsed.searchParams.delete("pending");
-        replaceState(parsed, {});
-      }
-    }
-  }
-
-  // Called by footer action buttons. If signed in, runs the real handler.
-  // If not, captures the intent, writes `?pending=` to the URL so a reload or
-  // cross-browser handoff preserves it, and opens the sign-in sheet.
-  function invokeGatedAction(
-    type: PendingActionType,
-    realHandler: (() => void) | (() => Promise<void>) | undefined,
-  ) {
-    if (authState.isAuthenticated) {
-      void realHandler?.();
-      return;
-    }
-    const sequenceId = sequence?.id ?? sequence?.word ?? "";
-    if (!sequenceId) return;
-
-    pendingActionQueue.enqueue({ type, sequenceId });
-    if (browser) {
-      const parsed = new URL(window.location.href);
-      parsed.searchParams.set("pending", type);
-      replaceState(parsed, {});
-    }
-    openSignInSheet(type);
-  }
-
-  async function onSignInSheetPrimary() {
-    if (webviewDetector.isInAppWebview) {
-      handleOpenInBrowser(signInSheetReason);
-      return;
-    }
-
-    // Prefer Google One Tap (FedCM) — it's the only flow that works reliably
-    // on mobile web, where signInWithPopup is blocked by most browsers. The
-    // app has a <GoogleOneTap /> mounted at root that already registered the
-    // credential callback; we just need to invoke the prompt. The replay
-    // effect below fires once the callback drives authState.isAuthenticated
-    // to true.
-    const oneTap = window.google?.accounts?.id;
-    if (oneTap) {
-      try {
-        oneTap.prompt();
-        signInSheetOpen = false;
-        return;
-      } catch {
-        // FedCM cooldown or disabled — fall through to popup.
-      }
-    }
-
-    // Desktop fallback: popup. Mirrors SocialAuthCompact's pattern.
-    try {
-      try {
-        await setPersistence(auth, indexedDBLocalPersistence);
-      } catch {
-        await setPersistence(auth, browserLocalPersistence);
-      }
-      const provider = new GoogleAuthProvider();
-      provider.addScope("email");
-      provider.addScope("profile");
-      await signInWithPopup(auth, provider);
-      signInSheetOpen = false;
-    } catch (err) {
-      const code = (err as { code?: string })?.code;
-      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        return; // user dismissed — leave sheet open for retry
-      }
-      console.error("[Viewer] Google sign-in failed:", err);
-      showToast({ message: "Sign-in failed. Please try again.", type: "error", duration: 3000 });
-    }
-  }
-
+  // ── Export ──
   // 3D viewer state — created once, distributed via Svelte context
   const viewer3DState = createViewer3DState({
     propInterpolator: getPropStateInterpolator(),
@@ -448,49 +346,49 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   });
   setViewer3DContext(viewer3DState);
 
-  // Motion visibility state — ephemeral per-viewer, resets on sequence change
-  const viewerVisibility = new SequenceViewerVisibilityState();
-  setViewerVisibilityContext(viewerVisibility);
+  const accessibilityHelper = createModalAccessibilityHelper();
 
+  const exportCoord = createExportCoordinator({ viewer3DState, accessibilityHelper });
+
+  // ── Prop context ──
+  // svelte-ignore state_referenced_locally — viewingContext is passed as a dep but
+  // the factory doesn't read it; activeContext is resolved reactively via getActiveContext().
+  const propContext = createPropContextResolver({ viewingContext });
+
+  // ── Image composition ──
+  const imgComp = createImageCompositionSync();
+
+  // ── Auth action queue ──
+  const authQueue = createAuthActionQueue();
+
+  // Wire export's exit-edit-mode callback
+  exportCoord.setExitEditModeCallback(() => exitEditMode());
+
+  // Wire playback's URL param callback reactively so the reference stays
+  // current if the parent swaps it (avoids state_referenced_locally warning).
   $effect(() => {
-    // Reset motion visibility whenever the sequence identity changes
-    void sequence?.id;
-    viewerVisibility.reset();
+    playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  const modalAnimationState = createAnimationPanelState();
-  let animationServicesReady = $state(false);
-  let animationLoading = $state(false);
-  let lastLoadedSequenceId: string | null = null;
+  // ============================================================================
+  // VIEW MODE STATE
+  // ============================================================================
 
-  // Render progress tracking for sequential cell rendering
-  let cellsLoaded = $state(0);
-  let totalCells = $state(0);
+  let viewMode = $state<ViewMode>(sequenceModalPersistence.loadViewMode());
+  $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
 
-  function handleRenderProgress(loaded: number, total: number) {
-    cellsLoaded = loaded;
-    totalCells = total;
-  }
+  // ============================================================================
+  // FULLSCREEN STATE
+  // ============================================================================
 
-  // Local reactive state for animation (synced via observer pattern)
-  let isPlayingLocal = $state(false);
-  let currentStepLocal = $state(0);
-  let bpmLocal = $state(120);
-  $effect.pre(() => { currentStepLocal = initialStep; bpmLocal = initialBpm; });
-  let cleanupAnimationStateSubscription: (() => void) | undefined;
+  let isFullscreen = $state(false);
+  let fullscreenControlsVisible = $state(false);
+  let controlsHideTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Track whether current position was reached via step buttons (vs. direct seek or playback)
-  // Used to show "just completed" beat in glyph/highlight instead of "about to start" beat
-  let arrivedViaStepping = $state(false);
+  // ============================================================================
+  // EDIT MODE STATE
+  // ============================================================================
 
-  // Edit mode (single source of truth for export state).
-  //
-  // Persisted across HMR remounts via sessionStorage, scoped by sequence ID
-  // and guarded by a short TTL. HMR tears down the orchestrator and mounts a
-  // fresh copy within milliseconds — both the sequence ID and timestamp still
-  // match, so the user lands back in Download Animation / Record Scene / etc.
-  // A normal drawer close + reopen takes much longer than the TTL (or opens a
-  // different sequence), so the user gets fresh state as before.
   const EDITING_PANE_SESSION_KEY = "tka-viewer-editing-pane";
   const EDITING_PANE_TTL_MS = 2000;
   type PersistedEditingPane = {
@@ -531,124 +429,76 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(
     untrack(() => loadRecentEditingPane(sequence?.id ?? null))
   );
-  // Refresh the stored timestamp whenever editingPane changes so the TTL
-  // window stays aligned with the most recent mount/transition.
   $effect(() => {
     persistEditingPane(editingPane, sequence?.id ?? null);
   });
 
-  // Video-synced playback: when a beat-mapped video is playing, the choreo card's
-  // gold border follows the video's beat position instead of the animation clock.
+  // ============================================================================
+  // VIDEO-SYNCED PLAYBACK
+  // ============================================================================
+
   let playbackSource = $state<PlaybackSource>("animation");
   let videoPlaybackBeatIndex = $state<number | null>(null);
-  let activeBeatMap = $state<BeatMap | null>(null);
+  let activeStepMap = $state<StepMap | null>(null);
 
-  // Export mode (derived from editingPane)
+  // ============================================================================
+  // EXPORT MODE (derived)
+  // ============================================================================
+
   const isExportMode = $derived(editingPane !== null);
   const exportType = $derived<ExportType | null>(
     editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null
   );
 
-  // Export state
-  let animationCanvas = $state<HTMLCanvasElement | null>(null);
-  const isExporting = $derived(sequenceModalExporter.state.isExporting);
-  const exportProgress = $derived(sequenceModalExporter.state.progress);
-  const exportError = $derived(sequenceModalExporter.state.error);
-  const previewBlobUrl = $derived(sequenceModalExporter.state.previewBlobUrl);
+  // ============================================================================
+  // RENDER PROGRESS
+  // ============================================================================
 
-  // 3D recording UI state
-  let countdownValue = $state(0);
-  let isRecording3D = $state(false);
-  let recordingElapsed = $state(0);
-  let recordingTimer: ReturnType<typeof setInterval> | null = null;
-  let resolveRecording: (() => void) | null = null;
+  let cellsLoaded = $state(0);
+  let totalCells = $state(0);
 
-  // Duration of a single sequence playthrough (for export UI)
-  const singlePlayDuration = $derived.by(() => {
-    const steps = effectiveSequence?.steps;
-    if (!steps?.length || bpmLocal <= 0) return 0;
-    const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
-    const speed = bpmLocal / 60;
-    return totalDurationUnits / speed;
-  });
+  function handleRenderProgress(loaded: number, total: number) {
+    cellsLoaded = loaded;
+    totalCells = total;
+  }
 
-  // LAN Sync
+  // ============================================================================
+  // LAN SYNC
+  // ============================================================================
+
   let isSyncToggling = $state(false);
 
-  // Settings
+  // ============================================================================
+  // SETTINGS
+  // ============================================================================
+
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType);
   const redPropType = $derived(settings.redPropType);
   const catDogModeEnabled = $derived(settings.catDogMode);
 
-  // Prop context — viewer sees creator's intended props by default ("creator-expression"),
-  // or their own settings ("notation"). User can toggle via the PropContextChip.
-  let contextOverride = $state<ViewingContext | null>(null);
-  const activeContext = $derived(contextOverride ?? viewingContext);
+  // ============================================================================
+  // MOTION VISIBILITY
+  // ============================================================================
 
-  const presentation = $derived.by((): ResolvedPresentation => {
-    if (!sequence) {
-      return {
-        bluePropType: bluePropType ?? PropType.STAFF,
-        redPropType: redPropType ?? PropType.STAFF,
-        catDogMode: catDogModeEnabled ?? false,
-        effortTimeline: null,
-        source: "viewer-settings",
-      };
-    }
-    const resolver = getPresentationResolver();
-    return resolver.resolve(
-      sequence,
-      activeContext,
-      bluePropType ?? PropType.STAFF,
-      redPropType ?? PropType.STAFF,
-      catDogModeEnabled ?? false
-    );
-  });
+  const viewerVisibility = new SequenceViewerVisibilityState();
+  setViewerVisibilityContext(viewerVisibility);
 
-  // Hand path visualization sequences always use HAND prop type — they represent
-  // pure spatial paths, not prop-based sequences. Only synthetic sequences built
-  // by DeckFamilySection set this flag. Regular sequences with handPathId metadata
-  // (for grouping/sorting) are NOT hand path visualizations.
-  const isHandPath = $derived(Boolean(sequence?.metadata?.isHandPathVisualization));
-
-  const activeBlueProp = $derived(isHandPath ? PropType.HAND : presentation.bluePropType);
-  const activeRedProp = $derived(isHandPath ? PropType.HAND : presentation.redPropType);
-  const activeCatDog = $derived(isHandPath ? false : presentation.catDogMode);
-
-  // Toggle between creator-intent and viewer-settings prop contexts
-  function togglePropContext() {
-    contextOverride = activeContext === "creator-expression" ? "notation" : "creator-expression";
-  }
-
-  // When active props change (chip toggle), update the animation orchestrator's prop types
-  // so the canvas re-renders with the correct prop visuals.
   $effect(() => {
-    const blue = activeBlueProp;
-    const red = activeRedProp;
-    if (blue && red && animationServicesReady) {
-      try {
-        const orchestrator = getSequenceAnimationOrchestrator() as ISequenceAnimationOrchestrator;
-        orchestrator.updatePropTypes(blue, red);
-      } catch {
-        // Animation services not ready yet — will pick up correct props on init
-      }
-    }
+    void sequence?.id;
+    viewerVisibility.reset();
   });
 
-  // Animation visibility
+  // ============================================================================
+  // ANIMATION VISIBILITY & EFFECTS
+  // ============================================================================
+
   const animationVisibility = getAnimationVisibilityManager();
 
-  // Canonical effects config — single source of truth shared across the
-  // canvas (ViewerSplitPane) AND the export panel (ExportVideoDrawer).
-  // Lives here so both subtrees can read the same context; without this,
-  // EffectsPanel's customize views see a null context and render
-  // "Effect state unavailable".
   const effectsConfigState = createEffectsConfigState(snapshotConfigFromVm(animationVisibility));
   seedTrailsFromAnimationSettings(effectsConfigState);
   setEffectsConfigContext(effectsConfigState);
 
-  // Scene-wide 3D render modifiers (motion blur + speed lines).
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
 
@@ -666,35 +516,57 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
   });
 
-  // Image composition
-  const imageComposition = getImageCompositionManager();
-  let imgShowWord = $state(imageComposition.addWord);
-  let imgShowStartPos = $state(imageComposition.includeStartPosition);
-  let imgShowStepNumbers = $state(imageComposition.addStepNumbers);
-  let imgShowDifficulty = $state(imageComposition.addDifficultyLevel);
-  let imgShowCreatorName = $state(imageComposition.showCreatorName);
-  let imgShowNotes = $state(imageComposition.showNotes);
-  let imgShowBirthday = $state(imageComposition.showBirthday);
-  let imgShowQRCode = $state(imageComposition.showQRCode);
-  let imgShowMandala = $state(imageComposition.showMandala);
-  let imgShowLoopGlyph = $state(imageComposition.showLoopGlyph);
-  let imgDarkMode = $state(imageComposition.darkMode);
-  let imgColumnCount = $state<number | null>(sequenceModalPersistence.loadColumnCount());
+  // ============================================================================
+  // PROP CONTEXT (derived from extracted module)
+  // ============================================================================
 
-  // Accessibility
-  const accessibilityHelper = createModalAccessibilityHelper();
+  const activeContext = $derived(propContext.getActiveContext(viewingContext));
 
-  // Tempo practice
-  const practiceOrchestrator = new TempoPracticeOrchestrator();
-  const practiceState = createTempoPracticeState();
-  let practiceActive = $derived(practiceState.progress.active);
+  const presentation = $derived.by((): ResolvedPresentation => {
+    return propContext.resolvePresentation(
+      sequence,
+      activeContext,
+      bluePropType,
+      redPropType,
+      catDogModeEnabled,
+    );
+  });
+
+  const isHandPath = $derived(Boolean(sequence?.metadata?.isHandPathVisualization));
+  const activeBlueProp = $derived(isHandPath ? PropType.HAND : presentation.bluePropType);
+  const activeRedProp = $derived(isHandPath ? PropType.HAND : presentation.redPropType);
+  const activeCatDog = $derived(isHandPath ? false : presentation.catDogMode);
+
+  function togglePropContext() {
+    propContext.togglePropContext(activeContext);
+  }
+
+  // Sync active props to animation orchestrator
+  $effect(() => {
+    const blue = activeBlueProp;
+    const red = activeRedProp;
+    propContext.syncPropsToOrchestrator(blue, red, animationServicesReady);
+  });
 
   // ============================================================================
-  // DERIVED
+  // DURATION (for export UI)
   // ============================================================================
 
   const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
   const hasSequence = $derived(effectiveSequence !== null);
+
+  const singlePlayDuration = $derived.by(() => {
+    const steps = effectiveSequence?.steps;
+    if (!steps?.length || playback.bpmLocal <= 0) return 0;
+    const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
+    const speed = playback.bpmLocal / 60;
+    return totalDurationUnits / speed;
+  });
+
+  // ============================================================================
+  // AUTH / OWNERSHIP DERIVED
+  // ============================================================================
+
   const isOwned = $derived(
     !!sequence?.ownerId &&
     !!authState.user?.uid &&
@@ -703,21 +575,13 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   let isSaved = $state(true);
   let isFavorite = $state(false);
-  // Runtime sequences loaded from Firestore are LibrarySequence (extends SequenceData),
-  // so visibility and contentHash are present even though SequenceData doesn't declare them.
   const isPublished = $derived((sequence as LibrarySequence | null)?.visibility === "public");
 
-  // Content hash cache — avoids redundant Firestore reads for the same hash
   const savedHashCache = new Map<string, boolean>();
 
-  // Check if this sequence is already saved to the user's library
   $effect(() => {
     const seq = sequence as LibrarySequence | null;
     if (!seq?.contentHash || !authState.user?.uid) {
-      // No contentHash means we can't verify against the library.
-      // If the sequence is owned by the current user (e.g. from create module),
-      // treat it as unsaved so the Save button appears. Otherwise default to true
-      // (viewing someone else's sequence or not logged in — Save is irrelevant).
       isSaved = !(isOwned && seq && !seq.contentHash);
       return;
     }
@@ -737,7 +601,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       .catch(() => {});
   });
 
-  // Check favorite status for the current sequence
   $effect(() => {
     const seq = sequence;
     if (!seq) { isFavorite = false; return; }
@@ -750,7 +613,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   function handleFavoriteToggle() {
     if (!sequence) return;
-    isFavorite = !isFavorite; // optimistic
+    isFavorite = !isFavorite;
     const cm = getCollectionManager() as ICollectionManager;
     cm.toggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
   }
@@ -773,39 +636,34 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     await repo.unpublishSequence(sequence.id);
   }
 
-  // After stepping (via step buttons), props land at the START of the next beat,
-  // meaning the PREVIOUS beat's motion just completed. Offset the glyph and highlight
-  // to show the just-completed beat instead of the upcoming one.
-  // Only applies when paused at an integer beat after using step buttons.
+  // ============================================================================
+  // STEP / LETTER DERIVED (uses playback state)
+  // ============================================================================
+
   const showPreviousBeat = $derived(
-    arrivedViaStepping &&
-    !isPlayingLocal &&
-    currentStepLocal >= 1 &&
-    Math.abs(currentStepLocal - Math.round(currentStepLocal)) < 0.01
+    playback.arrivedViaStepping &&
+    !playback.isPlayingLocal &&
+    playback.currentStepLocal >= 1 &&
+    Math.abs(playback.currentStepLocal - Math.round(playback.currentStepLocal)) < 0.01
   );
 
   const highlightedStepIndex = $derived.by(() => {
-    // When a video with beat map is driving playback, use its beat index
     if (playbackSource === "video" && videoPlaybackBeatIndex !== null) {
       return videoPlaybackBeatIndex;
     }
-
-    // Original animation-driven logic
-    if (!isPlayingLocal && currentStepLocal < 0.5) return null;
-    if (currentStepLocal < 1) return -1;
-    // After stepping to an integer beat, show the just-completed beat
+    if (!playback.isPlayingLocal && playback.currentStepLocal < 0.5) return null;
+    if (playback.currentStepLocal < 1) return -1;
     if (showPreviousBeat) {
-      return Math.round(currentStepLocal) - 2;
+      return Math.round(playback.currentStepLocal) - 2;
     }
-    return Math.floor(currentStepLocal) - 1;
+    return Math.floor(playback.currentStepLocal) - 1;
   });
 
   const currentStepData = $derived.by(() => {
     const sequenceData = modalAnimationState.sequenceData;
     if (!sequenceData) return null;
-    // After stepping to an integer beat, show the just-completed beat's data
     if (showPreviousBeat) {
-      const prevIndex = Math.round(currentStepLocal) - 2;
+      const prevIndex = Math.round(playback.currentStepLocal) - 2;
       if (prevIndex < 0 && sequenceData.startPosition) {
         return sequenceData.startPosition;
       }
@@ -814,11 +672,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         return sequenceData.steps[clampedIndex] || null;
       }
     }
-    if (currentStepLocal < 1 && sequenceData.startPosition) {
+    if (playback.currentStepLocal < 1 && sequenceData.startPosition) {
       return sequenceData.startPosition;
     }
     if (sequenceData.steps?.length > 0) {
-      const stepIndex = Math.max(0, Math.floor(currentStepLocal) - 1);
+      const stepIndex = Math.max(0, Math.floor(playback.currentStepLocal) - 1);
       const clampedIndex = Math.min(stepIndex, sequenceData.steps.length - 1);
       return sequenceData.steps[clampedIndex] || null;
     }
@@ -831,9 +689,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     if (!sequence?.steps?.length) return 1;
     const stepCount = sequence.steps.length;
     return layoutCalculator.calculateThumbnailAspectRatio(stepCount, {
-      includeStartPosition: imgShowStartPos,
-      hasHeader: imgShowWord,
-      hasFooter: imgShowCreatorName || imgShowNotes,
+      includeStartPosition: imgComp.imgShowStartPos,
+      hasHeader: imgComp.imgShowWord,
+      hasFooter: imgComp.imgShowCreatorName || imgComp.imgShowNotes,
     });
   });
 
@@ -844,123 +702,40 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // ============================================================================
 
   let keydownCleanup: (() => void) | null = null;
-  let imageCompositionObserver: (() => void) | null = null;
-
-  // Track beat transitions for haptic feedback during playback
-  let lastBeatNumber = 0;
-
-  // Subscribe to animation state changes (runs immediately, not in onMount)
-  cleanupAnimationStateSubscription = modalAnimationState.subscribe(
-    (key: AnimationStateKey, value: unknown) => {
-      switch (key) {
-        case "isPlaying":
-          isPlayingLocal = value as boolean;
-          lanSyncState.updatePlayback({ isPlaying: value as boolean });
-          break;
-        case "currentStep": {
-          const newStep = value as number;
-          // Haptic pulse on beat transitions during playback
-          const newBeat = Math.floor(newStep);
-          if (isPlayingLocal && newBeat !== lastBeatNumber && newBeat >= 1) {
-            hapticService?.trigger("selection");
-          }
-          lastBeatNumber = newBeat;
-          currentStepLocal = newStep;
-          lanSyncState.updatePlayback({ currentStep: newStep });
-          break;
-        }
-        case "speed":
-          bpmLocal = Math.round((value as number) * 60);
-          lanSyncState.updatePlayback({ speed: value as number });
-          break;
-      }
-    }
-  );
-
-  // Visibility observer ref for cleanup
-  let visibilityObserver: (() => void) | undefined;
+  let imageCompositionCleanup: (() => void) | null = null;
 
   onMount(() => {
-    // Bootstrap pending-action queue from ?pending= URL param. If we have a
-    // pending action left over from a pre-auth redirect, surface the sheet
-    // so the user knows their intent was captured and can complete sign-in.
-    if (browser) {
-      pendingActionQueue.bootstrapFromUrl(new URL(window.location.href));
-      const pending = pendingActionQueue.peek();
-      if (pending && !authState.isAuthenticated) {
-        openSignInSheet(pending.type);
-      }
-    }
+    // Bootstrap auth queue from URL
+    authQueue.bootstrapFromUrl();
 
     // Keyboard handler
     window.addEventListener("keydown", handleKeydown, { capture: true });
     keydownCleanup = () => window.removeEventListener("keydown", handleKeydown, { capture: true });
 
-    // Sync image composition from manager
-    const observer = () => {
-      imgShowWord = imageComposition.addWord;
-      imgShowStepNumbers = imageComposition.addStepNumbers;
-      imgShowStartPos = imageComposition.includeStartPosition;
-      imgShowDifficulty = imageComposition.addDifficultyLevel;
-      imgShowCreatorName = imageComposition.showCreatorName;
-      imgShowNotes = imageComposition.showNotes;
-      imgShowBirthday = imageComposition.showBirthday;
-      imgShowQRCode = imageComposition.showQRCode;
-      imgShowMandala = imageComposition.showMandala;
-      imgShowLoopGlyph = imageComposition.showLoopGlyph;
-      imgDarkMode = imageComposition.darkMode;
-    };
-    imageComposition.registerObserver(observer);
-    imageCompositionObserver = observer;
+    // Image composition sync
+    imageCompositionCleanup = imgComp.registerObserver();
 
-    // Sync playback mode from visibility manager (e.g. user toggles step/continuous in settings)
-    const visObs = () => {
-      const newMode = animationVisibility.getPlaybackMode();
-      if (modalAnimationState.playbackMode !== newMode) {
-        const wasPlaying = modalAnimationState.isPlaying;
-        if (wasPlaying && playbackController) {
-          playbackController.togglePlayback(); // stop
-        }
-        modalAnimationState.setPlaybackMode(newMode);
-        if (wasPlaying && playbackController) {
-          playbackController.togglePlayback(); // restart in new mode
-        }
-      }
-    };
-    animationVisibility.registerObserver(visObs);
-    visibilityObserver = visObs;
+    // Playback mode sync from visibility manager
+    playback.registerVisibilityObserver();
 
     // Load services
     void loadServices();
   });
 
   onDestroy(() => {
-    // Stop practice if active
-    if (practiceOrchestrator.isActive()) {
-      practiceOrchestrator.stop();
-      playbackController?.offLoopComplete();
-    }
-
+    playback.stopPracticeIfActive();
     keydownCleanup?.();
-    if (visibilityObserver) {
-      animationVisibility.unregisterObserver(visibilityObserver);
-    }
-    if (imageCompositionObserver) {
-      imageComposition.unregisterObserver(imageCompositionObserver);
-    }
-    cleanupAnimationStateSubscription?.();
-    clearControlsTimeout();
-    if (playbackController) {
-      playbackController.dispose();
-    }
+    imageCompositionCleanup?.();
+    playback.dispose();
     modalAnimationState.dispose();
-    sequenceModalExporter.dispose();
+    exportCoord.dispose();
     viewer3DState.dispose();
+    clearControlsTimeout();
   });
 
   // Initialize animation when sequence becomes available and services are ready
   $effect(() => {
-    if (sequence && animationServicesReady && playbackController) {
+    if (sequence && animationServicesReady && playbackControllerRef) {
       initializeAnimation(sequence);
     }
   });
@@ -973,7 +748,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   });
 
-  // Sync render mode to URL param when it changes
+  // Sync render mode to URL param
   $effect(() => {
     if (viewer3DState.renderMode === '3d') {
       onUrlParamChange?.('render', '3d');
@@ -982,15 +757,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   });
 
-  // Restore 3D mode on first load of THIS orchestrator instance. The drawer
-  // unmounts this component when it closes, so this effect runs again on every
-  // reopen — which is what lets 3D mode persist across drawer close/reopen.
-  //
-  // viewer3DState.renderMode is already synchronously init'd from localStorage
-  // by the factory (so the chip/label shows the right mode immediately). This
-  // effect's job is to load the sequence into the primary performer once the
-  // sequence prop is available. The _3dRestored flag gates it to one-shot per
-  // mount so enter3D's state writes don't trigger an infinite effect loop.
+  // Restore 3D mode on first load
   let _3dRestored = false;
   $effect(() => {
     if (_3dRestored) return;
@@ -1007,14 +774,65 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   });
 
   // ============================================================================
+  // LAN SYNC EFFECT
+  // ============================================================================
+
+  let lastAppliedSyncTimestamp = 0;
+
+  $effect(() => {
+    const pb = lanSyncState.playbackState;
+    if (!lanSyncState.isConnected || !playbackControllerRef) return;
+
+    if (pb.timestamp > lastAppliedSyncTimestamp) {
+      lastAppliedSyncTimestamp = pb.timestamp;
+
+      if (pb.isPlaying !== playback.isPlayingLocal) {
+        if (pb.isPlaying) {
+          if (!playback.isPlayingLocal) playbackControllerRef.togglePlayback();
+        } else {
+          if (playback.isPlayingLocal) playbackControllerRef.togglePlayback();
+        }
+      }
+
+      if (Math.abs(pb.currentStep - playback.currentStepLocal) > 0.5) {
+        playbackControllerRef.jumpToStep(pb.currentStep);
+      }
+
+      const currentSpeed = playback.bpmLocal / 60;
+      if (Math.abs(pb.speed - currentSpeed) > 0.01) {
+        playbackControllerRef.setSpeed(pb.speed);
+      }
+    }
+  });
+
+  // ============================================================================
+  // AUTH REPLAY EFFECT
+  // ============================================================================
+
+  $effect(() => {
+    authQueue.replayPendingAction({
+      handleSave,
+      handleFavoriteToggle,
+      handlePublishAction,
+      handleEdit,
+      handleShare,
+      handleOpenInBrowser,
+    });
+  });
+
+  // ============================================================================
   // SERVICES
   // ============================================================================
 
   async function loadServices() {
     try {
-      playbackController = getAnimationPlaybackController();
+      playbackControllerRef = getAnimationPlaybackController();
       sequenceDataProvider = getSequenceDataProvider();
       hapticService = getHapticFeedback();
+
+      // Wire dependencies to extracted modules
+      playback.setPlaybackController(playbackControllerRef);
+      playback.setHapticService(hapticService);
 
       const lanSyncCoordinator = getLanSyncCoordinator();
       lanSyncState.initialize(lanSyncCoordinator);
@@ -1027,7 +845,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   async function initializeAnimation(seq: SequenceData) {
-    if (!playbackController || !sequenceDataProvider) return;
+    if (!playbackControllerRef || !sequenceDataProvider) return;
 
     const seqId = seq.id || seq.word || "unknown";
     if (seqId === lastLoadedSequenceId) return;
@@ -1040,28 +858,20 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       const loadedSequence = await sequenceDataProvider.hydrateSequence(seq);
       if (!loadedSequence) throw new Error("Failed to load sequence");
 
-      // Pre-warm at user-blocking priority (fire-and-forget).
-      // First open renders fresh; second open is instant from IndexedDB cache.
       cellPreWarmer.preWarmSequence(loadedSequence, "user-blocking");
 
       modalAnimationState.setShouldLoop(true);
-      // Viewer always uses continuous mode - don't inherit step mode from localStorage
       modalAnimationState.setPlaybackMode("continuous");
-      const success = playbackController.initialize(loadedSequence, modalAnimationState);
+      const success = playbackControllerRef.initialize(loadedSequence, modalAnimationState);
       if (!success) throw new Error("Failed to initialize playback");
 
-      setAnimationPlaybackRef(playbackController);
+      setAnimationPlaybackRef(playbackControllerRef);
 
       lastLoadedSequenceId = seqId;
       modalAnimationState.setSequenceData(loadedSequence);
 
-      // Always sync controller speed to match UI state.
-      // bpmLocal defaults to 60 (initialBpm prop) but modalAnimationState
-      // loads persisted speed from localStorage which can differ.
-      playbackController.setSpeed(bpmLocal / 60);
+      playbackControllerRef.setSpeed(playback.bpmLocal / 60);
 
-      // Auto-start when enough cells are rendered (or after max wait).
-      // This replaces the old fixed 300ms delay with render-aware coordination.
       const MINIMUM_CELLS = 4;
       const MAX_WAIT_MS = 500;
       const CHECK_INTERVAL_MS = 50;
@@ -1073,7 +883,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         if (enough || timedOut) {
           clearInterval(checkReady);
           if (viewMode !== "image") {
-            playbackController?.togglePlayback();
+            playbackControllerRef?.togglePlayback();
           }
         }
       }, CHECK_INTERVAL_MS);
@@ -1087,154 +897,26 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   // ============================================================================
-  // PLAYBACK
+  // FOCUS MODE (EDIT MODE)
   // ============================================================================
 
-  function handlePlaybackToggle() {
-    arrivedViaStepping = false;
-    playbackController?.togglePlayback();
-  }
-
-  // Scrub gesture: pause while user drags the transport scrubber, resume on
-  // release if it was playing when the grab started.
-  let wasPlayingBeforeScrub = false;
-  function handleProgressBarSeek(targetStep: number) {
-    arrivedViaStepping = false;
-    modalAnimationState.setCurrentStep(targetStep);
-    playbackController?.seekToStep(targetStep);
-  }
-  function handleProgressBarScrubStart() {
-    wasPlayingBeforeScrub = isPlayingLocal;
-    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
-  }
-  function handleProgressBarScrubEnd() {
-    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
-    wasPlayingBeforeScrub = false;
-  }
-
-  function handleBpmChange(newBpm: number) {
-    hapticService?.trigger("selection");
-    const speedMultiplier = newBpm / 60;
-    playbackController?.setSpeed(speedMultiplier);
-    onUrlParamChange?.("bpm", String(newBpm));
-    if (practiceOrchestrator.isActive()) {
-      practiceOrchestrator.adjustBpm(newBpm);
-      practiceState.updateProgress(practiceOrchestrator.getProgress());
-    }
-  }
-
-  function handlePlaybackModeChange(mode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode) {
-    const wasPlaying = isPlayingLocal;
-    if (wasPlaying && playbackController) {
-      playbackController.togglePlayback();
-    }
-    modalAnimationState.setPlaybackMode(mode);
-    if (wasPlaying && playbackController) {
-      setTimeout(() => playbackController?.togglePlayback(), 0);
-    }
-  }
-
-  function handleStepClick(stepIndex: number) {
-    if (blockClicks) return;
-    if (editingPane !== 'image' || isPlayingLocal) return;
-
-    if (playbackController) {
-      hapticService?.trigger("selection");
-      const targetStep = stepIndex + 1;
-      // Seeking directly to a cell — disable the "show previous beat" offset
-      arrivedViaStepping = false;
-      modalAnimationState.setCurrentStep(targetStep);
-      playbackController.seekToStep(targetStep);
-    }
-  }
-
-  // ============================================================================
-  // PRACTICE TRAINING
-  // ============================================================================
-
-  function handlePracticeStart() {
-    if (!playbackController) {
-      showToast("Animation not ready yet. Wait for it to load.", "info");
-      return;
-    }
-
-    hapticService?.trigger("selection");
-    practiceState.clearCompletion();
-
-    const startBpm = practiceOrchestrator.start(practiceState.userConfig);
-    practiceState.updateProgress(practiceOrchestrator.getProgress());
-
-    handleBpmChange(startBpm);
-
-    playbackController.onLoopComplete(() => {
-      const newBpm = practiceOrchestrator.onLoopComplete();
-      practiceState.updateProgress(practiceOrchestrator.getProgress());
-
-      if (newBpm !== null) {
-        handleBpmChange(newBpm);
-        hapticService?.trigger("selection");
-      }
-
-      if (!practiceOrchestrator.isActive()) {
-        handlePracticeStop();
-      }
-    });
-
-    modalAnimationState.setShouldLoop(true);
-    if (!isPlayingLocal) {
-      playbackController.togglePlayback();
-    }
-  }
-
-  function handlePracticeStop() {
-    if (!playbackController) return;
-
-    const finalBpm = practiceOrchestrator.stop();
-    practiceState.updateProgress(practiceOrchestrator.getProgress());
-
-    playbackController.offLoopComplete();
-
-    const seqId = sequence?.id || sequence?.word || "unknown";
-    practiceState.recordPersonalBest(seqId, finalBpm);
-
-    practiceState.showCompletion(finalBpm);
-    hapticService?.trigger("success");
-
-    const personalBest = practiceState.getPersonalBest(seqId);
-    const isNewBest = personalBest !== null && finalBpm >= personalBest;
-    const message = isNewBest
-      ? `Practice complete: ${finalBpm} BPM (new best!)`
-      : `Practice complete: ${finalBpm} BPM`;
-    showToast(message, "success");
-  }
-
-  // ============================================================================
-  // FOCUS MODE
-  // ============================================================================
-
-  // Track whether playback was active before entering image export,
-  // so we can restore the prior state when exiting.
   let wasPlayingBeforeImageExport = false;
 
   function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
-    // 3D viewer stays in 3D when expanding to full-screen.
-    // Only exit 3D for image/video-upload export (those need the 2D canvas).
     if (viewer3DState.renderMode === '3d' && pane !== 'animation') {
       viewer3DState.exit3D();
     }
     hapticService?.trigger("selection");
     editingPane = pane;
 
-    // Video export: start playback for live preview
-    // Image export: pause playback (save state for restore)
     if (pane === "animation") {
-      if (!isPlayingLocal && playbackController) {
-        playbackController.togglePlayback();
+      if (!playback.isPlayingLocal && playbackControllerRef) {
+        playbackControllerRef.togglePlayback();
       }
     } else if (pane === "image" || pane === "video-upload") {
-      wasPlayingBeforeImageExport = isPlayingLocal;
-      if (isPlayingLocal && playbackController) {
-        playbackController.togglePlayback();
+      wasPlayingBeforeImageExport = playback.isPlayingLocal;
+      if (playback.isPlayingLocal && playbackControllerRef) {
+        playbackControllerRef.togglePlayback();
       }
     }
 
@@ -1250,11 +932,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     hapticService?.trigger("selection");
     const wasPaneImage = editingPane === "image" || editingPane === "video-upload";
     editingPane = null;
-    sequenceModalExporter.dismissPreview();
+    exportCoord.dismissPreview();
 
-    // Restore playback state after image export
-    if (wasPaneImage && wasPlayingBeforeImageExport && !isPlayingLocal && playbackController) {
-      playbackController.togglePlayback();
+    if (wasPaneImage && wasPlayingBeforeImageExport && !playback.isPlayingLocal && playbackControllerRef) {
+      playbackControllerRef.togglePlayback();
     }
     wasPlayingBeforeImageExport = false;
 
@@ -1306,336 +987,31 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   // ============================================================================
-  // EXPORT
+  // EXPORT (delegates to ExportCoordinator)
   // ============================================================================
 
   async function handleExport() {
-    if (isExporting || !exportType) return;
-    hapticService?.trigger("selection");
-
-    const isVideoExport = exportType === "animation";
-    const callbacks = {
-      onSuccess: (message: string) => {
-        showToast(message, "success");
-        accessibilityHelper.announce(message, "assertive");
-        // Video exports stay in export mode to show preview panel
-        // Image exports exit immediately (no preview needed)
-        if (!isVideoExport) {
-          exitEditMode();
-        }
-      },
-      onError: (message: string) => {
-        accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
-      },
-      onHaptic: (type: "success" | "error" | "selection") => {
-        hapticService?.trigger(type);
-      },
-    };
-
-    // 3D mode: real-time capture from WebGL canvas
-    const is3DMode = viewer3DState.renderMode === '3d';
-    const webglCanvas = viewer3DState.webglCanvas;
-
-    if (exportType === "animation" && is3DMode && webglCanvas && playbackController) {
-      const opts = exportOptions.getVideoOptions();
-      const secondsPerBeat = 1.0 / modalAnimationState.speed;
-      const beatsPerSecond = modalAnimationState.speed;
-      const steps = effectiveSequence?.steps ?? [];
-      const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
-      const startDur = opts.includeStartPosition ? 1 : 0;
-      const endDur = opts.includeEndHold ? 1 : 0;
-      const singleLoopSec = (startDur + totalDurationUnits + endDur) * secondsPerBeat;
-
-      // Gather Threlte internals from viewer3DState
-      const threlteCamera = viewer3DState.threlteCamera;
-      const threlteRenderer = viewer3DState.threlteRenderer;
-      const threlteRunFrame = viewer3DState.threlteRunFrame;
-      const threltePauseAutoLoop = viewer3DState.threltePauseAutoLoop;
-      const threlteResumeAutoLoop = viewer3DState.threlteResumeAutoLoop;
-      if (!threlteCamera || !threlteRenderer || !threlteRunFrame || !threltePauseAutoLoop || !threlteResumeAutoLoop) {
-        showToast("3D scene not ready for export. Please try again.", "error");
-        return;
-      }
-
-      // ── Pass 1: Camera Performance Recording ──
-      // Play the animation at normal speed while recording camera transforms
-      // at 60Hz. With a choreography preset selected, the driver controls
-      // the camera and we auto-stop after the preset's total loop count;
-      // with "free" the user orbits manually and clicks Stop Recording.
-      const cameraKeyframes = new CameraKeyframeBuffer();
-
-      const choreography = viewer3DState.cameraChoreography;
-      const activePresetId = choreography.activePresetId;
-      const activePreset = choreography.activePreset;
-      const presetEligible =
-        activePreset &&
-        choreography.evaluate(activePresetId, viewer3DState.performerManager.performers.length).eligible;
-      const usePreset = activePresetId !== "free" && !!activePreset && presetEligible;
-
-      const primaryAvatar = viewer3DState.performerManager.performers[0] ?? null;
-      const presetTotalLoops = usePreset ? activePreset!.totalLoops : 1;
-      const presetDurationSec = usePreset ? singleLoopSec * presetTotalLoops : 0;
-
-      // Attach the driver *before* starting playback so the opening
-      // shot is already framed at t=0. If applyPreset returns null
-      // (controls not yet registered, ineligible) we gracefully fall
-      // back to free-cam recording rather than degrading silently.
-      const disposeDriver: (() => void) | null = usePreset
-        ? choreography.applyPreset(activePresetId, {
-            performers: viewer3DState.performerManager.performers,
-            sequenceDurationSec: singleLoopSec,
-          })
-        : null;
-      const driverActive = !!disposeDriver;
-
-      // Snapshot loop flag so we can restore it after preset recording.
-      const loopBefore = primaryAvatar?.loop ?? false;
-      if (driverActive && primaryAvatar) primaryAvatar.loop = true;
-
-      // Jump to start and begin playback
-      const pc = playbackController!;
-      pc.jumpToStep(0);
-      if (!isPlayingLocal) pc.togglePlayback();
-
-      // Start camera recording
-      cameraKeyframes.startRecording(threlteCamera);
-      isRecording3D = true;
-      recordingElapsed = 0;
-      recordingTimer = setInterval(() => { recordingElapsed += 0.1; }, 100);
-
-      // Loop-boundary detector + auto-stop timer for preset recordings.
-      let boundaryPoller: ReturnType<typeof setInterval> | null = null;
-      let autoStopTimer: ReturnType<typeof setTimeout> | null = null;
-      if (driverActive && primaryAvatar) {
-        let prevProgress = primaryAvatar.progress;
-        let completedLoops = 0;
-        boundaryPoller = setInterval(() => {
-          const p = primaryAvatar.progress;
-          // Wraparound detection: progress jumped from near-end back to near-start.
-          if (prevProgress > 0.85 && p < 0.15) {
-            completedLoops += 1;
-            choreography.emitLoopBoundary();
-          }
-          prevProgress = p;
-        }, 1000 / 60);
-        autoStopTimer = setTimeout(() => {
-          if (resolveRecording) resolveRecording();
-        }, Math.round(presetDurationSec * 1000) + 200);
-      }
-
-      // Wait until the user clicks "Stop Recording" (or auto-stop fires).
-      try {
-        await new Promise<void>((resolve) => {
-          resolveRecording = resolve;
-        });
-      } finally {
-        if (boundaryPoller) clearInterval(boundaryPoller);
-        if (autoStopTimer) clearTimeout(autoStopTimer);
-        if (disposeDriver) disposeDriver();
-        if (driverActive && primaryAvatar) primaryAvatar.loop = loopBefore;
-      }
-
-      // Stop playback and recording
-      if (isPlayingLocal) pc.togglePlayback();
-      cameraKeyframes.stopRecording();
-      isRecording3D = false;
-      resolveRecording = null;
-      if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
-
-      // ── Pass 2: Deterministic Offline Render ──
-      // The puppet loop in Viewer3DScene distributes animation state —
-      // the exporter just sets exportCurrentStep each frame and calls advance().
-
-      // Use the actual recorded duration — the user decides how long to record.
-      // loopCount=1 because the recording already spans whatever the user captured.
-      const recordedDuration = cameraKeyframes.duration;
-      if (recordedDuration <= 0) {
-        showToast("Recording too short. Please try again.", "error");
-        return;
-      }
-
-      let exported3DOk = false;
-      try {
-        await sequenceModalExporter.export3DAnimation(
-          {
-            fps: opts.fps,
-            loopCount: 1,
-            resolution: opts.resolution,
-            includeStartPosition: opts.includeStartPosition,
-            includeEndHold: opts.includeEndHold,
-            quality: opts.quality,
-          },
-          {
-            webglCanvas,
-            camera: threlteCamera,
-            beatsPerSecond,
-            totalDurationSeconds: recordedDuration,
-            cameraKeyframes,
-            renderer: threlteRenderer,
-            runFrame: threlteRunFrame,
-            pauseAutoLoop: threltePauseAutoLoop,
-            resumeAutoLoop: threlteResumeAutoLoop,
-            setExporting: (value: boolean) => { viewer3DState.isExporting = value; },
-            setExportCurrentStep: (step: number | null) => { viewer3DState.exportCurrentStep = step; },
-          },
-          callbacks
-        );
-        exported3DOk = true;
-      } finally {
-        isRecording3D = false;
-        recordingElapsed = 0;
-        if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
-      }
-      if (exported3DOk) autoDownloadVideo();
-      return;
-    }
-
-    // 2D mode: frame-by-frame capture from PixiJS canvas
-    if (exportType === "animation" && playbackController && animationCanvas) {
-      const opts = exportOptions.getVideoOptions();
-      await sequenceModalExporter.exportAnimation(
-        {
-          fps: opts.fps,
-          loopCount: opts.loopCount,
-          resolution: opts.resolution,
-          includeStartPosition: opts.includeStartPosition,
-          includeEndHold: opts.includeEndHold,
-        },
-        { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
-        callbacks
-      );
-      if (sequenceModalExporter.state.previewBlobUrl && !sequenceModalExporter.state.error) {
-        autoDownloadVideo();
-      }
-    } else if (exportType === "animation" && (!playbackController || !animationCanvas)) {
-      showToast("Animation not ready yet. Wait a moment and try again.", "error");
-      return;
-    } else if (exportType === "image" && effectiveSequence) {
-      if (!effectiveSequence.steps || effectiveSequence.steps.length === 0) {
-        showToast("Sequence has no beats to export.", "error");
-        return;
-      }
-      // Include fields come from the global visibility settings so the Visibility
-      // tab, the side-by-side preview, and the download all agree. Column count
-      // and dark mode stay export-specific.
-      const opts = {
-        includeStartPosition: imgShowStartPos,
-        showStepNumbers: imgShowStepNumbers,
-        showWord: imgShowWord,
-        showDifficulty: imgShowDifficulty,
-        showCreatorName: imgShowCreatorName,
-        showNotes: imgShowNotes,
-        showQRCode: imgShowQRCode,
-        darkMode: exportOptions.imageDarkMode,
-        columnCount: exportOptions.imageColumnCount,
-      };
-      await sequenceModalExporter.exportImage(
-        opts,
-        { sequence: effectiveSequence, userName: authState.user?.displayName ?? "" },
-        callbacks
-      );
-    }
-  }
-
-  function handleCanvasReady(canvas: HTMLCanvasElement | null) {
-    animationCanvas = canvas;
-  }
-
-  function handleCancelExport() {
-    sequenceModalExporter.cancel();
-  }
-
-  function handleRetryExport() {
-    sequenceModalExporter.clearError();
-    handleExport();
-  }
-
-  function autoDownloadVideo() {
-    const url = sequenceModalExporter.state.previewBlobUrl;
-    if (!url) return;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${effectiveSequence?.word || "sequence"}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-
-  function dismissPreview() {
-    sequenceModalExporter.dismissPreview();
-    // Stay in export mode so user returns to the Download Animation view,
-    // not the full viewer with split pane
-    accessibilityHelper.announce("Ready to export again");
+    await exportCoord.handleExport(
+      editingPane,
+      effectiveSequence,
+      playbackControllerRef,
+      modalAnimationState,
+      hapticService,
+      playback.isPlayingLocal,
+      playback.bpmLocal,
+      imgComp.imgShowStartPos,
+      imgComp.imgShowWord,
+      imgComp.imgShowStepNumbers,
+      imgComp.imgShowDifficulty,
+      imgComp.imgShowCreatorName,
+      imgComp.imgShowNotes,
+      imgComp.imgShowQRCode,
+    );
   }
 
   // ============================================================================
-  // LAN SYNC
+  // LAN SYNC TOGGLE
   // ============================================================================
-
-  // Track last applied sync timestamp to avoid feedback loops
-  let lastAppliedSyncTimestamp = 0;
-
-  // Listen for incoming sync state changes from remote peers
-  $effect(() => {
-    const playback = lanSyncState.playbackState;
-    if (!lanSyncState.isConnected || !playbackController) return;
-
-    // Only apply if this is a remote update (timestamp changed)
-    if (playback.timestamp > lastAppliedSyncTimestamp) {
-      lastAppliedSyncTimestamp = playback.timestamp;
-
-      // Apply play/pause changes
-      if (playback.isPlaying !== isPlayingLocal) {
-        if (playback.isPlaying) {
-          if (!isPlayingLocal) playbackController.togglePlayback();
-        } else {
-          if (isPlayingLocal) playbackController.togglePlayback();
-        }
-      }
-
-      // Seek if step is significantly different (>0.5 step difference)
-      if (Math.abs(playback.currentStep - currentStepLocal) > 0.5) {
-        playbackController.jumpToStep(playback.currentStep);
-      }
-
-      // Apply speed/BPM changes
-      const currentSpeed = bpmLocal / 60;
-      if (Math.abs(playback.speed - currentSpeed) > 0.01) {
-        playbackController.setSpeed(playback.speed);
-      }
-    }
-  });
-
-  // Replay the pending action once the user finishes signing in. The queue
-  // may have been populated by this component (guest tapped Save), by the
-  // URL param (cross-browser handoff from an in-app webview), or by another
-  // tab that set the param before redirecting here.
-  $effect(() => {
-    if (!authState.isAuthenticated) return;
-    const pending = pendingActionQueue.drain();
-    if (!pending) return;
-
-    if (browser) {
-      const parsed = new URL(window.location.href);
-      if (parsed.searchParams.has("pending")) {
-        parsed.searchParams.delete("pending");
-        replaceState(parsed, {});
-      }
-    }
-
-    try {
-      switch (pending.type) {
-        case "save":     void handleSave(); break;
-        case "favorite": handleFavoriteToggle(); break;
-        case "publish":  void handlePublishAction(); break;
-        case "remix":    handleEdit(); break;
-        case "sendTo":   handleShare(); break;
-      }
-      signInSheetOpen = false;
-    } catch (err) {
-      console.error("[Viewer] pending-action replay failed:", err);
-    }
-  });
 
   async function handleSyncToggle() {
     if (isSyncToggling || !sequence) return;
@@ -1644,7 +1020,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
     try {
       const sequenceWord = sequence.word || sequence.name || "Sequence";
-      // Store the full sequence data so joining peers can receive it
       lanSyncState.setLocalSequence(sequence as unknown as Record<string, unknown>);
 
       const isNowSyncing = await lanSyncState.toggleSync(
@@ -1652,9 +1027,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         sequenceWord,
         {
           sequenceId: sequence.id,
-          currentStep: currentStepLocal,
-          isPlaying: isPlayingLocal,
-          speed: bpmLocal / 60,
+          currentStep: playback.currentStepLocal,
+          isPlaying: playback.isPlayingLocal,
+          speed: playback.bpmLocal / 60,
           shouldLoop: true
         }
       );
@@ -1675,7 +1050,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   // ============================================================================
-  // COMPOSE NAVIGATION
+  // NAVIGATION ACTIONS
   // ============================================================================
 
   async function handleOpenInCompose(preset: 'stagger' | 'mirror' | 'combo-export' = 'stagger') {
@@ -1685,15 +1060,14 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     saveSequenceHandoff({
       sequence,
       playbackState: {
-        currentStep: currentStepLocal,
-        bpm: bpmLocal,
-        isPlaying: isPlayingLocal,
+        currentStep: playback.currentStepLocal,
+        bpm: playback.bpmLocal,
+        isPlaying: playback.isPlayingLocal,
       },
       preferredPreset: preset,
       returnPath: browser ? window.location.pathname : "/browse/gallery",
     });
 
-    // Close the viewer (stops playback, disconnects LAN, restores focus)
     handleBackInternal();
 
     const message = preset === 'combo-export'
@@ -1704,10 +1078,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     await goto('/compose?handoff=true');
   }
 
-  // ============================================================================
-  // CONSTRUCTOR NAVIGATION
-  // ============================================================================
-
   function handleEdit() {
     if (!sequence) return;
     if (!authState.isAuthenticated) {
@@ -1716,10 +1086,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
     hapticService?.trigger("selection");
 
-    // Store the sequence for the Constructor to pick up
     localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
-
-    // Close the viewer (stops playback, disconnects LAN, restores focus)
     handleBackInternal();
 
     showToast({ message: "Opening for editing...", type: "info", duration: 2000 });
@@ -1742,7 +1109,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
     try {
       const libraryRepo = getLibraryRepository();
-      // Attach current prop config as intended prop, and capture pathShape in metadata
       const currentPathShape = getAnimationVisibilityManager().getPathShape();
       const pathShapeMetadata = currentPathShape !== "arc"
         ? { ...sequence.metadata, pathShape: currentPathShape }
@@ -1782,7 +1148,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       showToast("No sequence to upload video for", "info");
       return;
     }
-
     enterEditMode("video-upload");
   }
 
@@ -1795,7 +1160,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
     try {
       const libraryRepo = getLibraryRepository();
-      // Capture pathShape in metadata alongside prop intent
       const currentPathShape = getAnimationVisibilityManager().getPathShape();
       const pathShapeMetadata = currentPathShape !== "arc"
         ? { ...sequence.metadata, pathShape: currentPathShape }
@@ -1843,7 +1207,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   function handleShare() {
     hapticService?.trigger("selection");
 
-    // Build a share URL with metadata for the best experience on the receiving end
     let shareUrl = browser ? window.location.href : "";
 
     if (sequence) {
@@ -1862,8 +1225,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
             metadata.birthday = d.toISOString().slice(0, 10).replace(/-/g, "");
           }
         }
-        metadata.bpm = bpmLocal;
-        metadata.darkMode = imgDarkMode;
+        metadata.bpm = playback.bpmLocal;
+        metadata.darkMode = imgComp.imgDarkMode;
 
         const result = encoder.generateViewerURL(sequence, {
           compress: true,
@@ -1890,10 +1253,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  // Escape an in-app webview (Instagram, Facebook, etc.) into a real browser
-  // so sign-in can complete. When a pending action is supplied, appends
-  // `?pending=<type>` so the destination page's pending-action queue picks it
-  // up and replays the action after auth.
   function handleOpenInBrowser(pendingType: PendingActionType | null = null) {
     hapticService?.trigger("selection");
     const baseUrl = browser ? window.location.href : "";
@@ -1915,13 +1274,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   function handleUnifiedDarkModeToggle() {
     hapticService?.trigger("selection");
-    const newValue = !imgDarkMode;
-    // Sync to all three dark mode stores so they stay consistent.
-    // Without the AppSettings update, the Firebase real-time listener would
-    // read the stale darkMode value after the imageExport write triggers a
-    // document change, resetting the animation canvas back to the old state.
+    const newValue = !imgComp.imgDarkMode;
     void updateSettings({ darkMode: newValue });
-    imageComposition.setDarkMode(newValue);
+    imgComp.imageComposition.setDarkMode(newValue);
     animationVisibility.setDarkMode(newValue);
   }
 
@@ -1949,12 +1304,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       }
       event.preventDefault();
       event.stopPropagation();
-      playbackController?.togglePlayback();
+      playbackControllerRef?.togglePlayback();
       return;
     }
-
-    // P / Shift+P - Handled by global keyboard shortcut system
-    // (register-global-shortcuts.ts "global.cycle-prop-type")
   }
 
   // ============================================================================
@@ -1962,15 +1314,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // ============================================================================
 
   function handleBackInternal() {
-    // Stop practice if active
-    if (practiceOrchestrator.isActive()) {
-      practiceOrchestrator.stop();
-      playbackController?.offLoopComplete();
-      practiceState.updateProgress(practiceOrchestrator.getProgress());
-    }
+    playback.stopPracticeIfActive();
 
-    if (isPlayingLocal && playbackController) {
-      playbackController.togglePlayback();
+    if (playback.isPlayingLocal && playbackControllerRef) {
+      playbackControllerRef.togglePlayback();
     }
     setAnimationPlaybackRef(null);
 
@@ -1983,22 +1330,17 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   // ============================================================================
-  // STEP SHORTCUTS (forwarded from playback controller)
-  // ============================================================================
-
-  // ============================================================================
   // VIDEO-SYNCED PLAYBACK
   // ============================================================================
 
   function handleVideoTimeUpdate(currentTime: number) {
-    if (playbackSource !== "video" || !activeBeatMap) return;
-    const beatIndex = getHighlightedBeatFromVideo(
+    if (playbackSource !== "video" || !activeStepMap) return;
+    const stepNumber = getHighlightedBeatFromVideo(
       currentTime,
-      activeBeatMap.beatTimestamps
+      activeStepMap.beatTimestamps
     );
-    // Only update when the beat actually changes to avoid unnecessary re-renders
-    if (beatIndex !== videoPlaybackBeatIndex) {
-      videoPlaybackBeatIndex = beatIndex;
+    if (stepNumber !== videoPlaybackBeatIndex) {
+      videoPlaybackBeatIndex = stepNumber;
     }
   }
 
@@ -2009,23 +1351,13 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  function setActiveBeatMap(beatMap: BeatMap | null) {
-    activeBeatMap = beatMap;
+  function setActiveStepMap(beatMap: StepMap | null) {
+    activeStepMap = beatMap;
     if (!beatMap) {
       playbackSource = "animation";
       videoPlaybackBeatIndex = null;
     }
   }
-
-  // ============================================================================
-  // STEPPING
-  // ============================================================================
-
-  function stepHalfBeatBackward() { arrivedViaStepping = true; playbackController?.stepHalfBeatBackward(); }
-  function stepHalfBeatForward() { arrivedViaStepping = true; playbackController?.stepHalfBeatForward(); }
-  function stepFullBeatBackward() { arrivedViaStepping = true; playbackController?.stepFullBeatBackward(); }
-  function stepFullBeatForward() { arrivedViaStepping = true; playbackController?.stepFullBeatForward(); }
-  function restartToStart() { arrivedViaStepping = true; playbackController?.seekToStep(0); }
 
   // ============================================================================
   // CONTEXT OBJECT
@@ -2038,9 +1370,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     hasSequence,
 
     // Playback
-    isPlayingLocal,
-    currentStepLocal,
-    bpmLocal,
+    isPlayingLocal: playback.isPlayingLocal,
+    currentStepLocal: playback.currentStepLocal,
+    bpmLocal: playback.bpmLocal,
     currentLetter,
     currentStepData,
     highlightedStepIndex,
@@ -2050,9 +1382,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     // Video-synced playback
     playbackSource,
     videoPlaybackBeatIndex,
-    activeBeatMap,
+    activeStepMap,
     setPlaybackSource,
-    setActiveBeatMap,
+    setActiveStepMap,
     onVideoTimeUpdate: handleVideoTimeUpdate,
 
     // View state
@@ -2066,16 +1398,16 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     // Export
     isExportMode,
     exportType,
-    exportOptions,
-    isExporting,
-    exportProgress,
-    exportError,
-    previewBlobUrl,
+    exportOptions: exportCoord.exportOptions,
+    isExporting: exportCoord.isExporting,
+    exportProgress: exportCoord.exportProgress,
+    exportError: exportCoord.exportError,
+    previewBlobUrl: exportCoord.previewBlobUrl,
     singlePlayDuration,
 
     // Practice
-    practiceActive,
-    practiceState,
+    practiceActive: playback.practiceActive,
+    practiceState: playback.practiceState,
 
     // Settings (active prop values, resolved from source)
     bluePropType: activeBlueProp,
@@ -2090,15 +1422,15 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     // Prop source tracking
     handleSetAsIntended,
 
-    imgShowWord,
-    imgShowStepNumbers,
-    imgShowStartPos,
-    imgShowDifficulty,
-    imgShowCreatorName,
-    imgShowNotes,
-    imgShowBirthday,
-    imgDarkMode,
-    imgColumnCount,
+    imgShowWord: imgComp.imgShowWord,
+    imgShowStepNumbers: imgComp.imgShowStepNumbers,
+    imgShowStartPos: imgComp.imgShowStartPos,
+    imgShowDifficulty: imgComp.imgShowDifficulty,
+    imgShowCreatorName: imgComp.imgShowCreatorName,
+    imgShowNotes: imgComp.imgShowNotes,
+    imgShowBirthday: imgComp.imgShowBirthday,
+    imgDarkMode: imgComp.imgDarkMode,
+    imgColumnCount: imgComp.imgColumnCount,
 
     // Sync
     isSyncToggling,
@@ -2106,7 +1438,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     isSyncConnected: lanSyncState.isConnected,
 
     // Canvas state
-    canvasReady: (viewer3DState.renderMode === '3d' ? !!viewer3DState.webglCanvas : !!animationCanvas) && !!playbackController,
+    canvasReady: (viewer3DState.renderMode === '3d' ? !!viewer3DState.webglCanvas : !!exportCoord.animationCanvas) && !!playbackControllerRef,
 
     // Render progress
     onRenderProgress: handleRenderProgress,
@@ -2116,12 +1448,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     viewer3DState,
 
     // 3D recording UI state
-    countdownValue,
-    isRecording3D,
-    recordingElapsed,
-    handleStopRecording: () => {
-      if (resolveRecording) resolveRecording();
-    },
+    countdownValue: exportCoord.countdownValue,
+    isRecording3D: exportCoord.isRecording3D,
+    recordingElapsed: exportCoord.recordingElapsed,
+    handleStopRecording: () => exportCoord.handleStopRecording(),
 
     // Auth (?guest=1 overrides to unauthenticated view for debugging shared link UX)
     isLoggedIn: forceGuest ? false : authState.isAuthenticated,
@@ -2136,22 +1466,22 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
     // Playback mode
     playbackMode: modalAnimationState.playbackMode,
-    handlePlaybackModeChange,
+    handlePlaybackModeChange: playback.handlePlaybackModeChange,
 
     // Handlers
-    handlePlaybackToggle,
-    handleProgressBarSeek,
-    handleProgressBarScrubStart,
-    handleProgressBarScrubEnd,
-    handleBpmChange,
-    handleStepClick,
+    handlePlaybackToggle: playback.handlePlaybackToggle,
+    handleProgressBarSeek: playback.handleProgressBarSeek,
+    handleProgressBarScrubStart: playback.handleProgressBarScrubStart,
+    handleProgressBarScrubEnd: playback.handleProgressBarScrubEnd,
+    handleBpmChange: playback.handleBpmChange,
+    handleStepClick: (stepIndex: number) => playback.handleStepClick(stepIndex, blockClicks, editingPane),
     enterEditMode,
     exitEditMode,
     enterFullscreen,
     exitFullscreen,
     handleFullscreenTap,
     handleExport,
-    handleCanvasReady,
+    handleCanvasReady: exportCoord.handleCanvasReady,
     handleSyncToggle,
     handleOpenInCompose,
     handleEdit,
@@ -2160,43 +1490,44 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handleShare,
     handleDelete,
     handleOpenInBrowser,
-    invokeGatedAction,
+    invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) =>
+      authQueue.invokeGatedAction(type, realHandler, sequence),
     handleUnifiedDarkModeToggle,
-    handlePracticeStart,
-    handlePracticeStop,
+    handlePracticeStart: () => playback.handlePracticeStart(sequence),
+    handlePracticeStop: () => playback.handlePracticeStop(sequence),
     onBack: handleBackInternal,
-    stepHalfBeatBackward,
-    stepHalfBeatForward,
-    stepFullBeatBackward,
-    stepFullBeatForward,
-    restartToStart,
-    handleCancelExport,
-    handleRetryExport,
-    dismissPreview,
+    stepHalfBeatBackward: playback.stepHalfBeatBackward,
+    stepHalfBeatForward: playback.stepHalfBeatForward,
+    stepFullBeatBackward: playback.stepFullBeatBackward,
+    stepFullBeatForward: playback.stepFullBeatForward,
+    restartToStart: playback.restartToStart,
+    handleCancelExport: exportCoord.handleCancelExport,
+    handleRetryExport: () => exportCoord.handleRetryExport(handleExport),
+    dismissPreview: exportCoord.dismissPreview,
 
     // Pre-assembled prop groups for ViewerSplitPane
     splitPanePlayback: {
       animationState: modalAnimationState,
       animationLoading,
-      currentStep: currentStepLocal,
-      isPlaying: isPlayingLocal,
+      currentStep: playback.currentStepLocal,
+      isPlaying: playback.isPlayingLocal,
       currentLetter,
       currentStepData,
       highlightedStepIndex,
     },
     splitPaneImageComposition: {
-      showWord: imgShowWord,
-      showStepNumbers: imgShowStepNumbers,
-      showDifficulty: isHandPath ? false : imgShowDifficulty,
-      showStartPos: imgShowStartPos,
-      showCreatorName: imgShowCreatorName,
-      showNotes: imgShowNotes,
-      showBirthday: imgShowBirthday,
-      showQRCode: imgShowQRCode,
-      showMandala: imgShowMandala,
-      showLoopGlyph: !isHandPath && imgShowLoopGlyph,
-      darkMode: imgDarkMode,
-      columnCount: imgColumnCount,
+      showWord: imgComp.imgShowWord,
+      showStepNumbers: imgComp.imgShowStepNumbers,
+      showDifficulty: isHandPath ? false : imgComp.imgShowDifficulty,
+      showStartPos: imgComp.imgShowStartPos,
+      showCreatorName: imgComp.imgShowCreatorName,
+      showNotes: imgComp.imgShowNotes,
+      showBirthday: imgComp.imgShowBirthday,
+      showQRCode: imgComp.imgShowQRCode,
+      showMandala: imgComp.imgShowMandala,
+      showLoopGlyph: !isHandPath && imgComp.imgShowLoopGlyph,
+      darkMode: imgComp.imgDarkMode,
+      columnCount: imgComp.imgColumnCount,
       forceContain: false,
       userName: authState.user?.displayName || "",
     },
@@ -2223,11 +1554,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 <!-- Pending-action sign-in sheet. Appears when a guest taps a gated action
      or arrives with a ?pending= URL param after a browser handoff. -->
 <SignInSheet
-  open={signInSheetOpen}
-  reason={signInSheetReason}
-  webviewMode={webviewDetector.isInAppWebview}
-  onPrimaryAction={onSignInSheetPrimary}
-  onDismiss={closeSignInSheet}
+  open={authQueue.signInSheetOpen}
+  reason={authQueue.signInSheetReason}
+  webviewMode={authQueue.isInAppWebview}
+  onPrimaryAction={() => authQueue.onSignInSheetPrimary(handleOpenInBrowser)}
+  onDismiss={() => authQueue.closeSignInSheet()}
 />
 
 <!-- Loads the Google Identity Services script and registers the FedCM
