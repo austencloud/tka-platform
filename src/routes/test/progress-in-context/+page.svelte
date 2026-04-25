@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
+  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -21,7 +21,7 @@
 
   onMount(async () => {
     // Load a real sequence from the user's data
-    const sequenceRepository = container.items.sequenceRepository;
+    const sequenceRepository = getSequenceRepository();
 
     try {
       // Fetch user's sequences from local IndexedDB

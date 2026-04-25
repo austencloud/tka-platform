@@ -15,7 +15,7 @@
 // ============================================================================
 // Container type imports — simple (typeof) containers
 // ============================================================================
-import type { DataContainerType } from "./containers/data-container";
+// DataContainerType removed — data services dissolved into module singleton getters
 
 // ============================================================================
 // Container type imports — factory (ReturnType<typeof create...>) containers
@@ -121,8 +121,22 @@ interface CoreItems {
 	conflictResolver: import("../offline/services/contracts/IConflictResolver").IConflictResolver;
 }
 
-// Simple containers
-type DataItems = ItemsOf<DataContainerType>;
+// Data items — dissolved from data-container into module singleton getters.
+// Explicit interface replaces ItemsOf<DataContainerType>.
+interface DataItems {
+	csvLoader: import("../foundation/services/contracts/data/ICSVLoader").ICSVLoader;
+	csvParser: import("../foundation/services/contracts/data/ICSVParser").ICSVParser;
+	enumMapper: import("../foundation/services/contracts/data/IEnumMapper").IEnumMapper;
+	dataTransformer: import("../application/services/contracts/IDataTransformer").IDataTransformer;
+	persistenceService: import("../persistence/services/contracts/IPersistenceService").IPersistenceService;
+	sequenceDomainManager: import("$lib/features/create/shared/services/contracts/ISequenceDomainManager").ISequenceDomainManager;
+	reversalDetector: import("$lib/features/create/shared/services/contracts/IReversalDetector").IReversalDetector;
+	sequenceNormalizer: import("$lib/features/compose/services/contracts/ISequenceNormalizer").ISequenceNormalizer;
+	sequenceLoopabilityChecker: import("$lib/features/compose/services/contracts/ISequenceLoopabilityChecker").ISequenceLoopabilityChecker;
+	persistenceInitializationService: import("../persistence/services/contracts/IPersistenceInitializationService").IPersistenceInitializationService;
+	sequenceImporter: import("$lib/features/create/shared/services/contracts/ISequenceImporter").ISequenceImporter;
+	sequenceRepository: import("$lib/features/create/shared/services/contracts/ISequenceRepository").ISequenceRepository;
+}
 
 // Factory containers
 type FeedbackItems = ItemsOf<FeedbackContainer>;

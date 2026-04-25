@@ -32,6 +32,7 @@
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "../application/services/contracts/IHapticFeedback";
@@ -229,7 +230,7 @@
       playbackController = container.items.animationPlaybackController;
       videoExportOrchestrator = container.items.videoExportOrchestrator;
       VideoExporter = container.items.videoExporter;
-      loopabilityChecker = container.items.sequenceLoopabilityChecker;
+      loopabilityChecker = getSequenceLoopabilityChecker();
 
       // Expose playback controller for keyboard shortcuts
       setAnimationPlaybackRef(playbackController);

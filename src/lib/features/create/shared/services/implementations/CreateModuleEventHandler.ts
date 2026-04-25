@@ -8,6 +8,7 @@
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { container } from "$lib/shared/di";
+import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
 import type { ICreateModuleEventHandler } from "../contracts/ICreateModuleEventHandler";
@@ -60,7 +61,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
     this.OrientationCalculator = orientationCalculatorDirect;
 
     try {
-      this.ReversalDetector = container.items.reversalDetector as unknown as IReversalDetector | undefined ?? null;
+      this.ReversalDetector = getReversalDetector();
     } catch {
       this.ReversalDetector = null;
     }

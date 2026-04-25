@@ -30,6 +30,8 @@
   import type { IExportOrchestrator } from "$lib/shared/export-panel/services/contracts/IExportOrchestrator";
 
   import { container } from "$lib/shared/di";
+  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -120,7 +122,7 @@
   }
 
   try {
-    sequenceService = container.items.sequenceRepository;
+    sequenceService = getSequenceRepository();
   } catch (error) {
     console.warn("⚠️ Failed to resolve sequence repository:", error);
   }
@@ -254,7 +256,7 @@
       // Animation services available synchronously via ITI
       playbackController = container.items.animationPlaybackController;
       videoExportOrchestrator = container.items.videoExportOrchestrator;
-      loopabilityChecker = container.items.sequenceLoopabilityChecker;
+      loopabilityChecker = getSequenceLoopabilityChecker();
       layoutService = responsiveLayoutManager;
       setAnimationPlaybackRef(playbackController);
 
