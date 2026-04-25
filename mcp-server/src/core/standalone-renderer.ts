@@ -408,13 +408,12 @@ ${svgParts.join("\n")}
       // The regex matches <circle that is NOT followed by fill= before the >
       innerContent = innerContent.replace(/<circle(?![^>]*fill=)/g, `<circle fill="${gridColor}"`);
 
-      // Box mode outer points use <path> elements (compound paths: two concentric circles).
-      // With fill-rule:evenodd + fill color, the inner circle cuts out → ring with dark center.
-      // Also update stroke color so the outline is visible on dark backgrounds.
+      // Box mode outer points use <circle> elements with stroke-only rendering.
+      // Update stroke color so the rings are visible on dark backgrounds.
       if (gridMode === GridMode.BOX) {
         innerContent = innerContent.replace(
-          /\.box-grid-stroke\{stroke:#000;/,
-          `.box-grid-stroke{fill:${gridColor};fill-rule:evenodd;stroke:${gridColor};`
+          /\.box-outer-ring\{fill:none;stroke:#000;/,
+          `.box-outer-ring{fill:none;stroke:${gridColor};`
         );
       }
 
