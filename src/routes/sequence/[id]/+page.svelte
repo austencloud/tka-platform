@@ -24,6 +24,10 @@
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
+  import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
+  import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
+  import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
@@ -220,7 +224,7 @@
   function applyUrlPropPreferences() {
     if (!urlBlueProp && !urlRedProp) return;
 
-    const encoderService = container.items.sequenceEncoder;
+    const encoderService = getSequenceEncoder();
     const parsed = encoderService.parsePropsFromURL($page.url.searchParams);
 
     if (parsed.bluePropType || parsed.redPropType) {
@@ -243,7 +247,7 @@
    */
   async function matchPublicRecord(seq: SequenceData) {
     try {
-      const matcher = container.items.publicSequenceHashMatcher;
+      const matcher = getPublicSequenceHashMatcher();
       const result = await matcher.findPublicMatch(seq);
 
       if (result.matched && result.publicRecord) {
@@ -277,7 +281,7 @@
       applyUrlPropPreferences();
       isLoading = false;
     } else if (sequenceId) {
-      const encoderService = container.items.sequenceEncoder;
+      const encoderService = getSequenceEncoder();
       const parsed = encoderService.parseSequenceRouteId(sequenceId);
 
       if (parsed.encoded) {
@@ -285,8 +289,8 @@
           let decoded = encoderService.decodeWithCompression(parsed.encoded);
 
           decoded = await hydrateSequence(decoded, {
-            letterDeriver: container.items.letterDeriver,
-            positionDeriver: container.items.positionDeriver,
+            letterDeriver: getLetterDeriver(),
+            positionDeriver: getPositionDeriver(),
             loopDetector,
             gridModeDeriver,
           });
@@ -333,15 +337,15 @@
     loadError = null;
 
     try {
-      const encoderService = container.items.sequenceEncoder;
+      const encoderService = getSequenceEncoder();
 
       if (encoderService.isInlineEncoded(id)) {
         try {
           const decoded = encoderService.decodeWithCompression(decodeURIComponent(id));
           if (decoded) {
             sequence = await hydrateSequence(decoded, {
-              letterDeriver: container.items.letterDeriver,
-              positionDeriver: container.items.positionDeriver,
+              letterDeriver: getLetterDeriver(),
+              positionDeriver: getPositionDeriver(),
               loopDetector,
               gridModeDeriver,
             });
@@ -401,8 +405,8 @@
       }
 
       sequence = await hydrateSequence(resolvedSequence, {
-        letterDeriver: container.items.letterDeriver,
-        positionDeriver: container.items.positionDeriver,
+        letterDeriver: getLetterDeriver(),
+        positionDeriver: getPositionDeriver(),
         loopDetector,
         gridModeDeriver,
       });

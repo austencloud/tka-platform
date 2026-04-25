@@ -28,6 +28,10 @@
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
+  import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
+  import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
+  import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
@@ -193,7 +197,7 @@
 
     try {
       const shortCodeManager = container.items.shortCodeManager;
-      const sequenceEncoder = container.items.sequenceEncoder;
+      const sequenceEncoder = getSequenceEncoder();
 
       // Resolve short code to sequence
       // Handles both formats:
@@ -261,8 +265,8 @@
       // or refresh both arrive with bare motion data, so this pass
       // is what restores word / letters / loop badges / grid styling.
       resolved = await hydrateSequence(resolved, {
-        letterDeriver: container.items.letterDeriver,
-        positionDeriver: container.items.positionDeriver,
+        letterDeriver: getLetterDeriver(),
+        positionDeriver: getPositionDeriver(),
         loopDetector,
         gridModeDeriver,
       });
@@ -310,7 +314,7 @@
   function applyUrlPropPreferences() {
     if (!urlBlueProp && !urlRedProp) return;
 
-    const encoderService = container.items.sequenceEncoder;
+    const encoderService = getSequenceEncoder();
     const parsed = encoderService.parsePropsFromURL($page.url.searchParams);
 
     if (parsed.bluePropType || parsed.redPropType) {
@@ -338,7 +342,7 @@
    */
   async function matchPublicRecord(seq: SequenceData) {
     try {
-      const matcher = container.items.publicSequenceHashMatcher;
+      const matcher = getPublicSequenceHashMatcher();
       const result = await matcher.findPublicMatch(seq);
 
       if (result.matched && result.publicRecord) {

@@ -80,6 +80,7 @@
   import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
   import { container } from "../../di";
+  import { getSheetRouter } from "../../navigation/getSheetRouter";
   import { isModuleAccessible } from "../../auth/domain/guest-access-config";
   import { resolveAccessTier } from "../../auth/domain/AccessTier";
   import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
@@ -194,7 +195,7 @@
           .applicationInitializer;
         settingsService = settingsServiceSingleton;
         deviceService = getDeviceDetector();
-        sheetRouterService = container.items.sheetRouter;
+        sheetRouterService = getSheetRouter();
         authService = getAuthenticator();
         servicesResolved = true;
       } catch (error) {

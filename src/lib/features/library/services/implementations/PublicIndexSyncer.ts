@@ -32,6 +32,7 @@ import type { IBrowseLoader } from "$lib/features/browse/sequences/display/servi
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 import { container } from "$lib/shared/di";
+import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
@@ -114,7 +115,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       // LibrarySequence has full steps, so encoding works directly.
       let encoderHash: string | undefined;
       try {
-        const matcher = container.items.publicSequenceHashMatcher;
+        const matcher = getPublicSequenceHashMatcher();
         encoderHash = await matcher.computeEncoderHash(sequence);
       } catch {
         // Non-critical — sequence will still publish, just won't be URL-matchable

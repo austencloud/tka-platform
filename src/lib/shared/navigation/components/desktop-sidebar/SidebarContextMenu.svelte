@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getSidebarTabToggler } from "../../getSidebarTabToggler";
   import type { ISidebarTabToggler, TabVisibilityInfo } from "../../services/contracts/ISidebarTabToggler";
   import type { ModuleId } from "../../domain/types";
   import { translateTab } from "$lib/shared/i18n/translate";
@@ -196,7 +196,7 @@
   });
 
   onMount(() => {
-    sidebarTabToggler = container.items.sidebarTabToggler;
+    sidebarTabToggler = getSidebarTabToggler();
 
     if (menuState.mode === "module") {
       tabInfos = sidebarTabToggler.getAllTabsForModule(menuState.moduleId);

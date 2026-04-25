@@ -218,6 +218,7 @@
   import { auth } from "$lib/shared/auth/firebase";
   import { browser } from "$app/environment";
   import { container } from "$lib/shared/di";
+  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
   import { getPendingActionQueue } from "../getPendingActionQueue";
   import { getWebviewDetector } from "../getWebviewDetector";
   import { getPresentationResolver } from "../getPresentationResolver";
@@ -1838,7 +1839,7 @@
 
     if (sequence) {
       try {
-        const encoder = container.items.sequenceEncoder;
+        const encoder = getSequenceEncoder();
         const metadata: ShareURLMetadata = {};
 
         if (sequence.word) metadata.word = sequence.word;

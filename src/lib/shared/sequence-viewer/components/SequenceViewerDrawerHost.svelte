@@ -38,6 +38,9 @@
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   // Services
   import { container } from "$lib/shared/di";
+  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
+  import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
+  import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -220,7 +223,7 @@
       // Fire-and-forget scan telemetry — only for genuine scans. Skips
       // reloads, back/forward nav, and repeat session visits to avoid
       // inflating scanCount on refresh.
-      const encoder = container.items.sequenceEncoder;
+      const encoder = getSequenceEncoder();
       const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
       if (
         !encoder.isInlineEncoded(code) &&
@@ -250,8 +253,8 @@
       // viewer footer, reversal indicators, and loop-type badge all
       // showed blank on refresh (bug report 2026-04-19).
       const hydrated = await hydrateSequence(resolved, {
-        letterDeriver: container.items.letterDeriver,
-        positionDeriver: container.items.positionDeriver,
+        letterDeriver: getLetterDeriver(),
+        positionDeriver: getPositionDeriver(),
         loopDetector,
         gridModeDeriver,
       });

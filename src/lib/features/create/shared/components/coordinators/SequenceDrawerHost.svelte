@@ -30,6 +30,7 @@
   import type { IExportOrchestrator } from "$lib/shared/export-panel/services/contracts/IExportOrchestrator";
 
   import { container } from "$lib/shared/di";
+  import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
@@ -116,7 +117,7 @@
   }
 
   try {
-    sheetRouterService = container.items.sheetRouter;
+    sheetRouterService = getSheetRouter();
   } catch (error) {
     console.warn("⚠️ Failed to resolve sheet router service:", error);
   }
