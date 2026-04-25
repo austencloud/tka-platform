@@ -2,21 +2,19 @@
   ChoreoCard.svelte
 
   Renders a sequence preview with individually animated pictograph cells.
-  Each pictograph is rendered separately, enabling:
-  - Per-cell selection animation (scale + glow) during playback
-  - Smooth start position toggle animation (cell slides in/out)
-  - Independent visibility toggles without full re-render
+  Layout shell that composes extracted sub-components:
+  - CardHeader (difficulty badge + LOOP glyph + word title)
+  - CardGridLayout (grid section with cells, QR, mandalas)
+  - CardFooter (name, notes, birthday)
+  - CellRenderer (per-cell images, overlays — used by CardGridLayout)
 
-  Structure:
-  - Header section (difficulty badge + LOOP glyph) - animates in/out
-  - Grid section (individual pictograph cells, each animatable)
-  - Footer section (name, notes, birthday) - each animates independently
+  Owns: motion visibility, solo mode, context menu, animation/interactions,
+  responsive containment, cell rendering pipeline, caching.
 -->
 <script lang="ts">
-  import { fade, fly, scale } from "svelte/transition";
-  import { flip } from "svelte/animate";
-  import { cubicOut } from "svelte/easing";
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
+  // Note: transition/animation imports (fade, fly, scale, flip, cubicOut) moved to
+  // extracted sub-components (CardHeader, CardFooter, CardGridLayout, CellRenderer).
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PreviewCellRenderOptions } from "../services/contracts/IPreviewCellRenderer";
   import { onMount, onDestroy, untrack } from "svelte";
@@ -25,7 +23,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
@@ -44,18 +41,19 @@
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
-  import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { getMandalaPlacements } from "../services/getMandalaPlacements";
 
-  /** Fraction of the cell width the mandala occupies. Tweak for breathing room. */
-  const MANDALA_CELL_SCALE = 0.78;
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+
+  // Extracted sub-components
+  import CardHeader from "./CardHeader.svelte";
+  import CardFooter from "./CardFooter.svelte";
+  import CardGridLayout from "./CardGridLayout.svelte";
   import {
     HEADER_HEIGHT_DIVISOR, FOOTER_HEIGHT_DIVISOR,
     BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE,
     HEADER_WORD_FONT_SCALE, HEADER_WORD_FONT_MIN_SCALE,
-    LOOP_ICON_SIZE_SCALE, LOOP_ICON_GAP_SCALE,
     FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE,
     STEP_NUMBER_FONT_RATIO, STEP_NUMBER_FONT_MAX,
   } from "@tka/render-composition";
@@ -480,7 +478,7 @@
   // just hides the word and doesn't inject a replacement title.
   const showHeader = $derived(
     (isBrowseSoloMode && !hideSoloHeader) ||
-    showDifficultyLevel || (showLoopGlyph && loopComponents) || wordVisible
+    showDifficultyLevel || (showLoopGlyph && !!loopComponents) || wordVisible
   );
 
   // Show footer when any footer element is enabled
@@ -1878,57 +1876,6 @@
   });
 </script>
 
-<!-- Shared cell content: handles cross-fade images, step numbers, and duration badges -->
-{#snippet cellContent(cell: CellData, showDurBadge: boolean)}
-  {#if cell.isLoaded}
-    {#if cell.fadeOutUrl}
-      <img class="cell-image cell-fade-old" class:fading={crossfadeActive} src={cell.fadeOutUrl} alt="" draggable="false" />
-    {/if}
-    <img
-      class="cell-image"
-      class:cell-fade-new={!!cell.fadeOutUrl}
-      class:reveal={crossfadeActive}
-      src={cell.imageUrl}
-      alt={cell.label}
-      draggable="false"
-    />
-    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isBrowseSoloMode} style="font-size: {isBrowseSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
-    {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
-    {#if isMotionSoloMode}
-      {@const soloMotion = getMotionSoloMotion(cell.index)}
-      {#if soloMotion}
-        <span class="solo-locations" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
-          <span class="solo-loc-letter">{(soloMotion.startLocation ?? "").toLowerCase()}</span>
-          <img class="solo-loc-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
-          <span class="solo-loc-letter">{(soloMotion.endLocation ?? "").toLowerCase()}</span>
-        </span>
-        {@const turnsLabel = formatSoloTurns(soloMotion.turns)}
-        {#if turnsLabel}
-          <span
-            class="solo-turn-number"
-            class:dark-mode={activeDarkMode}
-            style="color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
-            transition:fade|local={{ duration: 150 }}
-          >{turnsLabel}</span>
-        {/if}
-        {@const startOri = shortOrientation(soloMotion.startOrientation)}
-        {@const endOri = shortOrientation(soloMotion.endOrientation)}
-        {#if startOri && endOri}
-          <span class="solo-orientation" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
-            <span class="solo-ori-letter">{startOri}</span>
-            <img class="solo-ori-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
-            <span class="solo-ori-letter">{endOri}</span>
-          </span>
-        {/if}
-      {/if}
-    {/if}
-  {:else}
-    <div class="cell-spinner-container">
-      <ProgressRing percent={-1} size={20} strokeWidth={2} />
-    </div>
-  {/if}
-{/snippet}
-
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} bind:this={containerElement}
@@ -1981,369 +1928,80 @@
       bind:this={previewStackElement}
     >
       <!-- Header section -->
-      {#if showHeader}
-        <div
-          class="header-section"
-          style="height: {scaledHeaderHeight}px;"
-          transition:fly|local={{ y: -20, duration: 250, easing: cubicOut }}
-        >
-          {#if isBrowseSoloMode}
-            <span
-              class="word-title"
-              style="font-size: {wordTitleFontSize}px; color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
-            >
-              {soloColor === "blue" ? "Blue" : "Red"} {browseViewMode?.subject === "hands" ? "Hand Path" : "Prop Path"}
-            </span>
-          {:else}
-            {#if showDifficultyLevel}
-              <div
-                class="difficulty-badge"
-                style="
-                  background: {currentLevelStyle.bg};
-                  border-color: {currentLevelStyle.border};
-                  color: {currentLevelStyle.text};
-                  width: {badgeSize}px;
-                  height: {badgeSize}px;
-                  left: {badgePadding}px;
-                  font-size: {badgeNumberFontSize}px;
-                "
-                transition:scale|local={{ duration: 200, easing: cubicOut }}
-              >
-                {difficultyLevel}
-              </div>
-            {/if}
-
-            {#if wordVisible}
-              <span
-                class="word-title"
-                style="font-size: {wordTitleFontSize}px;"
-                transition:fade|local={{ duration: 200 }}
-              >
-                {simplifyAndTruncate(sequence.word, 16)}
-              </span>
-            {/if}
-
-            {#if showLoopGlyph && loopComponents}
-              <div
-                class="loop-icon-badge"
-                style="height: {badgeSize}px; right: {badgePadding}px;"
-                transition:fade|local={{ duration: 200 }}
-              >
-                <LOOPIconStrip
-                  activeComponents={loopComponents}
-                  rotationSliceSize={loopRotationSliceSize}
-                  size={Math.floor(badgeSize * LOOP_ICON_SIZE_SCALE)}
-                  darkMode={activeDarkMode}
-                  showFreeformWhenEmpty={false}
-                />
-              </div>
-            {/if}
-          {/if}
-        </div>
-      {/if}
+      <CardHeader
+        {sequence}
+        {showHeader}
+        {isBrowseSoloMode}
+        {soloColor}
+        {browseViewMode}
+        {showDifficultyLevel}
+        {difficultyLevel}
+        {currentLevelStyle}
+        {wordVisible}
+        {showLoopGlyph}
+        {loopComponents}
+        {loopRotationSliceSize}
+        {scaledHeaderHeight}
+        {badgeSize}
+        {badgePadding}
+        {badgeNumberFontSize}
+        {wordTitleFontSize}
+        {activeDarkMode}
+      />
 
       <!-- Grid section with individual pictograph cells -->
-      {#if hasMixedDurations && durationRows.length > 0}
-        <!-- Duration-aware layout: start position as fixed column barrier, step rows to the right -->
-        {@const startCell = cells.find(c => c.index === -1)}
-        {@const stepMaxUnits = durationColCount - (includeStartPosition ? 1 : 0)}
-        {#if needsScroll}
-          <div class="grid-scroll-container themed-scrollbar" bind:this={gridScrollRef}>
-            <div class="duration-layout" style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
-              {#if includeStartPosition && startCell}
-                <div class="duration-start-col" transition:fade|local={{ duration: 200 }}>
-                  <div
-                    class="pictograph-cell"
-                    class:current={showHighlight && highlightedStepIndex === -1}
-                  >
-                    {@render cellContent(startCell, false)}
-                  </div>
-                  {#if showQRCode}
-                    <div class="pictograph-cell qr-cell" transition:fade|local={{ duration: 200 }}>
-                      {#if qrDataUrl}
-                        <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-              <div class="duration-steps-area">
-                {#each durationRows as row, rowIdx (rowIdx)}
-                  <div class="duration-row">
-                    {#each row.steps as { stepIndex, duration } (stepIndex)}
-                      {@const cell = cells.find(c => c.index === stepIndex)}
-                      {#if cell}
-                        <div class="duration-cell" style="--dur: {duration}; flex: {duration};">
-                          {#if onStepClick}
-                            <button
-                              class="pictograph-cell clickable"
-                              class:current={showHighlight && highlightedStepIndex === cell.index}
-                              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                              onclick={() => onStepClick(cell.index)}
-                              type="button"
-                              aria-label="Go to step {cell.label}"
-                            >
-                              {@render cellContent(cell, true)}
-                            </button>
-                          {:else}
-                            <div
-                              class="pictograph-cell"
-                              class:current={showHighlight && highlightedStepIndex === cell.index}
-                              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                            >
-                              {@render cellContent(cell, true)}
-                            </div>
-                          {/if}
-                        </div>
-                      {/if}
-                    {/each}
-                  </div>
-                {/each}
-              </div>
-            </div>
-          </div>
-        {:else}
-          <div class="duration-layout" style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
-            {#if includeStartPosition && startCell}
-              <div class="duration-start-col">
-                <div
-                  class="pictograph-cell"
-                  class:current={showHighlight && highlightedStepIndex === -1}
-                >
-                  {@render cellContent(startCell, false)}
-                </div>
-                {#if showQRCode && qrDataUrl}
-                  <div class="pictograph-cell qr-cell" transition:fade|local={{ duration: 200 }}>
-                    <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
-                  </div>
-                {/if}
-              </div>
-            {/if}
-            <div class="duration-steps-area">
-              {#each durationRows as row, rowIdx (rowIdx)}
-                <div class="duration-row">
-                  {#each row.steps as { stepIndex, duration } (stepIndex)}
-                    {@const cell = cells.find(c => c.index === stepIndex)}
-                    {#if cell}
-                      <div class="duration-cell" style="--dur: {duration}; flex: {duration};">
-                        {#if onStepClick}
-                          <button
-                            class="pictograph-cell clickable"
-                            class:current={showHighlight && highlightedStepIndex === cell.index}
-                            class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                            onclick={() => onStepClick(cell.index)}
-                            type="button"
-                            aria-label="Go to step {cell.label}"
-                          >
-                            {@render cellContent(cell, true)}
-                          </button>
-                        {:else}
-                          <div
-                            class="pictograph-cell"
-                            class:current={showHighlight && highlightedStepIndex === cell.index}
-                            class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                          >
-                            {@render cellContent(cell, true)}
-                        </div>
-                      {/if}
-                    </div>
-                  {/if}
-                {/each}
-              </div>
-            {/each}
-            </div>
-          </div>
-        {/if}
-      {:else if needsScroll}
-        <!-- Uniform grid: scroll mode -->
-        {@const startCellScroll = cells.find(c => c.index === -1)}
-        <div class="grid-scroll-container themed-scrollbar" bind:this={gridScrollRef}>
-          <div
-            class="grid-section"
-            style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
-          >
-            {#if startCellScroll && includeStartPosition}
-              <div
-                class="cell-flip-wrapper"
-                style="grid-column: 1; grid-row: 1;"
-                transition:scale|local={{ duration: 200, easing: cubicOut }}
-              >
-                <div class="pictograph-cell">
-                  {@render cellContent(startCellScroll, false)}
-                </div>
-              </div>
-            {/if}
-            {#each visibleCells as cell (cell.index)}
-              <div
-                class="cell-flip-wrapper"
-                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-                animate:flip={{ duration: flipDuration, easing: cubicOut }}
-              >
-              {#if onStepClick && cell.index >= 0}
-                <button
-                  class="pictograph-cell clickable"
-                  class:current={showHighlight && highlightedStepIndex === cell.index}
-                  class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                  onclick={() => onStepClick(cell.index)}
-                  type="button"
-                  aria-label="Go to step {cell.label}"
-                >
-                  {@render cellContent(cell, true)}
-                </button>
-              {:else}
-                <div
-                  class="pictograph-cell"
-                  class:current={showHighlight && highlightedStepIndex === cell.index}
-                  class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                >
-                  {@render cellContent(cell, true)}
-                </div>
-              {/if}
-              </div>
-            {/each}
-            {#if qrGridPosition && qrDataUrl}
-              <div
-                class="cell-flip-wrapper qr-cell-wrapper"
-                style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
-                transition:scale|local={{ duration: 200, easing: cubicOut }}
-              >
-                <div class="pictograph-cell qr-cell">
-                  <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
-                </div>
-              </div>
-            {/if}
-            {#each mandalaPlacements as placement (placement.row + "-" + placement.col + "-" + placement.variant)}
-              <div
-                class="cell-flip-wrapper mandala-cell-wrapper"
-                style="grid-column: {placement.col}; grid-row: {placement.row};"
-                transition:fade|local={{ duration: 200 }}
-              >
-                <div class="pictograph-cell mandala-cell">
-                  <SequenceMandala
-                    {sequence}
-                    mode="card-back"
-                    style="stroke"
-                    show={placement.variant === "full" ? "both" : placement.variant}
-                    size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
-                    darkMode={activeDarkMode}
-                    {bluePropType}
-                    {redPropType}
-                  />
-                </div>
-              </div>
-            {/each}
-          </div>
-        </div>
-      {:else}
-        <!-- Uniform grid: standard mode -->
-        {@const startCell = cells.find(c => c.index === -1)}
-        <div
-          class="grid-section"
-          style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
-        >
-          {#if startCell && includeStartPosition}
-            <div
-              class="cell-flip-wrapper"
-              style="grid-column: 1; grid-row: 1;"
-              transition:scale|local={{ duration: 200, easing: cubicOut }}
-            >
-              <div class="pictograph-cell">
-                {@render cellContent(startCell, false)}
-              </div>
-            </div>
-          {/if}
-          {#each visibleCells as cell (cell.index)}
-            <div
-              class="cell-flip-wrapper"
-              style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-              animate:flip={{ duration: flipDuration, easing: cubicOut }}
-            >
-            {#if onStepClick && cell.index >= 0}
-              <button
-                class="pictograph-cell clickable"
-                class:current={showHighlight && highlightedStepIndex === cell.index}
-                class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                onclick={() => onStepClick(cell.index)}
-                type="button"
-                aria-label="Go to step {cell.label}"
-              >
-                {@render cellContent(cell, true)}
-              </button>
-            {:else}
-              <div
-                class="pictograph-cell"
-                class:current={showHighlight && highlightedStepIndex === cell.index}
-                class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-              >
-                {@render cellContent(cell, true)}
-              </div>
-            {/if}
-            </div>
-          {/each}
-          {#if qrGridPosition && qrDataUrl}
-            <div
-              class="cell-flip-wrapper qr-cell-wrapper"
-              style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
-              transition:scale|local={{ duration: 200, easing: cubicOut }}
-            >
-              <div class="pictograph-cell qr-cell">
-                <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
-              </div>
-            </div>
-          {/if}
-          {#each mandalaPlacements as placement (placement.row + "-" + placement.col + "-" + placement.variant)}
-            <div
-              class="cell-flip-wrapper mandala-cell-wrapper"
-              style="grid-column: {placement.col}; grid-row: {placement.row};"
-              transition:fade|local={{ duration: 200 }}
-            >
-              <div class="pictograph-cell mandala-cell">
-                <SequenceMandala
-                  {sequence}
-                  mode="card-back"
-                  style="stroke"
-                  show={placement.variant === "full" ? "both" : placement.variant}
-                  size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
-                  darkMode={activeDarkMode}
-                  {bluePropType}
-                  {redPropType}
-                />
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
+      <CardGridLayout
+        {sequence}
+        {cells}
+        {visibleCells}
+        {effectiveColumns}
+        {effectiveRows}
+        {hasMixedDurations}
+        {durationRows}
+        {durationColCount}
+        {includeStartPosition}
+        {needsScroll}
+        {showHighlight}
+        {highlightedStepIndex}
+        {showQRCode}
+        {qrDataUrl}
+        {qrGridPosition}
+        showMandala={showMandala}
+        {mandalaPlacements}
+        {flipDuration}
+        {cellWidth}
+        {activeDarkMode}
+        {bluePropType}
+        {redPropType}
+        {onStepClick}
+        onGridScrollRefChange={(el) => { gridScrollRef = el; }}
+        {showStepNumbers}
+        {crossfadeActive}
+        {isBrowseSoloMode}
+        {isMotionSoloMode}
+        {soloColor}
+        {stepNumFontSize}
+        {formatDuration}
+        {getMotionSoloMotion}
+        {formatSoloTurns}
+        {shortOrientation}
+      />
 
       <!-- Footer section -->
-      {#if showFooter}
-        <div
-          class="footer-section"
-          style="height: {scaledFooterHeight}px; padding-left: {footerMargin}px; padding-right: {footerMargin}px; font-size: {footerFontSize}px;"
-          transition:fly|local={{ y: 20, duration: 250, easing: cubicOut }}
-        >
-          {#if showCreatorName && effectiveUserName}
-            <span class="footer-name" transition:fly|local={{ x: -20, duration: 200, easing: cubicOut }}>
-              {effectiveUserName}
-            </span>
-          {/if}
-
-          {#if showNotes}
-            <span class="footer-notes" transition:fade|local={{ duration: 200 }}>
-              {customNotesText}
-            </span>
-          {/if}
-
-          {#if showBirthday}
-            <span class="footer-birthday" transition:fly|local={{ x: 20, duration: 200, easing: cubicOut }}>
-              🎂 {birthdayDate}
-            </span>
-          {/if}
-
-          {#if hasPathShapeMetadata}
-            <span class="footer-path-shape">Linear shifts</span>
-          {/if}
-        </div>
-      {/if}
+      <CardFooter
+        {showFooter}
+        {showCreatorName}
+        {showNotes}
+        {showBirthday}
+        {hasPathShapeMetadata}
+        {effectiveUserName}
+        {customNotesText}
+        {birthdayDate}
+        {scaledFooterHeight}
+        {footerFontSize}
+        {footerMargin}
+        {activeDarkMode}
+      />
     </div>
   {/if}
 </div>
@@ -2418,569 +2076,16 @@
     overflow: hidden;
   }
 
-  /* Header section */
-  .header-section {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(245, 245, 245, 0.98);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
-    width: 100%;
-    box-sizing: border-box;
-    overflow: hidden;
-    transition: background-color 350ms ease, border-color 350ms ease;
-  }
-
-  .dark-mode .header-section {
-    background: rgba(10, 10, 15, 0.98);
-    border-bottom-color: rgba(255, 255, 255, 0.15);
-  }
-
-  .difficulty-badge {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    border-radius: 50%;
-    border: 1px solid black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Cambria, serif;
-    font-weight: bold;
-    flex-shrink: 0;
-  }
-
-  .word-title {
-    font-family: Georgia, serif;
-    font-weight: bold;
-    color: #000;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 75%;
-    transition: color 350ms ease, font-size 200ms ease;
-  }
-
-  .dark-mode .word-title {
-    color: #fff;
-  }
-
-  .loop-icon-badge {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    padding: 0 4px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-  }
-
-  .dark-mode .loop-icon-badge {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  /* Scroll container for long sequences (>16 beats) */
-  .grid-scroll-container {
-    flex: 0 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0;
-  }
-
-  /* Duration-aware layout — start column barrier + step rows to the right */
-  .duration-layout {
-    display: flex;
-    width: 100%;
-    min-height: 0;
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-    background: #f5f5f5;
-    transition: background-color 350ms ease;
-  }
-
-  .dark-mode .duration-layout {
-    background: #000;
-  }
-
-  /* Start position: fixed column that spans the full height as a barrier */
-  .duration-start-col {
-    flex: 0 0 calc(1 / var(--max-units, 5) * 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    background: #f5f5f5;
-    transition: background-color 350ms ease;
-  }
-
-  .dark-mode .duration-start-col {
-    background: #0a0a0f;
-  }
-
-  .duration-start-col .pictograph-cell {
-    width: 100%;
-    aspect-ratio: 1;
-  }
-
-  .duration-start-col .cell-image {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  /* Steps area: fills remaining width, stacks rows vertically */
-  .duration-steps-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  .duration-row {
-    display: flex;
-    gap: 0;
-    width: 100%;
-  }
-
-  .duration-cell {
-    /* flex distributes width proportionally within the row.
-       max-width caps each cell so rows with fewer total units
-       don't stretch cells beyond their proportion of the max step row. */
-    max-width: calc(var(--dur, 1) / var(--step-max, 4) * 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 0;
-    /* Background matches pictograph so wider cells have seamless side fill */
-    background: #f5f5f5;
-    transition: background-color 350ms ease;
-  }
-
-  .dark-mode .duration-cell {
-    background: #0a0a0f;
-  }
-
-  .duration-cell .pictograph-cell {
-    width: 100%;
-    aspect-ratio: auto;
-  }
-
-  .duration-cell .cell-image {
-    /* Image fills the cell width; height follows natural aspect ratio */
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  /* Grid section - CSS Grid layout */
-  .grid-section {
-    display: grid;
-    gap: 0;
-    min-height: 0;
-    min-width: 0;
-    width: 100%;
-    /* Fill remaining space after header/footer. 1fr rows divide the available
-       height evenly so the last row isn't clipped behind the footer. Cells
-       keep aspect-ratio: 1 but shrink slightly from perfect squares to fit. */
-    flex: 1;
-    grid-auto-rows: 1fr;
-    max-width: 100%;
-    overflow: hidden;
-    /* Light mode background for empty cells */
-    background: #f5f5f5;
-    transition: background-color 350ms ease;
-  }
-
-  .dark-mode .grid-section {
-    /* Dark mode background for empty cells */
-    background: #000;
-  }
-
-  /* Wrapper for FLIP animation — a real grid item so Svelte can measure bounding rects.
-     The pictograph-cell inside fills it completely. */
-  .cell-flip-wrapper {
-    overflow: hidden;
-  }
-
-  .cell-flip-wrapper > .pictograph-cell {
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Individual pictograph cell */
-  .pictograph-cell {
-    position: relative;
-    /* Container context for step-number-overlay cqw/cqh units */
-    container-type: inline-size;
-    aspect-ratio: 1;
-    overflow: hidden;
-    box-sizing: border-box;
-    /* Subtle border for cell separation */
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    /* Button reset for clickable variant */
-    background: none;
-    padding: 0;
-    margin: 0;
-    font: inherit;
-    color: inherit;
-    cursor: default;
-    transition: border-color 350ms ease;
-  }
-
-  button.pictograph-cell {
-    cursor: pointer;
-  }
-
-  .dark-mode .pictograph-cell {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .cell-image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    /* Use 'cover' to fill the cell completely - images are rendered as squares
-       so there should be no cropping. 'contain' was causing gaps when images
-       had slightly different aspect ratios. */
-    object-fit: cover;
-    -webkit-user-drag: none;
-    user-select: none;
-  }
-
-  /* Cross-fade: old image fades out while new image fades in simultaneously.
-     Both images are stacked in the same cell during the transition. */
-  .cell-fade-old {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1;
-    opacity: 1;
-    transition: opacity 350ms ease;
-    pointer-events: none;
-  }
-
-  .cell-fade-old.fading {
-    opacity: 0;
-  }
-
-  .cell-image.cell-fade-new {
-    opacity: 0;
-  }
-
-  .cell-image.cell-fade-new.reveal {
-    opacity: 1;
-    transition: opacity 350ms ease;
-  }
-
-  /* Step number overlay — rendered as HTML instead of baked into blobs
-     so identical pictographs at different beats share one cached image */
-  .step-number-overlay {
-    position: absolute;
-    top: 5.3%;
-    left: 5.3%;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    /* font-size set via inline style from stepNumFontSize (cellWidth-based)
-       so wider duration cells get the same number size as square cells */
-    line-height: 1;
-    color: #231f20;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .step-number-overlay.dark-mode {
-    color: #ffffff;
-  }
-
-  /* Solo mode location labels — subtle, bottom-center instead of top-left */
-  .step-number-overlay.solo-location {
-    top: auto;
-    left: 50%;
-    bottom: 3%;
-    transform: translateX(-50%);
-    opacity: 0.5;
-    font-weight: 500;
-  }
-
-  /* Duration badge — bottom-center, matches DurationGlyph.svelte positioning
-     (y=890 in 950-unit viewBox = ~93.7% from top, centered horizontally) */
-  .duration-badge {
-    position: absolute;
-    bottom: 2%;
-    left: 50%;
-    transform: translateX(-50%);
-    font-family: Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 600;
-    font-size: min(5.5cqw, 14px);
-    line-height: 1;
-    color: #231f20;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .duration-badge.dark-mode {
-    color: #ffffff;
-  }
-
-  /* Motion-solo top-center locations — matches PositionGlyph composition.
-     Canonical arrow dimensions from PositionGlyph: 88.9 × 34.8 * 0.75
-     ≈ 66.675 × 26.1 units in a 950-unit pictograph viewBox, i.e.
-     7.02cqw wide by 2.75cqw tall when 100cqw == cell width. We keep the
-     same arrow SVG and size it identically so headers read consistently. */
-  .solo-locations {
-    position: absolute;
-    top: 3.5%;
-    left: 50%;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.7cqw;
-    font-family: Cambria, "Hoefler Text", Georgia, serif;
-    font-weight: 700;
-    font-size: 7.9cqw; /* matches scaled letter height in PositionGlyph */
-    line-height: 1;
-    color: #231f20;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .solo-locations.dark-mode {
-    color: #ffffff;
-  }
-
-  .solo-loc-letter {
-    /* true lowercase, no small-caps */
-    text-transform: lowercase;
-    letter-spacing: 0;
-  }
-
-  /* Shared arrow sizing — both header rows use the exact dimensions of
-     the PositionGlyph's rendered arrow so the two look like siblings. */
-  .solo-loc-arrow,
-  .solo-ori-arrow {
-    width: 7.02cqw;
-    height: auto; /* aspect ratio preserved at 88.9:34.8 */
-    flex-shrink: 0;
-  }
-
-  :global(:root.dark) .solo-locations .solo-loc-arrow,
-  .solo-locations.dark-mode .solo-loc-arrow,
-  :global(:root.dark) .solo-orientation .solo-ori-arrow,
-  .solo-orientation.dark-mode .solo-ori-arrow {
-    filter: invert(0.92);
-  }
-
-  /* Motion-solo turn number — single colored digit where the TKA glyph's
-     turns column sat. Kept small so it reads as a secondary annotation. */
-  .solo-turn-number {
-    position: absolute;
-    left: 8%;
-    bottom: 6%;
-    font-family: Georgia, serif;
-    font-weight: 700;
-    font-size: min(10cqw, 28px);
-    line-height: 1;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  /* Motion-solo orientation annotation — bottom-center, below the
-     southernmost outer grid dot. Not bold; shares the arrow size with
-     the top locations row so both headers feel matched. */
-  .solo-orientation {
-    position: absolute;
-    bottom: 3%;
-    left: 50%;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.7cqw;
-    font-family: Cambria, "Hoefler Text", Georgia, serif;
-    font-weight: 400;
-    font-size: 7.9cqw;
-    line-height: 1;
-    color: #231f20;
-    opacity: 0.85;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .solo-orientation.dark-mode {
-    color: #ffffff;
-  }
-
-  .solo-ori-letter {
-    text-transform: lowercase;
-    letter-spacing: 0;
-  }
-
-  /* Per-cell loading spinner */
-  .cell-spinner-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    aspect-ratio: 1;
-  }
-
-  /* QR code cell — occupies the last row of column 1, under the start position.
-     In duration layouts (flex column), margin-top: auto pushes it to the bottom. */
-  .qr-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: auto;
-    background: #f5f5f5;
-    transition: background-color 350ms ease;
-  }
-
-  .dark-mode .qr-cell {
-    background: #000;
-  }
-
-  .qr-code-image {
-    width: 80%;
-    height: 80%;
-    object-fit: contain;
-    -webkit-user-drag: none;
-    user-select: none;
-  }
-
-  /* Mandala fill cell — sits in empty col-0 cells and shows blue/red/full path viz. */
-  .mandala-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    background: transparent;
-  }
-
-  /* Clickable cells */
-  .pictograph-cell.clickable {
-    cursor: pointer;
-  }
-
-  /* No individual cell hover scale in viewer - whole pane scales instead */
-
-  .pictograph-cell.clickable:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: -2px;
-    z-index: 5;
-  }
-
-  /* Current step - "Elevated Luxury" selection with scale + glow */
-  .pictograph-cell.current {
-    z-index: 10;
-  }
-
-  /* Golden selection overlay — rendered via ::after so it paints ON TOP of
-     the cell image. Stays within cell bounds so nothing overflows. */
-  .pictograph-cell.current::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border: 3px solid rgba(251, 191, 36, 0.9);
-    box-shadow: inset 0 0 14px rgba(251, 191, 36, 0.5);
-    pointer-events: none;
-    animation: cellSelectionGlowIn 0.4s ease-out forwards;
-  }
-
-  @keyframes cellSelectionGlowIn {
-    0% {
-      border-color: rgba(251, 191, 36, 0);
-      box-shadow: inset 0 0 0 rgba(251, 191, 36, 0);
-    }
-    100% {
-      border-color: rgba(251, 191, 36, 0.9);
-      box-shadow: inset 0 0 14px rgba(251, 191, 36, 0.5);
-    }
-  }
-
-  /* Played cells (already passed) - dim to distinguish from upcoming */
-  .pictograph-cell.played {
-    opacity: 0.6;
-    transition: opacity 0.15s ease-out;
-  }
-
-  /* Light mode needs stronger dimming since opacity against light bg is subtle */
-  .choreo-card-root:not(.dark-mode) .pictograph-cell.played {
+  /* Light mode needs stronger dimming since opacity against light bg is subtle.
+     This rule targets child component elements from the parent context. */
+  .choreo-card-root:not(.dark-mode) :global(.pictograph-cell.played) {
     opacity: 0.4;
-  }
-
-  /* Footer section */
-  .footer-section {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(245, 245, 245, 0.98);
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-    font-family: Georgia, serif;
-    color: black;
-    flex-shrink: 0;
-    width: 100%;
-    box-sizing: border-box;
-    transition: background-color 350ms ease, border-color 350ms ease, color 350ms ease;
-  }
-
-  .dark-mode .footer-section {
-    background: rgba(10, 10, 15, 0.98);
-    border-top-color: rgba(255, 255, 255, 0.15);
-    color: white;
-  }
-
-  .footer-name {
-    font-weight: bold;
-  }
-
-  .footer-notes {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .footer-birthday {
-    margin-left: auto;
-  }
-
-  .footer-path-shape {
-    font-size: inherit;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-style: italic;
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .preview-stack,
-    .pictograph-cell,
-    .header-section,
-    .grid-section,
-    .footer-section,
-    .word-title,
-    .duration-layout,
-    .duration-start-col,
-    .duration-cell,
-    .cell-fade-old,
-    .cell-image.cell-fade-new {
+    .preview-stack {
       transition: none;
-    }
-
-    .pictograph-cell.current::after {
-      animation: none;
-    }
-
-    .grid-scroll-container {
-      scroll-behavior: auto;
     }
   }
 </style>
