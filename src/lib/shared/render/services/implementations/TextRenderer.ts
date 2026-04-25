@@ -56,8 +56,10 @@ export class TextRenderer implements ITextRenderer {
         const dataUrl = cache.getGlyphDataUrl(letter);
         if (!dataUrl) return Promise.resolve();
         return new Promise<void>((resolve) => {
+          const timer = setTimeout(resolve, 3000); // safety net for non-data-URL sources
           const img = new Image();
           img.onload = () => {
+            clearTimeout(timer);
             this.glyphImageCache.set(letter, {
               image: img,
               naturalWidth: img.naturalWidth,
@@ -66,7 +68,7 @@ export class TextRenderer implements ITextRenderer {
             });
             resolve();
           };
-          img.onerror = () => resolve();
+          img.onerror = () => { clearTimeout(timer); resolve(); };
           img.src = dataUrl;
         });
       })
