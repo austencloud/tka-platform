@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import type { IStepBoundaryDetector } from './services/contracts/IStepBoundaryDetector';
-import { StepBoundaryDetector } from './services/implementations/StepBoundaryDetector';
+import type { IStepBoundaryDetector } from './services/contracts/IBeatBoundaryDetector';
+import { StepBoundaryDetector } from './services/implementations/BeatBoundaryDetector';
 
 let instance: IStepBoundaryDetector | null = null;
 

@@ -17,7 +17,7 @@ import type {
   CircularAlignmentResult,
   AlignmentOptions,
 } from "../contracts/ISequenceAligner";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
 import type { ISpatialTransformDetector } from "../contracts/ISpatialTransformDetector";
 import type { SpatialTransform } from "../../domain/models/signatures";
 
@@ -589,7 +589,7 @@ export class SequenceAligner implements ISequenceAligner {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { beatSignatureGenerator } from "./StepSignatureGenerator";
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
 import { spatialTransformDetector } from "./SpatialTransformDetector";
 
 export const sequenceAligner = new SequenceAligner(

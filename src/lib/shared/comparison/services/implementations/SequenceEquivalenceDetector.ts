@@ -16,11 +16,11 @@ import type {
   EquivalenceType,
   TransformDetails,
   SequenceSignature,
-  BeatSignature,
+  StepSignature,
   MotionSignature,
 } from "$lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector";
 import type { ISequenceCanonicalizer } from "../contracts/ISequenceCanonicalizer";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
 import type { ISpatialTransformDetector } from "../contracts/ISpatialTransformDetector";
 import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -83,7 +83,7 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
       stepCount: internalSig.stepCount,
       isCircular: internalSig.isCircular,
       beatSignatures: internalSig.beatSignatures.map((bs) =>
-        this.convertBeatSignature(bs)
+        this.convertStepSignature(bs)
       ),
       hash: internalSig.hash,
     };
@@ -362,9 +362,9 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
   }
 
   /**
-   * Convert internal BeatSignature to the interface's expected format.
+   * Convert internal StepSignature to the interface's expected format.
    */
-  private convertBeatSignature(internal: import("../../domain/models/signatures").BeatSignature): BeatSignature {
+  private convertStepSignature(internal: import("../../domain/models/signatures").StepSignature): StepSignature {
     return {
       blue: this.convertMotionSignature(internal.blue),
       red: this.convertMotionSignature(internal.red),
@@ -389,7 +389,7 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
-import { beatSignatureGenerator } from "./StepSignatureGenerator";
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
 import { spatialTransformDetector } from "./SpatialTransformDetector";
 import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
 

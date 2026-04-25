@@ -37,7 +37,7 @@ import {
   saveToStorage,
   TIMELINE_STORAGE_KEYS,
 } from "./timeline-storage";
-import { getBeatTimes } from "../services/BeatGridCalculator";
+import { getStepTimes } from "../services/BeatGridCalculator";
 import { createPlayheadActions } from "./actions/playhead-actions";
 import { createSelectionActions } from "./actions/selection-actions";
 import { createViewportActions } from "./actions/viewport-actions";
@@ -221,7 +221,7 @@ export function createTimelineState() {
   const beatMarkerTimes = $derived.by(() => {
     if (project.defaultBpm <= 0) return [];
     const ts = project.timeSignature ?? "4/4";
-    return getBeatTimes(project.defaultBpm, totalDuration + 10, ts);
+    return getStepTimes(project.defaultBpm, totalDuration + 10, ts);
   });
 
   // =========================================================================

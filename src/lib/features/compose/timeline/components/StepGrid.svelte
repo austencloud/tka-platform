@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * BeatGrid - Visual beat and measure markers for timeline tracks
+   * StepGrid - Visual beat and measure markers for timeline tracks
    *
    * Renders vertical lines at beat/measure positions:
    * - Measure lines: Thick, prominent
@@ -11,10 +11,10 @@
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
   import type { TimeSeconds } from "../domain/timeline-types";
   import {
-    calculateBeatMarkers,
+    calculateStepMarkers,
     calculateMeasureMarkers,
     calculateSubdivisionMarkers,
-    type BeatMarker,
+    type StepMarker,
     type MeasureMarker,
     type SubdivisionMarker,
   } from "../services/BeatGridCalculator";
@@ -51,7 +51,7 @@
   const beatMarkers = $derived.by(() => {
     if (bpm <= 0) return [];
 
-    const allMarkers = calculateBeatMarkers(bpm, duration, timeSignature);
+    const allMarkers = calculateStepMarkers(bpm, duration, timeSignature);
 
     // Filter to visible range if specified
     const end = visibleEnd ?? duration;

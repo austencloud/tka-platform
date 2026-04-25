@@ -11,9 +11,9 @@ import type {
   ISequenceCanonicalizer,
   CanonicalSequence,
 } from "../contracts/ISequenceCanonicalizer";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
 import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
-import type { SequenceSignature, BeatSignature } from "../../domain/models/signatures";
+import type { SequenceSignature, StepSignature } from "../../domain/models/signatures";
 
 export class SequenceCanonicalizer implements ISequenceCanonicalizer {
   constructor(
@@ -140,7 +140,7 @@ export class SequenceCanonicalizer implements ISequenceCanonicalizer {
     canonicalWord: string,
     stepCount: number,
     isCircular: boolean,
-    beatSignatures: readonly BeatSignature[],
+    beatSignatures: readonly StepSignature[],
     circularOffset: number
   ): string {
     // Reorder beat signatures according to circular offset
@@ -170,7 +170,7 @@ export class SequenceCanonicalizer implements ISequenceCanonicalizer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { beatSignatureGenerator } from "./StepSignatureGenerator";
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
 import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
 
 export const sequenceCanonicalizer = new SequenceCanonicalizer(

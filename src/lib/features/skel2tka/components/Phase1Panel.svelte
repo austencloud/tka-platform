@@ -16,14 +16,14 @@
   import type { Phase1Result } from "../domain/models";
   import type { SanityCheckReport } from "../domain/verification-models";
   import type { PhaseVerdict, UserCorrection } from "../domain/verification-models";
-  import type { TrainingPair, VerifiedBeatPosition, VideoReference } from "../domain/training-models";
+  import type { TrainingPair, VerifiedStepPosition, VideoReference } from "../domain/training-models";
   import type { IOverlayRenderer } from "../services/contracts/IOverlayRenderer";
   import type { ISanityChecker } from "../services/contracts/ISanityChecker";
   import type { ITrainingDataPersister } from "../services/contracts/ITrainingDataPersister";
   import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";
   import { getVideoFrameExtractor } from "$lib/features/skel2tka/getVideoFrameExtractor";
   import { getVideoHandAnalyzer } from "$lib/features/skel2tka/getVideoHandAnalyzer";
-  import { getBeatBoundaryDetector } from "$lib/features/skel2tka/getBeatBoundaryDetector";
+  import { getStepBoundaryDetector } from "$lib/features/skel2tka/getBeatBoundaryDetector";
   import { getPhase1OverlayRenderer } from "$lib/features/skel2tka/getPhase1OverlayRenderer";
   import { getSanityChecker } from "$lib/features/skel2tka/getSanityChecker";
   import { getTrainingDataPersister } from "$lib/features/skel2tka/getTrainingDataPersister";
@@ -57,7 +57,7 @@
   const landmarker = getImageModeHandLandmarker();
   const frameExtractor = getVideoFrameExtractor();
   const handAnalyzer = getVideoHandAnalyzer();
-  const beatDetector = getBeatBoundaryDetector();
+  const beatDetector = getStepBoundaryDetector();
   const overlayRenderer = getPhase1OverlayRenderer() as IOverlayRenderer;
   const sanityChecker = getSanityChecker() as ISanityChecker;
   const trainingPersister = getTrainingDataPersister() as ITrainingDataPersister;
@@ -154,7 +154,7 @@
         fileHash: await computeFileHash(videoFile),
       };
 
-      const verifiedBeats: VerifiedBeatPosition[] = result.beats.map((beat) => {
+      const verifiedBeats: VerifiedStepPosition[] = result.beats.map((beat) => {
         const bluePos = beat.positions.find((p) => p.hand === "blue");
         const redPos = beat.positions.find((p) => p.hand === "red");
 
@@ -163,7 +163,7 @@
         let redLocation = redPos?.location ?? null;
 
         for (const correction of corrections) {
-          if (correction.beatIndex === beat.index && correction.field === "hand_position") {
+          if (correction.stepNumber === beat.index && correction.field === "hand_position") {
             if (correction.hand === "blue") {
               blueLocation = correction.correctedValue as typeof blueLocation;
             } else if (correction.hand === "red") {
@@ -173,7 +173,7 @@
         }
 
         return {
-          beatIndex: beat.index,
+          stepNumber: beat.index,
           blueLocation,
           redLocation,
           positionLabel: beat.positionLabel,

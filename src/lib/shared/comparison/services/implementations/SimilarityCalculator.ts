@@ -18,7 +18,7 @@ import type {
   QuickSimilarityResult,
   SimilarityOptions,
 } from "../contracts/ISimilarityCalculator";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
 import type { ISequenceAligner } from "../contracts/ISequenceAligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -51,7 +51,7 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     const structuralSimilarity = this.computeStructuralSimilarity(seqA, seqB);
 
     // Calculate beat-by-beat scores
-    const beatByBeatScores = this.computeBeatByBeatScores(seqA, seqB);
+    const stepByBeatScores = this.computeBeatByBeatScores(seqA, seqB);
 
     // Find common subsequences
     const commonSubsequences = this.findCommonSubsequences(
@@ -61,7 +61,7 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     );
 
     // Calculate breakdown
-    const breakdown = this.computeBreakdown(seqA, seqB, beatByBeatScores);
+    const breakdown = this.computeBreakdown(seqA, seqB, stepByBeatScores);
 
     // Calculate overall score
     const overallScore =
@@ -83,7 +83,7 @@ export class SimilarityCalculator implements ISimilarityCalculator {
       motionSimilarity,
       positionSimilarity,
       structuralSimilarity,
-      beatByBeatScores,
+      stepByBeatScores,
       commonSubsequences,
       summary,
       breakdown,
@@ -569,7 +569,7 @@ export class SimilarityCalculator implements ISimilarityCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { beatSignatureGenerator } from "./StepSignatureGenerator";
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
 import { sequenceAligner } from "./SequenceAligner";
 
 export const similarityCalculator = new SimilarityCalculator(
