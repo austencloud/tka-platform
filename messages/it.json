@@ -1577,5 +1577,7 @@
   "visibility_trail_settings": "Impostazioni del percorso",
   "visibility_vtg": "VTG",
   "visibility_word": "Parola",
-  "warning_delete_also": "Attenzione: Questa azione eliminerà anche:"
+  "warning_delete_also": "Attenzione: Questa azione eliminerà anche:",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }

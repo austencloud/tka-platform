@@ -1602,5 +1602,7 @@
   "visibility_trail_settings": "Paramètres des traînées",
   "visibility_vtg": "VTG",
   "visibility_word": "Mot",
-  "warning_delete_also": "Attention : Cette action supprimera également :"
+  "warning_delete_also": "Attention : Cette action supprimera également :",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }

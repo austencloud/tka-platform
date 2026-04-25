@@ -1582,5 +1582,7 @@
   "visibility_trail_settings": "轨迹设置",
   "visibility_vtg": "VTG",
   "visibility_word": "单词",
-  "warning_delete_also": "警告：此操作还将删除："
+  "warning_delete_also": "警告：此操作还将删除：",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }

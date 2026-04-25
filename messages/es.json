@@ -1582,5 +1582,7 @@
   "visibility_trail_settings": "Configuración de estela",
   "visibility_vtg": "VTG",
   "visibility_word": "Palabra",
-  "warning_delete_also": "Advertencia: Esta acción también eliminará:"
+  "warning_delete_also": "Advertencia: Esta acción también eliminará:",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }

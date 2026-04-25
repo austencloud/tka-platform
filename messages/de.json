@@ -1582,5 +1582,7 @@
   "visibility_trail_settings": "Trail-Einstellungen",
   "visibility_vtg": "VTG",
   "visibility_word": "Wort",
-  "warning_delete_also": "Warnung: Diese Aktion wird auch löschen:"
+  "warning_delete_also": "Warnung: Diese Aktion wird auch löschen:",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }

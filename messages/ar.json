@@ -1582,5 +1582,7 @@
   "visibility_trail_settings": "إعدادات المسار",
   "visibility_vtg": "VTG",
   "visibility_word": "كلمة",
-  "warning_delete_also": "تحذير: سيؤدي هذا الإجراء أيضاً إلى حذف:"
+  "warning_delete_also": "تحذير: سيؤدي هذا الإجراء أيضاً إلى حذف:",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }

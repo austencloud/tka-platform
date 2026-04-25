@@ -1582,5 +1582,7 @@
   "visibility_trail_settings": "Configurações de rastro",
   "visibility_vtg": "VTG",
   "visibility_word": "Palavra",
-  "warning_delete_also": "Atenção: Esta ação também excluirá:"
+  "warning_delete_also": "Atenção: Esta ação também excluirá:",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }

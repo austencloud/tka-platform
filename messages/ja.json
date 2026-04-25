@@ -1582,5 +1582,7 @@
   "visibility_trail_settings": "トレイル設定",
   "visibility_vtg": "VTG",
   "visibility_word": "言葉",
-  "warning_delete_also": "警告：この操作は以下も削除します："
+  "warning_delete_also": "警告：この操作は以下も削除します：",
+  "tab_learn_guide": "Guide",
+  "tab_desc_learn_guide": "Level 1 interactive textbook"
 }
