@@ -1,12 +1,17 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import GuideNav from "./_components/GuideNav.svelte";
+  import { setActiveSectionContext } from "./_data/guide-data-context";
   import "./_styles/guide.css";
 
   let { children }: { children: Snippet } = $props();
 
   let activeSectionId = $state("");
   let sidebarOpen = $state(false);
+
+  setActiveSectionContext((id: string) => {
+    activeSectionId = id;
+  });
 </script>
 
 <svelte:head>
