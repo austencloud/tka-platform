@@ -9,18 +9,13 @@ import {
 } from "../../domain/sticker-constants";
 import type { IStickerUnitRenderer } from "../contracts/IStickerUnitRenderer";
 
-/**
- * Light-mode palette tuned for white sticker paper.
- * Darker, more saturated than the dark-mode defaults so blue/red read as primary colors
- * rather than washed-out glows.
- */
 const LIGHT_MODE_PALETTE: MandalaPalette = {
   blueStroke: "#1e40af",
-  blueFill: "rgba(37, 99, 235, 0.65)",
+  blueFill: "transparent",
   redStroke: "#991b1b",
-  redFill: "rgba(220, 38, 38, 0.65)",
+  redFill: "transparent",
   purpleStroke: "#6b21a8",
-  purpleFill: "rgba(126, 34, 206, 0.75)",
+  purpleFill: "transparent",
 };
 
 /**
@@ -39,7 +34,7 @@ export class StickerUnitRenderer implements IStickerUnitRenderer {
   renderSVG(unit: StickerUnit, mandalaPaths: MandalaPaths): string {
     const mandalaSvg = this.mandalaRenderer.renderSVG(mandalaPaths, {
       size: STICKER_ART_DIAMETER_PX,
-      style: "filled", // stroke + fill layered — see MandalaRenderer.filledAttributes
+      style: "stroke",
       showGridDots: false,
       show: toMandalaShow(unit.variant),
       strokeWidth: STICKER_STROKE_WIDTH,
