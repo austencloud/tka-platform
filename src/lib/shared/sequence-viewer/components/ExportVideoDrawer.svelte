@@ -1,26 +1,20 @@
 <!--
   ExportVideoDrawer.svelte
 
-  Unified 5-pill Download Animation panel. Works identically on mobile and
-  desktop, with a single shared template:
+  Unified Download Animation panel with collapsible sections. Works on
+  mobile and desktop with a single shared section stack:
 
-  - Mobile (layout="bottom"): pill row + download button at the bottom of
-    the canvas. Tapping a pill opens a bento sheet over the canvas.
-  - Desktop (layout="sidebar"): pill row at the top of the sidebar; the
-    active pill's body renders inline below; download button in the footer.
+  - Mobile (layout="bottom"): gear trigger + download button at bottom.
+    Tapping gear opens a RailBentoSheet with the full scrollable stack.
+  - Desktop (layout="sidebar"): scrollable stack fills the sidebar;
+    download button pinned in the footer.
 
-  Effects / Effort / Playback / Display / Export — five pills cover the
-  full surface. Loops + Timing live in Export (they describe the output
-  video file), Playback pill covers in-canvas preview behavior only.
+  Sections: Effects (expanded default) → Effort → Playback → Display → Export.
+  Collapsible headers show summary badges when collapsed.
 -->
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
-  // NOTE: VideoFps / VideoResolution are no longer imported — the new pill
-  // body calls setVideoFps(30|60|120) and setVideoResolution(720|1080|2160|4320)
-  // with literal arguments (widened automatically to the union at the call
-  // site), so the types have no remaining consumer in this file. Keeping
-  // them would surface as a `no-unused-vars` lint warning.
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
@@ -28,7 +22,6 @@
   import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
   import "./bento/rail-tile.css";
-  import "./pill-nav/pill-nav.css";
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
@@ -36,9 +29,7 @@
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
-  import DownloadPillNav from "./pill-nav/DownloadPillNav.svelte";
-  import PillBody from "./pill-nav/PillBody.svelte";
-  import { type PillId, type PillSpec, buildPillSpecs } from "./pill-nav/pill-types";
+  import RailBentoSheet from "./bento/RailBentoSheet.svelte";
   import {
     computeDisplaySummary,
     computeEffectsSummary,
@@ -87,41 +78,29 @@
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
 
-  // Mobile: null = no sheet open. Desktop: always has one pill active.
-  // A one-shot $state(layout === ...) initializer would only fire at
-  // component init — if the parent flips layout without remounting,
-  // desktop would render with no active pill, OR mobile would inherit an
-  // already-open sheet from a previous desktop state. The $effect below
-  // repairs both directions.
-  let activePillId = $state<PillId | null>(layout === "sidebar" ? "effects" : null);
-  $effect(() => {
-    if (layout === "sidebar" && activePillId === null) {
-      activePillId = "effects";
-    } else if (layout === "bottom" && activePillId !== null) {
-      // On a sidebar→bottom flip, close the sheet — otherwise a
-      // desktop-selected pill would pop open as a modal on mobile.
-      activePillId = null;
-    }
-  });
+  // ── Section expansion state ──
+  type SectionId = "effects" | "effort" | "playback" | "display" | "export";
+  let expandedSections = $state<Set<SectionId>>(new Set(["effects"]));
 
-  // Track the nav root + the last-activated pill ID so we can restore
-  // focus when the mobile sheet closes. We intentionally store the ID,
-  // not the HTMLButtonElement — on layout flip DownloadPillNav remounts
-  // with a fresh DOM root, and any cached element reference would point
-  // at a detached node. Re-querying via the live pillNavEl each time
-  // avoids that class of silent focus loss.
-  let pillNavEl: HTMLDivElement | null = $state(null);
-  function findPillButton(id: PillId | null): HTMLButtonElement | null {
-    if (!id || !pillNavEl) return null;
-    return pillNavEl.querySelector<HTMLButtonElement>(`[data-pill-id="${id}"]`);
+  function toggleSection(id: SectionId): void {
+    const next = new Set(expandedSections);
+    next.has(id) ? next.delete(id) : next.add(id);
+    expandedSections = next;
   }
-  let lastActivatedPillId: PillId | null = $state(null);
 
-  // Honor prefers-reduced-motion for the panel's entrance/exit fade
-  // transitions below. Initialize synchronously in the $state initializer
-  // — transition:fade reads its options at mount time, BEFORE onMount
-  // runs. An onMount-deferred read would let the first panel entrance
-  // animate at full duration even for users who have reduced-motion on.
+  // Mobile sheet state
+  let mobileSheetOpen = $state(false);
+  let settingsButtonEl: HTMLButtonElement | undefined = $state();
+
+  function openMobileSheet(): void {
+    mobileSheetOpen = true;
+  }
+
+  function closeMobileSheet(): void {
+    mobileSheetOpen = false;
+  }
+
+  // Honor prefers-reduced-motion
   let reduceMotion = $state(
     typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
@@ -135,33 +114,39 @@
     return () => mq.removeEventListener("change", handler);
   });
 
-  function selectPill(id: PillId): void {
-    if (layout === "bottom") {
-      // Mobile toggles the sheet; tapping the active pill closes it.
-      const wasOpen = activePillId === id;
-      activePillId = wasOpen ? null : id;
-      // Capture the activating pill id so the sheet can restore focus on
-      // close. Do NOT null-out when closing — the sheet's unmount cleanup
-      // reads this AFTER closePill runs, and we need the id to remain
-      // valid across that gap. Overwritten on next selectPill.
-      if (!wasOpen) lastActivatedPillId = id;
-    } else {
-      // Desktop is always-on; tapping the active pill is a no-op.
-      activePillId = id;
+  const slideDuration = $derived(reduceMotion ? 0 : 200);
+
+  function preventSpaceActivation(event: KeyboardEvent) {
+    if (event.key !== " " && event.code !== "Space") return;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    const tag = target.tagName;
+    if (tag === "BUTTON" || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (target.isContentEditable) return;
+    event.preventDefault();
+  }
+
+  // ── Keyboard nav between section headers ──
+  function onSectionKeydown(event: KeyboardEvent): void {
+    const headers = Array.from(
+      (event.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>(".section-header"),
+    );
+    const idx = headers.indexOf(event.target as HTMLButtonElement);
+    if (idx < 0) return;
+
+    let next: number | null = null;
+    if (event.key === "ArrowDown") next = (idx + 1) % headers.length;
+    else if (event.key === "ArrowUp") next = (idx - 1 + headers.length) % headers.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = headers.length - 1;
+
+    if (next !== null) {
+      event.preventDefault();
+      headers[next]?.focus();
     }
   }
 
-  function closePill(): void {
-    if (layout === "bottom") {
-      activePillId = null;
-      // Intentionally do NOT clear lastActivatedPillId here — the sheet's
-      // unmount cleanup reads returnFocusTo AFTER this function returns,
-      // and returnFocusTo is derived from lastActivatedPillId below.
-    }
-  }
-
-  // Reactive bridge to the animation visibility manager — drives all the
-  // pill summaries that depend on VM state.
+  // ── Reactive bridge to animation visibility manager ──
   const vm = getAnimationVisibilityManager();
   let vmVersion = $state(0);
   function onVmChanged(): void { vmVersion++; }
@@ -172,17 +157,10 @@
     void vmVersion;
     const id = vm.getEffortPreset();
     const match = EFFORTS.find((e) => e.id === id);
-    // EFFORTS is a non-empty readonly array; fall back to "linear" as a safety net.
     return match ?? EFFORTS[0] ?? { id: "linear", label: "Linear", subtitle: "", color: "#94a3b8", params: [] };
   });
 
-  // ── Pill summaries — recomputed when vmVersion ticks or props change ──
-  // Each helper is a pure function from pill-summaries.ts; the $derived
-  // wrapper threads the reactive inputs through it. The legacy effectsCount
-  // stat (count of non-none entries in tipEffectMap) is removed — the
-  // default map is { "*": { effect: "trails" } } so a count of 1 vs 0 never
-  // reflected any user action. Active-effect name is the truthful state.
-
+  // ── Section summaries (reuse pure functions from pill-summaries.ts) ──
   const effectsSummary = $derived.by(() => {
     void vmVersion;
     return computeEffectsSummary(vm.getActiveEffect(), EFFECT_LABELS);
@@ -213,9 +191,6 @@
     );
   });
 
-  /** Export pill shows resolution + fps + loop count. Loops live in Export
-   *  because they describe the OUTPUT video, not the preview playback
-   *  (Playback pill controls in-canvas behavior only). */
   const exportSummary = $derived(
     computeExportSummary({
       resolution: exportOptions.videoResolution,
@@ -224,59 +199,6 @@
       renderMode: renderMode === "3d" ? "3d" : "2d",
     }),
   );
-
-  /** PillSpec map keyed by PillId. Compiler enforces every PillId has a
-   *  spec — adding to PILL_ORDER without updating this object fails the
-   *  type check, so no runtime drift guard is needed.
-   *
-   *  Note: "export" is quoted defensively. JS / TS allow reserved words as
-   *  object literal keys, but some lint configs (e.g. strict
-   *  no-restricted-syntax rules) flag unquoted reserved words in property
-   *  positions. Quoting is unambiguous in every config. */
-  const pills = $derived<PillSpec[]>(
-    buildPillSpecs({
-      effects:    { label: "EFFECTS",  icon: "fa-sparkles",   summary: effectsSummary },
-      effort:     { label: "EFFORT",   summary: effortSummary, accentColor: effortAccent },
-      playback:   { label: "PLAYBACK", icon: "fa-play",       summary: playbackSummary },
-      display:    { label: "DISPLAY",  icon: "fa-eye",        summary: displaySummary },
-      "export":   { label: "EXPORT",   icon: "fa-sliders",    summary: exportSummary },
-    }),
-  );
-
-  /** Label used by the visually-hidden aria-live announcer below.
-   *  Announces "<pill> settings" on pill change — a short, meaningful status
-   *  message, NOT the full pill body subtree. */
-  const activePillAnnouncement = $derived.by(() => {
-    if (activePillId === null) return "";
-    const spec = pills.find((p) => p.id === activePillId);
-    if (!spec) {
-      // activePillId should always be an element of PILL_ORDER (the $effect
-      // above only assigns known ids), but an HMR-introduced drift between
-      // PILL_ORDER and the local pills Record could produce this state.
-      // Warn in dev so the drift surfaces instead of the SR announcer
-      // silently going empty.
-      console.warn("[ExportVideoDrawer] no pill spec for activePillId:", activePillId);
-      return "";
-    }
-    return `${spec.label} settings`;
-  });
-
-  /**
-   * Prevent Space-initiated page scroll when focus is on a non-interactive
-   * descendant of the export panel. Critically, do NOT preventDefault when
-   * the focused element is a button/input/textarea/select — Space on those
-   * elements is meant to activate the control, and preventDefault on the
-   * bubbled keydown blocks that activation.
-   */
-  function preventSpaceActivation(event: KeyboardEvent) {
-    if (event.key !== " " && event.code !== "Space") return;
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-    const tag = target.tagName;
-    if (tag === "BUTTON" || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-    if (target.isContentEditable) return;
-    event.preventDefault();
-  }
 
   const exportDisabled = $derived(isExporting || !canvasReady);
 
@@ -306,8 +228,6 @@
     return isEstimate ? `~${label} est.` : `~${label}`;
   });
 
-  /** Total video duration: one beat for each enabled hold + motion × loops. Matches the
-   *  timeline in VideoExportOrchestrator so the label agrees with the exported file. */
   const totalVideoDuration = $derived.by(() => {
     if (singlePlayDuration <= 0) return "";
     const unitSeconds = bpm > 0 ? 60 / bpm : 0;
@@ -316,199 +236,244 @@
     const total = startHold + singlePlayDuration * exportOptions.videoLoopCount + endHold;
     return formatDuration(total);
   });
+
+  // ── Section definitions ──
+  interface SectionDef {
+    id: SectionId;
+    icon: string;
+    label: string;
+    summary: string;
+    accentColor?: string;
+  }
+
+  const sections = $derived<SectionDef[]>([
+    { id: "effects",  icon: "fa-sparkles",      label: "Effects",  summary: effectsSummary },
+    { id: "effort",   icon: "fa-gauge",          label: "Effort",   summary: effortSummary, accentColor: effortAccent },
+    { id: "playback", icon: "fa-play",           label: "Playback", summary: playbackSummary },
+    { id: "display",  icon: "fa-eye",            label: "Display",  summary: displaySummary },
+    { id: "export",   icon: "fa-sliders",        label: "Export",   summary: exportSummary },
+  ]);
+
+  // ── SR announcer ──
+  let lastToggledSection = $state("");
+  function announceSectionToggle(id: SectionId, expanded: boolean): void {
+    const sec = sections.find((s) => s.id === id);
+    lastToggledSection = sec
+      ? `${sec.label} ${expanded ? "expanded" : "collapsed"}`
+      : "";
+  }
 </script>
 
-{#snippet pillBody()}
-  {#if activePillId === "effects"}
-    <!-- EffectsPanel manages its own .sb-section padding/borders;
-         render it flat without a wrapping .pill-inline-pad. -->
-    {#if layout === "bottom"}
-      <MobileEffectsPanel />
-    {:else}
-      <EffectsPanel
-        {bpm}
-        onBpmChange={onBpmChange ?? (() => {})}
-        {isPlaying}
-        onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-        showPlayback={!!(onPlaybackToggle && onBpmChange)}
-      />
-    {/if}
-  {:else if activePillId === "effort"}
-    <div class="pill-inline-pad">
-      <EffortPanel />
-    </div>
-  {:else if activePillId === "playback"}
-    <!-- Playback = how the canvas previews the sequence: tempo + mode.
-         Loops and start/end hold belong in Export because they describe
-         the OUTPUT video, not in-canvas playback. -->
-    <div class="pill-inline-pad">
-      <div class="rt-section">
-        <span class="rt-section-label">Tempo</span>
-        <TempoControl
-          {bpm}
-          onBpmChange={onBpmChange ?? (() => {})}
-          showPresets={false}
-          showPractice={false}
-          presetsMode="popover"
-        />
-      </div>
+{#snippet sectionStack()}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="section-stack" onkeydown={onSectionKeydown}>
+    {#each sections as sec (sec.id)}
+      <section class="collapsible-section">
+        <button
+          class="section-header"
+          aria-expanded={expandedSections.has(sec.id)}
+          aria-label={expandedSections.has(sec.id) ? `Collapse ${sec.label}` : `Expand ${sec.label}`}
+          onclick={() => {
+            toggleSection(sec.id);
+            announceSectionToggle(sec.id, expandedSections.has(sec.id));
+          }}
+        >
+          <i
+            class="fas {sec.icon} section-icon"
+            aria-hidden="true"
+            style={sec.accentColor ? `color: ${sec.accentColor}` : ""}
+          ></i>
+          <span class="section-label">{sec.label}</span>
+          <span
+            class="section-badge"
+            style={sec.accentColor ? `color: ${sec.accentColor}` : ""}
+          >{sec.summary}</span>
+          <i
+            class="fas fa-chevron-down section-chevron"
+            class:rotated={!expandedSections.has(sec.id)}
+            aria-hidden="true"
+          ></i>
+        </button>
 
-      {#if onPlaybackModeChange}
-        <div class="rt-section">
-          <span class="rt-section-label">Mode</span>
-          <PlaybackModeToggle
-            {playbackMode}
-            {isPlaying}
-            {onPlaybackModeChange}
-            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-          />
-        </div>
-      {/if}
-    </div>
-  {:else if activePillId === "display"}
-    <!-- role="region" (not "group") — these are named content landmarks,
-         not form-control groups. NVDA/JAWS announce "region" without the
-         "grouping of form controls" connotation that "group" triggers. -->
-    <div class="pill-inline-pad">
-      <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
-        <span class="rt-section-label" id="display-visibility-label">Visibility</span>
-        <DisplayPanel />
-      </div>
-      <div class="rt-section" role="region" aria-labelledby="display-paths-label">
-        <span class="rt-section-label" id="display-paths-label">Motion paths</span>
-        <PathShapePanel />
-      </div>
-    </div>
-  {:else if activePillId === "export"}
-    <div class="pill-inline-pad">
-      <div class="rt-section">
-        <span class="rt-section-label">Frame rate</span>
-        <div class="rt-chip-row">
-          <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoFps === 30}
-            onclick={() => exportOptions.setVideoFps(30)}
-          >30 fps</button>
-          <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoFps === 60}
-            onclick={() => exportOptions.setVideoFps(60)}
-          >60 fps</button>
-          <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoFps === 120}
-            onclick={() => exportOptions.setVideoFps(120)}
-          >120 fps</button>
-        </div>
-      </div>
+        {#if expandedSections.has(sec.id)}
+          <div
+            class="section-body"
+            transition:slide={{ duration: slideDuration }}
+          >
+            {#if sec.id === "effects"}
+              {#if layout === "bottom"}
+                <MobileEffectsPanel />
+              {:else}
+                <EffectsPanel
+                  {bpm}
+                  onBpmChange={onBpmChange ?? (() => {})}
+                  {isPlaying}
+                  onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+                  showPlayback={!!(onPlaybackToggle && onBpmChange)}
+                />
+              {/if}
+            {:else if sec.id === "effort"}
+              <div class="section-pad">
+                <EffortPanel />
+              </div>
+            {:else if sec.id === "playback"}
+              <div class="section-pad">
+                <div class="rt-section">
+                  <span class="rt-section-label">Tempo</span>
+                  <TempoControl
+                    {bpm}
+                    onBpmChange={onBpmChange ?? (() => {})}
+                    showPresets={false}
+                    showPractice={false}
+                    presetsMode="popover"
+                  />
+                </div>
+                {#if onPlaybackModeChange}
+                  <div class="rt-section">
+                    <span class="rt-section-label">Mode</span>
+                    <PlaybackModeToggle
+                      {playbackMode}
+                      {isPlaying}
+                      {onPlaybackModeChange}
+                      onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+                    />
+                  </div>
+                {/if}
+              </div>
+            {:else if sec.id === "display"}
+              <div class="section-pad">
+                <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
+                  <span class="rt-section-label" id="display-visibility-label">Visibility</span>
+                  <DisplayPanel />
+                </div>
+                <div class="rt-section" role="region" aria-labelledby="display-paths-label">
+                  <span class="rt-section-label" id="display-paths-label">Motion paths</span>
+                  <PathShapePanel />
+                </div>
+              </div>
+            {:else if sec.id === "export"}
+              <div class="section-pad">
+                <div class="rt-section">
+                  <span class="rt-section-label">Frame rate</span>
+                  <div class="rt-chip-row">
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoFps === 30}
+                      onclick={() => exportOptions.setVideoFps(30)}
+                    >30 fps</button>
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoFps === 60}
+                      onclick={() => exportOptions.setVideoFps(60)}
+                    >60 fps</button>
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoFps === 120}
+                      onclick={() => exportOptions.setVideoFps(120)}
+                    >120 fps</button>
+                  </div>
+                </div>
 
-      <div class="rt-section">
-        <span class="rt-section-label">Resolution</span>
-        <div class="rt-chip-row">
-          <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoResolution === 720}
-            onclick={() => exportOptions.setVideoResolution(720)}
-          >{renderMode === '3d' ? '720×720' : '720p'}</button>
-          <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoResolution === 1080}
-            onclick={() => exportOptions.setVideoResolution(1080)}
-          >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
-          <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoResolution === 2160}
-            onclick={() => exportOptions.setVideoResolution(2160)}
-          >{renderMode === '3d' ? '2160×2160' : '4K'}</button>
-          <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoResolution === 4320}
-            onclick={() => exportOptions.setVideoResolution(4320)}
-          >{renderMode === '3d' ? '4320×4320' : '8K'}</button>
-        </div>
-      </div>
+                <div class="rt-section">
+                  <span class="rt-section-label">Resolution</span>
+                  <div class="rt-chip-row">
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoResolution === 720}
+                      onclick={() => exportOptions.setVideoResolution(720)}
+                    >{renderMode === '3d' ? '720×720' : '720p'}</button>
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoResolution === 1080}
+                      onclick={() => exportOptions.setVideoResolution(1080)}
+                    >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoResolution === 2160}
+                      onclick={() => exportOptions.setVideoResolution(2160)}
+                    >{renderMode === '3d' ? '2160×2160' : '4K'}</button>
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoResolution === 4320}
+                      onclick={() => exportOptions.setVideoResolution(4320)}
+                    >{renderMode === '3d' ? '4320×4320' : '8K'}</button>
+                  </div>
+                </div>
 
-      {#if renderMode === '3d'}
-        <div class="rt-section">
-          <span class="rt-section-label">Quality</span>
-          <div class="rt-chip-row">
-            <button type="button" class="rt-chip"
-              aria-pressed={exportOptions.videoQuality === 'standard'}
-              onclick={() => exportOptions.setVideoQuality('standard')}
-            >Standard</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={exportOptions.videoQuality === 'cinema'}
-              onclick={() => exportOptions.setVideoQuality('cinema')}
-            ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
+                {#if renderMode === '3d'}
+                  <div class="rt-section">
+                    <span class="rt-section-label">Quality</span>
+                    <div class="rt-chip-row">
+                      <button type="button" class="rt-chip"
+                        aria-pressed={exportOptions.videoQuality === 'standard'}
+                        onclick={() => exportOptions.setVideoQuality('standard')}
+                      >Standard</button>
+                      <button type="button" class="rt-chip"
+                        aria-pressed={exportOptions.videoQuality === 'cinema'}
+                        onclick={() => exportOptions.setVideoQuality('cinema')}
+                      ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
+                    </div>
+                  </div>
+                {/if}
+
+                <div class="rt-section">
+                  <span class="rt-section-label">Timing</span>
+                  <div class="rt-chip-row">
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoIncludeStartPosition}
+                      onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+                    >
+                      <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
+                    </button>
+                    <button type="button" class="rt-chip"
+                      aria-pressed={exportOptions.videoIncludeEndHold}
+                      onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+                    >
+                      <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
+                    </button>
+                  </div>
+                </div>
+
+                <div class="rt-row">
+                  <span class="rt-row-label">Loops</span>
+                  <div class="rt-stepper">
+                    <button type="button" class="rt-step-btn"
+                      onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+                      disabled={exportOptions.videoLoopCount <= 1}
+                      aria-label="Decrease loop count"
+                    ><i class="fas fa-minus" aria-hidden="true"></i></button>
+                    <span class="rt-val">{exportOptions.videoLoopCount}×</span>
+                    <button type="button" class="rt-step-btn"
+                      onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+                      disabled={exportOptions.videoLoopCount >= 10}
+                      aria-label="Increase loop count"
+                    ><i class="fas fa-plus" aria-hidden="true"></i></button>
+                  </div>
+                </div>
+
+                {#if timeEstimateLabel}
+                  <div class="video-duration-line">
+                    <i class="fas fa-clock" aria-hidden="true"></i>
+                    {timeEstimateLabel}
+                  </div>
+                {/if}
+                {#if totalVideoDuration}
+                  <div class="video-duration-line">
+                    <i class="fas fa-film" aria-hidden="true"></i>
+                    Video length: {totalVideoDuration}
+                  </div>
+                {/if}
+              </div>
+            {/if}
           </div>
-        </div>
-      {/if}
-
-      <div class="rt-section">
-        <span class="rt-section-label">Timing</span>
-        <div class="rt-chip-row">
-          <button
-            type="button"
-            class="rt-chip"
-            aria-pressed={exportOptions.videoIncludeStartPosition}
-            onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
-          >
-            <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
-          </button>
-          <button
-            type="button"
-            class="rt-chip"
-            aria-pressed={exportOptions.videoIncludeEndHold}
-            onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
-          >
-            <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
-          </button>
-        </div>
-      </div>
-
-      <div class="rt-row">
-        <span class="rt-row-label">Loops</span>
-        <div class="rt-stepper">
-          <button
-            type="button"
-            class="rt-step-btn"
-            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
-            disabled={exportOptions.videoLoopCount <= 1}
-            aria-label="Decrease loop count"
-          ><i class="fas fa-minus" aria-hidden="true"></i></button>
-          <span class="rt-val">{exportOptions.videoLoopCount}×</span>
-          <button
-            type="button"
-            class="rt-step-btn"
-            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
-            disabled={exportOptions.videoLoopCount >= 10}
-            aria-label="Increase loop count"
-          ><i class="fas fa-plus" aria-hidden="true"></i></button>
-        </div>
-      </div>
-
-      {#if timeEstimateLabel}
-        <div class="video-duration-line">
-          <i class="fas fa-clock" aria-hidden="true"></i>
-          {timeEstimateLabel}
-        </div>
-      {/if}
-      {#if totalVideoDuration}
-        <div class="video-duration-line">
-          <i class="fas fa-film" aria-hidden="true"></i>
-          Video length: {totalVideoDuration}
-        </div>
-      {/if}
-    </div>
-  {/if}
+        {/if}
+      </section>
+    {/each}
+  </div>
 {/snippet}
 
-<!-- Visually-hidden live-region announcer. Updates to a short "<pill>
-     settings" string when the user switches pills, giving screen-reader
-     users a meaningful status message without dumping the whole new panel
-     subtree (which an aria-live on .pill-body-inline would). Mounted once
-     above the layout branches so it persists across layout flips. -->
+<!-- SR announcer -->
 <span class="sr-only" aria-live="polite" aria-atomic="true">
-  {activePillAnnouncement}
+  {lastToggledSection}
 </span>
 
 {#if layout === "bottom"}
   <!-- ============================================================
-       MOBILE: pill row + download button at bottom; sheet pops up
-       over the canvas when a pill is active.
+       MOBILE: settings trigger + download button at bottom;
+       sheet opens with the full section stack.
        ============================================================ -->
   <div
     class="mobile-export"
@@ -535,43 +500,35 @@
           <div class="progress-fill" style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"></div>
         </div>
         {#if onCancel}
-          <button
-            type="button"
-            class="cancel-btn"
-            onclick={onCancel}
-            aria-label="Cancel export"
-          >
+          <button type="button" class="cancel-btn" onclick={onCancel} aria-label="Cancel export">
             <i class="fas fa-times" aria-hidden="true"></i>
             Cancel
           </button>
         {/if}
       </div>
     {:else}
-      {#if activePillId !== null}
-        <PillBody
-          title={pills.find((p) => p.id === activePillId)?.label ?? ""}
-          variant="mobile"
-          onClose={closePill}
-          returnFocusTo={findPillButton(lastActivatedPillId)}
+      {#if mobileSheetOpen}
+        <RailBentoSheet
+          title="Settings"
+          onClose={closeMobileSheet}
+          returnFocusTo={settingsButtonEl}
         >
-          {@render pillBody()}
-        </PillBody>
+          {@render sectionStack()}
+        </RailBentoSheet>
       {/if}
 
-      <!-- Interaction wrapper — no redundant role="group"/aria-label here;
-           the enclosing .mobile-export already declares
-           role="region" aria-label="Animation export", and nesting a second
-           labelled landmark underneath produces duplicated SR announcements
-           (NVDA/JAWS read "Animation export ... Animation export"). -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="rt-zone" onkeydown={preventSpaceActivation}>
-        <DownloadPillNav
-          {pills}
-          activeId={activePillId}
-          onSelect={selectPill}
-          variant="mobile"
-          onNavMount={(el) => (pillNavEl = el)}
-        />
+      <div class="mobile-bar" onkeydown={preventSpaceActivation}>
+        <button
+          type="button"
+          class="mobile-settings-btn"
+          onclick={openMobileSheet}
+          bind:this={settingsButtonEl}
+          aria-label="Open animation settings"
+        >
+          <i class="fas fa-sliders" aria-hidden="true"></i>
+          Settings
+        </button>
 
         <button
           type="button"
@@ -582,7 +539,7 @@
         >
           {#if !canvasReady}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Preparing export...
+            Preparing...
           {:else}
             <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
             {exportButtonLabel}
@@ -593,7 +550,7 @@
   </div>
 {:else}
   <!-- ============================================================
-       DESKTOP SIDEBAR: pill row at top, body inline, download in footer.
+       DESKTOP SIDEBAR: scrollable section stack + pinned footer.
        ============================================================ -->
   <div
     class="export-panel sidebar"
@@ -602,21 +559,8 @@
     aria-label="Animation export settings"
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="panel-body" onkeydown={preventSpaceActivation}>
-      <DownloadPillNav
-        {pills}
-        activeId={activePillId}
-        onSelect={selectPill}
-        variant="desktop"
-        onNavMount={(el) => (pillNavEl = el)}
-      />
-
-      <PillBody
-        title={pills.find((p) => p.id === activePillId)?.label ?? ""}
-        variant="desktop"
-      >
-        {@render pillBody()}
-      </PillBody>
+    <div class="panel-scroll" onkeydown={preventSpaceActivation}>
+      {@render sectionStack()}
     </div>
 
     <div class="panel-footer">
@@ -639,12 +583,7 @@
             <div class="progress-fill" style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"></div>
           </div>
           {#if onCancel}
-            <button
-              type="button"
-              class="cancel-btn"
-              onclick={onCancel}
-              aria-label="Cancel export"
-            >
+            <button type="button" class="cancel-btn" onclick={onCancel} aria-label="Cancel export">
               <i class="fas fa-times" aria-hidden="true"></i>
               Cancel
             </button>
@@ -678,6 +617,96 @@
 
 <style>
   /* ============================================================
+   * COLLAPSIBLE SECTION STACK
+   * ============================================================ */
+
+  .section-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .collapsible-section {
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--theme-text, white);
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 120ms ease;
+  }
+
+  .section-header:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .section-header:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+    border-radius: 2px;
+  }
+
+  .section-icon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    flex-shrink: 0;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+
+  .section-badge {
+    flex: 1;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 8px;
+  }
+
+  .section-chevron {
+    font-size: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    flex-shrink: 0;
+    transition: transform 200ms ease;
+  }
+
+  .section-chevron.rotated {
+    transform: rotate(-90deg);
+  }
+
+  .section-body {
+    overflow: hidden;
+  }
+
+  .section-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 16px 16px;
+  }
+
+  /* ============================================================
    * MOBILE BOTTOM CONTAINER
    * ============================================================ */
 
@@ -694,6 +723,42 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px 16px 12px;
+  }
+
+  .mobile-bar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 10px 10px;
+  }
+
+  .mobile-settings-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 10px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+    flex-shrink: 0;
+  }
+
+  .mobile-settings-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .mobile-settings-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   /* ============================================================
@@ -715,25 +780,23 @@
     overflow: hidden;
   }
 
-  /* Desktop body becomes a vertical flex container: pill nav row at top,
-     PillBody fills remaining space and scrolls internally. */
-  .panel-body {
-    display: flex;
-    flex-direction: column;
+  .panel-scroll {
     flex: 1;
     min-height: 0;
-    gap: 12px;
-    padding: 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
-  /* Wrapper used by inline pill bodies (everything except Effects).
-     Effects renders its own .sb-section padding, so it skips this wrapper. */
-  :global(.pill-body-inline .pill-inline-pad) {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+  .panel-scroll::-webkit-scrollbar { width: 5px; }
+  .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+  .panel-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
   }
+
+  /* ============================================================
+   * Shared: duration lines, footer, export button, progress
+   * ============================================================ */
 
   .video-duration-line {
     display: flex;
@@ -741,11 +804,6 @@
     gap: 8px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    /* Fallback matches the dark-theme calculator's canonical textDim (0.75α
-       — 7:1 on panel-bg). The earlier 0.5α fallback composited to ~5.2:1,
-       below AAA for 12px body text when the theme variable is briefly
-       unset (SSR first paint, a custom theme without textDim, test
-       harnesses without the theme provider). */
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     padding: 4px 0;
   }
@@ -755,13 +813,10 @@
     opacity: 0.6;
   }
 
-  /* ============================================================
-   * Footer (desktop sidebar)
-   * ============================================================ */
-
   .panel-footer {
-    padding: 12px 20px 16px;
+    padding: 12px 16px 16px;
     flex-shrink: 0;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .export-row {
@@ -774,9 +829,6 @@
   .time-estimate {
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    /* See .video-duration-line rationale — 0.75α matches the canonical
-       dark-theme textDim so the fallback clears AAA (7:1) instead of the
-       prior 5.2:1 when the theme variable is briefly unset. */
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
   }
 
@@ -813,7 +865,6 @@
     cursor: not-allowed;
   }
 
-  /* Progress (shared between mobile + desktop) */
   .export-progress-row {
     display: flex;
     flex-direction: column;
@@ -830,10 +881,6 @@
   .progress-stage {
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    /* 0.75α matches the dark-theme calculator's canonical textDim (7:1 on
-       panel-bg). The prior 0.6α fallback composited to ~6.5:1 — above AA
-       but below AAA for 12px body text. Raising for consistency with the
-       .video-duration-line / .time-estimate hygiene from Round 4 item 37. */
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
   }
 
@@ -869,8 +916,6 @@
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
-    /* See .progress-stage — 0.75α keeps the fallback lane at AAA for
-       consistency across the panel's dimmed-text roles. */
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
@@ -885,15 +930,38 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .section-header,
+    .section-chevron,
     .export-btn,
     .cancel-btn,
-    .progress-fill {
+    .progress-fill,
+    .mobile-settings-btn {
       transition: none !important;
       animation: none !important;
     }
 
     .export-btn:active {
       transform: none !important;
+    }
+
+    .section-chevron.rotated {
+      transform: rotate(-90deg);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .section-header:focus-visible {
+      outline: 2px solid Highlight;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .collapsible-section {
+      border-bottom-width: 2px;
+    }
+
+    .section-badge {
+      color: var(--theme-text, white);
     }
   }
 </style>

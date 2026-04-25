@@ -418,7 +418,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       });
 
       // Start beat synchronization interval
-      startBeatSync();
+      startStepSync();
     }
   }
 
@@ -426,7 +426,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
    * Start beat synchronization for live mode.
    * Adjusts current beat based on server time.
    */
-  function startBeatSync() {
+  function startStepSync() {
     if (stepSyncInterval) {
       clearInterval(stepSyncInterval);
     }
@@ -436,7 +436,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
         return;
       }
 
-      const targetStep = broadcastRepository.getCurrentBeatPosition(
+      const targetStep = broadcastRepository.getCurrentStepPosition(
         broadcastState.startedAtMs,
         broadcastState.durationMs,
         broadcastState.currentSequence.totalSteps,
@@ -471,7 +471,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     animationState.setPlaybackMode("continuous");
 
     // Set initial beat position based on server time
-    const currentStep = broadcastRepository.getCurrentBeatPosition(
+    const currentStep = broadcastRepository.getCurrentStepPosition(
       state.startedAtMs,
       state.durationMs,
       state.currentSequence.totalSteps,
@@ -837,15 +837,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       0 0 100px rgba(99, 102, 241, 0.1);
   }
 
-  .beat-grid-container {
-    width: clamp(280px, 40vw, 450px);
-    height: clamp(320px, 50vw, 520px);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
   .state-message {
     width: 100%;
     height: 100%;
@@ -961,11 +952,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       gap: 16px;
     }
 
-    .beat-grid-container {
-      width: 100%;
-      max-width: 400px;
-      height: 200px;
-    }
   }
 
   @media (max-width: 600px) {
@@ -985,9 +971,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       width: min(90vw, 360px);
     }
 
-    .beat-grid-container {
-      display: none;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -78,7 +78,7 @@ export interface ICompositeVideoRenderer {
    * @param stepIndex The beat index (0-based)
    * @returns Grid position with column, row, and pixel coordinates
    */
-  getBeatGridPosition(stepIndex: number): StepGridPosition;
+  getStepGridPosition(stepIndex: number): StepGridPosition;
 
   /**
    * Get the composite canvas dimensions based on orientation.

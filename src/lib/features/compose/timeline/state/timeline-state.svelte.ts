@@ -37,7 +37,7 @@ import {
   saveToStorage,
   TIMELINE_STORAGE_KEYS,
 } from "./timeline-storage";
-import { getStepTimes } from "../services/BeatGridCalculator";
+import { getStepTimes } from "../services/StepGridCalculator";
 import { createPlayheadActions } from "./actions/playhead-actions";
 import { createSelectionActions } from "./actions/selection-actions";
 import { createViewportActions } from "./actions/viewport-actions";

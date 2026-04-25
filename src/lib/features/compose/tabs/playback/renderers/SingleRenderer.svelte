@@ -181,7 +181,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     animationState.setStepPlaybackStepSize(stepPlaybackStepSize);
   });
 
-  // Derived: Current beat data (for passing to AnimatorCanvas)
+  // Derived: Current step data (for passing to AnimatorCanvas)
   let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
 

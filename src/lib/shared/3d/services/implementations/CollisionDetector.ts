@@ -105,7 +105,7 @@ export class CollisionDetector implements ICollisionDetector {
     body: BodySnapshot,
     blueProp: PropSegment | null,
     redProp: PropSegment | null,
-    beatIndex: number,
+    stepNumber: number,
     beatProgress: number
   ): CollisionEvent[] {
     if (!this.enabled) return [];
@@ -125,7 +125,7 @@ export class CollisionDetector implements ICollisionDetector {
       const threshold = HEAD_RADIUS + seg.radius;
       if (closest < threshold) {
         const depth = threshold - closest;
-        events.push(this.makeEvent("prop-through-head", beatIndex, beatProgress, depth,
+        events.push(this.makeEvent("prop-through-head", stepNumber, beatProgress, depth,
           `${label} staff shaft → head (${(closest * 100).toFixed(1)}cm clearance, ${(depth * 100).toFixed(1)}cm deep)`));
       }
     }
@@ -145,7 +145,7 @@ export class CollisionDetector implements ICollisionDetector {
         }
       }
       if (worstDepth > 0) {
-        events.push(this.makeEvent("prop-through-torso", beatIndex, beatProgress, worstDepth,
+        events.push(this.makeEvent("prop-through-torso", stepNumber, beatProgress, worstDepth,
           `${label} staff shaft → torso (${(worstDepth * 100).toFixed(1)}cm deep)`));
       }
     }
@@ -164,7 +164,7 @@ export class CollisionDetector implements ICollisionDetector {
         const threshold = ARM_SEGMENT_RADIUS + seg.radius;
         if (closest < threshold) {
           const depth = threshold - closest;
-          events.push(this.makeEvent("prop-through-arm", beatIndex, beatProgress, depth,
+          events.push(this.makeEvent("prop-through-arm", stepNumber, beatProgress, depth,
             `${label} staff → ${arm.name} (${(depth * 100).toFixed(1)}cm deep)`));
           break; // one arm hit per prop is enough
         }
@@ -181,7 +181,7 @@ export class CollisionDetector implements ICollisionDetector {
       const threshold = blueProp.radius + redProp.radius + PROP_BODY_THRESHOLD;
       if (closest < threshold) {
         const depth = threshold - closest;
-        events.push(this.makeEvent("prop-through-prop", beatIndex, beatProgress, depth,
+        events.push(this.makeEvent("prop-through-prop", stepNumber, beatProgress, depth,
           `Staffs cross (${(closest * 100).toFixed(1)}cm gap, ${(depth * 100).toFixed(1)}cm overlap)`));
       }
     }
@@ -193,14 +193,14 @@ export class CollisionDetector implements ICollisionDetector {
     const leftArmThreshold = HEAD_RADIUS + ARM_SEGMENT_RADIUS + PROP_BODY_THRESHOLD;
     if (leftArmDist < leftArmThreshold) {
       const penetration = leftArmThreshold - leftArmDist;
-      events.push(this.makeEvent("arm-through-face", beatIndex, beatProgress, penetration,
+      events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration,
         `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
     }
     const rightArmDist = this.pointToSegmentDistance(body.face, body.rightElbow, body.rightHand);
     const rightArmThreshold = HEAD_RADIUS + ARM_SEGMENT_RADIUS + PROP_BODY_THRESHOLD;
     if (rightArmDist < rightArmThreshold) {
       const penetration = rightArmThreshold - rightArmDist;
-      events.push(this.makeEvent("arm-through-face", beatIndex, beatProgress, penetration,
+      events.push(this.makeEvent("arm-through-face", stepNumber, beatProgress, penetration,
         `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
     }
 
@@ -211,7 +211,7 @@ export class CollisionDetector implements ICollisionDetector {
     );
     if (armArmDist < ARM_ARM_THRESHOLD) {
       const penetration = ARM_ARM_THRESHOLD - armArmDist;
-      events.push(this.makeEvent("arms-through-each-other", beatIndex, beatProgress, penetration,
+      events.push(this.makeEvent("arms-through-each-other", stepNumber, beatProgress, penetration,
         `Forearms intersect (${(armArmDist * 100).toFixed(1)}cm gap, ${(penetration * 100).toFixed(1)}cm overlap)`));
     }
 
@@ -222,7 +222,7 @@ export class CollisionDetector implements ICollisionDetector {
     );
     if (upperArmDist < ARM_ARM_THRESHOLD) {
       const penetration = ARM_ARM_THRESHOLD - upperArmDist;
-      events.push(this.makeEvent("arms-through-each-other", beatIndex, beatProgress, penetration,
+      events.push(this.makeEvent("arms-through-each-other", stepNumber, beatProgress, penetration,
         `Upper arms intersect (${(upperArmDist * 100).toFixed(1)}cm gap, ${(penetration * 100).toFixed(1)}cm overlap)`));
     }
 
@@ -280,13 +280,13 @@ export class CollisionDetector implements ICollisionDetector {
 
   private makeEvent(
     zone: CollisionZone,
-    beatIndex: number,
+    stepNumber: number,
     beatProgress: number,
     penetrationDepth: number,
     description: string
   ): CollisionEvent {
     const severity = this.classifySeverity(penetrationDepth);
-    return { zone, severity, beatIndex, beatProgress, penetrationDepth, description };
+    return { zone, severity, stepNumber, beatProgress, penetrationDepth, description };
   }
 
   private trackStats(event: CollisionEvent): void {
@@ -301,12 +301,12 @@ export class CollisionDetector implements ICollisionDetector {
       });
     }
     const stats = this.zoneStats.get(key)!;
-    stats.beats.add(event.beatIndex);
+    stats.beats.add(event.stepNumber);
     stats.totalFrames++;
     stats.severityCounts[event.severity]++;
     if (event.penetrationDepth > stats.worstPenetration) {
       stats.worstPenetration = event.penetrationDepth;
-      stats.worstBeat = event.beatIndex;
+      stats.worstBeat = event.stepNumber;
     }
   }
 
@@ -318,7 +318,7 @@ export class CollisionDetector implements ICollisionDetector {
     // Filter by minimum severity
     if (this.severityRank(event.severity) < this.severityRank(this.minSeverity)) return;
 
-    const key = `${event.zone}:${event.beatIndex}:${event.severity}`;
+    const key = `${event.zone}:${event.stepNumber}:${event.severity}`;
     const now = performance.now();
     const lastTime = this.lastLogTimes.get(key) ?? 0;
     const cooldown = COOLDOWN_MS[event.severity];
@@ -326,7 +326,7 @@ export class CollisionDetector implements ICollisionDetector {
     if (now - lastTime > cooldown) {
       this.lastLogTimes.set(key, now);
       const badge = SEVERITY_BADGE[event.severity];
-      const msg = `[Collision] ${badge} | Beat ${event.beatIndex} (${(event.beatProgress * 100).toFixed(0)}%) | ${event.zone} | ${event.description}`;
+      const msg = `[Collision] ${badge} | Beat ${event.stepNumber} (${(event.beatProgress * 100).toFixed(0)}%) | ${event.zone} | ${event.description}`;
 
       switch (event.severity) {
         case "graze":

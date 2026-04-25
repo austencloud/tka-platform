@@ -73,7 +73,7 @@ export class CreateModuleHandlers implements ICreateModuleHandlers {
   /**
    * Handle remove beat button click
    */
-  handleRemoveBeat(
+  handleRemoveStep(
     stepIndex: number,
     CreateModuleState: CreateModuleState | null
   ): void {

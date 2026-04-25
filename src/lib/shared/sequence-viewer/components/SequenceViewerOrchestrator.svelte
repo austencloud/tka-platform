@@ -330,9 +330,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // ============================================================================
 
   // ── Playback ──
-  // svelte-ignore state_referenced_locally — initialBpm/initialStep are intentionally
-  // captured once; the $effect.pre below handles reactive sync.
-  const playback = createPlaybackController({ modalAnimationState, initialBpm, initialStep });
+  // Factory receives hardcoded defaults; the $effect.pre below immediately
+  // syncs the real prop values (runs before first render), avoiding
+  // state_referenced_locally by never reading initialBpm/initialStep outside
+  // a reactive context.
+  const playback = createPlaybackController({ modalAnimationState, initialBpm: 60, initialStep: 0 });
 
   // Sync initial values when props change (mirrors original $effect.pre)
   $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = initialBpm; });
@@ -351,9 +353,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   const exportCoord = createExportCoordinator({ viewer3DState, accessibilityHelper });
 
   // ── Prop context ──
-  // svelte-ignore state_referenced_locally — viewingContext is passed as a dep but
-  // the factory doesn't read it; activeContext is resolved reactively via getActiveContext().
-  const propContext = createPropContextResolver({ viewingContext });
+  // viewingContext is NOT passed here — the factory doesn't read it from deps.
+  // Instead, activeContext is resolved reactively via getActiveContext(viewingContext)
+  // in the $derived block below.
+  const propContext = createPropContextResolver({});
 
   // ── Image composition ──
   const imgComp = createImageCompositionSync();

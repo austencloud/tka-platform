@@ -49,7 +49,7 @@ export function removeStep(
   });
 
   // Remove the beat and all subsequent steps with staggered animation
-  createModuleState.sequenceState.removeBeatAndSubsequentWithAnimation(
+  createModuleState.sequenceState.removeStepAndSubsequentWithAnimation(
     stepIndex,
     () => {
       // After animation completes, select appropriate beat

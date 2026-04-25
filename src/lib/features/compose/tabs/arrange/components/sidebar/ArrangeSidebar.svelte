@@ -65,8 +65,8 @@
     // Playback props
     hasAnyLayers: boolean;
     isPlaying: boolean;
-    currentBeat: number;
-    totalBeats: number;
+    currentStep: number;
+    totalSteps: number;
     bpm: number;
     skipStartPosition: boolean;
     onPlayPause: () => void;
@@ -183,8 +183,8 @@
     <div class="sidebar-section playback-section">
       <PlaybackBar
         isPlaying={p.isPlaying}
-        currentBeat={p.currentBeat}
-        totalBeats={p.totalBeats}
+        currentStep={p.currentStep}
+        totalSteps={p.totalSteps}
         bpm={p.bpm}
         skipStartPosition={p.skipStartPosition}
         onPlayPause={p.onPlayPause}

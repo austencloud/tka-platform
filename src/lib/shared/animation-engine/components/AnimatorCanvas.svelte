@@ -321,7 +321,7 @@ Last audit: 2025-12-27
 
   const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
-  const effectiveBeatPositionVisible = $derived(beatPositionVisible);
+  const effectiveStepPositionVisible = $derived(beatPositionVisible);
 
   const effectiveIsSeamlesslyLoopable = $derived.by(() => {
     if (isSeamlesslyLoopable !== undefined) return isSeamlesslyLoopable;
@@ -571,7 +571,7 @@ Last audit: 2025-12-27
           {stepData}
           tkaGlyphVisible={effectiveTkaGlyphVisible}
           stepNumbersVisible={effectiveBeatNumbersVisible}
-          beatPositionVisible={effectiveBeatPositionVisible}
+          beatPositionVisible={effectiveStepPositionVisible}
           darkMode={darkModeEnabled}
           isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
           isAtEndPosition={

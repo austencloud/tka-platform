@@ -115,7 +115,7 @@ export function createSequenceSelectionState() {
       state.selectedStepNumber = null;
     },
 
-    isBeatSelected(stepNumber: number): boolean {
+    isStepSelected(stepNumber: number): boolean {
       if (state.mode === "single") {
         return state.selectedStepNumber === stepNumber;
       }

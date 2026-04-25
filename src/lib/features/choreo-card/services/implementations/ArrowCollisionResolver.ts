@@ -1,7 +1,7 @@
 /**
  * Arrow Collision Resolver
  *
- * When two hands end at the same grid location in a beat, their arrows stack
+ * When two hands end at the same grid location in a step, their arrows stack
  * on top of each other and become unreadable. This resolver detects those
  * collisions and pushes the arrows apart by applying pixel offsets in the
  * outward direction from the shared endpoint.
@@ -61,40 +61,40 @@ const OUTWARD_OFFSETS: Record<GridLocation, OffsetVector> = {
 
 export class ArrowCollisionResolver implements IArrowCollisionResolver {
   /**
-   * Returns a new beats array where any beat with blue and red arrows ending
+   * Returns a new steps array where any step with blue and red arrows ending
    * at the same location has those arrows pushed apart.
    *
-   * Non-colliding beats are returned as-is (same object reference). Only
-   * colliding beats produce new PictographData instances with updated
+   * Non-colliding steps are returned as-is (same object reference). Only
+   * colliding steps produce new PictographData instances with updated
    * arrowPlacementData on both motions.
    */
-  resolveCollisions(beats: PictographData[]): PictographData[] {
-    return beats.map((beat) => this.resolveBeat(beat));
+  resolveCollisions(steps: PictographData[]): PictographData[] {
+    return steps.map((step) => this.resolveStep(step));
   }
 
   // --------------------------------------------------------------------------
   // PRIVATE
   // --------------------------------------------------------------------------
 
-  private resolveBeat(beat: PictographData): PictographData {
-    const blue = beat.motions[MotionColor.BLUE];
-    const red = beat.motions[MotionColor.RED];
+  private resolveStep(step: PictographData): PictographData {
+    const blue = step.motions[MotionColor.BLUE];
+    const red = step.motions[MotionColor.RED];
 
     // Nothing to resolve if either motion is missing
-    if (!blue || !red) return beat;
+    if (!blue || !red) return step;
 
     // No collision if the hands end at different locations
-    if (blue.endLocation !== red.endLocation) return beat;
+    if (blue.endLocation !== red.endLocation) return step;
 
     const offset = OUTWARD_OFFSETS[blue.endLocation];
 
     // CENTER has zero offset — no useful outward direction, skip it
-    if (offset.x === 0 && offset.y === 0) return beat;
+    if (offset.x === 0 && offset.y === 0) return step;
 
     return {
-      ...beat,
+      ...step,
       motions: {
-        ...beat.motions,
+        ...step.motions,
         [MotionColor.BLUE]: this.applyOffset(blue, +offset.x, +offset.y),
         // Use (0 - n) instead of (-n) to avoid -0 for zero-component axes
         [MotionColor.RED]:  this.applyOffset(red,  0 - offset.x, 0 - offset.y),

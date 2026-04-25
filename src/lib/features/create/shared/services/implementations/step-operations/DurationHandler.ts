@@ -46,7 +46,7 @@ export function updateStepDuration(
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
   if (!stepData) {
-    logger.warn("Cannot update duration - no beat data available");
+    logger.warn("Cannot update duration - no step data available");
     return;
   }
 
@@ -61,7 +61,7 @@ export function updateStepDuration(
     return;
   }
 
-  // Create updated beat data
+  // Create updated step data
   const updatedStepData = {
     ...stepData,
     duration: roundedDuration,

@@ -48,11 +48,11 @@ export function createAutoEditPanelEffect(
       const selectedCount = selectedStepNumbers.size ?? 0;
 
       if (selectedCount > 1 && !panelState.isStepEditorPanelOpen) {
-        // Map beat numbers to beat data
-        const beatNumbersArray = Array.from(selectedStepNumbers).sort(
+        // Map beat numbers to step data
+        const stepNumbersArray = Array.from(selectedStepNumbers).sort(
           (a, b) => a - b
         );
-        const stepsData = beatNumbersArray
+        const stepsData = stepNumbersArray
           .map((stepNumber) => {
             if (stepNumber === START_POSITION_BEAT_NUMBER) {
               // Beat 0 is the start position
@@ -91,7 +91,7 @@ export function createAutoEditPanelEffect(
  *
  * @returns Cleanup function
  */
-export function createAutoBeatEditorEffect(
+export function createAutoStepEditorEffect(
   config: AutoEditPanelConfig
 ): () => void {
   const { CreateModuleState, panelState } = config;
@@ -123,16 +123,16 @@ export function createAutoBeatEditorEffect(
 }
 
 /**
- * @deprecated Use createAutoBeatEditorEffect instead
+ * @deprecated Use createAutoStepEditorEffect instead
  * Kept for backward compatibility during migration
  */
 export function createAutoSequenceActionsEffect(
   config: AutoEditPanelConfig
 ): () => void {
   getLogger().warn(
-    "createAutoSequenceActionsEffect is deprecated. Use createAutoBeatEditorEffect instead."
+    "createAutoSequenceActionsEffect is deprecated. Use createAutoStepEditorEffect instead."
   );
-  return createAutoBeatEditorEffect(config);
+  return createAutoStepEditorEffect(config);
 }
 
 /**

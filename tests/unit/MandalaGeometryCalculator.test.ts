@@ -92,7 +92,7 @@ function dist(
  * distances along a curve can be arbitrarily large. Instead we check only the
  * specific junction indices.
  */
-function maxBeatJunctionGap(d: string, samplesPerBeat: number, beatCount: number): number {
+function maxBeatJunctionGap(d: string, samplesPerBeat: number, stepCount: number): number {
   const pts = parseSVGEndpoints(d);
   // Points per beat in the SVG: samplesPerBeat + 1 on-curve points from M + C commands.
   // The M command is point[0] (first point of first beat).
@@ -116,7 +116,7 @@ function maxBeatJunctionGap(d: string, samplesPerBeat: number, beatCount: number
   //   (N+1)*(samplesPerBeat+1)       ← first of beat N+1
   const beatSize = samplesPerBeat + 1;
   let maxGap = 0;
-  for (let b = 1; b < beatCount; b++) {
+  for (let b = 1; b < stepCount; b++) {
     const endOfPrev = b * beatSize - 1;
     const startOfNext = b * beatSize;
     if (endOfPrev < pts.length && startOfNext < pts.length) {
@@ -781,10 +781,10 @@ describe("MandalaGeometryCalculator", () => {
     it("Ω-YΩXΩ-YΩX sequence has max junction gap < 0.02px across all paths", () => {
       const result = calc.calculate(SIXTEEN_BEAT_STEPS);
       const allPaths = [...result.blue, ...result.red];
-      const beatCount = SIXTEEN_BEAT_STEPS.length;
+      const stepCount = SIXTEEN_BEAT_STEPS.length;
 
       for (const path of allPaths) {
-        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, beatCount);
+        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, stepCount);
         expect(gap).toBeLessThan(0.02);
       }
     });

@@ -321,7 +321,7 @@ export class DimensionCalculator implements IDimensionCalculator {
    * Debug method to test height calculations across beat count range
    */
   debugHeightCalculations(
-    maxBeats: number = 10,
+    maxSteps: number = 10,
     stepScale: number = 1
   ): Array<{
     stepCount: number;
@@ -355,7 +355,7 @@ export class DimensionCalculator implements IDimensionCalculator {
       addDifficultyLevel: false,
     };
 
-    for (let stepCount = 0; stepCount <= maxBeats; stepCount++) {
+    for (let stepCount = 0; stepCount <= maxSteps; stepCount++) {
       const [topHeight, bottomHeight] = this.determineAdditionalHeights(
         testOptions,
         stepCount,

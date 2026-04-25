@@ -414,7 +414,7 @@ export function registerCreateShortcuts(
       }
 
       // Remove the beat and all subsequent steps with animation (same as trash can button)
-      sequenceState.removeBeatAndSubsequentWithAnimation(
+      sequenceState.removeStepAndSubsequentWithAnimation(
         selectedStepIndex,
         () => {
           // After animation completes, select appropriate beat
@@ -471,7 +471,7 @@ export function registerCreateShortcuts(
         return;
       }
 
-      sequenceState.removeBeatAndSubsequentWithAnimation(
+      sequenceState.removeStepAndSubsequentWithAnimation(
         selectedStepIndex,
         () => {
           if (selectedStepIndex > 0) {

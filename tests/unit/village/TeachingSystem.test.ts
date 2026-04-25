@@ -49,7 +49,7 @@ function makeTeacherLearnerPair(
 	teacher.social.sequenceBeingTransferred = "seq1";
 	learner.social.sequenceBeingTransferred = "seq1";
 	learner.social.teachingProgress = 0;
-	learner.social.currentBeatIndex = 0;
+	learner.social.currentStepIndex = 0;
 	learner.social.frustrationLevel = 0;
 
 	learner.personality.learnSpeed = 0.9;

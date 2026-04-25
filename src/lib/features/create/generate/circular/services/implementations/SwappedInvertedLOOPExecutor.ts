@@ -144,7 +144,7 @@ export class SwappedInvertedLOOPExecutor {
 
     const newStep: StepData = {
       ...previousMatchingStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       letter: invertedLetter, // INVERTED
       startPosition: previousStep.endPosition ?? null,

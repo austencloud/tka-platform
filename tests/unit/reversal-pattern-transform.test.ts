@@ -115,7 +115,7 @@ describe("getReversalFlagsForBeat", () => {
 
 function makeSteps(count: number, blueMotion = "pro", redMotion = "pro") {
   return Array.from({ length: count }, (_, i) => ({
-    beatIndex: i,
+    stepNumber: i,
     blueMotionType: blueMotion,
     redMotionType: redMotion,
     blueReversal: false,
@@ -189,8 +189,8 @@ describe("applyReversalPattern", () => {
 
   it("mixed motion types: pro flips, dash stays, static stays", () => {
     const steps = [
-      { beatIndex: 0, blueMotionType: "pro", redMotionType: "dash", blueReversal: false, redReversal: false },
-      { beatIndex: 1, blueMotionType: "static", redMotionType: "anti", blueReversal: false, redReversal: false },
+      { stepNumber: 0, blueMotionType: "pro", redMotionType: "dash", blueReversal: false, redReversal: false },
+      { stepNumber: 1, blueMotionType: "static", redMotionType: "anti", blueReversal: false, redReversal: false },
     ];
     applyReversalPattern(steps, "book");
 

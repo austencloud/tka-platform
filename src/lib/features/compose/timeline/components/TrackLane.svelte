@@ -9,7 +9,7 @@
   import type { TimelineTrack } from "../domain/timeline-types";
   import { getTimelineState } from "../state/timeline-state.svelte";
   import TimelineClip from "./TimelineClip.svelte";
-  import BeatGrid from "./BeatGrid.svelte";
+  import StepGrid from "./StepGrid.svelte";
   import { timeToPixels } from "../domain/timeline-types";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 
@@ -144,7 +144,7 @@
   aria-label="Track {track.name}"
 >
   <!-- Beat grid markers -->
-  <BeatGrid
+  <StepGrid
     bpm={projectBpm}
     timeSignature={projectTimeSignature}
     duration={projectDuration}

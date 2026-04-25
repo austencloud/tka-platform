@@ -4,7 +4,7 @@ import { StepNumberRenderer } from './services/implementations/StepNumberRendere
 
 let instance: IStepNumberRenderer | null = null;
 
-export function getBeatNumberRenderer(): IStepNumberRenderer {
-	if (!browser) throw new Error('getBeatNumberRenderer() is browser-only');
+export function getStepNumberRenderer(): IStepNumberRenderer {
+	if (!browser) throw new Error('getStepNumberRenderer() is browser-only');
 	return instance ??= new StepNumberRenderer();
 }

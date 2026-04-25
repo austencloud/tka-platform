@@ -31,14 +31,14 @@
   let correctedBlue = $state<GridLocation | null>(null);
   let correctedRed = $state<GridLocation | null>(null);
 
-  const currentBeat = $derived(beats[correctingBeatIndex] ?? null);
+  const currentStep = $derived(beats[correctingBeatIndex] ?? null);
 
   const detectedBlue = $derived<GridLocation | null>(
-    currentBeat?.positions.find((p) => p.hand === "blue")?.location ?? null
+    currentStep?.positions.find((p) => p.hand === "blue")?.location ?? null
   );
 
   const detectedRed = $derived<GridLocation | null>(
-    currentBeat?.positions.find((p) => p.hand === "red")?.location ?? null
+    currentStep?.positions.find((p) => p.hand === "red")?.location ?? null
   );
 
   function handleAccept() {
@@ -49,21 +49,21 @@
     onVerdict("rejected", []);
   }
 
-  function startCorrection(beatIndex: number) {
+  function startCorrection(stepNumber: number) {
     mode = "correcting";
-    correctingBeatIndex = beatIndex;
+    correctingBeatIndex = stepNumber;
     // Initialize with detected values
     correctedBlue = detectedBlue;
     correctedRed = detectedRed;
   }
 
   function saveCorrection() {
-    if (!currentBeat) return;
+    if (!currentStep) return;
 
     // Only add corrections where the value actually changed
     if (correctedBlue && correctedBlue !== detectedBlue) {
       corrections.push({
-        beatIndex: correctingBeatIndex,
+        stepNumber: correctingBeatIndex,
         field: "hand_position",
         hand: "blue",
         detectedValue: detectedBlue ?? "none",
@@ -73,7 +73,7 @@
 
     if (correctedRed && correctedRed !== detectedRed) {
       corrections.push({
-        beatIndex: correctingBeatIndex,
+        stepNumber: correctingBeatIndex,
         field: "hand_position",
         hand: "red",
         detectedValue: detectedRed ?? "none",
@@ -107,7 +107,7 @@
           {#each beats as beat, i}
             <button
               class="beat-btn"
-              class:has-correction={corrections.some((c) => c.beatIndex === i)}
+              class:has-correction={corrections.some((c) => c.stepNumber === i)}
               onclick={() => startCorrection(i)}
             >
               {i + 1}
@@ -132,12 +132,12 @@
       </button>
     </div>
 
-  {:else if mode === "correcting" && currentBeat}
+  {:else if mode === "correcting" && currentStep}
     <div class="correction-ui">
       <div class="correction-header">
         <h4>{t('skel2tka_correct_beat', { beat: String(correctingBeatIndex + 1) })}</h4>
         <span class="beat-time">
-          {currentBeat.startTime.toFixed(2)}s - {currentBeat.endTime.toFixed(2)}s
+          {currentStep.startTime.toFixed(2)}s - {currentStep.endTime.toFixed(2)}s
         </span>
       </div>
 

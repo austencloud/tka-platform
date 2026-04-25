@@ -295,7 +295,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     secondaryAnimationState.setStepPlaybackStepSize(stepPlaybackStepSize);
   });
 
-  // Derived: Current beat data for primary sequence
+  // Derived: Current step data for primary sequence
   let primaryStepData = $derived.by(() => {
     if (!primaryAnimationState.sequenceData) return null;
 

@@ -74,7 +74,7 @@ describe("SequenceFuser", () => {
 		expect(result.redSoloProp!.steps.length).toBe(12);
 	});
 
-	it("truncates when LCM exceeds maxBeats", () => {
+	it("truncates when LCM exceeds maxSteps", () => {
 		const blue = makeHandPath(37);
 		const red = makeHandPath(41);
 
@@ -85,12 +85,12 @@ describe("SequenceFuser", () => {
 		expect(result.sequenceLength).toBe(37);
 	});
 
-	it("respects custom maxBeats option", () => {
+	it("respects custom maxSteps option", () => {
 		const blue = makeHandPath(5);
 		const red = makeHandPath(7);
 
-		// LCM(5, 7) = 35. With maxBeats=10, should truncate to min(5, 7) = 5.
-		const result = fuser.fuse(blue, red, { maxBeats: 10 });
+		// LCM(5, 7) = 35. With maxSteps=10, should truncate to min(5, 7) = 5.
+		const result = fuser.fuse(blue, red, { maxSteps: 10 });
 
 		expect(result.stepPairings!.length).toBe(5);
 		expect(result.sequenceLength).toBe(5);

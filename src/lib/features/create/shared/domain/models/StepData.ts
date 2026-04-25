@@ -1,7 +1,7 @@
 /**
  * Beat Domain Model - Shared
  *
- * Unified beat data structure that combines pictograph data with beat context.
+ * Unified step data structure that combines pictograph data with beat context.
  * Used across build and animator modules for all beat-related operations.
  *
  * NOTE: StepData represents actual steps in a sequence (stepNumber >= 1).

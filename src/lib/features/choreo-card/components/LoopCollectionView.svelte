@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Deck } from "../domain/models/Deck";
-  import LoopBeatGrid from "./LoopBeatGrid.svelte";
+  import LoopStepGrid from "./LoopStepGrid.svelte";
   import LoopTurnsGrid from "./LoopTurnsGrid.svelte";
   import LoopReversalGrid from "./LoopReversalGrid.svelte";
   import LoopDeckFilters from "./LoopDeckFilters.svelte";
@@ -106,9 +106,9 @@
     }
   }
 
-  function handleSelectBeatCount(beatCount: number): void {
-    const matching = sliceAndGridFiltered.filter(d => d.stepCount === beatCount);
-    drillOrSelect('beats', beatCount, matching);
+  function handleSelectBeatCount(stepCount: number): void {
+    const matching = sliceAndGridFiltered.filter(d => d.stepCount === stepCount);
+    drillOrSelect('beats', stepCount, matching);
   }
 
   function handleSelectTurns(turns: string): void {
@@ -203,7 +203,7 @@
         {/if}
       </div>
     {:else if activeAxis === 'beats'}
-      <LoopBeatGrid decks={sliceAndGridFiltered} onSelectBeatCount={handleSelectBeatCount} />
+      <LoopStepGrid decks={sliceAndGridFiltered} onSelectBeatCount={handleSelectBeatCount} />
     {:else if activeAxis === 'turns'}
       <LoopTurnsGrid decks={sliceAndGridFiltered} onSelectTurns={handleSelectTurns} />
     {:else}

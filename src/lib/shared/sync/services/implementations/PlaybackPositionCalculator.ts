@@ -166,7 +166,7 @@ export class PlaybackPositionCalculator implements IPlaybackPositionCalculator {
 	 * @param durationMs - Duration of one beat in milliseconds
 	 * @throws Error if duration is not positive
 	 */
-	setBeatDuration(durationMs: number): void {
+	setStepDuration(durationMs: number): void {
 		if (durationMs <= 0) {
 			throw new Error(`Beat duration must be positive, got: ${durationMs}`);
 		}

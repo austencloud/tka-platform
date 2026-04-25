@@ -5,7 +5,7 @@
  * Extracted from composition-state.svelte.ts for single responsibility.
  */
 
-import type { AudioState, BeatMarker } from "../composition-types";
+import type { AudioState, StepMarker } from "../composition-types";
 import { createDefaultAudioState } from "../composition-helpers";
 import {
   saveAudioToCache,
@@ -128,33 +128,33 @@ export function createAudioStateManager() {
   // Beat Markers
   // =========================================================================
 
-  function addBeatMarker(marker: BeatMarker) {
+  function addStepMarker(marker: StepMarker) {
     audioState = {
       ...audioState,
-      globalBeatMarkers: [...audioState.globalBeatMarkers, marker],
+      globalStepMarkers: [...audioState.globalStepMarkers, marker],
     };
   }
 
-  function removeBeatMarker(markerId: string) {
+  function removeStepMarker(markerId: string) {
     audioState = {
       ...audioState,
-      globalBeatMarkers: audioState.globalBeatMarkers.filter(
+      globalStepMarkers: audioState.globalStepMarkers.filter(
         (m) => m.id !== markerId
       ),
     };
   }
 
-  function updateBeatMarker(markerId: string, updates: Partial<BeatMarker>) {
+  function updateStepMarker(markerId: string, updates: Partial<StepMarker>) {
     audioState = {
       ...audioState,
-      globalBeatMarkers: audioState.globalBeatMarkers.map((m) =>
+      globalStepMarkers: audioState.globalStepMarkers.map((m) =>
         m.id === markerId ? { ...m, ...updates } : m
       ),
     };
   }
 
-  function setBeatMarkers(markers: BeatMarker[]) {
-    audioState = { ...audioState, globalBeatMarkers: markers };
+  function setStepMarkers(markers: StepMarker[]) {
+    audioState = { ...audioState, globalStepMarkers: markers };
   }
 
   // =========================================================================
@@ -190,10 +190,10 @@ export function createAudioStateManager() {
     setAnalyzing,
 
     // Beat markers
-    addBeatMarker,
-    removeBeatMarker,
-    updateBeatMarker,
-    setBeatMarkers,
+    addStepMarker,
+    removeStepMarker,
+    updateStepMarker,
+    setStepMarkers,
 
     // Reset
     reset,

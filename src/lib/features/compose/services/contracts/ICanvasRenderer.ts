@@ -77,7 +77,7 @@ export interface ICanvasRenderer {
    * Render a segmented progress bar onto the canvas
    * @param y - Y position to draw the progress bar
    * @param totalSteps - Total number of steps in the sequence
-   * @param currentBeat - Current beat position (float, 0-based)
+   * @param currentStep - Current beat position (float, 0-based)
    * @param stepDurations - Duration of each step (defaults to 1 per step)
    * @param darkMode - When true, uses dark mode colors
    */
@@ -86,7 +86,7 @@ export interface ICanvasRenderer {
     canvasSize: number,
     y: number,
     totalSteps: number,
-    currentBeat: number,
+    currentStep: number,
     stepDurations: number[],
     darkMode: boolean
   ): void;

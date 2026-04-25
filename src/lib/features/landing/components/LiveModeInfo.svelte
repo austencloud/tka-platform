@@ -48,7 +48,7 @@
         {formatSliceSize(broadcastState.currentSequence.sliceSize)}
       </span>
       <span class="separator">·</span>
-      <span class="beat-count">
+      <span class="step-count">
         {t('landing_live_steps', { count: broadcastState.currentSequence.totalSteps })}
       </span>
     </div>

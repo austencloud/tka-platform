@@ -61,7 +61,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
         ? (applyToMotions(sequence.startPosition) as StartPositionData)
         : undefined,
       steps:
-        sequence.steps?.map((beat) => applyToMotions(beat) as StepData) ?? [],
+        sequence.steps?.map((step) => applyToMotions(step) as StepData) ?? [],
     };
   }
 
@@ -122,7 +122,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     );
   });
 
-  // Current beat data for AnimatorCanvas
+  // Current step data for AnimatorCanvas
   let currentLetter = $derived.by(() => {
     if (!animationState.sequenceData) return null;
     const currentStep = animationState.currentStep;
@@ -672,14 +672,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
   }
 
-  .beat-grid-panel {
-    flex: 0 0 auto;
-    width: clamp(420px, 57cqw, 600px);
-    height: clamp(420px, 57cqw, 600px);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
   .animation-loading,
   .animation-fallback {
     width: 420px;
@@ -711,19 +703,10 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       align-items: center;
     }
 
-    .beat-grid-panel {
-      width: 100%;
-      max-width: min(500px, 90vw);
-      height: clamp(200px, 40vw, 300px);
-    }
   }
 
   /* Mobile - hide beat grid, focus on animation */
   @media (max-width: 600px) {
-    .beat-grid-panel {
-      display: none;
-    }
-
     .canvas-wrapper {
       width: min(380px, 90vw);
       height: min(380px, 90vw);

@@ -1,5 +1,5 @@
 /**
- * IArrangeBeatCalculator - Contract for polyrhythmic beat calculation
+ * IArrangeStepCalculator - Contract for polyrhythmic beat calculation
  *
  * Computes per-cell and cross-grid beat counts using LCM (least common multiple)
  * to support polyrhythmic playback where cells with different sequence lengths
@@ -8,7 +8,7 @@
 
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
 
-export interface IArrangeBeatCalculator {
+export interface IArrangeStepCalculator {
   /**
    * Calculate the beat count for a single cell.
    * When a cell has multiple layers with different lengths,

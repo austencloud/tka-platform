@@ -446,9 +446,9 @@ In TKA, **position** describes where your two hands are relative to each other o
         }
       }
 
-      const beatCount = letters.length;
+      const stepCount = letters.length;
       const normalizedWord = letters.join("");
-      const explanation = `Here's **"${normalizedWord}"** as a ${beatCount}-beat animated sequence.`;
+      const explanation = `Here's **"${normalizedWord}"** as a ${stepCount}-beat animated sequence.`;
 
       return {
         explanation,

@@ -17,7 +17,7 @@
     type StepMarker,
     type MeasureMarker,
     type SubdivisionMarker,
-  } from "../services/BeatGridCalculator";
+  } from "../services/StepGridCalculator";
   import { timeToPixels } from "../domain/timeline-types";
 
   interface Props {
@@ -95,7 +95,7 @@
   }
 </script>
 
-<div class="beat-grid" aria-hidden="true">
+<div class="step-grid" aria-hidden="true">
   <!-- Subdivision lines (thinnest, only at high zoom) -->
   {#if shouldShowSubdivisions}
     {#each subdivisionMarkers as marker (marker.time)}
@@ -129,7 +129,7 @@
 </div>
 
 <style>
-  .beat-grid {
+  .step-grid {
     position: absolute;
     inset: 0;
     pointer-events: none;

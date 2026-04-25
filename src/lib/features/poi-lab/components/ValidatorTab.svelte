@@ -201,7 +201,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
         <h4>{t('poi_lab_beat_analysis')}</h4>
         <div class="steps-grid">
           {#each validationResult.stepResults as beat}
-            <div class="beat-card" class:valid={beat.isValid} class:invalid={!beat.isValid}>
+            <div class="step-card" class:valid={beat.isValid} class:invalid={!beat.isValid}>
               <div class="beat-header">
                 <span class="beat-number">{t('poi_lab_beat_number', { beat: String(beat.stepIndex) })}</span>
                 <span class="beat-letter">{beat.letter}</span>
@@ -485,18 +485,18 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
     gap: 0.5rem;
   }
 
-  .beat-card {
+  .step-card {
     padding: 0.75rem;
     border-radius: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  .beat-card.valid {
+  .step-card.valid {
     border-color: rgba(34, 197, 94, 0.3);
   }
 
-  .beat-card.invalid {
+  .step-card.invalid {
     border-color: rgba(239, 68, 68, 0.3);
   }
 
@@ -523,11 +523,11 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
     font-size: 0.875rem;
   }
 
-  .beat-card.valid .beat-status {
+  .step-card.valid .beat-status {
     color: #22c55e;
   }
 
-  .beat-card.invalid .beat-status {
+  .step-card.invalid .beat-status {
     color: #ef4444;
   }
 

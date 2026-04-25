@@ -150,7 +150,7 @@ export interface ISequenceExtender {
    * @returns The extension steps (excluding the existing sequence)
    * @throws Error if sequence cannot be extended
    */
-  generateExtensionBeats(
+  generateExtensionSteps(
     sequence: SequenceData,
     options?: ExtensionOptions
   ): Promise<StepData[]>;

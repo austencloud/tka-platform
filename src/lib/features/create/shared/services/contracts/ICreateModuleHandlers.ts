@@ -49,7 +49,7 @@ export interface ICreateModuleHandlers {
    * Handle remove beat button click
    * @throws Error if operation fails
    */
-  handleRemoveBeat(
+  handleRemoveStep(
     stepIndex: number,
     CreateModuleState: CreateModuleState | null
   ): void;

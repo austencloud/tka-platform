@@ -12,7 +12,7 @@ import type {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 /**
- * Raw beat data from sequence-index.json (camelCase format)
+ * Raw step data from sequence-index.json (camelCase format)
  */
 export interface RawStepData {
   beat?: number;

@@ -45,16 +45,16 @@ export function applyBatchChanges(
     return;
   }
 
-  const updatedSteps = currentSequence.steps.map((beat) => {
-    if (!selectedStepNumbers.has(beat.stepNumber)) return beat;
+  const updatedSteps = currentSequence.steps.map((step) => {
+    if (!selectedStepNumbers.has(step.stepNumber)) return step;
 
     const nextMotions =
-      changes.motions && beat.motions
-        ? { ...beat.motions, ...changes.motions }
-        : beat.motions;
+      changes.motions && step.motions
+        ? { ...step.motions, ...changes.motions }
+        : step.motions;
 
     return {
-      ...beat,
+      ...step,
       ...changes,
       motions: nextMotions,
     };

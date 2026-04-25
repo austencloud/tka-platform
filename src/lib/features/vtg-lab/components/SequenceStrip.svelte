@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * SequenceStrip — renders a 4-beat VTG cycle as a horizontal strip
+	 * SequenceStrip — renders a 4-step VTG cycle as a horizontal strip
 	 * of pictographs with beat labels, rotation badges, and position info.
 	 */
 
@@ -143,13 +143,6 @@
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 0.5rem;
-	}
-
-	.beat-cell {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.25rem;
 	}
 
 	.beat-number {

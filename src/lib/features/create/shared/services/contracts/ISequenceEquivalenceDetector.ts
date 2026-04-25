@@ -63,7 +63,7 @@ export interface SequenceSignature {
   readonly isCircular: boolean;
 
   /** Normalized beat signatures (rotation-invariant) */
-  readonly beatSignatures: readonly BeatSignature[];
+  readonly beatSignatures: readonly StepSignature[];
 
   /** Hash for quick inequality check */
   readonly hash: string;
@@ -72,7 +72,7 @@ export interface SequenceSignature {
 /**
  * Rotation-invariant signature for a single beat
  */
-export interface BeatSignature {
+export interface StepSignature {
   /** Blue motion signature */
   readonly blue: MotionSignature;
 

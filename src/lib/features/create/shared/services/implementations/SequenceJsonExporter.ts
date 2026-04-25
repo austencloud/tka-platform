@@ -10,7 +10,7 @@ import type {
 } from "../contracts/ISequenceJsonExporter";
 
 /** Union type for beat-like objects that can be exported */
-type BeatLike = StepData | StartPositionData | null | undefined;
+type StepLike = StepData | StartPositionData | null | undefined;
 
 /**
  * SequenceJsonExporter
@@ -72,7 +72,7 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
     };
   }
 
-  private minimalStep(beat: BeatLike): MinimalStep | null {
+  private minimalStep(beat: StepLike): MinimalStep | null {
     if (!beat) return null;
     // Handle both StepData (has stepNumber) and StartPositionData (no stepNumber)
     const stepNumber = "stepNumber" in beat ? beat.stepNumber : 0;

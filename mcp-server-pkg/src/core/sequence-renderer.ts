@@ -65,8 +65,8 @@ const START_COLUMN_LAYOUTS: Record<number, [number, number]> = {
   60: [5, 15], 61: [5, 16], 62: [5, 16], 63: [5, 16], 64: [5, 16],
 };
 
-function getStartColumnLayout(beatCount: number): [number, number] {
-  return START_COLUMN_LAYOUTS[beatCount] ?? START_COLUMN_LAYOUTS[64] ?? [5, 16];
+function getStartColumnLayout(stepCount: number): [number, number] {
+  return START_COLUMN_LAYOUTS[stepCount] ?? START_COLUMN_LAYOUTS[64] ?? [5, 16];
 }
 
 /**
@@ -342,15 +342,15 @@ function calculateStepPosition(
   // Letter steps: account for start position taking column 0 of row 0
   // beatColumns = totalColumns - 1 (columns available for beats per row after the start column)
   const beatColumns = totalColumns - 1;
-  const beatIndex = stepIndex - 1; // 0-based index among letter steps
+  const stepNumber = stepIndex - 1; // 0-based index among letter steps
 
-  if (beatIndex < beatColumns) {
+  if (stepNumber < beatColumns) {
     // First row: steps go after the start position
-    return { row: 0, col: beatIndex + 1 };
+    return { row: 0, col: stepNumber + 1 };
   }
 
   // Subsequent rows: start at column 1 (column 0 is empty)
-  const adjustedIndex = beatIndex - beatColumns; // Index relative to row 2+
+  const adjustedIndex = stepNumber - beatColumns; // Index relative to row 2+
   const row = Math.floor(adjustedIndex / beatColumns) + 1;
   const col = (adjustedIndex % beatColumns) + 1;
 

@@ -39,7 +39,7 @@ export interface OrientationCycleResult {
  * to the starting prop orientations.
  *
  * @param steps - Full step array where step 0 is the start position.
- *                Beats to cycle over are steps with stepNumber/beatIndex > 0.
+ *                Beats to cycle over are steps with stepNumber/stepNumber > 0.
  * @returns OrientationCycleResult with the cycle count and orientation history
  */
 export function detectOrientationCycle(steps: SequenceStep[]): OrientationCycleResult {

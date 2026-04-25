@@ -55,12 +55,12 @@ export async function hydrateSequence(
   // so behavior stays identical across entry points.
   const merged: SequenceData = {
     ...withLetters,
-    steps: withLetters.steps.map((beat, index) => ({
-      ...beat,
+    steps: withLetters.steps.map((step, index) => ({
+      ...step,
       startPosition:
-        beat.startPosition ?? withPositions.steps[index]?.startPosition ?? null,
+        step.startPosition ?? withPositions.steps[index]?.startPosition ?? null,
       endPosition:
-        beat.endPosition ?? withPositions.steps[index]?.endPosition ?? null,
+        step.endPosition ?? withPositions.steps[index]?.endPosition ?? null,
     })),
     startPosition: withLetters.startPosition
       ? {
@@ -97,11 +97,11 @@ export async function hydrateSequence(
   // encoded form may be a blank placeholder (no motions carried).
   let gridMode: GridMode | undefined;
   if (gridModeDeriver) {
-    for (const beat of merged.steps) {
-      if (beat.motions?.blue && beat.motions?.red) {
+    for (const step of merged.steps) {
+      if (step.motions?.blue && step.motions?.red) {
         gridMode = gridModeDeriver.deriveGridMode(
-          beat.motions.blue,
-          beat.motions.red
+          step.motions.blue,
+          step.motions.red
         );
         break;
       }

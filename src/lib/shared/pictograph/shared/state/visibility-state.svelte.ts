@@ -436,14 +436,14 @@ export class VisibilityStateManager {
    * Get beat numbers visibility
    * Beat numbers appear on pictographs in sequences (1, 2, 3...)
    */
-  getBeatNumbersVisibility(): boolean {
+  getStepNumbersVisibility(): boolean {
     return this.settings.stepNumbers;
   }
 
   /**
    * Set beat numbers visibility
    */
-  setBeatNumbersVisibility(visible: boolean): void {
+  setStepNumbersVisibility(visible: boolean): void {
     this.settings.stepNumbers = visible;
     this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)

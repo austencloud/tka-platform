@@ -21,7 +21,7 @@ export interface DifficultyAnalysis {
 export interface ISequenceDifficultyCalculator {
   /**
    * Calculate the difficulty level of a sequence based on its content
-   * @param steps - Array of beat data containing motion information
+   * @param steps - Array of step data containing motion information
    * @returns Numeric difficulty level (1 = beginner, 2 = intermediate, 3 = advanced)
    */
   calculateDifficultyLevel(steps: StepData[]): number;

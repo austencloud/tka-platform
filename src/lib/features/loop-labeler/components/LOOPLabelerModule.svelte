@@ -131,7 +131,7 @@
       return null;
     }
 
-    // Don't run detection until fullMetadata (beat data) is loaded
+    // Don't run detection until fullMetadata (step data) is loaded
     if (!seq.fullMetadata?.sequence || seq.fullMetadata.sequence.length === 0) {
       return null;
     }
@@ -375,9 +375,9 @@
     );
   }
 
-  function handleRemoveBeatPair(index: number) {
+  function handleRemoveStepPair(index: number) {
     if (!stepPairState) return;
-    stepPairState.actions.removeBeatPair(index);
+    stepPairState.actions.removeStepPair(index);
   }
 
   async function handleAddDesignation() {
@@ -667,7 +667,7 @@
                 {}}
               onRemoveWholeDesignation={handleRemoveDesignation}
               onRemoveSectionDesignation={handleRemoveSection}
-              onRemoveStepPairDesignation={handleRemoveBeatPair}
+              onRemoveStepPairDesignation={handleRemoveStepPair}
               onSetFreeform={handleSetFreeform}
               onMarkUnknown={handleMarkUnknown}
               onSaveAndNext={handleSaveAndNext}

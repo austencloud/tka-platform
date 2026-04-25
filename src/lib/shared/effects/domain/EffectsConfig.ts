@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 13;
+export const EFFECTS_CONFIG_VERSION = 14;
 
 export type EffectType =
   | "none"
@@ -33,7 +33,8 @@ export type EffectType =
   | "petals"
   | "smoke"
   | "ink"
-  | "frost";
+  | "frost"
+  | "silk";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -302,6 +303,25 @@ export interface FrostIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
+export interface SilkIntent {
+  /** 0-1. Overall opacity + width multiplier. */
+  intensity: number;
+  /** 0-1. Base ribbon half-width before velocity scaling. Maps to 5-30px. */
+  width: number;
+  /** 0-1. Sample lifetime. Maps to 0.5-4.0 seconds. */
+  duration: number;
+  /** 0-1. Sine-wave edge displacement amplitude. 0 = smooth, 1 = chaotic flutter. */
+  flutter: number;
+  /** 0-1. How much velocity narrows the ribbon. 0 = constant width, 1 = dramatic speed contrast. */
+  tautness: number;
+  /** Named palette. "custom" uses customColor. */
+  palette: "satin" | "velvet" | "ethereal" | "shadow" | "gold_leaf" | "ember" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /** Which staff end(s) the ribbon tracks. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
 /**
  * Backend-specific override storage. Populated only when the user
  * has explicitly edited a backend-only parameter via an Advanced
@@ -337,6 +357,8 @@ export interface EffectsOverrides {
   ink3D?: Record<string, unknown>;
   frost2D?: Record<string, unknown>;
   frost3D?: Record<string, unknown>;
+  silk2D?: Record<string, unknown>;
+  silk3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -356,6 +378,7 @@ export interface EffectsConfig {
   smoke: SmokeIntent;
   ink: InkIntent;
   frost: FrostIntent;
+  silk: SilkIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
@@ -371,6 +394,7 @@ export interface EffectsConfig {
     smoke: string | null;
     ink: string | null;
     frost: string | null;
+    silk: string | null;
   };
   overrides?: EffectsOverrides;
 }

@@ -31,8 +31,8 @@ describe("TipEvaluationContext", () => {
   it("creates a context with sensible defaults", () => {
     const c = createReusableContext();
     expect(c.time).toBe(0);
-    expect(c.beatIndex).toBe(-1);
-    expect(c.totalBeats).toBe(0);
+    expect(c.stepNumber).toBe(-1);
+    expect(c.totalSteps).toBe(0);
     expect(c.prevFrameTips).toHaveLength(0);
     expect(c.secondaryColor).toEqual({ r: 1, g: 1, b: 1 });
   });

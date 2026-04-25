@@ -88,7 +88,7 @@
         bind:value={compositionName}
         bind:this={nameInput}
         onkeydown={handleKeydown}
-        placeholder="e.g., Kaleidoscope 12-beat, Fire Opener"
+        placeholder="e.g., Kaleidoscope 12-step, Fire Opener"
         maxlength="80"
         autocomplete="off"
         data-form-type="other"

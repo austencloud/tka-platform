@@ -12,7 +12,7 @@
 
   interface Props {
     gridMode: string;
-    beatNumbersVisible: boolean;
+    stepNumbersVisible: boolean;
     armsVisible: boolean;
     propsVisible: boolean;
     trailStyle: TrailVisibility;
@@ -30,7 +30,7 @@
 
   let {
     gridMode,
-    beatNumbersVisible,
+    stepNumbersVisible,
     armsVisible,
     propsVisible,
     trailStyle,
@@ -193,9 +193,9 @@
           </button>
           <button
             class="toggle-btn"
-            class:active={beatNumbersVisible}
-            onclick={() => onToggle("beatNumbers")}
-            aria-pressed={beatNumbersVisible}
+            class:active={stepNumbersVisible}
+            onclick={() => onToggle("stepNumbers")}
+            aria-pressed={stepNumbersVisible}
           >
             <i class="fas fa-hashtag" aria-hidden="true"></i>
             Beat #s
@@ -353,9 +353,9 @@
         </button>
         <button
           class="toggle-btn"
-          class:active={beatNumbersVisible}
-          onclick={() => onToggle("beatNumbers")}
-          aria-pressed={beatNumbersVisible}
+          class:active={stepNumbersVisible}
+          onclick={() => onToggle("stepNumbers")}
+          aria-pressed={stepNumbersVisible}
         >
           <i class="fas fa-hashtag" aria-hidden="true"></i>
           Beat #

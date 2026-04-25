@@ -378,7 +378,7 @@
 
       let totalSvgTime = 0;
       let totalCanvasTime = 0;
-      let totalBeatsRendered = 0;
+      let totalStepsRendered = 0;
       const results: SequenceRenderResult[] = [];
 
       sequenceProgress = { current: 0, total: sequences.length, currentSeq: '', currentStep: 0, totalSteps: 0 };
@@ -461,7 +461,7 @@
               speedup: svgMs / canvasMs
             });
 
-            totalBeatsRendered++;
+            totalStepsRendered++;
           } catch (err) {
             console.error(`Error rendering beat ${stepIdx} of ${sequence.word}:`, err);
           }
@@ -481,13 +481,13 @@
 
       sequenceStats = {
         totalSequences: results.length,
-        totalSteps: totalBeatsRendered,
+        totalSteps: totalStepsRendered,
         totalSvgTime,
         totalCanvasTime,
         avgSpeedup: totalSvgTime / totalCanvasTime
       };
 
-      status = `Done! Rendered ${totalBeatsRendered} steps from ${results.length} sequences. Total: SVG ${totalSvgTime.toFixed(0)}ms, Canvas ${totalCanvasTime.toFixed(0)}ms (${(totalSvgTime / totalCanvasTime).toFixed(1)}x faster)`;
+      status = `Done! Rendered ${totalStepsRendered} steps from ${results.length} sequences. Total: SVG ${totalSvgTime.toFixed(0)}ms, Canvas ${totalCanvasTime.toFixed(0)}ms (${(totalSvgTime / totalCanvasTime).toFixed(1)}x faster)`;
       saveState();
 
     } catch (err) {
@@ -1204,12 +1204,6 @@
   .beat-render img {
     border: 1px solid #444;
     display: block;
-  }
-
-  .beat-label {
-    font-size: 10px;
-    color: #666;
-    margin-top: 4px;
   }
 
   /* Tab styling for 3 tabs */

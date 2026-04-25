@@ -20,14 +20,14 @@ import type { IDataTransformer } from "../contracts/IDataTransformer";
 
 export class DataTransformer implements IDataTransformer {
   /**
-   * Convert beat data to pictograph data
+   * Convert step data to pictograph data
    */
-  beatToPictographData(beat: StepData): PictographData {
+  stepToPictographData(beat: StepData): PictographData {
     const motions: Record<string, MotionData> = {};
     if (beat.motions["blue"]) motions["blue"] = beat.motions["blue"];
     if (beat.motions["red"]) motions["red"] = beat.motions["red"];
     return createPictographData({
-      id: `beat-${beat.stepNumber}`,
+      id: `step-${beat.stepNumber}`,
       motions,
       letter: beat.letter || null,
     });

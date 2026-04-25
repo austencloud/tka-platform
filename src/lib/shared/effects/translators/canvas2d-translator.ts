@@ -13,6 +13,7 @@ import type {
   SmokeIntent,
   InkIntent,
   FrostIntent,
+  SilkIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
@@ -29,6 +30,7 @@ import type {
   Smoke2DParams,
   Ink2DParams,
   Frost2DParams,
+  Silk2DParams,
 } from "./canvas2d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
 import { resolveBubblePalette } from "../domain/BubblePalettes";
@@ -36,6 +38,7 @@ import { resolvePetalPalette } from "../domain/PetalPalettes";
 import { resolveSmokePalette } from "../domain/SmokePalettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 import { resolveFrostPalette } from "../domain/FrostPalettes";
+import { resolveSilkPalette } from "../domain/SilkPalettes";
 
 export function resolveTrails2D(
   intent: TrailsIntent,
@@ -324,6 +327,21 @@ export function resolveFrost2D(
     crystalPoolSize: 256,
     crystalSpacing: 18,
     crystalGrowDuration: 0.6,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveSilk2D(
+  intent: SilkIntent,
+  override: Partial<Silk2DParams> = {},
+): Silk2DParams {
+  const palette = resolveSilkPalette(intent);
+  const defaults: Omit<Silk2DParams, keyof SilkIntent> = {
+    resolvedPalette: palette,
+    baseHalfWidth: 5 + intent.width * 25,      // 5-30px
+    lifetimeSeconds: 0.5 + intent.duration * 3.5, // 0.5-4.0s
+    motionReferenceSpeed: 3.0,
+    blendMode: palette.emissive ? "lighter" : "source-over",
   };
   return { ...intent, ...defaults, ...override };
 }

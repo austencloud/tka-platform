@@ -93,7 +93,7 @@
       lastStepIndex = currentStepIndex;
       beatStartTime = performance.now();
       if (!stepAnimFrameId && isPerforming) {
-        startBeatAnimation();
+        startStepAnimation();
       }
     }
   });
@@ -102,7 +102,7 @@
   $effect(() => {
     if (isPerforming && !stepAnimFrameId) {
       beatStartTime = performance.now();
-      startBeatAnimation();
+      startStepAnimation();
     } else if (!isPerforming && stepAnimFrameId) {
       cancelAnimationFrame(stepAnimFrameId);
       stepAnimFrameId = null;
@@ -110,7 +110,7 @@
     }
   });
 
-  function startBeatAnimation() {
+  function startStepAnimation() {
     function animate() {
       const elapsed = performance.now() - beatStartTime;
       const beatDuration = (60 / bpm) * 1000;

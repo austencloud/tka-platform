@@ -248,7 +248,7 @@ import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
               <textarea
                 id="error-comment"
                 class="comment-input"
-                placeholder="e.g. I was generating a 16-beat circular sequence..."
+                placeholder="e.g. I was generating a 16-step circular sequence..."
                 bind:value={userComment}
                 rows="3"
               ></textarea>

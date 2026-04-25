@@ -1,7 +1,7 @@
 export interface UnifiedPlaybackContext {
 	readonly overallProgress: number;
-	readonly currentBeat: number;
-	readonly totalBeats: number;
+	readonly currentStep: number;
+	readonly totalSteps: number;
 	readonly isPlaying: boolean;
 	readonly isLooping: boolean | undefined;
 	readonly duration: number;

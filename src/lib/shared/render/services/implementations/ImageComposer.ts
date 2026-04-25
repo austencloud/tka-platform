@@ -85,7 +85,7 @@ export class ImageComposer implements IImageComposer {
     private readonly blobCache: IPictographBlobCache,
     private readonly keyHasher: IPictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
-    private readonly beatNumberRenderer: IStepNumberRenderer,
+    private readonly stepNumberRenderer: IStepNumberRenderer,
     private readonly canvas2DRenderer: Canvas2DDirectRenderer,
     private readonly layerCompositor?: ILayerCompositor,
     private qrCodeGenerator?: IQRCodeGenerator
@@ -261,8 +261,8 @@ export class ImageComposer implements IImageComposer {
     const rawWord =
       sequence.word ||
       sequence.steps
-        .filter((beat) => beat.letter)
-        .map((beat) => beat.letter)
+        .filter((step) => step.letter)
+        .map((step) => step.letter)
         .join("");
 
     // Simplify repeated patterns (e.g., "ABCABCABC" → "ABC")
@@ -387,7 +387,7 @@ export class ImageComposer implements IImageComposer {
     // Render start position if needed (always at column 0, row 0)
     if (hasStartPosition && effectiveStartPosition) {
       // Only pass beat number 0 if addStepNumbers is true (shows "Start" text)
-      const startBeatNumber = options.addStepNumbers ? 0 : undefined;
+      const startStepNumber = options.addStepNumbers ? 0 : undefined;
       const startPositionData = hasPropOverride
         ? this.applyPropTypeOverride(
             effectiveStartPosition,
@@ -402,7 +402,7 @@ export class ImageComposer implements IImageComposer {
         0,
         0,
         stepSize,
-        startBeatNumber,
+        startStepNumber,
         gridOffsetY, // Offset grid below header (deck card: vertically centered)
         visibilitySettings, // Pass visibility settings
         effectiveBluePropType, // Pass snapshotted blue prop type
@@ -785,7 +785,7 @@ export class ImageComposer implements IImageComposer {
       // Draw beat number as text overlay (if provided)
       if (stepNumber !== undefined) {
         const isDarkMode = finalVisibilitySettings.darkMode ?? false;
-        this.beatNumberRenderer.drawStepNumber(ctx, stepNumber, x, y, stepSize, isDarkMode);
+        this.stepNumberRenderer.drawStepNumber(ctx, stepNumber, x, y, stepSize, isDarkMode);
       }
     } catch (error) {
       console.error(`❌ Failed to render beat at (${column}, ${row}):`, error);

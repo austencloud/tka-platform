@@ -45,7 +45,7 @@ export interface SequenceStep {
   redMotion: MotionData;
   stepNumber?: number;
   /** Beat index in the sequence (matches stepNumber for MCP adapter) */
-  beatIndex: number;
+  stepNumber: number;
   isBridge?: boolean;
   blueReversal?: boolean;
   redReversal?: boolean;
@@ -157,9 +157,9 @@ function pickRandom<T>(items: T[]): T | null {
   return items[Math.floor(Math.random() * items.length)] ?? null;
 }
 
-/** Create a SequenceStep with beatIndex = stepNumber */
-function makeStep(fields: Omit<SequenceStep, "beatIndex">): SequenceStep {
-  return { ...fields, beatIndex: fields.stepNumber ?? 0 };
+/** Create a SequenceStep with stepNumber = stepNumber */
+function makeStep(fields: Omit<SequenceStep, "stepNumber">): SequenceStep {
+  return { ...fields, stepNumber: fields.stepNumber ?? 0 };
 }
 
 function attemptSequenceBuild(

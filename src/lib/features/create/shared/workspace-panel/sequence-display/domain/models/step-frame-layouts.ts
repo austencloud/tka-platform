@@ -176,7 +176,7 @@ export const BEAT_FRAME_LAYOUTS_WIDE: Record<number, StepFrameLayout> = {
  * @param stepCount - Number of steps in the sequence
  * @param useWideLayout - Whether to use wide layout (≥652px in portrait mode)
  */
-export function getBeatFrameLayout(
+export function getStepFrameLayout(
   stepCount: number,
   useWideLayout: boolean = false
 ): StepFrameLayout {
@@ -216,7 +216,7 @@ export function shouldUseNarrowLayout(
   stepCount: number,
   useWideLayout: boolean = false
 ): boolean {
-  const layout = getBeatFrameLayout(stepCount, useWideLayout);
+  const layout = getStepFrameLayout(stepCount, useWideLayout);
   return layout.columns <= 3;
 }
 
@@ -238,7 +238,7 @@ export function getMaxColumnsForBeatCount(
   // Even in side-by-side layout, if the container is wide enough (e.g., Z-Fold),
   // we should use more columns to avoid vertical scrolling
   const useWideLayout = containerWidth >= 650;
-  const optimalLayout = getBeatFrameLayout(stepCount, useWideLayout);
+  const optimalLayout = getStepFrameLayout(stepCount, useWideLayout);
   const maxCap = useWideLayout ? 8 : 4;
   return Math.min(optimalLayout.columns, maxCap);
 }

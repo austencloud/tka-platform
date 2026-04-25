@@ -35,7 +35,7 @@ import type {
   VideoCollaborator,
   CollaborationInvite,
   VideoVisibility,
-  BeatMap,
+  StepMap,
 } from "../../domain/CollaborativeVideo";
 import type {
   ICollaborativeVideoManager,
@@ -120,11 +120,11 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
 
     // Parse beat map if present
     const beatMapData = docData.beatMap as Record<string, unknown> | undefined;
-    const beatMap: BeatMap | undefined = beatMapData
+    const beatMap: StepMap | undefined = beatMapData
       ? {
           beatTimestamps: (beatMapData.beatTimestamps as number[]) ?? [],
-          beatCount: (beatMapData.beatCount as number) ?? 0,
-          source: (beatMapData.source as BeatMap["source"]) ?? "manual",
+          stepCount: (beatMapData.stepCount as number) ?? 0,
+          source: (beatMapData.source as StepMap["source"]) ?? "manual",
           updatedAt:
             (beatMapData.updatedAt as Timestamp)?.toDate?.() ?? new Date(),
         }
@@ -186,7 +186,7 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       beatMap: video.beatMap
         ? {
             beatTimestamps: video.beatMap.beatTimestamps,
-            beatCount: video.beatMap.beatCount,
+            stepCount: video.beatMap.stepCount,
             source: video.beatMap.source,
             updatedAt: video.beatMap.updatedAt,
           }
@@ -315,7 +315,7 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
   // BEAT MAPPING
   // ============================================================================
 
-  async updateBeatMap(videoId: string, beatMap: BeatMap): Promise<void> {
+  async updateStepMap(videoId: string, beatMap: StepMap): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
       const userId = this.getUserId();
@@ -334,7 +334,7 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       await updateDoc(docRef, {
         beatMap: {
           beatTimestamps: beatMap.beatTimestamps,
-          beatCount: beatMap.beatCount,
+          stepCount: beatMap.stepCount,
           source: beatMap.source,
           updatedAt: serverTimestamp(),
         },

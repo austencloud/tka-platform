@@ -94,7 +94,7 @@ export interface SequenceStep {
     /** Red hand/prop motion data */
     redMotion: MotionData;
     /** Beat number in the sequence */
-    beatIndex: number;
+    stepNumber: number;
 }
 /**
  * Result of sequence building.

@@ -1,37 +1,37 @@
 <!--
-  BeatMappingView.svelte
+  StepMappingView.svelte
 
-  Wraps the existing BeatMapEditor with the selected sequence context.
+  Wraps the existing StepMapEditor with the selected sequence context.
   Saves the beat map locally (in memory) rather than to Firestore.
 -->
 <script lang="ts">
-  import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import BeatMapEditor from "$lib/shared/sequence-viewer/components/beat-mapping/BeatMapEditor.svelte";
+  import StepMapEditor from "$lib/shared/sequence-viewer/components/step-mapping/StepMapEditor.svelte";
 
   interface Props {
     videoUrl: string;
     videoDuration: number;
-    beatCount: number;
+    stepCount: number;
     sequence: SequenceData;
-    existingBeatMap: BeatMap | null;
-    onSave: (beatMap: BeatMap) => void;
+    existingStepMap: StepMap | null;
+    onSave: (beatMap: StepMap) => void;
     onBack: () => void;
   }
 
-  const { videoUrl, videoDuration, beatCount, sequence, existingBeatMap, onSave, onBack }: Props =
+  const { videoUrl, videoDuration, stepCount, sequence, existingStepMap, onSave, onBack }: Props =
     $props();
 
   // Default BPM — user can adjust later in the synced preview
   const defaultBpm = 60;
 
-  async function handleEditorSave(beatMap: BeatMap): Promise<void> {
+  async function handleEditorSave(beatMap: StepMap): Promise<void> {
     // Save locally (no Firestore), just pass up to parent
     onSave(beatMap);
   }
 </script>
 
-<div class="beat-mapping-view">
+<div class="step-mapping-view">
   <div class="mapping-header">
     <button class="back-btn" onclick={onBack} type="button">
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -39,17 +39,17 @@
     </button>
     <span class="mapping-title">
       Mapping: <strong>{sequence.word ?? sequence.name ?? "Untitled"}</strong>
-      ({beatCount} beats)
+      ({stepCount} beats)
     </span>
   </div>
 
   <div class="editor-container">
-    <BeatMapEditor
+    <StepMapEditor
       {videoUrl}
       {videoDuration}
-      {beatCount}
+      {stepCount}
       bpm={defaultBpm}
-      initialBeatMap={existingBeatMap ?? undefined}
+      initialStepMap={existingStepMap ?? undefined}
       onSave={handleEditorSave}
       onClose={onBack}
     />
@@ -57,7 +57,7 @@
 </div>
 
 <style>
-  .beat-mapping-view {
+  .step-mapping-view {
     display: flex;
     flex-direction: column;
     height: 100%;

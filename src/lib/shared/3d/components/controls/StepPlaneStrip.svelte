@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * BeatPlaneStrip
+   * StepPlaneStrip
    *
    * Horizontal timeline of small colored cells, one per beat.
    * Each cell is split top/bottom for blue/red hand plane assignments.
@@ -11,41 +11,41 @@
   import { Plane, PLANE_COLORS } from "../../domain/enums/Plane";
 
   interface Props {
-    totalBeats: number;
-    currentBeatIndex: number;
+    totalSteps: number;
+    currentStepIndex: number;
     beatPlaneOverrides: Map<number, { blue?: Plane; red?: Plane }>;
-    onBeatClick: (index: number) => void;
+    onStepClick: (index: number) => void;
   }
 
-  let { totalBeats, currentBeatIndex, beatPlaneOverrides, onBeatClick }: Props = $props();
+  let { totalSteps, currentStepIndex, beatPlaneOverrides, onStepClick }: Props = $props();
 
-  function getColor(beatIndex: number, hand: "blue" | "red"): string {
-    const override = beatPlaneOverrides.get(beatIndex);
+  function getColor(stepNumber: number, hand: "blue" | "red"): string {
+    const override = beatPlaneOverrides.get(stepNumber);
     const plane = hand === "blue" ? override?.blue : override?.red;
     // Default (WALL or no override) shows as a subtle base color
     if (!plane || plane === Plane.WALL) return PLANE_COLORS[Plane.WALL];
     return PLANE_COLORS[plane] ?? PLANE_COLORS[Plane.WALL];
   }
 
-  function hasOverride(beatIndex: number): boolean {
-    return beatPlaneOverrides.has(beatIndex);
+  function hasOverride(stepNumber: number): boolean {
+    return beatPlaneOverrides.has(stepNumber);
   }
 
   // Build beat indices as a stable array
-  const beatIndices = $derived(Array.from({ length: totalBeats }, (_, i) => i));
+  const beatIndices = $derived(Array.from({ length: totalSteps }, (_, i) => i));
 </script>
 
-{#if totalBeats > 1}
+{#if totalSteps > 1}
   <div class="beat-plane-strip" role="group" aria-label="Per-beat plane assignments">
     {#each beatIndices as i (i)}
       <button
         class="beat-cell"
-        class:current={i === currentBeatIndex}
+        class:current={i === currentStepIndex}
         class:has-override={hasOverride(i)}
-        onclick={() => onBeatClick(i)}
+        onclick={() => onStepClick(i)}
         title="Beat {i + 1}{hasOverride(i) ? ' (custom planes)' : ''}"
         aria-label="Beat {i + 1}"
-        aria-current={i === currentBeatIndex ? "step" : undefined}
+        aria-current={i === currentStepIndex ? "step" : undefined}
       >
         <div class="hand-half blue-half" style="background: {getColor(i, 'blue')};"></div>
         <div class="hand-half red-half" style="background: {getColor(i, 'red')};"></div>
@@ -68,34 +68,6 @@
 
   .beat-plane-strip::-webkit-scrollbar {
     display: none;
-  }
-
-  .beat-cell {
-    display: flex;
-    flex-direction: column;
-    width: 16px;
-    min-width: 16px;
-    height: 20px;
-    border-radius: 3px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    padding: 0;
-    overflow: hidden;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-
-  .beat-cell:hover {
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  .beat-cell.current {
-    border-color: rgba(255, 255, 255, 0.7);
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
-  }
-
-  .beat-cell.has-override {
-    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .hand-half {

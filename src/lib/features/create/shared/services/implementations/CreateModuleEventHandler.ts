@@ -155,7 +155,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
         }
       }
 
-      // Create initial beat data from option with correct beat number and reversals
+      // Create initial step data from option with correct beat number and reversals
       let stepData = createStepData({
         ...option, // Spread PictographData properties since StepData extends PictographData
         stepNumber: nextStepNumber,
@@ -241,7 +241,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
   /**
    * Handle beat modification from the Graph Editor
    */
-  handleBeatModified(_beatIndex: number, _beatData: StepData): void {
+  handleBeatModified(_stepNumber: number, _beatData: StepData): void {
     // stepIndex and stepData parameters are not used but kept for interface compatibility
     // Handle beat modifications from graph editor
     // Note: The coordination service doesn't have handleBeatModified,

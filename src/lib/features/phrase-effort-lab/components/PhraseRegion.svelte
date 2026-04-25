@@ -4,19 +4,19 @@
 
   interface Props {
     phrase: EffortPhrase;
-    totalBeats: number;
+    totalSteps: number;
     isSelected: boolean;
     onSelect: (id: string) => void;
   }
 
-  let { phrase, totalBeats, isSelected, onSelect }: Props = $props();
+  let { phrase, totalSteps, isSelected, onSelect }: Props = $props();
 
   const effort = $derived(EFFORTS.find((e) => e.id === phrase.effortId));
   const color = $derived(effort?.color ?? "#94a3b8");
   const label = $derived(effort?.label ?? phrase.effortId);
 
-  const left = $derived(((phrase.startBeat - 1) / totalBeats) * 100);
-  const width = $derived(((phrase.endBeat - phrase.startBeat + 1) / totalBeats) * 100);
+  const left = $derived(((phrase.startStep - 1) / totalSteps) * 100);
+  const width = $derived(((phrase.endStep - phrase.startStep + 1) / totalSteps) * 100);
 </script>
 
 <button
@@ -27,7 +27,7 @@
   style:--phrase-color={color}
   type="button"
   onclick={() => onSelect(phrase.id)}
-  aria-label="{label} beats {phrase.startBeat}-{phrase.endBeat}"
+  aria-label="{label} beats {phrase.startStep}-{phrase.endStep}"
 >
   <span class="phrase-label">{label}</span>
 </button>

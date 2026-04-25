@@ -13,11 +13,11 @@
 
   interface Props {
     timeline: EffortTimeline;
-    totalBeats: number;
+    totalSteps: number;
     height?: number;
   }
 
-  let { timeline, totalBeats, height = 40 }: Props = $props();
+  let { timeline, totalSteps, height = 40 }: Props = $props();
 
   const SAMPLES = 48;
 
@@ -25,8 +25,8 @@
     return EFFORTS.find((e) => e.id === effortId)?.color ?? "#94a3b8";
   }
 
-  function beatToPct(beat: number): number {
-    return ((beat - 1) / totalBeats) * 100;
+  function stepToPct(beat: number): number {
+    return ((beat - 1) / totalSteps) * 100;
   }
 
   function buildCurvePath(
@@ -49,16 +49,16 @@
   function buildBlendPath(
     phraseA: EffortPhrase,
     phraseB: EffortPhrase,
-    blendBeats: number,
+    blendSteps: number,
   ): string {
-    const halfBlend = blendBeats / 2;
+    const halfBlend = blendSteps / 2;
     // Blend region: [boundary - halfBlend, boundary + halfBlend]
-    const boundary = phraseB.startBeat; // where B starts (integer)
+    const boundary = phraseB.startStep; // where B starts (integer)
     const blendStart = boundary - halfBlend;
     const blendEnd = boundary + halfBlend;
 
-    const blendStartPct = beatToPct(blendStart);
-    const blendEndPct = beatToPct(blendEnd);
+    const blendStartPct = stepToPct(blendStart);
+    const blendEndPct = stepToPct(blendEnd);
     const blendWidthPct = blendEndPct - blendStartPct;
 
     const points: string[] = [];
@@ -66,15 +66,15 @@
 
     for (let i = 0; i <= BLEND_SAMPLES; i++) {
       const t = i / BLEND_SAMPLES; // 0 to 1 across blend region
-      const currentBeat = blendStart + t * blendBeats;
+      const currentStep = blendStart + t * blendSteps;
 
       // Evaluate both curves at this beat position
-      const durationA = phraseA.endBeat - phraseA.startBeat + 1;
-      const progressA = Math.min((currentBeat - phraseA.startBeat) / durationA, 1);
+      const durationA = phraseA.endStep - phraseA.startStep + 1;
+      const progressA = Math.min((currentStep - phraseA.startStep) / durationA, 1);
       const easedA = applyEffort(phraseA.effortId, Math.max(0, progressA));
 
-      const durationB = phraseB.endBeat - phraseB.startBeat + 1;
-      const progressB = Math.max((currentBeat - phraseB.startBeat) / durationB, 0);
+      const durationB = phraseB.endStep - phraseB.startStep + 1;
+      const progressB = Math.max((currentStep - phraseB.startStep) / durationB, 0);
       const easedB = applyEffort(phraseB.effortId, Math.min(progressB, 1));
 
       // Lerp between the two based on blend progress
@@ -91,8 +91,8 @@
   const phraseData = $derived(
     timeline.phrases.map((phrase) => {
       const color = getColor(phrase.effortId);
-      const leftPct = beatToPct(phrase.startBeat);
-      const rightPct = beatToPct(phrase.endBeat + 1);
+      const leftPct = stepToPct(phrase.startStep);
+      const rightPct = stepToPct(phrase.endStep + 1);
       const widthPct = rightPct - leftPct;
       const path = buildCurvePath(phrase.effortId, leftPct, widthPct);
       return { id: phrase.id, color, leftPct, widthPct, path, phrase };
@@ -101,7 +101,7 @@
 
   /** Blend curves between adjacent phrases (only in blend mode) */
   const blendCurves = $derived.by(() => {
-    if (timeline.transition !== "blend" || !timeline.blendBeats) return [];
+    if (timeline.transition !== "blend" || !timeline.blendSteps) return [];
 
     const curves: { path: string; colorA: string; colorB: string; id: string }[] = [];
     const phrases = timeline.phrases;
@@ -111,9 +111,9 @@
       const b = phrases[i + 1]!;
       if (!a || !b) continue;
       // Only blend adjacent phrases (no gap between them)
-      if (a.endBeat + 1 === b.startBeat) {
+      if (a.endStep + 1 === b.startStep) {
         curves.push({
-          path: buildBlendPath(a, b, timeline.blendBeats!),
+          path: buildBlendPath(a, b, timeline.blendSteps!),
           colorA: getColor(a.effortId),
           colorB: getColor(b.effortId),
           id: `blend-${a.id}-${b.id}`,
@@ -125,20 +125,20 @@
 
   /** Blend zone markers for visual indication */
   const blendZones = $derived.by(() => {
-    if (timeline.transition !== "blend" || !timeline.blendBeats) return [];
+    if (timeline.transition !== "blend" || !timeline.blendSteps) return [];
 
     const zones: { leftPct: number; widthPct: number; id: string }[] = [];
     const phrases = timeline.phrases;
-    const halfBlend = timeline.blendBeats! / 2;
+    const halfBlend = timeline.blendSteps! / 2;
 
     for (let i = 0; i < phrases.length - 1; i++) {
       const a = phrases[i]!;
       const b = phrases[i + 1]!;
       if (!a || !b) continue;
-      if (a.endBeat + 1 === b.startBeat) {
-        const boundary = b.startBeat;
-        const leftPct = beatToPct(boundary - halfBlend);
-        const rightPct = beatToPct(boundary + halfBlend);
+      if (a.endStep + 1 === b.startStep) {
+        const boundary = b.startStep;
+        const leftPct = stepToPct(boundary - halfBlend);
+        const rightPct = stepToPct(boundary + halfBlend);
         zones.push({ leftPct, widthPct: rightPct - leftPct, id: `zone-${i}` });
       }
     }
@@ -154,11 +154,11 @@
   aria-hidden="true"
 >
   <!-- Background grid lines -->
-  {#each Array.from({ length: totalBeats }, (_, i) => i) as beat}
+  {#each Array.from({ length: totalSteps }, (_, i) => i) as beat}
     <line
-      x1={((beat) / totalBeats) * 100}
+      x1={((beat) / totalSteps) * 100}
       y1="0"
-      x2={((beat) / totalBeats) * 100}
+      x2={((beat) / totalSteps) * 100}
       y2={height}
       stroke="rgba(255,255,255,0.06)"
       stroke-width="0.2"

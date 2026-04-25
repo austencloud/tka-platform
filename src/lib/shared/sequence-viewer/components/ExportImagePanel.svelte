@@ -22,7 +22,7 @@
     exportOptions: ExportOptionsStateManager;
     isExporting: boolean;
     layout?: PanelLayout;
-    beatCount: number;
+    stepCount: number;
     onExport: () => void;
     onClose?: () => void;
   }
@@ -31,7 +31,7 @@
     exportOptions,
     isExporting,
     layout = "bottom",
-    beatCount,
+    stepCount,
     onExport,
     onClose,
   }: Props = $props();
@@ -54,7 +54,7 @@
   const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
   const startPosLayout = $derived.by(() => {
     void compositionVersion;
-    return imageComposition.getStartPositionLayoutForStepCount(beatCount);
+    return imageComposition.getStartPositionLayoutForStepCount(stepCount);
   });
 
   // Pictograph visibility — sourced from VisibilityManager so this panel
@@ -125,14 +125,14 @@
   // Max columns = beat count only. The start position is an extra cell
   // that doesn't count toward the column limit.
   const columnOptions = $derived(
-    allColumnOptions.filter((opt) => opt.value === null || opt.value <= beatCount)
+    allColumnOptions.filter((opt) => opt.value === null || opt.value <= stepCount)
   );
 
   // If the current selection exceeds the beat count (e.g. user switched
   // to a shorter sequence), reset to Auto.
   $effect(() => {
     const current = exportOptions.imageColumnCount;
-    if (current !== null && current > beatCount) {
+    if (current !== null && current > stepCount) {
       exportOptions.setImageColumnCount(null);
     }
   });
@@ -272,11 +272,11 @@
           <div class="rt-chip-row">
             <button type="button" class="rt-chip"
               aria-pressed={startPosLayout === "row"}
-              onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "row")}
+              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}
             >Top Row</button>
             <button type="button" class="rt-chip"
               aria-pressed={startPosLayout === "column"}
-              onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "column")}
+              onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}
             >Left Column</button>
           </div>
         </div>
@@ -301,12 +301,12 @@
         <div class="rt-tile" role="group" aria-label="Card columns">
           <div class="rt-stepper">
             <button type="button" class="rt-step-btn"
-              onclick={() => exportOptions.setImageColumnCount(prevColumnValue(exportOptions.imageColumnCount, beatCount))}
+              onclick={() => exportOptions.setImageColumnCount(prevColumnValue(exportOptions.imageColumnCount, stepCount))}
               aria-label="Previous column value"
             ><i class="fas fa-minus" aria-hidden="true"></i></button>
             <span class="rt-val">{columnsLabel}</span>
             <button type="button" class="rt-step-btn"
-              onclick={() => exportOptions.setImageColumnCount(nextColumnValue(exportOptions.imageColumnCount, beatCount))}
+              onclick={() => exportOptions.setImageColumnCount(nextColumnValue(exportOptions.imageColumnCount, stepCount))}
               aria-label="Next column value"
             ><i class="fas fa-plus" aria-hidden="true"></i></button>
           </div>
@@ -474,12 +474,12 @@
         <div class="chip-group">
           <button type="button" class="chip"
             class:active={startPosLayout === "row"}
-            onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "row")}
+            onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "row")}
             aria-pressed={startPosLayout === "row"}
           >Top Row</button>
           <button type="button" class="chip"
             class:active={startPosLayout === "column"}
-            onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "column")}
+            onclick={() => imageComposition.setStartPositionLayoutForStepCount(stepCount, "column")}
             aria-pressed={startPosLayout === "column"}
           >Left Column</button>
         </div>

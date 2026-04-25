@@ -95,9 +95,9 @@
   // ─── Derived ─────────────────────────────────────────────────────────
   let gridMode = $derived(sequence?.gridMode ?? GridMode.DIAMOND);
   let sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
-  let totalBeats = $derived(steps.length);
+  let totalSteps = $derived(steps.length);
   // 1-based current beat for the timeline playhead
-  let currentBeatForTimeline = $derived(Math.floor(playbackBeat) + 1);
+  let currentStepForTimeline = $derived(Math.floor(playbackBeat) + 1);
   let hasUnsavedChanges = $derived(
     sequence !== null && timeline.phrases.length > 0
   );
@@ -200,8 +200,8 @@
     const beatsPerMs = bpm / 60000;
     playbackBeat += deltaMs * beatsPerMs;
 
-    if (playbackBeat >= totalBeats) {
-      playbackBeat = playbackBeat % totalBeats;
+    if (playbackBeat >= totalSteps) {
+      playbackBeat = playbackBeat % totalSteps;
     }
 
     updatePropStates();
@@ -215,7 +215,7 @@
    */
   function findNextPhrase(beat: number): EffortPhrase | null {
     for (const phrase of timeline.phrases) {
-      if (phrase.startBeat > beat) return phrase;
+      if (phrase.startStep > beat) return phrase;
     }
     return null;
   }
@@ -239,11 +239,11 @@
       localProgress = result.localProgress;
 
       // ── Blend mode: crossfade near phrase boundaries ──
-      if (timeline.transition === "blend" && timeline.blendBeats) {
-        const halfBlend = (timeline.blendBeats ?? 1) / 2;
+      if (timeline.transition === "blend" && timeline.blendSteps) {
+        const halfBlend = (timeline.blendSteps ?? 1) / 2;
 
         // Check if we're near the END of this phrase (approaching next phrase)
-        const phraseEnd = activePhrase.endBeat + 1; // exclusive end
+        const phraseEnd = activePhrase.endStep + 1; // exclusive end
         const distToEnd = phraseEnd - beat1Based;
         const nextPhrase = distToEnd <= halfBlend ? findNextPhrase(beat1Based) : null;
 
@@ -264,12 +264,12 @@
         }
 
         // Check if we're near the START of this phrase (coming from previous)
-        const distFromStart = beat1Based - activePhrase.startBeat;
+        const distFromStart = beat1Based - activePhrase.startStep;
         if (distFromStart < halfBlend && timeline.phrases.length > 0) {
           // Find previous phrase
           let prevPhrase: EffortPhrase | null = null;
           for (const p of timeline.phrases) {
-            if (p.endBeat + 1 <= activePhrase.startBeat) prevPhrase = p;
+            if (p.endStep + 1 <= activePhrase.startStep) prevPhrase = p;
             else break;
           }
           if (prevPhrase) {
@@ -369,7 +369,7 @@
     timeline = {
       ...timeline,
       transition: timeline.transition === "hard" ? "blend" : "hard",
-      ...(timeline.transition === "hard" ? { blendBeats: 1 } : {}),
+      ...(timeline.transition === "hard" ? { blendSteps: 1 } : {}),
     };
     saveStatus = "idle";
     persistTimeline();
@@ -411,20 +411,20 @@
   ];
 
   function applyPreset4x4(efforts: [EffortId, EffortId, EffortId, EffortId]) {
-    if (totalBeats < 4) return;
+    if (totalSteps < 4) return;
 
-    const sectionSize = Math.floor(totalBeats / 4);
+    const sectionSize = Math.floor(totalSteps / 4);
     let newTimeline = createEffortTimeline();
 
     for (let i = 0; i < 4; i++) {
-      const startBeat = i * sectionSize + 1;
-      const endBeat = i === 3 ? totalBeats : (i + 1) * sectionSize;
-      const phrase = createEffortPhrase(efforts[i]!, startBeat, endBeat);
+      const startStep = i * sectionSize + 1;
+      const endStep = i === 3 ? totalSteps : (i + 1) * sectionSize;
+      const phrase = createEffortPhrase(efforts[i]!, startStep, endStep);
       newTimeline = insertPhrase(newTimeline, phrase);
     }
 
     // Preserve current transition setting
-    newTimeline = { ...newTimeline, transition: timeline.transition, blendBeats: timeline.blendBeats };
+    newTimeline = { ...newTimeline, transition: timeline.transition, blendSteps: timeline.blendSteps };
     timeline = newTimeline;
     selectedPhraseId = null;
     saveStatus = "idle";
@@ -604,7 +604,7 @@
             class="action-btn preset-btn"
             onclick={() => (showPresetMenu = !showPresetMenu)}
             type="button"
-            disabled={totalBeats < 4}
+            disabled={totalSteps < 4}
           >
             <i class="fas fa-magic" aria-hidden="true"></i>
             4×4 Preset
@@ -651,16 +651,16 @@
 
       <PhraseTimeline
         {timeline}
-        {totalBeats}
+        {totalSteps}
         {selectedEffort}
         {selectedPhraseId}
         onTimelineChange={handleTimelineChange}
         onPhraseSelect={handlePhraseSelect}
-        currentBeat={currentBeatForTimeline}
+        currentStep={currentStepForTimeline}
       />
 
       {#if timeline.phrases.length > 0}
-        <PhraseEasingCurveOverlay {timeline} {totalBeats} />
+        <PhraseEasingCurveOverlay {timeline} {totalSteps} />
       {/if}
     </div>
 

@@ -141,8 +141,8 @@
       generateProgress = 100;
 
       generatedWord = result.word;
-      generateStatus = `Generated: ${result.word} (${result.beatCount} beats)`;
-      onstatuschange?.(`Beats: ${result.beatCount} | Generated`);
+      generateStatus = `Generated: ${result.word} (${result.stepCount} beats)`;
+      onstatuschange?.(`Beats: ${result.stepCount} | Generated`);
       generatedBeats = result.beats;
       onsequencegenerated?.(result.sequenceData);
     } catch (error) {
@@ -498,25 +498,10 @@
     justify-content: center;
   }
 
-  .beat-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-  }
-
   .beat-number {
     font-family: var(--retro-font-mono, "Fixedsys", monospace);
     font-size: 8px;
     color: var(--retro-dark-gray, #808080);
-  }
-
-  .beat-label {
-    color: var(--retro-black, #000);
-    font-size: 9px;
-    font-family: var(--retro-font-mono, "Fixedsys", monospace);
-    text-align: center;
-    font-weight: bold;
   }
 
   .empty-state {

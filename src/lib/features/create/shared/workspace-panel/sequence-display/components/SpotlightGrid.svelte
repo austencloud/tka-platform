@@ -5,7 +5,7 @@
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { GridLayout } from "../utils/grid-calculations";
   import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
-  import { calculateBeatPosition } from "../utils/grid-calculations";
+  import { calculateStepPosition } from "../utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
 
@@ -25,7 +25,7 @@
     onStartClick,
     onStepDelete,
     onStepLongPress,
-    getBeatKey,
+    getStepKey,
     getDurationDisplay,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
@@ -43,7 +43,7 @@
     onStartClick?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
-    getBeatKey: (beat: StepData, index: number) => string;
+    getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
   }>();
 </script>
@@ -73,8 +73,8 @@
   {/if}
 
   <!-- Step Grid -->
-  {#each steps as step, index (getBeatKey(step, index))}
-    {@const position = calculateBeatPosition(index, gridLayout.columns)}
+  {#each steps as step, index (getStepKey(step, index))}
+    {@const position = calculateStepPosition(index, gridLayout.columns)}
     {@const isDeleting = removingStepIndices.has(index)}
     {@const shouldSlide =
       removingStepIndex !== null && !isDeleting && index > removingStepIndex}

@@ -11,12 +11,13 @@
 
   const rows = [
     {
-      label: "Type 3",
-      sublabel: "One shifts, one dashes",
+      label: "Cross-Shifts",
+      sublabel: "Shift + Dash combined",
       cells: [
-        { data: p("V-0"), label: "V" },
-        { data: p("W-0"), label: "W" },
-        { data: p("X-0"), label: "X" },
+        { data: p("V-0"), label: "Σ-" },
+        { data: p("W-0"), label: "Δ-" },
+        { data: p("X-0"), label: "θ-" },
+        { data: p("Y-0"), label: "Ω-" },
       ],
     },
   ];
@@ -24,10 +25,21 @@
 
 <GuideSection id="type-3-cross-shifts" title="Type 3 — Cross-Shifts">
   <p>
-    Type 3 letters use a <span class="type-cross-shift">cross-shift</span> — one hand
-    shifts (moves with rotation) while the other dashes (moves without rotation).
-    The combination of rotating and non-rotating movement gives cross-shifts their
-    distinctive asymmetric feel.
+    A Cross-Shift combines a shift and a dash.
+    Since a dash has further to travel, it moves slightly faster.
+  </p>
+  <p>
+    Cross-Shifts use the same letters as Shifts, but each letter is followed by a
+    dash to indicate that the other hand is dashing into its end position.
+    They are spoken as "W Dash" or "Sigma Dash".
+  </p>
+  <p>
+    A dash symbol in the glyph equals a dash arrow on the graph.
+    The end position for each Type 2/3 letter remains the same.
+  </p>
+  <p>
+    Cross-Shifts can be tricky to remember. It helps to first picture the corresponding
+    Type 2 pictograph, then add the dash arrow without changing any other variables.
   </p>
 
   <GuidePictographGrid rows={rows} />

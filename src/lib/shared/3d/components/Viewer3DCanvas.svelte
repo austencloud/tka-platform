@@ -19,7 +19,7 @@
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
-  import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
+  import StepPlaneStrip from "./controls/StepPlaneStrip.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
@@ -160,11 +160,11 @@
       <UnifiedTimeline playback={playbackAdapter} />
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
-          <BeatPlaneStrip
-            totalBeats={avatarState.totalSteps}
-            currentBeatIndex={avatarState.currentStepIndex}
+          <StepPlaneStrip
+            totalSteps={avatarState.totalSteps}
+            currentStepIndex={avatarState.currentStepIndex}
             beatPlaneOverrides={avatarState.beatPlaneOverrides}
-            onBeatClick={(i) => avatarState.goToStep(i)}
+            onStepClick={(i) => avatarState.goToStep(i)}
           />
         </div>
       {/if}

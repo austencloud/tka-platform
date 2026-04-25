@@ -63,8 +63,8 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
       isStartPosition: true as const,
     };
 
-    const steps = beats.map((beat, i) =>
-      pictographDataToStepData(beat, beat.id ?? `tutorial-beat-${i}`),
+    const steps = beats.map((step, i) =>
+      pictographDataToStepData(step, step.id ?? `tutorial-beat-${i}`),
     );
 
     const word = beats.map((b) => b.letter ?? "").join("");

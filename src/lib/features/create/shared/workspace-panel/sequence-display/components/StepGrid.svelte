@@ -235,9 +235,9 @@
     isFirstRender = false;
 
     if (beatsArrayChanged && currentStepCount > 0) {
-      const beatCountDiff = currentStepCount - previousStepCount;
+      const stepCountDiff = currentStepCount - previousStepCount;
 
-      if (beatCountDiff === 1) {
+      if (stepCountDiff === 1) {
         if (previousStepCount === 0) {
           displayState.handleSingleBeatAddition(currentStepCount - 1);
         } else {
@@ -256,19 +256,19 @@
             }, 10);
           }
         }
-      } else if (beatCountDiff === 0) {
-        const firstBeatIdMatch = previousStepsRef[0]?.id === steps[0]?.id;
-        const lastBeatIdMatch =
+      } else if (stepCountDiff === 0) {
+        const firstStepIdMatch = previousStepsRef[0]?.id === steps[0]?.id;
+        const lastStepIdMatch =
           previousStepsRef[currentStepCount - 1]?.id ===
           steps[currentStepCount - 1]?.id;
 
-        if (!(firstBeatIdMatch && lastBeatIdMatch && currentStepCount > 0)) {
+        if (!(firstStepIdMatch && lastStepIdMatch && currentStepCount > 0)) {
           setTimeout(() => {
             triggerFullAnimation();
           }, 10);
         }
       } else if (
-        beatCountDiff > 1 &&
+        stepCountDiff > 1 &&
         displayState.isWaitingForSequentialAnimation &&
         !displayState.isPreparingFullAnimation
       ) {
@@ -425,7 +425,7 @@
   }
 
   // Composite key guard to avoid Svelte each_key_duplicate
-  const getBeatKey = (beat: StepData, index: number) =>
+  const getStepKey = (beat: StepData, index: number) =>
     `${beat.id ?? "no-id"}-${beat.stepNumber ?? index}-${index}`;
 
   // Helper to get duration display for a step
@@ -464,7 +464,7 @@
       onStartClick={handleStartClick}
       {onStepDelete}
       {onStepLongPress}
-      {getBeatKey}
+      {getStepKey}
       {getDurationDisplay}
     />
   {:else if isTimelineMode}
@@ -488,7 +488,7 @@
       {onStepDelete}
       {onStepLongPress}
       {onDurationChange}
-      {getBeatKey}
+      {getStepKey}
       {getDurationDisplay}
       bind:scrollContainerRef
     />
@@ -510,7 +510,7 @@
       onStartClick={handleStartClick}
       {onStepDelete}
       {onStepLongPress}
-      {getBeatKey}
+      {getStepKey}
       {getDurationDisplay}
       {bluePropTypeOverride}
       {redPropTypeOverride}

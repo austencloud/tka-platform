@@ -14,9 +14,9 @@ import type { StripPattern } from "./StripPattern";
 export interface PatternClip {
   readonly id: string;
   /** 1-based, inclusive */
-  readonly startBeat: number;
+  readonly startStep: number;
   /** Inclusive — a clip [3,5] covers the musical range [3.0, 6.0) */
-  readonly endBeat: number;
+  readonly endStep: number;
   /** Snapshot of the pattern at the moment the clip was painted */
   readonly pattern: StripPattern;
   /** Preset the clip was painted from, for display/tooltip */
@@ -26,12 +26,12 @@ export interface PatternClip {
 }
 
 export interface PatternTimeline {
-  /** Sorted by startBeat, non-overlapping */
+  /** Sorted by startStep, non-overlapping */
   readonly clips: readonly PatternClip[];
   /** Hard switch or crossfade blend between adjacent clips */
   readonly transition: "hard" | "blend";
   /** Crossfade duration in beats (only honored when transition === "blend") */
-  readonly blendBeats?: number;
+  readonly blendSteps?: number;
 }
 
 function makeClipId(): string {
@@ -39,16 +39,16 @@ function makeClipId(): string {
 }
 
 export function createPatternClip(
-  startBeat: number,
-  endBeat: number,
+  startStep: number,
+  endStep: number,
   pattern: StripPattern,
   presetId?: string,
   label?: string,
 ): PatternClip {
   return {
     id: makeClipId(),
-    startBeat,
-    endBeat,
+    startStep,
+    endStep,
     pattern,
     presetId,
     label,
@@ -58,10 +58,10 @@ export function createPatternClip(
 export function createEmptyPatternTimeline(): PatternTimeline {
   // Blend is the default because the whole point of the timeline is
   // smooth transitions between clips — a hard cut is the special-case
-  // stylistic choice, not the baseline. 2-beat fade ≈ 1 second at
+  // stylistic choice, not the baseline. 2-step fade ≈ 1 second at
   // 120bpm, wide enough to actually see the crossfade. Users who want
   // hard cuts can flip the transition toggle in the lane controls.
-  return { clips: [], transition: "blend", blendBeats: 2.0 };
+  return { clips: [], transition: "blend", blendSteps: 2.0 };
 }
 
 /**
@@ -76,8 +76,8 @@ export function findClipAtBeat(
   beat: number,
 ): PatternClip | null {
   for (const clip of timeline.clips) {
-    if (beat >= clip.startBeat && beat < clip.endBeat + 1) return clip;
-    if (clip.startBeat > beat) break;
+    if (beat >= clip.startStep && beat < clip.endStep + 1) return clip;
+    if (clip.startStep > beat) break;
   }
   return null;
 }
@@ -95,38 +95,38 @@ export function insertClip(
   for (const existing of timeline.clips) {
     // Completely covered by new clip — remove
     if (
-      existing.startBeat >= newClip.startBeat &&
-      existing.endBeat <= newClip.endBeat
+      existing.startStep >= newClip.startStep &&
+      existing.endStep <= newClip.endStep
     ) {
       continue;
     }
     // Existing wraps around new clip — split into two pieces
     if (
-      existing.startBeat < newClip.startBeat &&
-      existing.endBeat > newClip.endBeat
+      existing.startStep < newClip.startStep &&
+      existing.endStep > newClip.endStep
     ) {
-      updated.push({ ...existing, endBeat: newClip.startBeat - 1 });
+      updated.push({ ...existing, endStep: newClip.startStep - 1 });
       updated.push({
         ...existing,
         id: makeClipId(),
-        startBeat: newClip.endBeat + 1,
+        startStep: newClip.endStep + 1,
       });
       continue;
     }
     // Overlaps the left side of new clip — trim existing's right edge
     if (
-      existing.startBeat < newClip.startBeat &&
-      existing.endBeat >= newClip.startBeat
+      existing.startStep < newClip.startStep &&
+      existing.endStep >= newClip.startStep
     ) {
-      updated.push({ ...existing, endBeat: newClip.startBeat - 1 });
+      updated.push({ ...existing, endStep: newClip.startStep - 1 });
       continue;
     }
     // Overlaps the right side of new clip — trim existing's left edge
     if (
-      existing.startBeat <= newClip.endBeat &&
-      existing.endBeat > newClip.endBeat
+      existing.startStep <= newClip.endStep &&
+      existing.endStep > newClip.endStep
     ) {
-      updated.push({ ...existing, startBeat: newClip.endBeat + 1 });
+      updated.push({ ...existing, startStep: newClip.endStep + 1 });
       continue;
     }
     // No overlap
@@ -134,7 +134,7 @@ export function insertClip(
   }
 
   updated.push(newClip);
-  updated.sort((a, b) => a.startBeat - b.startBeat);
+  updated.sort((a, b) => a.startStep - b.startStep);
   return { ...timeline, clips: updated };
 }
 

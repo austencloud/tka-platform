@@ -82,7 +82,7 @@
     seekToFrame(currentFrameIndex + 1);
   }
 
-  function prevBeat() {
+  function prevStep() {
     const currentTime = currentTimestamp;
     for (let i = result.beats.length - 1; i >= 0; i--) {
       const beat = result.beats[i];
@@ -100,12 +100,12 @@
     seekToFrame(0);
   }
 
-  function nextBeat() {
+  function nextStep() {
     const currentTime = currentTimestamp;
-    for (const beat of result.beats) {
-      if (beat.startTime > currentTime + 0.01) {
+    for (const step of result.beats) {
+      if (step.startTime > currentTime + 0.01) {
         const targetFrame = result.timeline.frames.findIndex(
-          (f) => f.timestamp >= beat.startTime
+          (f) => f.timestamp >= step.startTime
         );
         if (targetFrame >= 0) {
           seekToFrame(targetFrame);
@@ -170,11 +170,11 @@
     switch (event.key) {
       case "ArrowLeft":
         event.preventDefault();
-        event.shiftKey ? prevBeat() : prevFrame();
+        event.shiftKey ? prevStep() : prevFrame();
         break;
       case "ArrowRight":
         event.preventDefault();
-        event.shiftKey ? nextBeat() : nextFrame();
+        event.shiftKey ? nextStep() : nextFrame();
         break;
       case " ":
         event.preventDefault();
@@ -221,7 +221,7 @@
 
   <div class="controls">
     <div class="scrubber-row">
-      <button class="control-btn" onclick={prevBeat} title={t('skel2tka_prev_beat_hint')} aria-label={t('skel2tka_prev_beat')}>
+      <button class="control-btn" onclick={prevStep} title={t('skel2tka_prev_beat_hint')} aria-label={t('skel2tka_prev_beat')}>
         <i class="fas fa-step-backward"></i>
       </button>
       <button class="control-btn" onclick={prevFrame} title={t('skel2tka_prev_frame_hint')} aria-label={t('skel2tka_prev_frame')}>
@@ -233,7 +233,7 @@
       <button class="control-btn" onclick={nextFrame} title={t('skel2tka_next_frame_hint')} aria-label={t('skel2tka_next_frame')}>
         <i class="fas fa-chevron-right"></i>
       </button>
-      <button class="control-btn" onclick={nextBeat} title={t('skel2tka_next_beat_hint')} aria-label={t('skel2tka_next_beat')}>
+      <button class="control-btn" onclick={nextStep} title={t('skel2tka_next_beat_hint')} aria-label={t('skel2tka_next_beat')}>
         <i class="fas fa-step-forward"></i>
       </button>
     </div>

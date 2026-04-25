@@ -189,13 +189,13 @@ export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
   ): SequenceData {
     return {
       ...sequenceWithLetters,
-      steps: sequenceWithLetters.steps.map((beat, index) => ({
-        ...beat,
+      steps: sequenceWithLetters.steps.map((step, index) => ({
+        ...step,
         startPosition:
-          beat.startPosition ??
+          step.startPosition ??
           sequenceWithPositions.steps[index]?.startPosition,
         endPosition:
-          beat.endPosition ?? sequenceWithPositions.steps[index]?.endPosition,
+          step.endPosition ?? sequenceWithPositions.steps[index]?.endPosition,
       })),
       startPosition: sequenceWithLetters.startPosition
         ? {

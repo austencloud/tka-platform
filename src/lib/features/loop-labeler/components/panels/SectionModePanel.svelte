@@ -55,7 +55,7 @@
   <!-- Current selection status -->
   {#if selectedSteps.size > 0}
     <div class="selection-status">
-      <span class="beat-count">{selectedSteps.size} steps selected</span>
+      <span class="step-count">{selectedSteps.size} steps selected</span>
       {#if selectedComponents.size > 0}
         <span class="arrow">→</span>
         <span class="components">{selectionLabel()}</span>
@@ -150,7 +150,7 @@
     border-radius: 8px;
   }
 
-  .beat-count {
+  .step-count {
     font-weight: 600;
     color: var(--semantic-warning);
   }

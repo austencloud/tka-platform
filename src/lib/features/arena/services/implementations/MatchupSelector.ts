@@ -79,13 +79,13 @@ export class MatchupSelector implements IMatchupSelector {
     const map = new Map<number, MatchupCandidate[]>();
     for (const c of pool) {
       // Use sequenceLength from index metadata — steps are empty at pool-load time
-      const beatCount = c.data.sequenceLength ?? c.data.steps?.length ?? 0;
-      if (beatCount === 0) continue;
-      const group = map.get(beatCount);
+      const stepCount = c.data.sequenceLength ?? c.data.steps?.length ?? 0;
+      if (stepCount === 0) continue;
+      const group = map.get(stepCount);
       if (group) {
         group.push(c);
       } else {
-        map.set(beatCount, [c]);
+        map.set(stepCount, [c]);
       }
     }
     return [...map.values()].sort((a, b) => b.length - a.length);

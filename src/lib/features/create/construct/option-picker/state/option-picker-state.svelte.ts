@@ -255,7 +255,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
       currentSequence.length > 0
         ? currentSequence[currentSequence.length - 1]
         : null;
-    const lastBeatMotionData = lastStep ? getMotionDebugData(lastStep) : null;
+    const lastStepMotionData = lastStep ? getMotionDebugData(lastStep) : null;
 
     return {
       timestamp: new Date().toISOString(),
@@ -265,10 +265,10 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
       lastSequenceId,
       currentSequenceLength: currentSequence.length,
       // Quick diagnosis: last beat motion status
-      lastBeatHasMotions: lastBeatMotionData
-        ? lastBeatMotionData.hasBlueMotion && lastBeatMotionData.hasRedMotion
+      lastStepHasMotions: lastStepMotionData
+        ? lastStepMotionData.hasBlueMotion && lastStepMotionData.hasRedMotion
         : false,
-      lastBeatMotionData,
+      lastStepMotionData,
       // Full sequence with motion data
       currentSequence: currentSequence.map((p, i) => ({
         index: i,

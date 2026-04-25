@@ -11,23 +11,22 @@
 
   const gammaRows = [
     {
-      label: "Gamma → Gamma",
-      sublabel: "Both shift, stay at right angle",
+      label: "Quarter-Opp",
+      sublabel: "Γ → Γ",
       cells: [
-        { data: p("J-0"), label: "J" },
-        { data: p("K-0"), label: "K" },
-        { data: p("L-0"), label: "L" },
-        { data: p("M-0"), label: "M" },
+        { data: p("J-0"), label: "M" },
+        { data: p("K-0"), label: "N" },
+        { data: p("L-0"), label: "O" },
       ],
     },
     {
-      label: "Gamma ↔ Other",
-      sublabel: "Shift to/from right angle",
+      label: "Quarter-Same",
+      sublabel: "Γ → Γ",
       cells: [
-        { data: p("N-0"), label: "N" },
-        { data: p("O-0"), label: "O" },
-        { data: p("P-0"), label: "P" },
-        { data: p("Q-0"), label: "Q" },
+        { data: p("M-0"), label: "S" },
+        { data: p("N-0"), label: "T" },
+        { data: p("O-0"), label: "U" },
+        { data: p("P-0"), label: "V" },
       ],
     },
   ];
@@ -35,10 +34,19 @@
 
 <GuideSection id="type-1-gamma" title="Gamma">
   <p>
-    Gamma positions place the hands at a right angle — 90° apart on the grid.
-    Type 1 gamma letters use dual-shifts where both hands maintain or transition
-    through a right-angle relationship.
+    Gamma, aka quarter-time, is based on two often forgotten modes:
+    Quarter-Opp and Quarter-Same.
+  </p>
+  <p>
+    Quarter-Opp has variations of parallel and antiparallel.
+  </p>
+  <p>
+    When in gamma, you can move to any other variation of gamma.
   </p>
 
   <GuidePictographGrid rows={gammaRows} />
+
+  <p>
+    Practice using Dual-Shifts to create other non-continuous Γ→Γ variations!
+  </p>
 </GuideSection>

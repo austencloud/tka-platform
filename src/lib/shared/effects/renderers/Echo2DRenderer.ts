@@ -39,7 +39,7 @@ interface Phantom {
  * Beat-onset phantom renderer for the Canvas2D backend.
  *
  * On each frame, reads the current animation step; when a beat boundary
- * is crossed (`floor(currentStep / interval) > lastBeatIndex`), captures
+ * is crossed (`floor(currentStep / interval) > lastStepIndex`), captures
  * a phantom of each active prop's tip pair. Phantoms age by the same
  * step index and are culled once their age (in intervals) reaches `decay`.
  *
@@ -50,7 +50,7 @@ interface Phantom {
 export class Echo2DRenderer {
   private phantomsBlue: Phantom[] = [];
   private phantomsRed: Phantom[] = [];
-  private lastBeatIndex: number = -1;
+  private lastStepIndex: number = -1;
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -60,8 +60,8 @@ export class Echo2DRenderer {
   ): void {
     // 1. Beat-onset detection. floor() places every sub-step within one
     //    beat cell; the transition from one cell to the next is the onset.
-    const beatIndex = Math.floor(tips.currentStep / params.interval);
-    if (beatIndex > this.lastBeatIndex) {
+    const stepNumber = Math.floor(tips.currentStep / params.interval);
+    if (stepNumber > this.lastStepIndex) {
       if (tips.bluePosA && tips.bluePosB) {
         this.phantomsBlue.push({
           posA: { x: tips.bluePosA.x, y: tips.bluePosA.y },
@@ -76,7 +76,7 @@ export class Echo2DRenderer {
           capturedStep: tips.currentStep,
         });
       }
-      this.lastBeatIndex = beatIndex;
+      this.lastStepIndex = stepNumber;
     }
 
     // 2. Cull aged-out phantoms (in-place compaction — zero allocation).
@@ -201,6 +201,6 @@ export class Echo2DRenderer {
   dispose(): void {
     this.phantomsBlue = [];
     this.phantomsRed = [];
-    this.lastBeatIndex = -1;
+    this.lastStepIndex = -1;
   }
 }

@@ -188,7 +188,7 @@ export class LOOPLabelerState {
 
   /**
    * Update a specific sequence's fullMetadata (and optionally gridMode).
-   * Used by lazy-fetch to populate beat data after loading from source.
+   * Used by lazy-fetch to populate step data after loading from source.
    */
   updateSequenceDetail(
     sequenceId: string,

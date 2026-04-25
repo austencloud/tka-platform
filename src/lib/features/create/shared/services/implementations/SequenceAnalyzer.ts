@@ -204,9 +204,9 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
     }
 
     // Find first beat with a start position
-    for (const beat of sequence.steps) {
-      if (beat.startPosition && !beat.isBlank) {
-        return beat;
+    for (const step of sequence.steps) {
+      if (step.startPosition && !step.isBlank) {
+        return step;
       }
     }
 
@@ -252,7 +252,7 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
 
     // Filter out blank steps
     const validSteps = sequence.steps.filter(
-      (beat) => !beat.isBlank && beat.endPosition
+      (step) => !step.isBlank && step.endPosition
     );
 
     if (validSteps.length === 0) {
@@ -261,9 +261,9 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
 
     // Check 1: Static LOOP - all steps at the same position
     const allSamePosition = validSteps.every(
-      (beat) =>
-        beat.startPosition === validSteps[0]!.startPosition &&
-        beat.endPosition === validSteps[0]!.endPosition
+      (step) =>
+        step.startPosition === validSteps[0]!.startPosition &&
+        step.endPosition === validSteps[0]!.endPosition
     );
 
     if (allSamePosition) {

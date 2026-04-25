@@ -6,7 +6,7 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
 import type { IMotionSignatureGenerator } from "../contracts/IMotionSignatureGenerator";
 import type {
   StepSignature,
@@ -220,4 +220,4 @@ export class StepSignatureGenerator implements IStepSignatureGenerator {
 // ============================================================================
 import { motionSignatureGenerator } from "./MotionSignatureGenerator";
 
-export const beatSignatureGenerator = new StepSignatureGenerator(motionSignatureGenerator);
+export const stepSignatureGenerator = new StepSignatureGenerator(motionSignatureGenerator);

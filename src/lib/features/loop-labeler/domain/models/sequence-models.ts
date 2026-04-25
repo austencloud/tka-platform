@@ -17,7 +17,7 @@ export interface SequenceEntry {
   };
 }
 
-// Raw beat data from sequence-index.json (camelCase format)
+// Raw step data from sequence-index.json (camelCase format)
 export interface RawStepData {
   beat?: number;
   letter?: string;

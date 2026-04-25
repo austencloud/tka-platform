@@ -207,7 +207,7 @@
   <!-- Tool Area: Beat Grid or Controls -->
   {#if isMobile}
     <div class="mobile-tool-area">
-      {#if playbackState.mobileToolView === "beat-grid"}
+      {#if playbackState.mobileToolView === "step-grid"}
         <MobilePlaybackStepGrid
           sequence={singleSequence()}
           currentStep={playbackState.currentStep}

@@ -45,7 +45,7 @@ import { createCompositionUIManager } from "./managers/CompositionUIManager.svel
 // Re-export types for external consumers
 export type {
   WorkflowPhase,
-  BeatMarker,
+  StepMarker,
   TempoRegion,
   AudioState,
 } from "./composition-types";
@@ -715,10 +715,10 @@ export function createCompositionState() {
     setDetectedBpm: audioManager.setDetectedBpm,
     setManualBpm: audioManager.setManualBpm,
     setAnalyzing: audioManager.setAnalyzing,
-    addBeatMarker: audioManager.addBeatMarker,
-    removeBeatMarker: audioManager.removeBeatMarker,
-    updateBeatMarker: audioManager.updateBeatMarker,
-    setBeatMarkers: audioManager.setBeatMarkers,
+    addStepMarker: audioManager.addStepMarker,
+    removeStepMarker: audioManager.removeStepMarker,
+    updateStepMarker: audioManager.updateStepMarker,
+    setStepMarkers: audioManager.setStepMarkers,
     clearAudio: audioManager.clearAudio,
     restoreAudioFromCache: audioManager.restoreFromCache,
 

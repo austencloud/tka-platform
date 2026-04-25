@@ -53,7 +53,7 @@ export class VideoPlayer implements IVideoPlayer {
     this.videoElement.currentTime = timeInSeconds;
   }
 
-  startBeatTracking(onStepChange: (beat: number) => void): void {
+  startStepTracking(onStepChange: (beat: number) => void): void {
     // Don't start if already tracking
     if (this.stepTrackingFrameId !== null) {
       return;
@@ -63,7 +63,7 @@ export class VideoPlayer implements IVideoPlayer {
 
     const trackBeat = () => {
       if (this.videoElement && this.stepChangeCallback) {
-        // Video is at 60 BPM base, so currentTime in seconds = currentBeat
+        // Video is at 60 BPM base, so currentTime in seconds = currentStep
         const currentStep = this.videoElement.currentTime;
         this.stepChangeCallback(currentStep);
       }
@@ -89,7 +89,7 @@ export class VideoPlayer implements IVideoPlayer {
   }
 
   getCurrentStep(): number {
-    // For videos at 60 BPM base, currentTime = currentBeat
+    // For videos at 60 BPM base, currentTime = currentStep
     return this.getCurrentTime();
   }
 

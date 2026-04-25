@@ -196,7 +196,7 @@ export function calculateGridLayout(
 /**
  * Calculate grid position (row, column) for beat index
  */
-export function calculateBeatPosition(
+export function calculateStepPosition(
   stepIndex: number,
   columns: number
 ): { row: number; column: number } {

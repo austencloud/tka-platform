@@ -39,7 +39,7 @@ import { compositionSyncer } from "../../../services/implementations/Composition
 import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
 
 import { getArrangeUndoManager } from "$lib/features/compose/tabs/arrange/getArrangeUndoManager";
-import { getArrangeBeatCalculator } from "$lib/features/compose/tabs/arrange/getArrangeBeatCalculator";
+import { getArrangeStepCalculator } from "$lib/features/compose/tabs/arrange/getArrangeStepCalculator";
 import { getArrangeGridPersister } from "$lib/features/compose/tabs/arrange/getArrangeGridPersister";
 import { getArrangePlaybackEngine } from "$lib/features/compose/tabs/arrange/getArrangePlaybackEngine";
 import { getArrangeLayerTransformer } from "$lib/features/compose/tabs/arrange/getArrangeLayerTransformer";
@@ -129,7 +129,7 @@ function createArrangeGridState() {
   const serializer = new ArrangeGridSerializer();
 
   // Services from module singleton getters (compose-arrange-container dissolved)
-  const beatCalculator = getArrangeBeatCalculator();
+  const beatCalculator = getArrangeStepCalculator();
   const persister = getArrangeGridPersister();
   const playbackEngine = getArrangePlaybackEngine();
   const layerTransformer = getArrangeLayerTransformer();
@@ -155,7 +155,7 @@ function createArrangeGridState() {
 
   // Reactive mirrors of playback engine state
   let isPlaying = $state(false);
-  let currentBeat = $state(0);
+  let currentStep = $state(0);
   let playbackBpm = $state(120);
 
   // Playback polling — only runs during active playback to avoid burning
@@ -168,7 +168,7 @@ function createArrangeGridState() {
     function poll() {
       const wasPlaying = isPlaying;
       isPlaying = playbackEngine.isPlaying;
-      currentBeat = playbackEngine.currentBeat;
+      currentStep = playbackEngine.currentStep;
       playbackBpm = playbackEngine.bpm;
 
       if (isPlaying || playbackEngine.isStepAnimating) {
@@ -301,7 +301,7 @@ function createArrangeGridState() {
     get gridRows() { return gridRows; },
     get gridCols() { return gridCols; },
     get isPlaying() { return isPlaying; },
-    get currentBeat() { return currentBeat; },
+    get currentStep() { return currentStep; },
     get selectedCellId() { return selectedCellId; },
     get showSequencePicker() { return showSequencePicker; },
     get clipboard() { return clipboard; },
@@ -314,7 +314,7 @@ function createArrangeGridState() {
     get visibleCells() {
       return cells.filter((c) => c.row < gridRows && c.col < gridCols);
     },
-    get totalBeats() { return getTotalBeats(); },
+    get totalSteps() { return getTotalBeats(); },
     get skipStartPosition() { return skipStartPosition; },
     get hasAnyLayers() {
       return cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0);
@@ -727,20 +727,20 @@ function createArrangeGridState() {
       playbackEngine.pause();
       // Do one final poll to capture the paused state
       isPlaying = playbackEngine.isPlaying;
-      currentBeat = playbackEngine.currentBeat;
+      currentStep = playbackEngine.currentStep;
     },
     stop() {
       playbackEngine.stop();
       // Do one final poll to capture the stopped state
       isPlaying = playbackEngine.isPlaying;
-      currentBeat = playbackEngine.currentBeat;
+      currentStep = playbackEngine.currentStep;
     },
 
     togglePlayPause() {
       if (playbackEngine.isPlaying) {
         playbackEngine.pause();
         isPlaying = playbackEngine.isPlaying;
-        currentBeat = playbackEngine.currentBeat;
+        currentStep = playbackEngine.currentStep;
       } else if (cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) {
         playbackEngine.play(getTotalBeats);
         startPlaybackPolling();
@@ -749,12 +749,12 @@ function createArrangeGridState() {
 
     stepFullForward() {
       playbackEngine.animateStep(1, getTotalBeats());
-      startPlaybackPolling(); // Animated step needs polling to update currentBeat
+      startPlaybackPolling(); // Animated step needs polling to update currentStep
     },
     stepFullBack() {
-      const floored = Math.floor(playbackEngine.currentBeat);
-      if (playbackEngine.currentBeat - floored > 0.01) {
-        playbackEngine.animateStep(floored - playbackEngine.currentBeat, getTotalBeats());
+      const floored = Math.floor(playbackEngine.currentStep);
+      if (playbackEngine.currentStep - floored > 0.01) {
+        playbackEngine.animateStep(floored - playbackEngine.currentStep, getTotalBeats());
       } else {
         playbackEngine.animateStep(-1, getTotalBeats());
       }
@@ -765,8 +765,8 @@ function createArrangeGridState() {
       startPlaybackPolling();
     },
     stepHalfBack() {
-      const snapped = Math.round(playbackEngine.currentBeat * 2) / 2;
-      const diff = snapped - playbackEngine.currentBeat;
+      const snapped = Math.round(playbackEngine.currentStep * 2) / 2;
+      const diff = snapped - playbackEngine.currentStep;
       if (Math.abs(diff) > 0.01 && diff < 0) {
         playbackEngine.animateStep(diff, getTotalBeats());
       } else {

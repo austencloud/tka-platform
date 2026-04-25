@@ -38,14 +38,14 @@ export class GalleryRenderer implements IGalleryRenderer {
     const seqName = sequence.word || sequence.name;
 
     // Check if steps need parsing - old format has blueAttributes, modern has motions.blue
-    const firstBeatRaw = sequence.steps?.[0] as
+    const firstStepRaw = sequence.steps?.[0] as
       | Record<string, unknown>
       | undefined;
     const needsParsing =
       !sequence.steps?.length ||
-      (firstBeatRaw &&
-        "blueAttributes" in firstBeatRaw &&
-        !firstBeatRaw.motions);
+      (firstStepRaw &&
+        "blueAttributes" in firstStepRaw &&
+        !firstStepRaw.motions);
 
     // Load full sequence data if not loaded OR if steps are in old format
     if (needsParsing) {
@@ -73,11 +73,11 @@ export class GalleryRenderer implements IGalleryRenderer {
 
     // Check if first beat has valid motion data for derivation
     // Must have both blue and red motions with startLocation defined
-    const firstBeatHasValidMotions =
+    const firstStepHasValidMotions =
       firstStep?.motions?.blue?.startLocation &&
       firstStep?.motions?.red?.startLocation;
 
-    if (!hasValidStartPosition && firstStep && firstBeatHasValidMotions) {
+    if (!hasValidStartPosition && firstStep && firstStepHasValidMotions) {
       try {
         const derivedStartPos =
           this.startPositionDeriver.deriveFromFirstBeat(firstStep);
@@ -96,7 +96,7 @@ export class GalleryRenderer implements IGalleryRenderer {
         console.warn(
           `[GalleryRenderer] Cannot derive start position: no first beat available`
         );
-      } else if (!firstBeatHasValidMotions) {
+      } else if (!firstStepHasValidMotions) {
         console.warn(
           `[GalleryRenderer] Cannot derive start position: first beat missing motion data or startLocation`,
           {
@@ -199,8 +199,8 @@ export class GalleryRenderer implements IGalleryRenderer {
       return true;
     }
 
-    for (const beat of sequence.steps || []) {
-      if (checkOrientations(beat.motions)) return true;
+    for (const step of sequence.steps || []) {
+      if (checkOrientations(step.motions)) return true;
     }
 
     return false;

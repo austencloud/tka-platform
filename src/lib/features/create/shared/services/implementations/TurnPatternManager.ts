@@ -92,22 +92,22 @@ export class TurnPatternManager implements ITurnPatternManager {
     let modifiedSteps = 0;
 
     // Step 1: Apply all turn changes
-    const updatedSteps: StepData[] = sequence.steps.map((beat, stepIndex) => {
+    const updatedSteps: StepData[] = sequence.steps.map((step, stepIndex) => {
       const entry = pattern.entries.find((e) => e.stepIndex === stepIndex);
-      if (!entry) return beat;
+      if (!entry) return step;
 
       let stepModified = false;
-      const updatedMotions = { ...beat.motions };
+      const updatedMotions = { ...step.motions };
 
       // Apply blue turns (if targeting blue or both)
       if (
         (targetHand === "both" || targetHand === "blue") &&
         entry.blue !== null &&
-        beat.motions?.blue
+        step.motions?.blue
       ) {
         const result = this.applyTurnToMotion(
           entry.blue,
-          beat.motions.blue,
+          step.motions.blue,
           MotionColor.BLUE,
           sequence.steps,
           stepIndex
@@ -125,11 +125,11 @@ export class TurnPatternManager implements ITurnPatternManager {
       if (
         (targetHand === "both" || targetHand === "red") &&
         entry.red !== null &&
-        beat.motions?.red
+        step.motions?.red
       ) {
         const result = this.applyTurnToMotion(
           entry.red,
-          beat.motions.red,
+          step.motions.red,
           MotionColor.RED,
           sequence.steps,
           stepIndex
@@ -145,9 +145,9 @@ export class TurnPatternManager implements ITurnPatternManager {
 
       if (stepModified) {
         modifiedSteps++;
-        return { ...beat, motions: updatedMotions };
+        return { ...step, motions: updatedMotions };
       }
-      return beat;
+      return step;
     });
 
     // Step 2: Propagate orientations forward through the sequence
@@ -191,7 +191,7 @@ export class TurnPatternManager implements ITurnPatternManager {
             MotionColor.RED
           );
 
-          // Get latest beat data (might have been updated for blue already)
+          // Get latest step data (might have been updated for blue already)
           const latestNextStep = updatedSteps[i + 1];
           if (!latestNextStep) continue;
           updatedSteps[i + 1] = {

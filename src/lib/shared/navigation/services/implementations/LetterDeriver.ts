@@ -40,7 +40,7 @@ export class LetterDeriver implements ILetterDeriver {
 
     // Derive letters for all steps in the sequence
     const stepsWithLetters = (await Promise.all(
-      sequence.steps.map((beat) => this.deriveLetterForBeat(beat))
+      sequence.steps.map((step) => this.deriveLetterForBeat(step))
     )) as StepData[];
 
     // Derive letter for start position if it exists
@@ -65,7 +65,7 @@ export class LetterDeriver implements ILetterDeriver {
 
     // Build the word from the letters
     const word = stepsWithLetters
-      .map((beat) => beat.letter ?? "")
+      .map((step) => step.letter ?? "")
       .join("")
       .toUpperCase();
 

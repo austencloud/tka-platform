@@ -10,7 +10,7 @@ import type { StepData } from "../../../domain/models/StepData";
 import type {
   AnimationMode,
   AnimationTiming,
-  BeatLetterAnimatedEvent,
+  StepLetterAnimatedEvent,
 } from "../domain/models/step-grid-display-models";
 import { DEFAULT_ANIMATION_TIMING } from "../domain/models/step-grid-display-models";
 
@@ -90,7 +90,7 @@ export function createStepGridDisplayState() {
    * Prepare for full sequence animation
    * Called BEFORE new sequence is set
    */
-  function prepareSequenceAnimation(_beatCount: number, mode: AnimationMode) {
+  function prepareSequenceAnimation(_stepCount: number, mode: AnimationMode) {
     // Increment epoch to signal all StepCells to reset their hasAnimated state
     // This is critical when beat IDs are reused across generations (e.g., beat-5, beat-6)
     animationEpoch++;
@@ -179,7 +179,7 @@ export function createStepGridDisplayState() {
       // Dispatch event with the letter from this beat
       const beat = steps[i];
       if (beat?.letter) {
-        const event = new CustomEvent<BeatLetterAnimatedEvent>(
+        const event = new CustomEvent<StepLetterAnimatedEvent>(
           "beat-letter-animated",
           {
             detail: {

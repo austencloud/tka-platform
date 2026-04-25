@@ -3,28 +3,28 @@ import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/eff
 export interface EffortPhrase {
   readonly id: string;
   readonly effortId: EffortId;
-  readonly startBeat: number;  // 1-based, inclusive
-  readonly endBeat: number;    // inclusive
+  readonly startStep: number;  // 1-based, inclusive
+  readonly endStep: number;    // inclusive
   readonly params?: EffortParams;
 }
 
 export interface EffortTimeline {
-  readonly phrases: readonly EffortPhrase[];  // sorted by startBeat, no overlaps
+  readonly phrases: readonly EffortPhrase[];  // sorted by startStep, no overlaps
   readonly transition: "hard" | "blend";
-  readonly blendBeats?: number;  // crossfade duration in beats (only if blend)
+  readonly blendSteps?: number;  // crossfade duration in beats (only if blend)
 }
 
 export function createEffortPhrase(
   effortId: EffortId,
-  startBeat: number,
-  endBeat: number,
+  startStep: number,
+  endStep: number,
   params?: EffortParams,
 ): EffortPhrase {
   return {
     id: `phrase-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     effortId,
-    startBeat,
-    endBeat,
+    startStep,
+    endStep,
     params,
   };
 }
@@ -38,7 +38,7 @@ export function createEffortTimeline(): EffortTimeline {
 
 /**
  * Find the phrase covering a given beat, or null if the beat is in a gap.
- * Assumes phrases are sorted by startBeat and non-overlapping.
+ * Assumes phrases are sorted by startStep and non-overlapping.
  */
 export function findPhraseAtBeat(
   timeline: EffortTimeline,
@@ -47,10 +47,10 @@ export function findPhraseAtBeat(
   for (const phrase of timeline.phrases) {
     // A phrase covering beats 3-6 owns the range [3.0, 7.0) —
     // it includes all fractional time within beat 6 up to (but not including) beat 7.
-    if (beat >= phrase.startBeat && beat < phrase.endBeat + 1) {
+    if (beat >= phrase.startStep && beat < phrase.endStep + 1) {
       return phrase;
     }
-    if (phrase.startBeat > beat) break;
+    if (phrase.startStep > beat) break;
   }
   return null;
 }
@@ -67,27 +67,27 @@ export function insertPhrase(
 
   for (const existing of timeline.phrases) {
     // Completely covered by new phrase — remove
-    if (existing.startBeat >= newPhrase.startBeat && existing.endBeat <= newPhrase.endBeat) {
+    if (existing.startStep >= newPhrase.startStep && existing.endStep <= newPhrase.endStep) {
       continue;
     }
     // Split — existing phrase completely wraps new phrase (must check before partial overlaps)
-    if (existing.startBeat < newPhrase.startBeat && existing.endBeat > newPhrase.endBeat) {
-      updated.push({ ...existing, endBeat: newPhrase.startBeat - 1 });
+    if (existing.startStep < newPhrase.startStep && existing.endStep > newPhrase.endStep) {
+      updated.push({ ...existing, endStep: newPhrase.startStep - 1 });
       updated.push({
         ...existing,
         id: `phrase-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        startBeat: newPhrase.endBeat + 1,
+        startStep: newPhrase.endStep + 1,
       });
       continue;
     }
     // Overlaps left side — trim right
-    if (existing.startBeat < newPhrase.startBeat && existing.endBeat >= newPhrase.startBeat) {
-      updated.push({ ...existing, endBeat: newPhrase.startBeat - 1 });
+    if (existing.startStep < newPhrase.startStep && existing.endStep >= newPhrase.startStep) {
+      updated.push({ ...existing, endStep: newPhrase.startStep - 1 });
       continue;
     }
     // Overlaps right side — trim left
-    if (existing.startBeat <= newPhrase.endBeat && existing.endBeat > newPhrase.endBeat) {
-      updated.push({ ...existing, startBeat: newPhrase.endBeat + 1 });
+    if (existing.startStep <= newPhrase.endStep && existing.endStep > newPhrase.endStep) {
+      updated.push({ ...existing, startStep: newPhrase.endStep + 1 });
       continue;
     }
     // No overlap
@@ -95,7 +95,7 @@ export function insertPhrase(
   }
 
   updated.push(newPhrase);
-  updated.sort((a, b) => a.startBeat - b.startBeat);
+  updated.sort((a, b) => a.startStep - b.startStep);
 
   return { ...timeline, phrases: updated };
 }

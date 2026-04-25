@@ -366,7 +366,7 @@ On the 8-point grid, skewed positions require one hand on a cardinal point and o
     title: "LOOP System and Compositional Theory",
     content: `## LOOP System
 
-A **LOOP** is a sequence that returns to its starting position (circular) and follows a structured transformation pattern between its halves/quarters. The LOOP type is determined by beat data (positions, motion types, hand identity), not by the word or letters.
+A **LOOP** is a sequence that returns to its starting position (circular) and follows a structured transformation pattern between its halves/quarters. The LOOP type is determined by step data (positions, motion types, hand identity), not by the word or letters.
 
 ### LOOP Types
 

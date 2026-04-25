@@ -22,8 +22,8 @@ export interface TipEvaluationContext {
   velocityY: number;
   speedMagnitude: number;
   prevFrameTips: ReadonlyArray<TipRelationData>;
-  beatIndex: number;
-  totalBeats: number;
+  stepNumber: number;
+  totalSteps: number;
 }
 
 const WHITE: LedColor = { r: 1, g: 1, b: 1 };
@@ -49,7 +49,7 @@ export function createReusableContext(): TipEvaluationContext {
     velocityY: 0,
     speedMagnitude: 0,
     prevFrameTips: EMPTY_TIPS,
-    beatIndex: -1,
-    totalBeats: 0,
+    stepNumber: -1,
+    totalSteps: 0,
   };
 }

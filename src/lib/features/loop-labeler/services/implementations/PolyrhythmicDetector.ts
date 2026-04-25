@@ -18,7 +18,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 // ============================================================================
 
 export interface StepProperties {
-  beat: number;
+  step: number;
   blueMotionType: string;
   redMotionType: string;
   blueRotDir: string;
@@ -109,7 +109,7 @@ function extractBeatProperties(
   const red = (rawStep.redAttributes as Record<string, unknown>) || {};
 
   return {
-    beat: (rawStep.beat as number) || 0,
+    step: (rawStep.beat as number) || 0,
     blueMotionType: (blue.motionType as string) || "unknown",
     redMotionType: (red.motionType as string) || "unknown",
     blueRotDir: (blue.propRotDir as string) || "unknown",
@@ -466,8 +466,8 @@ export class PolyrhythmicDetector {
     for (const group of positionGroups) {
       // Get property values for all steps in this position
       const values = group.map((stepNum) => {
-        const beat = steps.find((b) => b.beat === stepNum);
-        return beat ? getPropertyValue(beat, property) : "unknown";
+        const matchingStep = steps.find((b) => b.step === stepNum);
+        return matchingStep ? getPropertyValue(matchingStep, property) : "unknown";
       });
 
       // Check if all steps at this position have the same value

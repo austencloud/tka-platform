@@ -24,6 +24,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     smoke?: any;
     ink?: any;
     frost?: any;
+    silk?: any;
   };
   const version = input.version ?? 1;
 
@@ -149,6 +150,10 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // (15th chip including "none"). No field migration — absent frost resolves
   // to DEFAULT_EFFECTS_CONFIG.frost via the merge below.
 
+  // v13 → v14: add silk intent + activePresets.silk. Net-new 15th effect
+  // (16th chip including "none"). No field migration — absent silk resolves
+  // to DEFAULT_EFFECTS_CONFIG.silk via the merge below.
+
   let out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -166,6 +171,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke, ...(input.smoke ?? {}) },
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost, ...(input.frost ?? {}) },
+    silk: { ...DEFAULT_EFFECTS_CONFIG.silk, ...(input.silk ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
       ...(input.activePresets ?? {}),

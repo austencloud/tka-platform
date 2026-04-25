@@ -173,10 +173,10 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
     if (word) return word;
     if (sequence?.word) return sequence.word;
 
-    // If no word available, derive from beat letters
+    // If no word available, derive from step letters
     if (sequence?.steps && sequence.steps.length > 0) {
       const letters = sequence.steps
-        .map((beat) => beat?.letter || "")
+        .map((step) => step?.letter || "")
         .filter(Boolean)
         .join("");
       return letters || "";

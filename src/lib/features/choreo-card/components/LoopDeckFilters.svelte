@@ -20,8 +20,8 @@
   }: Props = $props();
 
   const SLICE_TYPE_META: Record<string, { label: string; tooltip: string }> = {
-    halved: { label: 'Halved', tooltip: '4-beat seed repeated once' },
-    quartered: { label: 'Quartered', tooltip: '2-beat seed repeated 3 times' },
+    halved: { label: 'Halved', tooltip: '4-step seed repeated once' },
+    quartered: { label: 'Quartered', tooltip: '2-step seed repeated 3 times' },
   };
 
   const GRID_MODE_META: Record<string, string> = {

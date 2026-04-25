@@ -7,7 +7,7 @@
  *
  * Why this exists:
  * Two sequences can share identical grid-position trajectories yet have
- * different orientation behavior. A 4-beat sequence where every beat is at
+ * different orientation behavior. A 4-step sequence where every beat is at
  * alpha1 but the props rotate 90° per beat is orientation-rotated (period 4)
  * while being position-static. The positional detector misses this entirely.
  *
@@ -28,7 +28,7 @@
  *   OrientationCycleDetector validates via re-simulation; here we trust it.
  * - Half-turns contribute ±2 quarter-turn units to delta, floats contribute ±1.
  *   So a sequence where blue accumulates 0.5 turns and red accumulates 0.5
- *   turns across a 4-beat pattern lands at delta=1 → period 4, matching the
+ *   turns across a 4-step pattern lands at delta=1 → period 4, matching the
  *   form-C example from the spec.
  */
 
@@ -85,13 +85,13 @@ export class LOOPOrientationDetector {
       return { period: 1, components: [] };
     }
 
-    const firstBeat = beats[0]!;
-    const lastBeat = beats[beats.length - 1]!;
+    const firstStep = beats[0]!;
+    const lastStep = beats[beats.length - 1]!;
 
-    const blueStartIdx = quarterIndex(firstBeat.blueAttributes?.startOri);
-    const redStartIdx = quarterIndex(firstBeat.redAttributes?.startOri);
-    const blueEndIdx = quarterIndex(lastBeat.blueAttributes?.endOri);
-    const redEndIdx = quarterIndex(lastBeat.redAttributes?.endOri);
+    const blueStartIdx = quarterIndex(firstStep.blueAttributes?.startOri);
+    const redStartIdx = quarterIndex(firstStep.redAttributes?.startOri);
+    const blueEndIdx = quarterIndex(lastStep.blueAttributes?.endOri);
+    const redEndIdx = quarterIndex(lastStep.redAttributes?.endOri);
 
     if (
       blueStartIdx === null ||

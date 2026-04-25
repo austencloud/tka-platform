@@ -4,15 +4,15 @@
   Experimental workspace for beat mapping, BPM-synced playback, and
   video-to-notation alignment. Three views:
     1. Upload & Select — pick a local video + library sequence
-    2. Beat Mapping — annotate beat timestamps using BeatMapEditor
+    2. Beat Mapping — annotate beat timestamps using StepMapEditor
     3. Synced Playback — side-by-side video + choreo card preview
 -->
 <script lang="ts">
-  import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   import UploadSelectView from "./views/UploadSelectView.svelte";
-  import BeatMappingView from "./views/BeatMappingView.svelte";
+  import StepMappingView from "./views/StepMappingView.svelte";
   import SyncedPlaybackView from "./views/SyncedPlaybackView.svelte";
 
   // ---- Shared state across views ----
@@ -28,7 +28,7 @@
   let selectedSequence = $state<SequenceData | null>(null);
 
   // Beat map produced by the mapping view
-  let beatMap = $state<BeatMap | null>(null);
+  let beatMap = $state<StepMap | null>(null);
 
   // ---- View transitions ----
 
@@ -40,7 +40,7 @@
     activeView = "mapping";
   }
 
-  function handleBeatMapSaved(saved: BeatMap) {
+  function handleStepMapSaved(saved: StepMap) {
     beatMap = saved;
     activeView = "preview";
   }
@@ -65,13 +65,13 @@
     {#if activeView === "upload"}
       <UploadSelectView onStartMapping={handleStartMapping} />
     {:else if activeView === "mapping" && videoUrl && selectedSequence}
-      <BeatMappingView
+      <StepMappingView
         {videoUrl}
         {videoDuration}
-        beatCount={selectedSequence.steps?.length || selectedSequence.word?.length || 8}
+        stepCount={selectedSequence.steps?.length || selectedSequence.word?.length || 8}
         sequence={selectedSequence}
-        existingBeatMap={beatMap}
-        onSave={handleBeatMapSaved}
+        existingStepMap={beatMap}
+        onSave={handleStepMapSaved}
         onBack={handleBackToUpload}
       />
     {:else if activeView === "preview" && videoUrl && selectedSequence && beatMap}

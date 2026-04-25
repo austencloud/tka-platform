@@ -21,7 +21,7 @@ export interface SimilarityReport {
   readonly structuralSimilarity: number;
 
   /** Per-beat similarity scores */
-  readonly beatByBeatScores: readonly number[];
+  readonly stepByBeatScores: readonly number[];
 
   /** Common subsequences found between the sequences */
   readonly commonSubsequences: readonly CommonSubsequence[];

@@ -138,11 +138,11 @@ export function createGenerationActionsState(
       // Enforce tier beat cap post-generation — handles words with bridge letters
       // that push the sequence beyond what the user's tier allows.
       const tier = resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role));
-      const maxBeats = getMaxBeats(tier);
-      if (generatedSequence.steps.length > maxBeats) {
+      const maxSteps = getMaxBeats(tier);
+      if (generatedSequence.steps.length > maxSteps) {
         generatedSequence = {
           ...generatedSequence,
-          steps: generatedSequence.steps.slice(0, maxBeats),
+          steps: generatedSequence.steps.slice(0, maxSteps),
         };
       }
 

@@ -27,7 +27,7 @@
     cells,
     gridRows,
     gridCols,
-    currentBeat,
+    currentStep,
     isPlaying,
     skipStartPosition = true,
     selectedCellId,
@@ -39,7 +39,7 @@
     cells: GridCell[];
     gridRows: number;
     gridCols: number;
-    currentBeat: number;
+    currentStep: number;
     isPlaying: boolean;
     skipStartPosition?: boolean;
     selectedCellId: string | null;
@@ -616,7 +616,7 @@
                 <CellCanvas
                   {cell}
                   cellIndex={arrangeGridState.getCellDisplayIndex(cell.id)}
-                  {currentBeat}
+                  {currentStep}
                   {isPlaying}
                   {skipStartPosition}
                   isSelected={selectedCellId === cell.id}

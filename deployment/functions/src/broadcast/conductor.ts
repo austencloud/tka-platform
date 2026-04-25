@@ -120,7 +120,7 @@ async function generateAndBroadcast(): Promise<{
 
     const newSequenceNumber = conductorState.totalGenerated + 1;
     const now = Timestamp.now();
-    const durationMs = calculateDuration(sequence.totalBeats, BEATS_PER_MINUTE);
+    const durationMs = calculateDuration(sequence.totalSteps, BEATS_PER_MINUTE);
     const endsAt = Timestamp.fromMillis(now.toMillis() + durationMs);
 
     // Create broadcast state
@@ -157,7 +157,7 @@ async function generateAndBroadcast(): Promise<{
     );
 
     console.log(
-      `Generated sequence #${newSequenceNumber}: ${sequence.word} (${sequence.loopType}, ${sequence.totalBeats} beats)`
+      `Generated sequence #${newSequenceNumber}: ${sequence.word} (${sequence.loopType}, ${sequence.totalSteps} beats)`
     );
 
     return { success: true, sequenceNumber: newSequenceNumber };

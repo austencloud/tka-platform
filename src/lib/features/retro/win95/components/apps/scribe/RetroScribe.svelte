@@ -41,7 +41,7 @@
   let showStatusBar = $state(true);
   let showSaveDialog = $state(false);
   let saveFilename = $state("UNTITLED");
-  let beatCount = $state(0);
+  let stepCount = $state(0);
   let statusText = $state("Ready");
 
   /**
@@ -174,7 +174,7 @@
   /* ------------------------------------------------------------------ */
 
   const statusPanels = $derived([
-    { text: `Beats: ${beatCount}`, width: "100px" },
+    { text: `Beats: ${stepCount}`, width: "100px" },
     { text: statusText },
   ]);
 
@@ -183,7 +183,7 @@
   /* ------------------------------------------------------------------ */
 
   function handleNew() {
-    beatCount = 0;
+    stepCount = 0;
     currentSequenceData = null;
     hasSavedOnce = false;
     statusText = "New sequence";
@@ -244,7 +244,7 @@
   }
 
   function handleClear() {
-    beatCount = 0;
+    stepCount = 0;
     currentSequenceData = null;
     hasSavedOnce = false;
     statusText = "Cleared";
@@ -260,7 +260,7 @@
     /* Parse beat count from status if available */
     const match = status.match(/Beats:\s*(\d+)/);
     if (match) {
-      beatCount = parseInt(match[1]!, 10);
+      stepCount = parseInt(match[1]!, 10);
     }
   }
 </script>

@@ -22,6 +22,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrat
   import CodexTab from "./codex/components/CodexTab.svelte";
   import QuizTab from "./quiz/components/QuizTab.svelte";
   import TikaTab from "$lib/features/tika/TikaModule.svelte";
+  import GuideTab from "./guide/GuideTab.svelte";
   import type { LearnConcept } from "./domain/types";
   import { getConceptById } from "./domain/concepts";
   import {
@@ -35,10 +36,10 @@ import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrat
   import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
 
-  type LearnMode = "concepts" | "play" | "codex" | "tika";
+  type LearnMode = "concepts" | "play" | "codex" | "tika" | "guide";
 
   // Tab order for determining slide direction
-  const TAB_ORDER: LearnMode[] = ["concepts", "play", "codex", "tika"];
+  const TAB_ORDER: LearnMode[] = ["concepts", "play", "codex", "tika", "guide"];
 
   // Props
   let {
@@ -87,6 +88,8 @@ import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrat
       newMode = "codex";
     } else if (navMode === "tika") {
       newMode = "tika";
+    } else if (navMode === "guide") {
+      newMode = "guide";
     }
 
     // Calculate slide direction based on tab order
@@ -130,6 +133,8 @@ import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrat
       header = t("learn_letters");
     } else if (activeMode === "tika") {
       header = "TIKA";
+    } else if (activeMode === "guide") {
+      header = "Level 1 Guide";
     }
 
     onHeaderChange(header);
@@ -212,6 +217,8 @@ import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrat
           <CodexTab />
         {:else if isModeActive("tika")}
           <TikaTab />
+        {:else if isModeActive("guide")}
+          <GuideTab />
         {/if}
       </div>
     {/key}

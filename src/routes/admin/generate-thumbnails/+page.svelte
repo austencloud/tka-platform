@@ -203,21 +203,21 @@
     redProp: PropType
   ): SequenceData {
     // Clone steps with new prop types
-    const newSteps: StepData[] = baseSequence.steps.map((beat) => ({
-      ...beat,
+    const newSteps: StepData[] = baseSequence.steps.map((step) => ({
+      ...step,
       motions: {
-        [MotionColor.BLUE]: beat.motions.blue
+        [MotionColor.BLUE]: step.motions.blue
           ? {
-              ...beat.motions.blue,
+              ...step.motions.blue,
               propType: blueProp,
             }
-          : beat.motions.blue,
-        [MotionColor.RED]: beat.motions.red
+          : step.motions.blue,
+        [MotionColor.RED]: step.motions.red
           ? {
-              ...beat.motions.red,
+              ...step.motions.red,
               propType: redProp,
             }
-          : beat.motions.red,
+          : step.motions.red,
       },
     }));
 

@@ -127,7 +127,7 @@ function toSequenceEntry(input: LoopDisplayInput): SequenceEntry {
 
 /**
  * In-memory cache keyed by sequence id. Detection runs beam search over
- * every beat pair — about 1–3ms on a 16-beat sequence, but the library
+ * every beat pair — about 1–3ms on a 16-step sequence, but the library
  * grid renders hundreds of these at once, so even 1ms per card stacks up.
  * The cache lets us pay once per sequence per session.
  *

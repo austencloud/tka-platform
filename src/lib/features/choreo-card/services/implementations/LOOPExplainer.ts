@@ -147,7 +147,7 @@ export class LOOPExplainer implements ILOOPExplainer {
   // ============================================================================
 
   /**
-   * Find repeating sub-patterns in the word. A 16-beat AAKE has word "AAKE"
+   * Find repeating sub-patterns in the word. A 16-step AAKE has word "AAKE"
    * repeated 4 times. The patterns are the distinct letter groups: "AA" and "KE".
    *
    * We identify patterns by finding the shortest repeating unit of the word,

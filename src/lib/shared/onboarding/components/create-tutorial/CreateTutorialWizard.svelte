@@ -15,7 +15,7 @@
 
   // Step components (will be created in Tasks 4-8)
   import PickStartPositionStep from "./steps/PickStartPositionStep.svelte";
-  import AddBeatStep from "./steps/AddBeatStep.svelte";
+  import AddStepTutorialStep from "./steps/AddStepTutorialStep.svelte";
   import PlaySequenceStep from "./steps/PlaySequenceStep.svelte";
   import ReadyStep from "./steps/ReadyStep.svelte";
 
@@ -140,7 +140,7 @@
     {#if createTutorialState.currentStep === "pick-start"}
       <PickStartPositionStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "add-beat"}
-      <AddBeatStep onAdvance={handleAdvance} />
+      <AddStepTutorialStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "play-sequence"}
       <PlaySequenceStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "ready"}

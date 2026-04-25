@@ -182,7 +182,7 @@ function edgeToStep(edge: PictographData, stepNumber: number): SequenceStep {
     endPosition: edge.endPosition,
     blueMotion: { ...edge.blueMotion },
     redMotion: { ...edge.redMotion },
-    beatIndex: stepNumber,
+    stepNumber: stepNumber,
     stepNumber,
     isBridge: false,
   };
@@ -213,7 +213,7 @@ function buildStartPositionStep(edge: PictographData): SequenceStep {
       startOrientation: "in",
       endOrientation: "in",
     },
-    beatIndex: 0,
+    stepNumber: 0,
     stepNumber: 0,
     isBridge: false,
   };

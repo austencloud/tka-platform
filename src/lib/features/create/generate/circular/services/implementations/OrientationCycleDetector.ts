@@ -67,9 +67,9 @@ export class OrientationCycleDetector {
       // current orientation. We can't just re-read stored endOrientation because
       // those values are fixed from the original pass — on subsequent passes the
       // start orientations differ, producing different end orientations.
-      for (const beat of steps) {
-        const blueMotion = beat.motions.blue;
-        const redMotion = beat.motions.red;
+      for (const step of steps) {
+        const blueMotion = step.motions.blue;
+        const redMotion = step.motions.red;
 
         if (blueMotion) {
           const adjusted = { ...blueMotion, startOrientation: currentBlue };

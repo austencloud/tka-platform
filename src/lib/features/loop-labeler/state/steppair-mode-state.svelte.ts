@@ -36,8 +36,8 @@ export interface StepPairModeState {
       key: keyof TransformationIntervals,
       value: TransformationInterval
     ): void;
-    addBeatPair(): void;
-    removeBeatPair(index: number): void;
+    addStepPair(): void;
+    removeStepPair(index: number): void;
     clearSelection(): void;
     loadSavedBeatPairs(label: LabeledSequence | null): void;
   };
@@ -124,7 +124,7 @@ export function createBeatPairModeState(): StepPairModeState {
       }
     },
 
-    addBeatPair() {
+    addStepPair() {
       if (firstStep === null || secondStep === null) {
         console.warn("[StepPairModeState] Cannot add: steps not selected");
         return;
@@ -162,7 +162,7 @@ export function createBeatPairModeState(): StepPairModeState {
       this.clearSelection();
     },
 
-    removeBeatPair(index: number) {
+    removeStepPair(index: number) {
       savedStepPairs = savedStepPairs.filter((_, i) => i !== index);
     },
 

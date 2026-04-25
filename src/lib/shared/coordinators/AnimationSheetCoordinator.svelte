@@ -150,7 +150,7 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
     return null;
   });
 
-  // Derived: Current beat data (for turns tuple generation)
+  // Derived: Current step data (for turns tuple generation)
   // Uses same indexing as SequenceAnimationOrchestrator:
   // - currentStep < 1: start position
   // - currentStep >= 1: motion steps where beat N uses steps[N-1]
@@ -408,7 +408,7 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
-      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
 
     // If sequence already has motion data, use it directly
     if (hasMotionData(sequence)) {

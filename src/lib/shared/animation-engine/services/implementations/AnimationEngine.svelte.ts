@@ -956,7 +956,10 @@ export class AnimationEngine {
           this.initializePrecomputationService();
           this.precomputationService?.initializeFramePreRenderer();
         },
-        initializePropTextureLoader: () => this.initializePropTextureLoader(),
+        initializePropTextureLoader: () => {
+          this.initializePropTextureLoader();
+          this.propTypeManager.updateRefs({ propTextureService: this.propTextureService });
+        },
         initializeResizeService: () => {
           this.initializeResizeService();
           this.canvasResizerService?.setup();

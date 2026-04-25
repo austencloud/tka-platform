@@ -224,8 +224,8 @@ export class SanityChecker implements ISanityChecker {
     let tooShort = 0;
     let tooLong = 0;
 
-    for (const beat of result.beats) {
-      const duration = beat.endTime - beat.startTime;
+    for (const step of result.beats) {
+      const duration = step.endTime - step.startTime;
       if (duration < THRESHOLDS.MIN_BEAT_DURATION_SEC) tooShort++;
       if (duration > THRESHOLDS.MAX_BEAT_DURATION_SEC) tooLong++;
     }

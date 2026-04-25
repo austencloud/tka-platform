@@ -20,7 +20,7 @@ export interface ISequenceRepository {
    * Update a beat in a sequence
    * @param sequenceId - Sequence identifier
    * @param stepIndex - Beat index to update
-   * @param stepData - New beat data
+   * @param stepData - New step data
    * @returns Promise that resolves when update is complete
    */
   updateStep(

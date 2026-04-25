@@ -91,7 +91,7 @@ export class Workbench implements IWorkbench {
 
       const newStep = createStepData({
         isBlank: true,
-        ...stepData, // Spread any provided beat data (which may include PictographData properties)
+        ...stepData, // Spread any provided step data (which may include PictographData properties)
       });
 
       const updatedSequence = updateSequenceData(sequence, {

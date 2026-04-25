@@ -159,12 +159,12 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     const blueReversalSteps: number[] = [];
     const redReversalSteps: number[] = [];
 
-    for (const beat of validSteps) {
-      if (beat.blueReversal) {
-        blueReversalSteps.push(beat.stepNumber);
+    for (const step of validSteps) {
+      if (step.blueReversal) {
+        blueReversalSteps.push(step.stepNumber);
       }
-      if (beat.redReversal) {
-        redReversalSteps.push(beat.stepNumber);
+      if (step.redReversal) {
+        redReversalSteps.push(step.stepNumber);
       }
     }
 
@@ -176,7 +176,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     const synchronizedReversals =
       blueReversalCount > 0 &&
       blueReversalCount === redReversalCount &&
-      blueReversalSteps.every((beat) => redReversalSteps.includes(beat));
+      blueReversalSteps.every((step) => redReversalSteps.includes(step));
 
     return {
       blueReversalCount,
@@ -213,10 +213,10 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     let gammaCount = 0;
     let totalPositions = 0;
 
-    for (const beat of validSteps) {
+    for (const step of validSteps) {
       // Count start positions
-      if (beat.startPosition) {
-        const group = this.getPositionGroup(beat.startPosition);
+      if (step.startPosition) {
+        const group = this.getPositionGroup(step.startPosition);
         this.incrementGroupCount(
           group,
           () => alphaCount++,
@@ -227,8 +227,8 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
       }
 
       // Count end positions
-      if (beat.endPosition) {
-        const group = this.getPositionGroup(beat.endPosition);
+      if (step.endPosition) {
+        const group = this.getPositionGroup(step.endPosition);
         this.incrementGroupCount(
           group,
           () => alphaCount++,
@@ -302,15 +302,15 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     let hasBeta = false;
     let hasGamma = false;
 
-    for (const beat of steps) {
-      if (beat.startPosition) {
-        const group = this.getPositionGroup(beat.startPosition);
+    for (const step of steps) {
+      if (step.startPosition) {
+        const group = this.getPositionGroup(step.startPosition);
         if (group === GridPositionGroup.ALPHA) hasAlpha = true;
         if (group === GridPositionGroup.BETA) hasBeta = true;
         if (group === GridPositionGroup.GAMMA) hasGamma = true;
       }
-      if (beat.endPosition) {
-        const group = this.getPositionGroup(beat.endPosition);
+      if (step.endPosition) {
+        const group = this.getPositionGroup(step.endPosition);
         if (group === GridPositionGroup.ALPHA) hasAlpha = true;
         if (group === GridPositionGroup.BETA) hasBeta = true;
         if (group === GridPositionGroup.GAMMA) hasGamma = true;
@@ -335,10 +335,10 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
   } {
     let turnStepCount = 0;
 
-    for (const beat of steps) {
-      if (beat.motions) {
-        const blueMotion = beat.motions[MotionColor.BLUE];
-        const redMotion = beat.motions[MotionColor.RED];
+    for (const step of steps) {
+      if (step.motions) {
+        const blueMotion = step.motions[MotionColor.BLUE];
+        const redMotion = step.motions[MotionColor.RED];
 
         // Check if either hand has a turn (pro or anti)
         const blueHasTurn =
@@ -366,7 +366,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     if (!sequence.steps) {
       return [];
     }
-    return sequence.steps.filter((beat) => !beat.isBlank);
+    return sequence.steps.filter((step) => !step.isBlank);
   }
 
   private getPositionGroup(position: GridPosition): GridPositionGroup | null {
@@ -407,10 +407,10 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
   private collectMotionTypes(steps: StepData[]): Set<MotionType> {
     const types = new Set<MotionType>();
 
-    for (const beat of steps) {
-      if (beat.motions) {
-        const blueMotion = beat.motions[MotionColor.BLUE];
-        const redMotion = beat.motions[MotionColor.RED];
+    for (const step of steps) {
+      if (step.motions) {
+        const blueMotion = step.motions[MotionColor.BLUE];
+        const redMotion = step.motions[MotionColor.RED];
 
         if (blueMotion?.motionType) {
           types.add(blueMotion.motionType);

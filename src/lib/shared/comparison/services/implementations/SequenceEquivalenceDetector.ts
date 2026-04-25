@@ -20,7 +20,7 @@ import type {
   MotionSignature,
 } from "$lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector";
 import type { ISequenceCanonicalizer } from "../contracts/ISequenceCanonicalizer";
-import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
 import type { ISpatialTransformDetector } from "../contracts/ISpatialTransformDetector";
 import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -28,7 +28,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector {
   constructor(
     private readonly sequenceCanonicalizer: ISequenceCanonicalizer,
-    private readonly beatSignatureGenerator: IStepSignatureGenerator,
+    private readonly stepSignatureGenerator: IStepSignatureGenerator,
     private readonly spatialTransformDetector: ISpatialTransformDetector,
     private readonly wordCyclicEquivalenceDetector: IWordCyclicEquivalenceDetector
   ) {}
@@ -194,7 +194,7 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
 
     const offset = wordResult.rotationOffset ?? 0;
 
-    // Verify that the actual beat data matches when rotated
+    // Verify that the actual step data matches when rotated
     if (!this.verifyCircularRotation(seqA, seqB, offset)) {
       return this.notEquivalent();
     }
@@ -226,10 +226,10 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
         return false;
       }
 
-      const sigA = this.beatSignatureGenerator.generateSignature(stepA);
-      const sigB = this.beatSignatureGenerator.generateSignature(stepB);
+      const sigA = this.stepSignatureGenerator.generateSignature(stepA);
+      const sigB = this.stepSignatureGenerator.generateSignature(stepB);
 
-      if (!this.beatSignatureGenerator.signaturesMatch(sigA, sigB)) {
+      if (!this.stepSignatureGenerator.signaturesMatch(sigA, sigB)) {
         return false;
       }
     }
@@ -325,9 +325,9 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
 
       // If spatial steps is 0, just compare signatures
       if (spatialSteps === 0) {
-        const sigA = this.beatSignatureGenerator.generateSignature(stepA);
-        const sigB = this.beatSignatureGenerator.generateSignature(stepB);
-        if (!this.beatSignatureGenerator.signaturesMatch(sigA, sigB)) {
+        const sigA = this.stepSignatureGenerator.generateSignature(stepA);
+        const sigB = this.stepSignatureGenerator.generateSignature(stepB);
+        if (!this.stepSignatureGenerator.signaturesMatch(sigA, sigB)) {
           return false;
         }
       } else {
@@ -389,13 +389,13 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
-import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { stepSignatureGenerator } from "./StepSignatureGenerator";
 import { spatialTransformDetector } from "./SpatialTransformDetector";
 import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
 
 export const sequenceEquivalenceDetector = new SequenceEquivalenceDetector(
   sequenceCanonicalizer,
-  beatSignatureGenerator,
+  stepSignatureGenerator,
   spatialTransformDetector,
   wordCyclicEquivalenceDetector
 );

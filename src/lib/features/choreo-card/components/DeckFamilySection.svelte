@@ -65,8 +65,8 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
    * as a valid sequence.
    */
   function toStepData(beats: PictographData[]): StepData[] {
-    return beats.map((beat, i) => ({
-      ...beat,
+    return beats.map((step, i) => ({
+      ...step,
       stepNumber: i + 1,
       duration: 1,
       blueReversal: false,
@@ -88,8 +88,8 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
    * subsequent loads.
    */
   function buildHandPathSequence(handPathId: string, representative: SequenceData): SequenceData {
-    const rawBeats = handPathBuilder.buildFromHandPathId(handPathId, representative);
-    const resolvedBeats = collisionResolver.resolveCollisions(rawBeats);
+    const rawSteps = handPathBuilder.buildFromHandPathId(handPathId, representative);
+    const resolvedBeats = collisionResolver.resolveCollisions(rawSteps);
     const steps = toStepData(resolvedBeats);
 
     return createSequenceData({
@@ -103,7 +103,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
   }
 
   // Group sequences by handPathId and pick one representative per unique hand path.
-  // For each representative, build a synthetic sequence with purpose-built beat data
+  // For each representative, build a synthetic sequence with purpose-built step data
   // so the render pipeline receives pre-constructed PictographData, not a raw SequenceData
   // that would be transformed at render time (which caused multi-layer caching failures).
   const handPathSequences = $derived.by(() => {
@@ -124,7 +124,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
   // Motion type pill parsing is shared via MotionTypePills component
 
   /**
-   * A halved loop is a 6-beat sequence with a detected LOOP pattern.
+   * A halved loop is a 6-step sequence with a detected LOOP pattern.
    * These display better in landscape orientation (7:5) with the start
    * position column on the left and 3 columns of beats.
    */
@@ -384,7 +384,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
     aspect-ratio: 7 / 5;
   }
 
-  /* Halved loops (6-beat LOOP sequences) display horizontally with
+  /* Halved loops (6-step LOOP sequences) display horizontally with
      start position as a top row and 3 columns of beats */
   .playing-card.halved-loop {
     aspect-ratio: 7 / 5;

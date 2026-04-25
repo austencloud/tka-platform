@@ -148,7 +148,7 @@ export class SequenceExtender implements ISequenceExtender {
   /**
    * Generate steps to extend a sequence back to its starting position
    */
-  async generateExtensionBeats(
+  async generateExtensionSteps(
     sequence: SequenceData,
     options: ExtensionOptions
   ): Promise<StepData[]> {
@@ -195,9 +195,9 @@ export class SequenceExtender implements ISequenceExtender {
     sequence: SequenceData,
     options: ExtensionOptions
   ): Promise<SequenceData> {
-    const extensionBeats = await this.generateExtensionBeats(sequence, options);
+    const extensionSteps = await this.generateExtensionSteps(sequence, options);
 
-    if (extensionBeats.length === 0) {
+    if (extensionSteps.length === 0) {
       return sequence;
     }
 
@@ -208,7 +208,7 @@ export class SequenceExtender implements ISequenceExtender {
     // but the motions are transformed (reversed, rotated, etc.), so the letter
     // is WRONG. We need to derive the correct letter from the transformed motions.
     const stepsWithDerivedLetters = await Promise.all(
-      extensionBeats.map(async (beat, index) => {
+      extensionSteps.map(async (beat, index) => {
         const derivedLetter = await this.deriveLetterForStep(beat, sequence.gridMode || GridMode.DIAMOND);
         return {
           ...beat,

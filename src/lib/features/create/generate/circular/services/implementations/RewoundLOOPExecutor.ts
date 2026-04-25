@@ -101,7 +101,7 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
   ): StepData {
     return {
       ...sourceStep,
-      id: `beat-${newStepNumber}`,
+      id: `step-${newStepNumber}`,
       stepNumber: newStepNumber,
       // Swap positions: new start = previous end, new end = source's start
       startPosition: previousStep.endPosition ?? null,

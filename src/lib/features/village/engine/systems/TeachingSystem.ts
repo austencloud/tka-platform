@@ -43,7 +43,7 @@ export class TeachingSystem {
 				this.emitter.emit(
 					"teaching:fumble",
 					learner,
-					learner.social.currentBeatIndex,
+					learner.social.currentStepIndex,
 				);
 
 				if (
@@ -170,7 +170,7 @@ export class TeachingSystem {
 		entity.social.teachingProgress = 0;
 		entity.social.sequenceBeingTransferred = null;
 		entity.social.frustrationLevel = 0;
-		entity.social.currentBeatIndex = 0;
+		entity.social.currentStepIndex = 0;
 		entity.social.idleTimer = 0;
 		entity.social.interactionCooldown = INTERACTION_COOLDOWN_BASE;
 	}

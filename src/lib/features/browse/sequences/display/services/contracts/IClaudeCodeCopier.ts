@@ -2,7 +2,7 @@
  * IClaudeCodeCopier - Copy sequence data formatted for AI analysis
  *
  * Generates comprehensive sequence prompts for Claude Code agents,
- * including metadata, beat data, and full JSON structure.
+ * including metadata, step data, and full JSON structure.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

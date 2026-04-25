@@ -12,7 +12,7 @@
 export type WorkflowPhase = "canvas" | "audio" | "export";
 
 /** Beat marker for audio sync */
-export interface BeatMarker {
+export interface StepMarker {
   id: string;
   beat: number;
   time: number; // seconds
@@ -38,7 +38,7 @@ export interface AudioState {
   duration: number; // seconds
   detectedBpm: number | null;
   manualBpm: number | null; // user override
-  globalBeatMarkers: BeatMarker[];
+  globalStepMarkers: StepMarker[];
   /** Tempo regions for variable BPM (empty = use detectedBpm/manualBpm) */
   tempoRegions: TempoRegion[];
   isAnalyzing: boolean;

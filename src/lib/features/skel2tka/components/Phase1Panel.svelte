@@ -23,7 +23,7 @@
   import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";
   import { getVideoFrameExtractor } from "$lib/features/skel2tka/getVideoFrameExtractor";
   import { getVideoHandAnalyzer } from "$lib/features/skel2tka/getVideoHandAnalyzer";
-  import { getStepBoundaryDetector } from "$lib/features/skel2tka/getBeatBoundaryDetector";
+  import { getStepBoundaryDetector } from "$lib/features/skel2tka/getStepBoundaryDetector";
   import { getPhase1OverlayRenderer } from "$lib/features/skel2tka/getPhase1OverlayRenderer";
   import { getSanityChecker } from "$lib/features/skel2tka/getSanityChecker";
   import { getTrainingDataPersister } from "$lib/features/skel2tka/getTrainingDataPersister";
@@ -154,16 +154,16 @@
         fileHash: await computeFileHash(videoFile),
       };
 
-      const verifiedBeats: VerifiedStepPosition[] = result.beats.map((beat) => {
-        const bluePos = beat.positions.find((p) => p.hand === "blue");
-        const redPos = beat.positions.find((p) => p.hand === "red");
+      const verifiedBeats: VerifiedStepPosition[] = result.beats.map((step) => {
+        const bluePos = step.positions.find((p: any) => p.hand === "blue");
+        const redPos = step.positions.find((p: any) => p.hand === "red");
 
         // Apply corrections if any
         let blueLocation = bluePos?.location ?? null;
         let redLocation = redPos?.location ?? null;
 
         for (const correction of corrections) {
-          if (correction.stepNumber === beat.index && correction.field === "hand_position") {
+          if (correction.stepNumber === step.index && correction.field === "hand_position") {
             if (correction.hand === "blue") {
               blueLocation = correction.correctedValue as typeof blueLocation;
             } else if (correction.hand === "red") {
@@ -173,12 +173,12 @@
         }
 
         return {
-          stepNumber: beat.index,
+          stepNumber: step.index,
           blueLocation,
           redLocation,
-          positionLabel: beat.positionLabel,
-          startTime: beat.startTime,
-          endTime: beat.endTime,
+          positionLabel: step.positionLabel,
+          startTime: step.startTime,
+          endTime: step.endTime,
         };
       });
 

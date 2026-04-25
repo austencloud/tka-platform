@@ -194,7 +194,7 @@ describe("Echo2DRenderer", () => {
     expect((r as any).phantomsRed.length).toBe(1);
   });
 
-  it("dispose() empties both phantom arrays and resets lastBeatIndex", () => {
+  it("dispose() empties both phantom arrays and resets lastStepIndex", () => {
     const r = new Echo2DRenderer();
     const ctx = makeCtx();
 
@@ -214,7 +214,7 @@ describe("Echo2DRenderer", () => {
     r.dispose();
     expect((r as any).phantomsBlue.length).toBe(0);
     expect((r as any).phantomsRed.length).toBe(0);
-    expect((r as any).lastBeatIndex).toBe(-1);
+    expect((r as any).lastStepIndex).toBe(-1);
   });
 });
 

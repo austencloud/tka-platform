@@ -52,7 +52,7 @@ export interface DisplayAnimationState {
 /**
  * Event detail for beat letter animation
  */
-export interface BeatLetterAnimatedEvent {
+export interface StepLetterAnimatedEvent {
   stepIndex: number;
   letter: string;
   totalSteps: number;

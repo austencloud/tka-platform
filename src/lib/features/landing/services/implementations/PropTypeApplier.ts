@@ -18,7 +18,7 @@ export class PropTypeApplier implements IPropTypeApplier {
       startPosition: sequence.startPosition
         ? this.applyToStartPosition(sequence.startPosition, propType)
         : undefined,
-      steps: sequence.steps?.map((beat) => this.applyToBeat(beat, propType)) ?? [],
+      steps: sequence.steps?.map((step) => this.applyToBeat(step, propType)) ?? [],
     };
   }
 

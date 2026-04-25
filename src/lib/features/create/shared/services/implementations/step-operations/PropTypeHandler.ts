@@ -20,7 +20,7 @@ const logger = createComponentLogger("PropTypeHandler");
 /**
  * Update prop type for a specific color in a single beat
  */
-export function updateBeatPropType(
+export function updateStepPropType(
   stepNumber: number,
   color: string,
   propType: PropType,
@@ -29,7 +29,7 @@ export function updateBeatPropType(
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
   if (!stepData?.motions) {
-    logger.warn("Cannot update prop type - no beat data available");
+    logger.warn("Cannot update prop type - no step data available");
     return;
   }
 

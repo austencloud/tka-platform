@@ -687,7 +687,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
                     <ExportImagePanel
                       exportOptions={ctx.exportOptions}
                       isExporting={ctx.isExporting}
-                      beatCount={ctx.effectiveSequence?.steps?.length ?? 0}
+                      stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
                       onExport={ctx.handleExport}
                       onClose={ctx.exitEditMode}
                     />

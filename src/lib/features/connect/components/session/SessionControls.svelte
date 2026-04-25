@@ -9,7 +9,7 @@
 
 	interface Props {
 		isPlaying: boolean;
-		currentBeat: number;
+		currentStep: number;
 		maxBeat: number;
 		disabled?: boolean;
 		onPlay: () => void;
@@ -23,7 +23,7 @@
 
 	let {
 		isPlaying,
-		currentBeat,
+		currentStep,
 		maxBeat,
 		disabled = false,
 		onPlay,
@@ -50,7 +50,7 @@
 	}
 
 	// Progress percentage for styling
-	const progressPercent = $derived(maxBeat > 0 ? (currentBeat / maxBeat) * 100 : 0);
+	const progressPercent = $derived(maxBeat > 0 ? (currentStep / maxBeat) * 100 : 0);
 </script>
 
 <div class="session-controls" class:disabled>
@@ -59,7 +59,7 @@
 		<button
 			class="transport-btn"
 			onclick={onFirst}
-			disabled={disabled || currentBeat === 0}
+			disabled={disabled || currentStep === 0}
 			aria-label={t('connect_first_beat')}
 			title={t('connect_first_beat')}
 		>
@@ -69,7 +69,7 @@
 		<button
 			class="transport-btn"
 			onclick={onPrevious}
-			disabled={disabled || currentBeat === 0}
+			disabled={disabled || currentStep === 0}
 			aria-label={t('connect_previous_beat')}
 			title={t('connect_previous_beat')}
 		>
@@ -93,7 +93,7 @@
 		<button
 			class="transport-btn"
 			onclick={onNext}
-			disabled={disabled || currentBeat >= maxBeat}
+			disabled={disabled || currentStep >= maxBeat}
 			aria-label={t('connect_next_beat')}
 			title={t('connect_next_beat')}
 		>
@@ -103,7 +103,7 @@
 		<button
 			class="transport-btn"
 			onclick={onLast}
-			disabled={disabled || currentBeat >= maxBeat}
+			disabled={disabled || currentStep >= maxBeat}
 			aria-label={t('connect_last_beat')}
 			title={t('connect_last_beat')}
 		>
@@ -113,7 +113,7 @@
 
 	<!-- Progress slider -->
 	<div class="progress-container">
-		<span class="beat-label">{currentBeat}</span>
+		<span class="step-label">{currentStep}</span>
 
 		<div class="slider-wrapper">
 			<input
@@ -121,19 +121,19 @@
 				class="progress-slider"
 				min="0"
 				max={maxBeat}
-				value={currentBeat}
+				value={currentStep}
 				{disabled}
 				oninput={handleSliderChange}
 				aria-label={t('connect_seek_position')}
 				aria-valuemin={0}
 				aria-valuemax={maxBeat}
-				aria-valuenow={currentBeat}
-				aria-valuetext={t('connect_beat_of', { current: currentBeat, total: maxBeat })}
+				aria-valuenow={currentStep}
+				aria-valuetext={t('connect_beat_of', { current: currentStep, total: maxBeat })}
 				style="--progress: {progressPercent}%"
 			/>
 		</div>
 
-		<span class="beat-label">{maxBeat}</span>
+		<span class="step-label">{maxBeat}</span>
 	</div>
 </div>
 
@@ -215,7 +215,7 @@
 		max-width: 400px;
 	}
 
-	.beat-label {
+	.step-label {
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
 		min-width: 24px;

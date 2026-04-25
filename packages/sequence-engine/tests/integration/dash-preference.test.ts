@@ -209,7 +209,7 @@ function countDashBeats(steps: { motions: { blue: MotionData; red: MotionData } 
   return count;
 }
 
-function totalBeats(stepsLength: number, skipStart = true): number {
+function totalSteps(stepsLength: number, skipStart = true): number {
   return skipStart ? stepsLength - 1 : stepsLength;
 }
 
@@ -239,7 +239,7 @@ describe("dashPreference soft bias", () => {
         level: 1,
       });
       baselineDashes += countDashBeats(baseline.sequence);
-      baselineTotal += totalBeats(baseline.sequence.length);
+      baselineTotal += totalSteps(baseline.sequence.length);
 
       const maximized = new SequenceBuilder(provider).build({
         length,
@@ -248,7 +248,7 @@ describe("dashPreference soft bias", () => {
         constraintOptions: { dashPreference: "maximize" },
       });
       maximizeDashes += countDashBeats(maximized.sequence);
-      maximizeTotal += totalBeats(maximized.sequence.length);
+      maximizeTotal += totalSteps(maximized.sequence.length);
     }
 
     const baselineRate = baselineDashes / baselineTotal;
@@ -278,7 +278,7 @@ describe("dashPreference soft bias", () => {
         level: 1,
       });
       baselineDashes += countDashBeats(baseline.sequence);
-      baselineTotal += totalBeats(baseline.sequence.length);
+      baselineTotal += totalSteps(baseline.sequence.length);
 
       const minimized = new SequenceBuilder(provider).build({
         length,
@@ -287,7 +287,7 @@ describe("dashPreference soft bias", () => {
         constraintOptions: { dashPreference: "minimize" },
       });
       minimizeDashes += countDashBeats(minimized.sequence);
-      minimizeTotal += totalBeats(minimized.sequence.length);
+      minimizeTotal += totalSteps(minimized.sequence.length);
     }
 
     const baselineRate = baselineDashes / baselineTotal;

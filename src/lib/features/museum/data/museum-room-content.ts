@@ -262,7 +262,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           subtitle: "1871, London",
           body:
             "The only surviving prototype. A mechanical calculator that could " +
-            "enumerate all possible four-beat sequences for a given starting position. " +
+            "enumerate all possible four-step sequences for a given starting position. " +
             "Patent recalled by the Home Office within six months of filing.",
           footer: "Inventor: [NAME REDACTED]",
         },

@@ -27,7 +27,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   let {
     cell,
     cellIndex,
-    currentBeat,
+    currentStep,
     isPlaying,
     skipStartPosition = true,
     isSelected = false,
@@ -36,7 +36,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   }: {
     cell: GridCell;
     cellIndex: number;
-    currentBeat: number;
+    currentStep: number;
     isPlaying: boolean;
     /** When true, step 0 (start position) is skipped and beats map to steps 1..N */
     skipStartPosition?: boolean;
@@ -120,7 +120,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   // Calculate effective beat for this cell (including cell-level offset and speed)
   const effectiveBeat = $derived.by(() => {
     const speed = cell.speedMultiplier ?? 1.0;
-    return (currentBeat + cell.beatOffset) * speed;
+    return (currentStep + cell.beatOffset) * speed;
   });
 
   // Calculate current step for each layer.

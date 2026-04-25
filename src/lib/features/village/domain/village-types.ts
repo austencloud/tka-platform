@@ -78,7 +78,7 @@ export interface SocialComponent {
 	sequenceBeingTransferred: string | null;
 	performingSequenceId: string | null; // which sequence is active during "performing" state
 	inJam: boolean; // suppresses auto-expire timer in SocialSystem
-	currentBeatIndex: number;
+	currentStepIndex: number;
 	frustrationLevel: number;
 	idleTimer: number;
 	interactionCooldown: number;
@@ -99,7 +99,7 @@ export interface PropArtifact {
 	createdAtTick: number;
 	createdBy: string;
 	ownershipChain: string[];
-	totalBeatsPerformed: number;
+	totalStepsPerformed: number;
 	wear: number;
 	favoriteSequenceId: string | null;
 	customHue: number;
@@ -169,7 +169,7 @@ export interface VillageEventMap {
 		learner: VillageEntity,
 		sequenceId: string,
 	) => void;
-	"teaching:fumble": (learner: VillageEntity, beatIndex: number) => void;
+	"teaching:fumble": (learner: VillageEntity, stepNumber: number) => void;
 	"sequence:invented": (inventor: VillageEntity, sequenceId: string) => void;
 	"sequence:extinct": (sequenceId: string) => void;
 	"sequence:forgotten": (entity: VillageEntity, sequenceId: string) => void;

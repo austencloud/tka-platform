@@ -68,7 +68,7 @@ interface PropSnapshot {
   lateralOffset: number;
 }
 
-interface BeatSnapshot {
+interface StepSnapshot {
   /** progress value (0–1) used to lerp between start and end for this beat */
   progress: number;
   blue: PropSnapshot;
@@ -81,7 +81,7 @@ interface Snapshot {
   facingAngle: number;
   avatarPosition: { x: number; y: number; z: number };
   gridOffset: number;
-  beats: BeatSnapshot[];
+  beats: StepSnapshot[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ function captureWallMode(): Snapshot[] {
     redStartAngle: number,
     redEndAngle: number
   ): Snapshot {
-    const beats: BeatSnapshot[] = progressValues.map((progress) => {
+    const beats: StepSnapshot[] = progressValues.map((progress) => {
       // Linear interpolation of angles for this sample
       const blueAngle = blueStartAngle + (blueEndAngle - blueStartAngle) * progress;
       const redAngle = redStartAngle + (redEndAngle - redStartAngle) * progress;
@@ -258,7 +258,7 @@ function captureDualWheelMode(): Snapshot[] {
 
   const progressValues = [0, 0.25, 0.5, 0.75, 1.0];
 
-  const beats: BeatSnapshot[] = progressValues.map((progress) => {
+  const beats: StepSnapshot[] = progressValues.map((progress) => {
     // Blue: N → S on its wheel plane
     const blueAngle = LOC.N + (LOC.S - LOC.N) * progress;
     const blueStaffAngle = blueAngle + Math.PI;
@@ -330,7 +330,7 @@ function captureMuseumMode(): Snapshot[] {
     redStartAngle: number,
     redEndAngle: number
   ): Snapshot {
-    const beats: BeatSnapshot[] = progressValues.map((progress) => {
+    const beats: StepSnapshot[] = progressValues.map((progress) => {
       const blueAngle = blueStartAngle + (blueEndAngle - blueStartAngle) * progress;
       const redAngle = redStartAngle + (redEndAngle - redStartAngle) * progress;
       const blueStaffAngle = blueAngle + Math.PI;

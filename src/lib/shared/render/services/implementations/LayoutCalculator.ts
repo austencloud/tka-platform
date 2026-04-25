@@ -318,9 +318,9 @@ export class LayoutCalculator implements ILayoutCalculator {
 
   /**
    * Get layout for current beat grid (compatibility method)
-   * Matches desktop get_current_beat_frame_layout()
+   * Matches desktop get_current_step_frame_layout()
    */
-  getCurrentBeatGridLayout(stepCount: number): [number, number] {
+  getCurrentStepGridLayout(stepCount: number): [number, number] {
     // For web implementation, we use the same logic as calculateLayout
     // This method exists for compatibility with desktop patterns
     return this.calculateLayout(stepCount, false);
@@ -425,7 +425,7 @@ export class LayoutCalculator implements ILayoutCalculator {
    */
   getLayoutsInRange(
     minSteps: number,
-    maxBeats: number,
+    maxSteps: number,
     includeStartPosition: boolean
   ): Array<{
     stepCount: number;
@@ -434,7 +434,7 @@ export class LayoutCalculator implements ILayoutCalculator {
   }> {
     const results = [];
 
-    for (let stepCount = minSteps; stepCount <= maxBeats; stepCount++) {
+    for (let stepCount = minSteps; stepCount <= maxSteps; stepCount++) {
       if (this.validateLayout(stepCount, includeStartPosition)) {
         const layout = this.calculateLayout(stepCount, includeStartPosition);
         const efficiency = this.getLayoutEfficiency(

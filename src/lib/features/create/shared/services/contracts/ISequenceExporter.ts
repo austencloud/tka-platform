@@ -58,7 +58,7 @@ export interface CondensedStartMotion {
 }
 
 /**
- * Condensed beat data
+ * Condensed step data
  */
 export interface CondensedStepData {
   letter: string;

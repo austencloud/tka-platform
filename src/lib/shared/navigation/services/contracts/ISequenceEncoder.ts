@@ -157,7 +157,7 @@ export interface ISequenceEncoder {
    * Returns a string prefixed with "s~" that contains all sequence data
    * compressed and URL-safe, allowing the sequence to load without Firebase.
    *
-   * Uses LZString compression (60-70% savings). A typical 16-beat sequence
+   * Uses LZString compression (60-70% savings). A typical 16-step sequence
    * compresses to ~100-150 chars, fitting in a QR-5 (224 char capacity).
    *
    * @param sequence - The sequence to encode

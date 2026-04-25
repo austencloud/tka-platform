@@ -41,7 +41,7 @@ export function updateStepTurns(
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
   if (!stepData?.motions) {
-    logger.warn("Cannot update turns - no beat data available");
+    logger.warn("Cannot update turns - no step data available");
     return;
   }
 
@@ -119,7 +119,7 @@ export function updateStepTurns(
     color as MotionColor
   );
 
-  // Create updated beat data
+  // Create updated step data
   const updatedStepData = {
     ...stepData,
     motions: {

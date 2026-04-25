@@ -35,7 +35,7 @@ describe('PlaybackPositionCalculator', () => {
 
 	beforeEach(() => {
 		calculator = new PlaybackPositionCalculator();
-		calculator.setBeatDuration(1000); // 1 second per beat
+		calculator.setStepDuration(1000); // 1 second per beat
 	});
 
 	describe('calculatePosition - basic cases', () => {
@@ -299,14 +299,14 @@ describe('PlaybackPositionCalculator', () => {
 		});
 	});
 
-	describe('setBeatDuration', () => {
+	describe('setStepDuration', () => {
 		it('should affect position calculations', () => {
 			const intent = createIntent({
 				anchorStep: 0,
 				anchorWallTime: 1000
 			});
 
-			calculator.setBeatDuration(500); // 0.5 seconds per beat
+			calculator.setStepDuration(500); // 0.5 seconds per beat
 
 			// 2 seconds at 0.5s/beat = 4 steps
 			const result = calculator.calculatePosition(intent, 3000);
@@ -315,8 +315,8 @@ describe('PlaybackPositionCalculator', () => {
 		});
 
 		it('should throw on non-positive duration', () => {
-			expect(() => calculator.setBeatDuration(0)).toThrow();
-			expect(() => calculator.setBeatDuration(-100)).toThrow();
+			expect(() => calculator.setStepDuration(0)).toThrow();
+			expect(() => calculator.setStepDuration(-100)).toThrow();
 		});
 	});
 
@@ -350,8 +350,8 @@ describe('PlaybackPositionCalculator', () => {
 
 			const calc1 = new PlaybackPositionCalculator();
 			const calc2 = new PlaybackPositionCalculator();
-			calc1.setBeatDuration(1000);
-			calc2.setBeatDuration(1000);
+			calc1.setStepDuration(1000);
+			calc2.setStepDuration(1000);
 
 			const nowMs = 5000;
 

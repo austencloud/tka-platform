@@ -12,11 +12,11 @@
   const rows = [
     {
       label: "Static",
-      sublabel: "Both hands hold position",
+      sublabel: "Both hands remain still",
       cells: [
         { data: p("α-0"), label: "α" },
         { data: p("β-0"), label: "β" },
-        { data: p("γ-0"), label: "γ" },
+        { data: p("γ-0"), label: "Γ" },
       ],
     },
   ];
@@ -24,15 +24,11 @@
 
 <GuideSection id="type-6-static" title="Type 6 — Static">
   <p>
-    Type 6 letters are <span class="type-static">static</span> — both hands
-    remain at their current grid points. The props may rotate in place (prospin
-    or antispin), but neither hand moves.
+    Static motions are indicated by no arrow.
+  </p>
+  <p>
+    Later on, static sequences gain complexity when adding prop rotations.
   </p>
 
   <GuidePictographGrid rows={rows} />
-
-  <p>
-    Static letters are named after the position they hold: α (alpha), β (beta),
-    and γ (gamma).
-  </p>
 </GuideSection>

@@ -18,7 +18,7 @@ import type {
   QuickSimilarityResult,
   SimilarityOptions,
 } from "../contracts/ISimilarityCalculator";
-import type { IStepSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
 import type { ISequenceAligner } from "../contracts/ISequenceAligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -33,7 +33,7 @@ const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
 
 export class SimilarityCalculator implements ISimilarityCalculator {
   constructor(
-    private readonly beatSignatureGenerator: IStepSignatureGenerator,
+    private readonly stepSignatureGenerator: IStepSignatureGenerator,
     private readonly sequenceAligner: ISequenceAligner
   ) {}
 
@@ -307,8 +307,8 @@ export class SimilarityCalculator implements ISimilarityCalculator {
       const stepB = stepsB[i];
       if (!stepA || !stepB) continue;
 
-      const sigA = this.beatSignatureGenerator.generateSignature(stepA);
-      const sigB = this.beatSignatureGenerator.generateSignature(stepB);
+      const sigA = this.stepSignatureGenerator.generateSignature(stepA);
+      const sigB = this.stepSignatureGenerator.generateSignature(stepB);
 
       if (sigA.startPositionGroup === sigB.startPositionGroup) {
         matches += 0.5;
@@ -364,9 +364,9 @@ export class SimilarityCalculator implements ISimilarityCalculator {
         continue;
       }
 
-      const sigA = this.beatSignatureGenerator.generateSignature(stepA);
-      const sigB = this.beatSignatureGenerator.generateSignature(stepB);
-      const result = this.beatSignatureGenerator.compareSignatures(sigA, sigB);
+      const sigA = this.stepSignatureGenerator.generateSignature(stepA);
+      const sigB = this.stepSignatureGenerator.generateSignature(stepB);
+      const result = this.stepSignatureGenerator.compareSignatures(sigA, sigB);
       scores.push(result.similarity);
     }
 
@@ -425,8 +425,8 @@ export class SimilarityCalculator implements ISimilarityCalculator {
       }
 
       // Position group comparison
-      const sigA = this.beatSignatureGenerator.generateSignature(stepA);
-      const sigB = this.beatSignatureGenerator.generateSignature(stepB);
+      const sigA = this.stepSignatureGenerator.generateSignature(stepA);
+      const sigB = this.stepSignatureGenerator.generateSignature(stepB);
 
       if (sigA.startPositionGroup === sigB.startPositionGroup) {
         positionGroupMatches++;
@@ -569,10 +569,10 @@ export class SimilarityCalculator implements ISimilarityCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { stepSignatureGenerator } from "./StepSignatureGenerator";
 import { sequenceAligner } from "./SequenceAligner";
 
 export const similarityCalculator = new SimilarityCalculator(
-  beatSignatureGenerator,
+  stepSignatureGenerator,
   sequenceAligner
 );

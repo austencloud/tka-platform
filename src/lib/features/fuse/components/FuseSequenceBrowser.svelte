@@ -49,7 +49,7 @@
 	const highlightedStep = $derived.by(() => {
 		if (!currentItem?.steps?.length) return null;
 		const stepCount = currentItem.steps.length;
-		return Math.floor(fuseState.currentBeat) % stepCount;
+		return Math.floor(fuseState.currentStep) % stepCount;
 	});
 
 	let pool = $state<SequenceData[]>([]);

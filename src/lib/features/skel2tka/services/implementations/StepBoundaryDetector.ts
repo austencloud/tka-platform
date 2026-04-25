@@ -15,7 +15,7 @@ import type { HandTimeline, DetectedBeat, StepPosition } from "../../domain/mode
 import type {
   IStepBoundaryDetector,
   StepDetectionOptions,
-} from "../contracts/IBeatBoundaryDetector";
+} from "../contracts/IStepBoundaryDetector";
 
 const DEFAULT_MIN_FRAMES_PER_BEAT = 3;
 const DEFAULT_MIN_CONFIDENCE = 0.5;

@@ -476,18 +476,6 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
     max-height: 100%;
   }
 
-  .beat-indicator {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    padding: 4px 8px;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 4px;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    backdrop-filter: blur(4px);
-  }
-
   .loading-state,
   .error-state,
   .empty-state {

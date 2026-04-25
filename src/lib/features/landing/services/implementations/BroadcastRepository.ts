@@ -211,7 +211,7 @@ export class BroadcastRepository implements IBroadcastRepository {
     }
   }
 
-  getCurrentBeatPosition(
+  getCurrentStepPosition(
     startedAtMs: number,
     durationMs: number,
     totalSteps: number,

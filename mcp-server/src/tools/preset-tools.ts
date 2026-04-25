@@ -377,7 +377,7 @@ export function registerPresetTools(server: McpServer): void {
             blueMotion: picto.blueMotion,
             redMotion: picto.redMotion,
             stepNumber: index,
-            beatIndex: index,
+            stepNumber: index,
           }));
           sequenceWord = constrained.word;
         } else {

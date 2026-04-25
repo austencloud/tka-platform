@@ -7,7 +7,7 @@
 
 import type {
   CollaborativeVideo,
-  BeatMap,
+  StepMap,
 } from "../../domain/CollaborativeVideo";
 
 /**
@@ -54,7 +54,7 @@ export interface ICollaborativeVideoManager {
    * Save or update the beat-to-timestamp mapping for a video.
    * Any collaborator on the video can update the beat map.
    */
-  updateBeatMap(videoId: string, beatMap: BeatMap): Promise<void>;
+  updateStepMap(videoId: string, beatMap: StepMap): Promise<void>;
 
   // ---- Collaboration Management ----
 

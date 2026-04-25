@@ -157,13 +157,13 @@ describe("ReversalDetector", () => {
     });
 
     it("should look back past multiple blanks", () => {
-      const prevBeats = [
+      const prevSteps = [
         createBeat(1, "cw", "cw"),
         createBeat(2, null, null, true),
         createBeat(3, null, null, true),
       ];
       const curr = createBeat(4, "ccw", "ccw");
-      const result = service.detectReversal(prevBeats, curr);
+      const result = service.detectReversal(prevSteps, curr);
 
       expect(result.blueReversal).toBe(true);
       expect(result.redReversal).toBe(true);

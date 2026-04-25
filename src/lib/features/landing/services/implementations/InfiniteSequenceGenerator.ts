@@ -76,7 +76,7 @@ const LOOP_TYPE_ROTATION: LOOPType[] = [
 
 /**
  * Slice size options with their probabilities.
- * Quartered (4 slices) is more common as it produces 16-beat sequences.
+ * Quartered (4 slices) is more common as it produces 16-step sequences.
  */
 const SLICE_OPTIONS: { slice: SliceSize; weight: number }[] = [
   { slice: SliceSize.QUARTERED, weight: 70 }, // 70% - 16 steps total

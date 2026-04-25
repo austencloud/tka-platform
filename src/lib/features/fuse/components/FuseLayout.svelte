@@ -130,7 +130,7 @@
 							bpm={fuseState.bpm}
 							onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
 							length={fuseLength}
-							currentBeat={fuseState.currentBeat}
+							currentStep={fuseState.currentStep}
 							onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
 						/>
 					</div>
@@ -140,7 +140,7 @@
 							bpm={fuseState.bpm}
 							onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
 							length={fuseLength}
-							currentBeat={fuseState.currentBeat}
+							currentStep={fuseState.currentStep}
 							onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
 						/>
 					</div>
@@ -157,7 +157,7 @@
 							bpm={fuseState.bpm}
 							onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
 							length={fuseLength}
-							currentBeat={fuseState.currentBeat}
+							currentStep={fuseState.currentStep}
 							onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
 							tourShuffleGlow={true}
 						/>
@@ -168,7 +168,7 @@
 							bpm={fuseState.bpm}
 							onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
 							length={fuseLength}
-							currentBeat={fuseState.currentBeat}
+							currentStep={fuseState.currentStep}
 							onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
 							tourShuffleGlow={true}
 						/>
@@ -194,7 +194,7 @@
 								bpm={fuseState.bpm}
 								onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
 								length={fuseLength}
-								currentBeat={fuseState.currentBeat}
+								currentStep={fuseState.currentStep}
 								onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
 							/>
 						</div>
@@ -204,7 +204,7 @@
 								bpm={fuseState.bpm}
 								onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
 								length={fuseLength}
-								currentBeat={fuseState.currentBeat}
+								currentStep={fuseState.currentStep}
 								onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
 							/>
 						</div>
@@ -229,7 +229,7 @@
 								<FuseAnimationPreview
 									sequence={fuseState.fusedSequence}
 									bpm={fuseState.bpm}
-									currentBeat={fuseState.currentBeat}
+									currentStep={fuseState.currentStep}
 									showBackButton={false}
 								/>
 							</div>
@@ -261,7 +261,7 @@
 					bpm={fuseState.bpm}
 					onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
 					length={fuseLength}
-					currentBeat={fuseState.currentBeat}
+					currentStep={fuseState.currentStep}
 					onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
 				/>
 			</div>
@@ -271,7 +271,7 @@
 					bpm={fuseState.bpm}
 					onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
 					length={fuseLength}
-					currentBeat={fuseState.currentBeat}
+					currentStep={fuseState.currentStep}
 					onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
 				/>
 			</div>

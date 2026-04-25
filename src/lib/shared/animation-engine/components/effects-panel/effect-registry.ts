@@ -27,6 +27,7 @@ export const EFFECTS: readonly EffectMeta[] = [
   { id: "smoke", label: "Smoke", icon: "fa-smog", color: "#c0c0c8" },
   { id: "ink", label: "Ink", icon: "fa-paint-brush", color: "#b8956a" },
   { id: "frost", label: "Frost", icon: "fa-snowflake", color: "#a0d8ff" },
+  { id: "silk", label: "Silk", icon: "fa-wind", color: "#c0c0d0" },
 ] as const;
 
 export const EFFECT_COLORS: Record<string, string> = Object.fromEntries(

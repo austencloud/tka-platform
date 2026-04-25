@@ -22,7 +22,7 @@ export interface IWorkbench {
    * Edit a beat with default pictograph data
    * @param stepIndex - Index of beat to edit
    * @param sequence - Current sequence
-   * @returns Updated beat data
+   * @returns Updated step data
    */
   editBeat(stepIndex: number, sequence: SequenceData): StepData;
 
@@ -30,14 +30,14 @@ export interface IWorkbench {
    * Clear a beat (make it blank)
    * @param stepIndex - Index of beat to clear
    * @param sequence - Current sequence
-   * @returns Updated beat data
+   * @returns Updated step data
    */
   clearBeat(stepIndex: number, sequence: SequenceData): StepData;
 
   /**
    * Add a beat to a sequence
    * @param sequenceId - Sequence identifier
-   * @param stepData - Optional beat data
+   * @param stepData - Optional step data
    * @returns Promise resolving to updated sequence
    */
   addStep(

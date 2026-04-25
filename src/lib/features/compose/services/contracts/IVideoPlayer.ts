@@ -36,7 +36,7 @@ export interface IVideoPlayer {
    * Start tracking the current beat position
    * @param onStepChange Callback fired on each frame with the current beat
    */
-  startBeatTracking(onStepChange: (beat: number) => void): void;
+  startStepTracking(onStepChange: (beat: number) => void): void;
 
   /**
    * Stop tracking the beat position

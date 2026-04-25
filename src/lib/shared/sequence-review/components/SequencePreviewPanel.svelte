@@ -176,7 +176,7 @@
       </div>
     </div>
   {:else}
-    <div class="no-data">No beat data available</div>
+    <div class="no-data">No step data available</div>
   {/if}
 </div>
 

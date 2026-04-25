@@ -142,7 +142,7 @@ export class MirroredSwappedLOOPExecutor {
     //      Then patterns are mirrored (cw↔ccw, e↔w)
     const newStep: StepData = {
       ...previousMatchingStep,
-      id: `beat-${stepNumber}`,
+      id: `step-${stepNumber}`,
       stepNumber,
       letter: previousMatchingStep.letter ?? null, // Same letter
       startPosition: previousStep.endPosition ?? null, // NORMAL continuity (not swapped)

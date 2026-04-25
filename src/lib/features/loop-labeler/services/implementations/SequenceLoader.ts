@@ -102,10 +102,10 @@ export class SequenceLoader implements ISequenceLoader {
     // These already contain metadata + start position + steps in RawStepData format
     const beats = data["beats"] as Array<Record<string, unknown>> | undefined;
     if (beats && beats.length > 0) {
-      const firstBeat = beats[0];
+      const firstStep = beats[0];
       // Detect raw format: has "blueAttributes" or "beat" field, or is metadata (has "word")
-      const isRawFormat = firstBeat &&
-        ("blueAttributes" in firstBeat || "beat" in firstBeat || "word" in firstBeat);
+      const isRawFormat = firstStep &&
+        ("blueAttributes" in firstStep || "beat" in firstStep || "word" in firstStep);
 
       if (isRawFormat) {
         console.log(`[SequenceLoader] Using raw beats format (${beats.length} elements)`);
@@ -113,9 +113,9 @@ export class SequenceLoader implements ISequenceLoader {
         return beats as RawStepData[];
       }
 
-      // Library beats format: has "motions" with blue/red sub-objects and "beatNumber"
-      const isLibraryBeatsFormat = firstBeat &&
-        ("motions" in firstBeat && "beatNumber" in firstBeat);
+      // Library beats format: has "motions" with blue/red sub-objects and "stepNumber"
+      const isLibraryBeatsFormat = firstStep &&
+        ("motions" in firstStep && "stepNumber" in firstStep);
 
       if (isLibraryBeatsFormat) {
         console.log(`[SequenceLoader] Using library beats format (${beats.length} elements)`);
@@ -176,9 +176,9 @@ export class SequenceLoader implements ISequenceLoader {
   }
 
   /**
-   * Convert library-format beats (motions.blue/red + beatNumber) to RawStepData[].
+   * Convert library-format beats (motions.blue/red + stepNumber) to RawStepData[].
    * This format stores beats with full motion objects directly in a "beats" array,
-   * using "beatNumber" (not "beat") and "motions" (not "blueAttributes"/"redAttributes").
+   * using "stepNumber" (not "beat") and "motions" (not "blueAttributes"/"redAttributes").
    */
   private convertLibraryBeats(
     data: Record<string, unknown>,
@@ -196,13 +196,13 @@ export class SequenceLoader implements ISequenceLoader {
     });
 
     // Convert each beat to RawStepData
-    for (const beat of beats) {
-      const motions = beat["motions"] as Record<string, Record<string, unknown>> | undefined;
-      const beatNumber = Number(beat["beatNumber"]) || 0;
+    for (const step of beats) {
+      const motions = step["motions"] as Record<string, Record<string, unknown>> | undefined;
+      const stepNumber = Number(step["stepNumber"]) || 0;
 
       result.push({
-        beat: beatNumber,
-        letter: (beat["letter"] as string) || undefined,
+        beat: stepNumber,
+        letter: (step["letter"] as string) || undefined,
         blueAttributes: motions ? this.convertMotionToRawAttributes(motions["blue"]) : undefined,
         redAttributes: motions ? this.convertMotionToRawAttributes(motions["red"]) : undefined,
       });

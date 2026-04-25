@@ -34,7 +34,7 @@ Design:
    *
    * IMPORTANT: currentStep is 1-based (1.0 = beat 1 starting, 2.0 = beat 2 starting)
    * - currentStep = 0 or 1: at/before beat 1 start = 0% progress
-   * - currentStep = 2.0: beat 2 just starting (33% for 3-beat sequence)
+   * - currentStep = 2.0: beat 2 just starting (33% for 3-step sequence)
    *
    * Formula: (currentStep - 1) / totalSteps converts to 0-based progress
    */

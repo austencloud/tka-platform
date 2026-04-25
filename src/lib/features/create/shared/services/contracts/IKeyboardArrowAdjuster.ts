@@ -2,7 +2,7 @@
  * Keyboard Arrow Adjustment Service Contract
  *
  * Handles manual arrow position adjustments via WASD keyboard controls.
- * Applies adjustments to beat data and updates the pictograph.
+ * Applies adjustments to step data and updates the pictograph.
  */
 
 import type { StepData } from "../../domain/models/StepData";
@@ -15,8 +15,8 @@ export interface IKeyboardArrowAdjuster {
    * @param key - The WASD key pressed
    * @param increment - The pixel increment to move (5, 20, or 200)
    * @param selectedArrow - The currently selected arrow data
-   * @param stepData - The beat data to update
-   * @returns Updated beat data with arrow adjustment applied
+   * @param stepData - The step data to update
+   * @returns Updated step data with arrow adjustment applied
    */
   handleWASDMovement(
     key: "w" | "a" | "s" | "d",

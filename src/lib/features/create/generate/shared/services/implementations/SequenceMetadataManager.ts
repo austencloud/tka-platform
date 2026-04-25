@@ -62,8 +62,8 @@ export class SequenceMetadataManager implements ISequenceMetadataManager {
    */
   calculateWordFromBeats(steps: StepData[]): string {
     return steps
-      .filter((beat) => beat.letter)
-      .map((beat) => beat.letter)
+      .filter((step) => step.letter)
+      .map((step) => step.letter)
       .join("");
   }
 

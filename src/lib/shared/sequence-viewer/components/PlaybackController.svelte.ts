@@ -52,13 +52,13 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
           break;
         case "currentStep": {
           const rawStep = value as number;
-          const newStep = Math.floor(rawStep);
-          if (isPlayingLocal && newStep !== lastStepNumber && newStep >= 1) {
+          const newBeat = Math.floor(rawStep);
+          if (isPlayingLocal && newBeat !== lastStepNumber && newBeat >= 1) {
             _hapticService?.trigger("selection");
           }
-          lastStepNumber = newStep;
-          currentStepLocal = newStep;
-          lanSyncState.updatePlayback({ currentStep: newStep });
+          lastStepNumber = newBeat;
+          currentStepLocal = rawStep;
+          lanSyncState.updatePlayback({ currentStep: rawStep });
           break;
         }
         case "speed":

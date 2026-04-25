@@ -6,7 +6,7 @@
   Upload flow: empty -> upload (preview) -> uploading -> gallery.
 
   Replaces the simpler VideoUploadPanel with full gallery support,
-  video count awareness, and beat-mapping entry point.
+  video count awareness, and step-mapping entry point.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
@@ -17,7 +17,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import {
     createVideoFromUpload,
@@ -27,7 +27,7 @@
     extractVideoThumbnail,
     type ThumbnailResult,
   } from "$lib/shared/video-collaboration/utils/thumbnail-extractor";
-  import BeatMapEditor from "../beat-mapping/BeatMapEditor.svelte";
+  import StepMapEditor from "../step-mapping/StepMapEditor.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -50,7 +50,7 @@
     | "upload"
     | "uploading"
     | "gallery"
-    | "beat-mapping";
+    | "step-mapping";
 
   let panelState = $state<PanelState>("loading");
   let videos = $state<CollaborativeVideo[]>([]);
@@ -315,10 +315,10 @@
   // BEAT MAPPING
   // ============================================================================
 
-  async function handleBeatMapSave(beatMap: BeatMap) {
+  async function handleStepMapSave(beatMap: StepMap) {
     if (!beatMappingVideo) return;
 
-    await videoManager.updateBeatMap(beatMappingVideo.id, beatMap);
+    await videoManager.updateStepMap(beatMappingVideo.id, beatMap);
 
     // Update the local video list so the beat-map indicator shows immediately
     videos = videos.map((v) =>
@@ -332,7 +332,7 @@
     panelState = "gallery";
   }
 
-  function handleBeatMapClose() {
+  function handleStepMapClose() {
     beatMappingVideo = null;
     panelState = "gallery";
   }
@@ -353,8 +353,8 @@
 
   function handleBack() {
     // Beat mapping: return to gallery
-    if (panelState === "beat-mapping") {
-      handleBeatMapClose();
+    if (panelState === "step-mapping") {
+      handleStepMapClose();
       return;
     }
     // If in upload/empty sub-state and gallery has videos, go back to gallery
@@ -604,7 +604,7 @@
                 <button
                   type="button"
                   class="gallery-action-btn map-beats"
-                  onclick={() => { beatMappingVideo = video; panelState = "beat-mapping"; }}
+                  onclick={() => { beatMappingVideo = video; panelState = "step-mapping"; }}
                   title="Map beats"
                 >
                   <i class="fas fa-music" aria-hidden="true"></i>
@@ -636,15 +636,15 @@
     <!-- ================================================================
          BEAT MAPPING
          ================================================================ -->
-    {:else if panelState === "beat-mapping" && beatMappingVideo}
-      <BeatMapEditor
+    {:else if panelState === "step-mapping" && beatMappingVideo}
+      <StepMapEditor
         videoUrl={beatMappingVideo.videoUrl}
         videoDuration={beatMappingVideo.duration}
-        beatCount={sequence.steps.length}
-        initialBeatMap={beatMappingVideo.beatMap}
+        stepCount={sequence.steps.length}
+        initialStepMap={beatMappingVideo.beatMap}
         {bpm}
-        onSave={handleBeatMapSave}
-        onClose={handleBeatMapClose}
+        onSave={handleStepMapSave}
+        onClose={handleStepMapClose}
       />
     {/if}
 
@@ -675,7 +675,7 @@
   }
 
   /* ============================================================
-   * CENTER STATE (loading, save-first, beat-mapping placeholder)
+   * CENTER STATE (loading, save-first, step-mapping placeholder)
    * ============================================================ */
 
   .center-state {

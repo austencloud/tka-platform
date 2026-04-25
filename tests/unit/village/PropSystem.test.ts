@@ -56,7 +56,7 @@ function makeProp(overrides: Partial<PropArtifact> = {}): PropArtifact {
 		createdAtTick: 0,
 		createdBy: "maker-1",
 		ownershipChain: ["entity-1"],
-		totalBeatsPerformed: 0,
+		totalStepsPerformed: 0,
 		wear: 0,
 		favoriteSequenceId: null,
 		customHue: 0,
@@ -80,7 +80,7 @@ describe("PropSystem", () => {
 
 		const staffWearRate = PROP_WEAR_PROFILES["staff"].wearRate;
 		expect(prop.wear).toBeCloseTo(staffWearRate);
-		expect(prop.totalBeatsPerformed).toBe(1);
+		expect(prop.totalStepsPerformed).toBe(1);
 	});
 
 	it("breaks prop when wear >= 1.0", () => {

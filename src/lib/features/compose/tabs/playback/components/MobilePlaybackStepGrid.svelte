@@ -44,16 +44,16 @@
     </div>
   {:else}
     <div class="step-grid" style:--grid-cols={gridColumns()}>
-      {#each steps() as beat, index}
+      {#each steps() as step, index}
         {@const stepNumber = index + 1}
-        {@const isCurrentBeat = isPlaying && currentStep === stepNumber}
+        {@const isCurrentStep = isPlaying && currentStep === stepNumber}
         <div
           class="step-cell"
-          class:current={isCurrentBeat}
+          class:current={isCurrentStep}
           class:played={isPlaying && currentStep > stepNumber}
         >
           <div class="step-content">
-            <TKAGlyph pictographData={beat} letter={beat?.letter} />
+            <TKAGlyph pictographData={step} letter={step?.letter} />
           </div>
           <span class="step-number">{stepNumber}</span>
         </div>

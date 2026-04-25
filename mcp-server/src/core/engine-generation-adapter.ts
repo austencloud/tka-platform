@@ -280,7 +280,7 @@ function convertToSequenceResult(
     blueMotion: step.blueMotion,
     redMotion: step.redMotion,
     stepNumber: i,
-    beatIndex: step.beatIndex ?? i,
+    stepNumber: step.stepNumber ?? i,
     isBridge: step.isBridge ?? false,
   }));
 

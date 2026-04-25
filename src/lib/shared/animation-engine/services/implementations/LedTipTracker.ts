@@ -256,8 +256,8 @@ export class LedTipTracker implements ILedTipTracker {
 			ctx.velocityY = velocityY;
 			ctx.speedMagnitude = speedMagnitude;
 			ctx.prevFrameTips = this.prevFrameSnapshot;
-			ctx.beatIndex = -1;
-			ctx.totalBeats = 0;
+			ctx.stepNumber = -1;
+			ctx.totalSteps = 0;
 			const color = evaluatePatternNew(ledConfig.patternId, ctx);
 
 			this.emitTip(

@@ -68,7 +68,7 @@
 
       if (startPositionStep) {
         const steps = sequence.steps.filter(
-          (beat: any) => beat && beat.stepNumber !== 0 && !beat.isStartPosition
+          (step: any) => step && step.stepNumber !== 0 && !step.isStartPosition
         );
 
         return {

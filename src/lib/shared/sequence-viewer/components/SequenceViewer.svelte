@@ -252,7 +252,7 @@
 	const hasAnimation = $derived(!!sequence);
 	const hasVideo = $derived(!!sequence?.performanceVideoUrl);
 
-	// Check if sequence has full beat data loaded (needed for ChoreoCard)
+	// Check if sequence has full step data loaded (needed for ChoreoCard)
 	const hasFullStepData = $derived(!!sequence?.steps?.length);
 
 	const availableMediaTypes = $derived.by(() => {
@@ -336,7 +336,7 @@
 			<div class="image-view-container">
 				<div class="image-view">
 					{#if showVisibilitySettings && hasFullStepData}
-						<!-- Interactive mode: Use layered preview for animated toggles (requires full beat data) -->
+						<!-- Interactive mode: Use layered preview for animated toggles (requires full step data) -->
 						<ChoreoCard
 							{sequence}
 							showStepNumbers={addStepNumbers}
@@ -353,7 +353,7 @@
 							catDogModeEnabled={catDogMode}
 						/>
 					{:else}
-						<!-- Browse mode or no beat data: Use cached composite images -->
+						<!-- Browse mode or no step data: Use cached composite images -->
 						<PropAwareThumbnail
 							{sequence}
 							{bluePropType}

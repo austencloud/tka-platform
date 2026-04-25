@@ -123,7 +123,7 @@
     /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
     disableSpineTwist?: boolean;
     /** Current beat index for collision detection logging */
-    beatIndex?: number;
+    stepNumber?: number;
     /** 0-1 progress within current beat for collision detection logging */
     beatProgress?: number;
     /** Optional callback invoked each frame with the collision detector's events.
@@ -170,7 +170,7 @@
     bluePropAnchorRef,
     redPropAnchorRef,
     disableSpineTwist = false,
-    beatIndex = 0,
+    stepNumber = 0,
     beatProgress = 0,
     onCollisionEvents,
     spinePitchOffset = 0,
@@ -817,7 +817,7 @@
         _boneVecs as BodySnapshot,
         blueSegOrNull,
         redSegOrNull,
-        beatIndex,
+        stepNumber,
         beatProgress
       );
       onCollisionEvents?.(events);

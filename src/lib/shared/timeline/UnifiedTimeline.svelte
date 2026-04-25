@@ -14,10 +14,10 @@
   const totalTimeLabel = $derived(formatTime(playback.duration));
 
   const beatMarkers = $derived(
-    playback.totalBeats > 1
+    playback.totalSteps > 1
       ? Array.from(
-          { length: playback.totalBeats - 1 },
-          (_, i) => (i + 1) / playback.totalBeats,
+          { length: playback.totalSteps - 1 },
+          (_, i) => (i + 1) / playback.totalSteps,
         )
       : ([] as number[]),
   );
@@ -65,17 +65,17 @@
       playback.togglePlay();
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
-      const step = 1 / Math.max(1, playback.totalBeats);
+      const step = 1 / Math.max(1, playback.totalSteps);
       playback.seek(Math.min(1, playback.overallProgress + step));
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
-      const step = 1 / Math.max(1, playback.totalBeats);
+      const step = 1 / Math.max(1, playback.totalSteps);
       playback.seek(Math.max(0, playback.overallProgress - step));
     }
   }
 </script>
 
-{#if visible && playback.totalBeats > 0}
+{#if visible && playback.totalSteps > 0}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="unified-timeline" role="group" aria-label="Playback transport" onkeydown={onKeydown}>
@@ -126,7 +126,7 @@
     </div>
 
     <div class="pill-context">
-      beat {playback.currentBeat} of {playback.totalBeats}
+      beat {playback.currentStep} of {playback.totalSteps}
     </div>
   </div>
 {/if}

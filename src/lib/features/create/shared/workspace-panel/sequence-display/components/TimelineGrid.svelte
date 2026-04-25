@@ -39,7 +39,7 @@
     onStepDelete,
     onStepLongPress,
     onDurationChange,
-    getBeatKey,
+    getStepKey,
     getDurationDisplay,
     scrollContainerRef = $bindable(),
   } = $props<{
@@ -62,7 +62,7 @@
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
     onDurationChange?: (stepNumber: number, newDuration: number) => void;
-    getBeatKey: (beat: StepData, index: number) => string;
+    getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
     scrollContainerRef?: HTMLElement;
   }>();
@@ -164,7 +164,7 @@
     <div class="timeline-rows">
       {#each timelineRows as row, rowIndex (rowIndex)}
         <div class="timeline-row">
-          {#each row.steps as { stepIndex, duration } (getBeatKey(steps[stepIndex], stepIndex))}
+          {#each row.steps as { stepIndex, duration } (getStepKey(steps[stepIndex], stepIndex))}
             {@const step = steps[stepIndex]}
             {@const isDeleting = removingStepIndices.has(stepIndex)}
             {@const shouldSlide =

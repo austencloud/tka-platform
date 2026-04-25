@@ -51,7 +51,7 @@ export function getSubdivisionsPerBeat(ts: TimeSignature): number {
  *   - beat 1, subdivision 1 → "1.33"
  *   - beat 1, subdivision 2 → "1.67"
  */
-export function formatBeatPosition(
+export function formatStepPosition(
 	stepNumber: number,
 	subdivisionIndex: number,
 	subdivisionsPerBeat: number
@@ -77,7 +77,7 @@ export function formatBeatPosition(
  *   - "1.5" → { beat: 1, subdivision: 2 } (for 4 subdivisions)
  *   - "6.75" → { beat: 6, subdivision: 3 } (for 4 subdivisions)
  */
-export function parseBeatPosition(
+export function parseStepPosition(
 	position: string,
 	subdivisionsPerBeat: number
 ): { beat: number; subdivision: number } {

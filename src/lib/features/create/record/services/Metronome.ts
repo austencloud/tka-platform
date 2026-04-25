@@ -65,7 +65,7 @@ export class Metronome {
    * @param bpm - Beats per minute
    * @param onStep - Callback called on each beat with beat index
    */
-  start(bpm: number, onBeat?: (beatIndex: number) => void): void {
+  start(bpm: number, onStep?: (stepNumber: number) => void): void {
     this.initializeAudioContext();
 
     if (!this.audioContext) {
@@ -93,11 +93,11 @@ export class Metronome {
           this.createClick(this.nextClickTime, isAccent);
         }
 
-        if (onBeat) {
+        if (onStep) {
           // Schedule callback at the same time as the click
           const callbackDelay =
             (this.nextClickTime - this.audioContext.currentTime) * 1000;
-          setTimeout(() => onBeat(stepIndex), Math.max(0, callbackDelay));
+          setTimeout(() => onStep(stepIndex), Math.max(0, callbackDelay));
         }
 
         this.nextClickTime += secondsPerBeat;

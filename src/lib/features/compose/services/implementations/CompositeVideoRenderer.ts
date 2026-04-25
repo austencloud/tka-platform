@@ -179,8 +179,8 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
       );
 
       // Draw beat highlight on grid pane
-      const stepPos = this.getBeatGridPosition(currentStep);
-      this.drawBeatHighlight(ctx, stepPos, halfWidth, 0);
+      const stepPos = this.getStepGridPosition(currentStep);
+      this.drawStepHighlight(ctx, stepPos, halfWidth, 0);
     } else {
       // Vertical layout: [animation] / [grid]
       const halfHeight = this.dimensions.height / 2;
@@ -206,12 +206,12 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
       );
 
       // Draw beat highlight on grid pane
-      const stepPos = this.getBeatGridPosition(currentStep);
-      this.drawBeatHighlight(ctx, stepPos, 0, halfHeight);
+      const stepPos = this.getStepGridPosition(currentStep);
+      this.drawStepHighlight(ctx, stepPos, 0, halfHeight);
     }
   }
 
-  getBeatGridPosition(stepIndex: number): StepGridPosition {
+  getStepGridPosition(stepIndex: number): StepGridPosition {
     if (!this.sequence || !this.options || !this.gridDimensions || !this.gridLayout) {
       throw new Error("CompositeVideoRenderer not initialized");
     }
@@ -288,7 +288,7 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
    * Draw gold highlight around current beat cell
    * Matches workspace preview styling (gold stroke + subtle fill)
    */
-  private drawBeatHighlight(
+  private drawStepHighlight(
     ctx: CanvasRenderingContext2D,
     stepPos: StepGridPosition,
     offsetX: number,

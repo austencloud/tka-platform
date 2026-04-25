@@ -9,15 +9,15 @@
 export interface IArrangePlaybackEngine {
   readonly isPlaying: boolean;
   readonly isStepAnimating: boolean;
-  readonly currentBeat: number;
+  readonly currentStep: number;
   readonly bpm: number;
 
   /**
    * Start continuous playback at the given BPM.
-   * @param totalBeatsGetter - Function returning the current total beat count
+   * @param totalStepsGetter - Function returning the current total beat count
    *   (must be a function since beat count changes as cells are modified)
    */
-  play(totalBeatsGetter: () => number, bpm?: number): void;
+  play(totalStepsGetter: () => number, bpm?: number): void;
 
   /** Pause playback, keeping the current beat position. */
   pause(): void;
@@ -33,7 +33,7 @@ export interface IArrangePlaybackEngine {
    * Used by step buttons so props visibly rotate/move.
    * No-op if continuous playback is active.
    */
-  animateStep(amount: number, totalBeats: number): void;
+  animateStep(amount: number, totalSteps: number): void;
 
   /** Force-set the current beat (e.g. when resetting on mode change). */
   setCurrentBeat(beat: number): void;

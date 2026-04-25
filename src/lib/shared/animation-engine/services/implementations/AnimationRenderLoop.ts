@@ -27,6 +27,7 @@ import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer
 import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
 import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
+import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
@@ -37,6 +38,7 @@ import type { PetalsTipInput } from "$lib/shared/effects/renderers/Petals2DRende
 import type { SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRenderer";
 import type { InkTipInput } from "$lib/shared/effects/renderers/Ink2DRenderer";
 import type { FrostTipInput } from "$lib/shared/effects/renderers/Frost2DRenderer";
+import type { SilkTipInput } from "$lib/shared/effects/renderers/Silk2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -124,6 +126,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastInkFrameTime: number = 0;
   private frostRenderer: IFrostOverlayRenderer | null = null;
   private lastFrostFrameTime: number = 0;
+  private silkRenderer: ISilkOverlayRenderer | null = null;
+  private lastSilkFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -146,6 +150,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveSmokeErrors: number = 0;
   private consecutiveInkErrors: number = 0;
   private consecutiveFrostErrors: number = 0;
+  private consecutiveSilkErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
@@ -158,6 +163,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private smokeDisabledByError: boolean = false;
   private inkDisabledByError: boolean = false;
   private frostDisabledByError: boolean = false;
+  private silkDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -239,6 +245,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.smokeRenderer = config.smokeRenderer ?? null;
     this.inkRenderer = config.inkRenderer ?? null;
     this.frostRenderer = config.frostRenderer ?? null;
+    this.silkRenderer = config.silkRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -292,6 +299,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.inkRenderer = config.inkRenderer ?? null;
     if (config.frostRenderer !== undefined)
       this.frostRenderer = config.frostRenderer ?? null;
+    if (config.silkRenderer !== undefined)
+      this.silkRenderer = config.silkRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -328,6 +337,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.consecutiveSmokeErrors = 0;
     this.consecutiveInkErrors = 0;
     this.consecutiveFrostErrors = 0;
+    this.consecutiveSilkErrors = 0;
     this.fireDisabledByError = false;
     this.ledDisabledByError = false;
     this.zapDisabledByError = false;
@@ -340,6 +350,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.smokeDisabledByError = false;
     this.inkDisabledByError = false;
     this.frostDisabledByError = false;
+    this.silkDisabledByError = false;
   }
 
   isRunning(): boolean {
@@ -438,6 +449,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.inkRenderer = null;
     this.frostRenderer?.dispose();
     this.frostRenderer = null;
+    this.silkRenderer?.dispose();
+    this.silkRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -532,6 +545,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const frostActive =
       params.frostConfig != null &&
       this.frostRenderer?.isInitialized() === true;
+    const silkActive =
+      params.silkConfig != null &&
+      this.silkRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -550,7 +566,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       petalsActive ||
       smokeActive ||
       inkActive ||
-      frostActive;
+      frostActive ||
+      silkActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -750,6 +767,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.frostRenderer?.isInitialized()) {
         this.frostRenderer.clear();
       }
+      // Clear silk overlay (Canvas2D) — also drops the ribbon trail buffers.
+      if (this.silkRenderer?.isInitialized()) {
+        this.silkRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -871,7 +892,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.frostRenderer?.isInitialized()
       && params.frostConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate;
+    const hasSilkOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.silkRenderer?.isInitialized()
+      && params.silkConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate || hasSilkOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1642,6 +1667,70 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } else if (activeFrostRenderer && !hasFrostOverlay) {
       activeFrostRenderer.clear();
       this.lastFrostFrameTime = 0;
+    }
+
+    // Silk overlay: per-tip deformable ribbon. Same tip-filtering
+    // pipeline as frost — reads sharedTipResult, resolves "silk" tips,
+    // drives the ribbon renderer with dt.
+    const activeSilkRenderer = this.silkRenderer?.isInitialized()
+      ? this.silkRenderer
+      : null;
+    const hasSilkOverlay =
+      this.fireTipTracker && activeSilkRenderer && params.silkConfig != null;
+
+    if (
+      hasSilkOverlay &&
+      !this.silkDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const silkTips: SilkTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "silk") continue;
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) silkTips.bluePosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) silkTips.bluePosB = { x: t.x, y: t.y };
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) silkTips.redPosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) silkTips.redPosB = { x: t.x, y: t.y };
+          }
+        }
+        const nowMs = currentTime;
+        let dt = this.lastSilkFrameTime > 0 ? (nowMs - this.lastSilkFrameTime) / 1000 : 1 / 60;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastSilkFrameTime = nowMs;
+        activeSilkRenderer!.renderFrame(params.silkConfig!, silkTips, dt);
+        this.consecutiveSilkErrors = 0;
+      } catch (error) {
+        this.consecutiveSilkErrors++;
+        activeSilkRenderer?.clear();
+        if (this.consecutiveSilkErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.silkDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Silk effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("silk", err);
+          } else {
+            effectErrorSignal.trigger("silk", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Silk render error (attempt ${this.consecutiveSilkErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeSilkRenderer && !hasSilkOverlay) {
+      activeSilkRenderer.clear();
+      this.lastSilkFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

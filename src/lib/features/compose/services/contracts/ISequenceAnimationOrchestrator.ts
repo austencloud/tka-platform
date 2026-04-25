@@ -76,10 +76,10 @@ export interface ISequenceAnimationOrchestrator {
   calculateStateDurationAware(timePosition: number): number;
 
   /**
-   * Get the current beat data (the beat being animated).
+   * Get the current step data (the beat being animated).
    * Returns null if at start position or not initialized.
    */
-  getCurrentBeatData(): StepData | null;
+  getCurrentStepBeatData(): StepData | null;
 
   /**
    * Get the current beat index (0-based array index).
@@ -90,7 +90,7 @@ export interface ISequenceAnimationOrchestrator {
   /**
    * Get the current progress within the beat (0.0 to 1.0).
    */
-  getBeatProgress(): number;
+  getStepProgress(): number;
 
   /**
    * Get the continuous musical position as a decimal.

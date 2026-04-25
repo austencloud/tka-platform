@@ -1,5 +1,5 @@
 <!--
-  AddBeatStep - Step 2 of the create tutorial
+  AddStepTutorialStep - Step 2 of the create tutorial
 
   Shows available next beats via the OptionPicker after the user picked a start position.
   The user picks 4 beats total. Each pick updates the sequence and refreshes options.
@@ -24,14 +24,14 @@
     createTutorialState.sequence
   );
 
-  const beatCount = $derived(createTutorialState.beats.length);
+  const stepCount = $derived(createTutorialState.beats.length);
   const beatsRemaining = $derived(createTutorialState.beatsRemaining);
 
   // Use the grid mode stored when the start position was picked
   const currentGridMode = $derived(createTutorialState.gridMode);
 
   function handleOptionSelected(option: PictographData) {
-    createTutorialState.addBeat(option);
+    createTutorialState.addStep(option);
     if (createTutorialState.beatsRemaining <= 0) {
       onAdvance();
     }
@@ -39,7 +39,7 @@
 </script>
 
 <div class="tutorial-step">
-  <h1 class="title">Add beat {beatCount + 1} of {REQUIRED_BEATS}</h1>
+  <h1 class="title">Add beat {stepCount + 1} of {REQUIRED_BEATS}</h1>
   <p class="subtitle">
     {#if beatsRemaining > 1}
       Pick a move. {beatsRemaining} beats left.

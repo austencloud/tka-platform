@@ -23,7 +23,7 @@
     beats: DetectedBeat[];
   } = $props();
 
-  const currentBeat = $derived(
+  const currentStep = $derived(
     beats.find((b) => timestamp >= b.startTime && timestamp <= b.endTime) ?? null
   );
 
@@ -70,16 +70,16 @@
     <div class="no-data">{t('skel2tka_no_detection_data')}</div>
   {/if}
 
-  {#if currentBeat}
+  {#if currentStep}
     <div class="beat-info">
-      <span class="beat-label">{t('skel2tka_beat_label', { beat: String(currentBeat.index + 1) })}</span>
-      {#if currentBeat.positionLabel}
-        <span class="position-label {currentBeat.positionLabel}">
-          {currentBeat.positionLabel}
+      <span class="beat-label">{t('skel2tka_beat_label', { beat: String(currentStep.index + 1) })}</span>
+      {#if currentStep.positionLabel}
+        <span class="position-label {currentStep.positionLabel}">
+          {currentStep.positionLabel}
         </span>
       {/if}
       <span class="beat-time">
-        {currentBeat.startTime.toFixed(2)}s - {currentBeat.endTime.toFixed(2)}s
+        {currentStep.startTime.toFixed(2)}s - {currentStep.endTime.toFixed(2)}s
       </span>
     </div>
   {/if}
@@ -180,7 +180,7 @@
     color: var(--theme-text, #ffffff);
   }
 
-  .beat-label {
+  .step-label {
     font-weight: 600;
   }
 

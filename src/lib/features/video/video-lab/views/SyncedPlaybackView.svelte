@@ -6,9 +6,9 @@
   Includes playback rate controls for BPM adjustment.
 -->
 <script lang="ts">
-  import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/beat-map-utils";
+  import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
@@ -16,7 +16,7 @@
     videoUrl: string;
     videoDuration: number;
     sequence: SequenceData;
-    beatMap: BeatMap;
+    beatMap: StepMap;
     onBackToMapping: () => void;
   }
 

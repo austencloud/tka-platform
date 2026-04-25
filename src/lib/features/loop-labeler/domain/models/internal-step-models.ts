@@ -2,7 +2,7 @@ import type { ComponentId } from "../constants/loop-components";
 import type { TransformationIntervals } from "./label-models";
 
 /**
- * Extracted beat data normalized for comparison.
+ * Extracted step data normalized for comparison.
  */
 export interface ExtractedStep {
   stepNumber: number;

@@ -103,7 +103,7 @@ function convertRaw(raw: RawSequence, gridMode: GridMode = "diamond" as GridMode
 // ── Raw sequence data from MCP get_sequence_data ──
 
 const RAW: Record<string, RawSequence> = {
-	// Victorian: Brass Notation Device — simple 3-beat pattern (ABD)
+	// Victorian: Brass Notation Device — simple 3-step pattern (ABD)
 	"vic-brass-seq": {
 		word: "ABD",
 		steps: [

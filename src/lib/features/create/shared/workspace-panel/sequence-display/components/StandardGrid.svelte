@@ -7,7 +7,7 @@
   import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
   import type { ScrollState } from "../state/scroll-state.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { calculateBeatPosition } from "../utils/grid-calculations";
+  import { calculateStepPosition } from "../utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
 
@@ -28,7 +28,7 @@
     onStartClick,
     onStepDelete,
     onStepLongPress,
-    getBeatKey,
+    getStepKey,
     getDurationDisplay,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
@@ -50,7 +50,7 @@
     onStartClick?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
-    getBeatKey: (beat: StepData, index: number) => string;
+    getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
@@ -90,7 +90,7 @@
     <!-- Step Grid -->
     <!-- Key by index to preserve component identity during regeneration, enabling CSS transitions -->
     {#each steps as step, index (index)}
-      {@const position = calculateBeatPosition(index, gridLayout.columns)}
+      {@const position = calculateStepPosition(index, gridLayout.columns)}
       {@const isDeleting = removingStepIndices.has(index)}
       {@const shouldSlide =
         removingStepIndex !== null && !isDeleting && index > removingStepIndex}

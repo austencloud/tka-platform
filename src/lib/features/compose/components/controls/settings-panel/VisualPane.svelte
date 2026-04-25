@@ -195,7 +195,7 @@
       class:active={getStepNumbers()}
       onclick={toggleStepNumbers}
       type="button"
-      aria-label={getStepNumbers() ? "Hide beat numbers" : "Show beat numbers"}
+      aria-label={getStepNumbers() ? "Hide step numbers" : "Show step numbers"}
       aria-pressed={getStepNumbers()}
     >
       <span>Beat #</span>

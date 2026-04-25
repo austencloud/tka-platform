@@ -157,6 +157,17 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
+  silk: {
+    intensity: 0.7,
+    width: 0.5,
+    duration: 0.5,
+    flutter: 0.3,
+    tautness: 0.5,
+    palette: "satin",
+    customColor: "#c0c0d0",
+    trackingMode: "both_ends",
+  },
+
   activePresets: {
     trails: null,
     fire: null,
@@ -172,5 +183,6 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     smoke: null,
     ink: null,
     frost: null,
+    silk: null,
   },
 };

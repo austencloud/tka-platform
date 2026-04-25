@@ -119,7 +119,7 @@ export async function runCacheBenchmark(
       return null;
     }
 
-    console.log(`✓ Loaded ${sequences.length} sequences with valid beat data\n`);
+    console.log(`✓ Loaded ${sequences.length} sequences with valid step data\n`);
 
     const renderOptions = {
       stepSize: 240,
@@ -483,7 +483,7 @@ export async function runVisibilityChangeBenchmark(
       return null;
     }
 
-    console.log(`✓ Loaded ${sequences.length} sequences with valid beat data\n`);
+    console.log(`✓ Loaded ${sequences.length} sequences with valid step data\n`);
 
     // Base render options (without visibility)
     const baseRenderOptions = {

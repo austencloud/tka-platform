@@ -90,7 +90,7 @@ Usage:
     onTogglePositions = undefined,
     onToggleReversals = undefined,
     onToggleNonRadial = undefined,
-    onToggleBeatPosition = undefined,
+    onToggleStepPosition = undefined,
     // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox)
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)

@@ -28,7 +28,8 @@ export type EffectType =
   | "petals"
   | "smoke"
   | "ink"
-  | "frost";
+  | "frost"
+  | "silk";
 
 export interface TipEffectAssignment {
   effect: EffectType;
