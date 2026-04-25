@@ -1,0 +1,309 @@
+<!--
+  CellRenderer.svelte
+
+  Renders individual pictograph cells with progressive loading, cross-fade
+  dark mode transitions, step number overlays, and solo-mode annotations.
+  Extracted from ChoreoCard.svelte — owns the cellContent snippet and
+  per-cell visual presentation.
+-->
+<script lang="ts">
+  import { fade } from "svelte/transition";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+
+  interface CellData {
+    index: number;
+    label: string;
+    imageUrl: string;
+    isLoaded: boolean;
+    gridColumn: number;
+    gridRow: number;
+    duration: number;
+    fadeOutUrl?: string;
+  }
+
+  interface Props {
+    cell: CellData;
+    showDurBadge: boolean;
+    showStepNumbers: boolean;
+    activeDarkMode: boolean;
+    crossfadeActive: boolean;
+    isBrowseSoloMode: boolean;
+    isMotionSoloMode: boolean;
+    soloColor: "blue" | "red" | undefined;
+    stepNumFontSize: number;
+    hasMixedDurations: boolean;
+    formatDuration: (d: number) => string;
+    getMotionSoloMotion: (cellIndex: number) =>
+      | MotionData
+      | undefined;
+    formatSoloTurns: (turns: number | "fl" | undefined | null) => string;
+    shortOrientation: (ori: string | undefined | null) => string | null;
+  }
+
+  const {
+    cell,
+    showDurBadge,
+    showStepNumbers,
+    activeDarkMode,
+    crossfadeActive,
+    isBrowseSoloMode,
+    isMotionSoloMode,
+    soloColor,
+    stepNumFontSize,
+    hasMixedDurations,
+    formatDuration,
+    getMotionSoloMotion,
+    formatSoloTurns,
+    shortOrientation,
+  }: Props = $props();
+</script>
+
+{#if cell.isLoaded}
+  {#if cell.fadeOutUrl}
+    <img class="cell-image cell-fade-old" class:fading={crossfadeActive} src={cell.fadeOutUrl} alt="" draggable="false" />
+  {/if}
+  <img
+    class="cell-image"
+    class:cell-fade-new={!!cell.fadeOutUrl}
+    class:reveal={crossfadeActive}
+    src={cell.imageUrl}
+    alt={cell.label}
+    draggable="false"
+  />
+  {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isBrowseSoloMode} style="font-size: {isBrowseSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
+  {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
+  {#if isMotionSoloMode}
+    {@const soloMotion = getMotionSoloMotion(cell.index)}
+    {#if soloMotion}
+      <span class="solo-locations" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
+        <span class="solo-loc-letter">{(soloMotion.startLocation ?? "").toLowerCase()}</span>
+        <img class="solo-loc-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
+        <span class="solo-loc-letter">{(soloMotion.endLocation ?? "").toLowerCase()}</span>
+      </span>
+      {@const turnsLabel = formatSoloTurns(soloMotion.turns)}
+      {#if turnsLabel}
+        <span
+          class="solo-turn-number"
+          class:dark-mode={activeDarkMode}
+          style="color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
+          transition:fade|local={{ duration: 150 }}
+        >{turnsLabel}</span>
+      {/if}
+      {@const startOri = shortOrientation(soloMotion.startOrientation)}
+      {@const endOri = shortOrientation(soloMotion.endOrientation)}
+      {#if startOri && endOri}
+        <span class="solo-orientation" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
+          <span class="solo-ori-letter">{startOri}</span>
+          <img class="solo-ori-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
+          <span class="solo-ori-letter">{endOri}</span>
+        </span>
+      {/if}
+    {/if}
+  {/if}
+{:else}
+  <div class="cell-spinner-container">
+    <ProgressRing percent={-1} size={20} strokeWidth={2} />
+  </div>
+{/if}
+
+<style>
+  .cell-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Use 'cover' to fill the cell completely - images are rendered as squares
+       so there should be no cropping. 'contain' was causing gaps when images
+       had slightly different aspect ratios. */
+    object-fit: cover;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  /* Cross-fade: old image fades out while new image fades in simultaneously.
+     Both images are stacked in the same cell during the transition. */
+  .cell-fade-old {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    opacity: 1;
+    transition: opacity 350ms ease;
+    pointer-events: none;
+  }
+
+  .cell-fade-old.fading {
+    opacity: 0;
+  }
+
+  .cell-image.cell-fade-new {
+    opacity: 0;
+  }
+
+  .cell-image.cell-fade-new.reveal {
+    opacity: 1;
+    transition: opacity 350ms ease;
+  }
+
+  /* Step number overlay — rendered as HTML instead of baked into blobs
+     so identical pictographs at different beats share one cached image */
+  .step-number-overlay {
+    position: absolute;
+    top: 5.3%;
+    left: 5.3%;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    /* font-size set via inline style from stepNumFontSize (cellWidth-based)
+       so wider duration cells get the same number size as square cells */
+    line-height: 1;
+    color: #231f20;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .step-number-overlay.dark-mode {
+    color: #ffffff;
+  }
+
+  /* Solo mode location labels — subtle, bottom-center instead of top-left */
+  .step-number-overlay.solo-location {
+    top: auto;
+    left: 50%;
+    bottom: 3%;
+    transform: translateX(-50%);
+    opacity: 0.5;
+    font-weight: 500;
+  }
+
+  /* Duration badge — bottom-center, matches DurationGlyph.svelte positioning
+     (y=890 in 950-unit viewBox = ~93.7% from top, centered horizontally) */
+  .duration-badge {
+    position: absolute;
+    bottom: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 600;
+    font-size: min(5.5cqw, 14px);
+    line-height: 1;
+    color: #231f20;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .duration-badge.dark-mode {
+    color: #ffffff;
+  }
+
+  /* Motion-solo top-center locations — matches PositionGlyph composition.
+     Canonical arrow dimensions from PositionGlyph: 88.9 × 34.8 * 0.75
+     ≈ 66.675 × 26.1 units in a 950-unit pictograph viewBox, i.e.
+     7.02cqw wide by 2.75cqw tall when 100cqw == cell width. We keep the
+     same arrow SVG and size it identically so headers read consistently. */
+  .solo-locations {
+    position: absolute;
+    top: 3.5%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7cqw;
+    font-family: Cambria, "Hoefler Text", Georgia, serif;
+    font-weight: 700;
+    font-size: 7.9cqw; /* matches scaled letter height in PositionGlyph */
+    line-height: 1;
+    color: #231f20;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .solo-locations.dark-mode {
+    color: #ffffff;
+  }
+
+  .solo-loc-letter {
+    /* true lowercase, no small-caps */
+    text-transform: lowercase;
+    letter-spacing: 0;
+  }
+
+  /* Shared arrow sizing — both header rows use the exact dimensions of
+     the PositionGlyph's rendered arrow so the two look like siblings. */
+  .solo-loc-arrow,
+  .solo-ori-arrow {
+    width: 7.02cqw;
+    height: auto; /* aspect ratio preserved at 88.9:34.8 */
+    flex-shrink: 0;
+  }
+
+  :global(:root.dark) .solo-locations .solo-loc-arrow,
+  .solo-locations.dark-mode .solo-loc-arrow,
+  :global(:root.dark) .solo-orientation .solo-ori-arrow,
+  .solo-orientation.dark-mode .solo-ori-arrow {
+    filter: invert(0.92);
+  }
+
+  /* Motion-solo turn number — single colored digit where the TKA glyph's
+     turns column sat. Kept small so it reads as a secondary annotation. */
+  .solo-turn-number {
+    position: absolute;
+    left: 8%;
+    bottom: 6%;
+    font-family: Georgia, serif;
+    font-weight: 700;
+    font-size: min(10cqw, 28px);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Motion-solo orientation annotation — bottom-center, below the
+     southernmost outer grid dot. Not bold; shares the arrow size with
+     the top locations row so both headers feel matched. */
+  .solo-orientation {
+    position: absolute;
+    bottom: 3%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7cqw;
+    font-family: Cambria, "Hoefler Text", Georgia, serif;
+    font-weight: 400;
+    font-size: 7.9cqw;
+    line-height: 1;
+    color: #231f20;
+    opacity: 0.85;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .solo-orientation.dark-mode {
+    color: #ffffff;
+  }
+
+  .solo-ori-letter {
+    text-transform: lowercase;
+    letter-spacing: 0;
+  }
+
+  /* Per-cell loading spinner */
+  .cell-spinner-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1;
+  }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .cell-fade-old,
+    .cell-image.cell-fade-new {
+      transition: none;
+    }
+  }
+</style>
