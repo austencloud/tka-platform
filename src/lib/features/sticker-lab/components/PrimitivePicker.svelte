@@ -20,11 +20,11 @@
 
   const PICKER_PALETTE: MandalaPalette = {
     blueStroke: "#1e40af",
-    blueFill: "rgba(37, 99, 235, 0.65)",
+    blueFill: "transparent",
     redStroke: "#991b1b",
-    redFill: "rgba(220, 38, 38, 0.65)",
+    redFill: "transparent",
     purpleStroke: "#6b21a8",
-    purpleFill: "rgba(126, 34, 206, 0.75)",
+    purpleFill: "transparent",
   };
 
   let entries = $state<PrimitiveCatalogEntry[]>([]);
@@ -94,7 +94,7 @@
             {#if paths}
               {@html renderer.renderSVG(paths, {
                 size: 120,
-                style: "filled",
+                style: "stroke",
                 showGridDots: false,
                 show: "both",
                 strokeWidth: 2,
