@@ -188,7 +188,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
       }
     } catch (err) {
       console.error("[UserProfilePanel] Error toggling follow:", err);
-      // Reload profile to get correct state
+      error = "Failed to update follow status";
       userProfile = await userService.getUserProfile(userId, currentUserId);
     } finally {
       followInProgress = false;
@@ -213,6 +213,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
       followingLoaded = true;
     } catch (err) {
       console.error("[UserProfilePanel] Error loading following users:", err);
+      error = "Failed to load following list";
     } finally {
       followingLoading = false;
     }
@@ -227,6 +228,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
       followersLoaded = true;
     } catch (err) {
       console.error("[UserProfilePanel] Error loading followers:", err);
+      error = "Failed to load followers list";
     } finally {
       followersLoading = false;
     }

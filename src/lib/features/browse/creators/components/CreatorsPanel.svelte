@@ -12,7 +12,7 @@
    */
 
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
@@ -36,6 +36,7 @@
 
   let searchQuery = $state("");
   let followingInProgress = $state<Set<string>>(new Set());
+  let initError = $state<string | null>(null);
 
   // Service instances
   let userRepository: IUserRepository;
@@ -115,6 +116,7 @@
       }
     } catch (err) {
       console.error("[CreatorsPanel] Error loading creators:", err);
+      initError = "Failed to load creators. Please try again.";
     }
   });
 
@@ -129,6 +131,10 @@
       // Non-critical — the list still works with the cached value
     }
   }
+
+  onDestroy(() => {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  });
 
   function handleUserClick(user: EnhancedUserProfile) {
     hapticService?.trigger("selection");
@@ -243,7 +249,9 @@
     {/if}
 
     <PanelContent>
-      {#if error}
+      {#if initError}
+        <PanelState type="error" title="Initialization Error" message={initError} />
+      {:else if error}
         <PanelState type="error" title={t("browse_error")} message={error} />
       {:else if isLoading && !creatorsDataState.isInitialized}
         <PanelState type="loading" message={t("browse_loading_creators")} />
@@ -333,7 +341,7 @@
     margin: 0;
     font-size: var(--font-size-xl);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
   }
 
   .panel-title i {

@@ -11,6 +11,7 @@
   import {
     createVirtualizer,
     type VirtualItem,
+    type SvelteVirtualizer,
   } from "@tanstack/svelte-virtual";
   import { onMount, untrack } from "svelte";
   import type { EnhancedUserProfile, CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -48,16 +49,10 @@
   let virtualRows = $state<VirtualItem[]>([]);
   let totalHeight = $state(0);
 
-  // Reference to current virtualizer instance (for measureElement calls)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let virtualizerRef: any = $state(null);
+  let virtualizerRef: SvelteVirtualizer<HTMLDivElement, Element> | null = $state(null);
 
   // Track extracted colors per user ID
   let userColors = $state<Map<string, string>>(new Map());
-
-  // Color extraction queue for batched processing
-  let colorExtractionQueue: string[] = [];
-  let isProcessingColors = false;
 
   // Dynamic column count based on container width
   // Match original PanelGrid behavior: minCardWidth="240px"
@@ -90,26 +85,6 @@
     return userColors.get(userId);
   }
 
-  // Queue color extraction for a user
-  function queueColorExtraction(userId: string) {
-    if (colorExtractionQueue.includes(userId)) return;
-    colorExtractionQueue.push(userId);
-    if (!isProcessingColors) {
-      processColorQueue();
-    }
-  }
-
-  // Process color extraction queue in batches
-  async function processColorQueue() {
-    isProcessingColors = true;
-    while (colorExtractionQueue.length > 0) {
-      const batch = colorExtractionQueue.splice(0, 10);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    isProcessingColors = false;
-  }
-
-  // Handle color extraction callback from card
   function handleColorExtracted(userId: string, color: string) {
     userColors = new Map(userColors).set(userId, color);
   }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import PanelTabs from "$lib/shared/components/panel/PanelTabs.svelte";
@@ -42,6 +42,17 @@
 
   let hapticService: IHapticFeedback | undefined;
 
+  let reducedMotion = $state(
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+
+  $effect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handler = (e: MediaQueryListEvent) => { reducedMotion = e.matches; };
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  });
+
   // Light mode tracking - reacts to "L" key toggle
   const visibilityManager = getAnimationVisibilityManager();
   let lightMode = $state(!visibilityManager.isDarkMode());
@@ -52,11 +63,11 @@
 
   onMount(() => {
     hapticService = getHapticFeedback();
-    visibilityManager.registerObserver(handleVisibilityChange);
   });
 
-  onDestroy(() => {
-    visibilityManager.unregisterObserver(handleVisibilityChange);
+  $effect(() => {
+    visibilityManager.registerObserver(handleVisibilityChange);
+    return () => visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
   function handleSequenceClick(sequence: LibrarySequence) {
@@ -94,7 +105,7 @@
   }
 </script>
 
-<div class="tabs-wrapper" transition:fly={{ y: 20, duration: 300, delay: 200 }}>
+<div class="tabs-wrapper" transition:fly={{ y: reducedMotion ? 0 : 20, duration: reducedMotion ? 0 : 300, delay: reducedMotion ? 0 : 200 }}>
   <PanelTabs
     tabs={[
       {
@@ -133,7 +144,8 @@
           <button
             class="sequence-card"
             onclick={() => handleSequenceClick(sequence)}
-            transition:fade={{ duration: 200 }}
+            transition:fade={{ duration: reducedMotion ? 0 : 200 }}
+            aria-label="View sequence {getDisplayName(sequence)}"
           >
             <div class="sequence-thumbnail">
               <PropAwareThumbnail sequence={sequence} {lightMode} />
@@ -179,7 +191,8 @@
           <button
             class="user-list-card"
             onclick={() => handleUserClick(user)}
-            transition:fade={{ duration: 200 }}
+            transition:fade={{ duration: reducedMotion ? 0 : 200 }}
+            aria-label="View profile of {user.displayName}"
           >
             <div class="user-list-avatar">
               <AvatarImage src={user.avatar} alt={user.displayName} size={48} />
@@ -220,7 +233,8 @@
           <button
             class="user-list-card"
             onclick={() => handleUserClick(user)}
-            transition:fade={{ duration: 200 }}
+            transition:fade={{ duration: reducedMotion ? 0 : 200 }}
+            aria-label="View profile of {user.displayName}"
           >
             <div class="user-list-avatar">
               <AvatarImage src={user.avatar} alt={user.displayName} size={48} />

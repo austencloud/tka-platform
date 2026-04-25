@@ -123,7 +123,7 @@
   .count-badge {
     padding: 2px 8px;
     background: var(--theme-accent);
-    color: white;
+    color: var(--text-on-accent, white);
     border-radius: 10px;
     font-size: var(--font-size-xs, 11px);
     font-weight: 600;
@@ -205,7 +205,7 @@
     height: 80px;
     border-radius: 6px;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-inset, rgba(0, 0, 0, 0.2));
   }
 
   .thumbnail {
@@ -251,8 +251,8 @@
     height: 24px;
     background: var(--theme-accent);
     border-radius: 50%;
-    color: white;
-    font-size: 10px;
+    color: var(--text-on-accent, white);
+    font-size: 0.75rem;
     flex-shrink: 0;
   }
 
