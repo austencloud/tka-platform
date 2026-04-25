@@ -8,7 +8,7 @@
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
   import {
     CATEGORY_ICONS,
     CATEGORY_LABELS,
@@ -18,7 +18,6 @@
     ChangelogCategory,
     ChangelogEntry,
   } from "$lib/features/feedback/domain/models/version-models";
-  import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
   import ContributorBadge from "./tabs/release-notes/ContributorBadge.svelte";
 
   // Category display order and colors
@@ -54,7 +53,7 @@
       contributors = new Map();
       return;
     }
-    const loader = container.items.contributorLoader as IContributorLoader;
+    const loader = getContributorLoader();
     loader.getByIds(version.contributorIds).then((list) => {
       contributors = new Map(list.map((c) => [c.id, c]));
     });
