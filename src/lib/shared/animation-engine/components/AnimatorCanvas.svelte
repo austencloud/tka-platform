@@ -34,7 +34,8 @@ Last audit: 2025-12-27
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
-  import TransportBar from "./layers/TransportBar.svelte";
+  import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
@@ -159,6 +160,14 @@ Last audit: 2025-12-27
     /** Virtual time for this frame (in ms). Used during video export. */
     virtualTime?: number;
   } = $props();
+
+  const playbackAdapter = createAnimatorPlaybackAdapter({
+    getCurrentStep: () => currentStep,
+    getSteps: () => sequenceData?.steps ?? [],
+    getIsPlaying: () => isPlaying,
+    onSeek: (targetStep) => onProgressBarSeek?.(targetStep),
+    onTogglePlay: () => onPlaybackToggle(),
+  });
 
   // Disassemble mode state machine
   // assembled → disassembling → disassembled → reassembling → assembled
@@ -580,21 +589,6 @@ Last audit: 2025-12-27
         />
       {/if}
 
-      {#if onPlaybackToggle && !hideProgressBar && sequenceData}
-        <button
-          type="button"
-          class="canvas-play-btn"
-          class:is-playing={isPlaying}
-          onclick={(e) => {
-            e.stopPropagation();
-            onPlaybackToggle();
-          }}
-          aria-label={isPlaying ? "Pause" : "Play"}
-          title={isPlaying ? "Pause (Space)" : "Play (Space)"}
-        >
-          <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-        </button>
-      {/if}
     </div>
 
     <!-- Split canvases: blue-only and red-only, expand below hero during disassemble -->
@@ -658,18 +652,9 @@ Last audit: 2025-12-27
 
     <!-- Always mounted, same reason as header-slot above. -->
     <div class="progress-slot">
-      <TransportBar
-        steps={sequenceData?.steps ?? []}
-        currentStep={currentStep}
+      <UnifiedTimeline
+        playback={playbackAdapter}
         visible={progressBarVisible && !hideProgressBar}
-        darkMode={darkModeEnabled}
-        variant={progressBarVariant}
-        showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-        onSeek={onProgressBarSeek}
-        onScrubStart={onProgressBarScrubStart}
-        onScrubEnd={onProgressBarScrubEnd}
-        {isPlaying}
-        {onPlaybackToggle}
       />
     </div>
   </div>
@@ -764,91 +749,6 @@ Last audit: 2025-12-27
 
   .canvas-wrapper[data-transparent="true"] {
     background: transparent;
-  }
-
-  /* Play/pause button: floats at bottom-center of the canvas, in the
-     dead space between the lowest grid dot and the scrubber bar. */
-  .canvas-play-btn {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    --_play-size: clamp(32px, 12cqw, 72px);
-    width: var(--_play-size);
-    height: var(--_play-size);
-    min-width: var(--_play-size);
-    min-height: var(--_play-size);
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 80%, white 20%);
-    color: white;
-    font-size: clamp(10px, 3cqw, 18px);
-    cursor: pointer;
-    z-index: 5;
-    -webkit-tap-highlight-color: transparent;
-    transition:
-      transform 120ms ease,
-      background 150ms ease,
-      border-color 150ms ease,
-      box-shadow 150ms ease;
-    background: var(--theme-accent, #6366f1);
-    box-shadow:
-      0 2px 8px rgba(0, 0, 0, 0.5),
-      0 1px 2px rgba(0, 0, 0, 0.35);
-  }
-
-  /* Invisible touch target expansion to 48px */
-  .canvas-play-btn::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 48px;
-    height: 48px;
-    transform: translate(-50%, -50%);
-  }
-
-  .canvas-play-btn.is-playing {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, rgba(20, 20, 28, 0.9));
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.4),
-      0 1px 2px rgba(0, 0, 0, 0.3);
-  }
-
-  .canvas-play-btn:hover {
-    transform: scale(1.12);
-  }
-  .canvas-play-btn:not(.is-playing):hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 90%, white 10%);
-  }
-  .canvas-play-btn.is-playing:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, rgba(20, 20, 28, 0.9));
-  }
-
-  .canvas-play-btn:active {
-    transform: scale(0.92);
-  }
-
-  .canvas-play-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 3px;
-  }
-
-  /* Optical centering for play triangle */
-  .canvas-play-btn:not(.is-playing) i {
-    margin-left: 1.5px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .canvas-play-btn {
-      transition: none;
-    }
-    .canvas-play-btn:hover {
-      transform: none;
-    }
   }
 
   /* ===========================================
