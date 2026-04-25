@@ -26,7 +26,8 @@
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
   import { createViewerCameraPlayerState } from "../state/viewer-camera-player-state.svelte";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
-  import ViewerTransportBar from "$lib/shared/sequence-viewer/components/ViewerTransportBar.svelte";
+  import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
@@ -59,6 +60,9 @@
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
+  const playbackAdapter = createAvatarPlaybackAdapter(
+    () => viewer3DState.performerManager.performers[0] ?? null,
+  );
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
   // Primary performer — gates the Canvas on performer[0] existing. Multi-
@@ -150,7 +154,7 @@
     {/if}
     <SceneLoadingCurtain />
     {#if !hideOverlays}
-      <ViewerTransportBar />
+      <UnifiedTimeline playback={playbackAdapter} />
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
           <BeatPlaneStrip
