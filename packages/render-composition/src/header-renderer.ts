@@ -26,12 +26,95 @@ export interface HeaderOptions {
   glyphImages?: Map<string, GlyphImageData>;
 }
 
+const LETTER_GAP_RATIO = 0.04; // gap between letters as fraction of headerHeight
+const GLYPH_HEIGHT_RATIO = 0.65; // glyph height as fraction of headerHeight
+// Dash overlay constants in SVG coordinate units (from Dash.svelte)
+const DASH_W_SVG = 70;
+const DASH_H_SVG = 20;
+const DASH_GAP_SVG = 10;
+const DASH_RADIUS_SVG = 9.5;
+
+function renderGlyphWord(
+  ctx: CanvasRenderingContext2D,
+  word: string,
+  glyphImages: Map<string, GlyphImageData>,
+  canvasWidth: number,
+  headerHeight: number,
+  darkMode: boolean,
+): void {
+  if (!word?.trim()) return;
+
+  const availableH = headerHeight * GLYPH_HEIGHT_RATIO;
+  const letterGap = headerHeight * LETTER_GAP_RATIO;
+  const verticalCenter = headerHeight / 2;
+
+  // Tokenize: group letter + optional trailing dash ("W-" is one token)
+  const tokens: string[] = [];
+  const chars = [...word];
+  let i = 0;
+  while (i < chars.length) {
+    const ch = chars[i]!;
+    if (chars[i + 1] === "-") {
+      tokens.push(ch + "-");
+      i += 2;
+    } else {
+      tokens.push(ch);
+      i += 1;
+    }
+  }
+
+  // First pass: compute total row width for centering
+  let totalWidth = 0;
+  for (const token of tokens) {
+    const data = glyphImages.get(token);
+    if (!data) continue;
+    const scale = availableH / data.naturalHeight;
+    const glyphW = data.naturalWidth * scale;
+    totalWidth += glyphW;
+    if (data.isDash) {
+      totalWidth += DASH_GAP_SVG * scale + DASH_W_SVG * scale;
+    }
+    totalWidth += letterGap;
+  }
+  // Remove trailing gap
+  if (tokens.length > 0) totalWidth -= letterGap;
+
+  // Second pass: draw
+  let cursorX = canvasWidth / 2 - totalWidth / 2;
+  const dashColor = darkMode ? "#ffffff" : "#231f20";
+
+  for (const token of tokens) {
+    const data = glyphImages.get(token);
+    if (!data) continue;
+    const scale = availableH / data.naturalHeight;
+    const glyphW = data.naturalWidth * scale;
+    const glyphY = verticalCenter - availableH / 2;
+
+    ctx.drawImage(data.image, cursorX, glyphY, glyphW, availableH);
+
+    if (data.isDash) {
+      const dashW = DASH_W_SVG * scale;
+      const dashH = DASH_H_SVG * scale;
+      const dashGap = DASH_GAP_SVG * scale;
+      const dashX = cursorX + glyphW + dashGap;
+      const dashY = verticalCenter - dashH / 2;
+      ctx.beginPath();
+      ctx.roundRect(dashX, dashY, dashW, dashH, DASH_RADIUS_SVG * scale);
+      ctx.fillStyle = dashColor;
+      ctx.fill();
+      cursorX += glyphW + dashGap + dashW + letterGap;
+    } else {
+      cursorX += glyphW + letterGap;
+    }
+  }
+}
+
 export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptions): void {
   const {
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
     loopComponents, rotationSliceSize, darkMode = true, letterStyles,
-    backgroundColor, borderColor,
+    backgroundColor, borderColor, glyphImages,
   } = options;
 
   // Background
@@ -73,9 +156,12 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   ctx.font = `700 ${finalFontSize}px Georgia, serif`;
   ctx.textBaseline = "middle";
 
+  // Word: glyphs if map provided, text otherwise
   if (word?.trim()) {
-    if (letterStyles && letterStyles.length > 0) {
-      // Render per-letter with dimming for bridge/derived letters
+    if (glyphImages && glyphImages.size > 0) {
+      renderGlyphWord(ctx, word, glyphImages, canvasWidth, headerHeight, darkMode);
+    } else if (letterStyles && letterStyles.length > 0) {
+      // Per-letter with dimming for bridge/derived letters
       const totalWidth = ctx.measureText(word).width;
       let cursorX = canvasWidth / 2 - totalWidth / 2;
       ctx.textAlign = "left";
