@@ -27,6 +27,8 @@
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import { container } from "$lib/shared/di";
+  import { getThumbnailLocalCache } from "$lib/features/browse/sequences/display/getThumbnailLocalCache";
+  import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
   import { getQuickAccessPersister } from "$lib/shared/debug/getQuickAccessPersister";
   import { getImageComposer } from "$lib/shared/render/getImageComposer";
   import type {
@@ -238,13 +240,13 @@
       console.log(`🗑️ Deleted ${wordcardCount} wordcard thumbnails`);
 
       // Also clear local IndexedDB thumbnail cache so stale local copies don't persist
-      const localCache = container.items.thumbnailLocalCache;
+      const localCache = getThumbnailLocalCache();
       await localCache.clear();
 
       // Nuke ALL remaining in-memory caches (URL cache, knownExists, static manifest)
       // This forces every subsequent thumbnail request to render fresh — including
       // thumbnails that scroll into view later, not just currently visible ones
-      const orchestrator = container.items.thumbnailRenderOrchestrator;
+      const orchestrator = getThumbnailRenderOrchestrator();
       orchestrator.invalidateAllCaches();
 
       console.log(`✅ Total deleted: ${totalDeleted} cloud thumbnails + all caches nuked`);
@@ -350,7 +352,7 @@
     introResetMessage = "Clearing thumbnail cache...";
 
     try {
-      const thumbnailCache = container.items.thumbnailLocalCache;
+      const thumbnailCache = getThumbnailLocalCache();
 
       // Get stats before clearing
       const statsBefore = await thumbnailCache.getStats();

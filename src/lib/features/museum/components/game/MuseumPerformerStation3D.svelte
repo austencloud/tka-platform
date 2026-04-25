@@ -17,6 +17,7 @@
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { GridMode } from "$lib/shared/3d/domain/constants/grid-layout";
@@ -106,7 +107,7 @@
       }
 
       // Not a hardcoded exhibit — try loading from Firestore
-      const loader = container.items.browseLoader;
+      const loader = getBrowseLoader();
       if (!loader) return;
 
       loader.loadFullSequenceData(id, id).then((seq: SequenceData | null) => {

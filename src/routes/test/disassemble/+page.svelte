@@ -5,6 +5,7 @@
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -53,7 +54,7 @@
     try {
       visibilityManager.setDarkMode(true);
       playbackController = container.items.animationPlaybackController;
-      const browseLoader: IBrowseLoader = container.items.browseLoader;
+      const browseLoader: IBrowseLoader = getBrowseLoader();
 
       // Load sequence metadata, then pick one and load its full data
       const metadata = await browseLoader.loadSequenceMetadata();

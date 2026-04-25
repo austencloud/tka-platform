@@ -110,7 +110,7 @@ import { getQRCodeGenerator } from "../qr/getQRCodeGenerator";
 import { createCreateContainer, configureLazyCreateContainer } from "./containers/create-container";
 import { createComposeCoreContainer } from "./containers/compose-core-container";
 // loop-labeler-container dissolved — services accessed via module singleton getters
-import { createBrowseContainer } from "./containers/browse-container";
+// browse-container dissolved — services accessed via module singleton getters
 // navigation-container dissolved — services accessed via module singleton getters
 // render-container dissolved — services accessed via module singleton getters
 import { getCanvasManager } from "../render/getCanvasManager";
@@ -132,7 +132,21 @@ import { getImageComposer } from "../render/getImageComposer";
 import { getSequenceRenderer } from "../render/getSequenceRenderer";
 // train-container dissolved — services accessed via module singleton getters
 // admin-container dissolved — services accessed via module singleton getters
-import { createShareContainer } from "./containers/share-container";
+// share-container dissolved — services accessed via module singleton getters
+import { getInstagramLinker } from "../share/getInstagramLinker";
+import { getR2Presigner } from "../share/getR2Presigner";
+import { getVideoUploader } from "../share/getVideoUploader";
+import { getSharer } from "../share/getSharer";
+import { getSequenceImageSharer } from "../share/getSequenceImageSharer";
+import { getMediaBundler } from "../share/getMediaBundler";
+import { getRecordingPersister } from "../video-record/getRecordingPersister";
+import { getCollaborativeVideoManager } from "../video-collaboration/getCollaborativeVideoManager";
+import { getCloudThumbnailCache } from "$lib/features/browse/sequences/display/getCloudThumbnailCache";
+// browse-container dissolved — all browse getters used directly at call sites
+import { getGalleryOfflineCache } from "$lib/shared/offline/getGalleryOfflineCache";
+import { getThumbnailLocalCache } from "$lib/features/browse/sequences/display/getThumbnailLocalCache";
+import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getExportOrchestrator } from "../export-panel/getExportOrchestrator";
 // feedback-container dissolved — services accessed via module singleton getters
 // gamification-container dissolved — services accessed via module singleton getters
 // learn-container dissolved — services accessed via module singleton getters
@@ -226,19 +240,9 @@ function _timeContainer<T>(name: string, factory: () => T): T {
 
 // navigation-container dissolved — services accessed via module singleton getters
 
-// Share container needs sequenceRenderer from render
-const shareContainer = typeof window !== 'undefined' ? _timeContainer('share', () => createShareContainer(getSequenceRenderer())) : null as any;
+// share-container dissolved — services accessed via module singleton getters
 
-// Browse container needs multiple external deps
-const browseContainer = typeof window !== 'undefined' ? _timeContainer('browse', () => createBrowseContainer({
-  wordDeriver: getWordDeriver(),
-  deviceDetector: getDeviceDetector(),
-  sequenceRenderer: getSequenceRenderer(),
-  startPositionDeriver,
-  cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
-  sheetRouter: getSheetRouter(),
-  collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
-})) : null as any;
+// browse-container dissolved — services accessed via module singleton getters
 
 // Create module container needs many external deps
 const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('create', () => createCreateContainer({
@@ -263,7 +267,7 @@ const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('cr
   arrowLocationCalculator,
   pictographPreparer,
   turnsTupleGenerator,
-  sharer: shareContainer.items.sharer,
+  sharer: getSharer(),
   // Animation services (from data container to avoid circular deps)
   sequenceLoopabilityChecker: getSequenceLoopabilityChecker(),
 })) : null as any;
@@ -292,7 +296,7 @@ if (typeof window !== 'undefined') {
     arrowLocationCalculator,
     pictographPreparer,
     turnsTupleGenerator,
-    sharer: shareContainer.items.sharer,
+    sharer: getSharer(),
     sequenceLoopabilityChecker: getSequenceLoopabilityChecker(),
   }));
 }
@@ -306,7 +310,7 @@ const composeCoreContainer = typeof window !== 'undefined' ? _timeContainer('com
   fileDownloader: getFileDownloader(),
   sequenceRepository: getSequenceRepository(),
   sequenceTransformer: createModuleContainer.items.sequenceTransformer,
-  browseLoader: browseContainer.items.browseLoader,
+  browseLoader: getBrowseLoader(),
   sequenceLoopabilityChecker: getSequenceLoopabilityChecker(),
 })) : null as any;
 
@@ -329,25 +333,25 @@ const libraryContainer = typeof window !== 'undefined' ? _timeContainer('library
     conflictResolver: getConflictResolver(),
   },
   librarySaveService: {
-    sharer: shareContainer.items.sharer,
-    videoUploader: shareContainer.items.videoUploader,
+    sharer: getSharer(),
+    videoUploader: getVideoUploader(),
     tagManager: getTagManager(),
   },
   publicIndexSyncer: {
     contentModerator: getContentModerator(),
     contentAppealManager: getContentAppealManager(),
-    browseLoader: browseContainer.items.browseLoader,
+    browseLoader: getBrowseLoader(),
   },
 })) : null as any;
 
 // qr-container dissolved — configure ShortCodeManager with browse dep, then getters handle the rest
 if (typeof window !== 'undefined') {
-  configureShortCodeManager(browseContainer.items.browseLoader);
+  configureShortCodeManager(getBrowseLoader());
 }
 
 // 3D engine container — infrastructure shared by every 3D surface
 const engine3DContainer = typeof window !== 'undefined' ? _timeContainer('3d-engine', () => create3DEngineContainer({
-  browseLoader: browseContainer.items.browseLoader,
+  browseLoader: getBrowseLoader(),
 })) : null as any;
 
 // Viewer-specific 3D services (undo/redo scoped to sequence viewer session)
@@ -375,8 +379,8 @@ const voiceSessionContainer = typeof window !== 'undefined' ? _timeContainer('vo
 
 // Watch container - needs collaborativeVideoManager from share and browseLoader from browse
 const watchContainer = typeof window !== 'undefined' ? _timeContainer('watch', () => createWatchContainer({
-  collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
-  browseLoader: browseContainer.items.browseLoader,
+  collaborativeVideoManager: getCollaborativeVideoManager(),
+  browseLoader: getBrowseLoader(),
 })) : null as any;
 
 // LAN Sync container - self-contained, no external dependencies
@@ -396,8 +400,8 @@ const connectContainer = typeof window !== 'undefined' ? _timeContainer('connect
 // galleryOfflineCache + thumbnailLocalCache from browse
 const offlineContainer = typeof window !== 'undefined' ? _timeContainer('offline', () => createOfflineContainer({
   networkStatusMonitor: deviceSyncContainer.items.networkStatusMonitor,
-  galleryOfflineCache: browseContainer.items.galleryOfflineCache,
-  thumbnailLocalCache: browseContainer.items.thumbnailLocalCache,
+  galleryOfflineCache: getGalleryOfflineCache(),
+  thumbnailLocalCache: getThumbnailLocalCache(),
 })) : null as any;
 
 // Feature factory containers (no external dependencies)
@@ -416,14 +420,14 @@ const tikaContainer = typeof window !== 'undefined' ? _timeContainer('tika', cre
 // DeepLinkResolver - needs sequenceRepository from data and browseLoader from browse
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   getSequenceRepository(),
-  browseContainer.items.browseLoader
+  getBrowseLoader()
 ) : null as any;
 
 // SequenceDataProvider - unified interface for loading sequences from any source
 // Abstracts local IndexedDB (user sequences) vs Firebase (public sequences)
 const sequenceDataProvider = typeof window !== 'undefined' ? new SequenceDataProvider(
   getSequenceRepository(),
-  browseContainer.items.browseLoader
+  getBrowseLoader()
 ) : null as any;
 
 // ============================================================================
@@ -539,12 +543,22 @@ function buildAppContainer(): any {
   c = c.add(composeCoreContainer.items);
   // Create module (sequence construction, generation, option picker)
   c = c.add(createModuleContainer.items);
-  // NOTE: browseContainer has naming conflicts (filterPersister, navigator)
-  // Using upsert to allow overwriting - these should be renamed in a follow-up
-  c = c.upsert(browseContainer.items);
+  // Browse dissolved — all browse services accessed via module singleton getters at call sites
   // train, learn, gamification, feedback, admin, promo, qr, moderation, loop-labeler dissolved
   c = c.add(libraryContainer.items);
-  c = c.add(shareContainer.items);
+  // Share services (dissolved from share-container — services accessed via module singleton getters)
+  c = c.add({
+    instagramLinker: () => getInstagramLinker(),
+    r2Presigner: () => getR2Presigner(),
+    recordingPersister: () => getRecordingPersister(),
+    collaborativeVideoManager: () => getCollaborativeVideoManager(),
+    cloudThumbnailCache: () => getCloudThumbnailCache(),
+    videoUploader: () => getVideoUploader(),
+    sharer: () => getSharer(),
+    sequenceImageSharer: () => getSequenceImageSharer(),
+    exportOrchestrator: () => getExportOrchestrator(),
+    mediaBundler: () => getMediaBundler(),
+  });
   c = c.add(engine3DContainer.items);
   c = c.add(viewer3DContainer.items);
   c = c.add(delightContainer.items);

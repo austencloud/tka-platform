@@ -11,7 +11,7 @@
 	import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 	import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-	import { container } from "$lib/shared/di";
+	import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import { getFuseContext } from "../context/fuse-context";
 
@@ -57,7 +57,7 @@
 	let loading = $state(true);
 	let poolIndex = $state(0);
 
-	const browseLoader: IBrowseLoader = container.items.browseLoader;
+	const browseLoader: IBrowseLoader = getBrowseLoader();
 
 	async function loadPool() {
 		loading = true;

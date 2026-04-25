@@ -18,7 +18,10 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { container } from '$lib/shared/di';
+  import { getThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator';
+  import { getThumbnailKeyDeriver } from '$lib/features/browse/sequences/display/getThumbnailKeyDeriver';
+  import { getThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/getThumbnailMetricsCollector';
+  import { getThumbnailLocalCache } from '$lib/features/browse/sequences/display/getThumbnailLocalCache';
   import { PublicSequencesLoader } from '$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import type { IThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/services/contracts/IThumbnailRenderOrchestrator';
@@ -144,10 +147,10 @@
     if (!browser) return;
 
     // Resolve services
-    orchestrator = container.items.thumbnailRenderOrchestrator;
-    keyDeriver = container.items.thumbnailKeyDeriver;
-    metricsCollector = container.items.thumbnailMetricsCollector;
-    localCache = container.items.thumbnailLocalCache;
+    orchestrator = getThumbnailRenderOrchestrator();
+    keyDeriver = getThumbnailKeyDeriver();
+    metricsCollector = getThumbnailMetricsCollector();
+    localCache = getThumbnailLocalCache();
 
     // Check for autorun parameter
     const autorun = $page.url.searchParams.get('autorun');

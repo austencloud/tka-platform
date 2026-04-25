@@ -297,8 +297,8 @@ async function runPass(
  */
 async function loadRealSequences(count: number): Promise<SequenceData[]> {
   try {
-    const { container } = await import("$lib/shared/di");
-    const browseLoader = container.items.browseLoader as {
+    const { getBrowseLoader } = await import("$lib/features/browse/sequences/display/getBrowseLoader");
+    const browseLoader = getBrowseLoader() as {
       loadSequenceMetadata: () => Promise<SequenceData[]>;
       loadFullSequenceData: (name: string) => Promise<SequenceData | null>;
     };

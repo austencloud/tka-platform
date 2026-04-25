@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
@@ -22,8 +23,8 @@
   let searchInput: HTMLInputElement | null = $state(null);
 
   onMount(() => {
-    browseLoader = container.items.browseLoader;
-    thumbnailProvider = container.items.browseThumbnailProvider;
+    browseLoader = getBrowseLoader();
+    thumbnailProvider = getBrowseThumbnailProvider();
   });
 
   // Load sequences when overlay becomes visible

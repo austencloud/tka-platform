@@ -10,7 +10,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import { onMount } from "svelte";
 
@@ -49,7 +49,7 @@
 
   onMount(() => {
     hapticService = getHapticFeedback();
-    browseLoader = container.items.browseLoader;
+    browseLoader = getBrowseLoader();
   });
 
   /** Ensure sequence has full step data for rendering */

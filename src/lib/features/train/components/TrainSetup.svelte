@@ -6,7 +6,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { onMount } from "svelte";
@@ -27,7 +27,7 @@
   let isLoadingFullSequence = $state(false);
 
   onMount(() => {
-    loaderService = container.items.browseLoader;
+    loaderService = getBrowseLoader();
   });
 
   $effect(() => {

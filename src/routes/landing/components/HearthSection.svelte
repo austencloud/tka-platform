@@ -10,7 +10,7 @@
    * Designed as a composition, not assembled from parts.
    */
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -43,7 +43,7 @@
 
   onMount(async () => {
     try {
-      const browseLoader = container.items.browseLoader;
+      const browseLoader = getBrowseLoader();
       // Load the specific curated AABB sequence (alpha1→3→5→3→1, pro+anti)
       const full = await browseLoader.loadFullSequenceData(
         "AABB",

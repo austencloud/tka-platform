@@ -14,6 +14,7 @@
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
@@ -212,7 +213,7 @@
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
       visibilityManager.setDarkMode(true);
 
-      browseLoader = container.items.browseLoader;
+      browseLoader = getBrowseLoader();
       playbackController = container.items
         .animationPlaybackController;
 

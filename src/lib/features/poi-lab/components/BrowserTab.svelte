@@ -11,6 +11,7 @@
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PoiValidationResult } from "../domain/poi-models";
   import ChoreoCardThumbnail from "$lib/features/browse/sequences/display/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
@@ -25,7 +26,7 @@
   const perPage = 24;
 
   // Services - use browseLoader for community sequences
-  const browseLoader = container.items.browseLoader;
+  const browseLoader = getBrowseLoader();
   const sequenceValidator = container.items.poiSequenceValidator;
 
   // Get user's prop settings for prop-aware thumbnails

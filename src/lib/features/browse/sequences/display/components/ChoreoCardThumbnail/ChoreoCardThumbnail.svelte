@@ -21,7 +21,7 @@ Variation support:
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
-  import { container } from "$lib/shared/di";
+  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
   import {
@@ -204,7 +204,7 @@ Variation support:
           icon: "fa-robot",
           async action() {
             try {
-              const copier = container.items.claudeCodeCopier;
+              const copier = getClaudeCodeCopier();
               const result = await copier.copyForClaude(seq);
               if (result.success) {
                 toast.success("Copied for Claude");
