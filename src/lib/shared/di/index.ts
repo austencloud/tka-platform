@@ -1,21 +1,19 @@
 /**
- * Application Dependency Injection — Module Singleton Getters
+ * Application Bootstrap Entry Point
  *
- * All services have been migrated to module-level singleton getters
- * colocated with their implementations. This file exists solely as
- * the bootstrap entry point:
+ * All services are module-level singleton getters colocated with their
+ * implementations. This file exists solely as the bootstrap entry point:
  *
  *   1. +layout.svelte dynamically imports this module, triggering
  *      side-effect registrations (e.g. ShortCodeManager configuration).
  *   2. The `container` export is retained for the "di-container" context
- *      provider in +layout.svelte (legacy compatibility).
+ *      provider in +layout.svelte (legacy compatibility — will be removed
+ *      once all getContext("di-container") call sites are confirmed gone).
  *
  * To access a service, import its getter directly:
  *   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
  *   const auth = getAuthenticator();
  */
-
-import { createContainer } from "iti";
 
 // Side-effect: configure ShortCodeManager with browse dep
 import { configureShortCodeManager } from "../qr/getShortCodeManager";
@@ -27,21 +25,6 @@ import { getImageComposer } from "../render/getImageComposer";
 
 // Boot profiler
 import { isBootProfileVerbose } from "../analytics/boot-profiler";
-
-// Pictograph singleton imports (eagerly loaded for perf — used on every card render)
-import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
-import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { betaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
-import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
-import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
-import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
-import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 
 // ============================================================================
 // BOOT PROFILER
@@ -56,32 +39,9 @@ if (typeof window !== 'undefined') {
 }
 
 // ============================================================================
-// MINIMAL CONTAINER (retained for legacy context provider)
+// LEGACY CONTAINER SHIM (empty — no services registered)
 // ============================================================================
-function buildAppContainer(): any {
-  let c: any = createContainer();
-
-  // Pictograph singletons (export const pattern — not getters, must be registered)
-  c = c.add({
-    motionQueryHandler: () => motionQueryHandler,
-    gridModeDeriver: () => gridModeDeriver,
-    gridPositionDeriver: () => gridPositionDeriver,
-    startPositionDeriver: () => startPositionDeriver,
-    orientationCalculator: () => orientationCalculator,
-    betaDetector: () => betaDetector,
-    arrowPositioningOrchestrator: () => arrowPositioningOrchestrator,
-    letterQueryHandler: () => letterQueryHandler,
-    screenSpaceAdjustmentTransformer: () => screenSpaceAdjustmentTransformer,
-    arrowAdjustmentCalculator: () => arrowAdjustmentCalculator,
-    arrowLocationCalculator: () => arrowLocationCalculator,
-    pictographPreparer: () => pictographPreparer,
-    turnsTupleGenerator: () => turnsTupleGenerator,
-  });
-
-  return c;
-}
-
-export const container = (typeof window !== 'undefined' ? buildAppContainer() : null) as unknown as
+export const container = (typeof window !== 'undefined' ? { items: {} } : null) as unknown as
   { items: Record<string, unknown> };
 
 // Log DI timing (verbose; gate behind ?profile=1)
@@ -107,7 +67,6 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Export type for legacy compatibility
 export type AppContainer = { items: Record<string, unknown> };
 
 export default container;

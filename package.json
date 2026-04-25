@@ -293,7 +293,6 @@
     "html2canvas": "^1.4.1",
     "interactjs": "^1.10.27",
     "isomorphic-dompurify": "^3.0.0-rc.2",
-    "iti": "^0.8.0",
     "jszip": "^3.10.1",
     "lz-string": "^1.5.0",
     "miniplex": "^2.0.0",

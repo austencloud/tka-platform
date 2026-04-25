@@ -8,7 +8,7 @@
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { BeatSignature, BeatComparisonResult } from "../../domain/models/signatures";
 
-export interface IBeatSignatureGenerator {
+export interface IStepSignatureGenerator {
   /**
    * Generate a rotation-invariant signature for a complete beat.
    *

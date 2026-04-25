@@ -5,11 +5,11 @@
  * The alphabet partitions into six types by motion family:
  *
  *   Type 1 Dual-Shift: A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V
- *   Type 2 Shift:      W, X, Y, Z, Σ, Δ, Θ, Ω
+ *   Type 2 Shift:      W, X, Y, Z, Σ, Δ, Θ, Ω, μ, ν
  *   Type 3 Cross-Shift: W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-
- *   Type 4 Dash:       Φ, Ψ, Λ
+ *   Type 4 Dash:       Φ, Ψ, Λ, τ-
  *   Type 5 Dual-Dash:  Φ-, Ψ-, Λ-
- *   Type 6 Static:     α, β, γ
+ *   Type 6 Static:     α, β, γ, ζ, η, τ, ⊕
  *
  * Per TKA convention, the trailing "-" suffix is a naming glyph (Cross-Shift vs Shift,
  * Dual-Dash vs Dash); it does not denote the "dash" motion type.
@@ -48,6 +48,8 @@ export const Letter = {
   Delta: "Δ",
   Theta: "Θ",
   Omega: "Ω",
+  Mu: "μ",
+  Nu: "ν",
 
   // Type 3 — Cross-Shift ("-" variant of Type 2)
   WDash: "W-",
@@ -63,6 +65,7 @@ export const Letter = {
   Phi: "Φ",
   Psi: "Ψ",
   Lambda: "Λ",
+  TauDash: "τ-",
 
   // Type 5 — Dual-Dash ("-" variant of Type 4)
   PhiDash: "Φ-",
@@ -73,6 +76,10 @@ export const Letter = {
   Alpha: "α",
   Beta: "β",
   Gamma: "γ",
+  Zeta: "ζ",
+  Eta: "η",
+  Tau: "τ",
+  Terra: "⊕",
 } as const;
 
 export type Letter = (typeof Letter)[keyof typeof Letter];

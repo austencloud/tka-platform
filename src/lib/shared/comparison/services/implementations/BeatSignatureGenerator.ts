@@ -6,7 +6,7 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { IBeatSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
 import type { IMotionSignatureGenerator } from "../contracts/IMotionSignatureGenerator";
 import type {
   BeatSignature,
@@ -46,7 +46,7 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
   [GridLocation.CENTER]: 0,
 };
 
-export class BeatSignatureGenerator implements IBeatSignatureGenerator {
+export class StepSignatureGenerator implements IStepSignatureGenerator {
   constructor(private readonly motionSignatureGenerator: IMotionSignatureGenerator) {}
 
   generateSignature(step: StepData): BeatSignature {
@@ -220,4 +220,4 @@ export class BeatSignatureGenerator implements IBeatSignatureGenerator {
 // ============================================================================
 import { motionSignatureGenerator } from "./MotionSignatureGenerator";
 
-export const beatSignatureGenerator = new BeatSignatureGenerator(motionSignatureGenerator);
+export const beatSignatureGenerator = new StepSignatureGenerator(motionSignatureGenerator);

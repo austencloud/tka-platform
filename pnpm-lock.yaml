@@ -239,9 +239,6 @@ importers:
       isomorphic-dompurify:
         specifier: ^3.0.0-rc.2
         version: 3.0.0(canvas@3.2.1)
-      iti:
-        specifier: ^0.8.0
-        version: 0.8.0
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
@@ -5000,10 +4997,6 @@ packages:
     resolution: {integrity: sha512-5K+MYP7Nrg74+Bi+QmQGzQ/FgEOyVHWsN8MuJy5wYQxxBRxPnWsD25Tjjt5FWYhan3OQ+vNLubyNJH9dfG03lQ==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
-  iti@0.8.0:
-    resolution: {integrity: sha512-sy/Hz+EQcC87E5jTusKtP7VFW4MDPe4HH11IafcrJU6wNX7d6QR31DYnEmpnpHDBgrG33B4siXLzMwhDaRmd9w==}
-    engines: {node: '>=12'}
-
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
@@ -6954,10 +6947,6 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
-
-  utility-types@3.11.0:
-    resolution: {integrity: sha512-6Z7Ma2aVEWisaL6TvBCy7P8rm2LQoPv6dJ7ecIaIixHcwfbJ0x7mWdbcwlIM5IGQxPZSFYeqRCqlOOeKoJYMkw==}
-    engines: {node: '>= 4'}
 
   utrie@1.0.2:
     resolution: {integrity: sha512-1MLa5ouZiOmQzUbjbu9VmjLzn1QLXBhwpUa7kdLUQK+KQ5KA9I1vk5U4YHe/X2Ch7PYnJfWuWT+VbuxbGwljhw==}
@@ -12361,10 +12350,6 @@ snapshots:
       - canvas
       - supports-color
 
-  iti@0.8.0:
-    dependencies:
-      utility-types: 3.11.0
-
   jackspeak@3.4.3:
     dependencies:
       '@isaacs/cliui': 8.0.2
@@ -14649,8 +14634,6 @@ snapshots:
       react: 19.2.4
 
   util-deprecate@1.0.2: {}
-
-  utility-types@3.11.0: {}
 
   utrie@1.0.2:
     dependencies:

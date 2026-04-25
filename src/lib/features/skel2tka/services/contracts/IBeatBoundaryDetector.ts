@@ -1,5 +1,5 @@
 /**
- * IBeatBoundaryDetector - Find beat transitions in a hand timeline
+ * IStepBoundaryDetector - Find beat transitions in a hand timeline
  *
  * Groups consecutive frames with stable (same) blue/red grid locations
  * into beats. A new beat starts when either hand changes grid location.
@@ -23,7 +23,7 @@ export interface BeatDetectionOptions {
   minConfidence?: number;
 }
 
-export interface IBeatBoundaryDetector {
+export interface IStepBoundaryDetector {
   /**
    * Detect beat boundaries in a hand timeline.
    *

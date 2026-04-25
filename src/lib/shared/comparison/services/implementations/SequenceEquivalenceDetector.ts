@@ -20,7 +20,7 @@ import type {
   MotionSignature,
 } from "$lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector";
 import type { ISequenceCanonicalizer } from "../contracts/ISequenceCanonicalizer";
-import type { IBeatSignatureGenerator } from "../contracts/IBeatSignatureGenerator";
+import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
 import type { ISpatialTransformDetector } from "../contracts/ISpatialTransformDetector";
 import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -28,7 +28,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector {
   constructor(
     private readonly sequenceCanonicalizer: ISequenceCanonicalizer,
-    private readonly beatSignatureGenerator: IBeatSignatureGenerator,
+    private readonly beatSignatureGenerator: IStepSignatureGenerator,
     private readonly spatialTransformDetector: ISpatialTransformDetector,
     private readonly wordCyclicEquivalenceDetector: IWordCyclicEquivalenceDetector
   ) {}
@@ -389,7 +389,7 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
-import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { beatSignatureGenerator } from "./StepSignatureGenerator";
 import { spatialTransformDetector } from "./SpatialTransformDetector";
 import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
 
