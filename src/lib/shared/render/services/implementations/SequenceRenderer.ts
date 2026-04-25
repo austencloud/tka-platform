@@ -29,7 +29,8 @@ export class SequenceRenderer implements ISequenceRenderer {
   async renderSequenceToCanvas(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions> = {},
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<HTMLCanvasElement> {
     if (!sequence) {
       throw new Error("Sequence data is required for rendering");
@@ -53,12 +54,14 @@ export class SequenceRenderer implements ISequenceRenderer {
         ? await this.compositionService.composeCardImage(
             sequence,
             fullOptions,
-            onProgress
+            onProgress,
+            signal
           )
         : await this.compositionService.composeSequenceImage(
             sequence,
             fullOptions,
-            onProgress
+            onProgress,
+            signal
           );
 
       return canvas;
@@ -76,7 +79,8 @@ export class SequenceRenderer implements ISequenceRenderer {
   async renderSequenceToBlob(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions> = {},
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<Blob> {
     if (!sequence) {
       throw new Error("Sequence data is required for rendering");
@@ -90,7 +94,8 @@ export class SequenceRenderer implements ISequenceRenderer {
       const canvas = await this.renderSequenceToCanvas(
         sequence,
         fullOptions,
-        onProgress
+        onProgress,
+        signal
       );
 
       // Convert to blob using format service

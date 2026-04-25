@@ -17,7 +17,8 @@ export interface ISequenceRenderer {
   renderSequenceToCanvas(
     sequence: SequenceData,
     options?: Partial<SequenceExportOptions>,
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<HTMLCanvasElement>;
 
   /**
@@ -27,7 +28,8 @@ export interface ISequenceRenderer {
   renderSequenceToBlob(
     sequence: SequenceData,
     options?: Partial<SequenceExportOptions>,
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<Blob>;
 
   /**

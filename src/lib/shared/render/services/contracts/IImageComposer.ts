@@ -26,7 +26,8 @@ export interface IImageComposer {
   composeSequenceImage(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>,
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<HTMLCanvasElement>;
 
   /**
@@ -37,7 +38,8 @@ export interface IImageComposer {
   composeCardImage(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>,
-    onProgress?: CompositionProgressCallback
+    onProgress?: CompositionProgressCallback,
+    signal?: AbortSignal
   ): Promise<HTMLCanvasElement>;
 
   /**

@@ -147,17 +147,21 @@ export class WorkerRenderPool implements IWorkerRenderPool {
             this.handleWorkerMessage(event.data);
           };
 
-          worker.onerror = (error) => {
-            console.warn(`[WorkerRenderPool] Worker ${i} error:`, error.message);
-          };
-
           workerEntries.push(entry);
 
           // Send init message and wait for response
           const initPromise = new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
-              reject(new Error(`Worker ${i} init timeout`));
+              reject(new Error(`Worker ${i} init timeout (10s)`));
             }, 10000);
+
+            // If the worker module fails to load, onerror fires before
+            // any message exchange — reject immediately instead of
+            // waiting for the 10s timeout.
+            worker.onerror = (error) => {
+              clearTimeout(timeout);
+              reject(new Error(`Worker ${i} module error: ${error.message}`));
+            };
 
             const originalHandler = worker.onmessage;
             worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
@@ -165,10 +169,12 @@ export class WorkerRenderPool implements IWorkerRenderPool {
                 clearTimeout(timeout);
                 entry.ready = true;
                 worker.onmessage = originalHandler;
+                worker.onerror = null;
                 resolve();
               } else if (event.data.type === "error") {
                 clearTimeout(timeout);
                 worker.onmessage = originalHandler;
+                worker.onerror = null;
                 reject(new Error((event.data as ErrorMessage).message));
               }
             };
@@ -188,11 +194,13 @@ export class WorkerRenderPool implements IWorkerRenderPool {
 
       // Only keep workers that initialized successfully
       for (let i = 0; i < workerEntries.length; i++) {
-        if (results[i]?.status === "fulfilled") {
+        const result = results[i];
+        if (result?.status === "fulfilled") {
           this.workers.push(workerEntries[i]!);
         } else {
           workerEntries[i]?.worker.terminate();
-          console.warn(`[WorkerRenderPool] Worker ${i} failed to initialize`);
+          const reason = result?.status === "rejected" ? result.reason : "unknown";
+          console.warn(`[WorkerRenderPool] Worker ${i} failed to initialize:`, reason);
         }
       }
 
