@@ -76,11 +76,12 @@ function renderGlyphWord(
     }
     totalWidth += letterGap;
   }
-  // Remove trailing gap
-  if (tokens.length > 0) totalWidth -= letterGap;
+  // Remove trailing gap (guard on totalWidth, not tokens.length, to handle all-missing case)
+  if (totalWidth > 0) totalWidth -= letterGap;
 
   // Second pass: draw
   let cursorX = canvasWidth / 2 - totalWidth / 2;
+  // Applied directly — no parent CSS invert filter in canvas context unlike TKAGlyph.svelte
   const dashColor = darkMode ? "#ffffff" : "#231f20";
 
   for (const token of tokens) {
