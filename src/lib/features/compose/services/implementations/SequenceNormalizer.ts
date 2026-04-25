@@ -49,15 +49,15 @@ export class SequenceNormalizer implements ISequenceNormalizer {
 
     // Find legacy start position (stepNumber === 0)
     const legacyStartPos = allSteps.find(
-      (beat) => beat.stepNumber === 0
+      (step) => step.stepNumber === 0
     ) as StepData | undefined;
 
     // Filter out start position from steps array (keep only actual steps)
-    const steps = allSteps.filter((beat) => beat.stepNumber !== 0);
+    const steps = allSteps.filter((step) => step.stepNumber !== 0);
 
     // Convert legacy StepData to StartPositionData if found
     const startPosition: StartPositionData | null = legacyStartPos
-      ? this.convertBeatToStartPosition(legacyStartPos)
+      ? this.convertStepToStartPosition(legacyStartPos)
       : null;
 
     return {
@@ -69,12 +69,12 @@ export class SequenceNormalizer implements ISequenceNormalizer {
   /**
    * Convert legacy StepData (stepNumber: 0) to proper StartPositionData
    */
-  private convertBeatToStartPosition(beat: StepData): StartPositionData {
+  private convertStepToStartPosition(step: StepData): StartPositionData {
     return createStartPositionData({
-      id: beat.id || `start-${Date.now()}`,
-      letter: beat.letter ?? null,
-      gridPosition: beat.endPosition ?? beat.startPosition ?? null,
-      motions: beat.motions,
+      id: step.id || `start-${Date.now()}`,
+      letter: step.letter ?? null,
+      gridPosition: step.endPosition ?? step.startPosition ?? null,
+      motions: step.motions,
     });
   }
 }

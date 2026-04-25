@@ -133,11 +133,11 @@ export class TrailPathGenerator {
     const totalSamples = totalSteps * samplesPerStep;
 
     for (let i = 0; i <= totalSamples; i++) {
-      const beat = i / samplesPerStep;
-      const timestamp = beat / totalSteps; // Normalized 0-1
+      const playbackPosition = i / samplesPerStep;
+      const timestamp = playbackPosition / totalSteps; // Normalized 0-1
 
-      // Get prop states at this beat position
-      orchestrator.calculateState(beat);
+      // Get prop states at this playback position
+      orchestrator.calculateState(playbackPosition);
       const blueState = orchestrator.getBluePropState();
       const redState = orchestrator.getRedPropState();
 
@@ -149,20 +149,20 @@ export class TrailPathGenerator {
       blueLeft.push({
         x: blueEnds.left.x,
         y: blueEnds.left.y,
-        beat,
+        beat: playbackPosition,
         timestamp,
       });
       blueRight.push({
         x: blueEnds.right.x,
         y: blueEnds.right.y,
-        beat,
+        beat: playbackPosition,
         timestamp,
       });
-      redLeft.push({ x: redEnds.left.x, y: redEnds.left.y, beat, timestamp });
+      redLeft.push({ x: redEnds.left.x, y: redEnds.left.y, beat: playbackPosition, timestamp });
       redRight.push({
         x: redEnds.right.x,
         y: redEnds.right.y,
-        beat,
+        beat: playbackPosition,
         timestamp,
       });
     }

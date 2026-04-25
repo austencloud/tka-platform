@@ -29,7 +29,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
   // Animation-to-beat state
   private animationTarget: number | null = null;
-  private animationStartBeat: number = 0;
+  private animationStartStep: number = 0;
   private animationStartTime: number = 0;
   private animationDuration: number = 300; // ms
   private useLinearAnimation: boolean = false;
@@ -44,7 +44,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   private isFirstLoop: boolean = true;
 
   // End position hold duration for freeform (non-looping) sequences
-  // Adds a 1-beat pause at the end position so the user can see the final state
+  // Adds a 1-step pause at the end position so the user can see the final state
   private endPositionHoldDuration: number = 0;
 
   // Loop completion callback (used by tempo practice training)
@@ -59,9 +59,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   /**
    * Sync current beat to both internal state and shared state (for workspace beat grid sync)
    */
-  private syncCurrentStep(beat: number): void {
-    this.state?.setCurrentStep(beat);
-    sharedAnimationState.setCurrentStep(beat);
+  private syncCurrentStep(step: number): void {
+    this.state?.setCurrentStep(step);
+    sharedAnimationState.setCurrentStep(step);
   }
 
   /**
@@ -92,7 +92,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     state.setSequenceMetadata(metadata.word, metadata.author);
 
     // Store total duration for duration-aware playback (includes start position)
-    // For freeform sequences, add 1-beat end position hold so the user can see the final state
+    // For freeform sequences, add 1-step end position hold so the user can see the final state
     this.endPositionHoldDuration = this._isSeamlesslyLoopable ? 0 : 1;
     this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
     this.timePosition = 0;
@@ -164,7 +164,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     if (this.state.isPlaying) {
       // Pause — clear animationTarget so resuming doesn't hit the
-      // "already animating to this target" early-return in animateToBeatInternal
+      // "already animating to this target" early-return in animateToStepInternal
       this.animationTarget = null;
       this.stopStepPlayback();
       this.loopService.stop();
@@ -206,7 +206,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.updatePropStatesFromEngine();
   }
 
-  jumpToStep(beat: number): void {
+  jumpToStep(step: number): void {
     if (!this.state) return;
 
     // Stop any current playback/animation
@@ -215,8 +215,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.syncIsPlaying(false);
     this.animationTarget = null;
 
-    // Clamp beat to valid range
-    const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps));
+    // Clamp step to valid range
+    const clampedStep = Math.max(0, Math.min(step, this.state.totalSteps));
     this.syncCurrentStep(clampedStep);
 
     // Sync time position so continuous playback starts from here
@@ -227,14 +227,14 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.updatePropStatesFromEngine();
   }
 
-  seekToStep(beat: number): void {
+  seekToStep(step: number): void {
     if (!this.state) return;
 
     // Cancel any animated seek in progress
     this.animationTarget = null;
 
-    // Clamp beat to valid range
-    const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps));
+    // Clamp step to valid range
+    const clampedStep = Math.max(0, Math.min(step, this.state.totalSteps));
 
     // If the caller passed an integer beat (e.g. step-cell click), preserve
     // the current fractional offset so playback continues smoothly from the
@@ -261,15 +261,15 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   }
 
   animateToStep(
-    beat: number,
+    step: number,
     duration: number = 300,
     linear: boolean = false
   ): void {
-    this.animateToBeatInternal(beat, duration, linear, true);
+    this.animateToStepInternal(step, duration, linear, true);
   }
 
-  private animateToBeatInternal(
-    beat: number,
+  private animateToStepInternal(
+    step: number,
     duration: number,
     linear: boolean,
     cancelStepPlayback: boolean
@@ -281,9 +281,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       this.stopStepPlayback();
     }
 
-    // Clamp target beat to valid animation range
-    // Allow totalSteps + 1 to show the final beat's motion (which spans from totalSteps to totalSteps + 1)
-    const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps + 1));
+    // Clamp target step to valid animation range
+    // Allow totalSteps + 1 to show the final step's motion (which spans from totalSteps to totalSteps + 1)
+    const clampedStep = Math.max(0, Math.min(step, this.state.totalSteps + 1));
 
     // If already animating to this target, don't restart
     if (this.animationTarget === clampedStep) {
@@ -305,19 +305,19 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     // Set up animation parameters
     this.animationTarget = clampedStep;
-    this.animationStartBeat = this.state.currentStep;
+    this.animationStartStep = this.state.currentStep;
     this.animationStartTime = performance.now();
     this.animationDuration = duration;
     this.useLinearAnimation = linear;
 
     // Start the animation loop with a custom callback
     this.loopService.start(
-      () => this.onAnimateToBeatUpdate(),
+      () => this.onAnimateToStepUpdate(),
       1.0 // Speed doesn't matter for time-based animation
     );
   }
 
-  private onAnimateToBeatUpdate(): void {
+  private onAnimateToStepUpdate(): void {
     if (!this.state || this.animationTarget === null) {
       this.loopService.stop();
       return;
@@ -333,8 +333,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     // Interpolate from start to target beat
     const currentStep =
-      this.animationStartBeat +
-      (this.animationTarget - this.animationStartBeat) * interpolatedProgress;
+      this.animationStartStep +
+      (this.animationTarget - this.animationStartStep) * interpolatedProgress;
 
     this.syncCurrentStep(currentStep);
     this.animationEngine.calculateState(currentStep);
@@ -545,7 +545,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         // redundant pause at the start position.
         if (this._isSeamlesslyLoopable) {
           const duration = this.getStepDuration(stepSize);
-          this.animateToBeatInternal(stepSize, duration, true, false);
+          this.animateToStepInternal(stepSize, duration, true, false);
         }
 
         // Schedule next tick to continue looping
@@ -567,7 +567,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       }
     } else {
       const duration = this.getStepDuration(stepSize);
-      this.animateToBeatInternal(nextStep, duration, true, false);
+      this.animateToStepInternal(nextStep, duration, true, false);
 
       // If we just stepped to the animation end beat:
       // - Loopable sequences: loop immediately (no pause, it's not a real beat)
@@ -657,14 +657,14 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
    * Calculate and update prop states for a specific beat without affecting playback.
    * Used when an external beat source (like composition state) drives the animation.
    */
-  calculateStateForBeat(beat: number): void {
+  calculateStateForStep(step: number): void {
     if (!this.state) return;
 
-    // Sync currentStep so the live UI (GlyphOverlay, step numbers) tracks the beat
-    this.syncCurrentStep(beat);
+    // Sync currentStep so the live UI (GlyphOverlay, step numbers) tracks the step
+    this.syncCurrentStep(step);
 
-    // Calculate state for the given beat
-    this.animationEngine.calculateState(beat);
+    // Calculate state for the given step
+    this.animationEngine.calculateState(step);
 
     // Update prop states on the animation panel state
     this.updatePropStatesFromEngine();

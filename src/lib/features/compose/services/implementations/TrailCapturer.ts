@@ -331,8 +331,8 @@ export class TrailCapturer implements ITrailCapturer {
     // Calculate animation-relative time (0ms to totalDurationMs)
     const animRelativeTime = currentTime - this.animationStartTime;
 
-    // Use current beat (fallback to 0 if undefined)
-    const beat = currentStep ?? 0;
+    // Use current step (fallback to 0 if undefined)
+    const currentBeat = currentStep ?? 0;
 
     // Check for loop and clear trails if:
     // - Mode is LOOP_CLEAR (user explicitly wants clearing on every loop)
@@ -342,7 +342,7 @@ export class TrailCapturer implements ITrailCapturer {
       trailSettings.mode === TrailMode.LOOP_CLEAR ||
       this.config.isSeamlesslyLoopable !== true;
 
-    const loopDetected = this.detectAnimationLoop(beat);
+    const loopDetected = this.detectAnimationLoop(currentBeat);
 
     if (shouldClearOnLoop && loopDetected) {
       this.clearTrails();
@@ -357,7 +357,7 @@ export class TrailCapturer implements ITrailCapturer {
         this.config.bluePropDimensions,
         0,
         animRelativeTime,
-        beat
+        currentBeat
       );
     }
     if (props.redProp) {
@@ -366,7 +366,7 @@ export class TrailCapturer implements ITrailCapturer {
         this.config.redPropDimensions,
         1,
         animRelativeTime,
-        beat
+        currentBeat
       );
     }
 
@@ -381,7 +381,7 @@ export class TrailCapturer implements ITrailCapturer {
             this.config.bluePropDimensions,
             0,
             animRelativeTime,
-            beat,
+            currentBeat,
             i
           );
         }
@@ -391,7 +391,7 @@ export class TrailCapturer implements ITrailCapturer {
             this.config.redPropDimensions,
             1,
             animRelativeTime,
-            beat,
+            currentBeat,
             i
           );
         }

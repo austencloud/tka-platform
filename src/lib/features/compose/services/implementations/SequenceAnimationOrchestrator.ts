@@ -81,12 +81,12 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       // is handled separately by the start position duration logic. Including it
       // here would double-count it and shift all beat indices by one.
       const steps = (sequenceData.steps ?? [])
-        .filter((beat): beat is StepData => !!beat && beat.stepNumber !== 0)
-        .map((beat, index) => ({
-          ...beat,
+        .filter((step): step is StepData => !!step && step.stepNumber !== 0)
+        .map((step, index) => ({
+          ...step,
           stepNumber:
-            typeof beat.stepNumber === "number" ? beat.stepNumber : index + 1,
-          motions: beat.motions ?? { blue: undefined, red: undefined },
+            typeof step.stepNumber === "number" ? step.stepNumber : index + 1,
+          motions: step.motions ?? { blue: undefined, red: undefined },
         }));
 
       if (steps.length === 0) {
@@ -97,13 +97,13 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       }
 
       // Validate steps using focused service
-      if (!this.stepCalculationService.validateBeats(steps)) {
-        throw new Error("Invalid beat data structure");
+      if (!this.stepCalculationService.validateSteps(steps)) {
+        throw new Error("Invalid step data structure");
       }
 
       this.missingMotionLogged.clear();
       this.hasMotionData = steps.some(
-        (beat) => beat?.motions?.blue || beat?.motions?.red
+        (step) => step?.motions?.blue || step?.motions?.red
       );
 
       // Extract metadata from domain data
@@ -212,8 +212,8 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
     // Skip steps without ANY motion data (neither hand present) and log once
     const beatMotions = stepState.currentStepData?.motions;
-    const hasBeatMotions = beatMotions?.blue || beatMotions?.red;
-    if (!hasBeatMotions) {
+    const hasStepMotions = beatMotions?.blue || beatMotions?.red;
+    if (!hasStepMotions) {
       const key =
         stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
       if (!this.missingMotionLogged.has(key)) {
@@ -234,13 +234,13 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
     if (this.effortTimeline?.phrases?.length) {
       // Phrase mode: check if current beat falls within a phrase
-      const currentBeat = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
-      const phrase = findPhraseAtBeat(this.effortTimeline, currentBeat);
+      const currentStep = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
+      const phrase = findPhraseAtBeat(this.effortTimeline, currentStep);
 
       if (phrase) {
         // Use phrase-level interpolation
         const phraseResult = this.phraseInterpolator.interpolate(
-          phrase, currentBeat, this.steps.length,
+          phrase, currentStep, this.steps.length,
         );
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
@@ -302,7 +302,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   /**
    * Get current beat progress (0.0 to 1.0 within current beat)
    */
-  getBeatProgress(): number {
+  getStepProgress(): number {
     return this.currentStepProgress;
   }
 
@@ -315,7 +315,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
   private findFirstBeatWithMotion(): StepData | null {
     return (
-      this.steps.find((beat) => beat?.motions?.blue || beat?.motions?.red) ??
+      this.steps.find((step) => step?.motions?.blue || step?.motions?.red) ??
       null
     );
   }
@@ -334,9 +334,9 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       return;
     }
 
-    const firstBeatWithMotion = this.findFirstBeatWithMotion();
+    const firstStepWithMotion = this.findFirstBeatWithMotion();
 
-    if (!firstBeatWithMotion) {
+    if (!firstStepWithMotion) {
       console.warn(
         "SequenceAnimationOrchestrator: No steps with motion data, resetting prop states"
       );
@@ -345,7 +345,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     }
 
     const initialAngles =
-      this.propInterpolationService.calculateInitialAngles(firstBeatWithMotion);
+      this.propInterpolationService.calculateInitialAngles(firstStepWithMotion);
 
     if (initialAngles.isValid) {
       if (initialAngles.blueAngles) {
@@ -488,8 +488,8 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
     // Skip steps without ANY motion data (neither hand present)
     const beatMotions = stepState.currentStepData?.motions;
-    const hasBeatMotions = beatMotions?.blue || beatMotions?.red;
-    if (!hasBeatMotions) {
+    const hasStepMotions = beatMotions?.blue || beatMotions?.red;
+    if (!hasStepMotions) {
       const key = stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
       if (!this.missingMotionLogged.has(key)) {
         this.missingMotionLogged.add(key);
@@ -506,13 +506,13 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
     if (this.effortTimeline?.phrases?.length) {
       // Phrase mode: check if current beat falls within a phrase
-      const currentBeat = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
-      const phrase = findPhraseAtBeat(this.effortTimeline, currentBeat);
+      const currentStep = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
+      const phrase = findPhraseAtBeat(this.effortTimeline, currentStep);
 
       if (phrase) {
         // Use phrase-level interpolation
         const phraseResult = this.phraseInterpolator.interpolate(
-          phrase, currentBeat, this.steps.length,
+          phrase, currentStep, this.steps.length,
         );
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
@@ -572,10 +572,10 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   }
 
   /**
-   * Get the current beat data (the beat being animated).
+   * Get the current step data (the beat being animated).
    * Returns null if at start position or not initialized.
    */
-  getCurrentBeatData(): StepData | null {
+  getCurrentStepBeatData(): StepData | null {
     if (!this.initialized || this.atStartPosition) {
       return null;
     }
@@ -639,16 +639,16 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
     // Beat 1+ = motion beats
     // Get the integer beat index (0-based) and fractional progress
-    const beatIndex = Math.floor(beat) - 1; // Convert 1-based to 0-based
+    const stepNumber = Math.floor(beat) - 1; // Convert 1-based to 0-based
     const beatProgress = beat - Math.floor(beat);
 
     // Calculate time position: startPosDuration + sum of all previous beat durations + progress
-    let timePosition = startPosDuration + this.stepCalculationService.getBeatStartTime(beatIndex, this.steps);
+    let timePosition = startPosDuration + this.stepCalculationService.getStepStartTime(stepNumber, this.steps);
 
     // Add progress within current beat
-    if (beatIndex >= 0 && beatIndex < this.steps.length) {
-      const currentBeatDuration = this.steps[beatIndex]?.duration ?? 1;
-      timePosition += beatProgress * currentBeatDuration;
+    if (stepNumber >= 0 && stepNumber < this.steps.length) {
+      const currentStepDuration = this.steps[stepNumber]?.duration ?? 1;
+      timePosition += beatProgress * currentStepDuration;
     }
 
     return timePosition;

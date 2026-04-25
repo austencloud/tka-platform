@@ -175,22 +175,22 @@ export class AnimationPathCache {
 
       for (; frame < chunkEnd; frame++) {
         const timestamp = frame * frameTimeMs;
-        const beat = timestamp / stepDurationMs;
+        const playbackPosition = timestamp / stepDurationMs;
 
-        const { blueProp, redProp } = calculateStateFunc(beat);
+        const { blueProp, redProp } = calculateStateFunc(playbackPosition);
 
         const blueEndpoints = this.propPositionCalculator.calculateEndpoints(blueProp, endpointConfig);
         const redEndpoints = this.propPositionCalculator.calculateEndpoints(redProp, endpointConfig);
 
         bluePositions[frame] = {
-          beat,
+          beat: playbackPosition,
           timestamp,
           propState: { ...blueProp },
           endpoints: blueEndpoints,
         };
 
         redPositions[frame] = {
-          beat,
+          beat: playbackPosition,
           timestamp,
           propState: { ...redProp },
           endpoints: redEndpoints,
