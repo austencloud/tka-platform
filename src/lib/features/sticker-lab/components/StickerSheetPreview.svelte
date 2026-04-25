@@ -96,40 +96,68 @@
   .preview {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--spacing-md);
     height: 100%;
   }
+
   .toolbar {
     display: flex;
     align-items: center;
-    gap: 16px;
-    font-size: 12px;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    font-size: var(--font-size-sm);
     color: var(--theme-text, white);
   }
+
   .toolbar .toggle-btn {
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 1px solid rgba(255,255,255,0.15);
+    min-height: var(--min-touch-target);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-2026-sm);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: transparent;
     color: var(--theme-text, white);
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
+    transition: background var(--duration-fast), border-color var(--duration-fast);
   }
   .toolbar .toggle-btn[aria-pressed="true"] {
-    background: rgba(255,255,255,0.15);
-    border-color: rgba(255,255,255,0.3);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
-  .toolbar .count { margin-left: auto; opacity: 0.6; }
-  .pager { display: flex; align-items: center; gap: 8px; }
+
+  .toolbar .count {
+    margin-left: auto;
+    font-size: var(--font-size-compact);
+    opacity: 0.6;
+  }
+
+  .pager {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
   .pager button {
-    width: 28px; height: 28px;
-    background: rgba(255,255,255,0.04);
-    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, white);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-2026-sm);
     cursor: pointer;
+    font-size: var(--font-size-base);
+    transition: background var(--duration-fast);
   }
-  .pager button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .pager button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .pager button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
 
   .sheet-frame {
     flex: 1;
@@ -137,27 +165,24 @@
     align-items: center;
     justify-content: center;
     overflow: auto;
-    padding: 16px;
+    padding: var(--spacing-md);
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
+    border-radius: var(--radius-2026-sm);
   }
 
   .sheet {
-    /* Scale to fit — CSS var length is ignored by most browsers when used as length,
-       so we compute using explicit max-height in JS if needed. For MVP, let it be
-       the true physical aspect ratio at 72 dpi (1in = 96px in CSS). */
     width: calc(var(--sheet-w));
     height: calc(var(--sheet-h));
     max-width: 100%;
     max-height: 100%;
     aspect-ratio: var(--sheet-ar);
     background: #f9f6ef;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
     display: grid;
     grid-template-columns: repeat(var(--cols), 1fr);
     grid-template-rows: repeat(var(--rows), 1fr);
     gap: 0.15in;
-    padding: 0.5in; /* approximate; true margins are centered in PDF */
+    padding: 0.5in;
     box-sizing: border-box;
   }
 
@@ -190,7 +215,7 @@
   }
 
   .missing {
-    font-size: 10px;
-    color: rgba(0,0,0,0.4);
+    font-size: var(--font-size-compact);
+    color: rgba(0, 0, 0, 0.4);
   }
 </style>
