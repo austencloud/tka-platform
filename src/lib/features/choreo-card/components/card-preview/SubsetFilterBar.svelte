@@ -129,7 +129,7 @@
 
   .chip.active {
     background: var(--theme-accent, #4a9eff);
-    color: #fff;
+    color: var(--theme-text, #fff);
     border-color: var(--theme-accent, #4a9eff);
   }
 

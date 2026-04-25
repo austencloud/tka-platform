@@ -197,8 +197,8 @@
     vertical-align: middle;
     margin: 0 1px;
   }
-  .color-swatch.blue { background: #3b82f6; }
-  .color-swatch.red { background: #ef4444; }
+  .color-swatch.blue { background: var(--tka-blue-hand, #3b82f6); }
+  .color-swatch.red { background: var(--tka-red-hand, #ef4444); }
 
   /* Pronunciation grid */
   .section-label {

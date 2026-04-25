@@ -261,7 +261,7 @@
     /* Standard playing card corner radius: ~3mm on 63.5mm = 4.72% of width */
     border-radius: 4.72%;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.4));
     transition:
       width 300ms ease,
       height 300ms ease;
@@ -269,7 +269,7 @@
   }
 
   .preview-stack.print-mode .card-frame {
-    background: #ffffff;
+    background: var(--print-bg, #ffffff);
   }
 
   /* Back card has dark content — transparent bg so corners don't show white */

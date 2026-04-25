@@ -464,6 +464,7 @@
             type="button"
             role="radio"
             aria-checked={viewMode === 'grid'}
+            aria-label="Grid view"
           >
             <i class="fas fa-th" aria-hidden="true"></i>
             Grid
@@ -475,6 +476,7 @@
             type="button"
             role="radio"
             aria-checked={viewMode === 'print'}
+            aria-label="Print view"
           >
             <i class="fas fa-print" aria-hidden="true"></i>
             Print Preview
@@ -727,7 +729,7 @@
 
   .picker-card:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
   }
 
   .picker-label {
@@ -866,7 +868,7 @@
     color: var(--theme-text, #fff);
     cursor: default;
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -885,8 +887,8 @@
     color: var(--theme-accent, #b763cd);
     cursor: default;
     font-weight: 500;
-    background: rgba(183, 99, 205, 0.1);
-    border-color: rgba(183, 99, 205, 0.25);
+    background: var(--vtg-accent-bg, rgba(183, 99, 205, 0.1));
+    border-color: var(--vtg-accent-border, rgba(183, 99, 205, 0.25));
   }
 
   /* ── Deck meta line ── */
@@ -937,11 +939,9 @@
     aspect-ratio: 5 / 7;
     border-radius: 5%;
     overflow: hidden;
-    box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.3),
-      0 1px 4px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: #ffffff;
+    background: var(--print-bg, #ffffff);
   }
 
   .playing-card :global(> button) {

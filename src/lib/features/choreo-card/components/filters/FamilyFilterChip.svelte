@@ -131,6 +131,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
         type="button"
         role="option"
         aria-selected={selectedFamilyIds.length === 0}
+        aria-label="All Families"
         onclick={handleSelectAll}
       >
         <span class="option-label">All Families</span>
@@ -151,6 +152,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
           type="button"
           role="option"
           aria-selected={isSelected}
+          aria-label="Filter by {family.typeCombo} family"
           onclick={() => handleToggleFamily(family.id)}
         >
           <span class="family-left">
@@ -212,7 +214,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
   }
 
   .popover-option.selected {
-    color: #8b5cf6;
+    color: var(--family-accent, #8b5cf6);
     font-weight: 600;
   }
 
@@ -269,7 +271,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
 
   .check-icon {
     font-size: 12px;
-    color: #8b5cf6;
+    color: var(--family-accent, #8b5cf6);
   }
 
   /* ── Pills row ────────────────────────────────────────────────────────── */
@@ -292,8 +294,8 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
     font-weight: 700;
     border-radius: 3px;
     background: var(--c1);
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    color: var(--theme-text, #fff);
+    text-shadow: var(--shadow-text, 0 1px 2px rgba(0, 0, 0, 0.5));
     white-space: nowrap;
     line-height: 1.2;
   }

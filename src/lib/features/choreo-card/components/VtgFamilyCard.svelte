@@ -97,7 +97,7 @@
   .element-icon {
     width: 64px;
     height: 64px;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+    filter: var(--shadow-drop, drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3)));
   }
 
   .family-name {

@@ -73,10 +73,10 @@
     <span class="spacer"></span>
     {#if isAdmin}
       <div class="scope" role="radiogroup" aria-label="Scope">
-        <button role="radio" aria-checked={scanState.scope === "mine"} class:active={scanState.scope === "mine"} onclick={() => (scanState.scope = "mine")}>
+        <button role="radio" aria-checked={scanState.scope === "mine"} aria-label="My cards" class:active={scanState.scope === "mine"} onclick={() => (scanState.scope = "mine")}>
           My cards
         </button>
-        <button role="radio" aria-checked={scanState.scope === "all"} class:active={scanState.scope === "all"} onclick={() => (scanState.scope = "all")}>
+        <button role="radio" aria-checked={scanState.scope === "all"} aria-label="All scans" class:active={scanState.scope === "all"} onclick={() => (scanState.scope = "all")}>
           All (admin)
         </button>
       </div>
@@ -172,8 +172,8 @@
   .link {
     display: flex; align-items: center; justify-content: center;
     padding: 14px; min-height: 44px;
-    background: rgba(16, 185, 129, 0.06);
-    border: 1px dashed rgba(16, 185, 129, 0.3);
+    background: var(--theme-accent-bg, rgba(16, 185, 129, 0.06));
+    border: 1px dashed var(--theme-accent-border, rgba(16, 185, 129, 0.3));
     border-radius: 8px;
     color: var(--theme-accent, #34d399); font-size: var(--font-size-sm, 14px);
     text-decoration: none;

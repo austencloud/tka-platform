@@ -131,7 +131,7 @@
 
   .turns-label {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
   .ratio-number {

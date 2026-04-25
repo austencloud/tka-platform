@@ -235,7 +235,7 @@
   }
 
   .filter-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -247,7 +247,7 @@
   .filter-btn.selected {
     background: var(--theme-accent, #f43f5e);
     border-color: var(--theme-accent, #f43f5e);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   /* Favorites Toggle */
@@ -270,7 +270,7 @@
   }
 
   .favorites-toggle:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -282,11 +282,11 @@
   .favorites-toggle.active {
     background: var(--semantic-error, #ef4444);
     border-color: var(--semantic-error, #ef4444);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   .favorites-toggle i {
-    font-size: 0.9rem;
+    font-size: 14px;
   }
 
   /* QR Toggle */
@@ -309,7 +309,7 @@
   }
 
   .qr-toggle:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
@@ -321,11 +321,11 @@
   .qr-toggle.active {
     background: var(--theme-accent, #f43f5e);
     border-color: var(--theme-accent, #f43f5e);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   .qr-toggle i {
-    font-size: 0.9rem;
+    font-size: 14px;
   }
 
   /* Author Dropdown */

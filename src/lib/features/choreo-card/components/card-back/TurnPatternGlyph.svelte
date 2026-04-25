@@ -48,6 +48,6 @@
     min-height: 0.5cqi;
   }
 
-  .bar.blue { background: #3498db; }
-  .bar.red { background: #e74c3c; }
+  .bar.blue { background: var(--tka-blue-hand, #3498db); }
+  .bar.red { background: var(--tka-red-hand, #e74c3c); }
 </style>

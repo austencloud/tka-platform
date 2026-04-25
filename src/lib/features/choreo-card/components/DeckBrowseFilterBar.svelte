@@ -190,14 +190,14 @@
   .collection-pill:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
 
   .collection-pill.active {
-    background: rgba(99, 183, 205, 0.15);
-    border-color: rgba(99, 183, 205, 0.4);
+    background: var(--loop-accent-bg, rgba(99, 183, 205, 0.15));
+    border-color: var(--loop-accent-border, rgba(99, 183, 205, 0.4));
     color: var(--theme-text, #fff);
   }
 
   .collection-pill.vtg.active {
-    background: rgba(183, 99, 205, 0.15);
-    border-color: rgba(183, 99, 205, 0.4);
+    background: var(--vtg-accent-bg, rgba(183, 99, 205, 0.15));
+    border-color: var(--vtg-accent-border, rgba(183, 99, 205, 0.4));
   }
 
   .deck-count {

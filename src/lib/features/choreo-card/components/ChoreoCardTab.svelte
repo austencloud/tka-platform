@@ -356,8 +356,9 @@
   });
 
   onMount(async () => {
+    // Browse/Designer sequences load in background — don't block deck rendering
     loaderService = getBrowseLoader();
-    await loadSequences();
+    loadSequences();
 
     // Check if the URL hash encodes a saved nav state (e.g. from a page refresh).
     // If so, it takes priority over localStorage so the user lands back where they were.

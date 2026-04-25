@@ -248,20 +248,20 @@
       "issues": []
     },
     "features/choreo-card": {
-      "lastAuditedAt": "2026-03-19T09:27:46.723Z",
+      "lastAuditedAt": "2026-04-25T04:36:17.143Z",
       "name": "Choreo Card",
       "type": "module",
       "grades": {
         "architecture": "A+",
         "codeQuality": "A+",
         "svelte5": "A+",
-        "accessibility": "B",
-        "uxStates": "A",
-        "uiConsistency": "C",
+        "accessibility": "A+",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
         "performance": "A+",
         "security": "A+"
       },
-      "overallGrade": "A",
+      "overallGrade": "A+",
       "notes": null,
       "issues": [
         {
