@@ -1333,16 +1333,29 @@ export function generateChainableSequence(
  * Detect reversals for all steps in a sequence.
  * A reversal occurs when the rotation direction changes between consecutive steps.
  *
+ * For loop sequences, beat 1 wraps around — its previous context is the tail
+ * of the sequence, since loops repeat continuously.
+ *
  * @param steps - The sequence steps to analyze
+ * @param isLoop - Whether this is a circular/loop sequence
  * @returns The same steps with blueReversal/redReversal flags set
  */
-export function detectReversals(steps: SequenceStep[]): SequenceStep[] {
+export function detectReversals(steps: SequenceStep[], isLoop = false): SequenceStep[] {
   if (steps.length === 0) return steps;
 
   return steps.map((step, index) => {
     if (index === 0) {
-      // First step never has reversals
-      return { ...step, blueReversal: false, redReversal: false };
+      if (!isLoop) {
+        return { ...step, blueReversal: false, redReversal: false };
+      }
+      // Loop wrapping: beat 1's previous context is the full sequence
+      const lastBlueRotDir = getLastValidRotationDirection(steps, "blue");
+      const lastRedRotDir = getLastValidRotationDirection(steps, "red");
+      const currentBlueRotDir = getRotationDirection(step, "blue");
+      const currentRedRotDir = getRotationDirection(step, "red");
+      const blueReversal = isReversal(lastBlueRotDir, currentBlueRotDir);
+      const redReversal = isReversal(lastRedRotDir, currentRedRotDir);
+      return { ...step, blueReversal, redReversal };
     }
 
     const previousSteps = steps.slice(0, index);

@@ -140,7 +140,8 @@ export async function renderSequenceToImage(
 
   // Include all steps (including step 0 start position)
   // Apply reversal detection if showReversals is enabled
-  const letterSteps = opts.showReversals ? detectReversals(steps) : steps;
+  const isLoop = !!(opts.loopComponents && opts.loopComponents.length > 0);
+  const letterSteps = opts.showReversals ? detectReversals(steps, isLoop) : steps;
 
   if (letterSteps.length === 0) {
     throw new Error("No steps to render");
