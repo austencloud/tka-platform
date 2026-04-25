@@ -11,7 +11,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import { onMount, onDestroy } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -218,7 +218,7 @@
     hapticService?.trigger("selection");
 
     try {
-      const renderer = container.items.sequenceRenderer;
+      const renderer = getSequenceRenderer();
       const blob = await renderer.renderSequenceToBlob(seq, {
         stepSize: 300,
         format: "PNG" as const,
@@ -247,7 +247,7 @@
       URL.revokeObjectURL(url);
       hapticService?.trigger("success");
     } catch (error) {
-      console.error("[CardDesigner] Export failed:", error);
+      console.warn("[CardDesigner] Export failed:", error);
       hapticService?.trigger("error");
       toast.error("Export failed. Try again.");
     } finally {
@@ -303,6 +303,7 @@
         class="settings-toggle"
         onclick={handleSidebarToggle}
         title="Settings"
+        aria-label="Toggle card settings"
         type="button"
       >
         <i class="fas fa-gear" aria-hidden="true"></i>

@@ -22,15 +22,14 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { RetroPictographData, RetroHandData } from "$lib/features/retro/shared/domain/pictograph-types";
   import { MotionColor, MotionType, Orientation, RotationDirection, GridLocation } from "$lib/features/retro/shared/domain/pictograph-types";
-  import { container } from "$lib/shared/di";
-  import type { IDirectRenderer } from "$lib/shared/render/services/contracts/IDirectRenderer";
+  import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import "$lib/features/retro/dos/styles/dos-terminal.css";
 
   const pixelRenderer = new PixelRenderer(pictographPreparer);
   const xpRenderer = new XPRenderer(pictographPreparer);
   const svgToBraille = new SvgToBrailleConverter(
-    container.items.canvas2DRenderer as IDirectRenderer,
+    getCanvas2DRenderer(),
     pictographPreparer,
   );
 

@@ -24,13 +24,12 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-  import { container } from "$lib/shared/di";
-  import type { IDirectRenderer } from "$lib/shared/render/services/contracts/IDirectRenderer";
+  import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
 
   // Pixel size of the canonical render — each era scales it to fit its
   // own grid diameter when compositing.
   const CANONICAL_SIZE = 500;
-  const canvas2DRenderer = container.items.canvas2DRenderer as IDirectRenderer;
+  const canvas2DRenderer = getCanvas2DRenderer();
 
   type EraId = "cave" | "egypt" | "mosaic" | "medieval" | "renaissance" | "woodblock" | "blueprint" | "deco" | "bauhaus" | "punch";
 

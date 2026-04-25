@@ -26,7 +26,7 @@
     createSequenceData,
     type SequenceData,
   } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
+  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 
   // Legacy data types from meta.json files
@@ -299,7 +299,7 @@
     try {
       console.log("Loading render service...");
       // ITI container is ready synchronously - get service directly
-      renderService = container.items.sequenceRenderer;
+      renderService = getSequenceRenderer();
       console.log("Render service loaded:", !!renderService);
     } catch (error) {
       console.error("Failed to load render service:", error);

@@ -105,7 +105,24 @@ import { createComposeCoreContainer } from "./containers/compose-core-container"
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
 import { createBrowseContainer } from "./containers/browse-container";
 import { createNavigationContainer } from "./containers/navigation-container";
-import { createRenderContainer } from "./containers/render-container";
+// render-container dissolved — services accessed via module singleton getters
+import { getCanvasManager } from "../render/getCanvasManager";
+import { getLayoutCalculator as getRenderLayoutCalculator } from "../render/getLayoutCalculator";
+import { getDimensionCalculator as getRenderDimensionCalculator } from "../render/getDimensionCalculator";
+import { getSvgToCanvasConverter } from "../render/getSvgToCanvasConverter";
+import { getGlyphCache } from "../render/getGlyphCache";
+import { getFilenameGenerator } from "../render/getFilenameGenerator";
+import { getPictographBlobCache } from "../render/getPictographBlobCache";
+import { getPictographKeyHasher } from "../render/getPictographKeyHasher";
+import { getPictographMemoryCache } from "../render/getPictographMemoryCache";
+import { getBeatNumberRenderer } from "../render/getBeatNumberRenderer";
+import { getCanvas2DRenderer } from "../render/getCanvas2DRenderer";
+import { getLayerCompositor } from "../render/getLayerCompositor";
+import { getLoopIconStripRenderer } from "../render/getLoopIconStripRenderer";
+import { getTextRenderer } from "../render/getTextRenderer";
+import { getImageFormatConverter } from "../render/getImageFormatConverter";
+import { getImageComposer } from "../render/getImageComposer";
+import { getSequenceRenderer } from "../render/getSequenceRenderer";
 import { createTrainContainer } from "./containers/train-container";
 import { createAdminContainer } from "./containers/admin-container";
 import { createShareContainer } from "./containers/share-container";
@@ -185,10 +202,7 @@ const feedbackContainer = typeof window !== 'undefined' ? _timeContainer('feedba
 const gamificationContainer = typeof window !== 'undefined' ? _timeContainer('gamification', createGamificationContainer) : null as any;
 const promoContainer = typeof window !== 'undefined' ? _timeContainer('promo', createPromoContainer) : null as any;
 
-// Render container needs fileDownloader from core
-const renderContainer = typeof window !== 'undefined' ? _timeContainer('render', () => createRenderContainer(
-  getFileDownloader()
-)) : null as any;
+// render-container dissolved — render services accessed via module singleton getters
 
 // Navigation container needs external deps from pictograph and data containers
 const navigationContainer = typeof window !== 'undefined' ? _timeContainer('navigation', () => createNavigationContainer({
@@ -199,13 +213,13 @@ const navigationContainer = typeof window !== 'undefined' ? _timeContainer('navi
 })) : null as any;
 
 // Share container needs sequenceRenderer from render
-const shareContainer = typeof window !== 'undefined' ? _timeContainer('share', () => createShareContainer(renderContainer.items.sequenceRenderer)) : null as any;
+const shareContainer = typeof window !== 'undefined' ? _timeContainer('share', () => createShareContainer(getSequenceRenderer())) : null as any;
 
 // Browse container needs multiple external deps
 const browseContainer = typeof window !== 'undefined' ? _timeContainer('browse', () => createBrowseContainer({
   wordDeriver: getWordDeriver(),
   deviceDetector: getDeviceDetector(),
-  sequenceRenderer: renderContainer.items.sequenceRenderer,
+  sequenceRenderer: getSequenceRenderer(),
   startPositionDeriver,
   cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
   sheetRouter: navigationContainer.items.sheetRouter,
@@ -271,9 +285,9 @@ if (typeof window !== 'undefined') {
 
 // Compose core container needs multiple external deps
 const composeCoreContainer = typeof window !== 'undefined' ? _timeContainer('compose-core', () => createComposeCoreContainer({
-  imageComposer: renderContainer.items.imageComposer,
-  dimensionCalculator: renderContainer.items.dimensionCalculator,
-  layoutCalculator: renderContainer.items.layoutCalculator,
+  imageComposer: getImageComposer(),
+  dimensionCalculator: getRenderDimensionCalculator(),
+  layoutCalculator: getRenderLayoutCalculator(),
   svgImageConverter: getSvgImageConverter(),
   fileDownloader: getFileDownloader(),
   sequenceRepository: getSequenceRepository(),
@@ -490,8 +504,26 @@ function buildAppContainer(): any {
   });
   // Navigation
   c = c.add(navigationContainer.items);
-  // Rendering
-  c = c.add(renderContainer.items);
+  // Rendering (dissolved from render-container — services accessed via module singleton getters)
+  c = c.add({
+    canvasManager: () => getCanvasManager(),
+    layoutCalculator: () => getRenderLayoutCalculator(),
+    dimensionCalculator: () => getRenderDimensionCalculator(),
+    svgToCanvasConverter: () => getSvgToCanvasConverter(),
+    glyphCache: () => getGlyphCache(),
+    filenameGenerator: () => getFilenameGenerator(),
+    pictographBlobCache: () => getPictographBlobCache(),
+    pictographKeyHasher: () => getPictographKeyHasher(),
+    pictographMemoryCache: () => getPictographMemoryCache(),
+    beatNumberRenderer: () => getBeatNumberRenderer(),
+    canvas2DRenderer: () => getCanvas2DRenderer(),
+    layerCompositor: () => getLayerCompositor(),
+    loopIconStripRenderer: () => getLoopIconStripRenderer(),
+    textRenderer: () => getTextRenderer(),
+    imageFormatConverter: () => getImageFormatConverter(),
+    imageComposer: () => getImageComposer(),
+    sequenceRenderer: () => getSequenceRenderer(),
+  });
   // Compose core (animation pipeline, video export)
   c = c.add(composeCoreContainer.items);
   // Create module (sequence construction, generation, option picker)
@@ -542,7 +574,7 @@ function buildAppContainer(): any {
   });
   c = c.add((ctx: any) => ({
     printCardRenderer: () => new PrintCardRendererImpl(
-      renderContainer.items.imageComposer,
+      getImageComposer(),
       ctx.cardBackDomRenderer,
       ctx.infoCardCanvasRenderer,
       createModuleContainer.items.sequenceToEntryConverter,
@@ -606,7 +638,7 @@ if (typeof window !== 'undefined' && isBootProfileVerbose()) {
 // Late binding: Inject QR generator into ImageComposer after container is fully composed
 // This resolves the circular dependency between render-container and qr-container
 if (typeof window !== 'undefined' && container?.items?.imageComposer && container?.items?.qrCodeGenerator) {
-  (container.items.imageComposer as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
+  (container.items.imageComposer as unknown as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
     container.items.qrCodeGenerator
   );
 }

@@ -18,7 +18,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 	import type { ControlsLevel, MediaType } from "../domain/types";
-	import { container } from "$lib/shared/di";
+	import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
@@ -196,7 +196,7 @@
 
 		try {
 			// Get the renderer from the ITI container
-			const renderer = container.items.sequenceRenderer;
+			const renderer = getSequenceRenderer();
 
 			// Render the image with current settings
 			const blob = await renderer.renderSequenceToBlob(sequence, {

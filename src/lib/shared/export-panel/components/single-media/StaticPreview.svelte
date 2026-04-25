@@ -14,7 +14,7 @@
 -->
 <script lang="ts">
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -42,7 +42,7 @@
   // Load render service on mount
   $effect(() => {
     try {
-      renderService = container.items.sequenceRenderer;
+      renderService = getSequenceRenderer();
       if (!renderService) {
         console.warn("⚠️ ISequenceRenderer not available in container");
       }
