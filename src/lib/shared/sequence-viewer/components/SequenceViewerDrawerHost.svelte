@@ -38,6 +38,7 @@
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   // Services
   import { container } from "$lib/shared/di";
+  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
@@ -210,7 +211,7 @@
     if (!code || overlay.isOpen) return;
     let openedSuccessfully = false;
     try {
-      const manager = container.items.shortCodeManager;
+      const manager = getShortCodeManager();
       const resolved = await manager.resolveShortCode(code);
       if (!resolved) {
         // Unresolvable code — strip it so the browser's base history entry

@@ -9,7 +9,10 @@
   Pictographs render inline in message bubbles (no side panel).
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
+  import { getQuizHistoryRecorder } from "$lib/features/learn/getQuizHistoryRecorder";
+  import { getConceptRecommender } from "$lib/features/learn/getConceptRecommender";
+  import { getGapDetector } from "$lib/features/learn/getGapDetector";
   import { Chat, type UIMessage } from "@ai-sdk/svelte";
   import { DefaultChatTransport } from "ai";
   import { browser } from "$app/environment";
@@ -104,18 +107,18 @@
   // User identity
   const userId = $derived(getEffectiveUserId() || "anonymous");
 
-  // Progress tracker and mastery services from DI container
+  // Progress tracker and mastery services via module singleton getters
   const progressTracker: ConceptProgressTracker | null = browser
-    ? container?.items?.conceptProgressTracker ?? null
+    ? (getConceptProgressTracker() as ConceptProgressTracker) ?? null
     : null;
   const quizHistoryRecorder: IQuizHistoryRecorder | null = browser
-    ? container?.items?.quizHistoryRecorder ?? null
+    ? getQuizHistoryRecorder() ?? null
     : null;
   const conceptRecommender: IConceptRecommender | null = browser
-    ? container?.items?.conceptRecommender ?? null
+    ? getConceptRecommender() ?? null
     : null;
   const gapDetector: IGapDetector | null = browser
-    ? container?.items?.gapDetector ?? null
+    ? getGapDetector() ?? null
     : null;
 
   // Interaction tracker for quiz persistence and topic tracking (depends on quizHistoryRecorder)

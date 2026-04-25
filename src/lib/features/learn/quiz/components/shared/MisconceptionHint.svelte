@@ -6,7 +6,7 @@ Appears below the feedback banner during the feedback window.
 Tappable: navigates to TIKA with the misconception pre-loaded.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
+  import { getLetterBreakdownGenerator } from "$lib/features/learn/getLetterBreakdownGenerator";
   import type { DetectedGap } from "../../../services/contracts/IGapDetector";
   import type { ILetterBreakdownGenerator } from "../../../services/contracts/ILetterBreakdownGenerator";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -22,8 +22,7 @@ Tappable: navigates to TIKA with the misconception pre-loaded.
   function openInTika() {
     if (!browser) return;
 
-    const generator = container.items
-      .letterBreakdownGenerator as ILetterBreakdownGenerator;
+    const generator = getLetterBreakdownGenerator() as ILetterBreakdownGenerator;
     const comparison = generator.compare(correctLetter, chosenLetter);
 
     let question: string;

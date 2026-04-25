@@ -10,7 +10,6 @@ Provides quiz functionality for learning TKA notation:
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onDestroy, onMount } from "svelte";
   import type { ICodex } from "../../codex/services/contracts/ICodex";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
@@ -26,20 +25,26 @@ Provides quiz functionality for learning TKA notation:
   import StreakDisplay from "./StreakDisplay.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { getCodex } from "$lib/features/learn/codex/getCodex";
+  import { getQuizRepoManager } from "$lib/features/learn/quiz/getQuizRepoManager";
+  import { getQuizSessionManager } from "$lib/features/learn/quiz/getQuizSessionManager";
+  import { getQuizHistoryRecorder } from "$lib/features/learn/getQuizHistoryRecorder";
+  import { getLetterToConceptMapper } from "$lib/features/learn/getLetterToConceptMapper";
+  import { getGapDetector } from "$lib/features/learn/getGapDetector";
 
   // Import learn components
 
   // ============================================================================
-  // SERVICE RESOLUTION - Resolved from ITI container
+  // SERVICE RESOLUTION - Resolved via module singleton getters
   // ============================================================================
 
-  const codexService = container.items.codex;
-  const quizRepo = container.items.quizRepoManager;
-  const quizSessionService = container.items.quizSessionManager;
+  const codexService = getCodex();
+  const quizRepo = getQuizRepoManager();
+  const quizSessionService = getQuizSessionManager();
   const hapticService = getHapticFeedback();
-  const quizHistoryRecorder = container.items.quizHistoryRecorder;
-  const letterToConceptMapper = container.items.letterToConceptMapper;
-  const gapDetector = container.items.gapDetector;
+  const quizHistoryRecorder = getQuizHistoryRecorder();
+  const letterToConceptMapper = getLetterToConceptMapper();
+  const gapDetector = getGapDetector();
   const delightOrchestrator = getDelightOrchestrator();
 
   // Component refs

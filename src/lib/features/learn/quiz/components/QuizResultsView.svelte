@@ -2,8 +2,8 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { container } from "$lib/shared/di";
   import { onDestroy, onMount } from "svelte";
+  import { getQuizResultsAnalyzer } from "$lib/features/learn/quiz/getQuizResultsAnalyzer";
   import type { QuizResults } from "../domain/models/quiz-models";
   import type { IQuizResultsAnalyzer } from "../QuizResultsAnalyzer";
   import type { AchievementDefinition } from "../domain/achievement-definitions";
@@ -56,7 +56,7 @@
   // Initialize services and queue celebrations
   onMount(() => {
     hapticService = getHapticFeedback();
-    analyzer = container.items.quizResultsAnalyzer;
+    analyzer = getQuizResultsAnalyzer();
 
     if (results && analyzer) {
       // Show perfect quiz celebration first if applicable

@@ -13,6 +13,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { container } from "$lib/shared/di";
   import { onMount, untrack } from "svelte";
+  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import ConceptPathView from "./components/ConceptPathView.svelte";
@@ -47,7 +48,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
 
   // Services from DI
   const delightOrchestrator = container.items.delightOrchestrator;
-  const conceptProgressTracker = container.items.conceptProgressTracker;
+  const conceptProgressTracker = getConceptProgressTracker();
 
   // Provide delight orchestrator to child components via context
   setDelightOrchestrator(delightOrchestrator);

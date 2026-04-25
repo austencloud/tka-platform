@@ -5,7 +5,9 @@
  * Separates DI concerns from state management.
  */
 
-import { container } from "$lib/shared/di";
+import { getSequenceLoader } from "$lib/features/loop-labeler/getSequenceLoader";
+import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
+import { getLoopLabelerNavigator } from "$lib/features/loop-labeler/getNavigator";
 import { loopDetector as loopDetectorInstance } from "../services/implementations/LOOPDetector";
 import type { ISequenceLoader } from "../services/contracts/ISequenceLoader";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
@@ -21,7 +23,7 @@ export class LOOPLabelerServiceLocator {
   get sequenceLoader(): ISequenceLoader | null {
     if (!this.cachedSequenceLoader) {
       this.cachedSequenceLoader =
-        container.items.sequenceLoader as ISequenceLoader | null;
+        getSequenceLoader() as ISequenceLoader | null;
     }
     return this.cachedSequenceLoader;
   }
@@ -30,8 +32,7 @@ export class LOOPLabelerServiceLocator {
     if (!this.cachedLabelsRepository) {
       try {
         this.cachedLabelsRepository =
-          container.items
-            .loopLabelsFirebaseRepository as ILOOPLabelsFirebaseRepository | null;
+          getLOOPLabelsFirebaseRepository() as ILOOPLabelsFirebaseRepository | null;
       } catch {
         return null;
       }
@@ -41,7 +42,7 @@ export class LOOPLabelerServiceLocator {
 
   get navigator(): INavigator | null {
     if (!this.cachedNavigator) {
-      this.cachedNavigator = container.items.navigator as INavigator | null;
+      this.cachedNavigator = getLoopLabelerNavigator() as INavigator | null;
     }
     return this.cachedNavigator;
   }

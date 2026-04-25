@@ -9,7 +9,7 @@
   import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
-	import { container } from '$lib/shared/di';
+	import { getContentAppealManager } from '$lib/features/moderation/getContentAppealManager';
 	import type { FlaggedTerm, CreateAppealData } from '../domain/models/content-moderation-models';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 
@@ -58,7 +58,7 @@
 		submitError = null;
 
 		try {
-			const appealManager = container.items.contentAppealManager;
+			const appealManager = getContentAppealManager();
 			const userId = (getAuthenticator() as any)?.currentUser?.uid;
 
 			if (!userId) {

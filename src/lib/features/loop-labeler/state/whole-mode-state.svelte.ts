@@ -5,7 +5,8 @@
  * Handles component selection, multiple designations, and freeform labeling.
  */
 
-import { container } from "$lib/shared/di";
+import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
+import { getLOOPDesignator } from "$lib/features/loop-labeler/getLOOPDesignator";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { ILOOPDesignator } from "../services/contracts/ILOOPDesignator";
 import type {
@@ -82,9 +83,9 @@ export function createWholeModeState(): WholeModeState {
 
   // Services
   const labelsService =
-    container.items.loopLabelsFirebaseRepository as ILOOPLabelsFirebaseRepository | null;
+    getLOOPLabelsFirebaseRepository() as ILOOPLabelsFirebaseRepository | null;
   const designationService =
-    container.items.loopDesignator as ILOOPDesignator | null;
+    getLOOPDesignator() as ILOOPDesignator | null;
 
   // Actions
   const actions = {

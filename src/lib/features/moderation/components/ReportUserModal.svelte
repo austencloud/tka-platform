@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { reportModalState } from '../state/report-modal-state.svelte';
-	import { container } from '$lib/shared/di';
+	import { getReportSubmitter } from '$lib/features/moderation/getReportSubmitter';
 	import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 	import ReportCategorySelector from './ReportCategorySelector.svelte';
 	import type { ReportCategory } from '../domain/models/report-models';
@@ -88,7 +88,7 @@
 		reportModalState.setError(null);
 
 		try {
-			const reportSubmitter = container.items.reportSubmitter;
+			const reportSubmitter = getReportSubmitter();
 			await reportSubmitter.submit({
 				reportedUserId: reportModalState.targetUser.id,
 				reportedUserDisplayName: reportModalState.targetUser.displayName,
