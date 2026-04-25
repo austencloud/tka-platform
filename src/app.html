@@ -48,7 +48,7 @@
     <script>
       (function() {
         var p = window.location.pathname;
-        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/q/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003');
+        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/q/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003') || p.startsWith('/privacy') || p.startsWith('/terms') || p.startsWith('/about') || p.startsWith('/roots') || p.startsWith('/delete-account') || p.startsWith('/store');
         if (isLanding) {
           // Mark landing mode early for loading bar skip below
           window.__tkaIsLanding = true;

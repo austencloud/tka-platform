@@ -1,30 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
-  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import { getPublicThemeIndex, savePublicThemeIndex, getNextThemeIndex } from "$lib/shared/settings/utils/public-page-backgrounds";
-
-  // Use shared animated backgrounds config
-  const backgrounds = ANIMATED_BACKGROUNDS;
-
-  // Restore saved theme from localStorage (persists across public pages)
-  let currentBgIndex = $state(getPublicThemeIndex());
-  let currentBackground = $derived(backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY);
-  let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
-  let currentLabel = $derived(backgrounds[currentBgIndex]?.label ?? "Night Sky");
-
-  function cycleBackground() {
-    currentBgIndex = getNextThemeIndex(currentBgIndex);
-    savePublicThemeIndex(currentBgIndex);
-    applyThemeForBackground(backgrounds[currentBgIndex]!.type);
-  }
-
-  onMount(() => {
-    applyThemeForBackground(currentBackground);
-  });
-
   const steps = [
     "Sign in to TKA Composer",
     "Tap profile icon → Settings",
@@ -45,8 +19,7 @@
     "Protects community references",
   ];
 
-  // In dev, back goes to /landing; in prod, back goes to /
-  const backHref = import.meta.env.DEV ? "/landing" : "/";
+  const backHref = "/";
 </script>
 
 <svelte:head>
@@ -58,9 +31,6 @@
 </svelte:head>
 
 <div class="page">
-  <!-- Animated Background -->
-  <BackgroundHost backgroundType={currentBackground} />
-
   <div class="container">
     <header>
       <a href={backHref} class="back-link">
@@ -132,15 +102,6 @@
     </footer>
   </div>
 
-  <!-- Theme Toggle Button -->
-  <button
-    class="theme-toggle"
-    onclick={cycleBackground}
-    title="Change theme: {currentLabel}"
-    aria-label="Change background theme"
-  >
-    <i class="fas {currentIcon}" aria-hidden="true"></i>
-  </button>
 </div>
 
 <style>
@@ -152,8 +113,9 @@
     justify-content: center;
     padding: 2rem;
     font-family: system-ui, -apple-system, sans-serif;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     overflow-x: hidden;
+    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
   }
 
   .container {
@@ -171,21 +133,21 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
     font-size: 0.875rem;
     padding: 0.5rem 1rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 100px;
     margin-bottom: 2rem;
     transition: all 0.2s ease;
   }
 
   .back-link:hover {
-    color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .header-content {
@@ -196,8 +158,8 @@
     display: inline-block;
     font-size: 1rem;
     font-weight: 700;
-    color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    color: #6366f1;
+    background: color-mix(in srgb, #6366f1 15%, transparent);
     padding: 0.5rem 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
@@ -207,7 +169,7 @@
   h1 {
     font-size: 2.5rem;
     margin: 0 0 0.5rem;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
     font-weight: 600;
     background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
     -webkit-background-clip: text;
@@ -216,7 +178,7 @@
   }
 
   .subtitle {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     margin: 0;
     font-size: 1rem;
   }
@@ -230,28 +192,28 @@
 
   .card {
     padding: 1.5rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     transition: all 0.25s ease;
   }
 
   .card:hover {
     transform: translateY(-2px);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border-color: rgba(255, 255, 255, 0.2);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   }
 
   .card-icon {
     font-size: 1.5rem;
     margin-bottom: 0.75rem;
-    color: var(--theme-accent-strong, #818cf8);
+    color: #818cf8;
   }
 
   h2 {
     font-size: 1rem;
     margin: 0 0 1rem;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -265,7 +227,7 @@
 
   li {
     margin-bottom: 0.5rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     font-size: 0.9rem;
     line-height: 1.7;
   }
@@ -275,7 +237,7 @@
   }
 
   .steps li::marker {
-    color: var(--theme-accent, #6366f1);
+    color: #6366f1;
     font-weight: 600;
   }
 
@@ -305,24 +267,24 @@
   }
 
   .sequences {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 8%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    background: color-mix(in srgb, #6366f1 8%, transparent);
+    border-color: color-mix(in srgb, #6366f1 15%, transparent);
   }
 
   .sequences:hover {
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    border-color: color-mix(in srgb, #6366f1 30%, transparent);
   }
 
   .sequences h2 {
-    color: var(--theme-accent-strong, #a5b4fc);
+    color: #a5b4fc;
   }
 
   .sequences .card-icon {
-    color: var(--theme-accent-strong, #a5b4fc);
+    color: #a5b4fc;
   }
 
   .sequences li::marker {
-    color: var(--theme-accent, #6366f1);
+    color: #6366f1;
   }
 
   .warning-banner {
@@ -355,7 +317,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    background: var(--theme-accent, #6366f1);
+    background: #6366f1;
     color: #ffffff;
     text-decoration: none;
     padding: 1rem 2rem;
@@ -366,9 +328,9 @@
   }
 
   .cta-button:hover {
-    background: var(--theme-accent-strong, #818cf8);
+    background: #818cf8;
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    box-shadow: 0 12px 32px color-mix(in srgb, #6366f1 40%, transparent);
     color: white;
   }
 
@@ -383,50 +345,18 @@
   .help {
     margin-top: 1rem;
     font-size: 0.85rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .help a {
-    color: var(--theme-accent-strong, #818cf8);
+    color: #818cf8;
     text-decoration: none;
     border-bottom: 1px solid transparent;
     transition: border-color 0.2s ease;
   }
 
   .help a:hover {
-    border-bottom-color: var(--theme-accent-strong, #818cf8);
-  }
-
-  /* Theme Toggle Button */
-  .theme-toggle {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 100;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 15%, rgba(0, 0, 0, 0.5));
-    border: 1px solid color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
-    border-radius: 50%;
-    color: var(--theme-accent-strong, #818cf8);
-    font-size: 1.125rem;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .theme-toggle:hover {
-    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, rgba(0, 0, 0, 0.6));
-    border-color: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 40%, transparent);
-    transform: scale(1.05);
-  }
-
-  .theme-toggle:active {
-    transform: scale(0.95);
+    border-bottom-color: #818cf8;
   }
 
   @media (max-width: 768px) {
@@ -442,13 +372,6 @@
       padding: 1.5rem 1rem;
       align-items: flex-start;
     }
-
-    .theme-toggle {
-      bottom: 16px;
-      right: 16px;
-      width: 44px;
-      height: 44px;
-    }
   }
 
   /* Reduced motion */
@@ -456,14 +379,12 @@
     .back-link,
     .card,
     .cta-button,
-    .theme-toggle,
     .help a {
       transition: none;
     }
 
     .card:hover,
-    .cta-button:hover,
-    .theme-toggle:hover {
+    .cta-button:hover {
       transform: none;
     }
 

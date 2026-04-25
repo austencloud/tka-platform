@@ -1,14 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
-  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import {
-    getPublicThemeIndex,
-    savePublicThemeIndex,
-    getNextThemeIndex,
-  } from "$lib/shared/settings/utils/public-page-backgrounds";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
 
   type VersionKey = "original" | "firejam" | "grant";
@@ -219,27 +209,6 @@
   }
 
   const active = $derived(versions.find((v) => v.id === activeVersion)!);
-
-  // Background
-  const backgrounds = ANIMATED_BACKGROUNDS;
-  let currentBgIndex = $state(getPublicThemeIndex());
-  let currentBackground = $derived(
-    backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY,
-  );
-  let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
-  let currentLabel = $derived(
-    backgrounds[currentBgIndex]?.label ?? "Night Sky",
-  );
-
-  function cycleBackground() {
-    currentBgIndex = getNextThemeIndex(currentBgIndex);
-    savePublicThemeIndex(currentBgIndex);
-    applyThemeForBackground(backgrounds[currentBgIndex]!.type);
-  }
-
-  onMount(() => {
-    applyThemeForBackground(currentBackground);
-  });
 </script>
 
 <svelte:head>
@@ -253,8 +222,6 @@
 </svelte:head>
 
 <div class="compare-page" style="--v-accent: {active.accent}; --v-accent-dim: {active.accentDim};">
-  <BackgroundHost backgroundType={currentBackground} />
-
   <div class="compare-container">
     <header class="compare-header">
       <a href="/about" class="back-link">
@@ -371,22 +338,14 @@
     </footer>
   </div>
 
-  <!-- Theme toggle -->
-  <button
-    class="theme-toggle"
-    onclick={cycleBackground}
-    title="Change theme: {currentLabel}"
-    aria-label="Change background theme"
-  >
-    <i class="fas {currentIcon}" aria-hidden="true"></i>
-  </button>
 </div>
 
 <style>
   .compare-page {
     position: relative;
     min-height: 100vh;
-    color: var(--theme-text, #fff);
+    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    color: #fff;
     overflow-x: hidden;
     font-family: "DM Sans", sans-serif;
   }
@@ -408,20 +367,20 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.5);
     text-decoration: none;
     font-size: 0.8125rem;
     padding: 0.4rem 0.9rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 100px;
     margin-bottom: 2rem;
     transition: color 0.2s, border-color 0.2s;
   }
 
   .back-link:hover {
-    color: var(--theme-text, #fff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .header-text {
@@ -435,12 +394,12 @@
     margin: 0 0 0.4rem;
     letter-spacing: -0.02em;
     line-height: 1.1;
-    color: var(--theme-text, #fff);
+    color: #fff;
   }
 
   .header-sub {
     font-size: 1.05rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.5);
     margin: 0;
     font-weight: 400;
   }
@@ -451,8 +410,8 @@
     gap: 0.5rem;
     margin-bottom: 1.5rem;
     padding: 0.375rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
   }
 
@@ -466,20 +425,20 @@
     border: 1px solid transparent;
     border-radius: 10px;
     cursor: pointer;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    color: rgba(255, 255, 255, 0.45);
     transition: all 0.2s ease;
     font-family: inherit;
   }
 
   .version-tab:hover:not(.active) {
     background: rgba(255, 255, 255, 0.03);
-    color: var(--theme-text, #fff);
+    color: #fff;
   }
 
   .version-tab.active {
     background: var(--tab-accent-dim);
     border-color: color-mix(in srgb, var(--tab-accent) 30%, transparent);
-    color: var(--theme-text, #fff);
+    color: #fff;
   }
 
   .tab-pip {
@@ -527,7 +486,7 @@
     margin: 0;
     font-size: 0.9375rem;
     font-style: italic;
-    color: var(--theme-text, #fff);
+    color: #fff;
     opacity: 0.85;
     font-family: "Source Serif 4", Georgia, serif;
     line-height: 1.5;
@@ -549,8 +508,8 @@
   }
 
   .section-card {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     padding: 1.75rem;
     animation: card-in 0.3s ease both;
@@ -600,7 +559,7 @@
     font-size: 1.125rem;
     font-weight: 600;
     margin: 0;
-    color: var(--theme-text, #fff);
+    color: #fff;
   }
 
   .section-body p {
@@ -608,7 +567,7 @@
     font-optical-sizing: auto;
     font-size: 1.0625rem;
     line-height: 1.72;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    color: rgba(255, 255, 255, 0.65);
     margin: 0 0 0.9rem;
   }
 
@@ -637,7 +596,7 @@
     aspect-ratio: 1;
     background: #ffffff;
     border-radius: 10px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.1);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -661,14 +620,14 @@
     font-family: "DM Sans", sans-serif;
     font-weight: 600;
     font-size: 0.9375rem;
-    color: var(--theme-text, #fff);
+    color: #fff;
     margin-bottom: 0.125rem;
   }
 
   .position-desc {
     font-family: "DM Sans", sans-serif;
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.5);
   }
 
   /* Footer */
@@ -679,7 +638,7 @@
 
   .compare-footer p {
     font-size: 0.8125rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    color: rgba(255, 255, 255, 0.35);
   }
 
   .compare-footer code {
@@ -687,33 +646,6 @@
     background: rgba(255, 255, 255, 0.06);
     padding: 0.15em 0.4em;
     border-radius: 4px;
-  }
-
-  /* Theme toggle */
-  .theme-toggle {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 100;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 1rem;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-  }
-
-  .theme-toggle:hover {
-    background: rgba(0, 0, 0, 0.6);
-    color: var(--theme-text, #fff);
-    border-color: rgba(255, 255, 255, 0.2);
   }
 
   /* Mobile */
@@ -755,11 +687,6 @@
     .position-name {
       font-size: 0.8125rem;
     }
-
-    .theme-toggle {
-      bottom: 16px;
-      right: 16px;
-    }
   }
 
   /* Reduced motion */
@@ -772,7 +699,6 @@
     .verdict-bar,
     .version-tab,
     .back-link,
-    .theme-toggle,
     .position-image-container {
       transition: none;
     }

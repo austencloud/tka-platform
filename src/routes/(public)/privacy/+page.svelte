@@ -1,32 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
-  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import { getPublicThemeIndex, savePublicThemeIndex, getNextThemeIndex } from "$lib/shared/settings/utils/public-page-backgrounds";
-
-  // Use shared animated backgrounds config
-  const backgrounds = ANIMATED_BACKGROUNDS;
-
-  // Restore saved theme from localStorage (persists across public pages)
-  let currentBgIndex = $state(getPublicThemeIndex());
-  let currentBackground = $derived(backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY);
-  let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
-  let currentLabel = $derived(backgrounds[currentBgIndex]?.label ?? "Night Sky");
-
-  function cycleBackground() {
-    currentBgIndex = getNextThemeIndex(currentBgIndex);
-    savePublicThemeIndex(currentBgIndex);
-    applyThemeForBackground(backgrounds[currentBgIndex]!.type);
-  }
-
-  onMount(() => {
-    applyThemeForBackground(currentBackground);
-  });
-
-  // In dev, back goes to /landing; in prod, back goes to /
-  const backHref = import.meta.env.DEV ? "/landing" : "/";
+  const backHref = "/";
 </script>
 
 <svelte:head>
@@ -38,9 +11,6 @@
 </svelte:head>
 
 <div class="privacy-page">
-  <!-- Animated Background -->
-  <BackgroundHost backgroundType={currentBackground} />
-
   <div class="privacy-container">
     <header class="privacy-header">
       <a href={backHref} class="back-link">
@@ -246,22 +216,14 @@
     </div>
   </div>
 
-  <!-- Theme Toggle Button -->
-  <button
-    class="theme-toggle"
-    onclick={cycleBackground}
-    title="Change theme: {currentLabel}"
-    aria-label="Change background theme"
-  >
-    <i class="fas {currentIcon}" aria-hidden="true"></i>
-  </button>
 </div>
 
 <style>
   .privacy-page {
     position: relative;
     min-height: 100vh;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
+    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     overflow-x: hidden;
   }
 
@@ -283,21 +245,21 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
     font-size: 0.875rem;
     padding: 0.5rem 1rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 100px;
     margin-bottom: 2rem;
     transition: all 0.2s ease;
   }
 
   .back-link:hover {
-    color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .header-content {
@@ -316,30 +278,30 @@
   }
 
   .last-updated {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     font-size: 0.875rem;
     margin: 0;
   }
 
   /* Content card */
   .privacy-content {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     padding: 2rem;
     transition: all 0.25s ease;
   }
 
   .privacy-content:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    border-color: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   }
 
   /* Summary box */
   .summary-box {
-    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.2));
-    border: 1px solid var(--theme-accent, rgba(129, 140, 248, 0.3));
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(129, 140, 248, 0.3);
     border-radius: 12px;
     padding: 1.25rem;
     margin-bottom: 2rem;
@@ -348,7 +310,7 @@
   .summary-box h2 {
     font-size: 1rem;
     margin: 0 0 0.75rem 0;
-    color: var(--theme-accent-strong, #818cf8);
+    color: #818cf8;
   }
 
   .summary-box ul {
@@ -373,35 +335,35 @@
     font-size: 1.375rem;
     font-weight: 600;
     margin: 0 0 0.75rem 0;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
   }
 
   h3 {
     font-size: 1.1rem;
     font-weight: 600;
     margin: 1.25rem 0 0.5rem 0;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
   }
 
   p {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     line-height: 1.7;
     margin: 0 0 0.75rem 0;
   }
 
   a {
-    color: var(--theme-accent-strong, #818cf8);
+    color: #818cf8;
     text-decoration: none;
     border-bottom: 1px solid transparent;
     transition: border-color 0.2s ease;
   }
 
   a:hover {
-    border-bottom-color: var(--theme-accent-strong, #818cf8);
+    border-bottom-color: #818cf8;
   }
 
   ul {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     line-height: 1.7;
     margin: 0;
     padding-left: 1.5rem;
@@ -412,39 +374,7 @@
   }
 
   li strong {
-    color: var(--theme-text, #ffffff);
-  }
-
-  /* Theme Toggle Button */
-  .theme-toggle {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 100;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 15%, rgba(0, 0, 0, 0.5));
-    border: 1px solid color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
-    border-radius: 50%;
-    color: var(--theme-accent-strong, #818cf8);
-    font-size: 1.125rem;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .theme-toggle:hover {
-    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, rgba(0, 0, 0, 0.6));
-    border-color: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 40%, transparent);
-    transform: scale(1.05);
-  }
-
-  .theme-toggle:active {
-    transform: scale(0.95);
+    color: #ffffff;
   }
 
   /* Responsive */
@@ -460,26 +390,17 @@
     h2 {
       font-size: 1.25rem;
     }
-
-    .theme-toggle {
-      bottom: 16px;
-      right: 16px;
-      width: 44px;
-      height: 44px;
-    }
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .back-link,
     .privacy-content,
-    .theme-toggle,
     a {
       transition: none;
     }
 
-    .privacy-content:hover,
-    .theme-toggle:hover {
+    .privacy-content:hover {
       transform: none;
     }
   }

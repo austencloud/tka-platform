@@ -1,15 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { APP_DOMAIN } from "../../../config/domains";
-  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
-  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import {
-    getPublicThemeIndex,
-    savePublicThemeIndex,
-    getNextThemeIndex,
-  } from "$lib/shared/settings/utils/public-page-backgrounds";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
 
   // Position pictograph light/dark mode (default to light to show existing images)
@@ -71,31 +61,7 @@
     },
   ];
 
-  // Use shared animated backgrounds config
-  const backgrounds = ANIMATED_BACKGROUNDS;
-
-  // Restore saved theme from localStorage (persists across public pages)
-  let currentBgIndex = $state(getPublicThemeIndex());
-  let currentBackground = $derived(
-    backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY
-  );
-  let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
-  let currentLabel = $derived(
-    backgrounds[currentBgIndex]?.label ?? "Night Sky"
-  );
-
-  function cycleBackground() {
-    currentBgIndex = getNextThemeIndex(currentBgIndex);
-    savePublicThemeIndex(currentBgIndex);
-    applyThemeForBackground(backgrounds[currentBgIndex]!.type);
-  }
-
-  onMount(() => {
-    applyThemeForBackground(currentBackground);
-  });
-
-  // In dev, back goes to /landing; in prod, back goes to /
-  const backHref = import.meta.env.DEV ? "/landing" : "/";
+  const backHref = "/";
 </script>
 
 <svelte:head>
@@ -252,9 +218,6 @@
 </svelte:head>
 
 <div class="about-page">
-  <!-- Animated Background -->
-  <BackgroundHost backgroundType={currentBackground} />
-
   <div class="about-container">
     <!-- Header -->
     <header class="about-header">
@@ -420,23 +383,14 @@
       <p class="creator-credit">Created by Austen Cloud • 2022–present</p>
     </footer>
   </div>
-
-  <!-- Theme Toggle Button -->
-  <button
-    class="theme-toggle"
-    onclick={cycleBackground}
-    title="Change theme: {currentLabel}"
-    aria-label="Change background theme"
-  >
-    <i class="fas {currentIcon}" aria-hidden="true"></i>
-  </button>
 </div>
 
 <style>
   .about-page {
     position: relative;
     min-height: 100vh;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
+    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     overflow-x: hidden;
   }
 
@@ -458,21 +412,21 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
     font-size: 0.875rem;
     padding: 0.5rem 1rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 100px;
     margin-bottom: 2rem;
     transition: all 0.2s ease;
   }
 
   .back-link:hover {
-    color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .header-content {
@@ -492,7 +446,7 @@
 
   .tagline {
     font-size: 1.25rem;
-    color: var(--theme-accent-strong, #818cf8);
+    color: #818cf8;
     margin: 0;
     font-weight: 500;
     transition: color 0.3s ease;
@@ -504,18 +458,18 @@
     font-size: clamp(1.25rem, 3vw, 1.5rem);
     font-weight: 500;
     line-height: 1.5;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
     text-align: center;
     max-width: 700px;
     margin: 0 auto 4rem;
     padding: 2rem 2.5rem;
     background: color-mix(
       in srgb,
-      var(--theme-accent, #6366f1) 12%,
+      #6366f1 12%,
       transparent
     );
     border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+      color-mix(in srgb, #6366f1 25%, transparent);
     border-radius: 20px;
     transition:
       background 0.3s ease,
@@ -529,8 +483,8 @@
   }
 
   .section-card {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     padding: 2rem;
     transition: all 0.25s ease;
@@ -574,11 +528,11 @@
     font-size: 1.375rem;
     font-weight: 600;
     margin: 0;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
   }
 
   .card-content p {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     line-height: 1.7;
     margin: 0 0 1rem 0;
     font-size: 1rem;
@@ -609,7 +563,7 @@
     aspect-ratio: 1;
     background: #ffffff;
     border-radius: 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.1);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -635,21 +589,21 @@
   .position-name {
     font-weight: 600;
     font-size: 1rem;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
     margin-bottom: 0.125rem;
   }
 
   .position-desc {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
   }
 
   /* FAQ Section */
   .faq-section {
     margin-top: 4rem;
     padding: 2rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;
   }
 
@@ -657,13 +611,13 @@
     font-size: clamp(1.5rem, 4vw, 2rem);
     font-weight: 700;
     margin: 0 0 1.5rem 0;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
     text-align: center;
   }
 
   .faq-item {
     padding: 1.25rem 0;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .faq-item:last-child {
@@ -674,12 +628,12 @@
     font-size: 1.125rem;
     font-weight: 600;
     margin: 0 0 0.5rem 0;
-    color: var(--theme-text, #ffffff);
+    color: #ffffff;
   }
 
   .faq-item p {
     margin: 0;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    color: rgba(255, 255, 255, 0.75);
     line-height: 1.6;
     font-size: 0.95rem;
   }
@@ -692,7 +646,7 @@
   .creator-credit {
     text-align: center;
     margin-top: 2rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.5);
     font-size: var(--font-size-compact, 12px);
   }
 
@@ -701,11 +655,11 @@
     padding: 3rem 2rem;
     background: color-mix(
       in srgb,
-      var(--theme-accent, #6366f1) 15%,
+      #6366f1 15%,
       transparent
     );
     border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+      color-mix(in srgb, #6366f1 30%, transparent);
     border-radius: 24px;
     transition:
       background 0.3s ease,
@@ -719,7 +673,7 @@
   }
 
   .cta-card p {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: rgba(255, 255, 255, 0.6);
     margin: 0 0 1.5rem 0;
   }
 
@@ -727,7 +681,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    background: var(--theme-accent, #6366f1);
+    background: #6366f1;
     color: #ffffff;
     text-decoration: none;
     padding: 1rem 2rem;
@@ -738,10 +692,10 @@
   }
 
   .cta-button:hover {
-    background: var(--theme-accent-strong, #818cf8);
+    background: #818cf8;
     transform: translateY(-2px);
     box-shadow: 0 12px 32px
-      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+      color-mix(in srgb, #6366f1 40%, transparent);
   }
 
   .cta-button i {
@@ -750,51 +704,6 @@
 
   .cta-button:hover i {
     transform: translateX(4px);
-  }
-
-  /* Theme Toggle Button */
-  .theme-toggle {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 100;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, #818cf8) 15%,
-      rgba(0, 0, 0, 0.5)
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
-    border-radius: 50%;
-    color: var(--theme-accent-strong, #818cf8);
-    font-size: 1.125rem;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .theme-toggle:hover {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, #818cf8) 25%,
-      rgba(0, 0, 0, 0.6)
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent-strong, #818cf8) 40%,
-      transparent
-    );
-    transform: scale(1.05);
-  }
-
-  .theme-toggle:active {
-    transform: scale(0.95);
   }
 
   /* Responsive */
@@ -827,13 +736,6 @@
       padding: 2rem 1.5rem;
     }
 
-    .theme-toggle {
-      bottom: 16px;
-      right: 16px;
-      width: 44px;
-      height: 44px;
-    }
-
     /* Position grid responsive */
     .position-grid {
       grid-template-columns: repeat(3, 1fr);
@@ -864,7 +766,6 @@
     .section-card,
     .cta-button,
     .back-link,
-    .theme-toggle,
     .tagline,
     .hero-quote,
     .cta-card {
@@ -872,8 +773,7 @@
     }
 
     .section-card:hover,
-    .cta-button:hover,
-    .theme-toggle:hover {
+    .cta-button:hover {
       transform: none;
     }
 
