@@ -16,6 +16,7 @@ import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { handpathDirectionCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
 
 // Cardinal and intercardinal sets used for per-step grid mode derivation.
 // Mirrors the same logic as HandPathFactory so the two are always consistent.
@@ -65,9 +66,45 @@ function deriveStepGridMode(
 }
 
 /**
+ * For a float motion, derive the prefloatRotationDirection from the stored
+ * prefloatMotionType plus the hand path. We do not persist prefloatRotation
+ * because it is redundant: pro spins with the hand path; anti spins against
+ * it. Knowing one (motion type) plus the path direction yields the other.
+ *
+ * Returns undefined when the rotation cannot be derived (e.g. dash hand
+ * paths, or a float without a stored prefloatMotionType — which means the
+ * data predates the prefloat-preservation fix).
+ */
+function derivePrefloatRotation(
+  prefloatMotionType: MotionType | undefined,
+  startLocation: GridLocation,
+  endLocation: GridLocation
+): RotationDirection | undefined {
+  if (!prefloatMotionType) return undefined;
+  const handpath = handpathDirectionCalculator.calculateDirection(
+    startLocation,
+    endLocation
+  );
+  if (handpath === "cw") {
+    return prefloatMotionType === MotionType.PRO
+      ? RotationDirection.CLOCKWISE
+      : RotationDirection.COUNTER_CLOCKWISE;
+  }
+  if (handpath === "ccw") {
+    return prefloatMotionType === MotionType.PRO
+      ? RotationDirection.COUNTER_CLOCKWISE
+      : RotationDirection.CLOCKWISE;
+  }
+  return undefined;
+}
+
+/**
  * Rehydrates a single SoloPropStepData into a MotionData object by adding the
  * rendering fields that the solo-prop model intentionally omits (color,
  * propType, gridMode, arrowLocation, placement stubs).
+ *
+ * Also reconstructs the prefloatRotationDirection from the stored
+ * prefloatMotionType + start/end pair (see derivePrefloatRotation above).
  */
 function rehydrateMotion(
   step: SoloPropStepData,
@@ -75,6 +112,12 @@ function rehydrateMotion(
   gridMode: GridMode,
   propType: PropType
 ): MotionData {
+  const prefloatRotationDirection = derivePrefloatRotation(
+    step.prefloatMotionType,
+    step.startLocation,
+    step.endLocation
+  );
+
   return createMotionData({
     startLocation: step.startLocation,
     endLocation: step.endLocation,
@@ -93,6 +136,10 @@ function rehydrateMotion(
     // Renderers recalculate arrowLocation from motion geometry; startLocation
     // is a safe placeholder that avoids an undefined field.
     arrowLocation: step.startLocation,
+    ...(step.prefloatMotionType && {
+      prefloatMotionType: step.prefloatMotionType,
+    }),
+    ...(prefloatRotationDirection && { prefloatRotationDirection }),
     // arrowPlacementData and propPlacementData default via createMotionData;
     // renderers recalculate both before drawing.
   });

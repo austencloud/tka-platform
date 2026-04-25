@@ -2,8 +2,93 @@ import type { ISequenceHydrator } from "../contracts/ISequenceHydrator";
 import type { IStepDeriver } from "../contracts/IStepDeriver";
 import type { ISequenceDecomposer } from "../contracts/ISequenceDecomposer";
 import type { SequenceData } from "../../domain/models/SequenceData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { MotionColor, MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { handpathDirectionCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
+
+// Legacy sequences saved before SoloPropStepData carried prefloatMotionType
+// will arrive here with derived float motions whose prefloat fields are
+// undefined, even though the original sequence.steps Firestore blob still
+// holds them. This walks the derived steps and copies prefloat metadata back
+// in, deriving prefloatRotationDirection from start/end + prefloatMotionType.
+function backfillPrefloatFromLegacySteps(
+	derived: StepData[],
+	original: readonly StepData[]
+): StepData[] {
+	if (!original || original.length === 0) return derived;
+
+	return derived.map((step, i) => {
+		const orig = original[i];
+		if (!orig?.motions) return step;
+
+		const blue = step.motions?.blue;
+		const red = step.motions?.red;
+		const origBlue = orig.motions.blue;
+		const origRed = orig.motions.red;
+
+		const needsBlueBackfill =
+			blue?.motionType === MotionType.FLOAT &&
+			!blue.prefloatMotionType &&
+			origBlue?.prefloatMotionType;
+		const needsRedBackfill =
+			red?.motionType === MotionType.FLOAT &&
+			!red.prefloatMotionType &&
+			origRed?.prefloatMotionType;
+
+		if (!needsBlueBackfill && !needsRedBackfill) return step;
+
+		const patched = { ...step, motions: { ...step.motions } };
+
+		if (needsBlueBackfill && blue && origBlue) {
+			const handpath = handpathDirectionCalculator.calculateDirection(
+				blue.startLocation,
+				blue.endLocation
+			);
+			const prefRot =
+				handpath === "cw"
+					? origBlue.prefloatMotionType === MotionType.PRO
+						? RotationDirection.CLOCKWISE
+						: RotationDirection.COUNTER_CLOCKWISE
+					: handpath === "ccw"
+						? origBlue.prefloatMotionType === MotionType.PRO
+							? RotationDirection.COUNTER_CLOCKWISE
+							: RotationDirection.CLOCKWISE
+						: undefined;
+
+			patched.motions.blue = {
+				...blue,
+				prefloatMotionType: origBlue.prefloatMotionType,
+				...(prefRot && { prefloatRotationDirection: prefRot }),
+			};
+		}
+
+		if (needsRedBackfill && red && origRed) {
+			const handpath = handpathDirectionCalculator.calculateDirection(
+				red.startLocation,
+				red.endLocation
+			);
+			const prefRot =
+				handpath === "cw"
+					? origRed.prefloatMotionType === MotionType.PRO
+						? RotationDirection.CLOCKWISE
+						: RotationDirection.COUNTER_CLOCKWISE
+					: handpath === "ccw"
+						? origRed.prefloatMotionType === MotionType.PRO
+							? RotationDirection.COUNTER_CLOCKWISE
+							: RotationDirection.CLOCKWISE
+						: undefined;
+
+			patched.motions.red = {
+				...red,
+				prefloatMotionType: origRed.prefloatMotionType,
+				...(prefRot && { prefloatRotationDirection: prefRot }),
+			};
+		}
+
+		return patched;
+	});
+}
 
 export class SequenceHydrator implements ISequenceHydrator {
 	constructor(
@@ -57,12 +142,22 @@ export class SequenceHydrator implements ISequenceHydrator {
 			sequence.stepPairings &&
 			sequence.stepPairings.length > 0
 		) {
-			const steps = this.stepDeriver.deriveSteps(
+			const derived = this.stepDeriver.deriveSteps(
 				sequence.blueSoloProp,
 				sequence.redSoloProp,
 				sequence.stepPairings,
 				{ bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false }
 			);
+
+			// Legacy-data backfill: sequences saved before SoloPropStepData
+			// learned to carry prefloatMotionType lost their prefloat on the
+			// decompose pass. The original `sequence.steps` array still on
+			// the Firestore document retains the original motion blobs with
+			// prefloat intact, so we can splice it back into the derived
+			// steps. Once such a sequence is re-saved, the compositional
+			// path will preserve prefloat on its own and this branch becomes
+			// a no-op for that document.
+			const steps = backfillPrefloatFromLegacySteps(derived, sequence.steps);
 
 			// Derive startPosition if missing — compositional fields don't store it,
 			// and without it the 3D viewer has no beat-0 config (avatar plays ahead).
