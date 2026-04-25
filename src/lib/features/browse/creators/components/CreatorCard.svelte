@@ -182,6 +182,7 @@
         class:loading={isFollowLoading}
         disabled={isFollowLoading}
         aria-busy={isFollowLoading}
+        aria-label={user.isFollowing ? "Unfollow {user.displayName}" : "Follow {user.displayName}"}
         onclick={handleFollowClick}
       >
         {#if isFollowLoading}
@@ -238,7 +239,7 @@
     /* Dynamic color glow on hover */
     box-shadow:
       0 8px 24px var(--card-accent-glow),
-      0 4px 12px rgba(0, 0, 0, 0.15);
+      0 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.15));
   }
 
   .user-card:focus {
@@ -271,7 +272,7 @@
     border-radius: 50%;
     object-fit: cover;
     /* Inner background to create ring effect */
-    background: #1a1a2e;
+    background: var(--theme-panel-bg, #1a1a2e);
   }
 
   .avatar-placeholder {
@@ -280,8 +281,8 @@
     justify-content: center;
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--card-accent) 20%, #1a1a2e) 0%,
-      #1a1a2e 100%
+      color-mix(in srgb, var(--card-accent) 20%, var(--theme-panel-bg, #1a1a2e)) 0%,
+      var(--theme-panel-bg, #1a1a2e) 100%
     );
   }
 
@@ -408,7 +409,7 @@
     cursor: pointer;
     transition: all var(--duration-emphasis) var(--ease-out, ease);
     background: var(--card-accent);
-    color: white;
+    color: var(--text-on-accent, white);
   }
 
   .follow-button:hover {

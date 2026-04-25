@@ -101,6 +101,7 @@
     onclick={toggleExpand}
     aria-expanded={isExpanded}
     aria-controls="connection-content"
+    aria-label="Toggle connection details"
     disabled={!isMobile}
   >
     <div class="header-left">
@@ -195,7 +196,7 @@
   }
 
   .section-header:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.02));
   }
 
   .section-header:disabled {

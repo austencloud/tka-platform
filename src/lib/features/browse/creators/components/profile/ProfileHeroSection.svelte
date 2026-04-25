@@ -86,6 +86,7 @@
           class:loading={followInProgress}
           disabled={followInProgress}
           onclick={onFollowToggle}
+          aria-label={userProfile.isFollowing ? "Unfollow {userProfile.displayName}" : "Follow {userProfile.displayName}"}
         >
           {#if followInProgress}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -109,6 +110,8 @@
 
 <style>
   .hero-section {
+    --instagram-brand: #E4405F;
+
     container-type: inline-size;
     container-name: hero-section;
 
@@ -166,10 +169,10 @@
     gap: 6px;
     margin-top: 12px;
     padding: 8px 16px;
-    background: rgba(228, 64, 95, 0.12);
-    border: 1px solid rgba(228, 64, 95, 0.25);
+    background: color-mix(in srgb, var(--instagram-brand) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--instagram-brand) 25%, transparent);
     border-radius: 20px;
-    color: #E4405F;
+    color: var(--instagram-brand);
     font-size: var(--font-size-sm);
     font-weight: 500;
     text-decoration: none;
@@ -177,8 +180,8 @@
   }
 
   .instagram-link:hover {
-    background: rgba(228, 64, 95, 0.2);
-    border-color: rgba(228, 64, 95, 0.4);
+    background: color-mix(in srgb, var(--instagram-brand) 20%, transparent);
+    border-color: color-mix(in srgb, var(--instagram-brand) 40%, transparent);
     transform: translateY(-1px);
   }
 
@@ -198,7 +201,7 @@
     background: var(--theme-accent);
     border: 1px solid var(--theme-accent);
     border-radius: 8px;
-    color: white;
+    color: var(--text-on-accent, white);
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
@@ -249,8 +252,8 @@
   }
 
   .report-button:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     color: var(--semantic-error, #ef4444);
   }
 
@@ -319,7 +322,7 @@
   }
 
   .instagram-link:focus-visible {
-    outline: 3px solid #E4405F;
+    outline: 3px solid var(--instagram-brand);
     outline-offset: 2px;
   }
 
@@ -355,7 +358,7 @@
     position: absolute;
     bottom: -4px;
     right: -4px;
-    font-size: 10px;
+    font-size: 0.75rem;
     color: gold;
   }
 </style>

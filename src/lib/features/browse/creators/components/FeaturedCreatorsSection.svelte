@@ -91,7 +91,7 @@
   }
 
   .section-title i {
-    color: #fbbf24; /* Gold/yellow for featured star */
+    color: var(--semantic-warning, #fbbf24);
     font-size: var(--font-size-sm);
   }
 
@@ -106,10 +106,10 @@
     height: 180px;
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.04) 0%,
-      rgba(255, 255, 255, 0.02) 100%
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 0%,
+      var(--surface-color, rgba(255, 255, 255, 0.02)) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 14px;
     animation: skeleton-pulse 1.5s ease-in-out infinite;
   }

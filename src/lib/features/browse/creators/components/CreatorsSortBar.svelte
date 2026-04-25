@@ -64,7 +64,8 @@
     class:open={isOpen}
     onclick={toggleDropdown}
     aria-expanded={isOpen}
-    aria-haspopup="listbox"
+    aria-haspopup="menu"
+    aria-label="Sort creators"
   >
     <i class="fas fa-sort" aria-hidden="true"></i>
     <span class="sort-label">Sort:</span>
@@ -73,21 +74,22 @@
   </button>
 
   {#if isOpen}
-    <div class="sort-dropdown" role="listbox">
+    <div class="sort-dropdown" role="menu">
       {#each sortOptions as option}
-        <button
+        <div
           class="sort-option"
           class:selected={sortBy === option.value}
           onclick={() => handleSelect(option.value)}
-          role="option"
-          aria-selected={sortBy === option.value}
+          onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(option.value); } }}
+          role="menuitem"
+          tabindex="0"
         >
           <i class="fas {option.icon}" aria-hidden="true"></i>
           <span>{option.label}</span>
           {#if sortBy === option.value}
             <i class="fas fa-check check-icon" aria-hidden="true"></i>
           {/if}
-        </button>
+        </div>
       {/each}
     </div>
   {/if}
@@ -137,7 +139,7 @@
   }
 
   .chevron {
-    font-size: 10px;
+    font-size: 0.75rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     transition: transform 0.2s ease;
   }
@@ -156,7 +158,7 @@
     border-radius: 12px;
     padding: 8px;
     z-index: 100;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-elevated, 0 8px 32px rgba(0, 0, 0, 0.3));
   }
 
   .sort-option {
@@ -166,7 +168,6 @@
     width: 100%;
     padding: 12px 16px;
     background: transparent;
-    border: none;
     border-radius: 8px;
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm, 14px);
@@ -200,7 +201,7 @@
 
   .check-icon {
     color: var(--theme-accent, #6366f1);
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   @media (max-width: 640px) {

@@ -3,7 +3,7 @@
 </script>
 
 <div class="profile-header">
-  <button class="back-btn" onclick={onBack}>
+  <button class="back-btn" onclick={onBack} aria-label="Back">
     <i class="fas fa-arrow-left" aria-hidden="true"></i>
     <span class="back-text">Back</span>
   </button>

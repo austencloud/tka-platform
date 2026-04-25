@@ -24,6 +24,7 @@
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
+  import { onDestroy } from "svelte";
 
   interface Props {
     userProfile: EnhancedUserProfile;
@@ -48,6 +49,14 @@
   let adminNotes = $state("");
   let notesSaveStatus = $state<"idle" | "saving" | "saved">("idle");
   let notesDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let labelResetTimer: ReturnType<typeof setTimeout> | null = null;
+  let notesResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (labelResetTimer) clearTimeout(labelResetTimer);
+    if (notesResetTimer) clearTimeout(notesResetTimer);
+    if (notesDebounceTimer) clearTimeout(notesDebounceTimer);
+  });
 
   // Contributor state
   let isContributor = $state(false);
@@ -312,7 +321,8 @@
       await updateDoc(userRef, { adminLabel: adminLabel.trim() || null });
       onUserUpdated?.({ adminLabel: adminLabel.trim() || undefined });
       labelSaveStatus = "saved";
-      setTimeout(() => {
+      if (labelResetTimer) clearTimeout(labelResetTimer);
+      labelResetTimer = setTimeout(() => {
         labelSaveStatus = "idle";
       }, 1500);
     } catch (err) {
@@ -333,8 +343,8 @@
       await updateDoc(userRef, { adminNotes: adminNotes.trim() || null });
       onUserUpdated?.({ adminNotes: adminNotes.trim() || undefined });
       notesSaveStatus = "saved";
-      // Reset to idle after showing "saved" briefly
-      setTimeout(() => {
+      if (notesResetTimer) clearTimeout(notesResetTimer);
+      notesResetTimer = setTimeout(() => {
         notesSaveStatus = "idle";
       }, 1500);
     } catch (err) {
@@ -445,6 +455,7 @@
           disabled={isActionPending}
           onclick={() => changeRole(role)}
           style="--role-color: {ROLE_DISPLAY[role].color}"
+          aria-label="Set role to {ROLE_DISPLAY[role].label}"
         >
           <i class="fas {ROLE_DISPLAY[role].icon}" aria-hidden="true"></i>
           {ROLE_DISPLAY[role].label}
@@ -487,6 +498,7 @@
         class="action-btn"
         disabled={isActionPending}
         onclick={openEditNameModal}
+        aria-label="Edit display name"
       >
         <i class="fas fa-pen" aria-hidden="true"></i>
         Edit Name
@@ -497,6 +509,7 @@
         class:contributor-active={isContributor}
         disabled={isTogglingContributor}
         onclick={toggleContributor}
+        aria-label={isContributor ? "Remove contributor status" : "Add as contributor"}
       >
         {#if isTogglingContributor}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -511,6 +524,7 @@
         class:danger={!userProfile.isDisabled}
         class:success={userProfile.isDisabled}
         disabled={isActionPending}
+        aria-label={userProfile.isDisabled ? "Enable account" : "Disable account"}
         onclick={() => {
           confirmAction = {
             type: "disable",
@@ -530,6 +544,7 @@
       <button
         class="action-btn danger"
         disabled={isActionPending}
+        aria-label="Reset user progress"
         onclick={() => {
           confirmAction = {
             type: "reset",
@@ -544,6 +559,7 @@
       <button
         class="action-btn destructive"
         disabled={isActionPending}
+        aria-label="Delete user account"
         onclick={() => {
           deleteConfirmText = "";
           confirmAction = {
@@ -600,6 +616,7 @@
           class="modal-btn cancel"
           onclick={() => { confirmAction = null; deleteConfirmText = ""; }}
           disabled={isActionPending}
+          aria-label="Cancel action"
         >
           Cancel
         </button>
@@ -607,6 +624,7 @@
           class="modal-btn confirm"
           onclick={handleConfirm}
           disabled={isActionPending || (confirmAction.type === "delete" && deleteConfirmText !== userProfile.displayName)}
+          aria-label="Confirm action"
         >
           {#if isActionPending}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -652,6 +670,7 @@
           class="modal-btn cancel"
           onclick={() => (editNameModal = { open: false, value: "" })}
           disabled={isActionPending}
+          aria-label="Cancel name edit"
         >
           Cancel
         </button>
@@ -659,6 +678,7 @@
           class="modal-btn save"
           onclick={saveDisplayName}
           disabled={isActionPending || !editNameModal.value.trim()}
+          aria-label="Save display name"
         >
           {#if isActionPending}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -863,7 +883,7 @@
   }
 
   .role-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-color, rgba(255, 255, 255, 0.08));
     border-color: var(--role-color, rgba(255, 255, 255, 0.2));
   }
 
@@ -899,7 +919,7 @@
   }
 
   .action-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-color, rgba(255, 255, 255, 0.08));
   }
 
   .action-btn.danger:hover:not(:disabled) {
@@ -947,7 +967,7 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--theme-backdrop, rgba(0, 0, 0, 0.7));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -956,7 +976,7 @@
   }
 
   .modal {
-    background: #1a1a2e;
+    background: var(--theme-panel-bg, #1a1a2e);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     padding: 24px;
@@ -993,7 +1013,7 @@
   }
 
   .modal-btn.cancel:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-hover, rgba(255, 255, 255, 0.1));
   }
 
   .modal-btn.confirm {

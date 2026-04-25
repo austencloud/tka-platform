@@ -7,6 +7,7 @@
    */
 
   import { getConnectionManager } from "$lib/shared/community/getConnectionManager";
+  import { onDestroy } from "svelte";
   import type { IConnectionManager } from "$lib/shared/community/services/contracts/IConnectionManager";
 
   interface Props {
@@ -18,8 +19,15 @@
   let { targetUserId, initialNotes = "", onNotesChange }: Props = $props();
 
   let notes = $state("");
-  let saveStatus = $state<"idle" | "saving" | "saved">("idle");
+  let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
+  let saveError = $state<string | null>(null);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let statusResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    if (statusResetTimer) clearTimeout(statusResetTimer);
+  });
 
   // Service
   let connectionManager: IConnectionManager;
@@ -44,12 +52,14 @@
       await connectionManager.saveNotes(targetUserId, notes);
       onNotesChange?.(notes);
       saveStatus = "saved";
-      setTimeout(() => {
+      if (statusResetTimer) clearTimeout(statusResetTimer);
+      statusResetTimer = setTimeout(() => {
         saveStatus = "idle";
       }, 1500);
     } catch (err) {
       console.error("[ConnectionNotes] Failed to save:", err);
-      saveStatus = "idle";
+      saveStatus = "error";
+      saveError = "Failed to save notes";
     }
   }
 
@@ -90,6 +100,11 @@
       <span class="save-status saved">
         <i class="fas fa-check" aria-hidden="true"></i>
         Saved
+      </span>
+    {:else if saveStatus === "error"}
+      <span class="save-status error">
+        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+        {saveError}
       </span>
     {/if}
   </label>
@@ -142,6 +157,10 @@
 
   .save-status.saved {
     color: var(--semantic-success);
+  }
+
+  .save-status.error {
+    color: var(--semantic-error);
   }
 
   .notes-input {
