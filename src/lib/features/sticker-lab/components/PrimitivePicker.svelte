@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { getStickerLabContext } from "../context/sticker-lab-context";
   import { loadPrimitiveCatalog } from "../services/implementations/PrimitiveCatalogReader";
   import { loadPrimitivePaths, getPrimitivePaths } from "../state/mandala-paths-cache.svelte";
@@ -7,12 +6,14 @@
   import { entryToRef } from "../domain/primitive-catalog-types";
   import type { PrimitiveCatalogEntry } from "../domain/primitive-catalog-types";
   import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
+  import { onMount } from "svelte";
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   interface Props {
     open: boolean;
     onclose: () => void;
   }
-  let { open, onclose }: Props = $props();
+  let { open = $bindable(), onclose }: Props = $props();
 
   const stickerState = getStickerLabContext();
   const renderer = new MandalaRenderer();
@@ -26,20 +27,9 @@
     purpleFill: "rgba(126, 34, 206, 0.75)",
   };
 
-  let pickerEl = $state<HTMLDivElement | null>(null);
-  let previousFocus: Element | null = null;
-
-  $effect(() => {
-    if (!open || !pickerEl) return;
-    previousFocus = document.activeElement;
-    pickerEl.focus();
-    return () => {
-      if (previousFocus instanceof HTMLElement) previousFocus.focus();
-    };
-  });
-
   let entries = $state<PrimitiveCatalogEntry[]>([]);
   let isLoading = $state(true);
+
   onMount(async () => {
     const catalog = await loadPrimitiveCatalog();
     entries = catalog.entries;
@@ -56,27 +46,34 @@
   function handleAdd(entry: PrimitiveCatalogEntry) {
     stickerState.addPrimitive(entryToRef(entry));
   }
+
+  function handleClose() {
+    open = false;
+    onclose();
+  }
 </script>
 
-{#if open}
-  <div
-    class="overlay-backdrop"
-    role="presentation"
-    onclick={onclose}
-    onkeydown={(e) => { if (e.key === "Escape") onclose(); }}
-  ></div>
-  <div
-    class="picker"
-    role="dialog"
-    aria-label="Choose a mandala primitive"
-    aria-modal="true"
-    bind:this={pickerEl}
-    tabindex="-1"
-    onkeydown={(e) => { if (e.key === "Escape") onclose(); }}
-  >
-    <header>
-      <h3>Choose a mandala primitive</h3>
-      <button class="close-btn" aria-label="Close picker" onclick={onclose}>×</button>
+<Drawer
+  bind:isOpen={open}
+  placement="right"
+  respectLayoutMode={true}
+  ariaLabel="Choose a mandala primitive"
+  closeOnBackdrop={true}
+  showHandle={true}
+  class="primitive-picker-drawer"
+  onclose={handleClose}
+  trapFocus={true}
+  preventScroll={false}
+>
+  <div class="picker-content">
+    <header class="picker-header">
+      <h3>Primitives</h3>
+      <div class="header-right">
+        <span class="entry-count">{entries.length}</span>
+        <button class="close-btn" aria-label="Close picker" onclick={handleClose}>
+          <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
     </header>
 
     {#if isLoading}
@@ -116,69 +113,76 @@
       </div>
     {/if}
   </div>
-{/if}
+</Drawer>
 
 <style>
-  .overlay-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 100;
+  :global(.drawer-content.primitive-picker-drawer[data-placement="right"]) {
+    width: clamp(300px, 30vw, 400px);
   }
 
-  .picker {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 480px;
-    max-height: 80vh;
-    background: var(--theme-surface-elevated, #1e1e2e);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-    z-index: 101;
+  .picker-content {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    height: 100%;
+    padding: var(--spacing-md);
   }
 
-  header {
+  .picker-header {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    margin-bottom: var(--spacing-md);
   }
-  header h3 {
+
+  .picker-header h3 {
     margin: 0;
     flex: 1;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     font-weight: 600;
     color: var(--theme-text, white);
   }
-  .close-btn {
-    background: none;
-    border: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    font-size: 20px;
-    line-height: 1;
-    padding: 0 4px;
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
   }
-  .close-btn:hover { color: white; }
+
+  .entry-count {
+    font-size: var(--font-size-sm);
+    color: var(--theme-text-dim);
+  }
+
+  .close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: none;
+    border-radius: var(--radius-2026-sm);
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    transition: color var(--duration-fast);
+  }
+  .close-btn:hover {
+    color: var(--theme-text, white);
+  }
 
   .loading, .empty {
-    padding: 32px;
+    padding: var(--spacing-xl);
     text-align: center;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    font-size: 13px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
   }
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: var(--spacing-sm);
     overflow-y: auto;
     flex: 1;
   }
@@ -188,17 +192,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 10px 8px;
-    background: rgba(255, 255, 255, 0.03);
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: var(--radius-2026-sm);
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background var(--duration-fast), border-color var(--duration-fast);
   }
   .tile:hover {
     background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
   .tile.on-sheet {
     border-color: var(--theme-accent, #8b5cf6);
@@ -206,48 +210,48 @@
   }
 
   .tile :global(svg) {
-    width: 120px;
-    height: 120px;
+    width: 100%;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #f9f6ef;
   }
 
   .tile-label {
-    font-size: 10px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
     text-align: center;
-    max-width: 110px;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .tile-loading {
-    width: 120px;
-    height: 120px;
+    width: 100%;
+    aspect-ratio: 1;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.2);
-    font-size: 18px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-lg);
   }
 
   .badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    min-width: 18px;
-    height: 18px;
-    border-radius: 9px;
+    top: var(--spacing-xs);
+    right: var(--spacing-xs);
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
     background: var(--theme-accent, #8b5cf6);
     color: white;
-    font-size: 10px;
+    font-size: var(--font-size-compact);
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 4px;
+    padding: 0 var(--spacing-xs);
   }
 </style>
