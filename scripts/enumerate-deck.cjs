@@ -655,30 +655,34 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
      */
     function edgeToEngineStep(edge, beatIndex) {
       return {
+        id: `beat-${beatIndex}`,
         letter: edge.letter,
         startPosition: edge.startPos,
         endPosition: edge.endPos,
         beatIndex,
         stepNumber: beatIndex,
-        blueMotion: {
-          motionType: edge.blueMotionType,
-          rotationDirection: edge.blueRotDir,
-          startLocation: edge.blueStartLoc,
-          endLocation: edge.blueEndLoc,
-          startOrientation: "in",
-          endOrientation: "in",
-          turns: 0,
-          color: "blue",
-        },
-        redMotion: {
-          motionType: edge.redMotionType,
-          rotationDirection: edge.redRotDir,
-          startLocation: edge.redStartLoc,
-          endLocation: edge.redEndLoc,
-          startOrientation: "in",
-          endOrientation: "in",
-          turns: 0,
-          color: "red",
+        duration: 1,
+        motions: {
+          blue: {
+            motionType: edge.blueMotionType,
+            rotationDirection: edge.blueRotDir,
+            startLocation: edge.blueStartLoc,
+            endLocation: edge.blueEndLoc,
+            startOrientation: "in",
+            endOrientation: "in",
+            turns: 0,
+            color: "blue",
+          },
+          red: {
+            motionType: edge.redMotionType,
+            rotationDirection: edge.redRotDir,
+            startLocation: edge.redStartLoc,
+            endLocation: edge.redEndLoc,
+            startOrientation: "in",
+            endOrientation: "in",
+            turns: 0,
+            color: "red",
+          },
         },
       };
     }
@@ -694,26 +698,26 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         const step = steps[i];
 
         // Chain: previous end → current start
-        step.blueMotion.startOrientation = prev.blueMotion.endOrientation;
-        step.redMotion.startOrientation = prev.redMotion.endOrientation;
+        step.motions.blue.startOrientation = prev.motions.blue.endOrientation;
+        step.motions.red.startOrientation = prev.motions.red.endOrientation;
 
         // Calculate end orientations
-        step.blueMotion.endOrientation = calculateEndOrientation({
-          motionType: step.blueMotion.motionType,
-          turns: step.blueMotion.turns,
-          rotationDirection: step.blueMotion.rotationDirection,
-          startLocation: step.blueMotion.startLocation,
-          endLocation: step.blueMotion.endLocation,
-          startOrientation: step.blueMotion.startOrientation,
+        step.motions.blue.endOrientation = calculateEndOrientation({
+          motionType: step.motions.blue.motionType,
+          turns: step.motions.blue.turns,
+          rotationDirection: step.motions.blue.rotationDirection,
+          startLocation: step.motions.blue.startLocation,
+          endLocation: step.motions.blue.endLocation,
+          startOrientation: step.motions.blue.startOrientation,
         });
 
-        step.redMotion.endOrientation = calculateEndOrientation({
-          motionType: step.redMotion.motionType,
-          turns: step.redMotion.turns,
-          rotationDirection: step.redMotion.rotationDirection,
-          startLocation: step.redMotion.startLocation,
-          endLocation: step.redMotion.endLocation,
-          startOrientation: step.redMotion.startOrientation,
+        step.motions.red.endOrientation = calculateEndOrientation({
+          motionType: step.motions.red.motionType,
+          turns: step.motions.red.turns,
+          rotationDirection: step.motions.red.rotationDirection,
+          startLocation: step.motions.red.startLocation,
+          endLocation: step.motions.red.endLocation,
+          startOrientation: step.motions.red.startOrientation,
         });
       }
       return steps;
@@ -729,28 +733,30 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         letter: step.letter,
         startPosition: step.startPosition,
         endPosition: step.endPosition,
+        blueReversal: step.blueReversal ?? false,
+        redReversal: step.redReversal ?? false,
         motions: {
           blue: {
-            motionType: step.blueMotion.motionType,
-            rotationDirection: step.blueMotion.rotationDirection,
-            startLocation: step.blueMotion.startLocation,
-            endLocation: step.blueMotion.endLocation,
-            turns: step.blueMotion.turns ?? 0,
-            startOrientation: step.blueMotion.startOrientation ?? "in",
-            endOrientation: step.blueMotion.endOrientation ?? "in",
+            motionType: step.motions.blue.motionType,
+            rotationDirection: step.motions.blue.rotationDirection,
+            startLocation: step.motions.blue.startLocation,
+            endLocation: step.motions.blue.endLocation,
+            turns: step.motions.blue.turns ?? 0,
+            startOrientation: step.motions.blue.startOrientation ?? "in",
+            endOrientation: step.motions.blue.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "blue",
             gridMode,
           },
           red: {
-            motionType: step.redMotion.motionType,
-            rotationDirection: step.redMotion.rotationDirection,
-            startLocation: step.redMotion.startLocation,
-            endLocation: step.redMotion.endLocation,
-            turns: step.redMotion.turns ?? 0,
-            startOrientation: step.redMotion.startOrientation ?? "in",
-            endOrientation: step.redMotion.endOrientation ?? "in",
+            motionType: step.motions.red.motionType,
+            rotationDirection: step.motions.red.rotationDirection,
+            startLocation: step.motions.red.startLocation,
+            endLocation: step.motions.red.endLocation,
+            turns: step.motions.red.turns ?? 0,
+            startOrientation: step.motions.red.startOrientation ?? "in",
+            endOrientation: step.motions.red.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "red",
@@ -776,19 +782,19 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
      * Returns null if no match is found (e.g. the reversal produced a
      * physically invalid combination — caller should keep the original letter).
      *
-     * @param {{ startPosition: string, endPosition: string, blueMotion: object, redMotion: object }} step
+     * @param {{ startPosition: string, endPosition: string, motions: { blue: object, red: object } }} step
      * @returns {string|null}
      */
     function lookupLetterFromMotions(step) {
       const match = edges.find(e =>
         e.startPos === step.startPosition &&
         e.endPos   === step.endPosition &&
-        e.blueMotionType === step.blueMotion.motionType &&
-        e.blueStartLoc   === step.blueMotion.startLocation &&
-        e.blueEndLoc     === step.blueMotion.endLocation &&
-        e.redMotionType  === step.redMotion.motionType &&
-        e.redStartLoc    === step.redMotion.startLocation &&
-        e.redEndLoc      === step.redMotion.endLocation
+        e.blueMotionType === step.motions.blue.motionType &&
+        e.blueStartLoc   === step.motions.blue.startLocation &&
+        e.blueEndLoc     === step.motions.blue.endLocation &&
+        e.redMotionType  === step.motions.red.motionType &&
+        e.redStartLoc    === step.motions.red.startLocation &&
+        e.redEndLoc      === step.motions.red.endLocation
       );
       return match ? match.letter : null;
     }
@@ -807,30 +813,34 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       // Build seed as engine SequenceStep array (start position + beats)
       const firstEdge = item.edges[0];
       const startStep = {
+        id: `start-${seqId}`,
         letter: item.startPos.startsWith("alpha") ? "α" : item.startPos.startsWith("beta") ? "β" : "γ",
         startPosition: item.startPos,
         endPosition: item.startPos,
         beatIndex: 0,
         stepNumber: 0,
-        blueMotion: {
-          motionType: "static",
-          rotationDirection: "noRotation",
-          startLocation: firstEdge.blueStartLoc,
-          endLocation: firstEdge.blueStartLoc,
-          startOrientation: "in",
-          endOrientation: "in",
-          turns: 0,
-          color: "blue",
-        },
-        redMotion: {
-          motionType: "static",
-          rotationDirection: "noRotation",
-          startLocation: firstEdge.redStartLoc,
-          endLocation: firstEdge.redStartLoc,
-          startOrientation: "in",
-          endOrientation: "in",
-          turns: 0,
-          color: "red",
+        duration: 1,
+        motions: {
+          blue: {
+            motionType: "static",
+            rotationDirection: "noRotation",
+            startLocation: firstEdge.blueStartLoc,
+            endLocation: firstEdge.blueStartLoc,
+            startOrientation: "in",
+            endOrientation: "in",
+            turns: 0,
+            color: "blue",
+          },
+          red: {
+            motionType: "static",
+            rotationDirection: "noRotation",
+            startLocation: firstEdge.redStartLoc,
+            endLocation: firstEdge.redStartLoc,
+            startOrientation: "in",
+            endOrientation: "in",
+            turns: 0,
+            color: "red",
+          },
         },
       };
 
@@ -854,9 +864,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       // format so that the letter re-lookup and Firestore conversion both see the
       // same reversed motion types.
       //
-      // applyReversalPattern expects steps with blueMotionType/redMotionType at
-      // the top level, but engine steps nest these inside blueMotion/redMotion.
-      // We apply the transformation manually here to avoid the mismatch.
+      // Apply reversal transformation directly on the motions.blue/motions.red
+      // nested structure used by engine steps.
       const beatStepsForReversal = fullSteps.slice(1);
       if (reversalPattern && reversalPattern !== 'continuous') {
         const patternDef = REVERSAL_PATTERNS[reversalPattern];
@@ -874,19 +883,19 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           // - pro/anti: flip motion type AND rotation direction
           // - static/dash: only flip rotation direction (type stays)
           if (blueReversed) {
-            if (step.blueMotion.motionType === 'pro' || step.blueMotion.motionType === 'anti') {
-              step.blueMotion.motionType = step.blueMotion.motionType === 'pro' ? 'anti' : 'pro';
+            if (step.motions.blue.motionType === 'pro' || step.motions.blue.motionType === 'anti') {
+              step.motions.blue.motionType = step.motions.blue.motionType === 'pro' ? 'anti' : 'pro';
             }
-            if (step.blueMotion.rotationDirection === 'cw' || step.blueMotion.rotationDirection === 'ccw') {
-              step.blueMotion.rotationDirection = step.blueMotion.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            if (step.motions.blue.rotationDirection === 'cw' || step.motions.blue.rotationDirection === 'ccw') {
+              step.motions.blue.rotationDirection = step.motions.blue.rotationDirection === 'cw' ? 'ccw' : 'cw';
             }
           }
           if (redReversed) {
-            if (step.redMotion.motionType === 'pro' || step.redMotion.motionType === 'anti') {
-              step.redMotion.motionType = step.redMotion.motionType === 'pro' ? 'anti' : 'pro';
+            if (step.motions.red.motionType === 'pro' || step.motions.red.motionType === 'anti') {
+              step.motions.red.motionType = step.motions.red.motionType === 'pro' ? 'anti' : 'pro';
             }
-            if (step.redMotion.rotationDirection === 'cw' || step.redMotion.rotationDirection === 'ccw') {
-              step.redMotion.rotationDirection = step.redMotion.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            if (step.motions.red.rotationDirection === 'cw' || step.motions.red.rotationDirection === 'ccw') {
+              step.motions.red.rotationDirection = step.motions.red.rotationDirection === 'cw' ? 'ccw' : 'cw';
             }
           }
 
@@ -912,26 +921,26 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         gridMode,
         motions: {
           blue: {
-            motionType: sp.blueMotion.motionType,
-            rotationDirection: sp.blueMotion.rotationDirection,
-            startLocation: sp.blueMotion.startLocation,
-            endLocation: sp.blueMotion.endLocation,
-            turns: sp.blueMotion.turns ?? 0,
-            startOrientation: sp.blueMotion.startOrientation ?? "in",
-            endOrientation: sp.blueMotion.endOrientation ?? "in",
+            motionType: sp.motions.blue.motionType,
+            rotationDirection: sp.motions.blue.rotationDirection,
+            startLocation: sp.motions.blue.startLocation,
+            endLocation: sp.motions.blue.endLocation,
+            turns: sp.motions.blue.turns ?? 0,
+            startOrientation: sp.motions.blue.startOrientation ?? "in",
+            endOrientation: sp.motions.blue.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "blue",
             gridMode,
           },
           red: {
-            motionType: sp.redMotion.motionType,
-            rotationDirection: sp.redMotion.rotationDirection,
-            startLocation: sp.redMotion.startLocation,
-            endLocation: sp.redMotion.endLocation,
-            turns: sp.redMotion.turns ?? 0,
-            startOrientation: sp.redMotion.startOrientation ?? "in",
-            endOrientation: sp.redMotion.endOrientation ?? "in",
+            motionType: sp.motions.red.motionType,
+            rotationDirection: sp.motions.red.rotationDirection,
+            startLocation: sp.motions.red.startLocation,
+            endLocation: sp.motions.red.endLocation,
+            turns: sp.motions.red.turns ?? 0,
+            startOrientation: sp.motions.red.startOrientation ?? "in",
+            endOrientation: sp.motions.red.endOrientation ?? "in",
             isVisible: true,
             propType: "staff",
             color: "red",
