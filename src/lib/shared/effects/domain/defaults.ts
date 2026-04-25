@@ -146,6 +146,17 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
+  frost: {
+    ambientEmission: 0.4,
+    motionEmission: 0.5,
+    intensity: 0.6,
+    palette: "glacial",
+    customColor: "#a0d8ff",
+    crystallinity: 1.0,
+    spreadRate: 0.5,
+    trackingMode: "both_ends",
+  },
+
   activePresets: {
     trails: null,
     fire: null,
@@ -160,5 +171,6 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     petals: null,
     smoke: null,
     ink: null,
+    frost: null,
   },
 };

@@ -21,12 +21,14 @@ import type {
   PetalsIntent,
   SmokeIntent,
   InkIntent,
+  FrostIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
 import type { BubblePalette } from "../domain/BubblePalettes";
 import type { PetalPalette } from "../domain/PetalPalettes";
 import type { SmokePalette } from "../domain/SmokePalettes";
 import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
+import type { FrostPalette } from "../domain/FrostPalettes";
 
 export interface Trails2DParams extends TrailsIntent {
   /** px value for ctx.lineWidth. Derived from thickness. */
@@ -242,4 +244,39 @@ export interface Ink2DParams extends InkIntent {
   stampScaleMin: number;
   /** Max stamp scale factor — reached at low tip speed (brush pressing). */
   stampScaleMax: number;
+  /** Gravity acceleration in px/s². Palette-adjusted (watercolor = 40%). */
+  gravityPx: number;
+  /** Max stretch distance (px) before strand breaks. Scaled by (1-viscosity). */
+  breakStretchMax: number;
+  /** Max droplets alive at once from strand breakup. */
+  dropletPoolSize: number;
+  /** Base max lifetime for droplets (seconds). */
+  dropletMaxAge: number;
+}
+
+export interface Frost2DParams extends FrostIntent {
+  /** Resolved palette swatches. */
+  resolvedPalette: FrostPalette;
+  /** Max aura particles alive at once. Tier-dependent: 512 / 1024 / 2048. */
+  auraPoolSize: number;
+  /** px — base aura particle radius before `intensity` multiplier. */
+  baseRadius: number;
+  /** Particles/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Particles/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s that maps to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** Particle lifetime range low (seconds). */
+  lifetimeMin: number;
+  /** Particle lifetime range high (seconds). */
+  lifetimeMax: number;
+  /** Canvas composite op. */
+  blendMode?: GlobalCompositeOperation;
+  /** Max crystal sprites alive at once. Tier-dependent: 128 / 256 / 512. */
+  crystalPoolSize: number;
+  /** px — minimum distance between crystal spawn points along trail. */
+  crystalSpacing: number;
+  /** seconds — time for crystal to grow from 0 to full size. */
+  crystalGrowDuration: number;
 }

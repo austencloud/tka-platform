@@ -7,7 +7,7 @@ import {
 } from "../../src/lib/shared/animation-engine/components/effects-panel/effect-primary-param";
 
 describe("effect-primary-param", () => {
-  it("has an entry for all 11 effects", () => {
+  it("has an entry for all 13 effects", () => {
     const ids = Object.keys(PRIMARY_PARAMS).sort();
     expect(ids).toEqual([
       "bloom",
@@ -15,8 +15,10 @@ describe("effect-primary-param", () => {
       "charcoal",
       "echo",
       "fire",
+      "ink",
       "led",
       "petals",
+      "smoke",
       "sparkles",
       "trails",
       "water",

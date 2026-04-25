@@ -21,12 +21,14 @@ import type {
   PetalsIntent,
   SmokeIntent,
   InkIntent,
+  FrostIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
 import type { BubblePalette } from "../domain/BubblePalettes";
 import type { PetalPalette } from "../domain/PetalPalettes";
 import type { SmokePalette } from "../domain/SmokePalettes";
 import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
+import type { FrostPalette } from "../domain/FrostPalettes";
 
 export interface Trails3DParams extends TrailsIntent {
   /** World-space tube radius, meters. Derived from thickness. */
@@ -226,4 +228,23 @@ export interface Ink3DParams extends InkIntent {
   maxPointsPerTip: number;
   /** World units/s mapping to full motion scalar. Spec MOTION_REFERENCE_SPEED=3.0. */
   motionReferenceSpeed: number;
+}
+
+export interface Frost3DParams extends FrostIntent {
+  /** Resolved palette swatches. */
+  resolvedPalette: FrostPalette;
+  /** Max instanced aura particles. Tier-dependent: 512 / 1024 / 2048. */
+  auraPoolSize: number;
+  /** World-units — base aura billboard radius. */
+  baseRadius: number;
+  /** Particles/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Particles/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s mapping to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** Particle lifetime range low (seconds). */
+  lifetimeMin: number;
+  /** Particle lifetime range high (seconds). */
+  lifetimeMax: number;
 }

@@ -15,6 +15,7 @@ function createMockScene(): any {
 function createMockCamera(): any {
   return {
     quaternion: { x: 0, y: 0, z: 0, w: 1 },
+    getWorldPosition: (target: any) => { target.x = 0; target.y = 2; target.z = 5; return target; },
   };
 }
 

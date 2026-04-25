@@ -23,6 +23,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     petals?: any;
     smoke?: any;
     ink?: any;
+    frost?: any;
   };
   const version = input.version ?? 1;
 
@@ -144,6 +145,10 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // thick loaded brush, fast = thin lifted brush). Sprint 1 = stroke MVP;
   // sprint 2 adds sag, strand breakup, splatter bursts, ground pooling.
 
+  // v12 → v13: add frost intent + activePresets.frost. Net-new 14th effect
+  // (15th chip including "none"). No field migration — absent frost resolves
+  // to DEFAULT_EFFECTS_CONFIG.frost via the merge below.
+
   let out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -160,6 +165,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     petals: { ...DEFAULT_EFFECTS_CONFIG.petals, ...(input.petals ?? {}) },
     smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke, ...(input.smoke ?? {}) },
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
+    frost: { ...DEFAULT_EFFECTS_CONFIG.frost, ...(input.frost ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
       ...(input.activePresets ?? {}),

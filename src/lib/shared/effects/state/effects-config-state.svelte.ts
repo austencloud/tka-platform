@@ -23,6 +23,7 @@ import type {
   PetalsIntent,
   SmokeIntent,
   InkIntent,
+  FrostIntent,
 } from "../domain/EffectsConfig";
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
@@ -64,6 +65,7 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     petals: patch.petals ? { ...base.petals, ...patch.petals } : base.petals,
     smoke: patch.smoke ? { ...base.smoke, ...patch.smoke } : base.smoke,
     ink: patch.ink ? { ...base.ink, ...patch.ink } : base.ink,
+    frost: patch.frost ? { ...base.frost, ...patch.frost } : base.frost,
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
@@ -165,6 +167,12 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     scheduleSave();
   }
 
+  function updateFrost(patch: Partial<FrostIntent>) {
+    config.frost = { ...config.frost, ...patch };
+    config.activePresets.frost = null;
+    scheduleSave();
+  }
+
   function setTipEffectMap(map: TipEffectMap) {
     config.tipEffectMap = map;
     scheduleSave();
@@ -211,6 +219,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get petals() { return config.petals; },
     get smoke() { return config.smoke; },
     get ink() { return config.ink; },
+    get frost() { return config.frost; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
 
@@ -227,6 +236,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     updatePetals,
     updateSmoke,
     updateInk,
+    updateFrost,
     setTipEffectMap,
     applyPreset,
     updateOverride,

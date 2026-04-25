@@ -12,6 +12,7 @@ import type {
   PetalsIntent,
   SmokeIntent,
   InkIntent,
+  FrostIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails3DParams,
@@ -27,12 +28,14 @@ import type {
   Petals3DParams,
   Smoke3DParams,
   Ink3DParams,
+  Frost3DParams,
 } from "./webgl3d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
 import { resolveBubblePalette } from "../domain/BubblePalettes";
 import { resolvePetalPalette } from "../domain/PetalPalettes";
 import { resolveSmokePalette } from "../domain/SmokePalettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
+import { resolveFrostPalette } from "../domain/FrostPalettes";
 
 export function resolveTrails3D(
   intent: TrailsIntent,
@@ -274,6 +277,24 @@ export function resolveInk3D(
     lifetimeSeconds: LIFETIME_SECONDS_BASE,
     maxPointsPerTip: MAX_POINTS_PER_TIP,
     motionReferenceSpeed: MOTION_REFERENCE_SPEED,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveFrost3D(
+  intent: FrostIntent,
+  override: Partial<Frost3DParams> = {},
+): Frost3DParams {
+  const palette = resolveFrostPalette(intent);
+  const defaults: Omit<Frost3DParams, keyof FrostIntent> = {
+    resolvedPalette: palette,
+    auraPoolSize: 1024,
+    baseRadius: 0.03,
+    ambientSpawnRate: 6,
+    motionSpawnRate: 25,
+    motionReferenceSpeed: 3.0,
+    lifetimeMin: 1.5,
+    lifetimeMax: 3.0,
   };
   return { ...intent, ...defaults, ...override };
 }

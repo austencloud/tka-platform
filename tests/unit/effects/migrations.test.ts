@@ -9,7 +9,7 @@ describe("migrateEffectsConfig", () => {
     expect(result).toEqual(v2);
   });
 
-  it("adds missing zap/sparkles/motion/bloom to v1 config", () => {
+  it("migrates v1 config through full chain to current version", () => {
     const v1: Record<string, unknown> = {
       version: 1,
       tipEffectMap: { "*": { effect: "trails" } },
@@ -20,14 +20,14 @@ describe("migrateEffectsConfig", () => {
       activePresets: { trails: null, fire: null, led: null, charcoal: null },
     };
     const result = migrateEffectsConfig(v1);
-    expect(result.version).toBe(2);
+    expect(result.version).toBe(DEFAULT_EFFECTS_CONFIG.version);
     expect(result.zap).toEqual(DEFAULT_EFFECTS_CONFIG.zap);
     expect(result.sparkles).toEqual(DEFAULT_EFFECTS_CONFIG.sparkles);
-    expect(result.motion).toEqual(DEFAULT_EFFECTS_CONFIG.motion);
+    expect(result.echo).toEqual(DEFAULT_EFFECTS_CONFIG.echo);
     expect(result.bloom).toEqual(DEFAULT_EFFECTS_CONFIG.bloom);
     expect(result.activePresets.zap).toBeNull();
     expect(result.activePresets.sparkles).toBeNull();
-    expect(result.activePresets.motion).toBeNull();
+    expect(result.activePresets.echo).toBeNull();
     expect(result.activePresets.bloom).toBeNull();
   });
 
