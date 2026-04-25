@@ -22,7 +22,6 @@ import { createContainer } from "iti";
 // ============================================================================
 // SIMPLE CONTAINERS (export const xyzContainer = createContainer()...)
 // ============================================================================
-import { dataContainer } from "./containers/data-container";
 import { multiGridContainer } from "./containers/multi-grid-container";
 import { videoInfraContainer } from "./containers/video-infra-container";
 import { videoTrailsContainer } from "./containers/video-trails-container";
@@ -58,7 +57,19 @@ import { getGestureHandler } from "../mobile/getGestureHandler";
 import { getPWAEngagementTracker } from "../mobile/getPWAEngagementTracker";
 import { getPWAInstallDismissalManager } from "../mobile/getPWAInstallDismissalManager";
 import { getWordDeriver } from "../foundation/getWordDeriver";
+import { getCsvLoader } from "../foundation/getCsvLoader";
+import { getCsvParser } from "../foundation/getCsvParser";
+import { getEnumMapper } from "../foundation/getEnumMapper";
 import { getFileDownloader } from "../foundation/getFileDownloader";
+import { getDataTransformer } from "../application/getDataTransformer";
+import { getPersistenceService } from "../persistence/getPersistenceService";
+import { getPersistenceInitializationService } from "../persistence/getPersistenceInitializationService";
+import { getSequenceDomainManager } from "$lib/features/create/shared/getSequenceDomainManager";
+import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
+import { getSequenceImporter } from "$lib/features/create/shared/getSequenceImporter";
+import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+import { getSequenceNormalizer } from "$lib/features/compose/getSequenceNormalizer";
+import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
 import { getStorageManager } from "../foundation/getStorageManager";
 import { getSeoManager } from "../foundation/getSeoManager";
 import { getSvgImageConverter } from "../foundation/getSvgImageConverter";
@@ -184,7 +195,7 @@ const navigationContainer = typeof window !== 'undefined' ? _timeContainer('navi
   motionQueryHandler,
   gridModeDeriver,
   gridPositionDeriver,
-  persistenceService: dataContainer.items.persistenceService,
+  persistenceService: getPersistenceService(),
 })) : null as any;
 
 // Share container needs sequenceRenderer from render
@@ -208,9 +219,9 @@ const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('cr
   gridPositionDeriver,
   gridModeDeriver,
   motionQueryHandler,
-  sequenceRepository: dataContainer.items.sequenceRepository,
-  persistenceService: dataContainer.items.persistenceService,
-  reversalDetector: dataContainer.items.reversalDetector,
+  sequenceRepository: getSequenceRepository(),
+  persistenceService: getPersistenceService(),
+  reversalDetector: getReversalDetector(),
   deepLinker: navigationContainer.items.deepLinker,
   letterDeriver: navigationContainer.items.letterDeriver,
   positionDeriver: navigationContainer.items.positionDeriver,
@@ -226,7 +237,7 @@ const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('cr
   turnsTupleGenerator,
   sharer: shareContainer.items.sharer,
   // Animation services (from data container to avoid circular deps)
-  sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
+  sequenceLoopabilityChecker: getSequenceLoopabilityChecker(),
 })) : null as any;
 
 // Configure lazy create container for HMR-optimized access pattern
@@ -238,9 +249,9 @@ if (typeof window !== 'undefined') {
     gridPositionDeriver,
     gridModeDeriver,
     motionQueryHandler,
-    sequenceRepository: dataContainer.items.sequenceRepository,
-    persistenceService: dataContainer.items.persistenceService,
-    reversalDetector: dataContainer.items.reversalDetector,
+    sequenceRepository: getSequenceRepository(),
+    persistenceService: getPersistenceService(),
+    reversalDetector: getReversalDetector(),
     deepLinker: navigationContainer.items.deepLinker,
     letterDeriver: navigationContainer.items.letterDeriver,
     positionDeriver: navigationContainer.items.positionDeriver,
@@ -254,7 +265,7 @@ if (typeof window !== 'undefined') {
     pictographPreparer,
     turnsTupleGenerator,
     sharer: shareContainer.items.sharer,
-    sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
+    sequenceLoopabilityChecker: getSequenceLoopabilityChecker(),
   }));
 }
 
@@ -265,10 +276,10 @@ const composeCoreContainer = typeof window !== 'undefined' ? _timeContainer('com
   layoutCalculator: renderContainer.items.layoutCalculator,
   svgImageConverter: getSvgImageConverter(),
   fileDownloader: getFileDownloader(),
-  sequenceRepository: dataContainer.items.sequenceRepository,
+  sequenceRepository: getSequenceRepository(),
   sequenceTransformer: createModuleContainer.items.sequenceTransformer,
   browseLoader: browseContainer.items.browseLoader,
-  sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
+  sequenceLoopabilityChecker: getSequenceLoopabilityChecker(),
 })) : null as any;
 
 // Loop labeler container needs sequenceAnalyzer from build
@@ -392,14 +403,14 @@ const tikaContainer = typeof window !== 'undefined' ? _timeContainer('tika', cre
 
 // DeepLinkResolver - needs sequenceRepository from data and browseLoader from browse
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
-  dataContainer.items.sequenceRepository,
+  getSequenceRepository(),
   browseContainer.items.browseLoader
 ) : null as any;
 
 // SequenceDataProvider - unified interface for loading sequences from any source
 // Abstracts local IndexedDB (user sequences) vs Firebase (public sequences)
 const sequenceDataProvider = typeof window !== 'undefined' ? new SequenceDataProvider(
-  dataContainer.items.sequenceRepository,
+  getSequenceRepository(),
   browseContainer.items.browseLoader
 ) : null as any;
 
@@ -462,8 +473,21 @@ function buildAppContainer(): any {
     tagManager: () => getTagManager(),
     conflictResolver: () => getConflictResolver(),
   });
-  // Data and persistence
-  c = c.add(dataContainer.items);
+  // Data and persistence (dissolved from data-container)
+  c = c.add({
+    csvLoader: () => getCsvLoader(),
+    csvParser: () => getCsvParser(),
+    enumMapper: () => getEnumMapper(),
+    dataTransformer: () => getDataTransformer(),
+    persistenceService: () => getPersistenceService(),
+    sequenceDomainManager: () => getSequenceDomainManager(),
+    reversalDetector: () => getReversalDetector(),
+    sequenceNormalizer: () => getSequenceNormalizer(),
+    sequenceLoopabilityChecker: () => getSequenceLoopabilityChecker(),
+    persistenceInitializationService: () => getPersistenceInitializationService(),
+    sequenceImporter: () => getSequenceImporter(),
+    sequenceRepository: () => getSequenceRepository(),
+  });
   // Navigation
   c = c.add(navigationContainer.items);
   // Rendering

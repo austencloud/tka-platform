@@ -17,7 +17,7 @@ import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceSt
 import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
-import { container } from "$lib/shared/di";
+import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { UndoMetadata, UndoOperationType } from "../services/contracts/IUndoManager";
@@ -52,7 +52,7 @@ export function createGeneratorTabState(
 
   // Generator tab has its own independent sequence state
   // IMPORTANT: Pass tabId="generate" to ensure persistence loads/saves only generator's data
-  const ReversalDetector = container.items.reversalDetector as IReversalDetector | undefined;
+  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,

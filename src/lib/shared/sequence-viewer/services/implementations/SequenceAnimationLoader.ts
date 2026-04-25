@@ -6,7 +6,7 @@ import type {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-import { container } from "$lib/shared/di";
+import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 /**
@@ -109,7 +109,7 @@ export class SequenceAnimationLoader implements ISequenceAnimationLoader {
 
     const galleryId = seq.word || seq.name;
     if (galleryId) {
-      const hydrated = await container.items.sequenceRepository.getSequence(galleryId);
+      const hydrated = await getSequenceRepository().getSequence(galleryId);
       if (hydrated && hasMotionData(hydrated)) {
         return this.ensureWordPopulated(hydrated);
       }

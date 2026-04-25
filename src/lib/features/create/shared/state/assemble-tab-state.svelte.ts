@@ -17,7 +17,7 @@ import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceSt
 import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
-import { container } from "$lib/shared/di";
+import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
@@ -49,7 +49,7 @@ export function createAssembleTabState(
   let letterCache = $state<Map<number, Letter | null>>(new Map());
 
   // Isolated sequence state for this tab
-  const ReversalDetector = container.items.reversalDetector as IReversalDetector | undefined;
+  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,

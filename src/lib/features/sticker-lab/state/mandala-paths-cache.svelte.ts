@@ -1,7 +1,7 @@
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implementations/MandalaGeometryCalculator";
 import { getCatalogEntry, loadPrimitiveCatalog } from "../services/implementations/PrimitiveCatalogReader";
-import { container } from "$lib/shared/di";
+import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
 
 /**
  * Mandala paths cache keyed by shapeHash.
@@ -44,7 +44,7 @@ export async function loadPrimitivePaths(shapeHash: string): Promise<MandalaPath
 
       // Stage A fallback: shapeHash is a sequenceId proxy.
       const sequenceId = entry?.sourceLoop?.sequenceId ?? shapeHash;
-      const seq = await container.items.sequenceRepository.getSequence(sequenceId);
+      const seq = await getSequenceRepository().getSequence(sequenceId);
       if (!seq?.steps) return null;
       const paths = calculator.calculate(seq.steps);
       cache[shapeHash] = paths;

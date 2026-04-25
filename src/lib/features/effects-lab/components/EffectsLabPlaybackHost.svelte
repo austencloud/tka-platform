@@ -14,6 +14,8 @@
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { container } from "$lib/shared/di";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -207,9 +209,9 @@
   onMount(async () => {
     window.addEventListener("keydown", handleKeydown);
     try {
-      sequenceService = container.items.sequenceRepository;
+      sequenceService = getSequenceRepository();
       const propInterpolator = container.items.propInterpolationService;
-      const loopabilityChecker = container.items.sequenceLoopabilityChecker;
+      const loopabilityChecker = getSequenceLoopabilityChecker();
       const stateManager = new AnimationStateManager();
       const stepCalculator = new StepCalculator();
       const loop = new AnimationLoop();

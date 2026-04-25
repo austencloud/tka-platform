@@ -16,6 +16,7 @@ import { createSimplifiedStartPositionState } from "../../construct/start-positi
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { container } from "$lib/shared/di";
+import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 
 const debug = createComponentLogger("ConstructTabState");
 import { createStartPositionData } from "../domain/factories/createStartPositionData";
@@ -114,7 +115,7 @@ export function createConstructTabState(
 
   // Construct tab has its own independent sequence state
   // IMPORTANT: Pass tabId="construct" to ensure persistence loads/saves only construct's data
-  const ReversalDetector = container.items.reversalDetector as IReversalDetector | undefined;
+  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,

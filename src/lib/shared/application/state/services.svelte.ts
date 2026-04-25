@@ -1,5 +1,5 @@
 import type { IPersistenceService } from "../../persistence/services/contracts/IPersistenceService";
-import { container } from "../../di";
+import { getPersistenceService as getPersistenceServiceSingleton } from "../../persistence/getPersistenceService";
 import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
 import { settingsService as settingsServiceSingleton } from "../../settings/state/SettingsState.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
@@ -75,7 +75,7 @@ export async function getSettingsService(): Promise<ISettingsState> {
 
 export async function getPersistenceService(): Promise<IPersistenceService> {
   if (!persistenceService) {
-    persistenceService = container.items.persistenceService;
+    persistenceService = getPersistenceServiceSingleton();
   }
   if (!persistenceService) {
     throw new Error("Persistence service is null after resolution");

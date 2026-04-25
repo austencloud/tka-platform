@@ -16,7 +16,7 @@ import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceSt
 import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
-import { container } from "$lib/shared/di";
+import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { StepData } from "../domain/models/StepData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
@@ -48,7 +48,7 @@ export function createCreateModuleState(
   sequenceValidationService?: ISequenceValidator
 ) {
   // Create sequence state (shared/legacy - kept for backwards compatibility)
-  const ReversalDetector = container.items.reversalDetector as IReversalDetector | undefined;
+  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
   const sequenceState = createSequenceState({
     sequenceService,
     ...(SequencePersister && { SequencePersister }),

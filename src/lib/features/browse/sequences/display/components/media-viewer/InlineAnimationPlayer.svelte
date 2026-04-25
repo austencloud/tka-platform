@@ -15,6 +15,8 @@
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -173,11 +175,11 @@
   // InlineAnimationPlayers can run simultaneously (e.g., Arena side-by-side)
   onMount(async () => {
     try {
-      sequenceService = container.items.sequenceRepository;
+      sequenceService = getSequenceRepository();
 
       // Stateless services shared from container
       const propInterpolator = container.items.propInterpolationService;
-      const loopabilityChecker = container.items.sequenceLoopabilityChecker;
+      const loopabilityChecker = getSequenceLoopabilityChecker();
 
       // Stateful services — fresh instance per player
       const stateManager = new AnimationStateManager();
