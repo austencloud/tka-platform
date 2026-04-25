@@ -9,12 +9,18 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ITransitionGraph } from "$lib/shared/sequence-engine/services/contracts/ITransitionGraph";
 import type { LetterPositionInfo } from "../../domain/models/spell-models";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 
 /**
  * Extended interface for browser contexts with Letter enum typing.
  * The underlying implementation uses the shared TransitionGraph.
  */
 export interface ILetterTransitionGraph {
+  /**
+   * Set the letter query handler. Must be called before initialize().
+   */
+  setLetterQueryHandler(handler: ILetterQueryHandler): void;
+
   /**
    * Initialize the graph by loading letter mapping data
    */

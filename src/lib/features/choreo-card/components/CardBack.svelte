@@ -9,6 +9,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import TKAWordGlyph from "./TKAWordGlyph.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import {
     LOOP_TYPE_LABELS,
@@ -68,7 +69,7 @@
 
       <!-- ── Sequence identity ── -->
       <div class="identity">
-        <span class="word">{word}</span>
+        <TKAWordGlyph {word} height={24} />
         <span class="beats">{beats} beats</span>
       </div>
 
@@ -201,13 +202,6 @@
     justify-content: space-between;
     align-items: baseline;
     padding: 2% 0;
-  }
-
-  .word {
-    font-size: clamp(12px, 3.5cqi, 20px);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: var(--cb-fg);
   }
 
   .beats {
