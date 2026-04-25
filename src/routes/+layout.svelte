@@ -297,10 +297,11 @@
 
     // Prefetch browse data so it's ready before the user navigates there.
     // Uses requestIdleCallback to avoid competing with the active module's load.
-    const prefetchBrowseData = () => {
+    const prefetchBrowseData = async () => {
       // Gallery: warm from IndexedDB cache, sync from Firestore in background
       try {
-        const prefetcher = container.items.galleryPrefetcher;
+        const { getGalleryPrefetcher } = await import("$lib/features/browse/shared/getGalleryPrefetcher");
+        const prefetcher = getGalleryPrefetcher();
         if (prefetcher && typeof prefetcher.prefetch === "function") {
           prefetcher.prefetch().catch((err: unknown) =>
             console.warn("[Layout] Gallery prefetch failed:", err)
