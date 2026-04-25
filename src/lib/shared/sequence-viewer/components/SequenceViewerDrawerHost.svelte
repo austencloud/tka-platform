@@ -38,6 +38,7 @@
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   // Services
   import { container } from "$lib/shared/di";
+  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
@@ -134,7 +135,7 @@
     const seq = overlay.sequence;
     if (!seq) return;
     try {
-      const copier = container.items.claudeCodeCopier;
+      const copier = getClaudeCodeCopier();
       await copier.copyForClaude(seq);
       copyClaudeFeedback = true;
       setTimeout(() => { copyClaudeFeedback = false; }, 1500);

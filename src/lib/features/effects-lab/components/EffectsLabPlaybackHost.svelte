@@ -17,6 +17,7 @@
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -102,7 +103,7 @@
   // The EffectsPanel writes to the VM; we read from it to know which mode
   // is active for the canvas conditional props and accent color theming.
   let vmActiveMode = $state<
-    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "echo" | "bloom" | "water" | "bubbles" | "petals" | "smoke" | "ink" | "none"
+    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "echo" | "bloom" | "water" | "bubbles" | "petals" | "smoke" | "ink" | "frost" | "none"
   >("none");
 
   function syncActiveMode() {
@@ -222,7 +223,7 @@
         animOrchestrator, loop, loopabilityChecker
       );
 
-      const browseLoader = container.items.browseLoader;
+      const browseLoader = getBrowseLoader();
       const generationOrchestrator = container.items.generationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer;
 

@@ -34,6 +34,7 @@
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "../application/services/contracts/IHapticFeedback";
@@ -227,7 +228,7 @@
 
     // Resolve animation-specific services (all registered synchronously via ITI)
     try {
-      browseLoader = container.items.browseLoader;
+      browseLoader = getBrowseLoader();
       playbackController = container.items.animationPlaybackController;
       videoExportOrchestrator = container.items.videoExportOrchestrator;
       VideoExporter = container.items.videoExporter;

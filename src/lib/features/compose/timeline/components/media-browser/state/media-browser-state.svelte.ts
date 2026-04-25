@@ -12,7 +12,10 @@ import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/Filt
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
 import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
-import { container } from "$lib/shared/di";
+import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
+import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
+import { getBrowseSorter } from "$lib/features/browse/sequences/display/getBrowseSorter";
 
 const BATCH_SIZE = 24;
 
@@ -111,10 +114,10 @@ export function createMediaBrowserState() {
   // Initialize services
   function initializeServices(): boolean {
     try {
-      loaderService = container.items.browseLoader;
-      thumbnailService = container.items.browseThumbnailProvider;
-      filterService = container.items.browseFilter;
-      sortService = container.items.browseSorter;
+      loaderService = getBrowseLoader();
+      thumbnailService = getBrowseThumbnailProvider();
+      filterService = getBrowseFilter();
+      sortService = getBrowseSorter();
       servicesReady = !!(loaderService && thumbnailService);
       return servicesReady;
     } catch (err) {

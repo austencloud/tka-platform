@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { turnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -75,7 +75,7 @@
       error = null;
 
       playbackController = createPlaybackControllerFactory();
-      browseLoader = container.items.browseLoader;
+      browseLoader = getBrowseLoader();
 
       await withRetry(() => browseLoader!.loadSequenceMetadata());
 

@@ -21,6 +21,8 @@
   import type { PlaybackMode, StepPlaybackStepSize } from "$lib/features/compose/state/animation-panel-state.svelte";
 
   import { container } from "$lib/shared/di";
+  import { getSequenceDetailLoader } from "$lib/features/browse/sequences/display/getSequenceDetailLoader";
+  import { getVideoCountManager } from "$lib/features/browse/sequences/display/getVideoCountManager";
   import { onMount, untrack } from "svelte";
 
   import SequenceViewer from "./SequenceViewer.svelte";
@@ -162,8 +164,8 @@
 
     if (mode === "browse") {
       try {
-        detailLoader = container.items.sequenceDetailLoader;
-        videoCountManager = container.items.videoCountManager;
+        detailLoader = getSequenceDetailLoader();
+        videoCountManager = getVideoCountManager();
       } catch (e) {
         console.warn("[SequencePanel] Could not resolve browse mode services:", e);
       }

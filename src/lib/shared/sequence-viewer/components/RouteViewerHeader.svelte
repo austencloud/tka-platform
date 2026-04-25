@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
+  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
 
@@ -37,7 +37,7 @@
   async function handleCopyForClaude() {
     if (!sequence) return;
     try {
-      const copier = container.items.claudeCodeCopier;
+      const copier = getClaudeCodeCopier();
       await copier.copyForClaude(sequence);
       copyClaudeFeedback = true;
       setTimeout(() => { copyClaudeFeedback = false; }, 1500);

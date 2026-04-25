@@ -11,7 +11,7 @@
   import TimelineClip from "./TimelineClip.svelte";
   import BeatGrid from "./BeatGrid.svelte";
   import { timeToPixels } from "../domain/timeline-types";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 
   interface Props {
     track: TimelineTrack;
@@ -86,7 +86,7 @@
       let sequence = sequenceData;
       if (sequenceData._needsFullLoad) {
         try {
-          const loader = container.items.browseLoader;
+          const loader = getBrowseLoader();
           if (loader) {
             const fullSequence = await loader.loadFullSequenceData(
               sequenceData.word || sequenceData.name || sequenceData.id

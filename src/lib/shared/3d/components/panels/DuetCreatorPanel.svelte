@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -76,7 +77,7 @@
 
   onMount(async () => {
     try {
-      browseLoader = container.items.browseLoader;
+      browseLoader = getBrowseLoader();
       duetPersister = container.items.duetPersister;
       await loadSequences();
     } catch (e) {

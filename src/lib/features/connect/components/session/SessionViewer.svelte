@@ -14,6 +14,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../../state/connect-state.svelte';
 	import { container } from '$lib/shared/di';
+	import { getBrowseLoader } from '$lib/features/browse/sequences/display/getBrowseLoader';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import { lanSyncState } from '$lib/shared/lan-sync/state/lan-sync-state.svelte';
 	import type { DisplayPreference, SyncSession } from '../../domain/models/connect-models';
@@ -146,7 +147,7 @@
 			}
 
 			// Source 4: Legacy browse loader (by document ID)
-			const browseLoader = container.items.browseLoader;
+			const browseLoader = getBrowseLoader();
 			const fromBrowse = await browseLoader.loadFullSequenceData(session.sequenceId);
 			if (fromBrowse) {
 				sequence = fromBrowse;

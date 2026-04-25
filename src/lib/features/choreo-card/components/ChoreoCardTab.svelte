@@ -6,8 +6,10 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import { SequenceDifficultyCalculator } from "../../browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
@@ -17,6 +19,7 @@
   import PageDisplay from "./PageDisplay.svelte";
   import type { Deck } from "../domain/models/Deck";
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
+  import type { IThumbnailRenderOrchestrator } from "../../browse/sequences/display/services/contracts/IThumbnailRenderOrchestrator";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
   import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";
@@ -353,7 +356,7 @@
   });
 
   onMount(async () => {
-    loaderService = container.items.browseLoader;
+    loaderService = getBrowseLoader();
     await loadSequences();
 
     // Check if the URL hash encodes a saved nav state (e.g. from a page refresh).
@@ -384,6 +387,10 @@
     }
   });
 
+  onDestroy(() => {
+    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
+  });
+
   async function loadSequences() {
     if (!loaderService) return;
 
@@ -393,7 +400,7 @@
       sequences = await loaderService.loadSequenceMetadata();
     } catch (err) {
       error = err instanceof Error ? err.message : "Failed to load sequences";
-      console.error("ChoreoCard: Failed to load sequences:", err);
+      console.warn("ChoreoCard: Failed to load sequences:", err);
     } finally {
       isLoading = false;
     }
@@ -450,7 +457,7 @@
       deckErrorMessage = null;
       decks = await deckLoader.loadDecks();
     } catch (err) {
-      console.error("Failed to load decks:", err);
+      console.warn("Failed to load decks:", err);
       deckErrorMessage = "Failed to load decks. Check your connection and try again.";
     } finally {
       isDeckLoading = false;
@@ -458,6 +465,7 @@
   }
 
   function handleBackToCollections() {
+    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
     selectedDeckId = null;
     selectedVtgFamily = null;
     deckSequences = [];
@@ -485,7 +493,7 @@
         }
       }
     } catch (err) {
-      console.error("Failed to load deck sequences:", err);
+      console.warn("Failed to load deck sequences:", err);
       deckErrorMessage = "Failed to load sequences for this deck. Try again.";
     } finally {
       isDeckLoading = false;
@@ -493,6 +501,7 @@
   }
 
   async function handleSelectDeck(deckId: string, vtgFamily?: string | null) {
+    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
     selectedDeckId = deckId;
     selectedVtgFamily = vtgFamily ?? null;
     deckSequences = [];
@@ -503,6 +512,7 @@
   }
 
   function handleBackToDeckList() {
+    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
     selectedDeckId = null;
     deckSequences = [];
     persist(STORAGE_KEY_SELECTED_DECK, null);
@@ -521,7 +531,7 @@
         .flatMap((f) => [...f.sequenceIds]);
       deckSequences = await deckLoader.loadSequencesByIds(selectedDeckId, seqIds);
     } catch (err) {
-      console.error("Failed to load family sequences:", err);
+      console.warn("Failed to load family sequences:", err);
     } finally {
       isDeckLoading = false;
     }
@@ -606,8 +616,8 @@
     justify-content: space-between;
     gap: var(--spacing-sm, 8px);
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: var(--semantic-error-bg, rgba(239, 68, 68, 0.15));
+    border: 1px solid var(--semantic-error-border, rgba(239, 68, 68, 0.4));
     border-radius: var(--border-radius-md, 8px);
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm, 14px);
@@ -616,8 +626,8 @@
   .error-banner button {
     padding: 4px 12px;
     border-radius: var(--border-radius-sm, 4px);
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid var(--semantic-error-border, rgba(239, 68, 68, 0.5));
+    background: var(--semantic-error-bg, rgba(239, 68, 68, 0.2));
     color: var(--theme-text, #fff);
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
@@ -625,7 +635,7 @@
   }
 
   .error-banner button:hover {
-    background: rgba(239, 68, 68, 0.35);
+    background: var(--semantic-error-bg, rgba(239, 68, 68, 0.35));
   }
 
   /* Responsive */

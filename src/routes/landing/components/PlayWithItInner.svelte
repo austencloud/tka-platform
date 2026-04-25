@@ -20,6 +20,7 @@
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
@@ -276,7 +277,7 @@
       // Trails on by default (matches "trails" active chip)
       visibilityManager.setActiveEffect("trails");
 
-      browseLoader = container.items.browseLoader;
+      browseLoader = getBrowseLoader();
       const controllerFactory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
       playbackController = controllerFactory.create();
       startPositionDeriver = startPositionDeriverInstance;

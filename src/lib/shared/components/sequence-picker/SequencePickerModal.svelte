@@ -23,7 +23,10 @@
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { ActiveFilter } from "$lib/features/browse/shared/domain/models/multi-filter-models";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
+  import { getBrowseSorter } from "$lib/features/browse/sequences/display/getBrowseSorter";
+  import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
   import PickerToolbar from "./PickerToolbar.svelte";
@@ -225,10 +228,10 @@
   // ===== Service Initialization =====
   function initializeServices() {
     try {
-      loaderService = container.items.browseLoader ?? null;
-      filterService = container.items.browseFilter ?? null;
-      sorterService = container.items.browseSorter ?? null;
-      thumbnailService = container.items.browseThumbnailProvider ?? null;
+      loaderService = getBrowseLoader() ?? null;
+      filterService = getBrowseFilter() ?? null;
+      sorterService = getBrowseSorter() ?? null;
+      thumbnailService = getBrowseThumbnailProvider() ?? null;
     } catch (err) {
       console.error("SequencePickerModal: Failed to initialize services:", err);
       error = "Failed to initialize services";

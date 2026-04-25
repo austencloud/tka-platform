@@ -5,7 +5,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container as di } from "$lib/shared/di";
+  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
 
@@ -68,12 +68,14 @@
   /** Copy sequence data in Claude-optimized compact format */
   async function copySequenceData() {
     try {
-      const copier = di.items.claudeCodeCopier;
+      const copier = getClaudeCodeCopier();
       const result = await copier.copyForClaude(sequence);
       copyDataState = result.success ? "success" : "error";
+      clearTimeout(dataResetTimer);
       dataResetTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
     } catch {
       copyDataState = "error";
+      clearTimeout(dataErrorTimer);
       dataErrorTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
     }
   }
@@ -101,9 +103,11 @@
         new ClipboardItem({ "image/png": blob }),
       ]);
       copyImageState = "success";
+      clearTimeout(imageResetTimer);
       imageResetTimer = setTimeout(() => { copyImageState = "idle"; }, 2000);
     } catch {
       copyImageState = "error";
+      clearTimeout(imageErrorTimer);
       imageErrorTimer = setTimeout(() => { copyImageState = "idle"; }, 2000);
     }
   }
@@ -214,7 +218,7 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.88);
+    background: var(--theme-overlay-bg, rgba(0, 0, 0, 0.88));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -244,14 +248,14 @@
   .modal-title {
     font-size: 28px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
     letter-spacing: 1.5px;
     margin: 0 0 4px 0;
   }
 
   .modal-hint {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
     margin: 0;
   }
 
@@ -269,8 +273,8 @@
     height: 44px;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.5);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     font-size: 20px;
     cursor: pointer;
     display: flex;
@@ -281,8 +285,8 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    color: var(--theme-text, #fff);
   }
 
   .bottom-bar {
@@ -303,19 +307,19 @@
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.5);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     font-size: 12px;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .copy-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
+    border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
   }
 
   .copy-btn:disabled {
@@ -324,33 +328,33 @@
   }
 
   .toggle-btn.on {
-    background: rgba(110, 180, 255, 0.14);
-    border-color: rgba(110, 180, 255, 0.35);
-    color: rgba(200, 225, 255, 0.9);
+    background: var(--theme-accent-bg, rgba(110, 180, 255, 0.14));
+    border-color: var(--theme-accent, rgba(110, 180, 255, 0.35));
+    color: var(--theme-text, rgba(200, 225, 255, 0.9));
   }
 
   .toggle-btn.on:hover {
-    background: rgba(110, 180, 255, 0.22);
-    border-color: rgba(110, 180, 255, 0.55);
-    color: #fff;
+    background: var(--theme-accent-glow, rgba(110, 180, 255, 0.22));
+    border-color: var(--theme-accent-strong, rgba(110, 180, 255, 0.55));
+    color: var(--theme-text, #fff);
   }
 
   .hints {
     display: flex;
     gap: 16px;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.12);
+    color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
     flex-shrink: 0;
   }
 
   .hints kbd {
     display: inline-block;
     padding: 1px 5px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 3px;
     font-family: inherit;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.25);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
     margin-right: 4px;
   }
 

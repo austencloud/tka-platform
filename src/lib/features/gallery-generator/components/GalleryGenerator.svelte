@@ -8,7 +8,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { container } from "$lib/shared/di";
+  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
@@ -57,7 +57,7 @@
       }
 
       // Get services from ITI container
-      const loaderService = container.items.browseLoader;
+      const loaderService = getBrowseLoader();
       const renderService = getSequenceRenderer();
 
       galleryRenderer = new GalleryRenderer(

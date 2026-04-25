@@ -24,8 +24,8 @@
 // GamificationContainer removed — dissolved into module singleton getters
 // PromoContainer removed — dissolved into module singleton getters
 // RenderContainer removed — render services dissolved into module singleton getters
-import type { ShareContainer } from "./containers/share-container";
-import type { BrowseContainer } from "./containers/browse-container";
+// ShareContainer removed — dissolved into module singleton getters
+// BrowseContainer removed — dissolved into module singleton getters
 import type { CreateContainer } from "./containers/create-container";
 // TrainContainer removed — dissolved into module singleton getters
 // Skel2TKAContainer removed — dissolved into module singleton getters
@@ -180,8 +180,20 @@ interface RenderItems {
 	imageComposer: import("../render/services/contracts/IImageComposer").IImageComposer;
 	sequenceRenderer: import("../render/services/contracts/ISequenceRenderer").ISequenceRenderer;
 }
-type ShareItems = ItemsOf<ShareContainer>;
-type BrowseItems = ItemsOf<BrowseContainer>;
+// ShareItems — dissolved from share-container into module singleton getters.
+interface ShareItems {
+	instagramLinker: import("../share/services/contracts/IInstagramLinker").IInstagramLinker;
+	r2Presigner: import("../share/services/contracts/IR2Presigner").IR2Presigner;
+	recordingPersister: import("../video-record/services/implementations/RecordingPersister").IRecordingPersister;
+	collaborativeVideoManager: import("../video-collaboration/services/contracts/ICollaborativeVideoManager").ICollaborativeVideoManager;
+	cloudThumbnailCache: import("$lib/features/browse/sequences/display/services/contracts/ICloudThumbnailCache").ICloudThumbnailCache;
+	videoUploader: import("../share/services/contracts/IVideoUploader").IVideoUploader;
+	sharer: import("../share/services/contracts/ISharer").ISharer;
+	sequenceImageSharer: import("../share/services/contracts/ISequenceImageSharer").ISequenceImageSharer;
+	exportOrchestrator: import("../export-panel/services/contracts/IExportOrchestrator").IExportOrchestrator;
+	mediaBundler: import("../share/services/contracts/IMediaBundler").IMediaBundler;
+}
+// BrowseItems — fully dissolved; all browse services accessed via module singleton getters at call sites
 // TrainItems removed — dissolved into module singleton getters
 // Skel2TKAItems removed — dissolved into module singleton getters
 // AdminItems removed — dissolved into module singleton getters
@@ -254,8 +266,7 @@ export type IAppContainerItems =
 	ComposeCoreContainerItems &
 	// Create module (with loopDetector omitted — overwritten by loop-labeler)
 	CreateItemsClean &
-	// Browse (upsert, but no actual key conflicts remain after browse* prefix rename)
-	BrowseItems &
+	// Browse fully dissolved — all browse services accessed via module singleton getters at call sites
 	// Train, Learn, Gamification, Feedback, Admin, Promo, QR, Moderation,
 	// LoopLabeler, Skel2TKA dissolved — services accessed via module singleton getters
 	LibraryItems &
