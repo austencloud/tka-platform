@@ -922,6 +922,10 @@ export default defineConfig({
       "@vtg/domain",
       "@flow-arts/core",
       "@tka/sequence-engine",
+      "@tka/sequence-engine/generation",
+      "@tka/sequence-engine/core",
+      "@tka/sequence-engine/loop",
+      "@tka/sequence-engine/analysis",
       "reflect-metadata", // Often has CJS issues
       "gif.js", // May contain CJS code
       "file-saver", // Often has CJS exports
