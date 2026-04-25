@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "TEAMID.com.tkaflowarts.composer"
+        ],
+        "components": [
+          { "/": "/q/*", "comment": "QR code resolver" },
+          { "/": "/sequence/*", "comment": "Shared sequences" },
+          { "/": "/store/*", "comment": "Merch store" }
+        ]
+      }
+    ]
+  }
+}
