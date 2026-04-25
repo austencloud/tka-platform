@@ -20,7 +20,10 @@ import {
   DIFFICULTY_FONT_FAMILY,
   applyGradientStops,
 } from "$lib/shared/config/difficulty-styles";
-import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId, type LoopRotationSliceSize } from "@tka/render-composition";
+import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId, type LoopRotationSliceSize, type GlyphImageData } from "@tka/render-composition";
+import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 
 export class TextRenderer implements ITextRenderer {
   // Font configuration matching WordLabel component exactly
@@ -33,6 +36,57 @@ export class TextRenderer implements ITextRenderer {
     private dimensionService: IDimensionCalculator,
     private loopIconStripRenderer?: ILOOPIconStripRenderer
   ) {}
+
+  private glyphImageCache = new Map<string, GlyphImageData>();
+
+  /**
+   * Eagerly load all TKA letter SVGs as HTMLImageElement objects.
+   * Call once at app startup (fire-and-forget from +layout.svelte).
+   * Until this resolves, renderWordHeader falls back to text.
+   * Idempotent — safe to call multiple times.
+   */
+  async preloadGlyphImages(): Promise<void> {
+    if (this.glyphImageCache.size > 0) return;
+    const cache = getGlyphCache();
+    await cache.initialize();
+
+    const letters = Object.values(Letter);
+    await Promise.all(
+      letters.map((letter) => {
+        const dataUrl = cache.getGlyphDataUrl(letter);
+        if (!dataUrl) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            this.glyphImageCache.set(letter, {
+              image: img,
+              naturalWidth: img.naturalWidth,
+              naturalHeight: img.naturalHeight,
+              isDash: letter.endsWith("-"),
+            });
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = dataUrl;
+        });
+      })
+    );
+  }
+
+  /**
+   * Build a Map<token, GlyphImageData> for the letters in `word`.
+   * Returns an empty map if preloadGlyphImages hasn't been called yet.
+   */
+  buildGlyphMap(word: string): Map<string, GlyphImageData> {
+    if (!word || this.glyphImageCache.size === 0) return new Map();
+    const tokens = tokenizeWord(word);
+    const result = new Map<string, GlyphImageData>();
+    for (const token of tokens) {
+      const data = this.glyphImageCache.get(token);
+      if (data) result.set(token, data);
+    }
+    return result;
+  }
 
   /**
    * Render sequence word/title text at the top center of the canvas
@@ -171,6 +225,8 @@ export class TextRenderer implements ITextRenderer {
       }
     }
 
+    const glyphImages = this.buildGlyphMap(word ?? "");
+
     renderHeader(ctx, {
       canvasWidth: canvas.width,
       headerHeight,
@@ -182,6 +238,7 @@ export class TextRenderer implements ITextRenderer {
       darkMode,
       backgroundColor,
       borderColor,
+      glyphImages: glyphImages.size > 0 ? glyphImages : undefined,
     });
   }
 
