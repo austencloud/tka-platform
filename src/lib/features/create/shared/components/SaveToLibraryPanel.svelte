@@ -28,6 +28,7 @@
   import { container } from "$lib/shared/di";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
   import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
+  import { getContentModerator } from "$lib/features/moderation/getContentModerator";
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
@@ -35,13 +36,6 @@
   import type { ISequenceContentHasher } from "$lib/features/library/services/contracts/ISequenceContentHasher";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
-  import { dev } from "$app/environment";
-  import {
-    LibraryClient,
-    makeEntryId,
-  } from "$guide-level-1/_lib/library-client";
-  import type { LibraryEntry } from "$guide-level-1/_lib/library-schema";
-
   interface Props {
     show: boolean;
     word?: string;
@@ -94,7 +88,7 @@
   // Get the content moderator
   let contentModerator: IContentModerator | null = null;
   try {
-    contentModerator = container.items.contentModerator;
+    contentModerator = getContentModerator();
   } catch (error) {
     console.warn("Failed to resolve contentModerator:", error);
   }
@@ -443,42 +437,7 @@
     showShameGate = false;
   }
 
-  // Save-to-Guide: dev-only Phase 2 wiring. Production gating arrives in
-  // Phase 4+ via hooks.server.ts auth.
-  let isSavingToGuide = $state(false);
 
-  async function handleSaveToGuide() {
-    if (!sequence) return;
-    const stepCount = sequence.steps?.length ?? 0;
-    const kind: LibraryEntry["kind"] = stepCount > 1 ? "sequence" : "pictograph";
-    const defaultName = tkaName || sequence.name || sequence.word || "Untitled";
-    const label = window.prompt("Library label:", defaultName);
-    if (label === null) return;
-    const trimmed = label.trim();
-    if (trimmed.length === 0) return;
-
-    isSavingToGuide = true;
-    try {
-      const entry: LibraryEntry = {
-        id: makeEntryId(kind),
-        kind,
-        label: trimmed,
-        sourceData: sequence,
-        thumbnailPath: undefined,
-        addedAt: Date.now(),
-      };
-      await new LibraryClient().append(entry);
-      logger.info("Saved to guide", { id: entry.id, kind });
-      window.alert("Saved to guide");
-    } catch (err) {
-      logger.error("Save to guide failed:", err);
-      window.alert(
-        `Save to guide failed: ${err instanceof Error ? err.message : String(err)}`
-      );
-    } finally {
-      isSavingToGuide = false;
-    }
-  }
 </script>
 
 <CreatePanelDrawer
@@ -671,23 +630,6 @@
       >
         Cancel
       </button>
-      {#if dev}
-        <button
-          type="button"
-          class="button button-guide"
-          onclick={handleSaveToGuide}
-          disabled={!sequence || isSavingToGuide || isSaving}
-          title="Save to guide library (dev only)"
-        >
-          {#if isSavingToGuide}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Saving...
-          {:else}
-            <i class="fas fa-book" aria-hidden="true"></i>
-            Save to Guide
-          {/if}
-        </button>
-      {/if}
       <button
         type="button"
         class="button button-primary"
@@ -1074,25 +1016,6 @@
   }
 
   .button-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* Dev-only Save to Guide button — distinct from main publish action */
-  .button-guide {
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    border: 1.5px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
-  }
-
-  .button-guide:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-accent);
-    transform: translateY(-1px);
-  }
-
-  .button-guide:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
