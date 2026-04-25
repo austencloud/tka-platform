@@ -7,13 +7,6 @@
     Vector3,
     Quaternion,
     Euler,
-    FogExp2,
-    Color,
-    Object3D,
-    RingGeometry,
-    MeshBasicMaterial,
-    Mesh,
-    DoubleSide,
   } from "three";
   import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
@@ -42,8 +35,11 @@
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import PlacementGhost from '../editor/PlacementGhost.svelte';
-  import { PlacementPersister } from '../../services/implementations/PlacementPersister';
   import { preloadAllFixtureModels, addTorchToScene, removeTorchFromScene } from './MuseumTorch3D.svelte';
+  import { createPortalConfig, PortalProximityChecker } from "../../services/implementations/MuseumPortals";
+  import { MuseumEditorPlacement } from "../../services/implementations/MuseumEditorPlacement";
+  import { createEmptyPool, recomputeNearbyRoomLights as recomputeNearbyLightsFromPool, type RoomLightSlot } from "../../services/implementations/MuseumRoomLightPool";
+  import { MuseumAtmosphere } from "../../services/implementations/MuseumAtmosphere";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
@@ -72,15 +68,12 @@
   // Shared texture generator — one instance for all plaques (caches internally)
   const plaqueGenerator = new PlaqueTextureGenerator();
   const torchMaterialCache = new TorchMaterialCache();
-  const placementPersister = new PlacementPersister();
+  const atmosphere = new MuseumAtmosphere();
 
-  // Scene reference for fog control — scene may not be available at init,
-  // so we defer fog setup to the first frame via $effect
   const threlteCtx = useThrelte();
-  const sceneFog = new FogExp2("#1a1008", 0.08);
   $effect(() => {
     const sc = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
-    if (sc && sc.fog !== sceneFog) sc.fog = sceneFog;
+    if (sc && sc.fog !== atmosphere.fog) sc.fog = atmosphere.fog;
   });
 
   // Enable shadow maps on the renderer
@@ -91,13 +84,6 @@
       renderer.shadowMap.type = PCFSoftShadowMap;
     }
   });
-
-  // Track current wing for ambient/fog transitions
-  let currentWingTheme: WingTheme | null = $state(null);
-  const fogColorTarget = new Color("#1a1008");
-  const fogColorCurrent = new Color("#1a1008");
-  let fogDensityTarget = 0.08;
-  const FOG_LERP_SPEED = 2.0; // Speed of fog color/density transition
 
   // Facing direction string → yaw angle for performer stations
   const FACING_TO_YAW: Record<string, number> = {
@@ -229,139 +215,14 @@
     }
   });
 
-  // ── Imperative placement — bypass Svelte for instant torch appearance ──
-  // Instead of pushing to a reactive array (which triggers component mount, async
-  // model loading, shader compilation), we clone the cached GLTF model and add it
-  // directly to the Three.js scene. This makes placement feel instant.
-
-  let placementHistory: { placementId: string; roomId: string }[] = [];
-
   function getSceneObj() {
     return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
   }
 
-  function handlePlace(worldX: number, worldZ: number, yaw: number, wallFacing: string | null): void {
-    const T0 = performance.now();
-    const def = museum3dEditorState.placementDef;
-    if (!def) return;
-
-    const tileX = Math.round(worldX / TILE_SIZE);
-    const tileY = Math.round(worldZ / TILE_SIZE);
-    const wing = grid.wings.find(w => {
-      const b = w.bounds;
-      return tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height;
-    });
-    const roomId = wing?.id ?? 'unknown';
-    const placementId = `${roomId}-${def.id}-${Date.now()}`;
-
-    const placement = {
-      id: placementId,
-      objectDefId: def.id,
-      tileX,
-      tileY,
-      wallFacing: wallFacing as any,
-      yaw,
-    };
-
-    const T1 = performance.now();
-    // Persist (fire-and-forget)
-    placementPersister.save(roomId, placement);
-    const T2 = performance.now();
-
-    // Instantly add to scene imperatively
-    if (def.category === 'fixture') {
-      let wallOffsetX = 0;
-      let wallOffsetZ = 0;
-      if (wallFacing === 'north') wallOffsetZ = -TILE_SIZE * 0.35;
-      else if (wallFacing === 'south') wallOffsetZ = TILE_SIZE * 0.35;
-      else if (wallFacing === 'west') wallOffsetX = -TILE_SIZE * 0.35;
-      else if (wallFacing === 'east') wallOffsetX = TILE_SIZE * 0.35;
-
-      const scn = getSceneObj();
-      if (scn) {
-        const wingTheme = (def.wingTheme ?? wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme;
-        const T3 = performance.now();
-        addTorchToScene(
-          scn,
-          tileX * TILE_SIZE, tileY * TILE_SIZE,
-          wallOffsetX, wallOffsetZ,
-          wingTheme,
-          placementId,
-        );
-        const T4 = performance.now();
-        console.log(`[Place] prep=${(T1-T0).toFixed(1)}ms save=${(T2-T1).toFixed(1)}ms addToScene=${(T4-T3).toFixed(1)}ms total=${(T4-T0).toFixed(1)}ms`);
-        requestAnimationFrame(() => {
-          console.log(`[Place] first-rAF=${(performance.now()-T0).toFixed(1)}ms`);
-          requestAnimationFrame(() => {
-            console.log(`[Place] second-rAF=${(performance.now()-T0).toFixed(1)}ms`);
-          });
-        });
-
-        // Pulse effect — golden ring that expands and fades
-        const tx = tileX * TILE_SIZE + wallOffsetX;
-        const tz = tileY * TILE_SIZE + wallOffsetZ;
-        const fixtureY = 1.25;
-        let normalX = 0, normalZ = 0;
-        if (wallFacing === 'north') normalZ = -1;
-        else if (wallFacing === 'south') normalZ = 1;
-        else if (wallFacing === 'west') normalX = -1;
-        else if (wallFacing === 'east') normalX = 1;
-
-        const ring = new RingGeometry(0.05, 0.08, 32);
-        const ringMat = new MeshBasicMaterial({
-          color: 0xffcc44,
-          transparent: true,
-          opacity: 0.8,
-          side: DoubleSide,
-          depthWrite: false,
-        });
-        const ringMesh = new Mesh(ring, ringMat);
-        ringMesh.position.set(tx, fixtureY, tz);
-        ringMesh.lookAt(tx + normalX, fixtureY, tz + normalZ);
-        scn.add(ringMesh);
-
-        const startTime = performance.now();
-        const animatePulse = () => {
-          const elapsed = performance.now() - startTime;
-          const t = Math.min(elapsed / 400, 1);
-          const scale = 1 + t * 4;
-          ringMesh.scale.setScalar(scale);
-          ringMat.opacity = 0.8 * (1 - t);
-          if (t < 1) {
-            requestAnimationFrame(animatePulse);
-          } else {
-            scn.remove(ringMesh);
-            ring.dispose();
-            ringMat.dispose();
-          }
-        };
-        requestAnimationFrame(animatePulse);
-      }
-
-      placementHistory.push({ placementId, roomId });
-    }
-  }
-
-  function handleDelete(placementId: string): void {
-    const scn = getSceneObj();
-    if (scn) removeTorchFromScene(scn, placementId);
-
-    // Find room from history or scan wings
-    const entry = placementHistory.find(h => h.placementId === placementId);
-    const roomId = entry?.roomId ?? 'unknown';
-
-    placementHistory = placementHistory.filter(h => h.placementId !== placementId);
-    placementPersister.remove(roomId, placementId);
-  }
-
-  function handlePlacementUndo(): void {
-    const entry = placementHistory.pop();
-    if (!entry) return;
-
-    const scn = getSceneObj();
-    if (scn) removeTorchFromScene(scn, entry.placementId);
-    placementPersister.remove(entry.roomId, entry.placementId);
-  }
+  const editorPlacement = new MuseumEditorPlacement(grid, TILE_SIZE, getSceneObj, {
+    add: addTorchToScene,
+    remove: removeTorchFromScene,
+  });
 
   // Apply any persisted overrides on mount (from previous editor sessions).
   // Must use untrack: applyEditorOverrides reads+writes grid.performers/exhibits
@@ -379,22 +240,6 @@
   });
 
   import type { WingTheme } from "../../domain/museum-grid-types";
-
-  // ── Per-wing fog settings — density and color vary by atmosphere ──
-  const WING_FOG: Record<WingTheme, { density: number; color: string }> = {
-    cave:          { density: 0.06, color: "#1a1008" },   // warm amber haze
-    classical:     { density: 0.03, color: "#1a1510" },   // light warm
-    renaissance:   { density: 0.03, color: "#14120e" },   // gentle
-    industrial:    { density: 0.04, color: "#141414" },   // slight grey
-    digital:       { density: 0.04, color: "#0a0a14" },   // cool blue hint
-    institutional: { density: 0.02, color: "#606068" },   // light grey haze — fluorescent wash
-    gallery:       { density: 0.02, color: "#0e0a10" },   // minimal
-    modern:        { density: 0.03, color: "#0a0a0a" },   // slight
-    futuristic:    { density: 0.03, color: "#0a0a10" },   // slight cool
-    outdoor:       { density: 0.008, color: "#2a2418" },  // warm haze, nearly clear
-    construction:  { density: 0.04, color: "#14120a" },   // dusty
-    retail:        { density: 0.02, color: "#141210" },   // clear
-  };
 
   // Wall height — used for ceiling light placement in the template
   const WALL_HEIGHT = 4.5;
@@ -420,103 +265,25 @@
   const spawnWorldX = initialPlayerPos?.x ?? grid.spawn.x * TILE_SIZE;
   const spawnWorldZ = initialPlayerPos?.z ?? grid.spawn.y * TILE_SIZE;
 
-  // ── Portal pair positions (cave ↔ gallery) ──
-  const portalCaveWing = grid.wings.find(w => w.theme === "cave");
-  const portalGalleryWing = grid.wings.find(w => w.theme === "gallery");
-  // Blue: WEST wall of cave, centered vertically. Faces east (into room).
-  // Cave corridors are on south and east walls — west wall is solid.
-  // Wall tile center is at bounds.x * TILE_SIZE. Wall box is TILE_SIZE wide.
-  // Inner face (facing east into room) is at bounds.x * TILE_SIZE + TILE_SIZE/2.
-  // Place portal flush on that inner face.
-  const portalBluePos: [number, number, number] = portalCaveWing
-    ? [
-        portalCaveWing.bounds.x * TILE_SIZE + TILE_SIZE / 2,  // inner face of west wall
-        1.5,
-        (portalCaveWing.bounds.y + portalCaveWing.bounds.height / 2) * TILE_SIZE,
-      ]
-    : [0, 0, 0];
-  const portalBlueRot: [number, number, number] = [0, Math.PI / 2, 0]; // faces east
+  // ── Portal system ──
+  const portalConfig = createPortalConfig(grid, TILE_SIZE);
+  const portalChecker = new PortalProximityChecker(portalConfig.pairs);
 
-  const portalOrangePos: [number, number, number] = portalGalleryWing
-    ? [
-        portalGalleryWing.bounds.x * TILE_SIZE + TILE_SIZE / 2,  // inner face of west wall
-        1.5,
-        (portalGalleryWing.bounds.y + portalGalleryWing.bounds.height / 2) * TILE_SIZE,
-      ]
-    : [0, 0, 0];
-  const portalOrangeRot: [number, number, number] = [0, Math.PI / 2, 0]; // faces east
-
-  // ── Portal teleportation ──
-  // Arrive 3 tiles INSIDE the target room (north of its portal wall)
-  const PORTAL_RADIUS = 1.0;
-  const PORTAL_COOLDOWN_MS = 1500;
-  const ARRIVAL_OFFSET = 3 * TILE_SIZE;
-  let portalCooldownUntil = 0;
-
-  interface PortalLink { srcX: number; srcZ: number; destX: number; destZ: number; destYaw: number; }
-
-  // destYaw: In UCC, yaw=0 → camera looks along +Z (south). yaw=Math.PI → looks along -Z (north).
-  // Portal is on the south wall. Player arrives north of it, should face NORTH (deeper into room) = -Z = yaw Math.PI.
-  // BUT: the player walks INTO the portal heading south (+Z), so they should EXIT heading north (-Z).
-  // UCC yaw convention: sin(yaw) for X, cos(yaw) for Z. yaw=0 → (0,1) = +Z = south.
-  // To face -Z (north, into the room): yaw = Math.PI.
-  // WAIT — screenshot shows they're facing the portal (south). So Math.PI is producing south-facing.
-  // Let's try yaw=0 which should face +Z... no that's also south.
-  // The issue: the ARRIVAL position is NORTH of the portal (destZ - offset = more negative Z).
-  // "Into the room" from that position means FURTHER north = more negative Z = yaw = Math.PI.
-  // But the screenshot shows facing south (toward the portal). So playerYaw isn't being applied
-  // to the camera — only to the avatar. The FPS camera yaw is separate (managed by UCC).
-  // We need to update UCC's internal yaw too, not just playerYaw.
-  // Portals on west wall face east. Arrive east of portal (inside room), facing east.
-  // UCC yaw: sin(yaw) = X component, cos(yaw) = Z component.
-  // East = +X direction → yaw = π/2 (sin(π/2)=1, cos(π/2)=0)
-  const PORTAL_DEST_YAW = Math.PI / 2;
-  const portalPairs: PortalLink[] =
-    portalCaveWing && portalGalleryWing
-      ? [
-          { srcX: portalBluePos[0], srcZ: portalBluePos[2],
-            destX: portalOrangePos[0] + ARRIVAL_OFFSET, destZ: portalOrangePos[2],
-            destYaw: PORTAL_DEST_YAW },
-          { srcX: portalOrangePos[0], srcZ: portalOrangePos[2],
-            destX: portalBluePos[0] + ARRIVAL_OFFSET, destZ: portalBluePos[2],
-            destYaw: PORTAL_DEST_YAW },
-        ]
-      : [];
-
-  /**
-   * Check if the player is standing inside a portal and teleport them to
-   * the linked destination. Returns true if a teleport happened.
-   */
-  function checkPortalProximity(playerX: number, playerZ: number): boolean {
-    if (portalPairs.length === 0) return false;
-
-    const now = performance.now();
-    if (now < portalCooldownUntil) return false;
-
-    const r2 = PORTAL_RADIUS * PORTAL_RADIUS;
-    for (const link of portalPairs) {
-      const dx = playerX - link.srcX;
-      const dz = playerZ - link.srcZ;
-      if (dx * dx + dz * dz < r2) {
-        physicsProvider.teleport!({ x: link.destX, y: 0, z: link.destZ });
-        syncPositionFromPhysics();
-        // Set facing for both avatar and camera
-        playerYaw = link.destYaw;
-        targetPlayerYaw = link.destYaw;
-        // Force UCC to remount with new yaw by updating the initial snapshot
-        fpsInitialYaw = link.destYaw;
-        fpsInitialPitch = 0;
-        // Brief unmount/remount of UCC to apply new yaw
-        fpsActive = false;
-        requestAnimationFrame(() => {
-          fpsActive = true;
-          progress = 1; // Skip flip animation — go straight to FPS
-        });
-        portalCooldownUntil = now + PORTAL_COOLDOWN_MS;
-        return true;
-      }
-    }
-    return false;
+  function handlePortalTeleport(playerX: number, playerZ: number): boolean {
+    const hit = portalChecker.check(playerX, playerZ);
+    if (!hit) return false;
+    physicsProvider.teleport!({ x: hit.destX, y: 0, z: hit.destZ });
+    syncPositionFromPhysics();
+    playerYaw = hit.destYaw;
+    targetPlayerYaw = hit.destYaw;
+    fpsInitialYaw = hit.destYaw;
+    fpsInitialPitch = 0;
+    fpsActive = false;
+    requestAnimationFrame(() => {
+      fpsActive = true;
+      progress = 1;
+    });
+    return true;
   }
 
   // ── Top-down camera: zoomed-in follow camera above the player ──
@@ -734,23 +501,9 @@
 
   function updateAtmosphere(tileX: number, tileZ: number, delta: number): void {
     const theme = getWingThemeAt(tileX, tileZ);
-
-    if (theme && theme !== currentWingTheme) {
-      currentWingTheme = theme;
-      const fogCfg = WING_FOG[theme];
-      fogColorTarget.set(fogCfg.color);
-      fogDensityTarget = fogCfg.density;
-      // Update room lights when crossing a room boundary
-      recomputeNearbyRoomLights(tileX * TILE_SIZE, tileZ * TILE_SIZE);
-    }
-
-    // Fog only in FPS — from overhead it just muddies the view with no benefit.
-    if (fpsActive) {
-      fogColorCurrent.lerp(fogColorTarget, FOG_LERP_SPEED * delta);
-      sceneFog.color.copy(fogColorCurrent);
-      sceneFog.density += (fogDensityTarget - sceneFog.density) * FOG_LERP_SPEED * delta;
-    } else {
-      sceneFog.density += (0 - sceneFog.density) * FOG_LERP_SPEED * delta;
+    const wingChanged = atmosphere.update(theme, fpsActive, delta);
+    if (wingChanged) {
+      roomLightPool = recomputeNearbyLightsFromPool(tileX * TILE_SIZE, tileZ * TILE_SIZE, roomLights);
     }
   }
 
@@ -824,7 +577,7 @@
         fpsPos.z = corrected.z;
       }
       // Portal teleportation check — if the player walked into a portal, jump to dest
-      if (checkPortalProximity(fpsPos.x, fpsPos.z)) {
+      if (handlePortalTeleport(fpsPos.x, fpsPos.z)) {
         const teleported = physicsProvider.getPlayerPosition();
         fpsPos.x = teleported.x;
         fpsPos.y = teleported.y;
@@ -912,7 +665,7 @@
       }
 
       // Portal teleportation check — walk into a portal, appear at the linked one
-      if (checkPortalProximity(pos.x, pos.z)) {
+      if (handlePortalTeleport(pos.x, pos.z)) {
         const teleported = physicsProvider.getPlayerPosition();
         pos.x = teleported.x;
         pos.y = teleported.y;
@@ -1646,48 +1399,7 @@
     return lights;
   });
 
-  // Per-room ambient lights — fixed-size pool to avoid shader recompilation.
-  // Three.js recompiles every material's shader when lights are added/removed from
-  // the scene graph (20-30 second freeze). Instead, we keep MAX_ROOM_LIGHTS slots
-  // always mounted and update their position/color/intensity reactively. Unused
-  // slots get intensity=0 — they're still in the shader but cost nothing to render.
-  interface RoomLightSlot { x: number; z: number; color: string; intensity: number; distance: number; }
-  const MAX_ROOM_LIGHTS = 16;
-  const ROOM_LIGHT_PROXIMITY = 15; // world units — roughly 30 tiles
-
-  // Initialize pool with all slots off (intensity=0) at origin
-  const EMPTY_SLOT: RoomLightSlot = { x: 0, z: 0, color: "#000000", intensity: 0, distance: 1 };
-  let roomLightPool = $state<RoomLightSlot[]>(Array.from({ length: MAX_ROOM_LIGHTS }, () => ({ ...EMPTY_SLOT })));
-
-  function recomputeNearbyRoomLights(px: number, pz: number): void {
-    if (roomLights.length === 0) return;
-    const nearby: (RoomLightSlot & { distSq: number })[] = [];
-    for (const light of roomLights) {
-      for (const pos of light.positions) {
-        const dx = pos.x - px;
-        const dz = pos.z - pz;
-        const distSq = dx * dx + dz * dz;
-        if (distSq <= ROOM_LIGHT_PROXIMITY * ROOM_LIGHT_PROXIMITY) {
-          nearby.push({ x: pos.x, z: pos.z, color: light.color, intensity: light.intensity, distance: light.distance, distSq });
-        }
-      }
-    }
-    if (nearby.length > MAX_ROOM_LIGHTS) {
-      nearby.sort((a, b) => a.distSq - b.distSq);
-    }
-
-    // Update pool slots in-place — active slots get real values, rest get zeroed
-    const newPool: RoomLightSlot[] = [];
-    for (let i = 0; i < MAX_ROOM_LIGHTS; i++) {
-      if (i < nearby.length) {
-        const n = nearby[i]!;
-        newPool.push({ x: n.x, z: n.z, color: n.color, intensity: n.intensity, distance: n.distance });
-      } else {
-        newPool.push({ ...EMPTY_SLOT });
-      }
-    }
-    roomLightPool = newPool;
-  }
+  let roomLightPool = $state<RoomLightSlot[]>(createEmptyPool());
 </script>
 
 <!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS, by OrbitControls in editor) -->
@@ -2024,21 +1736,21 @@
 {/each}
 
 <!-- Portal pair — blue in cave, orange in gallery -->
-{#if portalCaveWing && portalGalleryWing}
+{#if portalConfig.caveWing && portalConfig.galleryWing}
   <MuseumPortal
-    position={portalBluePos}
-    rotation={portalBlueRot}
-    destPosition={portalOrangePos}
-    destRotation={portalOrangeRot}
+    position={portalConfig.bluePos}
+    rotation={portalConfig.blueRot}
+    destPosition={portalConfig.orangePos}
+    destRotation={portalConfig.orangeRot}
     color="#0088ff"
     label="Gallery"
     playerPosition={playerPosition}
   />
   <MuseumPortal
-    position={portalOrangePos}
-    rotation={portalOrangeRot}
-    destPosition={portalBluePos}
-    destRotation={portalBlueRot}
+    position={portalConfig.orangePos}
+    rotation={portalConfig.orangeRot}
+    destPosition={portalConfig.bluePos}
+    destRotation={portalConfig.blueRot}
     color="#ff8800"
     label="Cave"
     playerPosition={playerPosition}
@@ -2051,9 +1763,9 @@
   {#if museum3dEditorState.placementDef}
     <PlacementGhost
       def={museum3dEditorState.placementDef}
-      onPlace={handlePlace}
-      onDelete={handleDelete}
-      onUndo={handlePlacementUndo}
+      onPlace={(x, z, yaw, wf) => editorPlacement.place(x, z, yaw, wf)}
+      onDelete={(id) => editorPlacement.delete(id)}
+      onUndo={() => editorPlacement.undo()}
     />
   {/if}
 {/if}
