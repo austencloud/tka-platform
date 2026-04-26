@@ -294,6 +294,16 @@ export function createAnimationSettingsState(): AnimationSettingsState {
 }
 
 // ============================================================================
+// HMR STATE PRESERVATION
+// ============================================================================
+// Without this, every HMR update recreates the singleton fresh, resetting
+// BPM, trail settings, and other animation state the user has configured.
+
+const hmrSettingsData = import.meta.hot?.data as
+  | { animationSettings?: AnimationSettingsState }
+  | undefined;
+
+// ============================================================================
 // SINGLETON INSTANCE
 // ============================================================================
 
@@ -301,4 +311,11 @@ export function createAnimationSettingsState(): AnimationSettingsState {
  * Global animation settings state instance.
  * Import this directly for easy access across the app.
  */
-export const animationSettings = createAnimationSettingsState();
+export const animationSettings =
+  hmrSettingsData?.animationSettings ?? createAnimationSettingsState();
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.animationSettings = animationSettings;
+  });
+}
