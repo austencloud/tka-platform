@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 15;
+export const EFFECTS_CONFIG_VERSION = 14;
 
 export type EffectType =
   | "none"
@@ -34,8 +34,7 @@ export type EffectType =
   | "smoke"
   | "ink"
   | "frost"
-  | "silk"
-  | "pulse";
+  | "silk";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -323,37 +322,6 @@ export interface SilkIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
-export interface PulseIntent {
-  /** 0-1. Ring peak alpha + brightness. */
-  intensity: number;
-  /** 0-1. Max ring expansion radius. Maps to 20-200px. */
-  reach: number;
-  /** 0.2-3.0 seconds. Ring lifetime from birth to full fade. */
-  lifetime: number;
-  /** "beat" = on beat onsets, "velocity" = on acceleration threshold, "continuous" = steady emission amplified by beats. */
-  trigger: "beat" | "velocity" | "continuous";
-  /** "stroke" = thin expanding outlines, "glow" = gradient-filled halos with bright leading edge. */
-  style: "stroke" | "glow";
-  /** 1-8. Beat interval for beat trigger. */
-  beatInterval: number;
-  /** 0-1. Velocity threshold for velocity trigger. */
-  velocityThreshold: number;
-  /** 0-1. Ring stroke width or gradient band thickness. */
-  thickness: number;
-  /** Named palette. "custom" uses customColor. */
-  palette: "sonar" | "ripple" | "aurora" | "neon" | "ember" | "void" | "custom";
-  /** Hex string. Used only when palette === "custom". */
-  customColor: string;
-  /** Color selection mode. */
-  colorMode: "solid" | "prop-matched" | "rainbow" | "palette";
-  /** Hex — when colorMode === "solid". */
-  color: string;
-  /** Multicolor palette (3-5 hex) — when colorMode === "palette". */
-  colorPalette: string[];
-  /** Which staff end(s) emit rings. */
-  trackingMode: "left_end" | "right_end" | "both_ends";
-}
-
 /**
  * Backend-specific override storage. Populated only when the user
  * has explicitly edited a backend-only parameter via an Advanced
@@ -391,8 +359,6 @@ export interface EffectsOverrides {
   frost3D?: Record<string, unknown>;
   silk2D?: Record<string, unknown>;
   silk3D?: Record<string, unknown>;
-  pulse2D?: Record<string, unknown>;
-  pulse3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -413,7 +379,6 @@ export interface EffectsConfig {
   ink: InkIntent;
   frost: FrostIntent;
   silk: SilkIntent;
-  pulse: PulseIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
@@ -430,7 +395,6 @@ export interface EffectsConfig {
     ink: string | null;
     frost: string | null;
     silk: string | null;
-    pulse: string | null;
   };
   overrides?: EffectsOverrides;
 }

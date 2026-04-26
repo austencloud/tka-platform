@@ -418,7 +418,6 @@ export class AnimationEngine {
     erm.prevHasInkTips = vm.hasEffect("ink");
     erm.prevHasFrostTips = vm.hasEffect("frost");
     erm.prevHasSilkTips = vm.hasEffect("silk");
-    erm.prevHasPulseTips = vm.hasEffect("pulse");
 
     // fireDefaultsLoader — load on demand via getter
     try {
@@ -1309,12 +1308,6 @@ export class AnimationEngine {
     if (hasSilkTips !== erm.prevHasSilkTips) {
       erm.prevHasSilkTips = hasSilkTips;
       erm.syncSilkOverlay();
-    }
-
-    const hasPulseTips = vm.hasEffect("pulse");
-    if (hasPulseTips !== erm.prevHasPulseTips) {
-      erm.prevHasPulseTips = hasPulseTips;
-      erm.syncPulseOverlay();
     }
 
     // Sync fire slider values + color curve -> physics

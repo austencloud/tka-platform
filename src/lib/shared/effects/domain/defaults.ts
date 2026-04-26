@@ -168,23 +168,6 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
-  pulse: {
-    intensity: 0.7,
-    reach: 0.6,
-    lifetime: 1.0,
-    trigger: "beat",
-    style: "stroke",
-    beatInterval: 1,
-    velocityThreshold: 0.3,
-    thickness: 0.3,
-    palette: "sonar",
-    customColor: "#38bdf8",
-    colorMode: "solid",
-    color: "#38bdf8",
-    colorPalette: ["#38bdf8", "#a855f7", "#22d3ee", "#f472b6", "#fbbf24"],
-    trackingMode: "both_ends",
-  },
-
   activePresets: {
     trails: null,
     fire: null,
@@ -201,6 +184,5 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     ink: null,
     frost: null,
     silk: null,
-    pulse: null,
   },
 };
