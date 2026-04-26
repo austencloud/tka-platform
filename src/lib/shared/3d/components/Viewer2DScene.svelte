@@ -16,6 +16,8 @@
   import PropPlane2D from "./PropPlane2D.svelte";
   import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/contracts/IPropTextureLoader";
+  import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     bluePropState: PropState | null;
@@ -63,6 +65,9 @@
   const redPos = $derived(redPropState ? propStateToPosition(redPropState) : null);
   const blueRot = $derived(bluePropState?.staffRotationAngle ?? 0);
   const redRot = $derived(redPropState?.staffRotationAngle ?? 0);
+
+  const blueColor = getMotionColor(MotionColor.BLUE, "dark");
+  const redColor = getMotionColor(MotionColor.RED, "dark");
 </script>
 
 <T.AmbientLight intensity={1} />
@@ -77,7 +82,8 @@
     rotation={blueRot}
     width={blueDims.width}
     height={blueDims.height}
-    color="#2196f3"
+    color={blueColor}
+    propType={bluePropType ?? "staff"}
     zIndex={0.01}
   />
 {/if}
@@ -88,7 +94,8 @@
     rotation={redRot}
     width={redDims.width}
     height={redDims.height}
-    color="#f44336"
+    color={redColor}
+    propType={redPropType ?? "staff"}
     zIndex={0.02}
   />
 {/if}
