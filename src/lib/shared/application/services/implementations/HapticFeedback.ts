@@ -10,6 +10,16 @@ import type {
 } from "../contracts/IHapticFeedback";
 import type { IPlatformDetector } from "$lib/shared/platform/services/contracts/IPlatformDetector";
 
+// Single short pulses for web Vibration API fallback (mobile browsers).
+// Kept minimal to avoid the "buzzy" feel of complex patterns.
+const WEB_IMPACT_MS: Record<HapticImpactStyle, number> = {
+  light: 8,
+  medium: 15,
+  heavy: 25,
+};
+const WEB_NOTIFICATION_MS = 15;
+const WEB_SELECTION_MS = 5;
+
 const DEFAULT_CONFIG: HapticFeedbackConfig = {
   enabled: true,
   respectReducedMotion: true,
@@ -22,28 +32,39 @@ export class HapticFeedback implements IHapticFeedback {
   private config: HapticFeedbackConfig = { ...DEFAULT_CONFIG };
   private effortMapper: EffortHapticMapper | null = null;
   private nativePlatformDetector: IPlatformDetector | null;
+  private hasVibrate: boolean = false;
 
   constructor(nativePlatformDetector?: IPlatformDetector) {
     this.nativePlatformDetector = nativePlatformDetector ?? null;
+    if (browser) {
+      // eslint-disable-next-line no-restricted-properties
+      this.hasVibrate =
+        typeof navigator !== "undefined" &&
+        typeof navigator.vibrate === "function" &&
+        (navigator.maxTouchPoints ?? 0) > 0;
+    }
     this.setupReducedMotionListener();
   }
 
   public impact(style: HapticImpactStyle): boolean {
     if (!this.canTrigger()) return false;
     this.lastFeedbackTime = Date.now();
-    return this.nativeImpact(style);
+    if (this.isNative()) return this.nativeImpact(style);
+    return this.webVibrate(WEB_IMPACT_MS[style]);
   }
 
   public notification(type: HapticNotificationType): boolean {
     if (!this.canTrigger()) return false;
     this.lastFeedbackTime = Date.now();
-    return this.nativeNotification(type);
+    if (this.isNative()) return this.nativeNotification(type);
+    return this.webVibrate(WEB_NOTIFICATION_MS);
   }
 
   public selection(): boolean {
     if (!this.canTrigger()) return false;
     this.lastFeedbackTime = Date.now();
-    return this.nativeSelection();
+    if (this.isNative()) return this.nativeSelection();
+    return this.webVibrate(WEB_SELECTION_MS);
   }
 
   public trigger(type: HapticFeedbackType = "selection"): boolean {
@@ -96,7 +117,7 @@ export class HapticFeedback implements IHapticFeedback {
   }
 
   public isSupported(): boolean {
-    return this.isNative();
+    return this.isNative() || this.hasVibrate;
   }
 
   public setEnabled(enabled: boolean): void {
@@ -161,6 +182,17 @@ export class HapticFeedback implements IHapticFeedback {
         setTimeout(() => this.nativeImpact("light"), timeOffset);
       }
       timeOffset += duration;
+    }
+  }
+
+  private webVibrate(ms: number): boolean {
+    if (!this.hasVibrate) return false;
+    try {
+      // eslint-disable-next-line no-restricted-properties
+      navigator.vibrate(ms);
+      return true;
+    } catch {
+      return false;
     }
   }
 
