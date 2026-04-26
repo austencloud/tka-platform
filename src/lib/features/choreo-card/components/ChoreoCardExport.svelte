@@ -13,6 +13,7 @@
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import { onMount } from "svelte";
+  import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
 
   interface Props {
     sequences: SequenceData[];
@@ -99,7 +100,7 @@
         const fullSeq = await ensureFullData(sequences[0]);
         exportStage = "rendering";
         const blob = await renderer.renderSequenceToBlob(fullSeq, renderOptions);
-        downloadBlob(blob, `${sequences[0].word || sequences[0].name || "choreo-card"}.png`);
+        await downloadBlob(blob, `${sequences[0].word || sequences[0].name || "choreo-card"}.png`);
         hapticService?.trigger("success");
         return;
       }
@@ -128,7 +129,7 @@
 
       exportStage = "zipping";
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      downloadBlob(zipBlob, "choreo-cards.zip");
+      await downloadBlob(zipBlob, "choreo-cards.zip");
       hapticService?.trigger("success");
     } catch (error) {
       console.warn("[ChoreoCardExport] Export failed:", error);
@@ -141,7 +142,19 @@
     }
   }
 
-  function downloadBlob(blob: Blob, filename: string) {
+  async function downloadBlob(blob: Blob, filename: string) {
+    const platform = getPlatformDetector().detectPlatform();
+    if (platform !== "desktop" && navigator.share) {
+      const file = new File([blob], filename, { type: blob.type });
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: filename });
+          return;
+        } catch (e: unknown) {
+          if (e instanceof Error && e.name === "AbortError") return;
+        }
+      }
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
