@@ -1,5 +1,5 @@
 <!--
-  ContextMenu — adapter over bits-ui DropdownMenu for right-click-at-cursor use.
+  ContextMenu - adapter over bits-ui DropdownMenu for right-click-at-cursor use.
   bits-ui provides keyboard nav, typeahead, focus management, viewport collision
   (via floating-ui). We position via `customAnchor` virtual element at (x, y)
   and preserve the original (menuState, items, onClose) public API so consumers
@@ -49,15 +49,10 @@
     if (!open && menuState.open) onClose();
   }
 
-  // bits-ui dismisses on the outside `pointerdown` for mouse, but on touch it
-  // defers dismissal to the subsequent `click` via a one-shot document listener.
-  // We also need to swallow that click so it doesn't hit the underlying viewer
-  // (which would enter export mode). Running in capture phase with
-  // `stopImmediatePropagation` preempts both the target handler AND bits-ui's
-  // touch-dismiss listener, so we take responsibility for the close ourselves.
-  // For mouse the menu is already closed by pointerdown, making the onClose
-  // call idempotent. Menu + submenu both carry `.ctx-menu-content`, so clicks
-  // on items still pass through.
+  // Dismiss on outside pointerdown (capture phase). onClose() triggers
+  // synchronous $effect cleanup which removes blockOutsideClick, but touch
+  // dispatches pointerup → click AFTER pointerdown. So dismissOnPointerDown
+  // plants one-shot guards that outlive the $effect cleanup to swallow them.
   $effect(() => {
     if (!menuState.open) return;
     if (typeof document === "undefined") return;
@@ -73,6 +68,21 @@
       const target = ev.target as Element | null;
       if (target?.closest(".ctx-menu-content")) return;
       ev.stopImmediatePropagation();
+      ev.preventDefault();
+
+      const swallow = (e: Event) => {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      };
+      const opts = { capture: true, once: true } as const;
+      document.addEventListener("pointerup", swallow, opts);
+      document.addEventListener("click", swallow, opts);
+      setTimeout(() => {
+        document.removeEventListener("pointerup", swallow, { capture: true });
+        document.removeEventListener("click", swallow, { capture: true });
+      }, 800);
+
+      haptic();
       onClose();
     };
 

@@ -26,7 +26,7 @@ export interface MotionColorsCache {
 }
 
 /**
- * Trail toggle type — still used by settings UI components to represent
+ * Trail toggle type - still used by settings UI components to represent
  * the on/off state that drives the trail section of tipEffectMap.
  * The manager itself no longer stores this as a field; use isTrailsActive() instead.
  */
@@ -125,7 +125,7 @@ export class AnimationVisibilityStateManager {
     this.ephemeral = options?.ephemeral ?? false;
 
     if (this.ephemeral) {
-      // Ephemeral instances start with defaults — no localStorage, no DOM sync
+      // Ephemeral instances start with defaults - no localStorage, no DOM sync
       this.settings = this.getDefaultSettings();
     } else {
       // Global singleton loads from localStorage and syncs the .dark class
@@ -185,7 +185,7 @@ export class AnimationVisibilityStateManager {
       tipEffectMap: { "*": { effect: "trails" } },
       tipEffortMap: {},
 
-      // All effects default to "behind" props — user opts individual effects into "front".
+      // All effects default to "behind" props - user opts individual effects into "front".
       effectLayerOverrides: {},
     };
   }
@@ -984,7 +984,7 @@ export class AnimationVisibilityStateManager {
 
   setEffectLayer(effectId: string, mode: EffectLayerMode): void {
     if (mode === "behind") {
-      // Keep the map small — absence encodes the default.
+      // Keep the map small - absence encodes the default.
       const { [effectId]: _omit, ...rest } = this.settings.effectLayerOverrides;
       this.settings.effectLayerOverrides = rest;
     } else {
@@ -1041,9 +1041,25 @@ export class AnimationVisibilityStateManager {
   }
 }
 
+// ============================================================================
+// HMR STATE PRESERVATION
+// ============================================================================
+// Without this, every HMR update recreates the visibility manager fresh,
+// resetting LED brightness, effect toggles, and other visibility state.
+
+const hmrVisibilityData = import.meta.hot?.data as
+  | { visibilityManager?: AnimationVisibilityStateManager | null }
+  | undefined;
+
 // Global singleton instance
 let globalAnimationVisibilityManager: AnimationVisibilityStateManager | null =
-  null;
+  hmrVisibilityData?.visibilityManager ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.visibilityManager = globalAnimationVisibilityManager;
+  });
+}
 
 /**
  * Get or create the global animation visibility state manager
