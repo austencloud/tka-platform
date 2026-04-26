@@ -124,10 +124,6 @@
         </button>
       {/if}
     </div>
-
-    <div class="pill-context">
-      beat {playback.currentStep} of {playback.totalSteps}
-    </div>
   </div>
 {/if}
 
@@ -136,8 +132,8 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 8px 12px 4px;
+    align-items: stretch;
+    padding: 0;
     box-sizing: border-box;
   }
 
@@ -147,13 +143,12 @@
     gap: 12px;
     padding: 8px 14px;
     width: 100%;
-    max-width: 720px;
     box-sizing: border-box;
     background: rgba(20, 22, 32, 0.78);
     backdrop-filter: blur(24px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 999px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0;
     touch-action: none;
   }
 
@@ -292,16 +287,6 @@
 
   .pill-loop:hover {
     background: rgba(99, 102, 241, 0.25);
-  }
-
-  .pill-context {
-    font-size: 9px;
-    color: rgba(255, 255, 255, 0.25);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    text-align: center;
-    margin-top: 6px;
-    user-select: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
