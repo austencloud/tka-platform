@@ -5,7 +5,6 @@
  * following the service-based architecture pattern.
  */
 
-import { goto } from "$app/navigation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   IBrowseEventHandler,
@@ -48,7 +47,6 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   handleSequenceSelect(sequence: SequenceData): void {
     this.ensureInitialized();
     this.params!.setSelectedSequence(sequence);
-    this.params!.galleryState.selectSequence(sequence);
   }
 
   async handleSequenceAction(
@@ -71,13 +69,13 @@ export class BrowseEventHandler implements IBrowseEventHandler {
           // This case is kept so the switch doesn't hit the default warn.
           break;
         case "favorite":
-          await this.params!.galleryState.toggleFavorite(sequence.id);
+          await this.params!.engine.toggleFavorite(sequence.id);
           break;
         case "fullscreen":
           this.handleSpotlightView(sequence);
           break;
         case "animate":
-          this.params!.galleryState.openAnimationModal(sequence);
+          this.params!.openAnimationModal(sequence);
           break;
         case "publish":
           await this.handlePublish(sequence);
@@ -166,13 +164,13 @@ export class BrowseEventHandler implements IBrowseEventHandler {
     switch (action) {
       case "play":
       case "animate":
-        this.params!.galleryState.openAnimationModal(sequence);
+        this.params!.openAnimationModal(sequence);
         break;
       case "fullscreen":
         this.handleSpotlightView(sequence);
         break;
       case "favorite":
-        await this.params!.galleryState.toggleFavorite(sequence.id);
+        await this.params!.engine.toggleFavorite(sequence.id);
         break;
       case "edit":
         this.handleEditSequence(sequence);
@@ -207,7 +205,7 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   handleRetry(): void {
     this.ensureInitialized();
     this.params!.setError(null);
-    void this.params!.galleryState.loadAllSequences();
+    void this.params!.engine.refresh();
   }
 
   private async handlePublish(sequence: SequenceData): Promise<void> {

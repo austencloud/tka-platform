@@ -9,7 +9,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   import { getBrowseEventHandler } from "../getBrowseEventHandler";
   import { getThumbnailRenderOrchestrator } from "../../sequences/display/getThumbnailRenderOrchestrator";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
-  import { onMount, onDestroy, setContext, untrack } from "svelte";
+  import { onMount, onDestroy, setContext } from "svelte";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -25,7 +25,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
-  import { createBrowseState } from "../state/browse-state-factory.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
   import GalleryTab from "./GalleryTab.svelte";
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import {
@@ -35,9 +35,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   } from "../state/browse-navigation-state.svelte";
   import { BrowseScrollBehavior } from "../services/implementations/BrowseScrollBehavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
-  import { sequenceControlsManager } from "../state/sequence-controls-state.svelte";
-  import { sequenceSourceManager } from "../state/sequence-source-state.svelte";
-  import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
@@ -58,7 +55,14 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   // STATE MANAGEMENT (Shared Coordination)
   // ============================================================================
 
-  const galleryState = createBrowseState();
+  const engine = createBrowseEngine({
+    persistKey: "tka-browse-gallery",
+    initialSource: "community",
+    sections: true,
+    defaultSectionGroupBy: "letter",
+    allowSourceToggle: true,
+    sources: ["community", "my-library"],
+  });
 
   // Service resolved lazily in onMount to ensure feature module is loaded
   let eventHandlerService: IBrowseEventHandler | null = null;
@@ -73,6 +77,18 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   let error = $state<string | null>(null);
   let activeTab = $state<BrowseModuleType>("gallery");
   let showAnimator = $state<boolean>(false);
+  let sequenceToAnimate = $state<SequenceData | null>(null);
+  let isAnimationModalOpen = $state(false);
+
+  function openAnimationModal(sequence: SequenceData) {
+    sequenceToAnimate = sequence;
+    isAnimationModalOpen = true;
+  }
+
+  function closeAnimationModal() {
+    isAnimationModalOpen = false;
+    sequenceToAnimate = null;
+  }
 
   // Slide direction for tab transitions (1 = right, -1 = left)
   let slideDirection = $state<1 | -1>(1);
@@ -243,45 +259,33 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
     }
   }
 
-  // ✅ SYNC GALLERY SOURCE STATE
-  // Wire sequenceSourceManager changes to galleryState.setSource()
-  $effect(() => {
-    const currentSource = sequenceSourceManager.current;
-    // Sync source to galleryState (handles data loading)
-    if (currentSource !== galleryState.currentSource) {
-      galleryState.setSource(currentSource);
-    }
-  });
-
   // ✅ RELOAD LIBRARY ON IMPERSONATION CHANGE
   // When admin impersonates a different user, reload My Library data
   let lastEffectiveUserId = $state<string | null>(authState.effectiveUserId);
   $effect(() => {
     const currentEffectiveUserId = authState.effectiveUserId;
-    const isInMyLibrary = sequenceSourceManager.current === "my-library";
+    const isInMyLibrary = engine.source === "my-library";
 
     // If user changed and we're viewing My Library, reload for the new user.
     // Clearing the cache ensures loadLibrarySequences fetches from Firestore
     // instead of returning the previous user's data.
     if (currentEffectiveUserId !== lastEffectiveUserId && isInMyLibrary) {
-      galleryState.invalidateLibraryCache();
-      galleryState.loadLibrarySequences();
+      engine.invalidateLibraryCache();
+      void engine.refresh();
     }
 
     lastEffectiveUserId = currentEffectiveUserId;
   });
 
   // ✅ SYNC ANIMATION MODAL STATE
-  // This effect syncs the local showAnimator state with galleryState
   $effect(() => {
-    showAnimator = galleryState.isAnimationModalOpen;
+    showAnimator = isAnimationModalOpen;
   });
 
   // ✅ SYNC CLOSE HANDLER
-  // When showAnimator is closed, inform galleryState
   $effect(() => {
-    if (!showAnimator && galleryState.isAnimationModalOpen) {
-      galleryState.closeAnimationModal();
+    if (!showAnimator && isAnimationModalOpen) {
+      closeAnimationModal();
     }
   });
 
@@ -291,9 +295,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
   // Create scroll behavior service instance
   const scrollBehaviorService = new BrowseScrollBehavior(browseScrollState);
-
-  // Track last scroll position for the container
-  let lastContainerScrollTop = $state(0);
 
   // Reactive UI visibility state
   const isUIVisible = $derived(browseScrollState.isUIVisible);
@@ -314,39 +315,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
     navigateToCreatorSequences: browseNavigationState.viewCreatorSequences,
   });
 
-  // Provide gallery state for TopBar controls via global reactive state
-  // (Context doesn't work for siblings, so we use module-level $state)
-  $effect(() => {
-    sequenceControlsManager.set({
-      get currentFilter() {
-        return galleryState.currentFilter;
-      },
-      get currentSortMethod() {
-        return galleryState.currentSortMethod;
-      },
-      get availableNavigationSections() {
-        return galleryState.availableNavigationSections;
-      },
-      onFilterChange: (filter) =>
-        galleryState.handleFilterChange(filter.type, filter.value),
-      onSortMethodChange: (method: string) =>
-        galleryState.handleSortChange(method as any, "asc"),
-      scrollToSection: galleryState.scrollToSection,
-      openFilterModal: () => galleryState.openFilterModal(),
-    });
-  });
-
-  // Handle scroll events from the scrollable container
-  function handleContainerScroll(event: CustomEvent<{ scrollTop: number }>) {
-    const { scrollTop } = event.detail;
-    scrollBehaviorService.handleContainerScroll(
-      scrollTop,
-      lastContainerScrollTop
-    );
-    lastContainerScrollTop = scrollTop;
-    browseScrollState.updateScrollPosition(scrollTop);
-  }
-
   // ============================================================================
   // LIFECYCLE (Coordination)
   // ============================================================================
@@ -358,7 +326,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
     // On reconnect: clear PublicSequencesLoader's in-memory cache so the next
     // gallery load re-fetches from Firestore and repopulates the Dexie offline cache
-    // with fresh data. This cast is intentional — adding clearCache() to IBrowseLoader
+    // with fresh data. This cast is intentional - adding clearCache() to IBrowseLoader
     // is a larger interface change deferred to a later task.
     const unsubscribeReconnect = networkStatusState.onOnline(() => {
       const loader = getBrowseLoader() as unknown as { cachedSequences?: unknown };
@@ -376,7 +344,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
     browseNavigationState.initialize("gallery");
 
     if (initialCreatorId) {
-      // Override whatever localStorage had — the URL is the source of truth on load.
+      // Override whatever localStorage had - the URL is the source of truth on load.
       browseNavigationState.viewCreatorProfile(initialCreatorId);
     }
 
@@ -386,7 +354,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
       // Initialize event handler service with required parameters
       eventHandlerService.initialize({
-        galleryState,
+        engine,
+        openAnimationModal,
         setSelectedSequence: (seq: SequenceData | null) => (_selectedSequence = seq),
         setError: (err: string | null) => (error = err),
       });
@@ -415,19 +384,14 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
       console.warn("BrowseModule: Failed to resolve DeviceDetector", err);
     }
 
-    // Load initial data using the user's last-selected source (non-blocking).
-    // The gallery toggle (Community / My Library) saves its state to localStorage
-    // via sequenceSourceManager. Reading from it here ensures that if the user was
-    // viewing their own library before navigating away, they return to their library
-    // instead of being reset to Community sequences on every visit.
-    galleryState
-      .setSource(sequenceSourceManager.current)
+    // Load initial data (engine restores persisted source from localStorage).
+    engine
+      .initialize()
       .then(() => {
         // Check if we have a pending sequence to view (e.g., from inbox message)
         const pendingSequenceId = consumePendingSequenceView();
         if (pendingSequenceId) {
-          // Find the sequence in the loaded data
-          const sequence = galleryState.displayedSequences.find(
+          const sequence = engine.sequences.find(
             (s) => s.id === pendingSequenceId
           );
           if (sequence) {
@@ -476,7 +440,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
     return () => {
       cleanup?.();
       unsubscribeReconnect();
-      sequenceControlsManager.clear();
       window.removeEventListener("popstate", handleCreatorPopState);
     };
   });
@@ -484,6 +447,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   // Cancel all pending thumbnail renders when leaving the browse module
   // This prevents the render queue from continuing to process after navigation
   onDestroy(() => {
+    engine.destroy();
     try {
       const orchestrator = getThumbnailRenderOrchestrator();
       if (orchestrator) {
@@ -506,7 +470,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
 <!-- Animation Sheet Coordinator -->
 <AnimationSheetCoordinator
-  sequence={galleryState.sequenceToAnimate}
+  sequence={sequenceToAnimate}
   bind:isOpen={showAnimator}
 />
 
@@ -534,13 +498,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
           <GalleryTab
             {isMobile}
             {drawerWidth}
-            {galleryState}
+            {engine}
             {error}
             onSequenceAction={(action, sequence, variations) => {
               return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
                 Promise.resolve();
             }}
-            onContainerScroll={handleContainerScroll}
           />
         {:else if activeTab === "collections"}
           <CollectionsBrowsePanel />

@@ -3,22 +3,17 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-  import type { FilterPreset } from "../domain/types/browse-types";
-  import type { createBrowseState } from "../state/browse-state-factory.svelte";
-  import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
+  import type { BrowseEngine } from "$lib/shared/browse/engine/types";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { BrowseSortMethod } from "../domain/enums/browse-enums";
 
-  type BrowseState = ReturnType<typeof createBrowseState>;
-
-  import BrowseLayout from "./BrowseLayout.svelte";
+  import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import InviteCollaboratorsPanel from "$lib/shared/video-collaboration/components/InviteCollaboratorsPanel.svelte";
-  import ViewPresetsSheet from "../../sequences/filtering/components/ViewPresetsSheet.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
   import LetterSelectionSheet from "../../sequences/filtering/components/bento-filter/LetterSelectionSheet.svelte";
   import PositionOptionsSheet from "../../sequences/filtering/components/bento-filter/PositionOptionsSheet.svelte";
-  import SequenceDisplayPanel from "../../sequences/display/components/SequenceDisplayPanel.svelte";
   import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import {
@@ -33,19 +28,17 @@
   interface Props {
     isMobile: boolean;
     drawerWidth: string;
-    galleryState: BrowseState;
+    engine: BrowseEngine;
     error: string | null;
     onSequenceAction: (action: string, sequence: SequenceData, variations?: SequenceData[]) => Promise<void>;
-    onContainerScroll: (event: CustomEvent<{ scrollTop: number }>) => void;
   }
 
   let {
     isMobile,
     drawerWidth,
-    galleryState,
+    engine,
     error,
     onSequenceAction,
-    onContainerScroll,
   }: Props = $props();
 
   // State for sub-sheets
@@ -58,62 +51,24 @@
   let startPosition = $state<PictographData | null>(null);
   let endPosition = $state<PictographData | null>(null);
 
-  // Derived values for inline filter chips
-  const currentLetter = $derived(
-    galleryState.currentFilter.type === "startingLetter" ||
-    galleryState.currentFilter.type === "starting_letter"
-      ? (galleryState.currentFilter.value as string)
-      : null
-  );
-
-  const currentLevel = $derived(
-    galleryState.currentFilter.type === "difficulty"
-      ? (galleryState.currentFilter.value as number)
-      : null
-  );
-
-  const currentLength = $derived(
-    galleryState.currentFilter.type === "length"
-      ? (galleryState.currentFilter.value as number)
-      : null
-  );
-
-  const currentLoopType = $derived(
-    galleryState.currentFilter.type === "cap_type"
-      ? (galleryState.currentFilter.value as string)
-      : null
-  );
-
-  const currentGridMode = $derived(
-    galleryState.currentFilter.type === "gridMode"
-      ? (galleryState.currentFilter.value as string)
-      : null
-  );
-
-  const isFavoritesActive = $derived(
-    galleryState.currentFilter.type === "favorites"
-  );
-
-  const hasActivePositions = $derived(
-    startPosition !== null || endPosition !== null
-  );
+  // Derived: current letter filter from engine
+  const currentLetter = $derived.by(() => {
+    const filter = engine.activeFilters.get(String(BrowseFilterType.STARTING_LETTER));
+    return filter ? filter.value as string : null;
+  });
 
   // Handler functions
-  function handleFilterChange(type: SequenceFilterType, value?: BrowseFilterValue) {
-    galleryState.handleFilterChange(type, value);
-  }
-
   function handleOpenLetterSheet() {
     isLetterSheetOpen = true;
   }
 
   function handleLetterSelect(letter: string) {
-    handleFilterChange("startingLetter", letter);
+    engine.addFilter(BrowseFilterType.STARTING_LETTER, letter, letter, "var(--semantic-info)");
     isLetterSheetOpen = false;
   }
 
   function handleLetterClear() {
-    handleFilterChange("all");
+    engine.removeFilter(String(BrowseFilterType.STARTING_LETTER));
     isLetterSheetOpen = false;
   }
 
@@ -124,25 +79,32 @@
   function handleStartPositionChange(position: PictographData | null) {
     startPosition = position;
     if (position) {
-      handleFilterChange("startPosition", position.startPosition ?? undefined);
-    } else if (!endPosition) {
-      handleFilterChange("all");
+      engine.addFilter(BrowseFilterType.STARTING_POSITION, position.startPosition ?? "", "Start Position", "var(--theme-accent)");
+    } else {
+      engine.removeFilter(String(BrowseFilterType.STARTING_POSITION));
+      if (!endPosition) {
+        // No position filters left
+      }
     }
   }
 
   function handleEndPositionChange(position: PictographData | null) {
     endPosition = position;
     if (position) {
-      handleFilterChange("endPosition", position.endPosition ?? undefined);
-    } else if (!startPosition) {
-      handleFilterChange("all");
+      engine.addFilter(BrowseFilterType.END_POSITION, position.endPosition ?? "", "End Position", "var(--theme-accent)");
+    } else {
+      engine.removeFilter(String(BrowseFilterType.END_POSITION));
+      if (!startPosition) {
+        // No position filters left
+      }
     }
   }
 
   function handleClearAllPositions() {
     startPosition = null;
     endPosition = null;
-    handleFilterChange("all");
+    engine.removeFilter(String(BrowseFilterType.STARTING_POSITION));
+    engine.removeFilter(String(BrowseFilterType.END_POSITION));
   }
 
   function handleInviteCollaborators(video: CollaborativeVideo) {
@@ -153,11 +115,6 @@
   function handleCloseInvitePanel() {
     isInvitePanelOpen = false;
     inviteVideo = null;
-  }
-
-  function handleSectionClick(sectionId: string) {
-    galleryState.scrollToSection(sectionId);
-    sequencePanelManager.close();
   }
 
   // Variation picker
@@ -176,10 +133,7 @@
   let searchMode = $state<"standard" | "spelled">("standard");
   const hapticService = getHapticFeedback();
 
-  const currentSearchQuery = $derived.by(() => {
-    const filter = galleryState.activeFilterList.find(f => f.type === 'contains_letters');
-    return filter ? filter.value as string : "";
-  });
+  const currentSearchQuery = $derived(engine.searchQuery);
 
   function handleToggleSearch() {
     hapticService?.trigger("selection");
@@ -187,78 +141,34 @@
   }
 
   function handleSearchClear() {
-    handleFilterChange('all');
+    engine.setSearch("");
+    engine.clearUserFilters();
   }
 
   function handleSearchKey(char: string) {
     const newValue = currentSearchQuery + char;
-    handleFilterChange('contains_letters', newValue);
+    engine.setSearch(newValue);
   }
 
   function handleSearchBackspace() {
     const newValue = currentSearchQuery.slice(0, -1);
-    if (newValue) {
-      handleFilterChange('contains_letters', newValue);
-    } else {
-      handleFilterChange('all');
-    }
+    engine.setSearch(newValue);
   }
+
+  // Derived: available sections for SortJumpSheet
+  const availableNavigationSections = $derived(
+    engine.sections.map((s) => s.title)
+  );
 </script>
 
-<BrowseLayout>
-  {#snippet centerPanel()}
-    <div class="sequences-main">
-      <SequenceDisplayPanel
-        sequences={galleryState.displayedSequences}
-        sections={galleryState.sequenceSections}
-        isLoading={galleryState.isLoading}
-        sectionsReady={galleryState.sectionsReady}
-        {error}
-        showSections={galleryState.showSections}
-        source={galleryState.currentSource}
-        activeFilterList={galleryState.activeFilterList}
-        activeLevel={currentLevel}
-        activeLetter={currentLetter}
-        activeLength={currentLength}
-        activeLoopType={currentLoopType}
-        activeGridMode={currentGridMode}
-        {isFavoritesActive}
-        {hasActivePositions}
-        availableLengths={galleryState.availableSequenceLengths}
-        loopTypeCounts={galleryState.loopTypeCounts}
-        onAction={onSequenceAction}
-        onScroll={onContainerScroll}
-        onFilterChange={handleFilterChange}
-        onRemoveFilter={(type) => galleryState.removeFilter(type)}
-        onClearAllFilters={() => galleryState.clearAllFilters()}
-        onOpenLetterSheet={handleOpenLetterSheet}
-        onOpenOptionsSheet={handleOpenOptionsSheet}
-        getFilteredCount={galleryState.getFilteredCount}
-        sequenceSections={galleryState.sequenceSections}
-      />
-    </div>
-  {/snippet}
-</BrowseLayout>
-
-<!-- View Presets Sheet (Mobile) -->
-{#if isMobile}
-  <Drawer
-    isOpen={sequencePanelManager.isViewPresetsOpen}
-    placement="bottom"
-    onOpenChange={(open) => {
-      if (!open) sequencePanelManager.close();
-    }}
-  >
-    <DrawerHeader title={t('browse_view_presets')} onClose={() => sequencePanelManager.close()} />
-    <ViewPresetsSheet
-      currentFilter={galleryState.currentFilter.type as FilterPreset}
-      onFilterChange={(preset) => {
-        handleFilterChange(preset);
-        sequencePanelManager.close();
-      }}
-    />
-  </Drawer>
-{/if}
+<div class="sequences-main">
+  <BrowsePanel
+    {engine}
+    layout="fullpage"
+    onSelect={(sequence, variations) => onSequenceAction("view-detail", sequence, variations)}
+    showSourceToggle
+  />
+</div>
 
 <!-- Sort & Jump Sheet (Mobile) -->
 {#if isMobile}
@@ -271,13 +181,15 @@
   >
     <DrawerHeader title={t('browse_sort_navigate')} onClose={() => sequencePanelManager.close()} />
     <SortJumpSheet
-      currentSortMethod={galleryState.currentSortMethod}
-      availableSections={galleryState.availableNavigationSections}
+      currentSortMethod={engine.sortMethod}
+      availableSections={availableNavigationSections}
       onSortMethodChange={(method) => {
-        galleryState.handleSortChange(method, "asc");
+        engine.setSort(method, "asc");
         sequencePanelManager.close();
       }}
-      onSectionClick={handleSectionClick}
+      onSectionClick={(sectionId) => {
+        sequencePanelManager.close();
+      }}
     />
   </Drawer>
 {/if}
@@ -353,7 +265,7 @@
   <VirtualKeyboard
     bind:isOpen={showSearchTerminal}
     value={currentSearchQuery}
-    resultCount={galleryState.displayedSequences.length}
+    resultCount={engine.resultCount}
     {searchMode}
     onKey={handleSearchKey}
     onBackspace={handleSearchBackspace}
@@ -364,8 +276,8 @@
 {/if}
 
 <!-- Floating Search Trigger (FAB) -->
-<button 
-  class="floating-search-trigger" 
+<button
+  class="floating-search-trigger"
   class:kb-active={showSearchTerminal}
   onclick={handleToggleSearch}
   type="button"
@@ -497,6 +409,12 @@
     opacity: 0;
     pointer-events: none;
     transform: scale(0.8);
+  }
+
+  @media (min-width: 1100px) {
+    .floating-search-trigger {
+      display: none;
+    }
   }
 
   @media (max-width: 640px) {

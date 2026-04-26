@@ -1,13 +1,12 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { createBrowseState } from "../../state/browse-state-factory.svelte";
-
-type BrowseState = ReturnType<typeof createBrowseState>;
+import type { BrowseEngine } from "$lib/shared/browse/engine/types";
 
 /**
  * Parameters required to initialize the event handler service
  */
 export interface BrowseEventHandlerParams {
-  galleryState: BrowseState;
+  engine: BrowseEngine;
+  openAnimationModal: (sequence: SequenceData) => void;
   setSelectedSequence: (sequence: SequenceData | null) => void;
   setError: (error: string | null) => void;
 }
