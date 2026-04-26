@@ -28,7 +28,6 @@ import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
 import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
 import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
-import type { IPulseOverlayRenderer } from "../contracts/IPulseOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
@@ -40,7 +39,6 @@ import type { SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRendere
 import type { InkTipInput } from "$lib/shared/effects/renderers/Ink2DRenderer";
 import type { FrostTipInput } from "$lib/shared/effects/renderers/Frost2DRenderer";
 import type { SilkTipInput } from "$lib/shared/effects/renderers/Silk2DRenderer";
-import type { PulseTipInput } from "$lib/shared/effects/renderers/Pulse2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -130,8 +128,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastFrostFrameTime: number = 0;
   private silkRenderer: ISilkOverlayRenderer | null = null;
   private lastSilkFrameTime: number = 0;
-  private pulseRenderer: IPulseOverlayRenderer | null = null;
-  private lastPulseFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -155,7 +151,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveInkErrors: number = 0;
   private consecutiveFrostErrors: number = 0;
   private consecutiveSilkErrors: number = 0;
-  private consecutivePulseErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
@@ -169,7 +164,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private inkDisabledByError: boolean = false;
   private frostDisabledByError: boolean = false;
   private silkDisabledByError: boolean = false;
-  private pulseDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -252,7 +246,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.inkRenderer = config.inkRenderer ?? null;
     this.frostRenderer = config.frostRenderer ?? null;
     this.silkRenderer = config.silkRenderer ?? null;
-    this.pulseRenderer = config.pulseRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -308,8 +301,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.frostRenderer = config.frostRenderer ?? null;
     if (config.silkRenderer !== undefined)
       this.silkRenderer = config.silkRenderer ?? null;
-    if (config.pulseRenderer !== undefined)
-      this.pulseRenderer = config.pulseRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -347,7 +338,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.consecutiveInkErrors = 0;
     this.consecutiveFrostErrors = 0;
     this.consecutiveSilkErrors = 0;
-    this.consecutivePulseErrors = 0;
     this.fireDisabledByError = false;
     this.ledDisabledByError = false;
     this.zapDisabledByError = false;
@@ -361,7 +351,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.inkDisabledByError = false;
     this.frostDisabledByError = false;
     this.silkDisabledByError = false;
-    this.pulseDisabledByError = false;
   }
 
   isRunning(): boolean {
@@ -462,8 +451,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.frostRenderer = null;
     this.silkRenderer?.dispose();
     this.silkRenderer = null;
-    this.pulseRenderer?.dispose();
-    this.pulseRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -561,9 +548,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const silkActive =
       params.silkConfig != null &&
       this.silkRenderer?.isInitialized() === true;
-    const pulseActive =
-      params.pulseConfig != null &&
-      this.pulseRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -583,8 +567,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       smokeActive ||
       inkActive ||
       frostActive ||
-      silkActive ||
-      pulseActive;
+      silkActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -788,10 +771,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.silkRenderer?.isInitialized()) {
         this.silkRenderer.clear();
       }
-      // Clear pulse overlay (Canvas2D) — also drops the ring pool.
-      if (this.pulseRenderer?.isInitialized()) {
-        this.pulseRenderer.clear();
-      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -917,11 +896,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.silkRenderer?.isInitialized()
       && params.silkConfig != null;
-    const hasPulseOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.pulseRenderer?.isInitialized()
-      && params.pulseConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate || hasSilkOverlayForTipUpdate || hasPulseOverlayForTipUpdate;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate || hasSilkOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1732,7 +1707,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
         if (dt > 0.1) dt = 0.1;
         this.lastSilkFrameTime = nowMs;
-        activeSilkRenderer!.renderFrame(params.silkConfig!, silkTips, dt);
+        const silkLoopDetected = this.loopDetectedThisFrame && (params.isSeamlesslyLoopable ?? false);
+        activeSilkRenderer!.renderFrame(params.silkConfig!, silkTips, dt, silkLoopDetected);
         this.consecutiveSilkErrors = 0;
       } catch (error) {
         this.consecutiveSilkErrors++;
@@ -1756,100 +1732,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } else if (activeSilkRenderer && !hasSilkOverlay) {
       activeSilkRenderer.clear();
       this.lastSilkFrameTime = 0;
-    }
-
-    // Pulse overlay: expanding wave rings from tip positions.
-    const activePulseRenderer = this.pulseRenderer?.isInitialized()
-      ? this.pulseRenderer
-      : null;
-    const hasPulseOverlay =
-      this.fireTipTracker && activePulseRenderer && params.pulseConfig != null;
-
-    if (
-      hasPulseOverlay &&
-      !this.pulseDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const blueColor = params.trailSettings.blueColor;
-        const redColor = params.trailSettings.redColor;
-        const pulseTips: PulseTipInput[] = [];
-        let globalPulseTipIndex = 0;
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "pulse") continue;
-          pulseTips.push({
-            x: t.x,
-            y: t.y,
-            propIndex: t.propIndex as 0 | 1,
-            tipIndex: globalPulseTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        const blueTransformPulse = renderedTransforms?.blue;
-        if (
-          params.props.blueProp &&
-          blueTransformPulse &&
-          resolveEffect(0, 0, tipMap, {}) === "pulse" &&
-          !pulseTips.some((t) => t.propIndex === 0)
-        ) {
-          pulseTips.push({
-            x: blueTransformPulse.centerX,
-            y: blueTransformPulse.centerY,
-            propIndex: 0,
-            tipIndex: globalPulseTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        const redTransformPulse = renderedTransforms?.red;
-        if (
-          params.props.redProp &&
-          redTransformPulse &&
-          resolveEffect(1, 0, tipMap, {}) === "pulse" &&
-          !pulseTips.some((t) => t.propIndex === 1)
-        ) {
-          pulseTips.push({
-            x: redTransformPulse.centerX,
-            y: redTransformPulse.centerY,
-            propIndex: 1,
-            tipIndex: globalPulseTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        const nowMs = currentTime;
-        let dt = this.lastPulseFrameTime > 0 ? (nowMs - this.lastPulseFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastPulseFrameTime = nowMs;
-        const pulseCurrentStep = params.currentStep ?? 0;
-        activePulseRenderer!.renderFrame(params.pulseConfig!, pulseTips, pulseCurrentStep, dt);
-        this.consecutivePulseErrors = 0;
-      } catch (error) {
-        this.consecutivePulseErrors++;
-        activePulseRenderer?.clear();
-        if (this.consecutivePulseErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.pulseDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Pulse effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("pulse", err);
-          } else {
-            effectErrorSignal.trigger("pulse", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Pulse render error (attempt ${this.consecutivePulseErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activePulseRenderer && !hasPulseOverlay) {
-      activePulseRenderer.clear();
-      this.lastPulseFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

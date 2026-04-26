@@ -31,7 +31,6 @@ import type {
   Ink2DParams,
   Petals2DParams,
   Silk2DParams,
-  Pulse2DParams,
   Smoke2DParams,
   Sparkles2DParams,
   Water2DParams,
@@ -45,7 +44,6 @@ import {
   resolveInk2D,
   resolvePetals2D,
   resolveSilk2D,
-  resolvePulse2D,
   resolveSmoke2D,
   resolveSparkles2D,
   resolveWater2D,
@@ -59,7 +57,6 @@ import type {
   InkIntent,
   PetalsIntent,
   SilkIntent,
-  PulseIntent,
   SmokeIntent,
   SparklesIntent,
   WaterIntent,
@@ -95,8 +92,6 @@ export class FrameParameterBuilder {
   private prevFrostIntentRef: FrostIntent | null = null;
   private silkConfig: Silk2DParams = resolveSilk2D(DEFAULT_EFFECTS_CONFIG.silk);
   private prevSilkIntentRef: SilkIntent | null = null;
-  private pulseConfig: Pulse2DParams = resolvePulse2D(DEFAULT_EFFECTS_CONFIG.pulse);
-  private prevPulseIntentRef: PulseIntent | null = null;
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
 
   // ── Loopability cache ───────────────────────────────────────────────
@@ -153,7 +148,6 @@ export class FrameParameterBuilder {
     inkConfig: null,
     frostConfig: null,
     silkConfig: null,
-    pulseConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -376,16 +370,6 @@ export class FrameParameterBuilder {
       }
     }
     fp.silkConfig = erm.prevHasSilkTips ? this.silkConfig : null;
-
-    // Pulse overlay config — same reference-identity diff pattern.
-    if (effectsConfigState) {
-      const intent = effectsConfigState.pulse;
-      if (intent !== this.prevPulseIntentRef) {
-        this.prevPulseIntentRef = intent;
-        this.pulseConfig = resolvePulse2D(intent);
-      }
-    }
-    fp.pulseConfig = erm.prevHasPulseTips ? this.pulseConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.

@@ -23,7 +23,6 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
-  PulseIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
 import type { BubblePalette } from "../domain/BubblePalettes";
@@ -32,7 +31,6 @@ import type { SmokePalette } from "../domain/SmokePalettes";
 import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 import type { FrostPalette } from "../domain/FrostPalettes";
 import type { SilkPalette } from "../domain/SilkPalettes";
-import type { PulsePalette } from "../domain/PulsePalettes";
 
 export interface Trails2DParams extends TrailsIntent {
   /** px value for ctx.lineWidth. Derived from thickness. */
@@ -295,16 +293,4 @@ export interface Silk2DParams extends SilkIntent {
   motionReferenceSpeed: number;
   /** Canvas composite op. */
   blendMode?: GlobalCompositeOperation;
-}
-
-export interface Pulse2DParams extends PulseIntent {
-  resolvedPalette: PulsePalette;
-  /** px — max ring expansion radius. */
-  maxRadius: number;
-  /** px — stroke width or gradient band width. */
-  ringWidth: number;
-  /** World units/s reference speed for velocity trigger. */
-  refSpeed: number;
-  /** Canvas composite op. */
-  blendMode: GlobalCompositeOperation;
 }

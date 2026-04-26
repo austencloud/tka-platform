@@ -25,7 +25,6 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
-  PulseIntent,
 } from "../domain/EffectsConfig";
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
@@ -69,7 +68,6 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     ink: patch.ink ? { ...base.ink, ...patch.ink } : base.ink,
     frost: patch.frost ? { ...base.frost, ...patch.frost } : base.frost,
     silk: patch.silk ? { ...base.silk, ...patch.silk } : base.silk,
-    pulse: patch.pulse ? { ...base.pulse, ...patch.pulse } : base.pulse,
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
@@ -183,12 +181,6 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     scheduleSave();
   }
 
-  function updatePulse(patch: Partial<PulseIntent>) {
-    config.pulse = { ...config.pulse, ...patch };
-    config.activePresets.pulse = null;
-    scheduleSave();
-  }
-
   function setTipEffectMap(map: TipEffectMap) {
     config.tipEffectMap = map;
     scheduleSave();
@@ -237,7 +229,6 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get ink() { return config.ink; },
     get frost() { return config.frost; },
     get silk() { return config.silk; },
-    get pulse() { return config.pulse; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
 
@@ -256,7 +247,6 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     updateInk,
     updateFrost,
     updateSilk,
-    updatePulse,
     setTipEffectMap,
     applyPreset,
     updateOverride,
