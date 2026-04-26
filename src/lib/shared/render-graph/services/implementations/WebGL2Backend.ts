@@ -1,5 +1,5 @@
 /**
- * WebGL2 render backend — Phase 1.
+ * WebGL2 render backend - Phase 1.
  *
  * Per-frame algorithm per tip (matches Canvas2D shadowBlur semantics):
  *
@@ -13,7 +13,7 @@
  *   4. Composite (stamp + blur * GLOW_MIX) on top of the decayed
  *      accumulator via premultiplied alpha-over blend. This bakes a
  *      fresh, full-brightness halo around the current polygon into the
- *      accumulator, which then fades naturally on subsequent frames —
+ *      accumulator, which then fades naturally on subsequent frames -
  *      the GPU equivalent of Canvas2D shadowBlur applied per-stroke.
  *   5. Composite accumulator onto the display.
  *
@@ -34,6 +34,18 @@ import type {
   TrailTipState,
   TrailBlendMode,
 } from "../../domain/TrailPass";
+import type { FirePassPayload } from "../../domain/FirePass";
+import type { LedPassPayload } from "../../domain/LedPass";
+import type { ParticlePassPayload } from "../../domain/ParticlePass";
+import type {
+  EchoPassPayload,
+  BloomPassPayload,
+  ZapPassPayload,
+  PulsePassPayload,
+  InkPassPayload,
+  FrostPassPayload,
+  SilkPassPayload,
+} from "../../domain/EffectPasses";
 import {
   adaptiveSubdivisions,
   buildTaperedMesh,
@@ -43,6 +55,10 @@ import {
 } from "../../math/trail-mesh";
 import { FBOPool, type FBO } from "./FBOPool";
 import { ShaderLibrary } from "./ShaderLibrary";
+import { FirePassExecutor } from "./FirePassExecutor";
+import { LedPassExecutor } from "./LedPassExecutor";
+import { ParticlePassExecutor } from "./ParticlePassExecutor";
+import { OverlayEffectsExecutor } from "./OverlayEffectsExecutor";
 
 const TRAIL_KEY_PREFIX = "trail-tip-";
 const STAMP_KEY = "stamp";
@@ -61,7 +77,7 @@ const GLOW_MIX = 1.0;
 const BLOOM_DOWNSAMPLE = 2;
 /** Effective sigma contributed by one 9-tap blur pass at 1 texel stride. */
 const SIGMA_PER_PASS = 2.0;
-/** Cap on blur iterations — bounds worst-case GPU cost. */
+/** Cap on blur iterations - bounds worst-case GPU cost. */
 const MAX_BLUR_ITERATIONS = 8;
 
 interface TipLiveness {
@@ -86,6 +102,10 @@ export class WebGL2Backend implements RenderBackend {
   private longestPassMs = 0;
   private readonly tipLiveness = new Map<string, TipLiveness>();
   private readonly unsupportedKindsWarned = new Set<RenderPassKind>();
+  private fireExecutor: FirePassExecutor | null = null;
+  private ledExecutor: LedPassExecutor | null = null;
+  private particleExecutor: ParticlePassExecutor | null = null;
+  private overlayExecutor: OverlayEffectsExecutor | null = null;
 
   async initialize(canvas: HTMLCanvasElement): Promise<void> {
     if (this.gl) return;
@@ -95,7 +115,7 @@ export class WebGL2Backend implements RenderBackend {
       antialias: false,
       preserveDrawingBuffer: false,
       // Required for the `__TKA_TRAIL_DEPTH` path's per-pixel age ordering.
-      // Cheap even when the flag is off — the existing accumulator path
+      // Cheap even when the flag is off - the existing accumulator path
       // never enables DEPTH_TEST so the depth buffer just goes unused.
       depth: true,
     });
@@ -121,6 +141,28 @@ export class WebGL2Backend implements RenderBackend {
       "trail-mesh",
       "gaussian-blur",
       "trail-composite",
+      "fire-splat",
+      "fire-advection",
+      "fire-curl",
+      "fire-vorticity",
+      "fire-curl-noise",
+      "fire-buoyancy",
+      "fire-combustion",
+      "fire-divergence",
+      "fire-jacobi",
+      "fire-gradient-subtract",
+      "fire-clear",
+      "fire-display",
+      "fire-bloom-composite",
+      "led-sprite",
+      "led-trail-accumulate",
+      "led-display",
+      "particle-sprite",
+      "bloom-downsample",
+      "bloom-upsample",
+      "effect-halo",
+      "effect-ring",
+      "effect-frost",
     ]);
 
     const mesh = this.shaders.get("trail-mesh");
@@ -188,6 +230,14 @@ export class WebGL2Backend implements RenderBackend {
   dispose(): void {
     if (!this.gl) return;
     const gl = this.gl;
+    this.fireExecutor?.dispose();
+    this.fireExecutor = null;
+    this.ledExecutor?.dispose();
+    this.ledExecutor = null;
+    this.particleExecutor?.dispose();
+    this.particleExecutor = null;
+    this.overlayExecutor?.dispose();
+    this.overlayExecutor = null;
     this.fbos?.dispose();
     this.shaders?.dispose();
     if (this.emptyVAO) gl.deleteVertexArray(this.emptyVAO);
@@ -216,6 +266,41 @@ export class WebGL2Backend implements RenderBackend {
       case "trail":
         this.executeTrailPass(pass.payload as TrailPassPayload, dt);
         return;
+      case "fire":
+        this.executeFirePass(pass.payload as FirePassPayload, dt);
+        return;
+      case "led":
+        this.executeLedPass(pass.payload as LedPassPayload, dt);
+        return;
+      case "water":
+      case "bubbles":
+      case "petals":
+      case "smoke":
+      case "charcoal":
+      case "sparkles":
+        this.executeParticlePass(pass.kind, pass.payload as ParticlePassPayload, dt);
+        return;
+      case "echo":
+        this.executeEchoPass(pass.payload as EchoPassPayload, dt);
+        return;
+      case "bloom":
+        this.executeBloomPass(pass.payload as BloomPassPayload, dt);
+        return;
+      case "zap":
+        this.executeZapPass(pass.payload as ZapPassPayload, dt);
+        return;
+      case "pulse":
+        this.executePulsePass(pass.payload as PulsePassPayload, dt);
+        return;
+      case "ink":
+        this.executeInkPass(pass.payload as InkPassPayload, dt);
+        return;
+      case "frost":
+        this.executeFrostPass(pass.payload as FrostPassPayload, dt);
+        return;
+      case "silk":
+        this.executeSilkPass(pass.payload as SilkPassPayload, dt);
+        return;
       case "composite":
         return;
       default:
@@ -233,7 +318,7 @@ export class WebGL2Backend implements RenderBackend {
     // Dev flag: when true, skip the per-tip ping-pong accumulator and draw
     // every tip's current leading-edge polygon directly to the canvas with
     // depth test enabled. Per-vertex z (0=newest, 1=oldest) gives global
-    // "newest-wins" compositing across tips — red strokes over blue when
+    // "newest-wins" compositing across tips - red strokes over blue when
     // red is newer, and vice versa. Glow is intentionally absent in this
     // path; it gets restored in a follow-up by rendering into a sceneTrail
     // FBO with depth and post-blurring.
@@ -580,7 +665,7 @@ export class WebGL2Backend implements RenderBackend {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     // 2. Iterate separable Gaussian. stride=1 texel in half-res = ~2px in
-    //    full-res — no aliasing between taps.
+    //    full-res - no aliasing between taps.
     const radiusHalfRes = radiusPx / BLOOM_DOWNSAMPLE;
     const targetSigma = Math.max(0.5, radiusHalfRes / 2);
     const iterations = Math.min(
@@ -673,13 +758,81 @@ export class WebGL2Backend implements RenderBackend {
     }
   }
 
+  // ── Effect pass executors ──────────────────────────────────────────
+
+  private executeFirePass(payload: FirePassPayload, dt: number): void {
+    if (!this.fireExecutor) {
+      this.fireExecutor = new FirePassExecutor(
+        this.gl!, this.fbos!, this.shaders!, this.emptyVAO!,
+      );
+    }
+    this.fireExecutor.execute(payload, dt);
+  }
+
+  private executeLedPass(payload: LedPassPayload, dt: number): void {
+    if (!this.ledExecutor) {
+      this.ledExecutor = new LedPassExecutor(
+        this.gl!, this.fbos!, this.shaders!, this.emptyVAO!,
+      );
+    }
+    this.ledExecutor.execute(payload, dt);
+  }
+
+  private executeParticlePass(
+    kind: string,
+    payload: ParticlePassPayload,
+    dt: number,
+  ): void {
+    if (!this.particleExecutor) {
+      this.particleExecutor = new ParticlePassExecutor(this.gl!, this.shaders!);
+    }
+    this.particleExecutor.execute(kind, payload, dt);
+  }
+
+  private getOverlay(): OverlayEffectsExecutor {
+    if (!this.overlayExecutor) {
+      this.overlayExecutor = new OverlayEffectsExecutor(
+        this.gl!, this.fbos!, this.shaders!, this.emptyVAO!,
+      );
+    }
+    return this.overlayExecutor;
+  }
+
+  private executeEchoPass(payload: EchoPassPayload, _dt: number): void {
+    this.getOverlay().executeEcho(payload);
+  }
+
+  private executeBloomPass(payload: BloomPassPayload, _dt: number): void {
+    this.getOverlay().executeBloom(payload);
+  }
+
+  private executeZapPass(payload: ZapPassPayload, _dt: number): void {
+    this.getOverlay().executeZap(payload);
+  }
+
+  private executePulsePass(payload: PulsePassPayload, _dt: number): void {
+    this.getOverlay().executePulse(payload);
+  }
+
+  private executeInkPass(payload: InkPassPayload, dt: number): void {
+    this.getOverlay().executeInk(payload, dt);
+  }
+
+  private executeFrostPass(payload: FrostPassPayload, dt: number): void {
+    this.getOverlay().executeFrost(payload, dt);
+  }
+
+  private executeSilkPass(payload: SilkPassPayload, dt: number): void {
+    this.getOverlay().executeSilk(payload, dt);
+  }
+
   private warnUnsupportedOnce(kind: RenderPassKind): void {
     if (this.unsupportedKindsWarned.has(kind)) return;
     this.unsupportedKindsWarned.add(kind);
     if (typeof window !== "undefined") {
       // eslint-disable-next-line no-console -- one-shot dev warning
       console.warn(
-        `[WebGL2Backend] pass kind "${kind}" not implemented yet — skipped`,
+        `[WebGL2Backend] pass kind "${kind}" not implemented yet - skipped`,
       );
     }
   }

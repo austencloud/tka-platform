@@ -23,7 +23,7 @@ export interface TipPathDelta {
 
 export interface TrailTranslationContext {
   tips: TipPathDelta[];
-  /** Wall time in seconds — drives rainbow hue cycling. */
+  /** Wall time in seconds - drives rainbow hue cycling. */
   elapsedSeconds: number;
   /** Optional color override per tipId. Wins over intent.blue/red. */
   colorOverrides?: Record<string, [number, number, number, number]>;

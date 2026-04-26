@@ -16,26 +16,48 @@ export type RenderPassKind =
   | "charcoal"
   | "zap"
   | "sparkles"
-  | "motion"
+  | "echo"
   | "bloom"
+  | "water"
+  | "bubbles"
+  | "petals"
+  | "smoke"
+  | "ink"
+  | "frost"
+  | "silk"
+  | "pulse"
   | "composite";
 
 /**
  * Canonical z-order per pass kind. Higher = drawn later (on top).
  * Trails sit behind props; bloom composites last.
+ *
+ * Ordering rationale:
+ *   Background plane: grid → glyphs → frost (surface) → trail → ink/silk (ribbons)
+ *   Mid-plane: charcoal → props → led → echo (phantoms)
+ *   Foreground: fire → water → smoke → bubbles → petals → zap → sparkles
+ *   Post-process: bloom → pulse (radial overlay) → composite
  */
 export const Z_ORDER = {
   GRID: 10,
   GLYPH: 20,
+  FROST: 30,
   TRAIL: 40,
+  INK: 42,
+  SILK: 44,
   CHARCOAL: 45,
   PROPS: 50,
   LED: 55,
+  ECHO: 57,
   FIRE: 60,
-  ZAP: 65,
-  SPARKLES: 70,
-  MOTION: 75,
+  WATER: 62,
+  SMOKE: 64,
+  BUBBLES: 66,
+  PETALS: 68,
+  ZAP: 70,
+  SPARKLES: 72,
   BLOOM: 80,
+  PULSE: 85,
   COMPOSITE: 100,
 } as const;
 
@@ -44,6 +66,9 @@ export type RenderTarget =
   | "scene"
   | "bloom-input"
   | `trail-${string}`
+  | `fire-${string}`
+  | `particle-${string}`
+  | `ribbon-${string}`
   | `custom-${string}`;
 
 export interface RenderPassDescriptor {
