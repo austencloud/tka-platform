@@ -62,7 +62,6 @@ export class PulseOverlayRenderer implements IPulseOverlayRenderer {
   clear(): void {
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.width, this.height);
-    this.renderer.dispose();
   }
 
   setVisible(visible: boolean): void {
