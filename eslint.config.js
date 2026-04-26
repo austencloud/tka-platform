@@ -90,6 +90,17 @@ export default tseslint.config(
       "@typescript-eslint/prefer-nullish-coalescing": "off",
       "@typescript-eslint/no-unnecessary-condition": "off",
 
+      // Block raw navigator.vibrate — use getHapticFeedback() service instead
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "navigator",
+          property: "vibrate",
+          message:
+            "Use getHapticFeedback() service instead of raw navigator.vibrate. See docs/superpowers/specs/2026-04-26-haptic-feedback-v2-design.md",
+        },
+      ],
+
       // Enforce architectural boundaries with path aliases
       "no-restricted-imports": [
         "error",
