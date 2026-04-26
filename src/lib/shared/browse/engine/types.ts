@@ -1,0 +1,243 @@
+/**
+ * Browse Engine Types
+ *
+ * Headless browse engine interfaces. The engine manages filtering, sorting,
+ * sectioning, source switching, favorites, and grid layout for any
+ * sequence-browsing surface (gallery tab, modal picker, card designer).
+ *
+ * Key design decisions:
+ * - Constraints are locked filters (`locked: true` on ActiveFilter)
+ * - All filtering is a reactive `$derived` pipeline
+ * - Engine calls existing singleton services internally
+ * - `persistKey` controls localStorage persistence (null = ephemeral)
+ */
+
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+import type { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+import type { SequenceSection } from "$lib/features/browse/shared/domain/models/browse-models";
+
+// ---------------------------------------------------------------------------
+// Sequence Source
+// ---------------------------------------------------------------------------
+
+/** Where the engine loads sequences from. */
+export type SequenceSource = "community" | "my-library";
+
+// ---------------------------------------------------------------------------
+// Active Filter (engine-owned, includes `locked`)
+// ---------------------------------------------------------------------------
+
+/**
+ * A single active filter. Engine's own type — extends the existing
+ * multi-filter `ActiveFilter` with a `locked` flag.
+ *
+ * Locked filters represent constraints set by the host (e.g. a modal
+ * picker that only shows length-4 sequences). They cannot be removed
+ * by the user and are not shown as dismissible chips.
+ */
+export interface ActiveFilter {
+	type: BrowseFilterType;
+	value: BrowseFilterValue;
+	/** Human-readable label for chip display (e.g. "Level 2", "Favorites"). */
+	label: string;
+	/** CSS color for chip accent — a CSS variable reference or hex value. */
+	chipColor: string;
+	/** When true, this filter was set by the host and cannot be removed by the user. */
+	locked: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Section Grouping
+// ---------------------------------------------------------------------------
+
+/** How sequences are grouped into sections. */
+export type SectionGroupBy =
+	| keyof SequenceData
+	| "letter"
+	| "length"
+	| "difficulty"
+	| "date"
+	| "none";
+
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
+
+/** Grid layout state managed by the engine. */
+export interface BrowseLayout {
+	/** Current number of grid columns. */
+	columns: number;
+	/** Per-breakpoint max derived from container width. */
+	maxColumns: number;
+	/** True for ~200ms after column change (CSS transition hint). */
+	isTransitioning: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Persisted State
+// ---------------------------------------------------------------------------
+
+/** Shape written to / read from localStorage under `persistKey`. */
+export interface PersistedEngineState {
+	source: SequenceSource;
+	sortMethod: BrowseSortMethod;
+	sortDirection: "asc" | "desc";
+	/** Serialized Map<string, ActiveFilter> entries (non-locked only). */
+	activeFilters: Array<[string, ActiveFilter]>;
+	columns: number;
+}
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+/**
+ * Configuration passed to `createBrowseEngine()`.
+ *
+ * Hosts provide this to customize the engine for their surface.
+ * Sensible defaults are applied for every optional field.
+ */
+export interface BrowseEngineConfig {
+	/**
+	 * localStorage key prefix for persisting engine state.
+	 * `null` = ephemeral (modal pickers that shouldn't remember state).
+	 */
+	persistKey: string | null;
+
+	/** Initial source. Defaults to "community". */
+	initialSource?: SequenceSource;
+
+	/** Initial sort method. Defaults to ALPHABETICAL. */
+	initialSort?: BrowseSortMethod;
+
+	/** Initial sort direction. Defaults to "asc". */
+	initialSortDirection?: "asc" | "desc";
+
+	/**
+	 * Locked filters — constraints the host imposes that the user cannot remove.
+	 * Example: a modal picker that only shows sequences of length 4.
+	 */
+	constraints?: Array<{
+		type: BrowseFilterType;
+		value: BrowseFilterValue;
+		label: string;
+	}>;
+
+	/** Initial column count. Defaults to settings.gridZoomLevel ?? 2. */
+	initialColumns?: number;
+
+	/** Minimum grid columns. Defaults to 2. */
+	minColumns?: number;
+
+	/** Whether the source toggle (community / my-library) is available. */
+	allowSourceToggle?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Engine
+// ---------------------------------------------------------------------------
+
+/**
+ * The headless browse engine returned by `createBrowseEngine()`.
+ *
+ * All state properties are reactive (Svelte 5 `$state` / `$derived`).
+ * Methods mutate state; the reactive pipeline propagates changes.
+ */
+export interface BrowseEngine {
+	// --- Reactive state (read-only from consumers) ---
+
+	/** True while loading sequences from Firestore / library. */
+	readonly isLoading: boolean;
+	/** Error message from the last failed operation, or null. */
+	readonly error: string | null;
+	/** Current sequence source. */
+	readonly source: SequenceSource;
+
+	/** All sequences from the current source (unfiltered). */
+	readonly allSequences: readonly SequenceData[];
+	/** Sequences after filtering + sorting. */
+	readonly displayedSequences: readonly SequenceData[];
+	/** Sequences organized into titled sections. */
+	readonly sections: readonly SequenceSection[];
+	/** True once the first load + section organization is complete. */
+	readonly sectionsReady: boolean;
+
+	/** Current sort method. */
+	readonly sortMethod: BrowseSortMethod;
+	/** Current sort direction. */
+	readonly sortDirection: "asc" | "desc";
+
+	/** All active filters (user-set + locked constraints). */
+	readonly activeFilters: ReadonlyMap<string, ActiveFilter>;
+	/** Number of active user-set (non-locked) filters. */
+	readonly userFilterCount: number;
+	/** True if any user-set (non-locked) filters are active. */
+	readonly hasUserFilters: boolean;
+
+	/** Grid layout state. */
+	readonly layout: BrowseLayout;
+
+	// --- Available filter metadata (for building filter UIs) ---
+
+	/** Distinct sequence lengths present in allSequences. */
+	readonly availableLengths: readonly number[];
+	/** LOOP type counts: { loopType: count, _total, _circular, _non_circular }. */
+	readonly loopTypeCounts: Readonly<Record<string, number>>;
+
+	// --- Methods ---
+
+	/** Switch source (community / my-library). Loads data. */
+	setSource(source: SequenceSource): Promise<void>;
+
+	/** Change sort method and direction. Recomputes pipeline. */
+	setSort(method: BrowseSortMethod, direction: "asc" | "desc"): void;
+
+	/**
+	 * Add or replace a user filter. Locked filters cannot be overwritten
+	 * by this method.
+	 */
+	addFilter(
+		type: BrowseFilterType,
+		value: BrowseFilterValue,
+		label: string,
+		chipColor: string
+	): void;
+
+	/** Remove a user filter by type key. Locked filters are ignored. */
+	removeFilter(typeKey: string): void;
+
+	/** Clear all user-set filters. Locked filters remain. */
+	clearUserFilters(): void;
+
+	/**
+	 * Contextual count: how many sequences would match if a candidate
+	 * filter were added, given other active filters.
+	 */
+	getFilteredCount(
+		candidateType: BrowseFilterType,
+		candidateValue: BrowseFilterValue
+	): number;
+
+	/** Toggle favorite status for a sequence. Updates local state. */
+	toggleFavorite(sequenceId: string): Promise<void>;
+
+	/** Set grid column count (clamped to min/max). */
+	setColumns(columns: number): void;
+
+	/** Update container width (from ResizeObserver). Re-clamps columns. */
+	updateContainerWidth(width: number): void;
+
+	/** Zoom in (more columns, smaller cards). */
+	zoomIn(): void;
+
+	/** Zoom out (fewer columns, larger cards). */
+	zoomOut(): void;
+
+	/** Invalidate library cache (e.g. when impersonated user changes). */
+	invalidateLibraryCache(): void;
+
+	/** Clean up effects and event listeners. */
+	destroy(): void;
+}
