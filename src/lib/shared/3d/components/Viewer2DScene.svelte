@@ -63,8 +63,10 @@
 
   const bluePos = $derived(bluePropState ? propStateToPosition(bluePropState) : null);
   const redPos = $derived(redPropState ? propStateToPosition(redPropState) : null);
-  const blueRot = $derived(bluePropState?.staffRotationAngle ?? 0);
-  const redRot = $derived(redPropState?.staffRotationAngle ?? 0);
+  const isBlueHand = $derived((bluePropType ?? "").toLowerCase() === "hand");
+  const isRedHand = $derived((redPropType ?? "").toLowerCase() === "hand");
+  const blueRot = $derived(isBlueHand ? 0 : (bluePropState?.staffRotationAngle ?? 0));
+  const redRot = $derived(isRedHand ? 0 : (redPropState?.staffRotationAngle ?? 0));
 
   const blueColor = getMotionColor(MotionColor.BLUE, "dark");
   const redColor = getMotionColor(MotionColor.RED, "dark");
