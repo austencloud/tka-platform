@@ -8,6 +8,7 @@
 
 import type { RenderBackend, BackendKind } from "../../domain/Backend";
 import { WebGL2Backend } from "./WebGL2Backend";
+import { WebGPUBackend } from "./WebGPUBackend";
 
 export interface BackendFactoryOptions {
   /** Force a particular backend for tests or side-by-side comparisons. */
@@ -27,7 +28,12 @@ export async function createBackend(
   }
 
   if (preferred === "webgpu") {
-    throw new Error("BackendFactory: WebGPU backend arrives in Phase 4");
+    if (!(await isWebGPUAvailable())) {
+      throw new Error("BackendFactory: WebGPU requested but not available");
+    }
+    const backend = new WebGPUBackend();
+    await backend.initialize(canvas);
+    return backend;
   }
 
   if (preferred === "canvas2d-legacy") {
