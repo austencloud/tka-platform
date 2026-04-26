@@ -1,4 +1,9 @@
 /**
+ * @deprecated Superseded by render-graph system (src/lib/shared/render-graph/).
+ * The WebGL2Backend + WebGPUBackend handle prop rendering via the unified
+ * FrameGraph. This file remains as the default code path until the
+ * render-graph is promoted from behind its feature flag.
+ *
  * Canvas2D Animation Renderer Implementation
  *
  * Pure Canvas2D renderer for animation visualization.
@@ -103,7 +108,7 @@ const SPHERE_MATERIALS: Record<string, SphereMaterial> = {
   frosted: { edgeDarkness: 0.35, specularIntensity: 0.2, specularRadius: 0.6 },
 };
 
-// Pattern: {big?}{double?}{material}ball — parse any combination
+// Pattern: {big?}{double?}{material}ball - parse any combination
 const SPHERE_PROP_PATTERN = /^(big)?(double)?(contact|glass|pmma|frosted)ball$/;
 
 function getSphereLayout(propType: string): SphereLayout | null {
