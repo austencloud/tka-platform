@@ -7,10 +7,10 @@
  */
 
 import { browser, dev } from "$app/environment";
-import { CapacitorUpdater } from '@capgo/capacitor-updater';
-
-if (typeof window !== 'undefined') {
-  CapacitorUpdater.notifyAppReady();
+if (typeof window !== 'undefined' && 'Capacitor' in window) {
+  import('@capgo/capacitor-updater').then(({ CapacitorUpdater }) => {
+    CapacitorUpdater.notifyAppReady();
+  }).catch(() => {});
 }
 
 // Always expose cache benchmark utility globally (in both dev and prod for testing)
