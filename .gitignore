@@ -287,4 +287,3 @@ src/lib/features/museum/audio/soundscape-candidates.generated.json
 
 # Tauri
 src-tauri/target/
-data/sequences/
