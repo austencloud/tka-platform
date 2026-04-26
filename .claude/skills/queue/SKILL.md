@@ -4,24 +4,44 @@ description: Use when starting a session and needing to pick work, when asking w
 
 # Spec Queue
 
-Live-ranked view of all active and backlog specs. Reads YAML frontmatter from spec files, scores them, and outputs a prioritized table.
+## Default Behavior: PICK AND GO
 
-## Run
+When invoked without arguments (`/queue`):
 
-Read all specs in `docs/superpowers/specs/active/` and `docs/superpowers/specs/backlog/`. Parse YAML frontmatter from each file. Compute scores and output the ranked view below.
+1. Read frontmatter from the top 5 backlog specs by score (don't read all 59)
+2. Pick the #1 non-blocked spec
+3. Tell the user in ONE sentence: "Top of queue: **[name]** (score [N], effort [E]) — [remaining]. Starting."
+4. Read the full spec, then begin working on it
+
+**Do NOT list the full queue.** Do NOT present options. Do NOT ask the user to choose. The whole point is the ranking already decided — just start.
+
+If the user wants to override: they'll say so. That's cheaper than dumping 59 items.
+
+## `/queue list` — Full Ranked View
+
+Only when the user explicitly asks to see the queue (`/queue list`, "show me the queue", "what's in the backlog"):
+
+1. Glob `docs/superpowers/specs/active/*.md` and `docs/superpowers/specs/backlog/*.md`
+2. Read first 10 lines of each for frontmatter
+3. Output the compact ranked table (see Output Format below)
+
+## `/queue triage [spec-name]` — Re-Score a Spec
+
+1. Read the full spec + grep git log for recent commits
+2. Update frontmatter (value, effort, remaining, last_triaged)
+3. If complete → `git mv` to shipped/
+4. If blocked → set status: blocked + blocked_by
 
 ## Frontmatter Schema
-
-Every active/backlog spec has this frontmatter:
 
 ```yaml
 ---
 status: backlog          # active | backlog | blocked
-value: 4                 # 1-5 (5 = highest user/product value)
+value: 4                 # 1-5 (5 = highest)
 effort: M                # XS | S | M | L | XL
 score: 12                # value × effort_multiplier (precomputed)
-remaining: "One-line description of what's left"
-blocked_by: ""           # optional — physical blocker
+remaining: "What's left"
+blocked_by: ""           # optional
 last_triaged: 2026-04-26
 ---
 ```
@@ -38,20 +58,14 @@ Score = `value × effort_multiplier`. Higher = better ROI.
 | L | 2 |
 | XL | 1 |
 
-## Output Format
-
-Group specs into tiers by score, then print one table per group:
+## Output Format (for `/queue list` only)
 
 ```
 ## ACTIVE (N specs)
   Name                         | Remaining
-  sequence-viewer-redesign     | Resume Phase 2 Task 11
-  ...
 
 ## TIER 1: CLOSE-OUTS (score 16+)
   #  Score  Effort  Name                        Remaining
-  1  20     S       effect-state-unification     Trail path into tipEffectMap
-  ...
 
 ## TIER 2: QUICK WINS (score 12-15)
   ...
@@ -64,47 +78,32 @@ Group specs into tiers by score, then print one table per group:
 
 ## BLOCKED
   Name                    Blocked By
-  arrow-tip-z-promotion   Manual Illustrator workflow
-  ...
 
-## STALE (last_triaged >30 days from today)
+## STALE (last_triaged >30 days)
   Name              Last Triaged    Days Ago
-  ...
 ```
 
-## Process
+Summary line: `N active, N backlog, N blocked, N stale. Top pick: [highest-score spec]`
 
-1. `Glob` for `docs/superpowers/specs/active/*.md` and `docs/superpowers/specs/backlog/*.md`
-2. `Read` each file (first 10 lines is enough for frontmatter)
-3. Parse the YAML between `---` markers
-4. Flag files with missing or malformed frontmatter as `[NO METADATA]`
-5. Separate `blocked` status specs into the BLOCKED section
-6. Sort remaining by score descending, then by value descending for ties
-7. Group into tiers and print
-8. Check `last_triaged` — if >30 days from today, append to STALE section
-9. Print summary line: `N active, N backlog, N blocked, N stale. Top pick: [highest-score spec]`
+## How to Find the Top Spec Quickly
 
-## Re-Triaging
+Specs are in `docs/superpowers/specs/backlog/`. The `score` field in frontmatter is precomputed. To find the top without reading all files:
 
-If user asks to re-triage or update scores:
+```bash
+grep -l "^score: 20" docs/superpowers/specs/backlog/*.md
+```
 
-1. Read the spec's full content + check git log for recent commits touching its deliverables
-2. Update frontmatter fields (`value`, `effort`, `remaining`, `last_triaged`)
-3. If spec is now complete, move it to `specs/shipped/` with `git mv`
-4. If spec is now blocked, set `status: blocked` and fill `blocked_by`
+If no score-20 hits, try 16, then 12. First match = top pick.
 
-## Directory Layout Reference
+## Directory Layout
 
 ```
 docs/superpowers/
-  QUEUE.md              ← snapshot (regenerate with /queue)
   specs/
-    shipped/   162      ← done
-    active/      5      ← in-flight
-    backlog/    54      ← scored and ranked
-    archived/   21      ← superseded/rejected/shelved
+    shipped/    completed
+    active/     in-flight (5)
+    backlog/    scored and ranked (54)
+    archived/   superseded/rejected/shelved (21)
   plans/
-    shipped/   137
-    active/      4
-    backlog/    46
+    shipped/    active/    backlog/
 ```
