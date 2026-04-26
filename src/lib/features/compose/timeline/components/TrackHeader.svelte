@@ -51,8 +51,7 @@
     showControls = !showControls;
   }
 
-  // Close menu when clicking outside
-  function handleClickOutside(e: MouseEvent) {
+  function handlePointerDownOutside(e: PointerEvent) {
     if (showControls && menuRef && !menuRef.contains(e.target as Node)) {
       showControls = false;
     }
@@ -96,7 +95,7 @@
   }
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window onpointerdown={handlePointerDownOutside} />
 
 <div
   class="track-header"

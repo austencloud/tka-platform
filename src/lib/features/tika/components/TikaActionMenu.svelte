@@ -39,7 +39,7 @@
     isOpen = false;
   }
 
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     if (menuRef && !menuRef.contains(event.target as Node)) {
       isOpen = false;
     }
@@ -47,9 +47,9 @@
 
   onMount(() => {
     hapticService = getHapticFeedback();
-    document.addEventListener("click", handleClickOutside);
+    document.addEventListener("pointerdown", handlePointerDownOutside);
     return () => {
-      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("pointerdown", handlePointerDownOutside);
     };
   });
 </script>

@@ -47,7 +47,7 @@
     item.action?.();
   }
 
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest(".retro-menubar")) {
       openMenuIndex = null;
@@ -62,12 +62,12 @@
 
   $effect(() => {
     if (openMenuIndex !== null) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("pointerdown", handlePointerDownOutside);
       document.addEventListener("keydown", handleKeydown);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handlePointerDownOutside);
       document.removeEventListener("keydown", handleKeydown);
     };
   });

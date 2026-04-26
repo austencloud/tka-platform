@@ -55,7 +55,7 @@
     showSortDropdown = false;
   }
 
-  function handleClickOutside(e: MouseEvent) {
+  function handlePointerDownOutside(e: PointerEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest(".sort-dropdown-wrapper")) {
       showSortDropdown = false;
@@ -64,7 +64,7 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="toolbar" role="toolbar" tabindex="0" onclick={handleClickOutside}>
+<div class="toolbar" role="toolbar" tabindex="0" onpointerdown={handlePointerDownOutside}>
   <!-- Sort Dropdown -->
   <div class="sort-dropdown-wrapper">
     <button
