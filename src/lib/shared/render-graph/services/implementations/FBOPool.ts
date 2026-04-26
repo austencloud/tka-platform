@@ -3,10 +3,10 @@
  *
  * Manages WebGL2 framebuffers + backing textures keyed by string name.
  * Supports single targets (e.g. "scene", "bloom-input") and ping-pong
- * pairs (e.g. trail accumulation — read one, draw to the other, swap).
+ * pairs (e.g. trail accumulation - read one, draw to the other, swap).
  *
  * Pool-level resize re-allocates all managed textures. Pool disposal
- * releases every GPU resource — there is no leakage of FBOs beyond
+ * releases every GPU resource - there is no leakage of FBOs beyond
  * pool lifetime.
  */
 
@@ -166,7 +166,7 @@ export class FBOPool {
     this.pairs.clear();
   }
 
-  /** List all managed target names — for diagnostics. */
+  /** List all managed target names - for diagnostics. */
   listNames(): string[] {
     return [...this.single.keys(), ...this.sized.keys(), ...this.pairs.keys()];
   }

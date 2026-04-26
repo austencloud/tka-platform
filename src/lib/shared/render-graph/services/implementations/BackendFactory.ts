@@ -56,7 +56,7 @@ export function isWebGL2Available(): boolean {
   const probe = document.createElement("canvas");
   const gl = probe.getContext("webgl2");
   const ok = gl !== null;
-  // Best-effort release — browsers GC quickly but this is explicit.
+  // Best-effort release - browsers GC quickly but this is explicit.
   if (gl) {
     const loseExt = gl.getExtension("WEBGL_lose_context");
     loseExt?.loseContext();

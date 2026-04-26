@@ -25,7 +25,7 @@ export interface Point2D {
 export const FADE_EXPONENT = 2.5;
 /** Must match Canvas2DTrailRenderer.MIN_TAIL_WIDTH_RATIO. */
 export const MIN_TAIL_WIDTH_RATIO = 0.3;
-/** Target total spline subdivisions across a path — matches Canvas2D. */
+/** Target total spline subdivisions across a path - matches Canvas2D. */
 export const TARGET_TOTAL_SUBDIVISIONS = 150;
 export const MIN_SPLINE_SUBDIVISIONS = 2;
 export const MAX_SPLINE_SUBDIVISIONS = 10;
@@ -124,7 +124,7 @@ export interface TrailMesh {
 export const TRAIL_VERTEX_STRIDE = 5;
 
 export interface MeshBuildOptions {
-  /** Head thickness in NDC — the polygon width at the head. */
+  /** Head thickness in NDC - the polygon width at the head. */
   thickness: number;
   /** Tail thickness as a fraction of head. Matches Canvas2D MIN_TAIL_WIDTH_RATIO. */
   taperTailRatio?: number;
