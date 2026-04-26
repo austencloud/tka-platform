@@ -13,6 +13,7 @@
   import CellContextMenuHost from "./cell-editor/context-menu/CellContextMenuHost.svelte";
   import type { CellContextMenuCallbacks } from "./cell-editor/context-menu/CellContextMenuBuilder";
   import { arrangeGridState, type GridCell } from "../../state/arrange-grid-state.svelte";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 
   interface GridBoundsInfo {
     minRow: number;
@@ -324,7 +325,7 @@
         longPressTimer = null;
         pressingCellId = null;
         if (dragState && !dragState.activated) {
-          navigator.vibrate?.(50);
+          getHapticFeedback().impact("heavy");
           dragState = { ...dragState, activated: true };
         }
       }, LONG_PRESS_DURATION);
@@ -342,7 +343,7 @@
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
       if (state.pointerType === "touch") {
-        // Touch: if finger moved too far before long press fires, user is scrolling — cancel
+        // Touch: if finger moved too far before long press fires, user is scrolling - cancel
         if (distance > LONG_PRESS_MOVE_TOLERANCE) {
           cancelLongPress();
           pressingCellId = null;
@@ -552,7 +553,7 @@
     if (e.pointerType !== "touch") return;
     contextMenuLongPressTimer = setTimeout(() => {
       contextMenuLongPressTimer = null;
-      navigator.vibrate?.(30);
+      getHapticFeedback().impact("medium");
       openCellContextMenu(cell, e.clientX, e.clientY);
     }, 500);
   }
