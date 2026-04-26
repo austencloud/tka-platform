@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: L
-score: 4
 remaining: "BVH mesh collision, leg model, costume collision"
+depends_on: ""
+plan_path: plans/backlog/2026-04-10-collision-lab.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Collision Lab — Future Work

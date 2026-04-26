@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # 3D Effects System Design
 
 **Date:** 2026-04-04

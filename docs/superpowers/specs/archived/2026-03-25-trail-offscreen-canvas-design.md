@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Trail Offscreen Canvas — Design Spec
 
 ## Problem

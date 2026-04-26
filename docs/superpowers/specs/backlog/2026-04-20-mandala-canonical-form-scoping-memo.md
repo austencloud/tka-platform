@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: L
-score: 6
-remaining: "Scoping memo. Needs full spec"
+remaining: Scoping memo. Needs full spec
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Mandala Canonical Form — Scoping Memo

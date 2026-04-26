@@ -2,9 +2,10 @@
 status: backlog
 value: 2
 effort: L
-score: 4
-remaining: "Scoping memo. Needs canonical form first"
-blocked_by: "mandala-canonical-form"
+remaining: Scoping memo. Needs canonical form first
+depends_on: mandala-canonical-form
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Chimera Mandala Builder — Scoping Memo

@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "Full build — MCP tool for viewing sequences"
+remaining: Full build — MCP tool for viewing sequences
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # View Sequence MCP Tool Design

@@ -2,8 +2,10 @@
 status: active
 value: 5
 effort: L
-score: 10
 remaining: "Delete app-side executors, consolidate MCP copies, publish packages"
+depends_on: ""
+plan_path: plans/active/2026-04-20-sequence-engine-unification-plan.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Sequence Engine Unification — Design Spec

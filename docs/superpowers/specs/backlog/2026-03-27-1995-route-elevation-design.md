@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: XL
-score: 3
-remaining: "Wire all 10 apps to real DI services"
+remaining: Wire all 10 apps to real DI services
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # /1995 Route Elevation: From Cute to Wow

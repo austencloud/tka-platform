@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "Replace global ambient with per-room local lights"
+remaining: Replace global ambient with per-room local lights
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Per-Room Lighting System

@@ -73,10 +73,34 @@ Each spec was assessed by:
 
 Three parallel agents triaged 46 partial specs. A fourth cross-linked all specs against all plans to identify orphans (32 orphan plans, 75 orphan specs).
 
+## Audit Fixes (A+ pass)
+
+After initial ship, a 14-item audit brought the system from B+ to A+:
+
+- **C1:** Moved 4 misplaced specs from shipped/ back to backlog/ (create-offline-persistence, unified-create-tab-hints, effect-state-unification, level-modal-redesign)
+- **C2:** Removed `score` field from all frontmatter — computed at read time instead
+- **C3:** Rewrote top-spec discovery to read all frontmatter (3K tokens, not worth optimizing vs brittle grep)
+- **H1:** Added `.claims/` lock file mechanism for parallel agent safety
+- **H2:** Added "New Spec Integration" section to skill for brainstorming handoff
+- **H3:** Added "When Done — Completion Handoff" section with `git mv` to shipped/ workflow
+- **H4:** Added "Remaining Refresh Trigger" guidance
+- **M1:** Added `plan_path` field for explicit spec↔plan cross-links (auto-populated by script)
+- **M2:** Renamed `blocked_by` → `depends_on` (accepts spec path or "external: description")
+- **M3:** Kept 5/4/3/2/1 multipliers — documented rationale (steep weights match session economics)
+- **M4:** Stripped QUEUE.md to a pure pointer — no stale data
+- **M5:** Added `tags: []` field for domain filtering
+- **L1:** Added session-budget awareness (prefer XS/S at >60% context)
+- **L2:** Injected minimal `status: archived` frontmatter into 21 archived specs
+- **L3:** Wrote `scripts/update-spec-frontmatter.cjs` as reusable bulk updater
+
 ## Files Changed
 
 - `scripts/inject-spec-frontmatter.cjs` — one-time script for initial frontmatter injection
-- `.claude/skills/queue/SKILL.md` — the /queue skill
-- `docs/superpowers/QUEUE.md` — static snapshot with "run /queue for live data" header
+- `scripts/update-spec-frontmatter.cjs` — reusable bulk frontmatter updater (audit fixes)
+- `.claude/skills/queue/SKILL.md` — the /queue skill (v2 with all audit fixes)
+- `docs/superpowers/QUEUE.md` — stripped to pure pointer (no stale data)
+- `docs/superpowers/specs/.claims/.gitkeep` — parallel agent lock directory
 - 242 spec files moved via `git mv` (history preserved)
 - 187 plan files moved via `git mv` (history preserved)
+- 57 active+backlog specs updated with new frontmatter schema
+- 20 archived specs given minimal `status: archived` frontmatter

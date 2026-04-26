@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Visual Debug Raycast — Spec
 
 **Date:** 2026-04-06

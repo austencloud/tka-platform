@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
 remaining: "Beat mapping, synced playback, viewer panel lifecycle"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Media Workspace Design Spec

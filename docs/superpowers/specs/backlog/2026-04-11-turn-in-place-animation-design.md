@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "Authored turn clips for 14 heading changes"
+remaining: Authored turn clips for 14 heading changes
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Turn-In-Place Animation System Design

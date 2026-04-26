@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: S
-score: 16
-remaining: "Verify offline save-to-library e2e"
+remaining: Verify offline save-to-library e2e
+depends_on: ""
+plan_path: plans/backlog/2026-03-17-create-offline-persistence.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Create Module Offline Persistence Design

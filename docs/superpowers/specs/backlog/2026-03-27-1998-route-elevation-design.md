@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: L
-score: 4
-remaining: "Full build — Win98 route elevation"
+remaining: Full build — Win98 route elevation
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # /1998 Route: TKA Constructor — Free Scribe Collective Edition

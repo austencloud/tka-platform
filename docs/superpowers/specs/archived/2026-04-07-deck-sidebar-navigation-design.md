@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Deck Browser: Sidebar Filter Navigation
 
 **Date:** 2026-04-07

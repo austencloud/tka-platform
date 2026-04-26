@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: M
-score: 12
-remaining: "L8 done. Verify and close out. L9 fusion = new spec"
+remaining: L8 done. Verify and close out. L9 fusion = new spec
+depends_on: ""
+plan_path: plans/backlog/2026-04-05-atomic-plane-system.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Atomic Plane System (L8) — Design Spec

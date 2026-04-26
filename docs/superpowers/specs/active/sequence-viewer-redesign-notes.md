@@ -2,8 +2,10 @@
 status: active
 value: 4
 effort: L
-score: 8
-remaining: "Architectural reference for Phase 2+ implementation"
+remaining: Architectural reference for Phase 2+ implementation
+depends_on: ""
+plan_path: plans/active/2026-04-15-sequence-viewer-redesign.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Sequence Viewer Redesign: Architectural Notes + Reviewer Calibration

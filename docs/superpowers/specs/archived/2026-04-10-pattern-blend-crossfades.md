@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Spec: Blend crossfades between pattern clips
 
 **Date:** 2026-04-10

@@ -2,14 +2,16 @@
 status: backlog
 value: 5
 effort: S
-score: 20
 remaining: "Trail path into tipEffectMap, localStorage key cleanup"
+depends_on: ""
+plan_path: plans/backlog/2026-03-31-effect-state-unification.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Effect State Unification: tipEffectMap as Single Source of Truth
 
 **Date:** 2026-03-31
-**Status:** Draft
+**Status:** Shipped (2026-04-26)
 **Builds on:** [Per-Tip Effect System (2026-03-29)](2026-03-29-per-tip-effect-system-design.md)
 **Module:** Animation Engine (global), Compose (per-cell), all effect consumers
 

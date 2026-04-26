@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: L
-score: 6
-remaining: "Full build — Stripe + MakePlayingCards"
+remaining: Full build — Stripe + MakePlayingCards
+depends_on: ""
+plan_path: plans/backlog/2026-04-01-physical-merch-store.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Physical Merch Store — Design Spec

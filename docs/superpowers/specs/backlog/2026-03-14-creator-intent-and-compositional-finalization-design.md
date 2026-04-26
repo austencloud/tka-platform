@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: L
-score: 6
-remaining: "Full build — compositional intent model"
+remaining: Full build — compositional intent model
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Creator Intent & Compositional Finalization

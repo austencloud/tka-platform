@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Export Drawer: Collapsible Stack Redesign
 
 **Date:** 2026-04-25

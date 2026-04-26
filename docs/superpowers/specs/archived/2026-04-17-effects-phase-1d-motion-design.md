@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Effects Phase 1d: Motion Vertical Slice Design
 
 **Status:** Spec (2026-04-17). Follows Phase 1c (Sparkles, `phase-1c-sparkles-complete` tag).

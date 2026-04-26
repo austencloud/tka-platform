@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: XL
-score: 2
 remaining: "Real data pipeline, map population, social attendance layer"
+depends_on: ""
+plan_path: plans/backlog/2026-03-23-festival-hub.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Festival Hub Design Spec

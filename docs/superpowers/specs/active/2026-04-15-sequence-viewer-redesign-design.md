@@ -2,8 +2,10 @@
 status: active
 value: 4
 effort: L
-score: 8
-remaining: "Resume Phase 2 Task 11 (DestinationBadge). 14 tasks across 3 phases"
+remaining: Resume Phase 2 Task 11 (DestinationBadge). 14 tasks across 3 phases
+depends_on: ""
+plan_path: plans/active/2026-04-15-sequence-viewer-redesign.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Sequence Viewer Redesign + Per-Performer Foundation

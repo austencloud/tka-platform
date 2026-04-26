@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: M
-score: 6
-remaining: "Full build — timeline + sequence integration"
+remaining: Full build — timeline + sequence integration
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Spec: Tie the pattern timeline to a real TKA sequence

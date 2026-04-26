@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: L
-score: 6
-remaining: "Full build — unified render composition pipeline"
+remaining: Full build — unified render composition pipeline
+depends_on: ""
+plan_path: plans/backlog/2026-03-28-unified-render-composition.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Unified Render Composition Design

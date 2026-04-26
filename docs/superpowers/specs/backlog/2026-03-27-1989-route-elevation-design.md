@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: XL
-score: 3
 remaining: "Real command parser, ASCII pictograph renderer, auth adapter"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # /1989 Route Elevation: TKAUTIL.COM as a Real CLI Client

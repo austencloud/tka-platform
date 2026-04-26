@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: S
-score: 8
 remaining: "Act editing modal, performer portfolio completion"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Applications Tab: Expanding "My Workshops" to Cover Teaching + Performance

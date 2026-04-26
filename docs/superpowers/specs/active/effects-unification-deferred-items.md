@@ -2,8 +2,10 @@
 status: active
 value: 2
 effort: M
-score: 6
 remaining: "Crackle 3D parity, FireTipTracker aliasing, zap dark mode check"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Effects Unification: Deferred Items Backlog

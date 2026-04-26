@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: M
-score: 6
 remaining: "Admin capture button, Firebase gallery drawer, Play Store slots"
+depends_on: ""
+plan_path: plans/backlog/2026-03-10-store-screenshot-capture.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Store Screenshot Capture Tool — Design Spec

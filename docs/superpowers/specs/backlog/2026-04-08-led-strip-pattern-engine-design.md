@@ -2,9 +2,10 @@
 status: backlog
 value: 4
 effort: L
-score: 8
 remaining: "USB serial Ignis upload, hardware integration"
-blocked_by: "Physical LED poi hardware"
+depends_on: Physical LED poi hardware
+plan_path: plans/backlog/2026-04-10-led-strip-pattern-engine.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # LED Strip Pattern Engine + POV Hardware Integration

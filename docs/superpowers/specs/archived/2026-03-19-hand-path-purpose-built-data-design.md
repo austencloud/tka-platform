@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Hand Path Cards: Purpose-Built Data Approach
 
 **Date:** 2026-03-19

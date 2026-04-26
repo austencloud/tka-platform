@@ -2,8 +2,10 @@
 status: backlog
 value: 5
 effort: L
-score: 10
 remaining: "WebGPU backend, full 2D migration. Incremental"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Unified GPU Render Pipeline — Design Spec

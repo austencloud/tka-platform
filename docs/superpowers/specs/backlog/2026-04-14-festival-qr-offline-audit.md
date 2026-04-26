@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: M
-score: 12
 remaining: "iOS Universal Links, web fallback redirect"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Festival QR Offline Flow — Audit & Path Forward (Capacitor-era)

@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: L
-score: 6
 remaining: "UI: add/remove buttons, formation picker, undo, persistence"
+depends_on: ""
+plan_path: plans/backlog/2026-04-11-multi-avatar-foundation.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Multi-Avatar Foundation Design

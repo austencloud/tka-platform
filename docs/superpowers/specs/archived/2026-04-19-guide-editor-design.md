@@ -1,11 +1,5 @@
 ---
-title: TKA Guide In-Browser Editor
-date: 2026-04-19
-status: design approved (brainstorming complete), implementation plan pending
-audience: implementer
-related:
-  - PDF→HTML conversion of Level 1 Guide (47 pages, in flight)
-  - Existing PictographRenderer, Step Editor, Sequence Actions panel, Save-to-Library dialog
+status: archived
 ---
 
 # TKA Guide In-Browser Editor — Design

@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "Full build — user profile screen"
+remaining: Full build — user profile screen
+depends_on: ""
+plan_path: plans/backlog/2026-03-19-profile-screen.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Profile Screen: Separate Identity from Account Plumbing

@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # 3D Effect Parameter Parity — Design
 
 **Date:** 2026-04-11

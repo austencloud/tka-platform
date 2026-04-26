@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: S
-score: 16
-remaining: "Full build — contextual hints in create tab"
+remaining: Full build — contextual create tab instruction hints
+depends_on: ""
+plan_path: plans/backlog/2026-03-19-unified-create-tab-hints.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Unified Create Tab Instruction Hints

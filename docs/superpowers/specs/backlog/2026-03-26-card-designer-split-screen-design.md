@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: M
-score: 6
-remaining: "Full build — split-screen card designer"
+remaining: Full build — split-screen card designer
+depends_on: ""
+plan_path: plans/backlog/2026-03-26-card-designer-split-screen.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Card Designer Split-Screen Redesign

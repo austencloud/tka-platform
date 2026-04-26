@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Card Preview Tab Design
 
 **Date:** 2026-03-28
