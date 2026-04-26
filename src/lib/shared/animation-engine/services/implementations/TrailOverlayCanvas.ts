@@ -12,6 +12,10 @@
  *
  * Follows the same overlay pattern as WebGLFireRenderer and LedOverlayRenderer:
  * position: absolute, pointer-events: none, z-index: 1.
+ *
+ * @deprecated Superseded by render-graph TrailPassExecutor + WebGL2Backend/WebGPUBackend.
+ * Trail capture → TrailTranslator → TrailPass → GPU ping-pong decay.
+ * Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
 import type {
@@ -27,6 +31,8 @@ import { PropPositionCalculator } from "$lib/shared/animation-engine/services/im
 import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+import { resolveEffect } from "../../domain/types/TipEffectTypes";
+import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 /** Minimum ring capacity; actual capacity grows with `trailSettings.tailLength`. */
 const RING_BUFFER_MIN = 120;
@@ -70,7 +76,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private blueAccumClearedWhileHidden = true;
   private redAccumClearedWhileHidden = true;
 
-  // Per-end ring buffers — separate buffers for left/right ends to prevent
+  // Per-end ring buffers - separate buffers for left/right ends to prevent
   // the renderer from zigzagging between endpoints. Filled from PropState
   // each frame (fire-renderer pattern), independent of the SequenceCache.
   private blueLeftRing: TrailPoint[] = [];
@@ -93,7 +99,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private hasPrevCenter = false;
 
   // smoothAlphaDecay does a full-canvas getImageData/putImageData roundtrip
-  // — a GPU↔CPU sync of ~3.6MB at 950². Running it every frame dominated
+  // - a GPU↔CPU sync of ~3.6MB at 950². Running it every frame dominated
   // render time (40-60ms). Amortize over N frames with a proportionally
   // larger DECAY step so observable fade rate is unchanged.
   private blueAlphaDecayFrameCounter = 0;
@@ -113,6 +119,12 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // trailSettings.tailLength each renderFrame.
   private leadingEdge = DEFAULT_LEADING_EDGE;
   private ringCapacity = RING_BUFFER_MIN;
+
+  // Per-tip trail flags from previous frame, encoded as a 4-bit mask
+  // (bit0=blue-left, bit1=blue-right, bit2=red-left, bit3=red-right).
+  // When the mask changes, accumulators for affected colors are cleared
+  // so stale pixels from deactivated tips don't persist.
+  private prevTipTrailMask = 0xF;
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
@@ -176,7 +188,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.width = width;
     this.height = height;
 
-    // Canvas resize invalidates all ring buffer positions — they were
+    // Canvas resize invalidates all ring buffer positions - they were
     // computed at the old canvas size and would cause artifact lines
     // when the next point is captured at the new size.
     if (sizeChanged) {
@@ -242,7 +254,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // off animates the trail's opacity down over 200 ms and toggling it
     // back on animates it up over 300 ms (matching prop fade timing).
     // The envelope manager records setVisible() with performance.now()
-    // internally, so updateProgress() must also read wall-clock time —
+    // internally, so updateProgress() must also read wall-clock time -
     // params.currentTime can be virtual/animation time and would make
     // the transition complete in a single frame if used here.
     const envelopeNow = performance.now();
@@ -278,7 +290,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.lastHasBlue = hasBlue;
     this.lastHasRed = hasRed;
 
-    // Unilateral props (club, fan, etc.) only have one tip — force single-end
+    // Unilateral props (club, fan, etc.) only have one tip - force single-end
     const blueIsBilateral = bluePropType ? isBilateralProp(bluePropType) : true;
     const redIsBilateral = redPropType ? isBilateralProp(redPropType) : true;
     const anyBilateral = blueIsBilateral || redIsBilateral;
@@ -291,18 +303,52 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
       !anyBilateral; // unilateral always tracks the single tip
 
+    // Per-tip effect gating: only capture tips assigned to "trails" in
+    // the tip effect map. When no map is provided, all tips are eligible.
+    const tipMap = params.tipEffectMap;
+    const hasMap = tipMap && Object.keys(tipMap).length > 0;
+    const blueLeftTrails = !hasMap || resolveEffect(0, 0, tipMap!, {}) === "trails";
+    const blueRightTrails = !hasMap || resolveEffect(0, 1, tipMap!, {}) === "trails";
+    const redLeftTrails = !hasMap || resolveEffect(1, 0, tipMap!, {}) === "trails";
+    const redRightTrails = !hasMap || resolveEffect(1, 1, tipMap!, {}) === "trails";
+
+    // Detect tip-set changes. When a tip transitions from trailing to
+    // non-trailing, its already-painted pixels are baked into the
+    // accumulator. Clear the affected color's accumulator + ring buffers
+    // so those stale pixels don't persist.
+    const tipMask =
+      (blueLeftTrails ? 1 : 0) |
+      (blueRightTrails ? 2 : 0) |
+      (redLeftTrails ? 4 : 0) |
+      (redRightTrails ? 8 : 0);
+    if (tipMask !== this.prevTipTrailMask) {
+      const blueBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
+      const redBitsChanged = (tipMask & 0xC) !== (this.prevTipTrailMask & 0xC);
+      if (blueBitsChanged) {
+        this.blueLeftRing = [];
+        this.blueRightRing = [];
+        this.blueAccumCtx?.clearRect(0, 0, this.width, this.height);
+      }
+      if (redBitsChanged) {
+        this.redLeftRing = [];
+        this.redRightRing = [];
+        this.redAccumCtx?.clearRect(0, 0, this.width, this.height);
+      }
+      this.prevTipTrailMask = tipMask;
+    }
+
     // Capture while the color is visible OR while its fade-out envelope
-    // is still transitioning — this keeps the trail tracking the prop's
+    // is still transitioning - this keeps the trail tracking the prop's
     // actual motion during the fade rather than freezing the last tail.
     // Capture stops once the envelope reaches zero (prop fully hidden),
     // so the ring doesn't keep growing invisibly in the background.
     const blueCaptureLive = hasBlue || blueFade.alpha > 0;
     const redCaptureLive = hasRed || redFade.alpha > 0;
     if (blueProp && blueCaptureLive) {
-      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight, currentTime);
+      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft && blueLeftTrails, trackRight && blueRightTrails, currentTime);
     }
     if (redProp && redCaptureLive) {
-      this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight, currentTime);
+      this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft && redLeftTrails, trackRight && redRightTrails, currentTime);
     }
 
     const fadeAmount = this.computeFadeAmount(
@@ -317,7 +363,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     // Advance each per-color accumulator: fade existing pixels, stamp
     // the current leading edge. Envelope doesn't touch the accumulator
-    // contents — it only modulates the final composite alpha below.
+    // contents - it only modulates the final composite alpha below.
     this.advanceAccumulator(
       this.blueAccumCtx,
       blueCaptureLive,
@@ -381,7 +427,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
    * Fade + stamp one color's accumulator. `hasColor` gates whether a
    * new stamp is drawn this frame (false means the prop is toggled off
    * and the trail should freeze in place while the envelope fades out).
-   * `envelopeLive` gates the fade pass — once the envelope is at zero
+   * `envelopeLive` gates the fade pass - once the envelope is at zero
    * and the accumulator has been cleared, there is no point continuing
    * to run the costly smoothAlphaDecay read/write every frame.
    */
@@ -399,7 +445,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   ): void {
     if (!accumCtx) return;
     if (!hasColor && !envelopeLive) {
-      // Nothing on screen, nothing to draw — skip the whole pass.
+      // Nothing on screen, nothing to draw - skip the whole pass.
       return;
     }
 
@@ -427,7 +473,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     if (rightLeading.length >= 2) passes.push(rightLeading);
 
     for (const leading of passes) {
-      // renderTrails takes a blue ring and a red ring separately — pass
+      // renderTrails takes a blue ring and a red ring separately - pass
       // the leading edge in only the active color's slot and an empty
       // array (with its `has*` flag set false) in the other.
       this.trailRenderer.renderTrails(
@@ -466,6 +512,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.blueAccumClearedWhileHidden = true;
     this.redAccumClearedWhileHidden = true;
     this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
+    this.prevTipTrailMask = 0xF;
   }
 
   /** Flush stale trail data on sequence change. Applies a short warmup
@@ -482,7 +529,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.redRightRing = [];
     this.blueAccumClearedWhileHidden = true;
     this.redAccumClearedWhileHidden = true;
-    // Always apply warmup — the orchestrator sets angles synchronously but
+    // Always apply warmup - the orchestrator sets angles synchronously but
     // the canvas size may still be settling (resize events arrive async)
     // and Svelte reactive props may not have propagated yet.
     this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
@@ -660,7 +707,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
    * Destination-out's multiplicative fade can never reach 0 due to 8-bit
    * integer rounding. Constant subtraction guarantees every pixel reaches 0.
    *
-   * Throttled to every SMOOTH_ALPHA_DECAY_INTERVAL frames — the full-canvas
+   * Throttled to every SMOOTH_ALPHA_DECAY_INTERVAL frames - the full-canvas
    * getImageData/putImageData is a GPU↔CPU roundtrip (~3.6MB at 950²) that
    * dominated render time at 60fps. Killswitch: window.__TKA_DISABLE_SMOOTH_DECAY = true
    */

@@ -1,4 +1,8 @@
 /**
+ * @deprecated Superseded by render-graph FrameGraph + RenderBackend.executeFrame().
+ * The render-graph dispatches passes via its own RAF loop with z-ordered
+ * scheduling. This file remains active until the render-graph is promoted.
+ *
  * Animation Render Loop Implementation
  *
  * Manages the requestAnimationFrame render loop for AnimatorCanvas.
@@ -28,6 +32,7 @@ import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
 import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
 import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
+import type { IPulseOverlayRenderer } from "../contracts/IPulseOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
@@ -39,6 +44,7 @@ import type { SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRendere
 import type { InkTipInput } from "$lib/shared/effects/renderers/Ink2DRenderer";
 import type { FrostTipInput } from "$lib/shared/effects/renderers/Frost2DRenderer";
 import type { SilkTipInput } from "$lib/shared/effects/renderers/Silk2DRenderer";
+import type { PulseTipInput } from "$lib/shared/effects/renderers/Pulse2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -50,7 +56,7 @@ import { resolveEffect } from "../../domain/types/TipEffectTypes";
 import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 // ============================================================================
-// Longtask observer singleton — one PerformanceObserver shared across every
+// Longtask observer singleton - one PerformanceObserver shared across every
 // AnimationRenderLoop instance. Without this, each loop attaches its own
 // observer and every main-thread stall produces N duplicate log lines where
 // N is the number of live AnimatorCanvas instances on the page.
@@ -84,7 +90,7 @@ function installLongTaskObserver(): void {
     observer.observe({ entryTypes: ["longtask"] });
     longTaskObserverInstalled = true;
   } catch {
-    // Observer setup failed — silently degrade (FPS summary still works).
+    // Observer setup failed - silently degrade (FPS summary still works).
   }
 }
 
@@ -128,6 +134,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastFrostFrameTime: number = 0;
   private silkRenderer: ISilkOverlayRenderer | null = null;
   private lastSilkFrameTime: number = 0;
+  private pulseRenderer: IPulseOverlayRenderer | null = null;
+  private lastPulseFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -151,6 +159,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveInkErrors: number = 0;
   private consecutiveFrostErrors: number = 0;
   private consecutiveSilkErrors: number = 0;
+  private consecutivePulseErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
@@ -164,6 +173,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private inkDisabledByError: boolean = false;
   private frostDisabledByError: boolean = false;
   private silkDisabledByError: boolean = false;
+  private pulseDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -183,17 +193,17 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   // Track 2D overlay suppression state to clear canvases on transition
   private wasSuppressed: boolean = false;
 
-  // Frame drop diagnostics — logs slow frames to console for debugging.
+  // Frame drop diagnostics - logs slow frames to console for debugging.
   // Disabled by default. Enable via browser console: window.__TKA_FRAME_DROP_LOG = true
   private frameDropLoggingEnabled = false;
-  private static readonly FRAME_DROP_THRESHOLD_MS = 20; // ~50fps — anything below 60fps
+  private static readonly FRAME_DROP_THRESHOLD_MS = 20; // ~50fps - anything below 60fps
   private lastFrameTime = 0; // Track RAF-to-RAF gap (true frame duration including browser overhead)
   private lastFrameDropLogTime = 0; // Rate-limit logs to avoid feedback loop with console recording extensions
   private static readonly FRAME_DROP_LOG_COOLDOWN_MS = 2000; // Max 1 log per 2 seconds
-  private framesRenderedSinceStart = 0; // Warm-up grace period — skip frame drop logging for first N frames
+  private framesRenderedSinceStart = 0; // Warm-up grace period - skip frame drop logging for first N frames
   private static readonly WARMUP_FRAMES = 10; // First 10 frames always have high RAF gaps
 
-  // Rolling FPS summary — logs once per second while playing so you can see
+  // Rolling FPS summary - logs once per second while playing so you can see
   // average FPS + min/max frame time + frame count without spamming per-frame.
   // Enabled by default; gate with window.__TKA_FPS_LOG = false to silence.
   private fpsWindowStart = 0;          // performance.now() at window open
@@ -246,11 +256,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.inkRenderer = config.inkRenderer ?? null;
     this.frostRenderer = config.frostRenderer ?? null;
     this.silkRenderer = config.silkRenderer ?? null;
+    this.pulseRenderer = config.pulseRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
     // can attribute main-thread stalls to the window in which they occurred.
-    // One observer serves all AnimationRenderLoop instances — without the
+    // One observer serves all AnimationRenderLoop instances - without the
     // singleton, N loops produced N duplicate log lines per longtask.
     if (!this.longTaskSubscriberDispose) {
       this.longTaskSubscriberDispose = subscribeToLongTasks((durationMs) => {
@@ -301,6 +312,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.frostRenderer = config.frostRenderer ?? null;
     if (config.silkRenderer !== undefined)
       this.silkRenderer = config.silkRenderer ?? null;
+    if (config.pulseRenderer !== undefined)
+      this.pulseRenderer = config.pulseRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -338,6 +351,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.consecutiveInkErrors = 0;
     this.consecutiveFrostErrors = 0;
     this.consecutiveSilkErrors = 0;
+    this.consecutivePulseErrors = 0;
     this.fireDisabledByError = false;
     this.ledDisabledByError = false;
     this.zapDisabledByError = false;
@@ -351,6 +365,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.inkDisabledByError = false;
     this.frostDisabledByError = false;
     this.silkDisabledByError = false;
+    this.pulseDisabledByError = false;
   }
 
   isRunning(): boolean {
@@ -364,7 +379,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
   triggerRender(getFrameParams: () => RenderFrameParams): void {
     this.needsRender = true;
-    this.consecutiveIdleFrames = 0; // Reset idle counter — new work incoming
+    this.consecutiveIdleFrames = 0; // Reset idle counter - new work incoming
     this.getFrameParamsCallback = getFrameParams;
     if (this.rafId === null && this.renderer) {
       this.framesRenderedSinceStart = 0; // Reset warm-up on loop restart
@@ -373,7 +388,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   }
 
   setTargetFps(_fps: number | null): void {
-    // No-op: FPS throttling removed — time-based animation interpolation
+    // No-op: FPS throttling removed - time-based animation interpolation
     // makes frame rate differences imperceptible in the preview.
     // FPS setting only affects the exported video file.
   }
@@ -451,6 +466,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.frostRenderer = null;
     this.silkRenderer?.dispose();
     this.silkRenderer = null;
+    this.pulseRenderer?.dispose();
+    this.pulseRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -548,6 +565,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const silkActive =
       params.silkConfig != null &&
       this.silkRenderer?.isInitialized() === true;
+    const pulseActive =
+      params.pulseConfig != null &&
+      this.pulseRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -567,7 +587,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       smokeActive ||
       inkActive ||
       frostActive ||
-      silkActive;
+      silkActive ||
+      pulseActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -598,7 +619,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         this.rafId = null;
       }
     } else {
-      // Stop loop — triggerRender() will restart if needed
+      // Stop loop - triggerRender() will restart if needed
       this.rafId = null;
       this.consecutiveIdleFrames = 0;
     }
@@ -627,7 +648,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Tail length is authored as "visible ring points at ~60fps render rate."
     // The path-cache pipeline uses fadeDurationMs for both read window and
-    // fade rate, so scale fadeDurationMs up to honor tailLength — otherwise
+    // fade rate, so scale fadeDurationMs up to honor tailLength - otherwise
     // a long tailLength in download/export mode would be clipped by the
     // legacy 2500ms default. The overlay reads ring-buffer directly by
     // tailLength; extending fadeDurationMs also slows its GPU decay so
@@ -654,13 +675,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
 
     // Gather trail points. When the trail overlay is active (chaining mode),
-    // disable seamless loop wrap-around — the overlay accumulates pixels
+    // disable seamless loop wrap-around - the overlay accumulates pixels
     // across sequences, so wrap-around would draw the loop-back path on
     // top of the next sequence's trail.
     const effectiveLoopable = this.trailOverlay
       ? false
       : (params.isSeamlesslyLoopable ?? false);
-    const trailPoints = this.gatherTrailPoints(currentStep, trailSettings, effectiveLoopable);
+    const trailPoints = this.gatherTrailPoints(currentStep, trailSettings, effectiveLoopable, params.tipEffectMap);
 
     // Update loopStartTime when a loop is detected (set inside gatherTrailPoints)
     if (this.loopDetectedThisFrame) {
@@ -743,33 +764,37 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.bloomRenderer?.isInitialized()) {
         this.bloomRenderer.clear();
       }
-      // Clear water overlay (Canvas2D) — also drops the droplet pool.
+      // Clear water overlay (Canvas2D) - also drops the droplet pool.
       if (this.waterRenderer?.isInitialized()) {
         this.waterRenderer.clear();
       }
-      // Clear bubbles overlay (Canvas2D) — also drops the bubble pool.
+      // Clear bubbles overlay (Canvas2D) - also drops the bubble pool.
       if (this.bubblesRenderer?.isInitialized()) {
         this.bubblesRenderer.clear();
       }
-      // Clear petals overlay (Canvas2D) — also drops the petal pool.
+      // Clear petals overlay (Canvas2D) - also drops the petal pool.
       if (this.petalsRenderer?.isInitialized()) {
         this.petalsRenderer.clear();
       }
-      // Clear smoke overlay (Canvas2D) — also drops the puff pool.
+      // Clear smoke overlay (Canvas2D) - also drops the puff pool.
       if (this.smokeRenderer?.isInitialized()) {
         this.smokeRenderer.clear();
       }
-      // Clear ink overlay (Canvas2D) — also drops the per-tip stroke history.
+      // Clear ink overlay (Canvas2D) - also drops the per-tip stroke history.
       if (this.inkRenderer?.isInitialized()) {
         this.inkRenderer.clear();
       }
-      // Clear frost overlay (Canvas2D) — also drops the particle pool.
+      // Clear frost overlay (Canvas2D) - also drops the particle pool.
       if (this.frostRenderer?.isInitialized()) {
         this.frostRenderer.clear();
       }
-      // Clear silk overlay (Canvas2D) — also drops the ribbon trail buffers.
+      // Clear silk overlay (Canvas2D) - also drops the ribbon trail buffers.
       if (this.silkRenderer?.isInitialized()) {
         this.silkRenderer.clear();
+      }
+      // Clear pulse overlay (Canvas2D) - also drops the ring pool.
+      if (this.pulseRenderer?.isInitialized()) {
+        this.pulseRenderer.clear();
       }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
@@ -777,6 +802,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Route trail rendering through the overlay canvas
     if (this.trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
+      if (this.lastTrailFrameTime === 0) {
+        this.trailOverlay.setVisible(true);
+      }
       const dt = this.lastTrailFrameTime > 0
         ? (currentTime - this.lastTrailFrameTime) / 1000
         : 1 / 60;
@@ -796,7 +824,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         redProp: params.props.redProp,
         bluePropType: params.bluePropType,
         redPropType: params.redPropType,
+        tipEffectMap: params.tipEffectMap,
       });
+    } else if (this.trailOverlay && !effectiveTrailsVisible && this.lastTrailFrameTime > 0) {
+      this.trailOverlay.clear();
+      this.trailOverlay.setVisible(false);
+      this.lastTrailFrameTime = 0;
     }
 
     // Render scene
@@ -896,7 +929,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.silkRenderer?.isInitialized()
       && params.silkConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate || hasSilkOverlayForTipUpdate;
+    const hasPulseOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.pulseRenderer?.isInitialized()
+      && params.pulseConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate || hasSilkOverlayForTipUpdate || hasPulseOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1043,7 +1080,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         }
       }
     } else if (activeZapRenderer && !hasZapOverlay) {
-      // Zap renderer exists but no zap config / not active this frame — clear
+      // Zap renderer exists but no zap config / not active this frame - clear
       // any leftover arcs so they don't sit stale on screen.
       activeZapRenderer.clear();
     }
@@ -1116,7 +1153,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Echo overlay: beat-onset phantoms of the staff. Reads the same shared
     // tip positions as fire/charcoal/zap/sparkles, plus per-prop trail colors
-    // for prop-matched colorMode. Unlike the others, echo does not need dt —
+    // for prop-matched colorMode. Unlike the others, echo does not need dt -
     // phantom aging is driven by `currentStep`.
     const activeEchoRenderer = this.echoRenderer?.isInitialized()
       ? this.echoRenderer
@@ -1211,7 +1248,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           });
         }
         // Augment with prop-center halos for visible props that emit no
-        // tip-tracker output (hand, contactball, etc. — empty tip-point
+        // tip-tracker output (hand, contactball, etc. - empty tip-point
         // configs). These props still occupy a meaningful position in
         // space; bloom should fire on their center even though they have
         // no per-tip endpoints. Only synthesizes when tipEffectMap
@@ -1278,7 +1315,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // pull the 2 tips per prop into the {bluePosA, bluePosB, redPosA,
     // redPosB} shape Water2DRenderer expects. Filters tips by
     // tipEffectMap resolution. dt drives particle physics + spawn-rate
-    // integration — unlike bloom, water has persistent pool state.
+    // integration - unlike bloom, water has persistent pool state.
     const activeWaterRenderer = this.waterRenderer?.isInitialized()
       ? this.waterRenderer
       : null;
@@ -1310,7 +1347,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
             else if (t.tipIndex === 1) waterTips.redPosB = { x: t.x, y: t.y };
           }
         }
-        // dt — seconds since last water frame (computed once from currentTime).
+        // dt - seconds since last water frame (computed once from currentTime).
         const nowMs = currentTime;
         let dt = this.lastWaterFrameTime > 0 ? (nowMs - this.lastWaterFrameTime) / 1000 : 1 / 60;
         // Clamp absurd dts (tab switch, export pause, etc.) so a stalled frame
@@ -1348,7 +1385,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // to pull the 2 tips per prop into the {bluePosA, bluePosB, redPosA,
     // redPosB} shape Bubbles2DRenderer expects. Filters tips by
     // tipEffectMap resolution. dt drives particle physics + spawn-rate
-    // integration — like water, bubbles have persistent pool state.
+    // integration - like water, bubbles have persistent pool state.
     const activeBubblesRenderer = this.bubblesRenderer?.isInitialized()
       ? this.bubblesRenderer
       : null;
@@ -1411,7 +1448,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
 
     // Petals overlay: per-tip falling silhouette emitter. Mirrors the bubbles
-    // pipeline — reads sharedTipResult, filters by tipEffectMap, integrates
+    // pipeline - reads sharedTipResult, filters by tipEffectMap, integrates
     // physics via dt since last frame. Petal pool state persists across frames
     // so we only clear on disable / error / sequence boundary.
     const activePetalsRenderer = this.petalsRenderer?.isInitialized()
@@ -1476,7 +1513,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
 
     // Smoke overlay: per-tip curl-noise puff emitter. Mirrors the petals
-    // pipeline — reads sharedTipResult, filters by tipEffectMap, integrates
+    // pipeline - reads sharedTipResult, filters by tipEffectMap, integrates
     // curl motion via dt since last frame. Puff pool state persists across
     // frames so we only clear on disable / error / sequence boundary.
     const activeSmokeRenderer = this.smokeRenderer?.isInitialized()
@@ -1540,7 +1577,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.lastSmokeFrameTime = 0;
     }
 
-    // Ink overlay: per-tip stroke path builder. Mirrors the smoke pipeline —
+    // Ink overlay: per-tip stroke path builder. Mirrors the smoke pipeline -
     // reads sharedTipResult, filters by tipEffectMap, ages points via dt. The
     // per-tip point history persists across frames so we only clear on
     // disable / error / sequence boundary.
@@ -1606,7 +1643,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
 
     // Frost overlay: per-tip cold aura particle system. Same tip-filtering
-    // pipeline as ink/smoke — reads sharedTipResult, resolves "frost" tips,
+    // pipeline as ink/smoke - reads sharedTipResult, resolves "frost" tips,
     // drives the particle renderer with dt.
     const activeFrostRenderer = this.frostRenderer?.isInitialized()
       ? this.frostRenderer
@@ -1670,7 +1707,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
 
     // Silk overlay: per-tip deformable ribbon. Same tip-filtering
-    // pipeline as frost — reads sharedTipResult, resolves "silk" tips,
+    // pipeline as frost - reads sharedTipResult, resolves "silk" tips,
     // drives the ribbon renderer with dt.
     const activeSilkRenderer = this.silkRenderer?.isInitialized()
       ? this.silkRenderer
@@ -1732,6 +1769,100 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } else if (activeSilkRenderer && !hasSilkOverlay) {
       activeSilkRenderer.clear();
       this.lastSilkFrameTime = 0;
+    }
+
+    // Pulse overlay: expanding wave rings from tip positions.
+    const activePulseRenderer = this.pulseRenderer?.isInitialized()
+      ? this.pulseRenderer
+      : null;
+    const hasPulseOverlay =
+      this.fireTipTracker && activePulseRenderer && params.pulseConfig != null;
+
+    if (
+      hasPulseOverlay &&
+      !this.pulseDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const blueColor = params.trailSettings.blueColor;
+        const redColor = params.trailSettings.redColor;
+        const pulseTips: PulseTipInput[] = [];
+        let globalPulseTipIndex = 0;
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "pulse") continue;
+          pulseTips.push({
+            x: t.x,
+            y: t.y,
+            propIndex: t.propIndex as 0 | 1,
+            tipIndex: globalPulseTipIndex++,
+            blueColor,
+            redColor,
+          });
+        }
+        const blueTransformPulse = renderedTransforms?.blue;
+        if (
+          params.props.blueProp &&
+          blueTransformPulse &&
+          resolveEffect(0, 0, tipMap, {}) === "pulse" &&
+          !pulseTips.some((t) => t.propIndex === 0)
+        ) {
+          pulseTips.push({
+            x: blueTransformPulse.centerX,
+            y: blueTransformPulse.centerY,
+            propIndex: 0,
+            tipIndex: globalPulseTipIndex++,
+            blueColor,
+            redColor,
+          });
+        }
+        const redTransformPulse = renderedTransforms?.red;
+        if (
+          params.props.redProp &&
+          redTransformPulse &&
+          resolveEffect(1, 0, tipMap, {}) === "pulse" &&
+          !pulseTips.some((t) => t.propIndex === 1)
+        ) {
+          pulseTips.push({
+            x: redTransformPulse.centerX,
+            y: redTransformPulse.centerY,
+            propIndex: 1,
+            tipIndex: globalPulseTipIndex++,
+            blueColor,
+            redColor,
+          });
+        }
+        const nowMs = currentTime;
+        let dt = this.lastPulseFrameTime > 0 ? (nowMs - this.lastPulseFrameTime) / 1000 : 1 / 60;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastPulseFrameTime = nowMs;
+        const pulseCurrentStep = params.currentStep ?? 0;
+        activePulseRenderer!.renderFrame(params.pulseConfig!, pulseTips, pulseCurrentStep, dt);
+        this.consecutivePulseErrors = 0;
+      } catch (error) {
+        this.consecutivePulseErrors++;
+        activePulseRenderer?.clear();
+        if (this.consecutivePulseErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.pulseDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Pulse effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("pulse", err);
+          } else {
+            effectErrorSignal.trigger("pulse", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Pulse render error (attempt ${this.consecutivePulseErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activePulseRenderer && !hasPulseOverlay) {
+      activePulseRenderer.clear();
+      this.lastPulseFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire
@@ -1848,7 +1979,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       }
     }
 
-    // Rolling 1-second FPS summary — complements the per-drop log by telling
+    // Rolling 1-second FPS summary - complements the per-drop log by telling
     // you the average even when individual drops fall below the 2s cooldown.
     // Opt-in diagnostic: enable with window.__TKA_FPS_LOG = true
     const fpsLogEnabled =
@@ -1907,10 +2038,22 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
   }
 
+  private static compactByTrailFlag(points: TrailPoint[], tipMap: TipEffectMap): void {
+    let w = 0;
+    for (let i = 0; i < points.length; i++) {
+      const pt = points[i]!;
+      if (resolveEffect(pt.propIndex, pt.tipIndex, tipMap, {}) === "trails") {
+        points[w++] = pt;
+      }
+    }
+    points.length = w;
+  }
+
   private gatherTrailPoints(
     currentStep: number,
     trailSettings: TrailSettings,
-    isSeamlesslyLoopable: boolean
+    isSeamlesslyLoopable: boolean,
+    tipEffectMap?: TipEffectMap,
   ): {
     blue: TrailPoint[];
     red: TrailPoint[];
@@ -1921,6 +2064,15 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
 
+    // Per-tip trail flags: only gather points for tips assigned "trails".
+    // When no map is provided, default to gathering all tips.
+    const tipMap = tipEffectMap ?? {};
+    const hasAnyTrailEntry = Object.keys(tipMap).length > 0;
+    const blueTip0Trails = !hasAnyTrailEntry || resolveEffect(0, 0, tipMap, {}) === "trails";
+    const blueTip1Trails = !hasAnyTrailEntry || resolveEffect(0, 1, tipMap, {}) === "trails";
+    const redTip0Trails = !hasAnyTrailEntry || resolveEffect(1, 0, tipMap, {}) === "trails";
+    const redTip1Trails = !hasAnyTrailEntry || resolveEffect(1, 1, tipMap, {}) === "trails";
+
     // Detect animation loop (currentStep jumps backward significantly)
     // This happens when the sequence repeats from the beginning
     const LOOP_DETECTION_THRESHOLD = 0.5; // steps
@@ -1929,7 +2081,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.loopDetectedThisFrame = true;
       this.hasLoopedAtLeastOnce = true;
       // For non-seamless loops, record where the loop occurred to clamp trail start.
-      // For seamless loops, don't clamp — trails wrap around the boundary.
+      // For seamless loops, don't clamp - trails wrap around the boundary.
       if (!isSeamlesslyLoopable) {
         this.loopOccurredAtStep = currentStep;
       } else {
@@ -1957,7 +2109,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         const desiredStart = currentStep - fadeSteps;
 
         // Determine if trail wraps around the loop boundary.
-        // Only wrap if a loop has actually occurred — on initial play there's
+        // Only wrap if a loop has actually occurred - on initial play there's
         // no previous loop to read trail data from.
         const needsWrapAround = isSeamlesslyLoopable && desiredStart < 0 && this.hasLoopedAtLeastOnce;
 
@@ -1974,42 +2126,60 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           const cacheEndStep = cacheInfo.totalSteps;
           const wrapStartStep = Math.max(0, cacheEndStep + desiredStart);
 
-          // Blue prop: tail segment (both ends) then head segment (both ends)
-          let blueCount = this.pathCache.fillTrailPoints(
-            0, 0, wrapStartStep, cacheEndStep, scaleFactor,
-            this.reusableBlueTrailPoints, 0
-          );
-          blueCount += this.pathCache.fillTrailPoints(
-            0, 1, wrapStartStep, cacheEndStep, scaleFactor,
-            this.reusableBlueTrailPoints, blueCount
-          );
-          blueCount += this.pathCache.fillTrailPoints(
-            0, 0, 0, currentStep, scaleFactor,
-            this.reusableBlueTrailPoints, blueCount
-          );
-          blueCount += this.pathCache.fillTrailPoints(
-            0, 1, 0, currentStep, scaleFactor,
-            this.reusableBlueTrailPoints, blueCount
-          );
+          // Blue prop: tail segment + head segment, filtered by per-tip trail flags
+          let blueCount = 0;
+          if (blueTip0Trails) {
+            blueCount += this.pathCache.fillTrailPoints(
+              0, 0, wrapStartStep, cacheEndStep, scaleFactor,
+              this.reusableBlueTrailPoints, blueCount
+            );
+          }
+          if (blueTip1Trails) {
+            blueCount += this.pathCache.fillTrailPoints(
+              0, 1, wrapStartStep, cacheEndStep, scaleFactor,
+              this.reusableBlueTrailPoints, blueCount
+            );
+          }
+          if (blueTip0Trails) {
+            blueCount += this.pathCache.fillTrailPoints(
+              0, 0, 0, currentStep, scaleFactor,
+              this.reusableBlueTrailPoints, blueCount
+            );
+          }
+          if (blueTip1Trails) {
+            blueCount += this.pathCache.fillTrailPoints(
+              0, 1, 0, currentStep, scaleFactor,
+              this.reusableBlueTrailPoints, blueCount
+            );
+          }
           this.reusableBlueTrailPoints.length = blueCount;
 
-          // Red prop: tail segment (both ends) then head segment (both ends)
-          let redCount = this.pathCache.fillTrailPoints(
-            1, 0, wrapStartStep, cacheEndStep, scaleFactor,
-            this.reusableRedTrailPoints, 0
-          );
-          redCount += this.pathCache.fillTrailPoints(
-            1, 1, wrapStartStep, cacheEndStep, scaleFactor,
-            this.reusableRedTrailPoints, redCount
-          );
-          redCount += this.pathCache.fillTrailPoints(
-            1, 0, 0, currentStep, scaleFactor,
-            this.reusableRedTrailPoints, redCount
-          );
-          redCount += this.pathCache.fillTrailPoints(
-            1, 1, 0, currentStep, scaleFactor,
-            this.reusableRedTrailPoints, redCount
-          );
+          // Red prop: tail segment + head segment, filtered by per-tip trail flags
+          let redCount = 0;
+          if (redTip0Trails) {
+            redCount += this.pathCache.fillTrailPoints(
+              1, 0, wrapStartStep, cacheEndStep, scaleFactor,
+              this.reusableRedTrailPoints, redCount
+            );
+          }
+          if (redTip1Trails) {
+            redCount += this.pathCache.fillTrailPoints(
+              1, 1, wrapStartStep, cacheEndStep, scaleFactor,
+              this.reusableRedTrailPoints, redCount
+            );
+          }
+          if (redTip0Trails) {
+            redCount += this.pathCache.fillTrailPoints(
+              1, 0, 0, currentStep, scaleFactor,
+              this.reusableRedTrailPoints, redCount
+            );
+          }
+          if (redTip1Trails) {
+            redCount += this.pathCache.fillTrailPoints(
+              1, 1, 0, currentStep, scaleFactor,
+              this.reusableRedTrailPoints, redCount
+            );
+          }
           this.reusableRedTrailPoints.length = redCount;
         } else {
           // NORMAL PATH (non-seamless, or seamless but trail doesn't cross boundary yet)
@@ -2020,31 +2190,41 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
             startStep = Math.max(startStep, this.loopOccurredAtStep);
           }
 
-          // Blue prop trails (both left and right endpoints)
-          let blueCount = this.pathCache.fillTrailPoints(
-            0, 0, startStep, currentStep, scaleFactor,
-            this.reusableBlueTrailPoints, 0
-          );
-          blueCount += this.pathCache.fillTrailPoints(
-            0, 1, startStep, currentStep, scaleFactor,
-            this.reusableBlueTrailPoints, blueCount
-          );
+          // Blue prop trails, filtered by per-tip trail flags
+          let blueCount = 0;
+          if (blueTip0Trails) {
+            blueCount += this.pathCache.fillTrailPoints(
+              0, 0, startStep, currentStep, scaleFactor,
+              this.reusableBlueTrailPoints, blueCount
+            );
+          }
+          if (blueTip1Trails) {
+            blueCount += this.pathCache.fillTrailPoints(
+              0, 1, startStep, currentStep, scaleFactor,
+              this.reusableBlueTrailPoints, blueCount
+            );
+          }
           this.reusableBlueTrailPoints.length = blueCount;
 
-          // Red prop trails (both left and right endpoints)
-          let redCount = this.pathCache.fillTrailPoints(
-            1, 0, startStep, currentStep, scaleFactor,
-            this.reusableRedTrailPoints, 0
-          );
-          redCount += this.pathCache.fillTrailPoints(
-            1, 1, startStep, currentStep, scaleFactor,
-            this.reusableRedTrailPoints, redCount
-          );
+          // Red prop trails, filtered by per-tip trail flags
+          let redCount = 0;
+          if (redTip0Trails) {
+            redCount += this.pathCache.fillTrailPoints(
+              1, 0, startStep, currentStep, scaleFactor,
+              this.reusableRedTrailPoints, redCount
+            );
+          }
+          if (redTip1Trails) {
+            redCount += this.pathCache.fillTrailPoints(
+              1, 1, startStep, currentStep, scaleFactor,
+              this.reusableRedTrailPoints, redCount
+            );
+          }
           this.reusableRedTrailPoints.length = redCount;
         }
       }
     } else if (this.TrailCapturer && !this.trailOverlay) {
-      // Fallback to real-time capture — only when NOT using the overlay.
+      // Fallback to real-time capture - only when NOT using the overlay.
       // The overlay accumulates pixels, so during the brief cache-rebuild
       // gap it's better to draw nothing (existing pixels fade naturally)
       // than to draw broken real-time capture points as artifacts.
@@ -2053,6 +2233,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         this.reusableRedTrailPoints,
         this.reusableAdditionalLayerTrails
       );
+
+      // Post-filter captured points by per-tip trail flags (allocation-free compact)
+      if (hasAnyTrailEntry) {
+        AnimationRenderLoop.compactByTrailFlag(this.reusableBlueTrailPoints, tipMap);
+        AnimationRenderLoop.compactByTrailFlag(this.reusableRedTrailPoints, tipMap);
+      }
     }
 
     return {

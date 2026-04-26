@@ -1,5 +1,5 @@
 /**
- * WebGLLedRenderer — Additive Glow Sprite + PBR Bloom LED Overlay
+ * WebGLLedRenderer - Additive Glow Sprite + PBR Bloom LED Overlay
  *
  * Creates a transparent WebGL2 canvas overlaid on the Canvas2D animation canvas.
  * Renders addressable LED props using instanced glow sprites with persistence-of-vision
@@ -13,8 +13,12 @@
  *   5. Display composite: trail + bloom to screen with premultiplied alpha
  *
  * References:
- *   - LearnOpenGL PBR Bloom (2022) — 13-tap downsample + tent upsample
- *   - GPU Pro 5 — energy-preserving bloom chain
+ *   - LearnOpenGL PBR Bloom (2022) - 13-tap downsample + tent upsample
+ *   - GPU Pro 5 - energy-preserving bloom chain
+ *
+ * @deprecated Superseded by render-graph WebGPULedExecutor (WGSL instanced sprites + bloom).
+ * Same instanced-sprite + bloom pipeline ported to WebGPU with compute-based accumulation.
+ * Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
 import type { ILedOverlayRenderer } from "../../contracts/ILedOverlayRenderer";
@@ -151,7 +155,7 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		// Float texture support is required for HDR bloom pipeline
 		const ext = gl.getExtension("EXT_color_buffer_float");
 		if (!ext) {
-			console.warn("EXT_color_buffer_float not available — LED overlay requires float FBOs");
+			console.warn("EXT_color_buffer_float not available - LED overlay requires float FBOs");
 			this.cleanup();
 			return false;
 		}
@@ -209,12 +213,12 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		// 1. Update instance data from tips. For each LED we also supply
 		//    its previous-frame position so the vertex shader can extrude
 		//    a motion-streak capsule between the two points. On the first
-		//    frame for a given LED — or after a long pause / big jump —
+		//    frame for a given LED - or after a long pause / big jump -
 		//    we collapse the capsule to a point by setting prev = curr.
 		const tipCount = Math.min(input.tips.length, MAX_LEDS);
 		// glowRadius * 60 is authored in reference-size (500px) pixels.
 		// Scale to the current canvas so the halo stays the same proportion
-		// of the frame — without this, a_glowRadius is fixed viewbox-space
+		// of the frame - without this, a_glowRadius is fixed viewbox-space
 		// and the halo reads as proportionally larger on small canvases.
 		const effectScale = computeEffectScale(input.canvasWidth, input.canvasHeight);
 		const baseGlowRadius = config.glowRadius * 60.0 * effectScale;

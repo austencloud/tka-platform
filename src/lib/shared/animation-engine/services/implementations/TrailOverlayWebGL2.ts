@@ -1,5 +1,5 @@
 /**
- * Trail Overlay — WebGL2 backend.
+ * Trail Overlay - WebGL2 backend.
  *
  * Drop-in replacement for `TrailOverlayCanvas`. Preserves the entire
  * prop-tip capture pipeline (ring buffers, tracking modes, bilateral-prop
@@ -11,6 +11,10 @@
  *
  * Runs at the same position + z-index as the Canvas2D overlay, so the
  * containing stack (fire, LEDs, props) composites unchanged.
+ *
+ * @deprecated Superseded by render-graph FrameGraph + RenderBackend.executeFrame().
+ * Trail capture moves into the unified per-frame graph; no standalone overlay needed.
+ * Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
 import type {
@@ -25,6 +29,8 @@ import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { Canvas2DVisibilityFadeManager } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
+import { resolveEffect } from "../../domain/types/TipEffectTypes";
+import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 import type { RenderBackend } from "$lib/shared/render-graph/domain/Backend";
 import type { FrameGraph } from "$lib/shared/render-graph/domain/FrameGraph";
@@ -97,7 +103,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private redLeftTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
   private redRightTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
 
-  /** Current ring capacity — derived from `trailSettings.tailLength`. */
+  /** Current ring capacity - derived from `trailSettings.tailLength`. */
   private ringCapacity = RING_BUFFER_MIN;
 
   private lastTrackingMode: TrackingMode | null = null;
@@ -131,6 +137,9 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
   private warmupFramesRemaining = 0;
   private static readonly WARMUP_FRAMES = 3;
+
+  // Per-tip trail mask from previous frame (4 bits).
+  private prevTipTrailMask = 0xF;
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
@@ -275,6 +284,39 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
       !anyBilateral;
 
+    // Per-tip effect gating
+    const tipMap = params.tipEffectMap;
+    const hasMap = tipMap && Object.keys(tipMap).length > 0;
+    const blueLeftTrails = !hasMap || resolveEffect(0, 0, tipMap!, {}) === "trails";
+    const blueRightTrails = !hasMap || resolveEffect(0, 1, tipMap!, {}) === "trails";
+    const redLeftTrails = !hasMap || resolveEffect(1, 0, tipMap!, {}) === "trails";
+    const redRightTrails = !hasMap || resolveEffect(1, 1, tipMap!, {}) === "trails";
+
+    const tipMask =
+      (blueLeftTrails ? 1 : 0) |
+      (blueRightTrails ? 2 : 0) |
+      (redLeftTrails ? 4 : 0) |
+      (redRightTrails ? 8 : 0);
+    if (tipMask !== this.prevTipTrailMask) {
+      const blueBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
+      const redBitsChanged = (tipMask & 0xC) !== (this.prevTipTrailMask & 0xC);
+      if (blueBitsChanged) {
+        this.blueLeftRing = [];
+        this.blueRightRing = [];
+        this.blueLeftTail = createTailState(leadingEdge);
+        this.blueRightTail = createTailState(leadingEdge);
+        this.blueTipEpoch++;
+      }
+      if (redBitsChanged) {
+        this.redLeftRing = [];
+        this.redRightRing = [];
+        this.redLeftTail = createTailState(leadingEdge);
+        this.redRightTail = createTailState(leadingEdge);
+        this.redTipEpoch++;
+      }
+      this.prevTipTrailMask = tipMask;
+    }
+
     let blueLeftMoved = false;
     let blueRightMoved = false;
     let redLeftMoved = false;
@@ -284,12 +326,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const blueCaptureLive = hasBlue || blueAlpha > 0;
     const redCaptureLive = hasRed || redAlpha > 0;
     if (blueProp && blueCaptureLive) {
-      const r = this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight);
+      const r = this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft && blueLeftTrails, trackRight && blueRightTrails);
       blueLeftMoved = r.leftMoved;
       blueRightMoved = r.rightMoved;
     }
     if (redProp && redCaptureLive) {
-      const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight);
+      const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft && redLeftTrails, trackRight && redRightTrails);
       redLeftMoved = r.leftMoved;
       redRightMoved = r.rightMoved;
     }
@@ -297,7 +339,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // Advance per-ring tail recession state. Moving frames update the
     // per-ring speed EMA and keep visibleCount at LEADING_EDGE. Stationary
     // frames walk the visible endpoint forward along the captured path at
-    // the pre-stop speed — so stopping on a dime reads as "the trail
+    // the pre-stop speed - so stopping on a dime reads as "the trail
     // finishes the motion" instead of freezing at constant length.
     const dtMs = Math.max(0, params.deltaTime * 1000);
 
@@ -308,7 +350,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
     // lineWidth is authored in reference-size (500px) pixels. On smaller
     // canvases, scale it down so the trail + glow halo stay the same
-    // proportion of the frame — otherwise the fixed-pixel floor (3.5) and
+    // proportion of the frame - otherwise the fixed-pixel floor (3.5) and
     // the NDC division by canvas width make the halo a bigger share of a
     // small canvas, which reads as overblown glow on mobile.
     const effectScale = computeEffectScale(this.width, this.height);
@@ -389,6 +431,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.blueEnvelopeWasZero = false;
     this.redEnvelopeWasZero = false;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
+    this.prevTipTrailMask = 0xF;
     this.rebuildBackend();
   }
 
@@ -404,7 +447,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
-    // Reset to DEFAULT_LEADING_EDGE — the next renderFrame will re-seed with
+    // Reset to DEFAULT_LEADING_EDGE - the next renderFrame will re-seed with
     // the current tailLength setting before the first advance call.
     this.blueLeftTail = createTailState(DEFAULT_LEADING_EDGE);
     this.blueRightTail = createTailState(DEFAULT_LEADING_EDGE);

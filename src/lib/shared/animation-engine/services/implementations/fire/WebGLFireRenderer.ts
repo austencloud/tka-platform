@@ -1,5 +1,5 @@
 /**
- * WebGLFireRenderer — Navier-Stokes Fluid Fire Simulation
+ * WebGLFireRenderer - Navier-Stokes Fluid Fire Simulation
  *
  * Creates a transparent WebGL2 canvas overlaid on the Canvas2D animation canvas.
  * Runs a multi-pass fluid simulation with combustion, buoyancy, and blackbody
@@ -20,6 +20,10 @@
  *   - GPU Gems Ch. 38 (Harris, 2004)
  *   - andrewkchan.dev/posts/fire.html
  *   - Pavel Dobryakov's WebGL-Fluid-Simulation
+ *
+ * @deprecated Superseded by render-graph WebGPUFireExecutor (WGSL Navier-Stokes).
+ * Same 13-step pipeline ported to WebGPU with WGSL shaders, explicit bind groups,
+ * and 256×256 rgba16float ping-pong textures. Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
 import type { IFireOverlayRenderer } from "../../contracts/IFireOverlayRenderer";
@@ -70,7 +74,7 @@ export function getActiveFireInstanceCount(): number {
 
 /**
  * Compute optimal Jacobi iterations based on how many fire renderers
- * are running simultaneously. Fire doesn't need precise pressure solving —
+ * are running simultaneously. Fire doesn't need precise pressure solving -
  * visual plausibility is all that matters.
  */
 export function computeAdaptiveJacobiIterations(instanceCount: number): number {
@@ -181,7 +185,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private tipFlameScaleLocs: (WebGLUniformLocation | null)[] = [];
   private tipColorLocs: (WebGLUniformLocation | null)[] = [];
 
-  // Mutable physics parameters — set via config.physicsPreset or defaults
+  // Mutable physics parameters - set via config.physicsPreset or defaults
   private physics: FirePhysicsParams = { ...DEFAULT_PHYSICS };
   private readonly AMBIENT_TEMP = 0.0;
   private readonly BURN_TEMP = 0.1;
@@ -228,7 +232,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // Float texture support is required for fluid simulation
     const ext = gl.getExtension("EXT_color_buffer_float");
     if (!ext) {
-      console.warn("EXT_color_buffer_float not available — fire simulation requires float FBOs");
+      console.warn("EXT_color_buffer_float not available - fire simulation requires float FBOs");
       this.cleanup();
       return false;
     }
@@ -268,7 +272,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     this.canvas.width = Math.round(width * this.dpr);
     this.canvas.height = Math.round(height * this.dpr);
-    // Simulation buffers stay at simWidth x simHeight — independent of display
+    // Simulation buffers stay at simWidth x simHeight - independent of display
     // Invalidate frame cache since display dimensions changed
     this.frameCache?.invalidate();
   }
@@ -285,7 +289,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // --- Frame cache logic ---
     const cache = this.frameCache;
     if (cache && !config.disableFrameCache) {
-      // Compute config hash for invalidation (includes playback speed — different BPM = different fire physics)
+      // Compute config hash for invalidation (includes playback speed - different BPM = different fire physics)
       const hash = this.computeConfigHash(config, input.playbackSpeed, input.sequenceContentHash);
 
       // Invalidate cache if config changed
@@ -297,13 +301,13 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       // Handle loop detection
       if (input.loopDetected) {
         if (cache.isRecording()) {
-          // First loop complete — switch to playback
+          // First loop complete - switch to playback
           cache.onLoopDetected();
         } else if (cache.isWarm()) {
-          // Subsequent loop — reset playback index
+          // Subsequent loop - reset playback index
           cache.onLoopDetected();
         } else {
-          // Cache is idle — start recording this loop
+          // Cache is idle - start recording this loop
           cache.startRecording(
             this.simWidth, this.simHeight,
             this.canvas!.width, this.canvas!.height,
@@ -311,14 +315,14 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
           );
         }
 
-        // For seamless loops, fire should continue naturally — props don't teleport,
+        // For seamless loops, fire should continue naturally - props don't teleport,
         // so there's no velocity spike or positional discontinuity to fix.
         // For non-seamless loops, clear only velocity/pressure (physics fields) so
         // residual velocity doesn't push fire away from prop tips, but let
         // temperature/fuel/soot fade out naturally through dissipation physics.
         if (!cache.isWarm()) {
           if (input.isSeamlesslyLoopable) {
-            // Don't clear anything — fire continues seamlessly
+            // Don't clear anything - fire continues seamlessly
           } else {
             this.clearVelocityFields();
           }
@@ -328,7 +332,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       // If cache is warm, skip simulation entirely and blit from cache
       if (cache.isWarm()) {
         if (cache.blitCachedFrame(input.relativeTime)) {
-          return; // Done — no simulation needed
+          return; // Done - no simulation needed
         }
         // Cache exhausted (shouldn't happen), fall through to live simulation
       }
@@ -340,7 +344,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
         return;
       }
     } else if (cache && config.disableFrameCache) {
-      // Frame caching disabled — invalidate any existing cache
+      // Frame caching disabled - invalidate any existing cache
       if (cache.isRecording() || cache.isWarm()) {
         cache.invalidate();
       }
@@ -422,7 +426,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       }
     }
 
-    // Divergence and curl are derived from velocity — clear them too
+    // Divergence and curl are derived from velocity - clear them too
     if (this.divergenceFBO) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.divergenceFBO.fbo);
       gl.clearColor(0, 0, 0, 0);
@@ -436,7 +440,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    // Note: frame cache is NOT invalidated here — velocity-only clearing
+    // Note: frame cache is NOT invalidated here - velocity-only clearing
     // is compatible with continued recording.
   }
 
@@ -557,7 +561,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // instead of isolated dots.
     const stepUV = baseSplatRadius;
 
-    // Advance turbulence clock — used by the buoyancy shader to create wind
+    // Advance turbulence clock - used by the buoyancy shader to create wind
     // perturbation on the rising plume (not the wick itself).
     this.turbulenceClock += dt;
 
@@ -590,7 +594,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
       // Temperature perturbation: vary the heat of each fuel parcel so some
       // rise faster (hotter) and some slower (cooler). The differential buoyancy
-      // creates natural shear that triggers Kelvin-Helmholtz instability —
+      // creates natural shear that triggers Kelvin-Helmholtz instability -
       // the same mechanism that makes real fire flicker. Uses incommensurate
       // frequencies per tip so flames don't pulse in unison.
       const tc = this.turbulenceClock;
@@ -795,7 +799,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   /**
    * Apply curl-noise turbulence: divergence-free velocity perturbation
    * concentrated at flame boundaries. This is what makes stationary fire
-   * flicker naturally — the rising plume gets pushed by spatially-coherent
+   * flicker naturally - the rising plume gets pushed by spatially-coherent
    * vortical forces while the wick stays still.
    */
   private applyCurlNoiseTurbulence(dt: number, texelSize: [number, number], heightMult: number, turbulence: number): void {
@@ -875,7 +879,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.useProgram(prog.program);
 
     // We want to multiply pressure by PRESSURE_DISSIPATION, not set to a constant.
-    // The clear shader sets a flat value — that's not what we want.
+    // The clear shader sets a flat value - that's not what we want.
     // Instead, use advection with dt=0 and dissipation = PRESSURE_DISSIPATION.
     const advProg = this.advectionProgram!;
     gl.useProgram(advProg.program);
@@ -1055,7 +1059,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   }
 
   /**
-   * The display shader pass — sets uniforms and draws.
+   * The display shader pass - sets uniforms and draws.
    * Caller is responsible for binding the target framebuffer and setting viewport.
    * This allows both renderDisplay (screen) and renderDisplayToCache (FBO) to share the same logic.
    */
