@@ -40,7 +40,9 @@ import {
   type Point2D,
   type MeshBuildOptions,
 } from "../../math/trail-mesh";
+import { WebGPUFireExecutor } from "./WebGPUFireExecutor";
 import { WebGPULedExecutor } from "./WebGPULedExecutor";
+import { WebGPUOverlayEffectsExecutor } from "./WebGPUOverlayEffectsExecutor";
 import { WebGPUParticleExecutor } from "./WebGPUParticleExecutor";
 
 const TRAIL_KEY_PREFIX = "trail-tip-";
@@ -233,7 +235,9 @@ export class WebGPUBackend implements RenderBackend {
   private meshBuffer: GPUBuffer | null = null;
   private meshBufferSize = 0;
 
+  private fireExecutor: WebGPUFireExecutor | null = null;
   private ledExecutor: WebGPULedExecutor | null = null;
+  private overlayExecutor: WebGPUOverlayEffectsExecutor | null = null;
   private particleExecutor: WebGPUParticleExecutor | null = null;
 
   private previousTime = -1;
@@ -336,8 +340,12 @@ export class WebGPUBackend implements RenderBackend {
     this.pingPongs.clear();
     this.meshBuffer?.destroy();
     this.meshBuffer = null;
+    this.fireExecutor?.dispose();
+    this.fireExecutor = null;
     this.ledExecutor?.dispose();
     this.ledExecutor = null;
+    this.overlayExecutor?.dispose();
+    this.overlayExecutor = null;
     this.particleExecutor?.dispose();
     this.particleExecutor = null;
     this.device.destroy();
@@ -738,8 +746,13 @@ export class WebGPUBackend implements RenderBackend {
 
   // ─── Effect Stubs (implemented in follow-up commits) ────────────
 
-  private executeFirePass(_payload: FirePassPayload, _dt: number): void {
-    // Phase 4b: port fluid simulation grid to compute shaders
+  private executeFirePass(payload: FirePassPayload, dt: number): void {
+    if (!this.fireExecutor) {
+      this.fireExecutor = new WebGPUFireExecutor(this.device!, this.linearSampler!);
+    }
+    const canvas = this.canvas!;
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.fireExecutor.execute(payload, dt, presentView, canvas.width, canvas.height);
   }
 
   private executeLedPass(payload: LedPassPayload, dt: number): void {
@@ -764,32 +777,49 @@ export class WebGPUBackend implements RenderBackend {
     this.particleExecutor.execute(kind, payload, dt, presentView, canvas.width, canvas.height);
   }
 
-  private executeEchoPass(_payload: EchoPassPayload, _dt: number): void {
-    // Phase 4e: port overlay effects
+  private getOverlay(): WebGPUOverlayEffectsExecutor {
+    if (!this.overlayExecutor) {
+      this.overlayExecutor = new WebGPUOverlayEffectsExecutor(this.device!, this.linearSampler!);
+    }
+    return this.overlayExecutor;
   }
 
-  private executeBloomPass(_payload: BloomPassPayload, _dt: number): void {
-    // Phase 4e: port bloom downsample/upsample chain
+  private executeEchoPass(payload: EchoPassPayload, _dt: number): void {
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.getOverlay().executeEcho(payload, presentView);
   }
 
-  private executeZapPass(_payload: ZapPassPayload, _dt: number): void {
-    // Phase 4e
+  private executeBloomPass(payload: BloomPassPayload, _dt: number): void {
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.getOverlay().executeBloom(payload, presentView);
   }
 
-  private executePulsePass(_payload: PulsePassPayload, _dt: number): void {
-    // Phase 4e
+  private executeZapPass(payload: ZapPassPayload, _dt: number): void {
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.getOverlay().executeZap(payload, presentView);
   }
 
-  private executeInkPass(_payload: InkPassPayload, _dt: number): void {
-    // Phase 4e
+  private executePulsePass(payload: PulsePassPayload, _dt: number): void {
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.getOverlay().executePulse(payload, presentView);
   }
 
-  private executeFrostPass(_payload: FrostPassPayload, _dt: number): void {
-    // Phase 4e
+  private executeInkPass(payload: InkPassPayload, dt: number): void {
+    const canvas = this.canvas!;
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.getOverlay().executeInk(payload, dt, presentView, canvas.width, canvas.height);
   }
 
-  private executeSilkPass(_payload: SilkPassPayload, _dt: number): void {
-    // Phase 4e
+  private executeFrostPass(payload: FrostPassPayload, dt: number): void {
+    const canvas = this.canvas!;
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.getOverlay().executeFrost(payload, dt, presentView, canvas.width, canvas.height);
+  }
+
+  private executeSilkPass(payload: SilkPassPayload, dt: number): void {
+    const canvas = this.canvas!;
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.getOverlay().executeSilk(payload, dt, presentView, canvas.width, canvas.height);
   }
 
   // ─── Pipeline Compilation ───────────────────────────────────────
