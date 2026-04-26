@@ -251,7 +251,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
       if (state && "deckId" in state) {
         void restoreNavState(state);
       } else {
-        // No state object (e.g. initial page load entry) — go to root
+        // No state object (e.g. initial page load entry) - go to root
         void restoreNavState({ deckId: null, vtgFamily: null });
       }
     }
@@ -358,7 +358,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
 
   onMount(async () => {
     console.time('[deck-perf] total mount');
-    // Browse/Designer sequences load in background — don't block deck rendering
+    // Browse/Designer sequences load in background - don't block deck rendering
     loaderService = getBrowseLoader();
     loadSequences();
 
@@ -388,7 +388,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
       if (cached && cached.length > 0) {
         console.log('[deck-perf] serving %d cached decks', cached.length);
         decks = cached;
-        // Refresh in background — updates cache + state silently
+        // Refresh in background - updates cache + state silently
         loadDecks().then(() => console.log('[deck-perf] background refresh done'));
       } else {
         console.time('[deck-perf] loadDecks (cold)');
@@ -592,7 +592,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
     {:else if mode === "designer"}
       <!-- Card Designer: full-width, no sidebar -->
       <main class="content-area">
-        <CardDesigner {sequences} {isLoading} />
+        <CardDesigner />
       </main>
     {:else if mode === "scan-activity"}
       <ScanActivityTab />
