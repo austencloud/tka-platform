@@ -52,11 +52,11 @@ export class SilkOverlayRenderer implements ISilkOverlayRenderer {
     this.scale = computeEffectScale(width, height);
   }
 
-  renderFrame(params: Silk2DParams, tips: SilkTipInput, dt: number): void {
+  renderFrame(params: Silk2DParams, tips: SilkTipInput, dt: number, loopDetected?: boolean): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);
-    this.renderer.render(ctx, params, tips, dt, this.scale);
+    this.renderer.render(ctx, params, tips, dt, this.scale, loopDetected);
   }
 
   clear(): void {

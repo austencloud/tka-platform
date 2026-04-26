@@ -42,7 +42,7 @@
     isOpen = !isOpen;
   }
 
-  function handleClickOutside(e: MouseEvent) {
+  function handlePointerDownOutside(e: PointerEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest(".sort-bar")) {
       isOpen = false;
@@ -56,7 +56,7 @@
   }
 </script>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeyDown} />
+<svelte:window onpointerdown={handlePointerDownOutside} onkeydown={handleKeyDown} />
 
 <div class="sort-bar">
   <button

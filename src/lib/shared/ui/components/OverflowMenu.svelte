@@ -36,7 +36,7 @@
     }
   }
 
-  function handleOutsideClick(e: MouseEvent) {
+  function handleOutsidePointerDown(e: PointerEvent) {
     if (menuEl && !menuEl.contains(e.target as Node)) {
       open = false;
     }
@@ -44,8 +44,8 @@
 
   $effect(() => {
     if (open) {
-      document.addEventListener("click", handleOutsideClick, true);
-      return () => document.removeEventListener("click", handleOutsideClick, true);
+      document.addEventListener("pointerdown", handleOutsidePointerDown, true);
+      return () => document.removeEventListener("pointerdown", handleOutsidePointerDown, true);
     }
     return undefined;
   });

@@ -197,8 +197,7 @@
     return lines.join("\n");
   }
 
-  // Close when clicking outside
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     if (wrapperEl && !wrapperEl.contains(event.target as Node)) {
       showReactions = false;
       showMoreMenu = false;
@@ -207,11 +206,10 @@
 
   $effect(() => {
     if (showReactions || showMoreMenu) {
-      // Small delay to prevent immediate close from the same click
       setTimeout(() => {
-        document.addEventListener("click", handleClickOutside);
+        document.addEventListener("pointerdown", handlePointerDownOutside);
       }, 10);
-      return () => document.removeEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("pointerdown", handlePointerDownOutside);
     }
     return undefined;
   });

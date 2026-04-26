@@ -62,29 +62,25 @@
     if (!menuState.open) return;
     if (typeof document === "undefined") return;
 
-    // Block outside pointerdown so bits-ui can't dismiss the menu before
-    // the click event fires. Without this, bits-ui closes on pointerdown,
-    // Svelte flushes the $effect cleanup (removing the click listener),
-    // and the click leaks through to the underlying UI.
-    const blockOutsidePointerDown = (ev: PointerEvent) => {
-      const target = ev.target as Element | null;
-      if (target?.closest(".ctx-menu-content")) return;
-      ev.stopImmediatePropagation();
-    };
-
     const blockOutsideClick = (ev: MouseEvent) => {
       const target = ev.target as Element | null;
       if (target?.closest(".ctx-menu-content")) return;
       ev.stopImmediatePropagation();
       ev.preventDefault();
+    };
+
+    const dismissOnPointerDown = (ev: PointerEvent) => {
+      const target = ev.target as Element | null;
+      if (target?.closest(".ctx-menu-content")) return;
+      ev.stopImmediatePropagation();
       onClose();
     };
 
-    document.addEventListener("pointerdown", blockOutsidePointerDown, { capture: true });
+    document.addEventListener("pointerdown", dismissOnPointerDown, { capture: true });
     document.addEventListener("click", blockOutsideClick, { capture: true });
 
     return () => {
-      document.removeEventListener("pointerdown", blockOutsidePointerDown, { capture: true });
+      document.removeEventListener("pointerdown", dismissOnPointerDown, { capture: true });
       document.removeEventListener("click", blockOutsideClick, { capture: true });
     };
   });

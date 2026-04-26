@@ -45,7 +45,7 @@
     }
   }
 
-  function handleClickOutside(e: MouseEvent) {
+  function handlePointerDownOutside(e: PointerEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest(".assignee-selector")) {
       isOpen = false;
@@ -54,8 +54,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<section class="section assignee-selector" onclick={handleClickOutside}>
+<section class="section assignee-selector" onpointerdown={handlePointerDownOutside}>
   <h3 class="section-title">
     <i class="fas fa-user-check" aria-hidden="true"></i>
     Assigned To
