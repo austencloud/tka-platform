@@ -1,19 +1,17 @@
 <!--
   ExportVideoDrawer.svelte
 
-  Unified Download Animation panel with collapsible sections. Works on
-  mobile and desktop with a single shared section stack:
+  Unified Download Animation panel with pill-nav section switcher.
 
-  - Mobile (layout="bottom"): gear trigger + download button at bottom.
-    Tapping gear opens a RailBentoSheet with the full scrollable stack.
-  - Desktop (layout="sidebar"): scrollable stack fills the sidebar;
-    download button pinned in the footer.
+  - Mobile (layout="bottom"): pill bar + download button at bottom.
+    Tapping a pill opens a RailBentoSheet with that section's body.
+  - Desktop (layout="sidebar"): pill bar at top, active section body
+    in scrollable area, download button pinned in footer.
 
-  Sections: Effects (expanded default) → Effort → Playback → Display → Export.
-  Collapsible headers show summary badges when collapsed.
+  Sections: Effects → Effort → Playback → Display → Export.
 -->
 <script lang="ts">
-  import { fade, slide } from "svelte/transition";
+  import { fade } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
@@ -22,6 +20,7 @@
   import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
   import "./bento/rail-tile.css";
+  import "./pill-nav/pill-nav.css";
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
@@ -30,6 +29,9 @@
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import RailBentoSheet from "./bento/RailBentoSheet.svelte";
+  import DownloadPillNav from "./pill-nav/DownloadPillNav.svelte";
+  import PillBody from "./pill-nav/PillBody.svelte";
+  import { buildPillSpecs, type PillId } from "./pill-nav/pill-types";
   import {
     computeDisplaySummary,
     computeEffectsSummary,
@@ -78,26 +80,24 @@
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
 
-  // ── Section expansion state ──
-  type SectionId = "effects" | "effort" | "playback" | "display" | "export";
-  let expandedSections = $state<Set<SectionId>>(new Set(["effects"]));
+  // ── Active pill state ──
+  let activePill = $state<PillId | null>("effects");
 
-  function toggleSection(id: SectionId): void {
-    const next = new Set(expandedSections);
-    next.has(id) ? next.delete(id) : next.add(id);
-    expandedSections = next;
+  function handlePillSelect(id: PillId): void {
+    if (layout === "bottom") {
+      // Mobile: toggle — tapping same pill closes the sheet
+      activePill = activePill === id ? null : id;
+    } else {
+      // Desktop: always select (never deselect)
+      activePill = id;
+    }
   }
 
-  // Mobile sheet state
-  let mobileSheetOpen = $state(false);
-  let settingsButtonEl: HTMLButtonElement | undefined = $state();
+  // Mobile: track pill nav element for focus restoration
+  let pillNavEl = $state<HTMLDivElement | null>(null);
 
-  function openMobileSheet(): void {
-    mobileSheetOpen = true;
-  }
-
-  function closeMobileSheet(): void {
-    mobileSheetOpen = false;
+  function findPillButton(id: PillId): HTMLElement | null {
+    return pillNavEl?.querySelector<HTMLElement>(`[data-pill-id="${id}"]`) ?? null;
   }
 
   // Honor prefers-reduced-motion
@@ -114,8 +114,6 @@
     return () => mq.removeEventListener("change", handler);
   });
 
-  const slideDuration = $derived(reduceMotion ? 0 : 200);
-
   function preventSpaceActivation(event: KeyboardEvent) {
     if (event.key !== " " && event.code !== "Space") return;
     const target = event.target as HTMLElement | null;
@@ -124,26 +122,6 @@
     if (tag === "BUTTON" || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
     if (target.isContentEditable) return;
     event.preventDefault();
-  }
-
-  // ── Keyboard nav between section headers ──
-  function onSectionKeydown(event: KeyboardEvent): void {
-    const headers = Array.from(
-      (event.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>(".section-header"),
-    );
-    const idx = headers.indexOf(event.target as HTMLButtonElement);
-    if (idx < 0) return;
-
-    let next: number | null = null;
-    if (event.key === "ArrowDown") next = (idx + 1) % headers.length;
-    else if (event.key === "ArrowUp") next = (idx - 1 + headers.length) % headers.length;
-    else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = headers.length - 1;
-
-    if (next !== null) {
-      event.preventDefault();
-      headers[next]?.focus();
-    }
   }
 
   // ── Reactive bridge to animation visibility manager ──
@@ -237,243 +215,201 @@
     return formatDuration(total);
   });
 
-  // ── Section definitions ──
-  interface SectionDef {
-    id: SectionId;
-    icon: string;
-    label: string;
-    summary: string;
-    accentColor?: string;
-  }
+  // ── Pill specs (drives the pill nav bar) ──
+  const pillSpecs = $derived(
+    buildPillSpecs({
+      effects:  { icon: "fa-sparkles",  label: "Effects",  summary: effectsSummary },
+      effort:   { label: "Effort",   summary: effortSummary, accentColor: effortAccent },
+      playback: { icon: "fa-play",      label: "Playback", summary: playbackSummary },
+      display:  { icon: "fa-eye",       label: "Display",  summary: displaySummary },
+      export:   { icon: "fa-sliders",   label: "Export",   summary: exportSummary },
+    }),
+  );
 
-  const sections = $derived<SectionDef[]>([
-    { id: "effects",  icon: "fa-sparkles",      label: "Effects",  summary: effectsSummary },
-    { id: "effort",   icon: "fa-gauge",          label: "Effort",   summary: effortSummary, accentColor: effortAccent },
-    { id: "playback", icon: "fa-play",           label: "Playback", summary: playbackSummary },
-    { id: "display",  icon: "fa-eye",            label: "Display",  summary: displaySummary },
-    { id: "export",   icon: "fa-sliders",        label: "Export",   summary: exportSummary },
-  ]);
+  // ── Pill label for SR announcer + PillBody title ──
+  const activePillLabel = $derived(
+    pillSpecs.find((p) => p.id === activePill)?.label ?? "",
+  );
 
   // ── SR announcer ──
-  let lastToggledSection = $state("");
-  function announceSectionToggle(id: SectionId, expanded: boolean): void {
-    const sec = sections.find((s) => s.id === id);
-    lastToggledSection = sec
-      ? `${sec.label} ${expanded ? "expanded" : "collapsed"}`
-      : "";
-  }
+  let lastAnnouncement = $state("");
+  $effect(() => {
+    if (activePillLabel) {
+      lastAnnouncement = `${activePillLabel} settings`;
+    }
+  });
 </script>
 
-{#snippet sectionStack()}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="section-stack" onkeydown={onSectionKeydown}>
-    {#each sections as sec (sec.id)}
-      <section class="collapsible-section">
-        <button
-          class="section-header"
-          aria-expanded={expandedSections.has(sec.id)}
-          aria-label={expandedSections.has(sec.id) ? `Collapse ${sec.label}` : `Expand ${sec.label}`}
-          onclick={() => {
-            toggleSection(sec.id);
-            announceSectionToggle(sec.id, expandedSections.has(sec.id));
-          }}
-        >
-          <i
-            class="fas {sec.icon} section-icon"
-            aria-hidden="true"
-            style={sec.accentColor ? `color: ${sec.accentColor}` : ""}
-          ></i>
-          <span class="section-label">{sec.label}</span>
-          <span
-            class="section-badge"
-            style={sec.accentColor ? `color: ${sec.accentColor}` : ""}
-          >{sec.summary}</span>
-          <i
-            class="fas fa-chevron-down section-chevron"
-            class:rotated={!expandedSections.has(sec.id)}
-            aria-hidden="true"
-          ></i>
-        </button>
+{#snippet pillBody()}
+  {#if activePill === "effects"}
+    {#if layout === "bottom"}
+      <MobileEffectsPanel />
+    {:else}
+      <EffectsPanel
+        {bpm}
+        onBpmChange={onBpmChange ?? (() => {})}
+        {isPlaying}
+        onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+        showPlayback={!!(onPlaybackToggle && onBpmChange)}
+      />
+    {/if}
+  {:else if activePill === "effort"}
+    <div class="section-pad">
+      <EffortPanel />
+    </div>
+  {:else if activePill === "playback"}
+    <div class="section-pad">
+      <div class="rt-section">
+        <span class="rt-section-label">Tempo</span>
+        <TempoControl
+          {bpm}
+          onBpmChange={onBpmChange ?? (() => {})}
+          showPresets={false}
+          showPractice={false}
+          presetsMode="popover"
+        />
+      </div>
+      {#if onPlaybackModeChange}
+        <div class="rt-section">
+          <span class="rt-section-label">Mode</span>
+          <PlaybackModeToggle
+            {playbackMode}
+            {isPlaying}
+            {onPlaybackModeChange}
+            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+          />
+        </div>
+      {/if}
+    </div>
+  {:else if activePill === "display"}
+    <div class="section-pad">
+      <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
+        <span class="rt-section-label" id="display-visibility-label">Visibility</span>
+        <DisplayPanel />
+      </div>
+      <div class="rt-section" role="region" aria-labelledby="display-paths-label">
+        <span class="rt-section-label" id="display-paths-label">Motion paths</span>
+        <PathShapePanel />
+      </div>
+    </div>
+  {:else if activePill === "export"}
+    <div class="section-pad">
+      <div class="rt-section">
+        <span class="rt-section-label">Frame rate</span>
+        <div class="rt-chip-row">
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoFps === 30}
+            onclick={() => exportOptions.setVideoFps(30)}
+          >30 fps</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoFps === 60}
+            onclick={() => exportOptions.setVideoFps(60)}
+          >60 fps</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoFps === 120}
+            onclick={() => exportOptions.setVideoFps(120)}
+          >120 fps</button>
+        </div>
+      </div>
 
-        {#if expandedSections.has(sec.id)}
-          <div
-            class="section-body"
-            transition:slide={{ duration: slideDuration }}
-          >
-            {#if sec.id === "effects"}
-              {#if layout === "bottom"}
-                <MobileEffectsPanel />
-              {:else}
-                <EffectsPanel
-                  {bpm}
-                  onBpmChange={onBpmChange ?? (() => {})}
-                  {isPlaying}
-                  onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-                  showPlayback={!!(onPlaybackToggle && onBpmChange)}
-                />
-              {/if}
-            {:else if sec.id === "effort"}
-              <div class="section-pad">
-                <EffortPanel />
-              </div>
-            {:else if sec.id === "playback"}
-              <div class="section-pad">
-                <div class="rt-section">
-                  <span class="rt-section-label">Tempo</span>
-                  <TempoControl
-                    {bpm}
-                    onBpmChange={onBpmChange ?? (() => {})}
-                    showPresets={false}
-                    showPractice={false}
-                    presetsMode="popover"
-                  />
-                </div>
-                {#if onPlaybackModeChange}
-                  <div class="rt-section">
-                    <span class="rt-section-label">Mode</span>
-                    <PlaybackModeToggle
-                      {playbackMode}
-                      {isPlaying}
-                      {onPlaybackModeChange}
-                      onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-                    />
-                  </div>
-                {/if}
-              </div>
-            {:else if sec.id === "display"}
-              <div class="section-pad">
-                <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
-                  <span class="rt-section-label" id="display-visibility-label">Visibility</span>
-                  <DisplayPanel />
-                </div>
-                <div class="rt-section" role="region" aria-labelledby="display-paths-label">
-                  <span class="rt-section-label" id="display-paths-label">Motion paths</span>
-                  <PathShapePanel />
-                </div>
-              </div>
-            {:else if sec.id === "export"}
-              <div class="section-pad">
-                <div class="rt-section">
-                  <span class="rt-section-label">Frame rate</span>
-                  <div class="rt-chip-row">
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoFps === 30}
-                      onclick={() => exportOptions.setVideoFps(30)}
-                    >30 fps</button>
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoFps === 60}
-                      onclick={() => exportOptions.setVideoFps(60)}
-                    >60 fps</button>
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoFps === 120}
-                      onclick={() => exportOptions.setVideoFps(120)}
-                    >120 fps</button>
-                  </div>
-                </div>
+      <div class="rt-section">
+        <span class="rt-section-label">Resolution</span>
+        <div class="rt-chip-row">
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 720}
+            onclick={() => exportOptions.setVideoResolution(720)}
+          >{renderMode === '3d' ? '720×720' : '720p'}</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 1080}
+            onclick={() => exportOptions.setVideoResolution(1080)}
+          >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 2160}
+            onclick={() => exportOptions.setVideoResolution(2160)}
+          >{renderMode === '3d' ? '2160×2160' : '4K'}</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 4320}
+            onclick={() => exportOptions.setVideoResolution(4320)}
+          >{renderMode === '3d' ? '4320×4320' : '8K'}</button>
+        </div>
+      </div>
 
-                <div class="rt-section">
-                  <span class="rt-section-label">Resolution</span>
-                  <div class="rt-chip-row">
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoResolution === 720}
-                      onclick={() => exportOptions.setVideoResolution(720)}
-                    >{renderMode === '3d' ? '720×720' : '720p'}</button>
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoResolution === 1080}
-                      onclick={() => exportOptions.setVideoResolution(1080)}
-                    >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoResolution === 2160}
-                      onclick={() => exportOptions.setVideoResolution(2160)}
-                    >{renderMode === '3d' ? '2160×2160' : '4K'}</button>
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoResolution === 4320}
-                      onclick={() => exportOptions.setVideoResolution(4320)}
-                    >{renderMode === '3d' ? '4320×4320' : '8K'}</button>
-                  </div>
-                </div>
-
-                {#if renderMode === '3d'}
-                  <div class="rt-section">
-                    <span class="rt-section-label">Quality</span>
-                    <div class="rt-chip-row">
-                      <button type="button" class="rt-chip"
-                        aria-pressed={exportOptions.videoQuality === 'standard'}
-                        onclick={() => exportOptions.setVideoQuality('standard')}
-                      >Standard</button>
-                      <button type="button" class="rt-chip"
-                        aria-pressed={exportOptions.videoQuality === 'cinema'}
-                        onclick={() => exportOptions.setVideoQuality('cinema')}
-                      ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
-                    </div>
-                  </div>
-                {/if}
-
-                <div class="rt-section">
-                  <span class="rt-section-label">Timing</span>
-                  <div class="rt-chip-row">
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoIncludeStartPosition}
-                      onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
-                    >
-                      <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
-                    </button>
-                    <button type="button" class="rt-chip"
-                      aria-pressed={exportOptions.videoIncludeEndHold}
-                      onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
-                    >
-                      <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
-                    </button>
-                  </div>
-                </div>
-
-                <div class="rt-row">
-                  <span class="rt-row-label">Loops</span>
-                  <div class="rt-stepper">
-                    <button type="button" class="rt-step-btn"
-                      onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
-                      disabled={exportOptions.videoLoopCount <= 1}
-                      aria-label="Decrease loop count"
-                    ><i class="fas fa-minus" aria-hidden="true"></i></button>
-                    <span class="rt-val">{exportOptions.videoLoopCount}×</span>
-                    <button type="button" class="rt-step-btn"
-                      onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
-                      disabled={exportOptions.videoLoopCount >= 10}
-                      aria-label="Increase loop count"
-                    ><i class="fas fa-plus" aria-hidden="true"></i></button>
-                  </div>
-                </div>
-
-                {#if timeEstimateLabel}
-                  <div class="video-duration-line">
-                    <i class="fas fa-clock" aria-hidden="true"></i>
-                    {timeEstimateLabel}
-                  </div>
-                {/if}
-                {#if totalVideoDuration}
-                  <div class="video-duration-line">
-                    <i class="fas fa-film" aria-hidden="true"></i>
-                    Video length: {totalVideoDuration}
-                  </div>
-                {/if}
-              </div>
-            {/if}
+      {#if renderMode === '3d'}
+        <div class="rt-section">
+          <span class="rt-section-label">Quality</span>
+          <div class="rt-chip-row">
+            <button type="button" class="rt-chip"
+              aria-pressed={exportOptions.videoQuality === 'standard'}
+              onclick={() => exportOptions.setVideoQuality('standard')}
+            >Standard</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={exportOptions.videoQuality === 'cinema'}
+              onclick={() => exportOptions.setVideoQuality('cinema')}
+            ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
           </div>
-        {/if}
-      </section>
-    {/each}
-  </div>
+        </div>
+      {/if}
+
+      <div class="rt-section">
+        <span class="rt-section-label">Timing</span>
+        <div class="rt-chip-row">
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoIncludeStartPosition}
+            onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+          >
+            <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
+          </button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoIncludeEndHold}
+            onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+          >
+            <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
+          </button>
+        </div>
+      </div>
+
+      <div class="rt-row">
+        <span class="rt-row-label">Loops</span>
+        <div class="rt-stepper">
+          <button type="button" class="rt-step-btn"
+            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+            disabled={exportOptions.videoLoopCount <= 1}
+            aria-label="Decrease loop count"
+          ><i class="fas fa-minus" aria-hidden="true"></i></button>
+          <span class="rt-val">{exportOptions.videoLoopCount}×</span>
+          <button type="button" class="rt-step-btn"
+            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+            disabled={exportOptions.videoLoopCount >= 10}
+            aria-label="Increase loop count"
+          ><i class="fas fa-plus" aria-hidden="true"></i></button>
+        </div>
+      </div>
+
+      {#if timeEstimateLabel}
+        <div class="video-duration-line">
+          <i class="fas fa-clock" aria-hidden="true"></i>
+          {timeEstimateLabel}
+        </div>
+      {/if}
+      {#if totalVideoDuration}
+        <div class="video-duration-line">
+          <i class="fas fa-film" aria-hidden="true"></i>
+          Video length: {totalVideoDuration}
+        </div>
+      {/if}
+    </div>
+  {/if}
 {/snippet}
 
 <!-- SR announcer -->
 <span class="sr-only" aria-live="polite" aria-atomic="true">
-  {lastToggledSection}
+  {lastAnnouncement}
 </span>
 
 {#if layout === "bottom"}
   <!-- ============================================================
-       MOBILE: settings trigger + download button at bottom;
-       sheet opens with the full section stack.
+       MOBILE: pill bar + download button at bottom;
+       tapping a pill opens a sheet with that section's body.
        ============================================================ -->
   <div
     class="mobile-export"
@@ -507,28 +443,26 @@
         {/if}
       </div>
     {:else}
-      {#if mobileSheetOpen}
-        <RailBentoSheet
-          title="Settings"
-          onClose={closeMobileSheet}
-          returnFocusTo={settingsButtonEl}
+      {#if activePill}
+        <PillBody
+          title="{activePillLabel} Settings"
+          variant="mobile"
+          onClose={() => { activePill = null; }}
+          returnFocusTo={findPillButton(activePill)}
         >
-          {@render sectionStack()}
-        </RailBentoSheet>
+          {@render pillBody()}
+        </PillBody>
       {/if}
 
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="mobile-bar" onkeydown={preventSpaceActivation}>
-        <button
-          type="button"
-          class="mobile-settings-btn"
-          onclick={openMobileSheet}
-          bind:this={settingsButtonEl}
-          aria-label="Open animation settings"
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-          Settings
-        </button>
+        <DownloadPillNav
+          pills={pillSpecs}
+          activeId={activePill}
+          onSelect={handlePillSelect}
+          variant="mobile"
+          onNavMount={(el) => { pillNavEl = el; }}
+        />
 
         <button
           type="button"
@@ -550,7 +484,8 @@
   </div>
 {:else}
   <!-- ============================================================
-       DESKTOP SIDEBAR: scrollable section stack + pinned footer.
+       DESKTOP SIDEBAR: pill bar at top, active body scrollable,
+       download button pinned in footer.
        ============================================================ -->
   <div
     class="export-panel sidebar"
@@ -558,9 +493,26 @@
     role="region"
     aria-label="Animation export settings"
   >
+    <div class="pill-bar-container">
+      <DownloadPillNav
+        pills={pillSpecs}
+        activeId={activePill}
+        onSelect={handlePillSelect}
+        variant="desktop"
+        onNavMount={(el) => { pillNavEl = el; }}
+      />
+    </div>
+
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="panel-scroll" onkeydown={preventSpaceActivation}>
-      {@render sectionStack()}
+    <div
+      class="panel-scroll"
+      onkeydown={preventSpaceActivation}
+      role="region"
+      aria-label="{activePillLabel} Settings"
+    >
+      {#if activePill}
+        {@render pillBody()}
+      {/if}
     </div>
 
     <div class="panel-footer">
@@ -617,86 +569,13 @@
 
 <style>
   /* ============================================================
-   * COLLAPSIBLE SECTION STACK
+   * PILL BAR CONTAINER (desktop top area)
    * ============================================================ */
 
-  .section-stack {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .collapsible-section {
+  .pill-bar-container {
+    flex-shrink: 0;
+    padding: 10px 12px 6px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    min-height: var(--min-touch-target, 44px);
-    padding: 10px 16px;
-    background: transparent;
-    border: none;
-    color: var(--theme-text, white);
-    cursor: pointer;
-    font-family: inherit;
-    text-align: left;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 120ms ease;
-  }
-
-  .section-header:hover {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .section-header:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: -2px;
-    border-radius: 2px;
-  }
-
-  .section-icon {
-    font-size: 14px;
-    width: 18px;
-    text-align: center;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    flex-shrink: 0;
-  }
-
-  .section-label {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    flex-shrink: 0;
-  }
-
-  .section-badge {
-    flex: 1;
-    text-align: right;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-left: 8px;
-  }
-
-  .section-chevron {
-    font-size: 10px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
-    flex-shrink: 0;
-    transition: transform 200ms ease;
-  }
-
-  .section-chevron.rotated {
-    transform: rotate(-90deg);
-  }
-
-  .section-body {
-    overflow: hidden;
   }
 
   .section-pad {
@@ -727,38 +606,9 @@
 
   .mobile-bar {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     padding: 8px 10px 10px;
-  }
-
-  .mobile-settings-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 52px;
-    padding: 10px 16px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: var(--theme-text, rgba(255, 255, 255, 0.85));
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    -webkit-tap-highlight-color: transparent;
-    transition: all 150ms ease;
-    flex-shrink: 0;
-  }
-
-  .mobile-settings-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .mobile-settings-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
   }
 
   /* ============================================================
@@ -776,6 +626,7 @@
     position: relative;
     width: 100%;
     max-width: 100%;
+    height: 100%;
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow: hidden;
   }
@@ -930,38 +781,15 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .section-header,
-    .section-chevron,
     .export-btn,
     .cancel-btn,
-    .progress-fill,
-    .mobile-settings-btn {
+    .progress-fill {
       transition: none !important;
       animation: none !important;
     }
 
     .export-btn:active {
       transform: none !important;
-    }
-
-    .section-chevron.rotated {
-      transform: rotate(-90deg);
-    }
-  }
-
-  @media (forced-colors: active) {
-    .section-header:focus-visible {
-      outline: 2px solid Highlight;
-    }
-  }
-
-  @media (prefers-contrast: more) {
-    .collapsible-section {
-      border-bottom-width: 2px;
-    }
-
-    .section-badge {
-      color: var(--theme-text, white);
     }
   }
 </style>
