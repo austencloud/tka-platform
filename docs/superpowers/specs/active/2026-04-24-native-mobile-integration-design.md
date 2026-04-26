@@ -2,8 +2,10 @@
 status: active
 value: 5
 effort: L
-score: 10
 remaining: "Phase 2: SQLite offline, native auth, haptics. iOS + store submission"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # TKA Composer — Native Mobile Integration Design Spec

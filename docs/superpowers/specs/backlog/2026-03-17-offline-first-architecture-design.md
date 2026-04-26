@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: M
-score: 12
 remaining: "Proactive SVG prefetch, status indicators. Festival scenario"
+depends_on: ""
+plan_path: plans/backlog/2026-03-17-offline-first-architecture.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Offline-First Architecture Design

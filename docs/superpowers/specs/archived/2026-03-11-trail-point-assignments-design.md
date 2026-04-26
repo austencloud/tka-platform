@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Trail Point Assignments
 
 **Date:** 2026-03-11

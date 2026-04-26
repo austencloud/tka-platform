@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Hand Path Render Mode
 
 **Date:** 2026-03-19

@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: S
-score: 16
-remaining: "Visual QA — sidebar was reverted once for styling"
+remaining: "Remove !showSections from virtualization guard — core perf win. Sidebar already built."
+depends_on: ""
+plan_path: plans/backlog/2026-03-18-gallery-virtualization-sidebar.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Gallery Virtualization + Section Index Sidebar — Design Spec

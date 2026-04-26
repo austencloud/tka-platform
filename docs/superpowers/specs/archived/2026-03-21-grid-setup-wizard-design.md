@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Grid Setup Wizard with Level Gating & Premium Tiers
 
 **Date:** 2026-03-21

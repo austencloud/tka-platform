@@ -2,9 +2,10 @@
 status: backlog
 value: 4
 effort: M
-score: 12
-remaining: "Illustrator SVG splitting for 60 arrows + manifest"
-blocked_by: "Manual Illustrator workflow"
+remaining: Illustrator SVG splitting for 60 arrows + manifest
+depends_on: Manual Illustrator workflow
+plan_path: plans/backlog/2026-04-04-arrow-tip-z-promotion.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Arrow Tip Z-Promotion

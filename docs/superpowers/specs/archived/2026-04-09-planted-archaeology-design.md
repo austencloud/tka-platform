@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Planted Archaeology: Real-World Museum Artifacts
 
 > **Status:** Brainstorm — concept validated, needs era-by-era design pass

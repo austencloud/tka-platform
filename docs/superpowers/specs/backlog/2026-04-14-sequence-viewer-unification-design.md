@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: M
-score: 12
-remaining: "Route consolidation — merge /p/ and /sequence/ into one shell"
+remaining: Route consolidation — merge /p/ and /sequence/ into one shell
+depends_on: ""
+plan_path: plans/backlog/2026-04-14-sequence-viewer-unification.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Sequence Viewer Unification

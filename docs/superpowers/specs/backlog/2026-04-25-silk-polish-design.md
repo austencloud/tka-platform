@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "6 renderer upgrades (~280 LOC). Well-scoped"
+remaining: 6 renderer upgrades (~280 LOC). Well-scoped
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Silk Polish: MVP → Stunning

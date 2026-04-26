@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: S
-score: 12
 remaining: "Wave 2 polish: sparklines, zero-scan candidates view"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Shortcode Durability Roadmap

@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: M
-score: 6
-remaining: "Full build — merge card view into decks tab"
+remaining: Full build — merge card view into decks tab
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Merge Card View into Decks Tab

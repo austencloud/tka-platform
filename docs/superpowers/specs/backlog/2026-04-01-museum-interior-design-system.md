@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: XL
-score: 3
 remaining: "Era-matched TVs, design validator, dev whiteboards"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Museum Interior Design System

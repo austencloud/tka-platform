@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Yoga Sequence Builder App - Design Spec
 
 ## Overview

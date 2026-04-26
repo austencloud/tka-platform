@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "Full build — prop collection editor"
+remaining: Full build — prop collection editor
+depends_on: ""
+plan_path: plans/backlog/2026-03-11-my-props-editor.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # My Props Editor — Design Spec

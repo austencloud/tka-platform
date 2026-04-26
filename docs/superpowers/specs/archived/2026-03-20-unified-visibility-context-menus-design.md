@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Unified Visibility Context Menus
 
 **Date:** 2026-03-20

@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: L
-score: 8
-remaining: "Content authoring for 40+ interactive pages"
+remaining: Content authoring for 40+ interactive pages
+depends_on: ""
+plan_path: plans/backlog/2026-04-25-level-1-guide-redesign.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Level 1 Guide — Interactive HTML Redesign

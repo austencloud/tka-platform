@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: L
-score: 4
-remaining: "Full build — XP route elevation"
+remaining: Full build — XP route elevation
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # /2003 Route: OpenTKA — The Last Version Before Silence

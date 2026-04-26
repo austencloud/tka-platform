@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Agent Prompt: Pictograph Dive-In Transition
 
 **Copy everything below this line and paste it as the opening message to a new Claude Code agent window.**

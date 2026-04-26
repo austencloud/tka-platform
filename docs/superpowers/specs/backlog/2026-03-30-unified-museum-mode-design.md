@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: M
-score: 12
-remaining: "E-key interaction + overlay in 3D mode"
+remaining: E-key interaction + overlay in 3D mode
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Unified Museum Mode Design

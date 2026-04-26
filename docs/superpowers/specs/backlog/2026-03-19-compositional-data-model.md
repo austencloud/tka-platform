@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
 remaining: "2x2 browse taxonomy UI, progressive disclosure"
+depends_on: ""
+plan_path: plans/backlog/2026-03-19-compositional-data-model.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Compositional Data Model: Browsing, Saving, and Progressive Disclosure

@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "Firebase persistence layer (local library works)"
+remaining: Firebase persistence layer (local library works)
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Spec: Account-scoped POV image library

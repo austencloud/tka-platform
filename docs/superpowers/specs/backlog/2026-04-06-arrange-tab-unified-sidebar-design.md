@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: M
-score: 9
-remaining: "Collapsible-section refactor of arrange tab"
+remaining: Collapsible-section refactor of arrange tab
+depends_on: ""
+plan_path: plans/backlog/2026-04-06-arrange-tab-unified-sidebar.md
+tags: []
 last_triaged: 2026-04-26
 ---
 # Arrange Tab: Unified Sections Sidebar

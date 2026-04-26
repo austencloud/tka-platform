@@ -2,8 +2,10 @@
 status: backlog
 value: 3
 effort: S
-score: 12
-remaining: "Single Invert button replacing CW/CCW pair"
+remaining: Single Invert button replacing CW/CCW pair
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Invert Rotation Toggle — Design Spec

@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # V-Key Camera Zoom Transition
 
 **Goal:** Replace the hard cut between first-person and third-person camera modes with a smooth dolly animation. Pressing V animates the camera distance between 0 (inside the player's head) and ~3m (behind and above the player) over 0.3-0.5 seconds. Controls stay responsive during the transition.

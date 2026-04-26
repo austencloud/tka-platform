@@ -1,3 +1,6 @@
+---
+status: archived
+---
 # Deck Browser Redesign — Design Spec
 
 **Date:** 2026-04-04

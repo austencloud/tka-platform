@@ -2,8 +2,10 @@
 status: backlog
 value: 4
 effort: L
-score: 8
 remaining: "3 lab tabs: Atlas, Builder, Disassemble view"
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Hand Path Ecosystem — Design Spec

@@ -2,8 +2,10 @@
 status: backlog
 value: 2
 effort: M
-score: 6
-remaining: "Perf harness for isolated-room benchmarking"
+remaining: Perf harness for isolated-room benchmarking
+depends_on: ""
+plan_path: ""
+tags: []
 last_triaged: 2026-04-26
 ---
 # Unified View Toggle + Performance Test Harness
