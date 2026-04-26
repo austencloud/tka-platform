@@ -205,7 +205,7 @@
       color-mix(in srgb, var(--right-color) 8%, transparent)
     );
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
+    border-radius: var(--action-radius, 10px);
   }
 
   .chip-colors {
@@ -258,7 +258,7 @@
     border: 1px solid rgba(255, 255, 255, 0.06);
     background: rgba(255, 255, 255, 0.04);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-    border-radius: 8px;
+    border-radius: var(--action-radius, 10px);
     cursor: pointer;
     transition: background var(--duration-fast, 150ms) ease,
       border-color var(--duration-fast, 150ms) ease,
@@ -281,7 +281,7 @@
   .layer-add-actions {
     display: flex;
     flex-direction: column;
-    gap: clamp(6px, 2cqi, 10px);
+    gap: var(--chip-gap, clamp(6px, 1.5cqi, 8px));
     margin-top: clamp(4px, 1cqi, 8px);
   }
 
@@ -289,22 +289,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(6px, 2cqi, 10px);
+    gap: var(--chip-gap, clamp(6px, 1.5cqi, 8px));
     min-height: 44px;
-    padding: clamp(10px, 2.5cqi, 14px);
-    background: rgba(16, 185, 129, 0.04);
-    border: 1px solid rgba(16, 185, 129, 0.1);
-    border-radius: 10px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, #10b981 4%, transparent);
+    border: 1px solid color-mix(in srgb, #10b981 10%, transparent);
+    border-radius: var(--action-radius, 10px);
     color: rgba(16, 185, 129, 0.55);
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
+    transition: background 150ms ease, border-color 150ms ease;
   }
 
   .add-sequence-btn:hover {
-    background: rgba(16, 185, 129, 0.08);
-    border-color: rgba(16, 185, 129, 0.2);
+    background: color-mix(in srgb, #10b981 8%, transparent);
+    border-color: color-mix(in srgb, #10b981 20%, transparent);
     color: rgba(16, 185, 129, 0.75);
   }
 
@@ -312,22 +312,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(6px, 2cqi, 10px);
+    gap: var(--chip-gap, clamp(6px, 1.5cqi, 8px));
     min-height: 44px;
-    padding: clamp(10px, 2.5cqi, 14px);
-    background: rgba(139, 92, 246, 0.04);
-    border: 1px solid rgba(139, 92, 246, 0.1);
-    border-radius: 10px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, #8b5cf6 4%, transparent);
+    border: 1px solid color-mix(in srgb, #8b5cf6 10%, transparent);
+    border-radius: var(--action-radius, 10px);
     color: rgba(167, 139, 250, 0.55);
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
+    transition: background 150ms ease, border-color 150ms ease;
   }
 
   .paste-btn:hover {
-    background: rgba(139, 92, 246, 0.08);
-    border-color: rgba(139, 92, 246, 0.2);
+    background: color-mix(in srgb, #8b5cf6 8%, transparent);
+    border-color: color-mix(in srgb, #8b5cf6 20%, transparent);
     color: rgba(167, 139, 250, 0.75);
   }
 

@@ -71,7 +71,7 @@
   .chip-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--chip-gap, 6px);
   }
 
   .chip {
@@ -79,11 +79,11 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 14px;
+    padding: 8px clamp(12px, 3cqi, 14px);
     min-height: 44px;
-    border-radius: 22px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: var(--chip-radius, 22px);
+    background: var(--surface-idle, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 13px;
     font-weight: 500;
@@ -92,13 +92,13 @@
   }
 
   .chip:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(--surface-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
   }
 
   .chip.active {
-    background: rgba(96, 165, 250, 0.12);
-    border-color: rgba(96, 165, 250, 0.3);
+    background: color-mix(in srgb, #60a5fa var(--surface-active-pct, 12%), transparent);
+    border-color: color-mix(in srgb, #60a5fa var(--stroke-active-pct, 35%), transparent);
     color: #60a5fa;
   }
 

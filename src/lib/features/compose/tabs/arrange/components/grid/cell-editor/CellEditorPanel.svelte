@@ -231,10 +231,32 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: clamp(12px, 3cqi, 20px);
+    gap: var(--section-gap);
     padding: clamp(10px, 2.5cqi, 16px);
     container-type: inline-size;
     container-name: celleditorpanel;
+
+    /* ── Design tokens (inherited by all children) ── */
+
+    /* Shape */
+    --chip-radius: 22px;
+    --action-radius: 10px;
+    --badge-radius: 4px;
+
+    /* Surfaces */
+    --surface-idle: rgba(255, 255, 255, 0.05);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --surface-active-pct: 12%;
+
+    /* Strokes */
+    --stroke-idle: rgba(255, 255, 255, 0.08);
+    --stroke-hover: rgba(255, 255, 255, 0.15);
+    --stroke-active-pct: 35%;
+
+    /* Spacing */
+    --chip-gap: clamp(6px, 1.5cqi, 8px);
+    --group-gap: clamp(10px, 2.5cqi, 14px);
+    --section-gap: clamp(12px, 3cqi, 20px);
   }
 
   /* Header */
@@ -270,7 +292,7 @@
     color: var(--theme-accent, #8b5cf6);
     padding: 2px clamp(6px, 1.5cqi, 8px);
     background: rgba(139, 92, 246, 0.15);
-    border-radius: clamp(3px, 1cqi, 4px);
+    border-radius: var(--badge-radius);
     cursor: help;
   }
 
@@ -279,16 +301,16 @@
     color: rgba(167, 139, 250, 0.8);
     padding: 2px clamp(6px, 1.5cqi, 8px);
     background: rgba(139, 92, 246, 0.12);
-    border-radius: clamp(3px, 1cqi, 4px);
+    border-radius: var(--badge-radius);
   }
 
   /* Footer */
   .panel-footer {
     margin-top: auto;
     display: flex;
-    gap: clamp(6px, 2cqi, 10px);
-    padding-top: clamp(12px, 3cqi, 18px);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    gap: var(--chip-gap);
+    padding-top: var(--group-gap);
+    border-top: 1px solid var(--stroke-idle);
   }
 
   .footer-btn {
@@ -296,36 +318,36 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(6px, 2cqi, 10px);
+    gap: var(--chip-gap);
     min-height: 44px;
-    padding: clamp(10px, 2.5cqi, 14px);
-    border-radius: clamp(6px, 2cqi, 10px);
+    padding: 10px 14px;
+    border-radius: var(--action-radius);
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
+    transition: background 150ms ease, border-color 150ms ease;
   }
 
   .copy-all-btn {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface-idle);
+    border: 1px solid var(--stroke-idle);
     color: rgba(255, 255, 255, 0.6);
   }
 
   .copy-all-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--surface-hover);
+    border-color: var(--stroke-hover);
   }
 
   .clear-all-btn {
-    background: rgba(239, 68, 68, 0.06);
-    border: 1px solid rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, #ef4444 6%, transparent);
+    border: 1px solid color-mix(in srgb, #ef4444 10%, transparent);
     color: rgba(239, 68, 68, 0.6);
   }
 
   .clear-all-btn:hover {
-    background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, #ef4444 var(--surface-active-pct), transparent);
+    border-color: color-mix(in srgb, #ef4444 20%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {
