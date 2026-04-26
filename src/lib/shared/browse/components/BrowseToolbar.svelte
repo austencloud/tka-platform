@@ -1,0 +1,540 @@
+<!--
+  BrowseToolbar - Unified sort dropdown + search + result count + optional source toggle.
+  Replaces both SequenceTopBarControls (gallery) and PickerToolbar (picker).
+
+  Layout (left to right):
+  1. Source toggle (if showSourceToggle && engine.canSwitchSource)
+  2. Sort dropdown — trigger chip + popover with 4 options
+  3. ExpandableSearchBar
+  4. Result count (right-aligned, tabular-nums)
+-->
+<script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+  import type { BrowseEngine } from "../engine/types";
+  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import ExpandableSearchBar from "$lib/features/browse/shared/components/ExpandableSearchBar.svelte";
+  import type { SequenceSource } from "../engine/types";
+
+  interface Props {
+    engine: BrowseEngine;
+    showSourceToggle?: boolean;
+  }
+
+  let { engine, showSourceToggle = false }: Props = $props();
+
+  // ---------------------------------------------------------------------------
+  // Sort dropdown state
+  // ---------------------------------------------------------------------------
+
+  interface SortOption {
+    id: BrowseSortMethod;
+    label: string;
+    shortLabel: string;
+    icon: string;
+  }
+
+  const SORT_OPTIONS: SortOption[] = [
+    { id: BrowseSortMethod.ALPHABETICAL, label: "A-Z", shortLabel: "A-Z", icon: "fa-font" },
+    { id: BrowseSortMethod.DATE_ADDED, label: "Recent", shortLabel: "Recent", icon: "fa-clock" },
+    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: "Level", shortLabel: "Level", icon: "fa-signal" },
+    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: "Length", shortLabel: "Length", icon: "fa-ruler" },
+  ];
+
+  let sortOpen = $state(false);
+  let sortVisible = $state(false);
+  let sortTriggerEl: HTMLButtonElement | null = $state(null);
+  let sortPopoverEl: HTMLDivElement | null = $state(null);
+  let focusedIndex = $state(-1);
+
+  const EXIT_ANIMATION_MS = 180;
+
+  const currentSortOption = $derived.by((): SortOption => {
+    return SORT_OPTIONS.find((o) => o.id === engine.sortMethod) ?? SORT_OPTIONS[0]!;
+  });
+
+  function openSort() {
+    sortOpen = true;
+    focusedIndex = SORT_OPTIONS.findIndex((o) => o.id === engine.sortMethod);
+    if (focusedIndex < 0) focusedIndex = 0;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        sortVisible = true;
+        focusSortOptionAt(focusedIndex);
+      });
+    });
+  }
+
+  function closeSort() {
+    sortVisible = false;
+    focusedIndex = -1;
+    setTimeout(() => {
+      sortOpen = false;
+    }, EXIT_ANIMATION_MS);
+  }
+
+  function focusSortOptionAt(index: number) {
+    if (!sortPopoverEl) return;
+    const options = sortPopoverEl.querySelectorAll<HTMLButtonElement>('[role="option"]');
+    options[index]?.focus();
+  }
+
+  function handleSortToggle() {
+    if (sortOpen) closeSort();
+    else openSort();
+  }
+
+  function handleSortSelect(method: BrowseSortMethod) {
+    engine.setSort(method, engine.sortDirection);
+    closeSort();
+  }
+
+  function handleSortKeydown(event: KeyboardEvent) {
+    if (!sortOpen) return;
+    switch (event.key) {
+      case "Escape":
+        event.stopPropagation();
+        closeSort();
+        sortTriggerEl?.focus();
+        break;
+      case "ArrowDown": {
+        event.preventDefault();
+        const next = (focusedIndex + 1) % SORT_OPTIONS.length;
+        focusedIndex = next;
+        focusSortOptionAt(next);
+        break;
+      }
+      case "ArrowUp": {
+        event.preventDefault();
+        const prev = (focusedIndex - 1 + SORT_OPTIONS.length) % SORT_OPTIONS.length;
+        focusedIndex = prev;
+        focusSortOptionAt(prev);
+        break;
+      }
+      case "Home":
+        event.preventDefault();
+        focusedIndex = 0;
+        focusSortOptionAt(0);
+        break;
+      case "End":
+        event.preventDefault();
+        focusedIndex = SORT_OPTIONS.length - 1;
+        focusSortOptionAt(focusedIndex);
+        break;
+      case "Enter":
+      case " ": {
+        const focused = SORT_OPTIONS[focusedIndex];
+        if (focused) {
+          event.preventDefault();
+          handleSortSelect(focused.id);
+        }
+        break;
+      }
+    }
+  }
+
+  function handlePointerDownOutside(event: PointerEvent) {
+    if (!sortOpen) return;
+    const target = event.target as Node;
+    if (sortTriggerEl?.contains(target) || sortPopoverEl?.contains(target)) return;
+    closeSort();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Source toggle
+  // ---------------------------------------------------------------------------
+
+  async function handleSourceChange(source: SequenceSource) {
+    await engine.setSource(source);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
+
+  onMount(() => {
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
+  });
+
+  onDestroy(() => {
+    document.removeEventListener("pointerdown", handlePointerDownOutside, true);
+  });
+</script>
+
+<div class="browse-toolbar">
+  <!-- 1. Source toggle -->
+  {#if showSourceToggle && engine.canSwitchSource}
+    <div class="source-toggle" role="group" aria-label="Sequence source">
+      <button
+        type="button"
+        class="source-btn"
+        class:active={engine.source === "community"}
+        onclick={() => handleSourceChange("community")}
+        aria-pressed={engine.source === "community"}
+      >
+        Community
+      </button>
+      <button
+        type="button"
+        class="source-btn"
+        class:active={engine.source === "my-library"}
+        onclick={() => handleSourceChange("my-library")}
+        aria-pressed={engine.source === "my-library"}
+      >
+        My Library
+      </button>
+    </div>
+  {/if}
+
+  <!-- 2. Sort dropdown -->
+  <div class="sort-dropdown-wrapper">
+    <button
+      type="button"
+      class="sort-trigger"
+      class:open={sortOpen}
+      bind:this={sortTriggerEl}
+      onclick={handleSortToggle}
+      onkeydown={handleSortKeydown}
+      aria-haspopup="listbox"
+      aria-expanded={sortOpen}
+      aria-label="Sort by {currentSortOption.label}"
+    >
+      <i class="fas fa-arrow-down-short-wide sort-trigger-icon" aria-hidden="true"></i>
+      <span class="sort-trigger-label">{currentSortOption.shortLabel}</span>
+      <i
+        class="fas fa-chevron-down sort-chevron"
+        class:rotated={sortOpen}
+        aria-hidden="true"
+      ></i>
+    </button>
+
+    {#if sortOpen}
+      <div
+        class="sort-popover"
+        class:visible={sortVisible}
+        bind:this={sortPopoverEl}
+        role="listbox"
+        aria-label="Sort options"
+        aria-activedescendant={focusedIndex >= 0 ? `sort-opt-${focusedIndex}` : undefined}
+        onkeydown={handleSortKeydown}
+        tabindex="-1"
+      >
+        {#each SORT_OPTIONS as option, i}
+          <button
+            id="sort-opt-{i}"
+            type="button"
+            class="sort-option"
+            class:selected={engine.sortMethod === option.id}
+            class:focused={focusedIndex === i}
+            onclick={() => handleSortSelect(option.id)}
+            role="option"
+            aria-selected={engine.sortMethod === option.id}
+            tabindex={focusedIndex === i ? 0 : -1}
+            style="transition-delay: {sortVisible ? i * 30 : 0}ms"
+          >
+            <i class="fas {option.icon} option-icon" aria-hidden="true"></i>
+            <span class="option-label">{option.label}</span>
+            {#if engine.sortMethod === option.id}
+              <i class="fas fa-check check-icon" aria-hidden="true"></i>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
+  </div>
+
+  <!-- 3. ExpandableSearchBar -->
+  <div class="search-slot">
+    <ExpandableSearchBar
+      onSearch={(q) => engine.setSearch(q)}
+      value={engine.searchQuery}
+      placeholder="Search sequences..."
+      resultCount={engine.resultCount}
+    />
+  </div>
+
+  <!-- 4. Result count -->
+  <span class="result-count" aria-live="polite" aria-atomic="true">
+    {engine.resultCount} {engine.resultCount === 1 ? "sequence" : "sequences"}
+  </span>
+</div>
+
+<style>
+  .browse-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    background: var(--theme-panel-bg);
+    width: 100%;
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  /* ---- Source toggle ---- */
+  .source-toggle {
+    display: flex;
+    align-items: center;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-md, 10px);
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .source-btn {
+    padding: 0 var(--spacing-sm, 8px);
+    height: calc(var(--min-touch-target, 48px) - 8px);
+    min-height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius-sm, 6px);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease;
+  }
+
+  .source-btn:hover {
+    color: var(--theme-text);
+  }
+
+  .source-btn.active {
+    background: var(--theme-accent);
+    color: #fff;
+  }
+
+  .source-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 1px;
+  }
+
+  /* ---- Sort dropdown ---- */
+  .sort-dropdown-wrapper {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .sort-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    min-height: var(--min-touch-target, 48px);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-md, 10px);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .sort-trigger:hover {
+    background: color-mix(in srgb, var(--theme-text) 6%, var(--theme-card-bg));
+    color: var(--theme-text);
+    border-color: color-mix(in srgb, var(--theme-stroke) 80%, var(--theme-text));
+  }
+
+  .sort-trigger:active {
+    transform: scale(0.97);
+  }
+
+  .sort-trigger.open {
+    background: color-mix(in srgb, var(--theme-accent) 12%, var(--theme-card-bg));
+    border-color: var(--theme-accent);
+    color: var(--theme-text);
+  }
+
+  .sort-trigger:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .sort-trigger-icon {
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.7;
+  }
+
+  .sort-trigger-label {
+    font-weight: 600;
+  }
+
+  .sort-chevron {
+    font-size: 10px;
+    opacity: 0.5;
+    transition: transform var(--duration-fast, 150ms) cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+
+  .sort-chevron.rotated {
+    transform: rotate(180deg);
+  }
+
+  .sort-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 160px;
+    padding: 4px;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-md, 10px);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+
+    opacity: 0;
+    transform: scale(0.92) translateY(-4px);
+    transform-origin: top left;
+    transition:
+      opacity 180ms ease,
+      transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .sort-popover.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  .sort-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 0 14px;
+    min-height: var(--min-touch-target, 48px);
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius-sm, 6px);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+
+    opacity: 0;
+    transform: translateY(-4px);
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .sort-popover.visible .sort-option {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease,
+      opacity 150ms ease;
+  }
+
+  .sort-option:hover,
+  .sort-option.focused {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text);
+  }
+
+  .sort-option:active {
+    transform: scale(0.98);
+  }
+
+  .sort-option.selected {
+    color: var(--theme-accent);
+  }
+
+  .sort-option:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: -2px;
+  }
+
+  .option-icon {
+    width: 16px;
+    text-align: center;
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .sort-option.selected .option-icon {
+    opacity: 1;
+  }
+
+  .option-label {
+    flex: 1;
+  }
+
+  .check-icon {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-accent);
+    animation: checkPop 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes checkPop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ---- Search slot ---- */
+  .search-slot {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ---- Result count ---- */
+  .result-count {
+    flex-shrink: 0;
+    margin-left: auto;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ---- Mobile (max-width: 520px) ---- */
+  @media (max-width: 520px) {
+    .sort-trigger-label {
+      display: none;
+    }
+
+    .result-count {
+      display: none;
+    }
+  }
+
+  /* ---- Reduced motion ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .sort-trigger,
+    .sort-chevron,
+    .sort-popover,
+    .sort-option,
+    .check-icon,
+    .source-btn {
+      transition: none !important;
+      animation: none !important;
+    }
+
+    .sort-popover {
+      transform: none;
+    }
+
+    .sort-popover .sort-option {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
