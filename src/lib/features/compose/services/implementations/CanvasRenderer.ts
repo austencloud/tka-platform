@@ -24,9 +24,9 @@ export class CanvasRenderer implements ICanvasRenderer {
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     gridVisible: boolean,
-    gridImage: HTMLImageElement | null,
-    blueStaffImage: HTMLImageElement | null,
-    redStaffImage: HTMLImageElement | null,
+    gridImage: HTMLImageElement | ImageBitmap | null,
+    blueStaffImage: HTMLImageElement | ImageBitmap | null,
+    redStaffImage: HTMLImageElement | ImageBitmap | null,
     blueProp: PropState | null,
     redProp: PropState | null,
     bluePropViewBoxDimensions: { width: number; height: number } = {
@@ -173,7 +173,7 @@ export class CanvasRenderer implements ICanvasRenderer {
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     gridVisible: boolean,
-    gridImage: HTMLImageElement | null
+    gridImage: HTMLImageElement | ImageBitmap | null
   ): void {
     if (!gridVisible || !gridImage) return;
     ctx.drawImage(gridImage, 0, 0, canvasSize, canvasSize);
@@ -191,7 +191,7 @@ export class CanvasRenderer implements ICanvasRenderer {
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     propState: PropState,
-    staffImage: HTMLImageElement,
+    staffImage: HTMLImageElement | ImageBitmap,
     viewBoxDimensions: { width: number; height: number }
   ): void {
     // Calculate position

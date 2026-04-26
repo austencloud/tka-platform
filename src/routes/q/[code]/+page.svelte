@@ -1,71 +1,49 @@
 <!--
   /q/[code]/+page.svelte
 
-  QR Code Resolver + Inline Viewer
+  QR Video Landing Page
 
-  Resolves short codes from QR scans and renders the sequence viewer
-  directly — no redirect to /sequence/[id]. This eliminates a full
-  page navigation and JS reload, making QR scans feel instant.
+  Minimal page that plays a cached MP4 video of the scanned sequence,
+  or renders one on-device via a headless worker if uncached.
+  No full app bundle — no SequenceViewerOrchestrator, no animation
+  engine, no 3D renderer.
 
   URL format: /q/{shortCode}
 
   Flow:
-  1. Resolve short code to SequenceData (Firebase or inline-encoded)
-  2. Track scan count (Firebase codes only, fire-and-forget)
-  3. Render SequenceViewerOrchestrator inline
-  4. Cosmetically update URL via SvelteKit's replaceState()
+  1. Resolve short code → SequenceData
+  2. Compute canonical hash (SequenceEncoder.encode → SHA-256)
+  3. HEAD check against R2 CDN for cached video
+  4a. Cached: play <video src={r2Url}> instantly
+  4b. Uncached: spawn headless worker → render → play → upload to R2
 -->
 <script lang="ts">
-
-import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   import { page } from "$app/stores";
-  import { goto, replaceState } from "$app/navigation";
-  import { browser } from "$app/environment";
-  import { onMount, onDestroy } from "svelte";
-  import { fade } from "svelte/transition";
-  import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
-  import { captureEvent } from "$lib/shared/analytics/services/posthog";
-  import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { onMount } from "svelte";
+  import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+  import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
-  import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
-  import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
-  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
-  import { registerDrawer, unregisterDrawer, generateDrawerId } from "$lib/shared/foundation/ui/drawer/DrawerStack";
-  import { createModalSwipeDismiss } from "$lib/shared/sequence-viewer/services/implementations/ModalSwipeDismiss";
-  import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { HeadlessAnimationOrchestrator } from "$lib/shared/qr-video/services/HeadlessAnimationOrchestrator";
   import {
-    openSendSequenceSheet,
-    buildSequenceSharePayload,
-    buildThumbnailUrl,
-  } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+    buildTimelineParams,
+    calculateFrameTiming,
+  } from "$lib/shared/qr-video/domain/qr-video-types";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type {
+    WorkerOutMessage,
+    RenderRequest,
+    PrecomputedFrame,
+  } from "$lib/shared/qr-video/domain/qr-video-types";
 
-  // Components
-  import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
-  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
-  import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
-  import ViewerFooter from "$lib/shared/sequence-viewer/components/ViewerFooter.svelte";
-  import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
-  import ExportVideoDrawer from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
-  import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
-  import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
-  import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
-  import RouteViewerHeader from "$lib/shared/sequence-viewer/components/RouteViewerHeader.svelte";
-  import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
-  import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
-  import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
-
-  // ============================================================================
-  // PAGE DATA (from +page.server.ts — Cloudflare geo headers)
-  // ============================================================================
+  const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
   interface Props {
     data: {
@@ -78,821 +56,493 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
 
   const { data }: Props = $props();
 
-  // ============================================================================
-  // ROUTE-SPECIFIC STATE
-  // ============================================================================
-
-  // Short code from URL param
   const shortCode = $derived($page.params["code"]);
 
-  // Guest preview mode — forces unauthenticated view for debugging shared link UX
-  const forceGuest = $derived($page.url.searchParams.get("guest") === "1");
+  type PageState =
+    | { kind: "loading" }
+    | { kind: "error"; message: string }
+    | { kind: "rendering"; percent: number; phase: string; word: string }
+    | { kind: "playing"; videoUrl: string; word: string; isFirstView: boolean };
 
-  // URL prop params (from QR codes with prop info)
-  const urlBlueProp = $derived($page.url.searchParams.get("bp"));
-  const urlRedProp = $derived($page.url.searchParams.get("rp"));
+  let state = $state<PageState>({ kind: "loading" });
 
-  // URL metadata params (from share URLs)
-  const urlDarkMode = $derived($page.url.searchParams.get("dark"));
+  const encoder = new SequenceEncoder();
 
-  // IAB banner padding (in-app browsers like Instagram, Facebook)
-  const iabBannerShowing = $derived(getIabBannerVisible());
+  const stubBrowseLoader: IBrowseLoader = {
+    loadSequenceMetadata: async () => [],
+    loadFullSequenceData: async () => null,
+    removeFromCache: () => {},
+    addToCache: () => {},
+    warmFromCache: () => {},
+    refreshFromFirestore: async () => [],
+  };
 
-  // Sequence loading state
-  let sequence = $state<SequenceData | null>(null);
-  let isLoading = $state(true);
-  let error = $state<string | null>(null);
-  let errorDiagnostics = $state<string | null>(null);
+  const shortCodeManager = new ShortCodeManager(stubBrowseLoader, encoder);
 
-  // Mobile detection
-  let isMobile = $state(false);
-
-  // Swipe-to-dismiss (works at all viewport sizes)
-  const swipeDismiss = createModalSwipeDismiss();
-  let currentSwipeY = $state(0);
-  let currentIsSwiping = $state(false);
-
-  // Page container ref for swipe visual feedback
-  let pageContainer: HTMLElement | null = $state(null);
-
-  // Delete confirmation state
-  let deleteConfirmOpen = $state(false);
-  let isDeleting = $state(false);
-
-  // ChoreoCard context menu
-  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
-
-  // DrawerStack registration - blocks pull-to-refresh on mobile
-  const drawerId = generateDrawerId();
-
-  // Cleanup
-  let resizeCleanup: (() => void) | null = null;
-
-  // ============================================================================
-  // SEND-TO HANDLER
-  // ============================================================================
-
-  function handleSendTo() {
-    const seq = sequence;
-    if (!seq) return;
-    const propType = seq.intendedProp?.bluePropType ?? settingsService.settings.bluePropType ?? "staff";
-    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, String(propType), false);
-    openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
+  async function computeHash(seq: SequenceData): Promise<string> {
+    const pipeString = encoder.encode(seq);
+    const buffer = new TextEncoder().encode(pipeString);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(hashBuffer), (b) =>
+      b.toString(16).padStart(2, "0")
+    ).join("");
   }
 
-  // ============================================================================
-  // LIFECYCLE
-  // ============================================================================
+  function videoUrl(hash: string): string {
+    return `${R2_CDN}/qr-videos/${hash}.mp4`;
+  }
 
-  onMount(async () => {
-    // Initialize app services non-blocking (fire and forget).
-    // The viewer can render before services are fully ready.
-    initializeAppServices().catch((err) => {
-      console.warn("[QR Resolver] Background service init failed:", err);
+  async function checkR2Cache(hash: string): Promise<boolean> {
+    try {
+      const res = await fetch(videoUrl(hash), { method: "HEAD" });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function uploadToR2(hash: string, mp4: ArrayBuffer): Promise<void> {
+    try {
+      await fetch(`/api/qr-video/${hash}`, {
+        method: "PUT",
+        headers: { "Content-Type": "video/mp4" },
+        body: mp4,
+      });
+    } catch (err) {
+      console.warn("[QR Video] Upload to R2 failed:", err);
+    }
+  }
+
+  function precomputeFrames(
+    seq: SequenceData,
+    blueProp: PropType,
+    redProp: PropType,
+    fps: number,
+    speed: number,
+    loopCount: number
+  ): PrecomputedFrame[] {
+    const orchestrator = new HeadlessAnimationOrchestrator({
+      bluePropType: blueProp,
+      redPropType: redProp,
     });
 
-    // Mobile detection
-    const checkMobile = () => { isMobile = window.innerWidth < 768; };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    resizeCleanup = () => window.removeEventListener("resize", checkMobile);
+    const initialized = orchestrator.initializeWithDomainData(seq);
+    if (!initialized) return [];
 
-    // Block pull-to-refresh on mobile
-    if (isMobile) {
-      registerDrawer(drawerId, handleBack);
+    const steps = (seq.steps ?? []).filter((s) => s && s.stepNumber !== 0);
+    const stepDurations = steps.map((s) => s.duration ?? 1);
+    const stepCount = steps.length;
+
+    const timeline = buildTimelineParams(
+      stepDurations,
+      speed,
+      fps,
+      loopCount,
+      true,
+      true
+    );
+
+    const frames: PrecomputedFrame[] = [];
+
+    for (let i = 0; i < timeline.totalFrames; i++) {
+      const timing = calculateFrameTiming(
+        i,
+        timeline.totalFrames,
+        timeline.totalDurationWithHolds,
+        timeline.startPositionDuration,
+        timeline.motionLoopUnits,
+        timeline.totalDurationUnits,
+        timeline.cumulativeDurations,
+        stepDurations,
+        stepCount
+      );
+
+      orchestrator.calculateState(timing.playbackPosition);
+      const propStates = orchestrator.getPropStates();
+
+      frames.push({
+        blue: propStates.blue
+          ? { ...propStates.blue }
+          : null,
+        red: propStates.red
+          ? { ...propStates.red }
+          : null,
+      });
     }
 
-    // Resolve the short code
-    await resolveShortCode();
-  });
+    return frames;
+  }
 
-  onDestroy(() => {
-    unregisterDrawer(drawerId);
-    resizeCleanup?.();
-    swipeDismiss.dispose();
-  });
+  function spawnWorker(
+    seq: SequenceData,
+    hash: string,
+    word: string
+  ): void {
+    state = { kind: "rendering", percent: 0, phase: "loading-assets", word };
 
-  // Apply visual feedback during swipe gesture
-  $effect(() => {
-    if (!pageContainer) return;
-    if (currentIsSwiping && currentSwipeY > 0) {
-      pageContainer.style.transform = `translateY(${currentSwipeY}px)`;
-      pageContainer.style.opacity = `${Math.max(0.3, 1 - currentSwipeY / 300)}`;
-      pageContainer.style.transition = "none";
-    } else if (!currentIsSwiping) {
-      pageContainer.style.transform = "";
-      pageContainer.style.opacity = "";
-      pageContainer.style.transition = "";
+    const blueProp =
+      (seq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
+    const redProp =
+      (seq.intendedProp?.redPropType as PropType) ?? PropType.STAFF;
+
+    const frames = precomputeFrames(seq, blueProp, redProp, 30, 1, 2);
+    if (frames.length === 0) {
+      state = { kind: "error", message: "Failed to compute animation frames" };
+      return;
     }
-  });
 
-  // ============================================================================
-  // SHORT CODE RESOLUTION
-  // ============================================================================
+    const worker = new Worker(
+      new URL(
+        "$lib/shared/qr-video/workers/headless-video-renderer.worker.ts",
+        import.meta.url
+      ),
+      { type: "module" }
+    );
 
-  async function resolveShortCode() {
+    const msg: RenderRequest = {
+      type: "render",
+      sequenceData: seq,
+      frames,
+      config: {
+        fps: 30,
+        resolution: 720,
+        speed: 1,
+        propTypes: { blue: blueProp, red: redProp },
+        loopCount: 2,
+        includeStartPosition: true,
+        includeEndHold: true,
+        baseUrl: window.location.origin,
+        cacheHash: hash,
+      },
+    };
+
+    worker.postMessage(msg);
+
+    worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
+      const out = e.data;
+      if (out.type === "progress") {
+        state = {
+          kind: "rendering",
+          percent: out.percent,
+          phase: out.phase,
+          word,
+        };
+      } else if (out.type === "complete") {
+        const blob = new Blob([out.mp4], { type: "video/mp4" });
+        const blobUrl = URL.createObjectURL(blob);
+        state = { kind: "playing", videoUrl: blobUrl, word, isFirstView: true };
+        worker.terminate();
+        uploadToR2(hash, out.mp4);
+      } else if (out.type === "error") {
+        state = { kind: "error", message: out.message };
+        worker.terminate();
+      }
+    };
+
+    worker.onerror = (err) => {
+      state = { kind: "error", message: err.message || "Worker crashed" };
+      worker.terminate();
+    };
+  }
+
+  onMount(async () => {
     if (!shortCode) {
-      error = "No short code provided";
-      isLoading = false;
+      state = { kind: "error", message: "No short code provided" };
       return;
     }
 
     try {
-      const shortCodeManager = getShortCodeManager();
-      const sequenceEncoder = getSequenceEncoder();
-
-      // Resolve short code to sequence
-      // Handles both formats:
-      // - s~{encodedData} -> offline decode (no Firebase needed)
-      // - {shortCode} -> Firebase lookup (traditional)
-      let resolved = await shortCodeManager.resolveShortCode(shortCode);
-
-      if (!resolved) {
-        // Capture diagnostics for the error screen so we can debug without DevTools
-        try {
-          const analytics = await shortCodeManager.getAnalytics(shortCode);
-          errorDiagnostics = analytics
-            ? `Code: ${shortCode} | Word: ${analytics.sequence} | Name: ${analytics.sequenceName ?? "?"}`
-            : `Code: ${shortCode} | Record not found in Firestore`;
-        } catch {
-          errorDiagnostics = `Code: ${shortCode} | Failed to read record`;
-        }
-        error = "Sequence not found";
-        isLoading = false;
+      let seq = await shortCodeManager.resolveShortCode(shortCode);
+      if (!seq) {
+        state = { kind: "error", message: "Sequence not found" };
         return;
       }
 
-      // Track scan count ONLY for genuine scans — skip refreshes and
-      // back/forward navigations, and skip repeat visits within the same
-      // session. Without this guard every F5 inflated the counter.
-      const isScan =
-        !sequenceEncoder.isInlineEncoded(shortCode) && isGenuineScan(shortCode);
-      if (isScan) {
-        shortCodeManager.incrementScanCount(shortCode).catch((err: unknown) => {
-          console.warn("Failed to increment scan count:", err);
-        });
-
-        // Fire scan analytics (fire-and-forget, never blocks the viewer)
-        captureEvent("qr_code_scanned", {
-          short_code: shortCode,
-          print_id: new URL(window.location.href).searchParams.get("pid") || null,
-          sequence_word: resolved.word,
-          sequence_id: resolved.id,
-          country: data?.geo?.country || null,
-          city: data?.geo?.city || null,
-          screen_width: window.screen.width,
-          screen_height: window.screen.height,
-          viewport_width: window.innerWidth,
-          viewport_height: window.innerHeight,
-          referrer: document.referrer || null,
-          is_deck_sequence: !resolved.ownerId,
-        });
-
-        // Log detailed scan event to Firestore subcollection
-        shortCodeManager.logScanEvent(shortCode, {
-          printId: new URL(window.location.href).searchParams.get("pid") || null,
-          country: data?.geo?.country || null,
-          city: data?.geo?.city || null,
-          userAgent: navigator.userAgent,
-          screenWidth: window.screen.width,
-          screenHeight: window.screen.height,
-          referrer: document.referrer || null,
-          userId: null,
-          deviceId: getDeviceIdService().getDeviceId(),
-        }).catch(() => {}); // Silent failure — analytics should never break the viewer
-      }
-
-      // Run every pure client-side deriver: letter, position, loop
-      // pattern (isCircular + loopType), and gridMode. A fresh scan
-      // or refresh both arrive with bare motion data, so this pass
-      // is what restores word / letters / loop badges / grid styling.
-      resolved = await hydrateSequence(resolved, {
+      seq = await hydrateSequence(seq, {
         letterDeriver: getLetterDeriver(),
         positionDeriver: getPositionDeriver(),
         loopDetector,
         gridModeDeriver,
       });
 
-      // Apply URL dark mode preference before the orchestrator mounts
-      if (urlDarkMode !== null) {
-        const imageComposition = getImageCompositionManager();
-        imageComposition.setDarkMode(urlDarkMode === "1");
+      const word = seq.word || seq.name || "Sequence";
+
+      if (
+        !encoder.isInlineEncoded(shortCode) &&
+        isGenuineScan(shortCode)
+      ) {
+        captureEvent("qr_video_scanned", {
+          short_code: shortCode,
+          sequence_word: word,
+          country: data?.geo?.country || null,
+        });
       }
 
-      // Apply URL prop preferences (from QR codes with embedded prop info)
-      applyUrlPropPreferences();
+      const hash = await computeHash(seq);
+      const cached = await checkR2Cache(hash);
 
-      // Store resolved sequence and show viewer
-      sequence = resolved;
-      isLoading = false;
-
-      // Cosmetically update the URL to the canonical sequence path.
-      // This does NOT trigger navigation — the viewer is already rendered.
-      try {
-        const routePath = sequenceEncoder.generateSequenceRoutePath(resolved);
-        const currentSearch = window.location.search;
-        replaceState(routePath + currentSearch, {});
-      } catch {
-        // Non-critical: viewer works fine without URL update
+      if (cached) {
+        state = {
+          kind: "playing",
+          videoUrl: videoUrl(hash),
+          word,
+          isFirstView: false,
+        };
+      } else {
+        spawnWorker(seq, hash, word);
       }
-
-      // Background: try to match against public library for attribution
-      void matchPublicRecord(resolved);
     } catch (err: unknown) {
-      console.error("Failed to resolve short code:", err);
-      error = "Failed to load sequence";
-      isLoading = false;
+      state = {
+        kind: "error",
+        message: err instanceof Error ? err.message : "Failed to load sequence",
+      };
     }
-  }
+  });
 
-  // ============================================================================
-  // PROP PREFERENCES
-  // ============================================================================
-
-  /**
-   * Apply URL prop preferences to settings state.
-   * Uses PROP_TYPE_DECODE mapping (single char -> PropType).
-   */
-  function applyUrlPropPreferences() {
-    if (!urlBlueProp && !urlRedProp) return;
-
-    const encoderService = getSequenceEncoder();
-    const parsed = encoderService.parsePropsFromURL($page.url.searchParams);
-
-    if (parsed.bluePropType || parsed.redPropType) {
-      const settingsState = settingsService;
-      const updates: { bluePropType?: PropType; redPropType?: PropType } = {};
-
-      if (parsed.bluePropType) {
-        updates.bluePropType = parsed.bluePropType as PropType;
-      }
-      if (parsed.redPropType) {
-        updates.redPropType = parsed.redPropType as PropType;
-      }
-
-      settingsState.updateSettings(updates);
-    }
-  }
-
-  // ============================================================================
-  // PUBLIC RECORD MATCHING
-  // ============================================================================
-
-  /**
-   * Fire-and-forget: query publicSequences for attribution data.
-   * If it fails (offline, no match, error), the viewer works fine from resolved data alone.
-   */
-  async function matchPublicRecord(seq: SequenceData) {
-    try {
-      const matcher = getPublicSequenceHashMatcher();
-      const result = await matcher.findPublicMatch(seq);
-
-      if (result.matched && result.publicRecord) {
-        const pub = result.publicRecord;
-        sequence = {
-          ...seq,
-          ownerId: pub.ownerId,
-          ownerDisplayName: pub.ownerDisplayName,
-          intendedProp: seq.intendedProp,
-          creatorIntent: pub.creatorIntent ?? undefined,
-          word: seq.word || pub.word,
-          name: seq.name === "Shared Sequence" ? pub.name : seq.name,
-        } as SequenceData;
-      }
-    } catch {
-      // Silent failure — progressive enhancement only
-    }
-  }
-
-  // ============================================================================
-  // NAVIGATION
-  // ============================================================================
-
-  function handleBack() {
-    // If user has browser history (came from another page), go back naturally.
-    // Otherwise (QR scan opened a new tab), navigate to the gallery.
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      goto("/browse/gallery");
-    }
-  }
-
-  function handleGoHome() {
-    goto("/browse/gallery");
-  }
-
-  // ============================================================================
-  // SWIPE HANDLING (ALL VIEWPORTS)
-  // ============================================================================
-
-  function handleTouchStart(e: TouchEvent, ctx: OrchestratorContext) {
-    if (ctx.isFullscreen || ctx.isExportMode) return;
-    swipeDismiss.handleTouchStart(e);
-  }
-
-  function handleTouchMove(e: TouchEvent, ctx: OrchestratorContext) {
-    if (ctx.isFullscreen || ctx.isExportMode) return;
-    const handled = swipeDismiss.handleTouchMove(e);
-    currentSwipeY = swipeDismiss.state.swipeY;
-    currentIsSwiping = swipeDismiss.state.isSwiping;
-    if (handled && e.cancelable) {
-      e.preventDefault();
-    }
-  }
-
-  async function handleTouchEnd(ctx: OrchestratorContext) {
-    const shouldDismiss = swipeDismiss.handleTouchEnd();
-    if (shouldDismiss) {
-      if (pageContainer) {
-        pageContainer.style.transition = "transform 200ms ease-out, opacity 200ms ease-out";
-        pageContainer.style.transform = "translateY(100%)";
-        pageContainer.style.opacity = "0";
-        await new Promise((r) => setTimeout(r, 200));
-      }
-      setSkipNextViewTransition();
-      ctx.onBack();
-    } else {
-      currentSwipeY = 0;
-      currentIsSwiping = false;
-    }
-  }
-
-  // ============================================================================
-  // EXPORT HELPERS
-  // ============================================================================
-
-  // Persist transient viewer state (bpm, time, render mode, etc.) to the URL so
-  // reloads and shares preserve it. This is the same shape used by /sequence/[id].
-  function updateUrlParam(key: string, value: string) {
-    if (!browser) return;
-    const parsed = new URL(window.location.href);
-    if (value === "" || value == null) {
-      parsed.searchParams.delete(key);
-    } else {
-      parsed.searchParams.set(key, value);
-    }
-    window.history.replaceState({}, "", parsed.toString());
+  function handleDownload() {
+    if (state.kind !== "playing") return;
+    const a = document.createElement("a");
+    a.href = state.videoUrl;
+    a.download = `${state.word}.mp4`;
+    a.click();
   }
 </script>
 
 <svelte:head>
-  {#if sequence}
-    <title>{sequence.word || sequence.name || "Sequence"} - TKA Composer</title>
+  {#if state.kind === "playing" || state.kind === "rendering"}
+    <title>{state.word} - TKA</title>
     <meta
       name="description"
-      content={sequence.word
-        ? `View the "${sequence.word}" flow sequence in TKA Composer`
-        : "View this flow sequence in TKA Composer"}
+      content="Watch the {state.word} flow sequence"
     />
   {:else}
-    <title>Loading sequence... - TKA Composer</title>
-    <meta name="description" content="Loading a flow sequence in TKA Composer" />
+    <title>TKA Sequence</title>
   {/if}
   <meta name="theme-color" content="#0f0f1a" />
 </svelte:head>
 
-{#if isLoading}
-  <div class="resolver-page">
-    <div class="loading-container">
-      <LoadingGate variant="card" message="Loading sequence..." />
+<div class="page">
+  {#if state.kind === "loading"}
+    <div class="center-content">
+      <div class="spinner"></div>
+      <p class="status-text">Loading sequence...</p>
     </div>
-  </div>
-{:else if error || !sequence}
-  <div class="resolver-page">
-    <div class="error-container">
-      <div class="error-card">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          class="error-icon"
-        >
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        <h1>Sequence Not Found</h1>
-        <p>{error || "This sequence could not be loaded."}</p>
-        {#if errorDiagnostics}
-          <p class="diagnostics">{errorDiagnostics}</p>
-        {/if}
-        <button class="home-button" onclick={handleGoHome} type="button">
-          Browse Sequences
-        </button>
-      </div>
+
+  {:else if state.kind === "error"}
+    <div class="center-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-icon">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <h1 class="error-heading">Sequence Not Found</h1>
+      <p class="status-text">{state.message}</p>
+      <a href="/browse/gallery" class="cta-button">Browse Sequences</a>
     </div>
-  </div>
-{:else}
-  <SequenceViewerOrchestrator
-    {sequence}
-    {isMobile}
-    {forceGuest}
-    initialBpm={60}
-    initialStep={0}
-    onBack={handleBack}
-    onUrlParamChange={updateUrlParam}
-    blockClicks={swipeDismiss.state.blockClicks}
-  >
-    {#snippet children(ctx)}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="sequence-route-page"
-        bind:this={pageContainer}
-        data-fullscreen={ctx.isFullscreen}
-        ontouchstart={(e) => handleTouchStart(e, ctx)}
-        ontouchmove={(e) => handleTouchMove(e, ctx)}
-        ontouchend={() => handleTouchEnd(ctx)}
-      >
-        <!-- Header -->
-        <RouteViewerHeader
-          editingPane={ctx.editingPane}
-          isFullscreen={ctx.isFullscreen}
-          {isMobile}
-          returnLabel="Back"
-          onBack={ctx.onBack}
-          onExitEditMode={ctx.exitEditMode}
-          sequence={sequence}
-        />
 
-        <!-- Main content -->
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-        <div
-          class="route-body-content"
-          data-fullscreen={ctx.isFullscreen}
-          style:padding-bottom={iabBannerShowing ? `${IAB_BANNER_HEIGHT}px` : undefined}
-          onclick={ctx.isFullscreen ? ctx.handleFullscreenTap : undefined}
-          onkeydown={ctx.isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') ctx.handleFullscreenTap(); } : undefined}
-          role={ctx.isFullscreen ? "button" : undefined}
-          tabindex={ctx.isFullscreen ? 0 : undefined}
-        >
-          {#if ctx.isFullscreen}
-            <FullscreenControls
-              visible={ctx.fullscreenControlsVisible}
-              viewMode={ctx.viewMode}
-              isPlaying={ctx.isPlayingLocal}
-              bpm={ctx.bpmLocal}
-              onExit={ctx.exitFullscreen}
-              onPlaybackToggle={ctx.handlePlaybackToggle}
-              onStepHalfBeatBackward={ctx.stepHalfBeatBackward}
-              onStepHalfBeatForward={ctx.stepHalfBeatForward}
-              onStepFullBeatBackward={ctx.stepFullBeatBackward}
-              onStepFullBeatForward={ctx.stepFullBeatForward}
-              onRestartToStart={ctx.restartToStart}
-              onBpmChange={ctx.handleBpmChange}
-            />
-          {/if}
-
-          {#if ctx.hasSequence && ctx.effectiveSequence}
-            {@const isVideoExportActive = ctx.editingPane === "animation"}
-            {@const isImageExportActive = ctx.editingPane === "image"}
-            {@const isAnyExportActive = isVideoExportActive || isImageExportActive}
-            <div
-              class="viewer-and-export"
-              class:export-active={isAnyExportActive}
-              class:desktop={!isMobile}
-            >
-              <!-- Single persistent ViewerSplitPane -->
-              <ViewerSplitPane
-                sequence={ctx.effectiveSequence}
-                playback={ctx.splitPanePlayback}
-                imageComposition={isImageExportActive
-                  ? {
-                      showWord: ctx.exportOptions.imageShowWord,
-                      showStepNumbers: ctx.exportOptions.imageShowStepNumbers,
-                      showDifficulty: ctx.exportOptions.imageShowDifficulty,
-                      showStartPos: ctx.exportOptions.imageIncludeStartPosition,
-                      showCreatorName: ctx.exportOptions.imageShowCreatorName,
-                      showNotes: ctx.exportOptions.imageShowNotes,
-                      showBirthday: ctx.splitPaneImageComposition.showBirthday,
-                      showQRCode: ctx.exportOptions.imageShowQRCode,
-                      darkMode: ctx.exportOptions.imageDarkMode,
-                      columnCount: ctx.exportOptions.imageColumnCount != null
-                        ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
-                        : null,
-                      forceContain: true,
-                      userName: ctx.splitPaneImageComposition.userName,
-                    }
-                  : ctx.splitPaneImageComposition}
-                propRendering={ctx.splitPanePropRendering}
-                layout={{
-                  isFullscreen: ctx.isFullscreen,
-                  fullscreenStackVertical: ctx.fullscreenStackVertical,
-                  isMobile,
-                  isLandscapeMobile: false,
-                  focusedPane: ctx.editingPane,
-                  suppressCloseButton: ctx.editingPane !== null,
-                }}
-                onFocusPane={ctx.enterEditMode}
-                onUnfocusPane={ctx.exitEditMode}
-                onStepClick={ctx.handleStepClick}
-                onCanvasReady={ctx.handleCanvasReady}
-                onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
-              />
-              <ChoreoCardContextMenuHost
-                bind:this={choreoCardMenuHost}
-                isExportMode={isImageExportActive}
-                exportOptions={ctx.exportOptions}
-                onSendTo={sequence ? handleSendTo : undefined}
-                stepCount={sequence?.steps?.length ?? 0}
-              />
-              {#if isAnyExportActive}
-                <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
-                  {#if isVideoExportActive}
-                    {#if ctx.previewBlobUrl}
-                      <VideoPreviewPanel
-                        blobUrl={ctx.previewBlobUrl}
-                        onDismiss={ctx.dismissPreview}
-                        onRedownload={() => {
-                          const a = document.createElement("a");
-                          a.href = ctx.previewBlobUrl!;
-                          a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
-                          a.click();
-                        }}
-                      />
-                    {:else}
-                      <ExportVideoDrawer
-                        exportOptions={ctx.exportOptions}
-                        isExporting={ctx.isExporting}
-                        exportProgress={ctx.exportProgress}
-                        canvasReady={ctx.canvasReady}
-                        layout={isMobile ? "bottom" : "sidebar"}
-                        singlePlayDuration={ctx.singlePlayDuration}
-                        isPlaying={ctx.isPlayingLocal}
-                        bpm={ctx.bpmLocal}
-                        playbackMode={ctx.playbackMode}
-                        onPlaybackToggle={ctx.handlePlaybackToggle}
-                        onPlaybackModeChange={ctx.handlePlaybackModeChange}
-                        onBpmChange={ctx.handleBpmChange}
-                        onExport={ctx.handleExport}
-                        onCancel={ctx.handleCancelExport}
-                      />
-                    {/if}
-                  {:else if isImageExportActive}
-                    <ExportImagePanel
-                      exportOptions={ctx.exportOptions}
-                      isExporting={ctx.isExporting}
-                      stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
-                      onExport={ctx.handleExport}
-                      onClose={ctx.exitEditMode}
-                    />
-                  {/if}
-                </div>
-              {/if}
-            </div>
-          {/if}
-        </div>
-
-        <!-- Footer -->
-        {#if !ctx.isFullscreen}
-          <div class="footer-collapse" class:collapsed={!!ctx.editingPane}>
-            <ViewerFooter
-              bpm={ctx.bpmLocal}
-              isPlaying={ctx.isPlayingLocal}
-              practiceActive={ctx.practiceActive}
-              onBpmChange={ctx.handleBpmChange}
-              onPlayPause={ctx.handlePlaybackToggle}
-              onStepBack={ctx.stepFullBeatBackward}
-              onStepForward={ctx.stepFullBeatForward}
-              onStepHalfBack={ctx.stepHalfBeatBackward}
-              onStepHalfForward={ctx.stepHalfBeatForward}
-              onRestartToStart={ctx.restartToStart}
-              onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-              onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-              onPracticeStart={ctx.handlePracticeStart}
-              onPracticeStop={ctx.handlePracticeStop}
-              isOwned={ctx.isOwned}
-              onDeleteRequest={() => (deleteConfirmOpen = true)}
-              isSaved={ctx.isSaved}
-              isPublished={ctx.isPublished}
-              isFavorite={ctx.isFavorite}
-              onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-              onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
-              onUnpublish={ctx.handleUnpublishAction}
-            />
-            {#if ctx.practiceActive}
-              <PracticeProgressIndicator
-                progress={ctx.practiceState.progress}
-                onStop={ctx.handlePracticeStop}
-                variant="floating"
-              />
-            {/if}
-          </div>
-        {/if}
+  {:else if state.kind === "rendering"}
+    <div class="center-content">
+      <h1 class="word-title">{state.word}</h1>
+      <p class="first-view-message">
+        You're the first to view this sequence!
+      </p>
+      <div class="progress-container">
+        <div class="progress-bar" style:width="{state.percent}%"></div>
       </div>
+      <p class="status-text">
+        {#if state.phase === "loading-assets"}
+          Loading assets...
+        {:else if state.phase === "rendering"}
+          Building animation... {state.percent}%
+        {:else}
+          Finalizing video...
+        {/if}
+      </p>
+      <p class="hint-text">Future scans will load instantly.</p>
+      <a href="/browse/gallery" class="link-button">Open TKA Composer</a>
+    </div>
 
-      {#if deleteConfirmOpen}
-        <DeleteConfirmDialog
-          word={sequence?.word}
-          {isDeleting}
-          positioning="fixed"
-          onConfirm={async () => {
-            isDeleting = true;
-            try {
-              await ctx.handleDelete();
-            } finally {
-              deleteConfirmOpen = false;
-              isDeleting = false;
-            }
-          }}
-          onCancel={() => (deleteConfirmOpen = false)}
-        />
+  {:else if state.kind === "playing"}
+    <div class="video-container">
+      <h1 class="word-title">{state.word}</h1>
+      {#if state.isFirstView}
+        <p class="first-view-badge">First scan render complete!</p>
       {/if}
-    {/snippet}
-  </SequenceViewerOrchestrator>
-{/if}
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <video
+        class="sequence-video"
+        src={state.videoUrl}
+        autoplay
+        loop
+        muted
+        playsinline
+      ></video>
+      <div class="actions">
+        <button type="button" class="cta-button" onclick={handleDownload}>
+          Download
+        </button>
+        <a href="/browse/gallery" class="cta-button secondary">
+          Open TKA Composer
+        </a>
+      </div>
+    </div>
+  {/if}
+</div>
 
 <style>
-  .resolver-page {
+  .page {
     min-height: 100vh;
     min-height: 100dvh;
     background: #0f0f1a;
-    overflow: hidden;
-  }
-
-  .loading-container {
-    min-height: 100vh;
-    min-height: 100dvh;
-    position: relative;
-  }
-
-  .error-container {
-    min-height: 100vh;
-    min-height: 100dvh;
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    font-family: system-ui, -apple-system, sans-serif;
   }
 
-  .error-card {
+  .center-content {
     text-align: center;
-    padding: 2rem;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 1rem;
     max-width: 400px;
+    width: 100%;
   }
 
-  .error-icon {
-    color: var(--semantic-error, #ef4444);
+  .video-container {
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+  }
+
+  .word-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  .first-view-message {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 1.5rem;
+  }
+
+  .first-view-badge {
+    font-size: 0.875rem;
+    color: #4ade80;
+    margin: 0 0 1rem;
+  }
+
+  .progress-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
     margin-bottom: 1rem;
   }
 
-  .error-card h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-    margin: 0 0 0.5rem 0;
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    border-radius: 3px;
+    transition: width 200ms ease;
   }
 
-  .error-card p {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    margin: 0 0 1.5rem 0;
-    font-size: var(--font-size-sm, 14px);
+  .status-text {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 0.5rem;
   }
 
-  .diagnostics {
-    font-family: monospace;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    word-break: break-all;
+  .hint-text {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 0 1.5rem;
   }
 
-  .home-button {
-    min-height: var(--min-touch-target);
+  .sequence-video {
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background: #000;
+    margin-bottom: 1.5rem;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
     padding: 0.75rem 1.5rem;
-    background: var(--theme-accent, #f43f5e);
+    background: #6366f1;
     color: white;
     border: none;
     border-radius: 0.5rem;
     font-weight: 600;
-    font-size: var(--font-size-sm, 14px);
+    font-size: 0.875rem;
     cursor: pointer;
-    transition: background var(--duration-normal) ease;
+    text-decoration: none;
+    transition: filter 150ms ease;
   }
 
-  .home-button:hover {
-    filter: brightness(1.1);
+  .cta-button:hover {
+    filter: brightness(1.15);
   }
 
-  .home-button:focus-visible {
-    outline: 2px solid var(--theme-accent, #f43f5e);
+  .cta-button:focus-visible {
+    outline: 2px solid #6366f1;
     outline-offset: 2px;
   }
 
-  /* ================================================================
-   * VIEWER LAYOUT (mirrors /sequence/[id] styles)
-   * ================================================================ */
-
-  .sequence-route-page {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+  .cta-button.secondary {
+    background: rgba(255, 255, 255, 0.1);
   }
 
-  .route-body-content {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  .link-button {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
-  .route-body-content[data-fullscreen="true"] {
-    position: relative;
+  .link-button:hover {
+    color: rgba(255, 255, 255, 0.9);
   }
 
-  /* Viewer + export panel container. */
-  .viewer-and-export {
-    --export-sidebar-width: 560px;
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
+  .error-icon {
+    color: #ef4444;
+    margin-bottom: 1rem;
   }
 
-  /* Desktop: always a grid so the sidebar column can transition smoothly. */
-  .viewer-and-export.desktop {
-    display: grid;
-    grid-template-columns: 1fr 0px;
-    grid-template-rows: minmax(0, 1fr);
-    transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
+  .error-heading {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
   }
 
-  .viewer-and-export.desktop :global(.view-container) {
-    position: relative;
-    inset: auto;
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: spin 0.8s linear infinite;
   }
 
-  .viewer-and-export.export-active.desktop {
-    grid-template-columns: 1fr var(--export-sidebar-width);
-  }
-
-  /* Export panel — grid child on desktop, flex child on mobile */
-  .export-panel-container {
-    overflow: hidden;
-    overflow-y: auto;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    isolation: isolate;
-    min-width: 0;
-  }
-
-  /* Mobile: export panel is inline in flex layout */
-  @media (max-width: 767px) {
-    .viewer-and-export.export-active {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .export-panel-container {
-      width: 100%;
-      flex-shrink: 0;
-      overflow: visible;
-      border-left: none;
-      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    }
-  }
-
-  /* Footer — CSS grid row collapse for smooth height animation */
-  .footer-collapse {
-    display: grid;
-    grid-template-rows: 1fr;
-    transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
-                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  .footer-collapse > :global(*) {
-    overflow: hidden;
-  }
-
-  .footer-collapse.collapsed {
-    grid-template-rows: 0fr;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  /* Mobile drawer appearance */
-  @media (max-width: 767px) {
-    .sequence-route-page {
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
-      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
-      background: var(--theme-panel-bg, #0a0a14);
-      overflow: hidden;
-      overscroll-behavior-y: contain;
-      touch-action: pan-y;
-    }
-
-    .route-body-content {
-      view-transition-name: none !important;
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 </style>
