@@ -17,6 +17,7 @@
     isSeparator,
     isHeader,
   } from "./context-menu-types";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 
   let {
     menuState,
@@ -82,7 +83,7 @@
         document.removeEventListener("click", swallow, { capture: true });
       }, 800);
 
-      haptic();
+      getHapticFeedback().impact("light");
       onClose();
     };
 
@@ -95,12 +96,6 @@
     };
   });
 
-  function haptic() {
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(8);
-    }
-  }
-
   async function runAction(item: ContextMenuItem, event: Event) {
     if (item.disabled) {
       event.preventDefault();
@@ -110,7 +105,7 @@
     // keepOpen means don't auto-close on select
     if (item.keepOpen) event.preventDefault();
 
-    haptic();
+    getHapticFeedback().impact("medium");
     loadingItemId = item.id;
     try {
       await item.action();
