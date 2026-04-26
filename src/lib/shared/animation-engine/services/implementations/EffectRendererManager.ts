@@ -1,8 +1,8 @@
 /**
  * EffectRendererManager
  *
- * Owns all 14 effect overlay renderers (fire, charcoal, LED, zap, sparkles,
- * echo, bloom, water, bubbles, petals, smoke, ink, frost, silk).
+ * Owns all 15 effect overlay renderers (fire, charcoal, LED, zap, sparkles,
+ * echo, bloom, water, bubbles, petals, smoke, ink, frost, silk, pulse).
  * Handles initialize/destroy lifecycle, config sync, and layer ordering.
  *
  * Extracted from AnimationEngine to reduce its line count.
@@ -26,6 +26,7 @@ import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
 import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
 import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
+import type { IPulseOverlayRenderer } from "../contracts/IPulseOverlayRenderer";
 import type { IAnimationRenderLoop } from "../contracts/IAnimationRenderLoop";
 import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
 import type { FireOverlayConfig } from "../../domain/types/FireTypes";
@@ -50,6 +51,7 @@ import { SmokeOverlayRenderer } from "./SmokeOverlayRenderer";
 import { InkOverlayRenderer } from "./InkOverlayRenderer";
 import { FrostOverlayRenderer } from "./FrostOverlayRenderer";
 import { SilkOverlayRenderer } from "./SilkOverlayRenderer";
+import { PulseOverlayRenderer } from "./PulseOverlayRenderer";
 import { TrailOverlayWebGL2 } from "./TrailOverlayWebGL2";
 import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
 
@@ -75,6 +77,7 @@ export class EffectRendererManager {
   inkRenderer: IInkOverlayRenderer | null = null;
   frostRenderer: IFrostOverlayRenderer | null = null;
   silkRenderer: ISilkOverlayRenderer | null = null;
+  pulseRenderer: IPulseOverlayRenderer | null = null;
 
   // ── Configs ─────────────────────────────────────────────────────────
   fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
@@ -99,6 +102,7 @@ export class EffectRendererManager {
   prevHasInkTips = false;
   prevHasFrostTips = false;
   prevHasSilkTips = false;
+  prevHasPulseTips = false;
 
   // ── Dependencies (injected) ─────────────────────────────────────────
   private containerElement: HTMLDivElement | null = null;
@@ -583,6 +587,37 @@ export class EffectRendererManager {
     this.triggerRender();
   }
 
+  syncPulseOverlay(): void {
+    const enabled = this.prevHasPulseTips;
+
+    if (enabled) {
+      if (!this.pulseRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.pulseRenderer = new PulseOverlayRenderer();
+        const success = this.pulseRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize,
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            pulseRenderer: this.pulseRenderer,
+          });
+        } else {
+          this.pulseRenderer = null;
+        }
+      }
+    } else {
+      if (this.pulseRenderer?.isInitialized()) {
+        this.pulseRenderer.dispose();
+        this.pulseRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ pulseRenderer: null });
+    }
+
+    this.triggerRender();
+  }
+
   /**
    * Initialize or destroy the LED overlay based on config.enabled.
    * Creates the WebGL canvas lazily on first enable, removes on disable.
@@ -719,6 +754,7 @@ export class EffectRendererManager {
     apply("ink", this.inkRenderer);
     apply("frost", this.frostRenderer);
     apply("silk", this.silkRenderer);
+    apply("pulse", this.pulseRenderer);
   }
 
   // ── Trail Overlay Factory ───────────────────────────────────────────
@@ -758,6 +794,7 @@ export class EffectRendererManager {
     this.inkRenderer?.resize(newSize, newSize);
     this.frostRenderer?.resize(newSize, newSize);
     this.silkRenderer?.resize(newSize, newSize);
+    this.pulseRenderer?.resize(newSize, newSize);
     this.charcoalRenderer?.resize(newSize, newSize);
     // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
     // Without this, after HMR the tracker uses stale positions from the old size.
@@ -840,6 +877,9 @@ export class EffectRendererManager {
     if (this.prevHasSilkTips && !this.silkRenderer?.isInitialized()) {
       this.syncSilkOverlay();
     }
+    if (this.prevHasPulseTips && !this.pulseRenderer?.isInitialized()) {
+      this.syncPulseOverlay();
+    }
   }
 
   /**
@@ -919,6 +959,8 @@ export class EffectRendererManager {
     this.frostRenderer = null;
     this.silkRenderer?.dispose();
     this.silkRenderer = null;
+    this.pulseRenderer?.dispose();
+    this.pulseRenderer = null;
   }
 
   // ── Private helpers ─────────────────────────────────────────────────

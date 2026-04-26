@@ -14,6 +14,7 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
+  PulseIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
@@ -31,6 +32,7 @@ import type {
   Ink2DParams,
   Frost2DParams,
   Silk2DParams,
+  Pulse2DParams,
 } from "./canvas2d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
 import { resolveBubblePalette } from "../domain/BubblePalettes";
@@ -39,6 +41,7 @@ import { resolveSmokePalette } from "../domain/SmokePalettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 import { resolveFrostPalette } from "../domain/FrostPalettes";
 import { resolveSilkPalette } from "../domain/SilkPalettes";
+import { resolvePulsePalette } from "../domain/PulsePalettes";
 
 export function resolveTrails2D(
   intent: TrailsIntent,
@@ -342,6 +345,21 @@ export function resolveSilk2D(
     lifetimeSeconds: 0.5 + intent.duration * 3.5, // 0.5-4.0s
     motionReferenceSpeed: 3.0,
     blendMode: palette.emissive ? "lighter" : "source-over",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolvePulse2D(
+  intent: PulseIntent,
+  override: Partial<Pulse2DParams> = {},
+): Pulse2DParams {
+  const palette = resolvePulsePalette(intent);
+  const defaults: Omit<Pulse2DParams, keyof PulseIntent> = {
+    resolvedPalette: palette,
+    maxRadius: 20 + intent.reach * 180,
+    ringWidth: intent.style === "stroke" ? 1 + intent.thickness * 4 : 3 + intent.thickness * 12,
+    refSpeed: 3.0,
+    blendMode: "lighter",
   };
   return { ...intent, ...defaults, ...override };
 }
