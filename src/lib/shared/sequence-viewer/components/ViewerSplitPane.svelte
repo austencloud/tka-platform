@@ -17,6 +17,7 @@
   } from "../domain/viewer-prop-groups";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
+  import UnifiedViewerCanvas from "$lib/shared/3d/components/UnifiedViewerCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -62,7 +63,7 @@
     return settings;
   });
 
-  // Canonical effects config — single source of truth for both 2D canvas
+  // Canonical effects config - single source of truth for both 2D canvas
   // and 3D viewer effect parameters. Seeded from existing state (vm +
   // animationSettings) and kept in sync via a compat shim while Phase A
   // is in flight. Shim deleted in Phase B.
@@ -157,6 +158,13 @@
     isExporting = false,
   }: Props = $props();
 
+  // Feature flag: set window.__TKA_UNIFIED_VIEWER = true to enable the
+  // orthographic Threlte scene as the 2D renderer (Phase 3 of GPU pipeline).
+  const useUnifiedViewer = $derived(
+    typeof window !== "undefined" &&
+    (window as unknown as Record<string, unknown>).__TKA_UNIFIED_VIEWER === true
+  );
+
   onMount(() => {
     startSceneAssetPreload();
   });
@@ -168,7 +176,7 @@
   }
 
   function handleAnimationClick(e: MouseEvent) {
-    // Freeze layout during export — a pane-focus toggle resizes the 3D
+    // Freeze layout during export - a pane-focus toggle resizes the 3D
     // canvas under the frame grabber, which corrupts the video. Orbit
     // camera drags still go through because OrbitControls intercepts
     // pointer events before click fires.
@@ -178,7 +186,7 @@
     }
 
     // Clicks/releases on the transport scrubber or the play knob are
-    // their own controls — never read them as "expand the pane".
+    // their own controls - never read them as "expand the pane".
     const target = e.target as HTMLElement | null;
     if (target?.closest('[role="slider"], button')) {
       pointerDownPos = null;
@@ -186,7 +194,7 @@
     }
 
     // For 3D mode, only expand on tap (no significant drag movement).
-    // OrbitControls use drag — a click without movement means "tap to expand".
+    // OrbitControls use drag - a click without movement means "tap to expand".
     if (renderMode === '3d' && pointerDownPos) {
       const dx = Math.abs(e.clientX - pointerDownPos.x);
       const dy = Math.abs(e.clientY - pointerDownPos.y);
@@ -206,7 +214,7 @@
   }
 
   function handlePreviewClick() {
-    // Same reasoning as handleAnimationClick — don't let the user trigger
+    // Same reasoning as handleAnimationClick - don't let the user trigger
     // a layout transition while a video or image export is running.
     if (isExporting) return;
     if (layout.focusedPane === "image") {
@@ -285,7 +293,7 @@
         <!-- Both canvases always mounted. Crossfade via opacity transition. -->
         <div
           class="canvas-layer canvas-3d-layer"
-          style="opacity:{renderMode === '3d' ? 1 : 0};pointer-events:{renderMode === '3d' ? 'auto' : 'none'};"
+          style="opacity:{renderMode === '3d' && !useUnifiedViewer ? 1 : 0};pointer-events:{renderMode === '3d' && !useUnifiedViewer ? 'auto' : 'none'};"
         >
           <Viewer3DCanvas
             sequenceData={playback.animationState.sequenceData}
@@ -300,9 +308,32 @@
             onExitFullScreen={onUnfocusPane}
           />
         </div>
+        {#if useUnifiedViewer}
+          <div
+            class="canvas-layer canvas-unified-layer"
+            style="opacity:1;pointer-events:auto;"
+          >
+            <UnifiedViewerCanvas
+              cameraMode={renderMode === '3d' ? 'perspective-3d' : 'orthographic-2d'}
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              {bpm}
+              {onBpmChange}
+              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+              bluePropState={playback.animationState.bluePropState}
+              redPropState={playback.animationState.redPropState}
+              gridMode={sequence?.gridMode?.toString()}
+              fullScreen={layout.focusedPane === "animation"}
+              onExitFullScreen={onUnfocusPane}
+              {onCanvasReady}
+            />
+          </div>
+        {/if}
         <div
           class="canvas-layer canvas-2d-layer"
-          style="opacity:{renderMode === '3d' ? 0 : 1};pointer-events:{renderMode === '3d' ? 'none' : 'auto'};"
+          style="opacity:{renderMode === '3d' || useUnifiedViewer ? 0 : 1};pointer-events:{renderMode === '3d' || useUnifiedViewer ? 'none' : 'auto'};"
         >
           <AnimatorCanvas
             sequenceData={playback.animationState.sequenceData}
@@ -323,15 +354,15 @@
             onProgressBarScrubStart={onProgressBarScrubStart ?? null}
             onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
             focused={layout.focusedPane === "animation"}
-            suppress2DOverlays={renderMode === '3d'}
-            hideProgressBar={renderMode === '3d'}
+            suppress2DOverlays={renderMode === '3d' || useUnifiedViewer}
+            hideProgressBar={renderMode === '3d' || useUnifiedViewer}
           />
         </div>
       {/if}
 
     </div>
 
-    <!-- Unified control rail — sibling of .media-pane, NOT inside it.
+    <!-- Unified control rail - sibling of .media-pane, NOT inside it.
          The hover-scale effect is applied to .media-pane so the rail
          sits in a non-scaling layer. Keeps chip positions stable as
          the user moves the cursor toward them (Fitts's Law). -->
@@ -405,10 +436,10 @@
   /*
    * Unified Motion Language
    *
-   * One curve:  cubic-bezier(0.2, 0, 0, 1)  — Material 3 "emphasized decelerate"
-   * Micro:      120ms  — button press, hover
-   * Standard:   250ms  — layout shifts, panel transitions, focus/unfocus
-   * Spring:     cubic-bezier(0.34, 1.56, 0.64, 1) — close button pop only
+   * One curve:  cubic-bezier(0.2, 0, 0, 1)  - Material 3 "emphasized decelerate"
+   * Micro:      120ms  - button press, hover
+   * Standard:   250ms  - layout shifts, panel transitions, focus/unfocus
+   * Spring:     cubic-bezier(0.34, 1.56, 0.64, 1) - close button pop only
    */
 
   /* View container for absolute positioning */
@@ -430,7 +461,7 @@
                 grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Split columns — tappable focus targets */
+  /* Split columns - tappable focus targets */
   .split-column {
     position: relative; /* anchor for non-scaling overlays like RightRail */
     min-height: 0;
@@ -450,7 +481,7 @@
     transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Hover outline — desktop pointer devices only.
+  /* Hover outline - desktop pointer devices only.
      Subtle outline on hover signals "click to expand" without the
      disorienting scale pop. No outline at rest or when focused. */
   @media (hover: hover) and (pointer: fine) {
@@ -513,6 +544,13 @@
     transition: opacity 250ms ease;
   }
 
+  .canvas-unified-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    transition: opacity 250ms ease;
+  }
+
   .canvas-2d-layer {
     position: absolute;
     inset: 0;
@@ -545,7 +583,7 @@
      (grid-template-columns: 1fr var(--export-sidebar-width)).
      No padding-right compensation needed. */
 
-  /* Close button — spring pop-in, staggered 100ms after grid starts moving */
+  /* Close button - spring pop-in, staggered 100ms after grid starts moving */
   .pane-close-btn {
     position: absolute;
     top: 12px;
@@ -592,7 +630,7 @@
     outline-offset: 2px;
   }
 
-  /* Hidden column fades out — same 250ms as the grid, so everything lands together */
+  /* Hidden column fades out - same 250ms as the grid, so everything lands together */
   .split-view[data-focused] .split-column[data-hidden="true"] {
     opacity: 0;
     pointer-events: none;
@@ -649,7 +687,7 @@
       padding: 24px;
     }
 
-    /* Preview pane needs less padding — the ChoreoCard
+    /* Preview pane needs less padding - the ChoreoCard
        handles its own glow padding internally */
     .preview-pane {
       padding: 4px;
