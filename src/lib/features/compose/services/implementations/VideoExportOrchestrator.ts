@@ -84,10 +84,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     const visibilityManager = getAnimationVisibilityManager();
     const showWordHeader = visibilityManager.getVisibility("wordHeader");
     const showProgressBar = visibilityManager.getVisibility("progressBar");
-    const headerHeight = showWordHeader
+    // Header/progress bar heights at SOURCE resolution — used only for
+    // aspect ratio calculation so the output dimensions stay correct.
+    const srcHeaderHeight = showWordHeader
       ? this.canvasRenderer.getHeaderHeight(canvas.width)
       : 0;
-    const progressBarHeight = showProgressBar
+    const srcProgressBarHeight = showProgressBar
       ? this.canvasRenderer.getProgressBarHeight(canvas.width)
       : 0;
 
@@ -127,7 +129,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     // Calculate source dimensions from the live canvas (includes header + progress bar)
     const sourceWidth = Math.round(canvas.width);
     const sourceHeight = Math.round(
-      canvas.height + headerHeight + progressBarHeight
+      canvas.width + srcHeaderHeight + srcProgressBarHeight
     );
 
     if (sourceWidth === 0 || sourceHeight === 0) {
@@ -327,11 +329,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         await this.compositeRenderer.cacheStaticGrid();
       }
 
-      // Use the source dimensions captured at export start, NOT live canvas.width.
-      // On mobile, the canvas can resize mid-export when UI layout shifts (e.g.,
-      // export panel appearing). Using the snapshot avoids size mismatches.
-      const actualCanvasSize = sourceWidth;
-
       // Get additional visibility settings (showWordHeader already checked above)
       const showTkaGlyph = visibilityManager.getVisibility("tkaGlyph");
       const showStepNumbers = visibilityManager.getVisibility("stepNumbers");
@@ -342,9 +339,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         await this.glyphPrerenderer.prerenderGlyphs(steps, isDarkMode);
       }
 
-      // Create offscreen canvas for compositing (so we don't touch the visible canvas).
-      // For the background encoder we render at source resolution here, then scale
-      // down to export resolution when extracting ImageData for the worker.
+      // Create offscreen canvas for compositing at OUTPUT resolution directly.
+      // Each source layer (main canvas, overlays) is scaled up individually
+      // with high-quality interpolation, producing sharper trails and effects
+      // than the previous approach of compositing at source size then resizing.
       const offscreenCanvas = document.createElement("canvas");
 
       // Set canvas dimensions based on mode
@@ -353,8 +351,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         offscreenCanvas.width = compositeDims.width;
         offscreenCanvas.height = compositeDims.height;
       } else {
-        offscreenCanvas.width = sourceWidth;
-        offscreenCanvas.height = sourceHeight;
+        offscreenCanvas.width = outputWidth;
+        offscreenCanvas.height = outputHeight;
       }
       const offscreenCtx = offscreenCanvas.getContext("2d", {
         willReadFrequently: useBackgroundEncoder,
@@ -364,22 +362,19 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         throw new Error("Failed to create offscreen canvas context");
       }
 
-      // When the export resolution differs from the source, create a second
-      // canvas to downscale/upscale before extracting the frame.
-      const needsResize =
-        offscreenCanvas.width !== outputWidth ||
-        offscreenCanvas.height !== outputHeight;
-      let resizeCanvas: HTMLCanvasElement | null = null;
-      let resizeCtx: CanvasRenderingContext2D | null = null;
+      // Use Lanczos (high) interpolation when scaling source layers up
+      offscreenCtx.imageSmoothingEnabled = true;
+      offscreenCtx.imageSmoothingQuality = "high";
 
-      if (needsResize) {
-        resizeCanvas = document.createElement("canvas");
-        resizeCanvas.width = outputWidth;
-        resizeCanvas.height = outputHeight;
-        resizeCtx = resizeCanvas.getContext("2d", {
-          willReadFrequently: useBackgroundEncoder,
-        });
-      }
+      // Scale factor from source canvas to output resolution.
+      const scaleFactor = isCompositeMode ? 1 : outputWidth / sourceWidth;
+
+      // Header/progress bar heights at OUTPUT resolution
+      const headerHeight = Math.round(srcHeaderHeight * scaleFactor);
+      const progressBarHeight = Math.round(srcProgressBarHeight * scaleFactor);
+      // The square animation area in the output
+      const outputCanvasSize = isCompositeMode ? sourceWidth : outputWidth;
+      const actualCanvasSize = outputCanvasSize;
 
       // Track the current glyph cache key for crossfade detection
       let currentCacheKey = "";
@@ -483,7 +478,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               offscreenCanvas
             );
           } else {
-            // Normal mode: copy the live canvas to the offscreen canvas (preserves visible animation)
+            // Normal mode: scale each source layer up to output resolution individually.
+            // High-quality (Lanczos) interpolation is set on offscreenCtx above.
             offscreenCtx.clearRect(
               0,
               0,
@@ -491,21 +487,21 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               offscreenCanvas.height
             );
 
-            // Animation content goes below header (and above progress bar)
+            // Animation content goes below header (and above progress bar), at output scale
             const canvasY = headerHeight > 0 ? headerHeight : 0;
 
-            // Use 9-arg drawImage to handle canvas resize during export.
-            // On mobile, UI layout shifts (export panel appearing) can shrink the
-            // canvas container mid-export. The 9-arg form scales the current canvas
-            // content to fill the expected area regardless of its current backing size.
+            // Scale the live canvas to output resolution. The 9-arg drawImage
+            // handles canvas resize mid-export (mobile layout shifts) and scales
+            // from source to output in a single step.
             offscreenCtx.drawImage(
               canvas,
-              0, 0, canvas.width, canvas.height,          // source: full current canvas
-              0, canvasY, sourceWidth, sourceWidth          // dest: fill expected square area
+              0, 0, canvas.width, canvas.height,                       // source: full current canvas
+              0, canvasY, outputCanvasSize, outputCanvasSize             // dest: fill output square area
             );
 
-            // Composite WebGL overlay canvases (fire, charcoal sparks, LED effects)
-            // These are sibling canvases in the same container, layered via z-index
+            // Composite overlay canvases (trails, fire, charcoal sparks, LED effects).
+            // Each overlay is scaled from its source size to output resolution
+            // individually, preserving detail in transparent layers (trails, glow).
             const container = canvas.parentElement;
             if (container) {
               const overlayCanvases = container.querySelectorAll("canvas");
@@ -514,8 +510,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
                 if (overlay.width === 0 || overlay.height === 0) continue; // Skip uninitialized
                 offscreenCtx.drawImage(
                   overlay,
-                  0, 0, overlay.width, overlay.height,    // source: full overlay
-                  0, canvasY, sourceWidth, sourceWidth      // dest: same target area
+                  0, 0, overlay.width, overlay.height,                  // source: full overlay
+                  0, canvasY, outputCanvasSize, outputCanvasSize          // dest: scaled to output
                 );
               }
             }
@@ -655,7 +651,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           // Render progress bar if enabled (below canvas area).
           // The progress bar expects a 0-based step index float.
           if (showProgressBar && !isCompositeMode) {
-            const progressBarY = headerHeight + canvas.height;
+            const progressBarY = headerHeight + outputCanvasSize;
             const progressBeat = isInStartPosition
               ? 0
               : isInEndHold
@@ -674,30 +670,15 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         }
 
         // -----------------------------------------------------------------------
-        // Capture frame — background encoder vs inline exporter
+        // Capture frame — offscreen canvas is already at output resolution
         // -----------------------------------------------------------------------
         if (useBackgroundEncoder) {
-          // Extract ImageData, optionally resizing to export resolution first
-          let frameData: ImageData;
-
-          if (needsResize && resizeCtx && resizeCanvas) {
-            resizeCtx.clearRect(0, 0, outputWidth, outputHeight);
-            resizeCtx.drawImage(
-              offscreenCanvas,
-              0,
-              0,
-              outputWidth,
-              outputHeight
-            );
-            frameData = resizeCtx.getImageData(0, 0, outputWidth, outputHeight);
-          } else {
-            frameData = offscreenCtx.getImageData(
-              0,
-              0,
-              offscreenCanvas.width,
-              offscreenCanvas.height
-            );
-          }
+          const frameData = offscreenCtx.getImageData(
+            0,
+            0,
+            offscreenCanvas.width,
+            offscreenCanvas.height
+          );
 
           const timestampMicros = i * frameDurationMicros;
           const isKeyframe = i % keyframeInterval === 0;
@@ -710,20 +691,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             isKeyframe
           );
         } else if (inlineExporter) {
-          // Legacy path: capture from the (possibly resized) canvas
-          if (needsResize && resizeCtx && resizeCanvas) {
-            resizeCtx.clearRect(0, 0, outputWidth, outputHeight);
-            resizeCtx.drawImage(
-              offscreenCanvas,
-              0,
-              0,
-              outputWidth,
-              outputHeight
-            );
-            await inlineExporter.addFrame(resizeCanvas);
-          } else {
-            await inlineExporter.addFrame(offscreenCanvas);
-          }
+          await inlineExporter.addFrame(offscreenCanvas);
         }
 
         // Increment crossfade frame counter
