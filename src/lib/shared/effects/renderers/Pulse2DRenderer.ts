@@ -128,7 +128,7 @@ export class Pulse2DRenderer {
       case "beat": {
         const beatIdx = Math.floor(currentStep / params.beatInterval);
         const lastIdx = this.lastBeatIndex.get(tip.tipIndex) ?? -1;
-        if (beatIdx > lastIdx) {
+        if (beatIdx !== lastIdx) {
           this.spawn(tip.x, tip.y, color);
           this.lastBeatIndex.set(tip.tipIndex, beatIdx);
           spawned = true;
