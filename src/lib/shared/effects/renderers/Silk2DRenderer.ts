@@ -33,14 +33,26 @@ export class Silk2DRenderer {
     tips: SilkTipInput,
     dt: number,
     scale: number = 1,
+    loopDetected: boolean = false,
   ): void {
     this.time += dt;
 
     for (const key of TIP_KEYS) {
       const tip = tips[key];
       if (!tip || !this.isTipEnabled(key, params)) {
+        // When tips go temporarily null (e.g. warmup frames after a loop
+        // reset), preserve trail data so the ribbon keeps rendering from
+        // existing samples and fades out naturally via lifetimeSeconds.
+        // Only clear lastTipPos so speed isn't computed against a stale pos.
+        const trail = this.tipTrails[key];
+        if (trail) {
+          const cutoff = this.time - params.lifetimeSeconds;
+          while (trail.length > 0 && trail[0]!.t < cutoff) trail.shift();
+          if (trail.length === 0) {
+            delete this.tipTrails[key];
+          }
+        }
         delete this.lastTipPos[key];
-        delete this.tipTrails[key];
         continue;
       }
 
@@ -48,6 +60,15 @@ export class Silk2DRenderer {
       if (!trail) {
         trail = [];
         this.tipTrails[key] = trail;
+      }
+
+      if (loopDetected) {
+        // On a seamless loop boundary, the tip position teleports from
+        // end-of-sequence back to start. Skip recording this frame's sample
+        // to avoid a velocity spike and visible ribbon discontinuity.
+        // Update lastTipPos so the next frame computes speed normally.
+        this.lastTipPos[key] = { x: tip.x, y: tip.y };
+        continue;
       }
 
       const last = this.lastTipPos[key];

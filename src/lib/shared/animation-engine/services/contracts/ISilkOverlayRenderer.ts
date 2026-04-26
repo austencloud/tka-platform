@@ -4,7 +4,7 @@ import type { SilkTipInput } from "$lib/shared/effects/renderers/Silk2DRenderer"
 export interface ISilkOverlayRenderer {
   initialize(container: HTMLElement, width: number, height: number): boolean;
   resize(width: number, height: number): void;
-  renderFrame(params: Silk2DParams, tips: SilkTipInput, dt: number): void;
+  renderFrame(params: Silk2DParams, tips: SilkTipInput, dt: number, loopDetected?: boolean): void;
   clear(): void;
   setVisible(visible: boolean): void;
   setCanvasZIndex(z: number): void;
