@@ -14,7 +14,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type {
 	BrowseEngine,
 	BrowseEngineConfig,
-	BrowseLayout,
 	ActiveFilter,
 	SequenceSource,
 	PersistedEngineState,
@@ -170,6 +169,13 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 	let activeFilters = $state<Map<string, ActiveFilter>>(buildInitialFilters());
 
+	// Search state
+	let _searchQuery = $state("");
+
+	// Section state
+	let _sectionsEnabled = $state(config.sections ?? false);
+	let _sectionGroupBy = $state<SectionGroupBy>(config.defaultSectionGroupBy ?? "letter");
+
 	// Layout state
 	let columns = $state<number>(
 		persisted?.columns ?? config.initialColumns ?? settingsService.settings.gridZoomLevel ?? 2
@@ -195,6 +201,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			);
 		}
 
+		// Apply search
+		if (_searchQuery.trim()) {
+			result = filterService.applyFilter(result, BrowseFilterType.CONTAINS_LETTERS, _searchQuery);
+		}
+
 		// Apply sorting
 		const sorted = sortService.sortSequences(result, sortMethod);
 		if (sortDirection === "desc") {
@@ -206,9 +217,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	// --- Derived: sections ---
 
 	const sections = $derived.by((): SequenceSection[] => {
-		if (!sectionsReady) return [];
+		if (!_sectionsEnabled || !sectionsReady) return [];
 		const sectionConfig: SectionConfig = {
-			groupBy: sortMethodToGroupBy(sortMethod),
+			groupBy: _sectionGroupBy,
 			sortMethod,
 			showEmptySections: false,
 			expandedSections: new Set<string>(),
@@ -226,7 +237,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		return count;
 	});
 
-	const hasUserFilters = $derived(userFilterCount > 0);
+	const hasActiveFilters = $derived(userFilterCount > 0);
+
+	const allFilterChips = $derived.by(() => {
+		return Array.from(activeFilters.values());
+	});
 
 	const availableLengths = $derived.by(() => {
 		const lengths = new Set<number>();
@@ -260,12 +275,6 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	// --- Derived: layout ---
 
 	const maxColumns = $derived(getMaxColumnsForWidth(containerWidth));
-
-	const layout = $derived<BrowseLayout>({
-		columns,
-		maxColumns,
-		isTransitioning,
-	});
 
 	// --- Persistence effect ---
 
@@ -417,14 +426,20 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		get allSequences() {
 			return allSequences;
 		},
-		get displayedSequences() {
+		get sequences() {
 			return filteredAndSorted;
+		},
+		get resultCount() {
+			return filteredAndSorted.length;
 		},
 		get sections() {
 			return sections;
 		},
 		get sectionsReady() {
 			return sectionsReady;
+		},
+		get searchQuery() {
+			return _searchQuery;
 		},
 		get sortMethod() {
 			return sortMethod;
@@ -435,20 +450,63 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		get activeFilters() {
 			return activeFilters;
 		},
+		get allFilterChips() {
+			return allFilterChips;
+		},
 		get userFilterCount() {
 			return userFilterCount;
 		},
-		get hasUserFilters() {
-			return hasUserFilters;
+		get hasActiveFilters() {
+			return hasActiveFilters;
 		},
-		get layout() {
-			return layout;
+
+		// Layout (flat getters)
+		get columnCount() {
+			return Math.max(minColumns, Math.min(maxColumns, columns));
 		},
+		get canZoomIn() {
+			return columns < maxColumns;
+		},
+		get canZoomOut() {
+			return columns > minColumns;
+		},
+		get isTransitioning() {
+			return isTransitioning;
+		},
+
+		// Source / section state
+		get canSwitchSource() {
+			return (config.allowSourceToggle !== false) && ((config.sources?.length ?? 2) > 1);
+		},
+		get sectionsEnabled() {
+			return _sectionsEnabled;
+		},
+		get sectionGroupBy() {
+			return _sectionGroupBy;
+		},
+
 		get availableLengths() {
 			return availableLengths;
 		},
 		get loopTypeCounts() {
 			return loopTypeCounts;
+		},
+
+		// --- Initialize / Refresh ---
+		async initialize(): Promise<void> {
+			if (source === "my-library") await loadLibrarySequences();
+			else await loadCommunitySequences();
+		},
+
+		async refresh(): Promise<void> {
+			libraryCache = null;
+			if (source === "my-library") await loadLibrarySequences();
+			else await loadCommunitySequences();
+		},
+
+		// --- Search ---
+		setSearch(query: string): void {
+			_searchQuery = query;
 		},
 
 		// --- Source ---
@@ -581,6 +639,15 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		zoomOut(): void {
 			engine.setColumns(columns - 1);
+		},
+
+		// --- Sections ---
+		setSectionsEnabled(enabled: boolean): void {
+			_sectionsEnabled = enabled;
+		},
+
+		setSectionGroupBy(groupBy: SectionGroupBy): void {
+			_sectionGroupBy = groupBy;
 		},
 
 		// --- Cache ---

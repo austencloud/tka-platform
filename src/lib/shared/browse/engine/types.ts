@@ -62,20 +62,6 @@ export type SectionGroupBy =
 	| "none";
 
 // ---------------------------------------------------------------------------
-// Layout
-// ---------------------------------------------------------------------------
-
-/** Grid layout state managed by the engine. */
-export interface BrowseLayout {
-	/** Current number of grid columns. */
-	columns: number;
-	/** Per-breakpoint max derived from container width. */
-	maxColumns: number;
-	/** True for ~200ms after column change (CSS transition hint). */
-	isTransitioning: boolean;
-}
-
-// ---------------------------------------------------------------------------
 // Persisted State
 // ---------------------------------------------------------------------------
 
@@ -133,6 +119,15 @@ export interface BrowseEngineConfig {
 
 	/** Whether the source toggle (community / my-library) is available. */
 	allowSourceToggle?: boolean;
+
+	/** Enable section grouping. Defaults to false. */
+	sections?: boolean;
+
+	/** Default section grouping strategy. Defaults to "letter". */
+	defaultSectionGroupBy?: SectionGroupBy;
+
+	/** Which sources are available. Defaults to both community and my-library. */
+	sources?: SequenceSource[];
 }
 
 // ---------------------------------------------------------------------------
@@ -158,11 +153,16 @@ export interface BrowseEngine {
 	/** All sequences from the current source (unfiltered). */
 	readonly allSequences: readonly SequenceData[];
 	/** Sequences after filtering + sorting. */
-	readonly displayedSequences: readonly SequenceData[];
+	readonly sequences: readonly SequenceData[];
+	/** Number of filtered sequences (convenience for `sequences.length`). */
+	readonly resultCount: number;
 	/** Sequences organized into titled sections. */
 	readonly sections: readonly SequenceSection[];
 	/** True once the first load + section organization is complete. */
 	readonly sectionsReady: boolean;
+
+	/** Current search text. */
+	readonly searchQuery: string;
 
 	/** Current sort method. */
 	readonly sortMethod: BrowseSortMethod;
@@ -171,13 +171,32 @@ export interface BrowseEngine {
 
 	/** All active filters (user-set + locked constraints). */
 	readonly activeFilters: ReadonlyMap<string, ActiveFilter>;
+	/** All filter chips (locked + user), for chip bar rendering. */
+	readonly allFilterChips: readonly ActiveFilter[];
 	/** Number of active user-set (non-locked) filters. */
 	readonly userFilterCount: number;
 	/** True if any user-set (non-locked) filters are active. */
-	readonly hasUserFilters: boolean;
+	readonly hasActiveFilters: boolean;
 
-	/** Grid layout state. */
-	readonly layout: BrowseLayout;
+	// --- Layout (flat getters) ---
+
+	/** Current number of grid columns. */
+	readonly columnCount: number;
+	/** True when zoom-in (more columns) is available. */
+	readonly canZoomIn: boolean;
+	/** True when zoom-out (fewer columns) is available. */
+	readonly canZoomOut: boolean;
+	/** True for ~200ms after column change (CSS transition hint). */
+	readonly isTransitioning: boolean;
+
+	// --- Source / section state ---
+
+	/** True when the source toggle is available. */
+	readonly canSwitchSource: boolean;
+	/** Whether section grouping is enabled. */
+	readonly sectionsEnabled: boolean;
+	/** Current section grouping strategy. */
+	readonly sectionGroupBy: SectionGroupBy;
 
 	// --- Available filter metadata (for building filter UIs) ---
 
@@ -187,6 +206,15 @@ export interface BrowseEngine {
 	readonly loopTypeCounts: Readonly<Record<string, number>>;
 
 	// --- Methods ---
+
+	/** Load initial data for current source. Call on mount. */
+	initialize(): Promise<void>;
+
+	/** Force reload (invalidates cache). For retry buttons. */
+	refresh(): Promise<void>;
+
+	/** Set the search query text. Filters pipeline reactively. */
+	setSearch(query: string): void;
 
 	/** Switch source (community / my-library). Loads data. */
 	setSource(source: SequenceSource): Promise<void>;
@@ -234,6 +262,12 @@ export interface BrowseEngine {
 
 	/** Zoom out (fewer columns, larger cards). */
 	zoomOut(): void;
+
+	/** Enable or disable section grouping. */
+	setSectionsEnabled(enabled: boolean): void;
+
+	/** Set the section grouping strategy. */
+	setSectionGroupBy(groupBy: SectionGroupBy): void;
 
 	/** Invalidate library cache (e.g. when impersonated user changes). */
 	invalidateLibraryCache(): void;
