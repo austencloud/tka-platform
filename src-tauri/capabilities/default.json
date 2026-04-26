@@ -1,0 +1,15 @@
+{
+  "identifier": "default",
+  "description": "TKA Composer desktop capabilities",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "fs:allow-read-text-file",
+    "fs:allow-resource-read-recursive",
+    "http:default",
+    "shell:allow-open",
+    "notification:default",
+    "updater:default",
+    "window-state:default"
+  ]
+}
