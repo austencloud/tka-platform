@@ -43,7 +43,7 @@
   const colorComboLabels = ['Blue / Red', 'Purple / Orange', 'Emerald / Pink', 'Cyan / Yellow'];
   const colorLabel = $derived(colorComboLabels[colorComboIndex] ?? 'Blue / Red');
 
-  // Effect display — check tipEffectMap first, then flat effect, then global
+  // Effect display - check tipEffectMap first, then flat effect, then global
   const globalVM = getAnimationVisibilityManager();
   const activeEffect = $derived.by(() => {
     // Check tip effect map first for per-tip assignments
@@ -88,7 +88,7 @@
   );
 
   interface ChipDef {
-    id: ExpandableSection;
+    id: ExpandableSection | null;
     icon: string;
     label: string;
     action: () => void;
@@ -98,79 +98,99 @@
     isExpandable: boolean;
   }
 
-  const chips: ChipDef[] = $derived([
+  interface ChipGroup {
+    label: string;
+    chips: ChipDef[];
+  }
+
+  const groups: ChipGroup[] = $derived([
     {
-      id: "transform" as ExpandableSection,
-      icon: "fa-rotate",
-      label: "Transform",
-      action: () => panelState.toggleSection("transform"),
-      isExpandable: true,
+      label: "View",
+      chips: [
+        {
+          id: "effects" as ExpandableSection,
+          icon: "fa-wind",
+          label: effectName,
+          action: () => panelState.toggleSection("effects"),
+          activeColor: hasEffect ? "#f97316" : undefined,
+          isActive: hasEffect,
+          isExpandable: true,
+        },
+        {
+          id: null,
+          icon: blueVisible ? "fa-eye" : "fa-eye-slash",
+          label: "Blue",
+          action: onToggleBlueVisibility,
+          activeColor: blueVisible ? "#60a5fa" : undefined,
+          isActive: blueVisible,
+          isMuted: !blueVisible,
+          isExpandable: false,
+        },
+        {
+          id: null,
+          icon: redVisible ? "fa-eye" : "fa-eye-slash",
+          label: "Red",
+          action: onToggleRedVisibility,
+          activeColor: redVisible ? "#dc2626" : undefined,
+          isActive: redVisible,
+          isMuted: !redVisible,
+          isExpandable: false,
+        },
+      ],
     },
     {
-      id: "speed" as ExpandableSection,
-      icon: "fa-gauge-high",
-      label: speedLabel,
-      action: () => panelState.toggleSection("speed"),
-      isExpandable: true,
+      label: "Timing",
+      chips: [
+        {
+          id: "speed" as ExpandableSection,
+          icon: "fa-gauge-high",
+          label: speedLabel,
+          action: () => panelState.toggleSection("speed"),
+          isExpandable: true,
+        },
+        {
+          id: "offset" as ExpandableSection,
+          icon: "fa-drum",
+          label: offsetLabel,
+          action: () => panelState.toggleSection("offset"),
+          isExpandable: true,
+        },
+      ],
     },
     {
-      id: "effects" as ExpandableSection,
-      icon: "fa-wind",
-      label: effectName,
-      action: () => panelState.toggleSection("effects"),
-      activeColor: hasEffect ? "#f97316" : undefined,
-      isActive: hasEffect,
-      isExpandable: true,
-    },
-    {
-      id: null,
-      icon: blueVisible ? "fa-eye" : "fa-eye-slash",
-      label: "Blue",
-      action: onToggleBlueVisibility,
-      activeColor: blueVisible ? "#2563eb" : undefined,
-      isActive: blueVisible,
-      isMuted: !blueVisible,
-      isExpandable: false,
-    },
-    {
-      id: null,
-      icon: redVisible ? "fa-eye" : "fa-eye-slash",
-      label: "Red",
-      action: onToggleRedVisibility,
-      activeColor: redVisible ? "#dc2626" : undefined,
-      isActive: redVisible,
-      isMuted: !redVisible,
-      isExpandable: false,
-    },
-    {
-      id: "colors" as ExpandableSection,
-      icon: "fa-palette",
-      label: colorLabel,
-      action: () => panelState.toggleSection("colors"),
-      isExpandable: true,
-    },
-    {
-      id: "effort" as ExpandableSection,
-      icon: "",
-      label: effortLabel,
-      action: () => panelState.toggleSection("effort"),
-      activeColor: hasEffort ? effortColor : undefined,
-      isActive: hasEffort,
-      isExpandable: true,
-    },
-    {
-      id: "offset" as ExpandableSection,
-      icon: "fa-drum",
-      label: offsetLabel,
-      action: () => panelState.toggleSection("offset"),
-      isExpandable: true,
-    },
-    {
-      id: "display" as ExpandableSection,
-      icon: "fa-film",
-      label: mediaLabel,
-      action: () => panelState.toggleSection("display"),
-      isExpandable: true,
+      label: "Style",
+      chips: [
+        {
+          id: "transform" as ExpandableSection,
+          icon: "fa-rotate",
+          label: "Transform",
+          action: () => panelState.toggleSection("transform"),
+          isExpandable: true,
+        },
+        {
+          id: "colors" as ExpandableSection,
+          icon: "fa-palette",
+          label: colorLabel,
+          action: () => panelState.toggleSection("colors"),
+          isExpandable: true,
+        },
+        {
+          id: "effort" as ExpandableSection,
+          icon: "",
+          label: effortLabel,
+          action: () => panelState.toggleSection("effort"),
+          activeColor: hasEffort ? effortColor : undefined,
+          isActive: hasEffort,
+          isExpandable: true,
+        },
+        {
+          id: "display" as ExpandableSection,
+          icon: "fa-film",
+          label: mediaLabel,
+          action: () => panelState.toggleSection("display"),
+          isExpandable: true,
+        },
+      ],
     },
   ]);
 
@@ -179,45 +199,71 @@
   }
 </script>
 
-<div class="chip-grid">
-  {#each chips as chip}
-    <button
-      class="chip"
-      class:active={chip.isActive && chip.activeColor}
-      class:muted={chip.isMuted}
-      class:expanded={isExpanded(chip)}
-      style:--chip-color={chip.activeColor || "transparent"}
-      onclick={chip.action}
-      aria-label={chip.label}
-    >
-      {#if chip.icon}
-        <i class="fas {chip.icon} chip-icon" aria-hidden="true"></i>
-      {:else}
-        <!-- Effort dot indicator -->
-        <span
-          class="effort-dot"
-          class:has-effort={hasEffort}
-          style:background={hasEffort ? effortColor : undefined}
-          style:border-color={hasEffort ? effortColor : undefined}
-        ></span>
-      {/if}
-      <span class="chip-label">{chip.label}</span>
-      {#if chip.isExpandable}
-        <i
-          class="fas fa-chevron-right chevron"
-          class:rotated={isExpanded(chip)}
-          aria-hidden="true"
-        ></i>
-      {/if}
-    </button>
+<div class="chip-groups">
+  {#each groups as group}
+    <div class="chip-group">
+      <span class="group-label">{group.label}</span>
+      <div class="chip-row">
+        {#each group.chips as chip}
+          <button
+            class="chip"
+            class:active={chip.isActive && chip.activeColor}
+            class:muted={chip.isMuted}
+            class:expanded={isExpanded(chip)}
+            style:--chip-color={chip.activeColor || "transparent"}
+            onclick={chip.action}
+            aria-label={chip.label}
+          >
+            {#if chip.icon}
+              <i class="fas {chip.icon} chip-icon" aria-hidden="true"></i>
+            {:else}
+              <span
+                class="effort-dot"
+                class:has-effort={hasEffort}
+                style:background={hasEffort ? effortColor : undefined}
+                style:border-color={hasEffort ? effortColor : undefined}
+              ></span>
+            {/if}
+            <span class="chip-label">{chip.label}</span>
+            {#if chip.isExpandable}
+              <i
+                class="fas fa-chevron-right chevron"
+                class:rotated={isExpanded(chip)}
+                aria-hidden="true"
+              ></i>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    </div>
   {/each}
 </div>
 
 <style>
-  .chip-grid {
+  .chip-groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--group-gap, clamp(10px, 2.5cqi, 14px));
+  }
+
+  .chip-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--chip-gap, clamp(6px, 1.5cqi, 8px));
+  }
+
+  .group-label {
+    font-size: clamp(0.65rem, 2cqi, 0.75rem);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: clamp(6px, 1.5cqi, 8px);
+    gap: var(--chip-gap, clamp(6px, 1.5cqi, 8px));
   }
 
   .chip {
@@ -225,28 +271,27 @@
     align-items: center;
     gap: clamp(4px, 1cqi, 6px);
     min-height: 44px;
-    padding: 8px 14px;
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px clamp(12px, 3cqi, 14px);
+    border-radius: var(--chip-radius, 22px);
+    background: var(--surface-idle, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, white);
     font-size: clamp(0.75rem, 2.5cqi, 0.85rem);
     cursor: pointer;
     transition:
-      background var(--duration-fast, 150ms) ease,
-      border-color var(--duration-fast, 150ms) ease;
+      background 150ms ease,
+      border-color 150ms ease;
     white-space: nowrap;
   }
 
   .chip:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--stroke-hover, rgba(255, 255, 255, 0.15));
+    background: var(--surface-hover, rgba(255, 255, 255, 0.08));
   }
 
-  /* Active state: tinted by chip color */
   .chip.active {
-    background: color-mix(in srgb, var(--chip-color) 12%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 35%, transparent);
+    background: color-mix(in srgb, var(--chip-color) var(--surface-active-pct, 12%), transparent);
+    border-color: color-mix(in srgb, var(--chip-color) var(--stroke-active-pct, 35%), transparent);
   }
 
   .chip.active:hover {
@@ -254,13 +299,11 @@
     border-color: color-mix(in srgb, var(--chip-color) 50%, transparent);
   }
 
-  /* Expanded state: highlighted border to show which section is open */
   .chip.expanded {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-hover, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-accent, #8b5cf6);
   }
 
-  /* Muted state: dimmed for visibility-off chips */
   .chip.muted {
     background: rgba(255, 255, 255, 0.02);
     border-color: rgba(255, 255, 255, 0.05);
@@ -268,8 +311,8 @@
   }
 
   .chip.muted:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--surface-idle, rgba(255, 255, 255, 0.05));
+    border-color: var(--stroke-idle, rgba(255, 255, 255, 0.08));
   }
 
   .chip-icon {
@@ -298,12 +341,18 @@
   .chevron {
     font-size: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    transition: transform var(--duration-fast, 150ms) ease;
+    transition: transform 150ms ease;
     margin-left: 2px;
   }
 
   .chevron.rotated {
     transform: rotate(90deg);
+  }
+
+  @container celleditorpanel (max-width: 280px) {
+    .chip {
+      flex: 1 0 100%;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

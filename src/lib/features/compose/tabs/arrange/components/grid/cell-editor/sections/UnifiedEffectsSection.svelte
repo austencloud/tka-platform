@@ -63,7 +63,7 @@
     { value: "trails", label: "Trails", icon: "fa-wind", cssClass: "eff-trails" },
   ];
 
-  // Scope + local map state — initialized from currentMap
+  // Scope + local map state - initialized from currentMap
   let scope: Scope = $state<Scope>("cell");
   let localMap: TipEffectMap = $state<TipEffectMap>({});
 
@@ -304,7 +304,7 @@
   .chip-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--chip-gap, 6px);
   }
 
   .chip {
@@ -312,11 +312,11 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 14px;
+    padding: 8px clamp(12px, 3cqi, 14px);
     min-height: 44px;
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--chip-radius, 22px);
+    background: var(--surface-idle, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 13px;
     font-weight: 500;
@@ -325,13 +325,13 @@
   }
 
   .chip:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(--surface-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
   }
 
   .chip.active {
-    background: color-mix(in srgb, var(--chip-color, #f97316) 10%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color, #f97316) 30%, transparent);
+    background: color-mix(in srgb, var(--chip-color, #f97316) var(--surface-active-pct, 12%), transparent);
+    border-color: color-mix(in srgb, var(--chip-color, #f97316) var(--stroke-active-pct, 35%), transparent);
     color: var(--chip-color, #f97316);
   }
 
