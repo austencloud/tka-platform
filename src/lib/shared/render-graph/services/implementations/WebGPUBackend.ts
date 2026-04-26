@@ -40,6 +40,8 @@ import {
   type Point2D,
   type MeshBuildOptions,
 } from "../../math/trail-mesh";
+import { WebGPULedExecutor } from "./WebGPULedExecutor";
+import { WebGPUParticleExecutor } from "./WebGPUParticleExecutor";
 
 const TRAIL_KEY_PREFIX = "trail-tip-";
 const DT_CLAMP_SECONDS = 0.1;
@@ -231,6 +233,9 @@ export class WebGPUBackend implements RenderBackend {
   private meshBuffer: GPUBuffer | null = null;
   private meshBufferSize = 0;
 
+  private ledExecutor: WebGPULedExecutor | null = null;
+  private particleExecutor: WebGPUParticleExecutor | null = null;
+
   private previousTime = -1;
   private frameCount = 0;
   private lastFrameMs = 0;
@@ -331,6 +336,10 @@ export class WebGPUBackend implements RenderBackend {
     this.pingPongs.clear();
     this.meshBuffer?.destroy();
     this.meshBuffer = null;
+    this.ledExecutor?.dispose();
+    this.ledExecutor = null;
+    this.particleExecutor?.dispose();
+    this.particleExecutor = null;
     this.device.destroy();
     this.device = null;
     this.context = null;
@@ -733,16 +742,26 @@ export class WebGPUBackend implements RenderBackend {
     // Phase 4b: port fluid simulation grid to compute shaders
   }
 
-  private executeLedPass(_payload: LedPassPayload, _dt: number): void {
-    // Phase 4c: port LED sprite instanced draw
+  private executeLedPass(payload: LedPassPayload, dt: number): void {
+    if (!this.ledExecutor) {
+      this.ledExecutor = new WebGPULedExecutor(this.device!, this.linearSampler!);
+    }
+    const canvas = this.canvas!;
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.ledExecutor.execute(payload, dt, presentView, canvas.width, canvas.height);
   }
 
   private executeParticlePass(
-    _kind: RenderPassKind,
-    _payload: ParticlePassPayload,
-    _dt: number,
+    kind: RenderPassKind,
+    payload: ParticlePassPayload,
+    dt: number,
   ): void {
-    // Phase 4d: port particle sprite sheet instanced draw
+    if (!this.particleExecutor) {
+      this.particleExecutor = new WebGPUParticleExecutor(this.device!);
+    }
+    const canvas = this.canvas!;
+    const presentView = this.context!.getCurrentTexture().createView();
+    this.particleExecutor.execute(kind, payload, dt, presentView, canvas.width, canvas.height);
   }
 
   private executeEchoPass(_payload: EchoPassPayload, _dt: number): void {
