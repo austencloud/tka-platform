@@ -1707,7 +1707,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
         if (dt > 0.1) dt = 0.1;
         this.lastSilkFrameTime = nowMs;
-        activeSilkRenderer!.renderFrame(params.silkConfig!, silkTips, dt);
+        const silkLoopDetected = this.loopDetectedThisFrame && (params.isSeamlesslyLoopable ?? false);
+        activeSilkRenderer!.renderFrame(params.silkConfig!, silkTips, dt, silkLoopDetected);
         this.consecutiveSilkErrors = 0;
       } catch (error) {
         this.consecutiveSilkErrors++;
