@@ -9,6 +9,7 @@
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import type { ClaimHealth } from "../../services/contracts/IClaimStatusDeriver";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 
   const {
     item,
@@ -215,8 +216,8 @@
       isDragging = true;
       createDragGhost(startX, startY);
       onDragStart(item);
-      // Haptic feedback if available (guarded — DevTools blocks vibrate before first tap)
-      try { navigator.vibrate?.(50); } catch { /* ignored in simulated environments */ }
+      // Haptic feedback if available (guarded - DevTools blocks vibrate before first tap)
+      getHapticFeedback().impact("heavy");
     }, 150);
   }
 
@@ -255,9 +256,7 @@
       isDragging = true;
       createDragGhost(touch.clientX, touch.clientY);
       onDragStart(item);
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
+      getHapticFeedback().impact("heavy");
       if (e.cancelable) e.preventDefault();
     }
   }
@@ -448,7 +447,7 @@
     cursor: grab;
     text-align: left;
     overflow: hidden;
-    /* Prevent browser from intercepting touch for scroll — drag is JS-handled */
+    /* Prevent browser from intercepting touch for scroll - drag is JS-handled */
     touch-action: none;
     transition: all var(--duration-normal) var(--spring-smooth);
     box-shadow:
