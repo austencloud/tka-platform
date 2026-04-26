@@ -98,7 +98,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
     // Keep dropdown open for multi-select — user closes explicitly or clicks outside
   }
 
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest(".family-chip-wrapper")) {
       isOpen = false;
@@ -107,8 +107,8 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
 
   $effect(() => {
     if (!isOpen) return;
-    document.addEventListener("click", handleClickOutside, true);
-    return () => document.removeEventListener("click", handleClickOutside, true);
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDownOutside, true);
   });
 </script>
 

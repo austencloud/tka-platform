@@ -54,7 +54,7 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
       }
     }
 
-    function handleMousedown(e: MouseEvent) {
+    function handlePointerDown(e: PointerEvent) {
       const target = e.target as Node;
       if (
         popoverEl &&
@@ -66,11 +66,11 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
     }
 
     document.addEventListener("keydown", handleKeydown);
-    document.addEventListener("mousedown", handleMousedown);
+    document.addEventListener("pointerdown", handlePointerDown);
 
     return () => {
       document.removeEventListener("keydown", handleKeydown);
-      document.removeEventListener("mousedown", handleMousedown);
+      document.removeEventListener("pointerdown", handlePointerDown);
     };
   });
 

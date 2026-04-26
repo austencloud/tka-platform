@@ -25,7 +25,7 @@ import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unifi
 import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
 import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
-import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 /**
  * Lightweight Animation Orchestrator
@@ -63,6 +63,14 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
   setVisibilityManager(vm: AnimationVisibilityStateManager): void {
     this.visibilityManagerOverride = vm;
+  }
+
+  protected getDefaultPropConfig(): { bluePropType: PropType; redPropType: PropType } {
+    const settings = getSettings();
+    return {
+      bluePropType: settings.bluePropType || settings.propType || PropType.STAFF,
+      redPropType: settings.redPropType || settings.propType || PropType.STAFF,
+    };
   }
 
   /**
@@ -107,8 +115,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       );
 
       // Extract metadata from domain data
-      // Get per-color prop types from settings
-      const settings = getSettings();
+      const propConfig = this.getDefaultPropConfig();
 
       this.metadata = {
         word: sequenceData.word || sequenceData.name || "",
@@ -116,10 +123,9 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
           sequenceData.author ||
           (sequenceData.metadata?.["author"] as string) ||
           "",
-        totalSteps: steps.length, // Number of motion steps (NOT including start position)
-        // propType removed from sequences - use settings (viewer preference)
-        bluePropType: settings.bluePropType || settings.propType,
-        redPropType: settings.redPropType || settings.propType,
+        totalSteps: steps.length,
+        bluePropType: propConfig.bluePropType,
+        redPropType: propConfig.redPropType,
         gridMode: sequenceData.gridMode,
       };
 

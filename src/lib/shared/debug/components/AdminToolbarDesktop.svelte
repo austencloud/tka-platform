@@ -188,8 +188,7 @@
     isActionsOpen = false;
   }
 
-  // Close dropdown when clicking outside
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest(".actions-menu")) {
       isActionsOpen = false;
@@ -197,7 +196,7 @@
   }
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window onpointerdown={handlePointerDownOutside} />
 
 <div class="admin-toolbar" transition:slide={{ duration: 150 }}>
   <!-- Hidden measuring element — always rendered offscreen to get natural button width -->

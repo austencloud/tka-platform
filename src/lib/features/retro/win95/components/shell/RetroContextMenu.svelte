@@ -53,7 +53,7 @@
   /* Click-outside dismiss                                               */
   /* ------------------------------------------------------------------ */
 
-  function handleWindowMouseDown(event: MouseEvent) {
+  function handleWindowPointerDown(event: PointerEvent) {
     if (!menuElement) return;
     const target = event.target as HTMLElement;
     if (!menuElement.contains(target)) {
@@ -139,7 +139,7 @@
   }
 </script>
 
-<svelte:window onmousedown={handleWindowMouseDown} />
+<svelte:window onpointerdown={handleWindowPointerDown} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div

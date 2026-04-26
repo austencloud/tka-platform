@@ -54,7 +54,7 @@
     posOpen = false;
   }
 
-  function handlePosClickOutside(event: MouseEvent) {
+  function handlePosPointerDownOutside(event: PointerEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest(".pos-chip-wrapper")) {
       posOpen = false;
@@ -63,8 +63,8 @@
 
   $effect(() => {
     if (!posOpen) return;
-    document.addEventListener("click", handlePosClickOutside, true);
-    return () => document.removeEventListener("click", handlePosClickOutside, true);
+    document.addEventListener("pointerdown", handlePosPointerDownOutside, true);
+    return () => document.removeEventListener("pointerdown", handlePosPointerDownOutside, true);
   });
 </script>
 
