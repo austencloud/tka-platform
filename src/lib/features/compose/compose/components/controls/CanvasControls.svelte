@@ -75,8 +75,7 @@
     }
   }
 
-  // Close dropdowns on outside click
-  function handleClickOutside(e: MouseEvent) {
+  function handlePointerDownOutside(e: PointerEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest(".layout-picker")) {
       showLayoutDropdown = false;
@@ -84,7 +83,7 @@
   }
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window onpointerdown={handlePointerDownOutside} />
 
 <div class="canvas-controls">
   <!-- Row 1: Playback + Preview + Layout/Templates -->

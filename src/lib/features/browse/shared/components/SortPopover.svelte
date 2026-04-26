@@ -146,7 +146,7 @@
     }
   }
 
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     if (!isOpen) return;
     const target = event.target as Node;
     if (triggerEl?.contains(target) || popoverEl?.contains(target)) return;
@@ -154,11 +154,11 @@
   }
 
   onMount(() => {
-    document.addEventListener("click", handleClickOutside, true);
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
   });
 
   onDestroy(() => {
-    document.removeEventListener("click", handleClickOutside, true);
+    document.removeEventListener("pointerdown", handlePointerDownOutside, true);
   });
 </script>
 

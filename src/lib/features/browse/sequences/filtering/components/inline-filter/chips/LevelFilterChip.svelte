@@ -56,7 +56,7 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
     isOpen = false;
   }
 
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest(".level-chip-wrapper")) {
       isOpen = false;
@@ -65,8 +65,8 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
 
   $effect(() => {
     if (!isOpen) return;
-    document.addEventListener("click", handleClickOutside, true);
-    return () => document.removeEventListener("click", handleClickOutside, true);
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDownOutside, true);
   });
 </script>
 

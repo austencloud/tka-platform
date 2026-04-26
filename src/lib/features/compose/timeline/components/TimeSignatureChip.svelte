@@ -60,8 +60,7 @@
     }
   }
 
-  // Close dropdown when clicking outside
-  function handleClickOutside(e: MouseEvent) {
+  function handlePointerDownOutside(e: PointerEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest(".time-signature-chip-container")) {
       isOpen = false;
@@ -70,8 +69,8 @@
 
   $effect(() => {
     if (isOpen) {
-      document.addEventListener("click", handleClickOutside);
-      return () => document.removeEventListener("click", handleClickOutside);
+      document.addEventListener("pointerdown", handlePointerDownOutside);
+      return () => document.removeEventListener("pointerdown", handlePointerDownOutside);
     }
     return undefined;
   });

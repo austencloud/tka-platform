@@ -165,7 +165,7 @@
     }
   }
 
-  function handleClickOutside(event: MouseEvent) {
+  function handlePointerDownOutside(event: PointerEvent) {
     if (
       containerRef &&
       !containerRef.contains(event.target as Node) &&
@@ -178,9 +178,9 @@
   }
 
   onMount(() => {
-    document.addEventListener("click", handleClickOutside, true);
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
     return () => {
-      document.removeEventListener("click", handleClickOutside, true);
+      document.removeEventListener("pointerdown", handlePointerDownOutside, true);
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
