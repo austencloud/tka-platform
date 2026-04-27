@@ -5,7 +5,7 @@
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import "../app.css";
-  // Chip toggle tokens — maps --chip-* to TKA design values
+  // Chip toggle tokens - maps --chip-* to TKA design values
   import "@austencloud/chip-toggle/css/tka-tokens.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
@@ -60,7 +60,7 @@
   // Some URL params are owned by specific features (e.g. `?seq=` belongs to
   // the loop-labeler admin tool for deep-linking sequences by id). When the
   // user navigates AWAY from that feature, the params stick around because
-  // no one cleans them up — they cargo-cult through every subsequent URL
+  // no one cleans them up - they cargo-cult through every subsequent URL
   // change until the next hard reload.
   //
   // This is more than cosmetic: the stale params feed the shortcode
@@ -107,7 +107,7 @@
   // PARALLEL IMPORT KICKOFF (pre-onMount)
   //
   // Start fetching all app-mode JS chunks the moment this module is evaluated,
-  // NOT when onMount runs. onMount waits for Svelte hydration — by then the
+  // NOT when onMount runs. onMount waits for Svelte hydration - by then the
   // browser is idle and could have been downloading chunks already.
   //
   // Fetching at module-top lets all vendor chunks (firebase, iti, etc.) stream
@@ -141,7 +141,7 @@
     if (typeof window === "undefined") return;
     // Dev mode: each ES module is a separate HTTP request. Preloading the
     // module chunk (150+ files for /create) contends with the DI container
-    // fetch and slows both. Skip in dev — ModuleRenderer lazy loads anyway.
+    // fetch and slows both. Skip in dev - ModuleRenderer lazy loads anyway.
     // Prod mode: chunks are bundled; HTTP/2 multiplexes them at negligible
     // cost, so parallel preload is pure win.
     if (!import.meta.env.PROD) return;
@@ -150,7 +150,7 @@
     if (loader) {
       // Fire-and-forget. Cache warms up while DI/firebase/auth resolve in parallel.
       loader().catch(() => {
-        // Preload failure is non-critical — ModuleRenderer retries on demand.
+        // Preload failure is non-critical - ModuleRenderer retries on demand.
       });
     }
   }
@@ -170,7 +170,7 @@
       cacheBuster: import("$lib/shared/utils/cache-buster"),
     };
     // Prod-only: preload MainApp too. In dev, AppShellLoader's own import() is
-    // fast enough — adding it here pulls too many deps into initial parallel
+    // fast enough - adding it here pulls too many deps into initial parallel
     // fetch and slows DI.
     if (import.meta.env.PROD) {
       (common as Record<string, Promise<unknown>>).mainApp = import(
@@ -185,7 +185,7 @@
       ? startAppImports()
       : null;
 
-  // Site mode detection — determines whether we load the heavy app stack
+  // Site mode detection - determines whether we load the heavy app stack
   let siteMode = $state<SiteMode>("loading");
 
   // App-mode state
@@ -203,10 +203,10 @@
   // Track cleanup functions for app-mode resources
   let appCleanup: (() => void) | null = null;
 
-  // Deferred DI container reference — set once the dynamic import resolves
+  // Deferred DI container reference - set once the dynamic import resolves
   let containerRef: any = null;
 
-  // Set context synchronously during component init — the getter defers to the
+  // Set context synchronously during component init - the getter defers to the
   // dynamically loaded container once available. Legacy code calls getContext()
   // in onMount or later, by which point the container will be loaded.
   setContext("di-container", () => containerRef);
@@ -234,15 +234,15 @@
     }
     window.addEventListener("resize", updateViewportHeight);
 
-    // i18n is lightweight — safe for landing
+    // i18n is lightweight - safe for landing
     const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
     initI18n();
 
-    // Analytics: PostHog (same instance as app mode — lightweight, no DI needed)
+    // Analytics: PostHog (same instance as app mode - lightweight, no DI needed)
     const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
     initPostHog();
 
-    // Landing doesn't need DI container or auth — mark ready immediately
+    // Landing doesn't need DI container or auth - mark ready immediately
     containerReady = true;
 
     return () => {
@@ -254,7 +254,7 @@
   }
 
   /**
-   * App mode init: full bootstrap — DI container, Firebase, auth, analytics.
+   * App mode init: full bootstrap - DI container, Firebase, auth, analytics.
    * Same logic as the original layout, but loaded dynamically.
    */
   async function initAppMode() {
@@ -277,7 +277,7 @@
       }
     }
 
-    // Load DI container — this triggers all service registration
+    // Load DI container - this triggers all service registration
     bootProfiler.mark("di-container");
     const { container } = await imports.di;
     bootProfiler.end("di-container");
@@ -292,16 +292,23 @@
     import("$lib/shared/render/services/implementations/TextRenderer").then(
       ({ textRenderer }) => {
         textRenderer.preloadGlyphImages().catch(() => {
-          // Non-critical — card headers fall back to text on failure
+          // Non-critical - card headers fall back to text on failure
         });
       }
     );
 
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
-    // No-op on web — the isNative check inside returns immediately.
+    // No-op on web - the isNative check inside returns immediately.
     const { getNativeInitializer } = await import("$lib/shared/platform/getNativeInitializer");
     getNativeInitializer().initialize().catch((err: unknown) =>
       console.warn("[Layout] Native init skipped:", err)
+    );
+
+    // Initialize desktop Tauri features (window state, updater).
+    // No-op on web/mobile - the isDesktop check inside returns immediately.
+    const { getDesktopInitializer } = await import("$lib/shared/desktop/getDesktopInitializer");
+    getDesktopInitializer().initialize().catch((err: unknown) =>
+      console.warn("[Layout] Desktop init skipped:", err)
     );
 
     // Prefetch browse data so it's ready before the user navigates there.
@@ -404,31 +411,31 @@
     (window as any).__tkaLoadProgress?.(80, "Checking session...");
 
     bootProfiler.end("total-init");
-    // Don't print summary yet — wait for the active feature module to signalReady.
+    // Don't print summary yet - wait for the active feature module to signalReady.
     // 3s timeout is the safety net if no module signals.
     bootProfiler.scheduleSummary(3000);
 
     // ========================================================================
-    // BACKGROUND INIT — fire-and-forget. The UI is interactive at this point;
+    // BACKGROUND INIT - fire-and-forget. The UI is interactive at this point;
     // these are observability + secondary banners that don't need to block.
     // Each is wrapped to log its own timing without holding up the boot.
     // ========================================================================
     const runDeferred = () => {
-      // Web Vitals — analytics, never user-visible
+      // Web Vitals - analytics, never user-visible
       bootProfiler.mark("web-vitals");
       import("$lib/shared/analytics/web-vitals")
         .then(({ initWebVitals }) => initWebVitals())
         .catch((error) => console.warn("Web Vitals failed:", error))
         .finally(() => bootProfiler.end("web-vitals"));
 
-      // Cloud thumbnail manifest — only needed when user visits browse
+      // Cloud thumbnail manifest - only needed when user visits browse
       bootProfiler.mark("thumbnail-manifest");
       import("$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache")
         .then(({ CloudThumbnailCache }) => new CloudThumbnailCache().loadManifest())
         .catch((error) => console.warn("Cloud thumbnail manifest failed:", error))
         .finally(() => bootProfiler.end("thumbnail-manifest"));
 
-      // Secondary UI components (banners, prompts) — slot in when ready
+      // Secondary UI components (banners, prompts) - slot in when ready
       bootProfiler.mark("ui-components");
       Promise.all([
         import("$lib/features/moderation/components/WarningBanner.svelte"),
@@ -580,7 +587,7 @@
     <EmailVerificationBannerComp />
   {/if}
 
-  <!-- Render children always — required for SSR/prerender of public routes.
+  <!-- Render children always - required for SSR/prerender of public routes.
        App routes opt out of SSR via their own +layout.ts (ssr = false). -->
   {@render children()}
 

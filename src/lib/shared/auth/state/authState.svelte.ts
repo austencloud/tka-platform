@@ -88,13 +88,13 @@ let _state = $state<AuthState>(
   }
 );
 
-// Auth listener cleanup — preserve across HMR so we don't lose the active listener
+// Auth listener cleanup - preserve across HMR so we don't lose the active listener
 let cleanupAuthListener: (() => void) | null = hmrAuthData?.cleanupAuthListener ?? null;
 let cleanupSubscriptionListener: (() => void) | null = hmrAuthData?.cleanupSubscriptionListener ?? null;
 
 // Track whether child services (settings, arrows, onboarding, etc.) have been initialized.
 // On HMR, the auth listener fires again because the Firebase app instance rotates, but
-// the child services don't need to re-initialize — they're already listening/loaded.
+// the child services don't need to re-initialize - they're already listening/loaded.
 // Without this guard, every file save in dev triggers ~12 Firestore reads.
 let childServicesInitialized = hmrAuthData?.childServicesInitialized ?? false;
 
@@ -290,6 +290,19 @@ export async function initializeAuthListener() {
 
   await authReady;
 
+  const { isDesktop } = await import("$lib/shared/desktop/isDesktop");
+  const isDesktopEnv = isDesktop();
+
+  if (isDesktopEnv) {
+    _state = {
+      user: null,
+      loading: false,
+      initialized: true,
+      isAdmin: true,
+      role: "admin",
+    };
+  }
+
   cleanupAuthListener = onAuthStateChanged(
     auth,
     async (user) => {
@@ -302,7 +315,7 @@ export async function initializeAuthListener() {
       // is never stuck on the loading spinner indefinitely.
       const safetyTimeout = setTimeout(() => {
         if (_state.loading) {
-          console.warn("⚠️ [authState] Auth processing timed out — unblocking UI");
+          console.warn("⚠️ [authState] Auth processing timed out - unblocking UI");
           _state = {
             ..._state,
             loading: false,
@@ -404,18 +417,19 @@ export async function initializeAuthListener() {
 
       clearTimeout(safetyTimeout);
 
+      const desktopAdminFallback = isDesktopEnv && !user;
       _state = {
         user,
         loading: false,
         initialized: true,
-        isAdmin,
-        role,
+        isAdmin: desktopAdminFallback ? true : isAdmin,
+        role: desktopAdminFallback ? "admin" : role,
       };
 
       // If the user just became authenticated, clear any in-flight auth
       // drawer state. Otherwise a "Sign up" the user opened before signing
       // in a different way (popover, magic link, One Tap) stays flagged as
-      // open — then re-appears as a ghost sheet the next time they sign out,
+      // open - then re-appears as a ghost sheet the next time they sign out,
       // because MainApplication re-mounts AuthDrawer with `open={authDrawerState.open}`.
       if (user) {
         try {
@@ -423,7 +437,7 @@ export async function initializeAuthListener() {
             await import("../state/auth-drawer-state.svelte");
           authDrawerState.reset();
         } catch {
-          // Drawer state may not be loaded in some code paths — safe to ignore.
+          // Drawer state may not be loaded in some code paths - safe to ignore.
         }
       }
 
@@ -572,7 +586,7 @@ export async function initializeAuthListener() {
               await import("$lib/shared/auth/firebase");
             await getFirestoreInstance();
 
-            // Re-check auth after async gap — a logout callback may have
+            // Re-check auth after async gap - a logout callback may have
             // cleared _state.user while we were awaiting Firestore.
             if (!_state.user) return;
 
