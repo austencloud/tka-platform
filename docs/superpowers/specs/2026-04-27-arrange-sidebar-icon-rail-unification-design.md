@@ -25,6 +25,8 @@ The Arrange tab sidebar (CellEditorPanel) was rebuilt with a 5-pill tab nav that
 │ ┌──┬───────────────────────────────┐ │
 │ │  │ Breadcrumb: Grid > Cell 3     │ │
 │ │  ├───────────────────────────────┤ │
+│ │  │ Layers: [L1 LOVE 8b] [+Add]  │ │
+│ │  ├───────────────────────────────┤ │
 │ │⚡│                               │ │
 │ │🎨│    Active Pill Body           │ │
 │ │▶ │    (scrollable)               │ │
@@ -38,6 +40,8 @@ The Arrange tab sidebar (CellEditorPanel) was rebuilt with a 5-pill tab nav that
 │ └──────────────────────────────────┘ │
 └──────────────────────────────────────┘
 ```
+
+**Layers section** sits between breadcrumb and pill body (per v4 mockup). Compact layer chips: color dots + sequence name + beat count + copy/remove buttons. "Add Layer (2/4)" button. Visible at Cell scope, hidden when drilled into Layer/Hand/Tip. This reuses the existing `LayerSection` from CellEditorPanel.
 
 Transport controls (play/pause, scrubber, BPM chips) remain below the grid in `PlaybackBar.svelte`. They are NOT part of the sidebar.
 
@@ -71,17 +75,21 @@ Location: `src/lib/features/compose/tabs/arrange/components/grid/cell-editor/Sco
 Arrange-specific — the Viewer doesn't have scope hierarchy.
 
 ```typescript
-type ScopeLevel = "grid" | "cell" | "layer";
+type ScopeLevel = "grid" | "cell" | "layer" | "hand" | "tip";
+
+interface BreadcrumbSegment {
+  level: ScopeLevel;
+  label: string;
+  icon?: string;          // e.g. color dot for hand/tip
+}
 
 interface ScopeBreadcrumbProps {
-  scopeLevel: ScopeLevel;
-  cellLabel?: string;     // e.g. "Cell 3"
-  layerLabel?: string;    // e.g. "Layer 1"
+  segments: BreadcrumbSegment[];
   onNavigate: (level: ScopeLevel) => void;
 }
 ```
 
-Renders: `Grid` › `Cell 3` › `Layer 1` — each segment clickable to navigate up.
+Renders: `Grid` › `Cell 3` › `L1` › `Left` › `Thumb` — each segment clickable to navigate up. Per v4 mockup, hand segments show prop color dots, tip segments show tip color dots. Only renders segments down to current scope depth.
 
 ### Shared Code Reuse
 
@@ -101,9 +109,11 @@ Each pill body reuses existing section components. No new section components nee
 - Summary: active effect name (e.g. "Fire", "None")
 
 **Effort** (`PillId: "effort"`, label: "Style" in Arrange context)
-- `TransformSection` — hand selector, rotation buttons, rearrange grid (mirror/flip/swap/invert/shift/rewind)
-- `ColorsSection` — four prop color combo chips
-- `UnifiedEffortSection` — effort level, per-tip effort grid
+Per v4 mockup, Style panel contains four subsections in order:
+1. `TransformSection` — Mirror, Flip, Rotate, Swap, Rewind, Shift buttons (2×3 grid)
+2. `ColorsSection` — prop color combo chips (Default Blue/Red, Alt 1, etc.)
+3. `UnifiedEffortSection` — effort level, per-tip effort grid
+4. **Visibility toggles** — Blue eye / Red eye buttons (per v4, lives here not in Display)
 - Summary: effort level + color combo name (e.g. "Linear · Blue/Red")
 
 **Playback** (`PillId: "playback"`)
@@ -114,8 +124,7 @@ Each pill body reuses existing section components. No new section components nee
 
 **Display** (`PillId: "display"`)
 - `DisplaySection` — Animation vs Choreo Card media type
-- Blue/Red motion visibility toggles (existing `onSetBlueVisible`/`onSetRedVisible` callbacks)
-- Summary: media type + visibility (e.g. "Anim · 2/2")
+- Summary: media type (e.g. "Animation")
 
 **Export** (`PillId: "export"`)
 - Download Arrangement button (primary action)
