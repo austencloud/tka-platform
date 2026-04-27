@@ -16,6 +16,7 @@ import {
   LOOP_TYPE_LABELS,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
 
 // Constants
@@ -436,29 +437,31 @@ export class BrowseFilter implements IBrowseFilter {
     });
   }
 
+  private getSequenceComponents(seq: SequenceData): readonly LOOPComponent[] {
+    if (seq.components?.length) return seq.components;
+    if (seq.loopType) return Array.from(loopTypeResolver.parseComponents(seq.loopType as LOOPType));
+    return [];
+  }
+
   private filterByLOOPComponent(
     sequences: SequenceData[],
     componentKey: string
   ): SequenceData[] {
     if (componentKey === "rotated_halved") {
-      return sequences.filter(
-        (seq) =>
-          seq.components?.includes(LOOPComponent.ROTATED) &&
-          (seq.period ?? 2) <= 2
-      );
+      return sequences.filter((seq) => {
+        const comps = this.getSequenceComponents(seq);
+        return comps.includes(LOOPComponent.ROTATED) && (seq.period ?? 2) <= 2;
+      });
     }
     if (componentKey === "rotated_quartered") {
-      return sequences.filter(
-        (seq) =>
-          seq.components?.includes(LOOPComponent.ROTATED) &&
-          (seq.period ?? 2) === 4
-      );
+      return sequences.filter((seq) => {
+        const comps = this.getSequenceComponents(seq);
+        return comps.includes(LOOPComponent.ROTATED) && (seq.period ?? 2) === 4;
+      });
     }
 
     const componentEnum = componentKey as LOOPComponent;
-    return sequences.filter(
-      (seq) => seq.components?.includes(componentEnum)
-    );
+    return sequences.filter((seq) => this.getSequenceComponents(seq).includes(componentEnum));
   }
 
   // ============================================================================

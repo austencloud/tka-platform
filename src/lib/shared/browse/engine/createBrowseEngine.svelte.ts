@@ -26,6 +26,8 @@ import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/brows
 import type { SectionConfig, SequenceSection } from "$lib/features/browse/shared/domain/models/browse-models";
 
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
 import { getMultiFilter } from "$lib/features/browse/sequences/display/getMultiFilter";
@@ -256,16 +258,20 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 				}
 			}
 
-			if (seq.components) {
-				for (const comp of seq.components) {
-					componentCounts.set(comp, (componentCounts.get(comp) ?? 0) + 1);
-				}
-				if (seq.components.includes(LOOPComponent.ROTATED)) {
-					if ((seq.period ?? 2) === 4) {
-						rotatedQuarteredCount++;
-					} else {
-						rotatedHalvedCount++;
-					}
+			const comps: readonly LOOPComponent[] = seq.components?.length
+				? seq.components
+				: seq.loopType
+					? Array.from(loopTypeResolver.parseComponents(seq.loopType as LOOPType))
+					: [];
+
+			for (const comp of comps) {
+				componentCounts.set(comp, (componentCounts.get(comp) ?? 0) + 1);
+			}
+			if (comps.includes(LOOPComponent.ROTATED)) {
+				if ((seq.period ?? 2) === 4) {
+					rotatedQuarteredCount++;
+				} else {
+					rotatedHalvedCount++;
 				}
 			}
 		}
