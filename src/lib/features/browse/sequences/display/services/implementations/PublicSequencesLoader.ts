@@ -133,7 +133,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
       await this.loadSequenceMetadata();
     }
 
-    // Prefer ID-based lookup when available — this is the only way to
+    // Prefer ID-based lookup when available - this is the only way to
     // disambiguate multiple sequences that share the same word.
     let sourceRef = sequenceId ? this.sourceRefCache.get(`id:${sequenceId}`) : undefined;
 
@@ -189,7 +189,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
   /**
    * Add a sequence directly to the in-memory cache.
    * Called after publishing so the sequence appears in the gallery immediately.
-   * If the cache isn't loaded yet, this is a no-op — the sequence will be fetched
+   * If the cache isn't loaded yet, this is a no-op - the sequence will be fetched
    * from Firestore naturally on the next gallery load.
    */
   addToCache(sequence: SequenceData): void {
@@ -208,7 +208,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
   }
 
   warmFromCache(sequences: SequenceData[], sourceRefs: Map<string, string>): void {
-    if (this.cachedSequences) return; // Already warmed or loaded — don't overwrite
+    if (this.cachedSequences) return; // Already warmed or loaded - don't overwrite
     this.cachedSequences = sequences;
     for (const [key, value] of sourceRefs) {
       this.sourceRefCache.set(key, value);
@@ -289,6 +289,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
       level: data.level ?? this.difficultyStringToLevel(data.difficultyLevel),
       difficultyLevel: data.difficultyLevel,
       loopType: data.loopType as SequenceData["loopType"],
+      period: (data as unknown as { period?: number }).period,
       isFavorite: false,
       isCircular: (data as unknown as { isCircular?: boolean }).isCircular ?? false,
       tags: [...data.tags],
@@ -333,7 +334,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
         }
         return hydrated;
       } catch {
-        // Hydration services not available — return with empty steps
+        // Hydration services not available - return with empty steps
         // (will fall back to sourceRef fetch on demand)
       }
     }

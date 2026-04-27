@@ -17,6 +17,7 @@ import {
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
 import { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
 
 // Constants
@@ -443,6 +444,12 @@ export class BrowseFilter implements IBrowseFilter {
     return [];
   }
 
+  private getSequencePeriod(seq: SequenceData): number {
+    if (seq.period !== undefined) return seq.period;
+    if (seq.steps?.length) return detectRotationPeriod(seq.id, seq.steps);
+    return 2;
+  }
+
   private filterByLOOPComponent(
     sequences: SequenceData[],
     componentKey: string
@@ -450,13 +457,13 @@ export class BrowseFilter implements IBrowseFilter {
     if (componentKey === "rotated_halved") {
       return sequences.filter((seq) => {
         const comps = this.getSequenceComponents(seq);
-        return comps.includes(LOOPComponent.ROTATED) && (seq.period ?? 2) <= 2;
+        return comps.includes(LOOPComponent.ROTATED) && this.getSequencePeriod(seq) <= 2;
       });
     }
     if (componentKey === "rotated_quartered") {
       return sequences.filter((seq) => {
         const comps = this.getSequenceComponents(seq);
-        return comps.includes(LOOPComponent.ROTATED) && (seq.period ?? 2) === 4;
+        return comps.includes(LOOPComponent.ROTATED) && this.getSequencePeriod(seq) === 4;
       });
     }
 

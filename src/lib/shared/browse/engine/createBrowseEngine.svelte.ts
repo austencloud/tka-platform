@@ -28,6 +28,7 @@ import type { SectionConfig, SequenceSection } from "$lib/features/browse/shared
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
 import { getMultiFilter } from "$lib/features/browse/sequences/display/getMultiFilter";
@@ -268,7 +269,8 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 				componentCounts.set(comp, (componentCounts.get(comp) ?? 0) + 1);
 			}
 			if (comps.includes(LOOPComponent.ROTATED)) {
-				if ((seq.period ?? 2) === 4) {
+				const period = seq.period ?? (seq.steps?.length ? detectRotationPeriod(seq.id, seq.steps) : 2);
+				if (period === 4) {
 					rotatedQuarteredCount++;
 				} else {
 					rotatedHalvedCount++;

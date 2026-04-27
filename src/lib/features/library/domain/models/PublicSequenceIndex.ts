@@ -67,6 +67,9 @@ export interface PublicSequenceIndex {
   /** LOOP type label (e.g., "rotated", "mirrored+swapped", "freeform", null for non-LOOP) */
   readonly loopType?: string | null;
 
+  /** LOOP period: 2 = halved (180°), 4 = quartered (90°). Only set for rotated LOOPs. */
+  readonly period?: number;
+
   // ============================================================
   // ENGAGEMENT METRICS
   // ============================================================
@@ -107,7 +110,7 @@ export interface PublicSequenceIndex {
   /** Full motion content hash (SHA-256) for deduplication */
   readonly contentHash?: string;
 
-  /** SHA-256 of SequenceEncoder.encode() output — used for URL-to-library matching */
+  /** SHA-256 of SequenceEncoder.encode() output - used for URL-to-library matching */
   readonly encoderHash?: string;
 
   /** Blue performer's solo prop decomposition (steps + hand path) */

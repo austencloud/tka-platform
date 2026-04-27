@@ -36,6 +36,7 @@ import type { IErrorHandler } from "$lib/shared/application/services/contracts/I
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { periodToNumber } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 
 function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
@@ -102,7 +103,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       const userDoc = await getDoc(doc(firestore, `users/${userId}`));
       const userData = userDoc.data() ?? {};
 
-      // Deduplicate by contentHash — reject if an identical sequence already exists
+      // Deduplicate by contentHash - reject if an identical sequence already exists
       // in the public index from a different document (re-publishing the same doc is OK)
       if (sequence.contentHash) {
         const dupQuery = query(
@@ -122,7 +123,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       }
 
       // Detect circularity and LOOP type from step/motion data
-      const { isCircular, loopType } = await this.detectLoopInfo(firestore, sequence);
+      const { isCircular, loopType, period } = await this.detectLoopInfo(firestore, sequence);
 
       // Calculate numeric level from steps if available
       const level = sequence.steps?.length > 0
@@ -136,7 +137,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         const matcher = getPublicSequenceHashMatcher();
         encoderHash = await matcher.computeEncoderHash(sequence);
       } catch {
-        // Non-critical — sequence will still publish, just won't be URL-matchable
+        // Non-critical - sequence will still publish, just won't be URL-matchable
       }
 
       const publicData = {
@@ -154,6 +155,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         level,
         isCircular,
         loopType,
+        ...(period !== undefined && { period }),
         forkCount: sequence.forkCount ?? 0,
         viewCount: sequence.viewCount ?? 0,
         starCount: sequence.starCount ?? 0,
@@ -168,7 +170,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         // Full motion content hash for deduplication
         contentHash: sequence.contentHash,
         encoderHash,
-        // Compositional fields — everything needed to render without sourceRef
+        // Compositional fields - everything needed to render without sourceRef
         blueSoloProp: sequence.blueSoloProp,
         redSoloProp: sequence.redSoloProp,
         stepPairings: sequence.stepPairings,
@@ -178,12 +180,12 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         blueSoloHash: sequence.blueSoloHash,
         redSoloHash: sequence.redSoloHash,
         ...(sequence.creatorIntent && { creatorIntent: sequence.creatorIntent }),
-        // Start position — not derivable from compositional fields, needed for
+        // Start position - not derivable from compositional fields, needed for
         // correct 3D avatar orientation at beat 0.
         ...(sequence.startPosition && { startPosition: sequence.startPosition }),
       };
 
-      // Recursively strip undefined fields — Firestore rejects them in setDoc
+      // Recursively strip undefined fields - Firestore rejects them in setDoc
       const filteredPublicData = stripUndefined(publicData as Record<string, unknown>);
 
       await setDoc(
@@ -239,7 +241,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         "[PublicIndexSyncer] Failed to sync to public index:",
         error
       );
-      // Don't show a generic error modal for moderation failures — those have their own UI
+      // Don't show a generic error modal for moderation failures - those have their own UI
       if (!(error instanceof ContentModerationError)) {
         const errorHandler = getErrorHandler() as IErrorHandler;
         errorHandler.showUserError({
@@ -353,7 +355,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       }
     }
 
-    // Write all artifacts in parallel — merge so we don't overwrite existing documents
+    // Write all artifacts in parallel - merge so we don't overwrite existing documents
     await Promise.allSettled(
       artifacts.map((a) =>
         setDoc(doc(firestore, a.collectionPath, a.docId), a.data, { merge: true })
@@ -370,16 +372,36 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
   private async detectLoopInfo(
     firestore: Firestore,
     sequence: LibrarySequence
-  ): Promise<{ isCircular: boolean; loopType: string | null }> {
+  ): Promise<{ isCircular: boolean; loopType: string | null; period?: number }> {
     // Layer 1: Trust existing loopType on the sequence (set by LOOP generator)
     if (sequence.loopType) {
-      return { isCircular: true, loopType: sequence.loopType };
+      // Run detection anyway to get the period
+      try {
+        const detection = loopDetector.detectLOOPType(sequence);
+        return {
+          isCircular: true,
+          loopType: sequence.loopType,
+          period: detection.period ? periodToNumber(detection.period) : undefined,
+        };
+      } catch {
+        return { isCircular: true, loopType: sequence.loopType };
+      }
     }
 
     // Layer 2: Check loop-labels collection for human-curated override
     const curatedLoopType = await this.fetchLoopType(firestore, sequence.word);
     if (curatedLoopType) {
-      return { isCircular: true, loopType: curatedLoopType };
+      // Run detection to get the period
+      try {
+        const detection = loopDetector.detectLOOPType(sequence);
+        return {
+          isCircular: true,
+          loopType: curatedLoopType,
+          period: detection.period ? periodToNumber(detection.period) : undefined,
+        };
+      } catch {
+        return { isCircular: true, loopType: curatedLoopType };
+      }
     }
 
     // Layer 3: Run live algorithmic detection
@@ -388,12 +410,13 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       return { isCircular: false, loopType: null };
     }
 
-    // Sequence is circular — run full LOOP type detection
+    // Sequence is circular - run full LOOP type detection
     try {
       const detection = loopDetector.detectLOOPType(sequence);
       return {
         isCircular: true,
         loopType: detection.loopType,
+        period: detection.period ? periodToNumber(detection.period) : undefined,
       };
     } catch (error) {
       console.warn(
