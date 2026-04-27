@@ -25,6 +25,15 @@
   import ColorsSection from "./sections/ColorsSection.svelte";
   import OffsetSection from "./sections/OffsetSection.svelte";
   import DisplaySection from "./sections/DisplaySection.svelte";
+  import PillNav from './pill-nav/PillNav.svelte';
+  import ModeToggle from './pill-nav/ModeToggle.svelte';
+  import ScopeSelector from './pill-nav/ScopeSelector.svelte';
+  import EffectsPillBody from './pill-nav/bodies/EffectsPillBody.svelte';
+  import StylePillBody from './pill-nav/bodies/StylePillBody.svelte';
+  import PlaybackPillBody from './pill-nav/bodies/PlaybackPillBody.svelte';
+  import DisplayPillBody from './pill-nav/bodies/DisplayPillBody.svelte';
+  import ExportPillBody from './pill-nav/bodies/ExportPillBody.svelte';
+  import type { PillId } from './pill-nav/types';
 
   const MAX_LAYERS = 4;
 
@@ -84,6 +93,14 @@
   );
 
   const showSizeBadge = $derived(cell.colSpan > 1 || cell.rowSpan > 1);
+
+  const pillSummaries = $derived<Record<PillId, string>>({
+    effects: cell.effect && cell.effect !== 'none' ? cell.effect.charAt(0).toUpperCase() + cell.effect.slice(1) : 'None',
+    style: cell.effort ?? 'Linear',
+    playback: `${Math.round((cell.speedMultiplier ?? 1) * 60)} BPM`,
+    display: 'Anim',
+    export: '1080p',
+  });
 
   function handleToggleBlueVisibility() {
     const current = cell.blueMotionVisible !== false;
@@ -153,60 +170,126 @@
     onPasteLayer={p.onPasteLayer}
   />
 
-  <!-- Control Chips -->
+  <!-- Control Chips / Pill Nav -->
   {#if cell.layers.length > 0}
-    <ChipGrid
-      {cell}
-      {panelState}
-      onToggleBlueVisibility={handleToggleBlueVisibility}
-      onToggleRedVisibility={handleToggleRedVisibility}
-    />
-  {/if}
+    {#if panelState.usePillNav}
+      <ModeToggle
+        mode={panelState.editorMode}
+        onModeChange={mode => panelState.setEditorMode(mode)}
+      />
 
-  <!-- Expanded sections -->
-  {#if panelState.expandedSection === 'transform'}
-    <TransformSection {panelState} onTransform={handleTransform} />
-  {:else if panelState.expandedSection === 'speed'}
-    <SpeedSection
-      currentSpeed={cell.speedMultiplier ?? 1.0}
-      onSetSpeed={speed => p.onSetSpeed?.(speed)}
-    />
-  {:else if panelState.expandedSection === 'effects'}
-    <UnifiedEffectsSection
-      currentEffect={cell.effect ?? "none"}
-      currentTrailMode={cell.trailMode}
-      currentMap={cell.tipEffectMap ?? {}}
-      bluePropType="staff"
-      redPropType="staff"
-      onSetEffect={effect => p.onSetEffect?.(effect)}
-      onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
-      onUpdateMap={map => p.onSetTipEffectMap?.(map)}
-    />
-  {:else if panelState.expandedSection === 'colors'}
-    <ColorsSection
-      currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
-      onSetColors={colors => p.onSetColors?.(colors)}
-    />
-  {:else if panelState.expandedSection === 'effort'}
-    <UnifiedEffortSection
-      currentEffort={cell.effort}
-      currentMap={cell.tipEffortMap ?? {}}
-      bluePropType="staff"
-      redPropType="staff"
-      onSetEffort={effort => p.onSetEffort?.(effort)}
-      onUpdateMap={map => p.onSetTipEffortMap?.(map)}
-    />
-  {:else if panelState.expandedSection === 'offset'}
-    <OffsetSection
-      currentOffset={cell.beatOffset}
-      onSetOffset={offset => p.onSetOffset?.(offset)}
-    />
-  {:else if panelState.expandedSection === 'display'}
-    <DisplaySection
-      currentMediaType={cell.mediaType}
-      layerCount={cell.layers.length}
-      onMediaTypeChange={type => p.onMediaTypeChange(type)}
-    />
+      <PillNav
+        activePill={panelState.activePill}
+        summaries={pillSummaries}
+        onPillChange={pill => panelState.setActivePill(pill)}
+      />
+
+      {#if panelState.editorMode === 'advanced'}
+        <ScopeSelector
+          activePill={panelState.activePill}
+          scopeLevel={panelState.scopeLevel}
+          layerCount={cell.layers.length}
+          echoActive={(cell.effect as string) === 'echo'}
+          onScopeChange={level => panelState.setScopeLevel(level)}
+        />
+      {/if}
+
+      <div class="pill-body" id="pill-body-{panelState.activePill}" role="tabpanel">
+        {#if panelState.activePill === 'effects'}
+          <EffectsPillBody
+            currentEffect={cell.effect ?? 'none'}
+            currentTrailMode={cell.trailMode}
+            tipEffectMap={cell.tipEffectMap ?? {}}
+            onSetEffect={effect => p.onSetEffect?.(effect as any)}
+            onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
+            onUpdateTipEffectMap={map => p.onSetTipEffectMap?.(map)}
+          />
+        {:else if panelState.activePill === 'style'}
+          <StylePillBody
+            {panelState}
+            currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
+            currentEffort={cell.effort}
+            tipEffortMap={cell.tipEffortMap ?? {}}
+            onTransform={handleTransform}
+            onSetColors={colors => p.onSetColors?.(colors)}
+            onSetEffort={effort => p.onSetEffort?.(effort)}
+            onUpdateTipEffortMap={map => p.onSetTipEffortMap?.(map)}
+          />
+        {:else if panelState.activePill === 'playback'}
+          <PlaybackPillBody
+            currentSpeed={cell.speedMultiplier ?? 1.0}
+            currentOffset={cell.beatOffset}
+            layerCount={cell.layers.length}
+            onSetSpeed={speed => p.onSetSpeed?.(speed)}
+            onSetOffset={offset => p.onSetOffset?.(offset)}
+          />
+        {:else if panelState.activePill === 'display'}
+          <DisplayPillBody
+            currentMediaType={cell.mediaType}
+            layerCount={cell.layers.length}
+            blueVisible={cell.blueMotionVisible !== false}
+            redVisible={cell.redMotionVisible !== false}
+            onMediaTypeChange={type => p.onMediaTypeChange(type)}
+            onToggleBlueVisibility={handleToggleBlueVisibility}
+            onToggleRedVisibility={handleToggleRedVisibility}
+          />
+        {:else if panelState.activePill === 'export'}
+          <ExportPillBody />
+        {/if}
+      </div>
+    {:else}
+      <ChipGrid
+        {cell}
+        {panelState}
+        onToggleBlueVisibility={handleToggleBlueVisibility}
+        onToggleRedVisibility={handleToggleRedVisibility}
+      />
+
+      {#if panelState.expandedSection === 'transform'}
+        <TransformSection {panelState} onTransform={handleTransform} />
+      {:else if panelState.expandedSection === 'speed'}
+        <SpeedSection
+          currentSpeed={cell.speedMultiplier ?? 1.0}
+          onSetSpeed={speed => p.onSetSpeed?.(speed)}
+        />
+      {:else if panelState.expandedSection === 'effects'}
+        <UnifiedEffectsSection
+          currentEffect={cell.effect ?? "none"}
+          currentTrailMode={cell.trailMode}
+          currentMap={cell.tipEffectMap ?? {}}
+          bluePropType="staff"
+          redPropType="staff"
+          onSetEffect={effect => p.onSetEffect?.(effect)}
+          onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
+          onUpdateMap={map => p.onSetTipEffectMap?.(map)}
+        />
+      {:else if panelState.expandedSection === 'colors'}
+        <ColorsSection
+          currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
+          onSetColors={colors => p.onSetColors?.(colors)}
+        />
+      {:else if panelState.expandedSection === 'effort'}
+        <UnifiedEffortSection
+          currentEffort={cell.effort}
+          currentMap={cell.tipEffortMap ?? {}}
+          bluePropType="staff"
+          redPropType="staff"
+          onSetEffort={effort => p.onSetEffort?.(effort)}
+          onUpdateMap={map => p.onSetTipEffortMap?.(map)}
+        />
+      {:else if panelState.expandedSection === 'offset'}
+        <OffsetSection
+          currentOffset={cell.beatOffset}
+          onSetOffset={offset => p.onSetOffset?.(offset)}
+        />
+      {:else if panelState.expandedSection === 'display'}
+        <DisplaySection
+          currentMediaType={cell.mediaType}
+          layerCount={cell.layers.length}
+          onMediaTypeChange={type => p.onMediaTypeChange(type)}
+        />
+      {/if}
+    {/if}
   {/if}
 
   <!-- Footer actions -->
@@ -302,6 +385,15 @@
     padding: 2px clamp(6px, 1.5cqi, 8px);
     background: rgba(139, 92, 246, 0.12);
     border-radius: var(--badge-radius);
+  }
+
+  /* Pill body */
+  .pill-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   /* Footer */
