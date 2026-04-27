@@ -234,7 +234,10 @@ flow-arts-transcripts/instagram/
 flow-arts-transcripts/*-done.txt
 
 # Search interest tracking data
-/data/
+# /data/ excluded except the sequences bundle directory (for Tauri desktop bundling)
+/data/*
+!/data/sequences/
+/data/sequences/*.json
 firebase-service-account.json
 .mcp.json
 
