@@ -142,17 +142,19 @@
       </div>
 
       <div class="header-right">
-        <!-- Search Mode Toggle -->
-        <button 
-          class="mode-toggle"
-          class:spelled={searchMode === "spelled"}
-          onmousedown={(e) => handleAction(() => onModeToggle?.(searchMode === "standard" ? "spelled" : "standard"), e)}
-          type="button"
-          title="Toggle Search Mode"
-        >
-          <i class="fas {searchMode === "standard" ? "fa-link" : "fa-font"}"></i>
-          <span>{searchMode === "standard" ? "STD" : "SPELL"}</span>
-        </button>
+        <!-- Search Mode Toggle (only when caller supports mode switching) -->
+        {#if onModeToggle}
+          <button
+            class="mode-toggle"
+            class:spelled={searchMode === "spelled"}
+            onmousedown={(e) => handleAction(() => onModeToggle?.(searchMode === "standard" ? "spelled" : "standard"), e)}
+            type="button"
+            title="Toggle Search Mode"
+          >
+            <i class="fas {searchMode === "standard" ? "fa-link" : "fa-font"}"></i>
+            <span>{searchMode === "standard" ? "Name" : "Spell"}</span>
+          </button>
+        {/if}
         
         <button
           class="header-action-btn close-btn"

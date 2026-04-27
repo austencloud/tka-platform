@@ -2,7 +2,7 @@
  * LOOP display resolver
  *
  * Shared entry point for any UI that wants to show LOOP icons for a sequence.
- * Returns the active components and — for rotated loops — whether the rotation
+ * Returns the active components and - for rotated loops - whether the rotation
  * is halved (180°) or quartered (90°), so the icon strip can pick the right
  * visual ("fa-rotate" vs "fa-arrows-spin").
  *
@@ -22,7 +22,7 @@ import {
   type LOOPDomain,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import {
-  SliceSize,
+  Period,
   type LOOPType,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { loopDetector } from "./implementations/LOOPDetector";
@@ -44,14 +44,20 @@ export interface LoopDisplay {
    */
   period: number;
   /**
-   * @deprecated Use `period` instead. `SliceSize.HALVED` maps to period 2,
-   * `SliceSize.QUARTERED` to period 4. Kept while Phase 6 migrates consumers.
+   * @deprecated Use `period` instead. `Period.HALVED` maps to period 2,
+   * `Period.QUARTERED` to period 4. Kept while Phase 6 migrates consumers.
    */
-  rotationSliceSize?: SliceSize;
+  rotationPeriod?: Period;
+  /**
+   * @deprecated Use `period` instead. Same mapping as rotationPeriod but
+   * for the inverted component's icon variant (halved → circle-half-stroke,
+   * quartered → checkerboard circle).
+   */
+  inversionPeriod?: Period;
 }
 
 /**
- * Input accepted by resolveLoopDisplay — either a full library SequenceData
+ * Input accepted by resolveLoopDisplay - either a full library SequenceData
  * (with typed .steps) or a thin SequenceEntry (with .fullMetadata.sequence).
  * The resolver figures out which path it got and adapts accordingly.
  */
@@ -61,7 +67,7 @@ export type LoopDisplayInput = SequenceData | SequenceEntry;
  * Mapping from ComponentId strings (the loop-labeler's internal identifier)
  * to the LOOPComponent enum that every UI consumer actually uses.
  * The 6 primitives share the same lowercase string value across both systems,
- * so this is essentially an identity cast — but we do it explicitly so adding
+ * so this is essentially an identity cast - but we do it explicitly so adding
  * a new ComponentId (like "repeated" or "modular") can't silently leak into
  * UI that expects only the 6 classic primitives.
  */
@@ -86,9 +92,9 @@ function toLoopComponent(id: ComponentId): LOOPComponent | null {
 
 function mapRotationInterval(
   interval: string | undefined
-): SliceSize | undefined {
-  if (interval === "halved") return SliceSize.HALVED;
-  if (interval === "quartered") return SliceSize.QUARTERED;
+): Period | undefined {
+  if (interval === "halved") return Period.HALVED;
+  if (interval === "quartered") return Period.QUARTERED;
   return undefined;
 }
 
@@ -127,11 +133,11 @@ function toSequenceEntry(input: LoopDisplayInput): SequenceEntry {
 
 /**
  * In-memory cache keyed by sequence id. Detection runs beam search over
- * every beat pair — about 1–3ms on a 16-step sequence, but the library
+ * every beat pair - about 1–3ms on a 16-step sequence, but the library
  * grid renders hundreds of these at once, so even 1ms per card stacks up.
  * The cache lets us pay once per sequence per session.
  *
- * Sequences that lack an id (rare — mostly ephemeral in-editor drafts)
+ * Sequences that lack an id (rare - mostly ephemeral in-editor drafts)
  * bypass the cache and run detection fresh each call. That's intentional:
  * caching those by object identity would leak memory as the editor mutates
  * the draft in place.
@@ -150,16 +156,16 @@ export function clearLoopDisplayCache(): void {
 // ============================================================================
 
 /**
- * Resolve the active LOOP components and — when rotated — the rotation slice
- * size (halved or quartered) for a sequence.
+ * Resolve the active LOOP components and - when rotated - the rotation period
+ * (halved or quartered) for a sequence.
  *
  * Resolution order:
  * 1. If the sequence has real steps (length ≥ 2), run the loop-labeler's
  *    detector. This gives us transformationIntervals, which is the only way
  *    to tell a 90° rotation from a 180° rotation.
  * 2. Else, if the sequence has a stored loopType string, parse that into
- *    components. We can't recover slice size from a string, so
- *    rotationSliceSize stays undefined.
+ *    components. We can't recover period from a string, so
+ *    rotationPeriod stays undefined.
  * 3. Else, return an empty set.
  *
  * The on-demand path takes precedence because a stored loopType can be stale
@@ -192,7 +198,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
 
       // Prefer the domain-aware componentsDetailed path (Phase 3 populated it
       // via orientation merge). Fall back to the legacy components ID list
-      // when detailed is empty — keeps old sequences rendering while the
+      // when detailed is empty - keeps old sequences rendering while the
       // migration window is open.
       const detailed = detection.componentsDetailed ?? [];
       if (detailed.length > 0) {
@@ -219,21 +225,29 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
           components,
           componentDomains,
           period,
-          // Back-compat for consumers still reading rotationSliceSize. Rotated
-          // + period 4 → QUARTERED; Rotated + period 2 → HALVED. Period 8 or
-          // non-rotated sequences leave it undefined.
-          rotationSliceSize: components.has(LOOPComponent.ROTATED)
-            ? period === 4
-              ? SliceSize.QUARTERED
-              : period === 2
-                ? SliceSize.HALVED
-                : undefined
-            : mapRotationInterval(
+          rotationPeriod: components.has(LOOPComponent.ROTATED)
+            ? mapRotationInterval(
                 detection.transformationIntervals?.rotation
-              ),
+              ) ??
+              (period === 4
+                ? Period.QUARTERED
+                : period === 2
+                  ? Period.HALVED
+                  : undefined)
+            : undefined,
+          inversionPeriod: components.has(LOOPComponent.INVERTED)
+            ? mapRotationInterval(
+                detection.transformationIntervals?.invert
+              ) ??
+              (period === 4
+                ? Period.QUARTERED
+                : period === 2
+                  ? Period.HALVED
+                  : undefined)
+            : undefined,
         };
       }
-      // Detection returned nothing usable — fall through to stored loopType
+      // Detection returned nothing usable - fall through to stored loopType
     } catch {
       // Detection blew up (malformed motions, missing positions, etc.)
       // Fall through to stored loopType rather than returning empty.
@@ -243,7 +257,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
   // Path 2: stored loopType string.
   // SequenceEntry types this as `string | null`, SequenceData as `LOOPType`.
   // parseComponents handles any string value that matches the 6 primitive
-  // names, so cast to the stricter type — parseComponents does its own
+  // names, so cast to the stricter type - parseComponents does its own
   // substring matching and is safe for unknown strings.
   const storedLoopType = input.loopType as LOOPType | null | undefined;
   if (storedLoopType) {
@@ -257,13 +271,12 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
       }
     }
     if (components.size > 0) {
-      // Legacy string path can't recover orientation info; assume period 2
-      // (halved) which is the historical default for non-quartered LOOPs.
       return {
         components,
         componentDomains,
         period: 2,
-        rotationSliceSize: undefined,
+        rotationPeriod: undefined,
+        inversionPeriod: undefined,
       };
     }
   }
@@ -272,6 +285,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
   return {
     components: new Set<LOOPComponent>(),
     period: 1,
-    rotationSliceSize: undefined,
+    rotationPeriod: undefined,
+    inversionPeriod: undefined,
   };
 }
