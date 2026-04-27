@@ -77,8 +77,6 @@ import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn
 import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
 import { calculateReversalPositions } from "../../core";
 
-import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
-
 // Constants matching the SVG system
 const VIEWBOX_SIZE = 950;
 
@@ -373,7 +371,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       this.drawDirectionDot(ctx, preparedPictograph, letterDimensions, scale, isDarkMode);
     }
 
-    // 8. Beat number — NOT drawn here.
+    // 8. Beat number - NOT drawn here.
     // Step numbers are composited by the caller (ImageComposer draws them as
     // overlays on the export canvas; ChoreoCard renders HTML overlays).
     // Drawing them here would bake them into cached blobs, causing double
