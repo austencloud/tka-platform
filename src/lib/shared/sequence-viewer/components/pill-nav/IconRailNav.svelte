@@ -22,8 +22,10 @@
 
   function focusPillAt(index: number) {
     const wrapped = ((index % pills.length) + pills.length) % pills.length;
+    const pill = pills[wrapped];
+    if (!pill) return;
     const target = navEl?.querySelector<HTMLButtonElement>(
-      `[data-pill-id="${pills[wrapped].id}"]`
+      `[data-pill-id="${pill.id}"]`
     );
     target?.focus();
   }
@@ -51,10 +53,12 @@
         focusPillAt(pills.length - 1);
         break;
       case " ":
-      case "Enter":
+      case "Enter": {
         e.preventDefault();
-        onSelect(pills[currentIndex].id);
+        const pill = pills[currentIndex];
+        if (pill) onSelect(pill.id);
         break;
+      }
     }
   }
 </script>
