@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
+  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
 
   interface Props {
     hasSequence: boolean;
@@ -162,8 +163,8 @@
             ? "Swap requires both hands selected"
             : "Swap hands in sequence"}
       >
-        <div class="btn-icon">
-          <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
+        <div class="btn-icon swap-icon-host">
+          <SwapIcon size="16px" />
         </div>
         <div class="btn-text">
           <span class="btn-label">Swap</span>

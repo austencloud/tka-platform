@@ -8,6 +8,7 @@
   import type { CellEditorPanelState } from "../state/cell-editor-panel-state.svelte";
   import type { TransformType } from "$lib/features/compose/compose/domain/types";
   import type { TargetHand } from "$lib/features/compose/compose/domain/types";
+  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
 
   let {
     panelState,
@@ -134,7 +135,11 @@
           class="icon-badge"
           style="background: {btn.bgTint}; color: {btn.iconColor};"
         >
-          <i class="fas {btn.icon}" aria-hidden="true"></i>
+          {#if btn.type === "swapColors"}
+            <SwapIcon size="14px" />
+          {:else}
+            <i class="fas {btn.icon}" aria-hidden="true"></i>
+          {/if}
         </span>
         <span class="btn-label">{btn.label}</span>
         <span class="btn-desc">{btn.description}</span>

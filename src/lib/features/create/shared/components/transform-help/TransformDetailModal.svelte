@@ -5,6 +5,7 @@
   Shows visual data mapping + interactive pictograph example.
 -->
 <script lang="ts">
+  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount } from "svelte";
   import {
@@ -115,7 +116,7 @@
         return;
     }
 
-    // Reclassify letter before assigning — transforms change motion types/locations,
+    // Reclassify letter before assigning - transforms change motion types/locations,
     // which means the pictograph now corresponds to a different letter.
     // Single assignment avoids triggering two preparation cycles.
     transformed = await reclassifyLetter(transformed);
@@ -153,7 +154,11 @@
     <!-- Header -->
     <div class="modal-header" style:--transform-color={action?.color ?? "#3b82f6"}>
       <div class="header-icon">
-        <i class="fas {action?.icon ?? 'fa-question'}" aria-hidden="true"></i>
+        {#if transformId === "swap"}
+          <SwapIcon size="20px" />
+        {:else}
+          <i class="fas {action?.icon ?? 'fa-question'}" aria-hidden="true"></i>
+        {/if}
       </div>
       <div class="header-text">
         <h2 class="header-title">{action?.name ?? "Action"}</h2>
@@ -199,7 +204,11 @@
               disabled={isLoading}
               style:--transform-color={action?.color}
             >
-              <i class="fas {action?.icon}" aria-hidden="true"></i>
+              {#if transformId === "swap"}
+                <SwapIcon size="14px" />
+              {:else}
+                <i class="fas {action?.icon}" aria-hidden="true"></i>
+              {/if}
               <span>Apply</span>
             </button>
 

@@ -6,6 +6,8 @@
   48px minimum touch target. Uses --btn-color CSS variable for theming.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   interface Props {
     icon: string;
     label: string;
@@ -13,6 +15,7 @@
     disabled?: boolean;
     unavailable?: boolean;
     highlighted?: boolean;
+    customIcon?: Snippet;
     onAction: () => void;
     onLongPress?: () => void;
   }
@@ -24,6 +27,7 @@
     disabled = false,
     unavailable = false,
     highlighted = false,
+    customIcon,
     onAction,
     onLongPress,
   }: Props = $props();
@@ -78,7 +82,11 @@
   oncontextmenu={(e) => e.preventDefault()}
 >
   <div class="btn-icon">
-    <i class="fas fa-{icon}" aria-hidden="true"></i>
+    {#if customIcon}
+      {@render customIcon()}
+    {:else}
+      <i class="fas fa-{icon}" aria-hidden="true"></i>
+    {/if}
   </div>
   <span class="btn-label">{label}</span>
 </button>
