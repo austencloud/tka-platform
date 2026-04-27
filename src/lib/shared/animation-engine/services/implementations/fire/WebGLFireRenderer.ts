@@ -444,6 +444,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // is compatible with continued recording.
   }
 
+  invalidateFrameCache(): void {
+    this.frameCache?.invalidate();
+  }
+
   clearSimulation(): void {
     const gl = this.gl;
     if (!gl || !this.initialized) return;

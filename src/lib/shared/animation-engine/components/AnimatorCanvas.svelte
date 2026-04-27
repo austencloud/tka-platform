@@ -144,7 +144,7 @@ Last audit: 2025-12-27
      * manager instead of the global singleton. Enables multiple canvases to have
      * independent visibility/effect settings (e.g. landing page with two players). */
     visibilityManagerOverride?: AnimationVisibilityStateManager;
-    /** Live EffectsConfigState (single source of truth for per-effect intents —
+    /** Live EffectsConfigState (single source of truth for per-effect intents -
      *  zap, sparkles, motion, bloom today; fire/led/charcoal in later phases).
      *  The engine reads from this each frame to pick up slider changes from
      *  the Customize panels without touching the visibility manager. */
@@ -155,7 +155,7 @@ Last audit: 2025-12-27
     /** When provided alongside externalToggleDisassemble, controls the context menu label
      * ("Disassemble" vs "Reassemble"). Defaults to false. */
     externalDisassembled?: boolean;
-    /** When true, 2D effect overlays (fire/charcoal/LED/trails) are hidden — 3D mode handles effects */
+    /** When true, 2D effect overlays (fire/charcoal/LED/trails) are hidden - 3D mode handles effects */
     suppress2DOverlays?: boolean;
     /** Virtual time for this frame (in ms). Used during video export. */
     virtualTime?: number;
@@ -185,7 +185,7 @@ Last audit: 2025-12-27
   const isDisassembledView = $derived(viewState !== "assembled");
   // Show split canvases in DOM for all non-assembled states
   const showSplitCanvases = $derived(viewState !== "assembled");
-  // Pause split canvas resize during transitions — only allow resize in settled "disassembled" state
+  // Pause split canvas resize during transitions - only allow resize in settled "disassembled" state
   const splitResizePaused = $derived(viewState !== "disassembled");
 
   function handleSplitCanvasReady() {
@@ -229,12 +229,12 @@ Last audit: 2025-12-27
 
     if (viewState === "disassembling") {
       viewState = "disassembled";
-      // Resume ResizeObserver — catch up to the new (narrower) container size
+      // Resume ResizeObserver - catch up to the new (narrower) container size
       engine.resumeResize();
     } else if (viewState === "reassembling") {
       viewState = "assembled";
       splitExpanded = false;
-      // Resume ResizeObserver — catch up to the restored full-width container
+      // Resume ResizeObserver - catch up to the restored full-width container
       engine.resumeResize();
     }
   }
@@ -259,7 +259,7 @@ Last audit: 2025-12-27
   let containerElement: HTMLDivElement | undefined = $state();
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
-  // Engine instance — wire per-instance visibility manager before initialization
+  // Engine instance - wire per-instance visibility manager before initialization
   const engine = new AnimationEngine();
 
   // Sync 2D overlay suppression (for 3D mode)
@@ -287,7 +287,7 @@ Last audit: 2025-12-27
 
   // Push viewer-scoped motion visibility into the engine whenever the toggle
   // changes. Reads tryGet so AnimatorCanvas still works outside the viewer
-  // (landing page, browse previews) — context absent → method never called.
+  // (landing page, browse previews) - context absent → method never called.
   const viewerVisibilityCtx = tryGetViewerVisibilityContext();
   $effect(() => {
     if (!viewerVisibilityCtx) return;
@@ -380,7 +380,11 @@ Last audit: 2025-12-27
     const sig = fireCacheInvalidation.signal;
     if (sig !== lastFireInvalidationSignal) {
       lastFireInvalidationSignal = sig;
-      untrack(() => engine.invalidateFireCache());
+      if (fireCacheInvalidation.cacheOnly) {
+        untrack(() => engine.invalidateFireFrameCacheOnly());
+      } else {
+        untrack(() => engine.invalidateFireCache());
+      }
     }
   });
 
@@ -416,7 +420,7 @@ Last audit: 2025-12-27
   const displayedMusicalPosition = $derived(engine.state.displayedMusicalPosition);
 
   // Initialize engine when container element appears.
-  // The hero canvas stays mounted always — no teardown during disassemble.
+  // The hero canvas stays mounted always - no teardown during disassemble.
   $effect(() => {
     const el = containerElement;
     if (!el) return;
@@ -721,7 +725,7 @@ Last audit: 2025-12-27
   }
 
   /* Canvas wrapper: square in portrait mode. Owns the background color so the
-     main canvas can stay transparent — effect overlays at z<3 sit between this
+     main canvas can stay transparent - effect overlays at z<3 sit between this
      background and the main canvas's opaque prop pixels. */
   .canvas-wrapper {
     position: relative;
@@ -747,7 +751,7 @@ Last audit: 2025-12-27
   /* ===========================================
      SPLIT CANVASES: Blue-only and Red-only
      Expand below hero during disassemble.
-     Same DOM tree — no swap, CSS transitions only.
+     Same DOM tree - no swap, CSS transitions only.
      =========================================== */
 
   .split-canvases {

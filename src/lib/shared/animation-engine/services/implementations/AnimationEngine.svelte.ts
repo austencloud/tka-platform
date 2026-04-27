@@ -177,7 +177,7 @@ export interface AnimationEngineState {
   currentRedPropType: string;
   currentPropType: string;
 
-  // 3D mode flag — when true, 2D effect overlays (fire/charcoal/LED/trails) are suppressed
+  // 3D mode flag - when true, 2D effect overlays (fire/charcoal/LED/trails) are suppressed
   suppress2DOverlays: boolean;
 
   // Viewer-scoped motion visibility (not stored in AnimationVisibilityState)
@@ -302,7 +302,7 @@ export class AnimationEngine {
 
   // Live effects config state (zap intent, plus other intents in later phases).
   // Wired by the host via setEffectsConfigState() before initialize() runs.
-  // Optional — when null, zapConfig stays at defaults (sequence viewer, etc.).
+  // Optional - when null, zapConfig stays at defaults (sequence viewer, etc.).
   private effectsConfigState: EffectsConfigState | null = null;
 
   // Simple reference to last props for initial render (not a copy - avoids GC)
@@ -418,8 +418,9 @@ export class AnimationEngine {
     erm.prevHasInkTips = vm.hasEffect("ink");
     erm.prevHasFrostTips = vm.hasEffect("frost");
     erm.prevHasSilkTips = vm.hasEffect("silk");
+    erm.prevHasPulseTips = vm.hasEffect("pulse");
 
-    // fireDefaultsLoader — load on demand via getter
+    // fireDefaultsLoader - load on demand via getter
     try {
       const { getFireDefaultsLoader } = await import("$lib/shared/animation-engine/getFireDefaultsLoader");
       this.fireDefaultsLoader = getFireDefaultsLoader();
@@ -542,7 +543,7 @@ export class AnimationEngine {
     // Handle additional layer prop textures for tunnel mode
     this.propTypeManager.handleAdditionalLayers(props, this.state, getFrameParamsFn);
 
-    // Handle trail settings changes — enforce unilateral constraint before syncing
+    // Handle trail settings changes - enforce unilateral constraint before syncing
     if (props.externalTrailSettings !== undefined) {
       this.trailSettingsSyncService?.handleExternalSettingsSync(
         this.frameParameterBuilder.enforceUnilateralConstraint(
@@ -786,6 +787,15 @@ export class AnimationEngine {
    */
   invalidateFireCache(): void {
     this.effectRendererManager.fireRenderer?.clearSimulation();
+  }
+
+  /**
+   * Invalidate the fire frame cache without clearing simulation FBOs.
+   * Use before video export so the cache records fresh frames while the
+   * Navier-Stokes simulation retains its warm (steady-state) fluid fields.
+   */
+  invalidateFireFrameCacheOnly(): void {
+    this.effectRendererManager.fireRenderer?.invalidateFrameCache();
   }
 
   /**
@@ -1224,8 +1234,10 @@ export class AnimationEngine {
       }
     }
 
-    // Sync fire effect toggle
-    const hasFireTips = vm.hasEffect("fire");
+    // Sync effect toggles - use the effective map (cell-level override
+    // takes priority over global VM map) so per-cell assignments properly
+    // spin up / tear down overlay renderers.
+    const hasFireTips = erm.hasEffectInEffectiveMap("fire");
     if (hasFireTips !== erm.prevHasFireTips) {
       erm.prevHasFireTips = hasFireTips;
       erm.syncFireOverlay();
@@ -1236,78 +1248,82 @@ export class AnimationEngine {
       }
     }
 
-    // Sync charcoal effect toggle
-    const hasCharcoalTips = vm.hasEffect("charcoal");
+    const hasCharcoalTips = erm.hasEffectInEffectiveMap("charcoal");
     if (hasCharcoalTips !== erm.prevHasCharcoalTips) {
       erm.prevHasCharcoalTips = hasCharcoalTips;
       erm.syncCharcoalOverlay();
     }
 
-    // Sync zap effect toggle
-    const hasZapTips = vm.hasEffect("zap");
+    const hasZapTips = erm.hasEffectInEffectiveMap("zap");
     if (hasZapTips !== erm.prevHasZapTips) {
       erm.prevHasZapTips = hasZapTips;
       erm.syncZapOverlay();
     }
 
-    const hasSparklesTips = vm.hasEffect("sparkles");
+    const hasSparklesTips = erm.hasEffectInEffectiveMap("sparkles");
     if (hasSparklesTips !== erm.prevHasSparklesTips) {
       erm.prevHasSparklesTips = hasSparklesTips;
       erm.syncSparklesOverlay();
     }
 
-    const hasEchoTips = vm.hasEffect("echo");
+    const hasEchoTips = erm.hasEffectInEffectiveMap("echo");
     if (hasEchoTips !== erm.prevHasEchoTips) {
       erm.prevHasEchoTips = hasEchoTips;
       erm.syncEchoOverlay();
     }
 
-    const hasBloomTips = vm.hasEffect("bloom");
+    const hasBloomTips = erm.hasEffectInEffectiveMap("bloom");
     if (hasBloomTips !== erm.prevHasBloomTips) {
       erm.prevHasBloomTips = hasBloomTips;
       erm.syncBloomOverlay();
     }
 
-    const hasWaterTips = vm.hasEffect("water");
+    const hasWaterTips = erm.hasEffectInEffectiveMap("water");
     if (hasWaterTips !== erm.prevHasWaterTips) {
       erm.prevHasWaterTips = hasWaterTips;
       erm.syncWaterOverlay();
     }
 
-    const hasBubblesTips = vm.hasEffect("bubbles");
+    const hasBubblesTips = erm.hasEffectInEffectiveMap("bubbles");
     if (hasBubblesTips !== erm.prevHasBubblesTips) {
       erm.prevHasBubblesTips = hasBubblesTips;
       erm.syncBubblesOverlay();
     }
 
-    const hasPetalsTips = vm.hasEffect("petals");
+    const hasPetalsTips = erm.hasEffectInEffectiveMap("petals");
     if (hasPetalsTips !== erm.prevHasPetalsTips) {
       erm.prevHasPetalsTips = hasPetalsTips;
       erm.syncPetalsOverlay();
     }
 
-    const hasSmokeTips = vm.hasEffect("smoke");
+    const hasSmokeTips = erm.hasEffectInEffectiveMap("smoke");
     if (hasSmokeTips !== erm.prevHasSmokeTips) {
       erm.prevHasSmokeTips = hasSmokeTips;
       erm.syncSmokeOverlay();
     }
 
-    const hasInkTips = vm.hasEffect("ink");
+    const hasInkTips = erm.hasEffectInEffectiveMap("ink");
     if (hasInkTips !== erm.prevHasInkTips) {
       erm.prevHasInkTips = hasInkTips;
       erm.syncInkOverlay();
     }
 
-    const hasFrostTips = vm.hasEffect("frost");
+    const hasFrostTips = erm.hasEffectInEffectiveMap("frost");
     if (hasFrostTips !== erm.prevHasFrostTips) {
       erm.prevHasFrostTips = hasFrostTips;
       erm.syncFrostOverlay();
     }
 
-    const hasSilkTips = vm.hasEffect("silk");
+    const hasSilkTips = erm.hasEffectInEffectiveMap("silk");
     if (hasSilkTips !== erm.prevHasSilkTips) {
       erm.prevHasSilkTips = hasSilkTips;
       erm.syncSilkOverlay();
+    }
+
+    const hasPulseTips = erm.hasEffectInEffectiveMap("pulse");
+    if (hasPulseTips !== erm.prevHasPulseTips) {
+      erm.prevHasPulseTips = hasPulseTips;
+      erm.syncPulseOverlay();
     }
 
     // Sync fire slider values + color curve -> physics
@@ -1398,7 +1414,7 @@ export class AnimationEngine {
             }
           })
           .catch(() => {
-            // Precomputation failed — real-time capture continues
+            // Precomputation failed - real-time capture continues
           });
       }
 
@@ -1461,7 +1477,7 @@ export class AnimationEngine {
         this.state.isNewLetter = gs.isNewLetter;
     }
 
-    // Sync from prop type service — but ONLY when overrides are not active.
+    // Sync from prop type service - but ONLY when overrides are not active.
     if (
       this.propTypeChangeService &&
       this.propTypeManager.propTypeOverrideBlue == null &&
@@ -1583,7 +1599,7 @@ export class AnimationEngine {
   }
 
   /**
-   * Build frame params — delegates to FrameParameterBuilder with current engine state.
+   * Build frame params - delegates to FrameParameterBuilder with current engine state.
    */
   private buildFrameParams(props: AnimationEngineProps) {
     return this.frameParameterBuilder.getFrameParams(props, this.state, {
