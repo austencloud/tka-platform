@@ -42,9 +42,12 @@ const config = {
     // 2026: Preload critical modules for better performance
     prerender: {
       crawl: true,
-      handleHttpError: ({ path, message }) => {
-        // PWA splash screens and icons may not exist yet — ignore 404s for static assets
+      handleHttpError: ({ path, message, status }) => {
+        // PWA splash screens and icons may not exist yet
         if (path.startsWith("/pwa/")) return;
+        // SPA routes hit during crawl return 500 because they need client-side JS —
+        // the adapter-static fallback handles them at runtime
+        if (status === 500) return;
         throw new Error(message);
       },
     },

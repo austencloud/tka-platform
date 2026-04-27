@@ -57,8 +57,6 @@ import { isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-g
 import { calculateReversalPositions } from "../../core";
 import type { DrawableImage } from "./SvgImageCache";
 
-import { getLayerCompositor } from "$lib/shared/render/getLayerCompositor";
-
 // Constants matching Canvas2DDirectRenderer
 const VIEWBOX_SIZE = 950;
 const TKA_GLYPH_X = 50;
@@ -250,18 +248,18 @@ export class LayerCompositor implements ILayerCompositor {
       ctx.fillRect(0, 0, canvasWidth, options.size);
     }
 
-    // Draw base layer (props + arrows) — centered
+    // Draw base layer (props + arrows) - centered
     ctx.drawImage(baseResult.canvas, coreOffset, 0);
 
-    // Draw grid points overlay — centered
+    // Draw grid points overlay - centered
     ctx.drawImage(gridPointsResult.canvas, coreOffset, 0);
 
-    // Draw TKA overlay — positioned at left edge of expanded canvas
+    // Draw TKA overlay - positioned at left edge of expanded canvas
     if (tkaResult) {
       ctx.drawImage(tkaResult.canvas, wm > 1 ? 0 : 0, 0);
     }
 
-    // Draw reversal overlay — centered with core content
+    // Draw reversal overlay - centered with core content
     if (reversalResult) {
       ctx.drawImage(reversalResult.canvas, coreOffset, 0);
     }
