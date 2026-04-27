@@ -1,10 +1,17 @@
 import { isDesktop } from "./isDesktop";
+import { DesktopDataSeeder } from "./DesktopDataSeeder";
 
 export class DesktopInitializer {
+	private seeder = new DesktopDataSeeder();
+
 	async initialize(): Promise<void> {
 		if (!isDesktop()) return;
 
-		await Promise.all([this.initWindowState(), this.initUpdater()]);
+		await Promise.all([
+			this.initWindowState(),
+			this.initUpdater(),
+			this.initDataSeeder(),
+		]);
 	}
 
 	private async initWindowState(): Promise<void> {
@@ -22,6 +29,15 @@ export class DesktopInitializer {
 			}
 		} catch (err) {
 			console.warn("[Desktop] Update check skipped:", err);
+		}
+	}
+
+	private async initDataSeeder(): Promise<void> {
+		try {
+			const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "0.0.0";
+			await this.seeder.seedIfNeeded(appVersion);
+		} catch (err) {
+			console.error("[Desktop] Data seeding failed:", err);
 		}
 	}
 }
