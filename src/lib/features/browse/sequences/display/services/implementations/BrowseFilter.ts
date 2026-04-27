@@ -15,6 +15,7 @@ import type {
 import {
   LOOP_TYPE_LABELS,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
 
 // Constants
@@ -408,6 +409,11 @@ export class BrowseFilter implements IBrowseFilter {
 
     const filterStr = String(filterValue);
 
+    // Component-based filtering (new): "component:rotated_halved", "component:mirrored", etc.
+    if (filterStr.startsWith("component:")) {
+      return this.filterByLOOPComponent(sequences, filterStr.slice("component:".length));
+    }
+
     // Special case: filter all circular sequences
     if (filterStr === "circular" || filterStr === "all_circular") {
       return sequences.filter((seq) => seq.isCircular === true);
@@ -425,12 +431,34 @@ export class BrowseFilter implements IBrowseFilter {
 
     // Filter by specific LOOP type
     return sequences.filter((seq) => {
-      // Must be circular
       if (!seq.isCircular) return false;
-
-      // Check loopType field
       return seq.loopType === filterStr;
     });
+  }
+
+  private filterByLOOPComponent(
+    sequences: SequenceData[],
+    componentKey: string
+  ): SequenceData[] {
+    if (componentKey === "rotated_halved") {
+      return sequences.filter(
+        (seq) =>
+          seq.components?.includes(LOOPComponent.ROTATED) &&
+          (seq.period ?? 2) <= 2
+      );
+    }
+    if (componentKey === "rotated_quartered") {
+      return sequences.filter(
+        (seq) =>
+          seq.components?.includes(LOOPComponent.ROTATED) &&
+          (seq.period ?? 2) === 4
+      );
+    }
+
+    const componentEnum = componentKey as LOOPComponent;
+    return sequences.filter(
+      (seq) => seq.components?.includes(componentEnum)
+    );
   }
 
   // ============================================================================
