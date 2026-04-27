@@ -25,6 +25,7 @@ import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/Fil
 import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 import type { SectionConfig, SequenceSection } from "$lib/features/browse/shared/domain/models/browse-models";
 
+import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
 import { getMultiFilter } from "$lib/features/browse/sequences/display/getMultiFilter";
@@ -66,21 +67,6 @@ function deduplicateById(sequences: SequenceData[]): SequenceData[] {
 		seen.add(seq.id);
 		return true;
 	});
-}
-
-function sortMethodToGroupBy(method: BrowseSortMethod): SectionGroupBy {
-	switch (method) {
-		case BrowseSortMethod.ALPHABETICAL:
-			return "letter";
-		case BrowseSortMethod.DIFFICULTY_LEVEL:
-			return "difficulty";
-		case BrowseSortMethod.SEQUENCE_LENGTH:
-			return "length";
-		case BrowseSortMethod.DATE_ADDED:
-			return "date";
-		default:
-			return "letter";
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +243,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		let circularCount = 0;
 		const total = allSequences.length;
 
+		// Per-component counters
+		let rotatedHalvedCount = 0;
+		let rotatedQuarteredCount = 0;
+		const componentCounts = new Map<LOOPComponent, number>();
+
 		for (const seq of allSequences) {
 			if (seq.isCircular) {
 				circularCount++;
@@ -264,11 +255,38 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 					counts[seq.loopType] = (counts[seq.loopType] ?? 0) + 1;
 				}
 			}
+
+			if (seq.components) {
+				for (const comp of seq.components) {
+					componentCounts.set(comp, (componentCounts.get(comp) ?? 0) + 1);
+				}
+				if (seq.components.includes(LOOPComponent.ROTATED)) {
+					if ((seq.period ?? 2) === 4) {
+						rotatedQuarteredCount++;
+					} else {
+						rotatedHalvedCount++;
+					}
+				}
+			}
 		}
 
 		counts["_total"] = total;
 		counts["_circular"] = circularCount;
 		counts["_non_circular"] = total - circularCount;
+
+		// Component counts keyed as "component:<name>"
+		counts["component:rotated_halved"] = rotatedHalvedCount;
+		counts["component:rotated_quartered"] = rotatedQuarteredCount;
+		for (const comp of [
+			LOOPComponent.MIRRORED,
+			LOOPComponent.FLIPPED,
+			LOOPComponent.SWAPPED,
+			LOOPComponent.INVERTED,
+			LOOPComponent.REWOUND,
+		]) {
+			counts[`component:${comp}`] = componentCounts.get(comp) ?? 0;
+		}
+
 		return counts;
 	});
 
