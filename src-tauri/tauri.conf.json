@@ -5,7 +5,7 @@
   "identifier": "com.tkaflowarts.composer.desktop",
   "build": {
     "beforeDevCommand": "pnpm dev -- --port 5174",
-    "beforeBuildCommand": "cross-env DISABLE_PWA=true pnpm build",
+    "beforeBuildCommand": "cross-env DISABLE_PWA=true pnpm build && node scripts/strip-desktop-assets.cjs",
     "devUrl": "http://localhost:5174",
     "frontendDist": "../build"
   },
