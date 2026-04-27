@@ -30,6 +30,7 @@
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import RailBentoSheet from "./bento/RailBentoSheet.svelte";
   import DownloadPillNav from "./pill-nav/DownloadPillNav.svelte";
+  import IconRailNav from "./pill-nav/IconRailNav.svelte";
   import PillBody from "./pill-nav/PillBody.svelte";
   import { buildPillSpecs, type PillId } from "./pill-nav/pill-types";
   import {
@@ -85,16 +86,13 @@
 
   function handlePillSelect(id: PillId): void {
     if (layout === "bottom") {
-      // Mobile: toggle — tapping same pill closes the sheet
       activePill = activePill === id ? null : id;
     } else {
-      // Desktop: always select (never deselect)
       activePill = id;
     }
   }
 
-  // Mobile: track pill nav element for focus restoration
-  let pillNavEl = $state<HTMLDivElement | null>(null);
+  let pillNavEl = $state<HTMLElement | null>(null);
 
   function findPillButton(id: PillId): HTMLElement | null {
     return pillNavEl?.querySelector<HTMLElement>(`[data-pill-id="${id}"]`) ?? null;
@@ -138,7 +136,7 @@
     return match ?? EFFORTS[0] ?? { id: "linear", label: "Linear", subtitle: "", color: "#94a3b8", params: [] };
   });
 
-  // ── Section summaries (reuse pure functions from pill-summaries.ts) ──
+  // ── Section summaries ──
   const effectsSummary = $derived.by(() => {
     void vmVersion;
     return computeEffectsSummary(vm.getActiveEffect(), EFFECT_LABELS);
@@ -215,7 +213,7 @@
     return formatDuration(total);
   });
 
-  // ── Pill specs (drives the pill nav bar) ──
+  // ── Pill specs ──
   const pillSpecs = $derived(
     buildPillSpecs({
       effects:  { icon: "fa-sparkles",  label: "Effects",  summary: effectsSummary },
@@ -226,7 +224,6 @@
     }),
   );
 
-  // ── Pill label for SR announcer + PillBody title ──
   const activePillLabel = $derived(
     pillSpecs.find((p) => p.id === activePill)?.label ?? "",
   );
@@ -493,76 +490,77 @@
     role="region"
     aria-label="Animation export settings"
   >
-    <div class="pill-bar-container">
-      <DownloadPillNav
+    <div class="sidebar-rail-layout">
+      <IconRailNav
         pills={pillSpecs}
         activeId={activePill}
         onSelect={handlePillSelect}
-        variant="desktop"
         onNavMount={(el) => { pillNavEl = el; }}
       />
-    </div>
 
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="panel-scroll"
-      onkeydown={preventSpaceActivation}
-      role="region"
-      aria-label="{activePillLabel} Settings"
-    >
-      {#if activePill}
-        {@render pillBody()}
-      {/if}
-    </div>
-
-    <div class="panel-footer">
-      {#if isExporting}
-        <div class="export-progress-row" role="status" aria-live="polite">
-          <div class="progress-info">
-            <span class="progress-stage">
-              {#if !exportProgress}Starting...{:else}Exporting{/if}
-            </span>
-            <span class="progress-pct">{exportProgress ? Math.round(exportProgress.progress * 100) : 0}%</span>
-          </div>
-          <div
-            class="progress-bar"
-            role="progressbar"
-            aria-valuenow={exportProgress ? Math.round(exportProgress.progress * 100) : 0}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Export progress"
-          >
-            <div class="progress-fill" style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"></div>
-          </div>
-          {#if onCancel}
-            <button type="button" class="cancel-btn" onclick={onCancel} aria-label="Cancel export">
-              <i class="fas fa-times" aria-hidden="true"></i>
-              Cancel
-            </button>
+      <div class="sidebar-main">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="panel-scroll"
+          onkeydown={preventSpaceActivation}
+          role="region"
+          aria-label="{activePillLabel} Settings"
+        >
+          {#if activePill}
+            {@render pillBody()}
           {/if}
         </div>
-      {:else}
-        <div class="export-row">
-          <button
-            type="button"
-            class="export-btn"
-            onclick={onExport}
-            disabled={exportDisabled}
-            aria-label={exportButtonLabel}
-          >
-            {#if !canvasReady}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              Preparing export...
-            {:else}
-              <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
-              {exportButtonLabel}
-            {/if}
-          </button>
-          {#if timeEstimateLabel && !exportDisabled}
-            <span class="time-estimate">{timeEstimateLabel}</span>
+
+        <div class="panel-footer">
+          {#if isExporting}
+            <div class="export-progress-row" role="status" aria-live="polite">
+              <div class="progress-info">
+                <span class="progress-stage">
+                  {#if !exportProgress}Starting...{:else}Exporting{/if}
+                </span>
+                <span class="progress-pct">{exportProgress ? Math.round(exportProgress.progress * 100) : 0}%</span>
+              </div>
+              <div
+                class="progress-bar"
+                role="progressbar"
+                aria-valuenow={exportProgress ? Math.round(exportProgress.progress * 100) : 0}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Export progress"
+              >
+                <div class="progress-fill" style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"></div>
+              </div>
+              {#if onCancel}
+                <button type="button" class="cancel-btn" onclick={onCancel} aria-label="Cancel export">
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                  Cancel
+                </button>
+              {/if}
+            </div>
+          {:else}
+            <div class="export-row">
+              <button
+                type="button"
+                class="export-btn"
+                onclick={onExport}
+                disabled={exportDisabled}
+                aria-label={exportButtonLabel}
+              >
+                {#if !canvasReady}
+                  <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                  Preparing export...
+                {:else}
+                  <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
+                  {exportButtonLabel}
+                {/if}
+              </button>
+              {#if timeEstimateLabel && !exportDisabled}
+                <span class="time-estimate">{timeEstimateLabel}</span>
+              {/if}
+            </div>
           {/if}
         </div>
-      {/if}
+      </div>
     </div>
   </div>
 {/if}
@@ -572,10 +570,18 @@
    * PILL BAR CONTAINER (desktop top area)
    * ============================================================ */
 
-  .pill-bar-container {
-    flex-shrink: 0;
-    padding: 10px 12px 6px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+  .sidebar-rail-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .sidebar-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
   }
 
   .section-pad {
