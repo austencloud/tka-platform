@@ -94,6 +94,33 @@ fn main(
 }
 `;
 
+const LED_FULLSCREEN_VERT_WGSL = /* wgsl */ `
+struct VertexOutput {
+  @builtin(position) position: vec4f,
+  @location(0) uv: vec2f,
+};
+
+@vertex
+fn main(@builtin(vertex_index) vi: u32) -> VertexOutput {
+  var out: VertexOutput;
+  let x = f32((vi << 1u) & 2u);
+  let y = f32(vi & 2u);
+  out.position = vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);
+  out.uv = vec2f(x, y);
+  return out;
+}
+`;
+
+const LED_COMPOSITE_FRAG_WGSL = /* wgsl */ `
+@group(0) @binding(0) var samp: sampler;
+@group(0) @binding(1) var t_src: texture_2d<f32>;
+
+@fragment
+fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+  return textureSample(t_src, samp, uv);
+}
+`;
+
 interface GPUTextureEntry {
   texture: GPUTexture;
   view: GPUTextureView;
@@ -112,6 +139,8 @@ export class WebGPULedExecutor {
   private instanceBuffer: GPUBuffer | null = null;
   private instanceData = new Float32Array(MAX_LEDS * INSTANCE_STRIDE_FLOATS);
   private uniformBuffer: GPUBuffer | null = null;
+  private compositePipeline: GPURenderPipeline | null = null;
+  private compositeBindGroupLayout: GPUBindGroupLayout | null = null;
 
   private prevPositions = new Map<string, { x: number; y: number }>();
   private spriteTexture: GPUTextureEntry | null = null;
@@ -240,6 +269,35 @@ export class WebGPULedExecutor {
       primitive: { topology: "triangle-list" },
     });
 
+    const compositeVertModule = device.createShaderModule({ code: LED_FULLSCREEN_VERT_WGSL });
+    const compositeFragModule = device.createShaderModule({ code: LED_COMPOSITE_FRAG_WGSL });
+
+    this.compositeBindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+      ],
+    });
+
+    this.compositePipeline = device.createRenderPipeline({
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [this.compositeBindGroupLayout],
+      }),
+      vertex: { module: compositeVertModule, entryPoint: "main" },
+      fragment: {
+        module: compositeFragModule,
+        entryPoint: "main",
+        targets: [{
+          format: "bgra8unorm",
+          blend: {
+            color: { srcFactor: "one", dstFactor: "one", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one", operation: "add" },
+          },
+        }],
+      },
+      primitive: { topology: "triangle-list" },
+    });
+
     this.ensureSpriteTexture(w, h);
   }
 
@@ -354,7 +412,6 @@ export class WebGPULedExecutor {
     pass.setBindGroup(0, bindGroup);
     pass.setVertexBuffer(0, this.quadBuffer!);
     pass.setVertexBuffer(1, this.instanceBuffer!);
-    pass.drawIndexed?.(6, ledCount);
     pass.draw(6, ledCount);
     pass.end();
     this.device.queue.submit([encoder.finish()]);
@@ -365,9 +422,28 @@ export class WebGPULedExecutor {
     _w: number,
     _h: number,
   ): void {
-    // Blit sprite texture to screen — full bloom chain deferred to Phase 4e
-    // For now, direct composite via a copy or fullscreen blit
-    // The sprite texture content is already rendered; a fullscreen composite
-    // pipeline would sample it onto the present view. Stubbed for now.
+    if (!this.spriteTexture || !this.compositePipeline || !this.compositeBindGroupLayout) return;
+
+    const bg = this.device.createBindGroup({
+      layout: this.compositeBindGroupLayout,
+      entries: [
+        { binding: 0, resource: this.sampler },
+        { binding: 1, resource: this.spriteTexture.view },
+      ],
+    });
+
+    const encoder = this.device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: presentView,
+        loadOp: "load" as GPULoadOp,
+        storeOp: "store" as GPUStoreOp,
+      }],
+    });
+    pass.setPipeline(this.compositePipeline);
+    pass.setBindGroup(0, bg);
+    pass.draw(3);
+    pass.end();
+    this.device.queue.submit([encoder.finish()]);
   }
 }

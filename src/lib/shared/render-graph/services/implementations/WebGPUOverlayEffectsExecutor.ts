@@ -415,16 +415,6 @@ export class WebGPUOverlayEffectsExecutor {
     if (payload.phantoms.length === 0) return;
     this.ensureInit();
 
-    const encoder = this.device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: presentView,
-        loadOp: "load" as GPULoadOp,
-        storeOp: "store" as GPUStoreOp,
-      }],
-    });
-    pass.setPipeline(this.meshPipeline);
-
     for (const phantom of payload.phantoms) {
       if (phantom.age >= payload.maxAge) continue;
       const ageFade = 1 - phantom.age / payload.maxAge;
@@ -433,20 +423,17 @@ export class WebGPUOverlayEffectsExecutor {
 
       if (drawStaff) {
         this.drawLineSegment(
-          pass, phantom.bluePos, phantom.redPos,
+          this.meshPipeline, presentView, phantom.bluePos, phantom.redPos,
           payload.thickness, payload.color, payload.color[3] * ageFade,
         );
       }
 
       if (drawTips) {
         const dotW = payload.thickness * (drawStaff ? 2 : 1);
-        this.drawDot(pass, phantom.bluePos, dotW, payload.color, payload.color[3] * ageFade);
-        this.drawDot(pass, phantom.redPos, dotW, payload.color, payload.color[3] * ageFade);
+        this.drawDot(this.meshPipeline, presentView, phantom.bluePos, dotW, payload.color, payload.color[3] * ageFade);
+        this.drawDot(this.meshPipeline, presentView, phantom.redPos, dotW, payload.color, payload.color[3] * ageFade);
       }
     }
-
-    pass.end();
-    this.device.queue.submit([encoder.finish()]);
   }
 
   // ── Zap (procedural lightning) ──────────────────────────────────
@@ -458,16 +445,6 @@ export class WebGPUOverlayEffectsExecutor {
     if (payload.arcs.length === 0) return;
     this.ensureInit();
 
-    const encoder = this.device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: presentView,
-        loadOp: "load" as GPULoadOp,
-        storeOp: "store" as GPUStoreOp,
-      }],
-    });
-    pass.setPipeline(this.meshPipelineAdditive);
-
     for (const arc of payload.arcs) {
       const path = this.buildJaggedPath(arc.from, arc.to, 12, arc.seed);
       const smooth = createSmoothCurve(path, { subdivisionsPerSegment: 3 });
@@ -477,16 +454,13 @@ export class WebGPUOverlayEffectsExecutor {
         taperTailRatio: 0.8,
       });
       if (mesh.vertexCount >= 2) {
-        this.uploadAndDrawMesh(pass, mesh.vertices, mesh.vertexCount, arc.color);
+        this.drawMeshToTarget(this.meshPipelineAdditive, mesh.vertices, mesh.vertexCount, arc.color, presentView);
       }
 
       if (arc.branching > 0) {
-        this.drawBranches(pass, path, arc, payload.intensity);
+        this.drawBranches(this.meshPipelineAdditive, presentView, path, arc, payload.intensity);
       }
     }
-
-    pass.end();
-    this.device.queue.submit([encoder.finish()]);
   }
 
   // ── Ink (ribbon with accumulator persistence) ───────────────────
@@ -506,15 +480,6 @@ export class WebGPUOverlayEffectsExecutor {
     this.decayAccumulator(accum, payload.decayPerSecond, dt);
 
     const writeView = accum.textures[1 - accum.readIdx]!.view;
-    const encoder = this.device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: writeView,
-        loadOp: "load" as GPULoadOp,
-        storeOp: "store" as GPUStoreOp,
-      }],
-    });
-    pass.setPipeline(this.meshPipelineAccum);
 
     for (const stroke of payload.strokes) {
       if (stroke.path.length < 2) continue;
@@ -535,12 +500,9 @@ export class WebGPUOverlayEffectsExecutor {
         taperTailRatio: 0.5,
       });
       if (mesh.vertexCount >= 2) {
-        this.uploadAndDrawMesh(pass, mesh.vertices, mesh.vertexCount, stroke.color);
+        this.drawMeshToTarget(this.meshPipelineAccum, mesh.vertices, mesh.vertexCount, stroke.color, writeView);
       }
     }
-
-    pass.end();
-    this.device.queue.submit([encoder.finish()]);
 
     accum.readIdx = 1 - accum.readIdx;
     this.compositeAccumToScreen(accum, presentView);
@@ -563,15 +525,6 @@ export class WebGPUOverlayEffectsExecutor {
     this.decayAccumulator(accum, payload.decayPerSecond, dt);
 
     const writeView = accum.textures[1 - accum.readIdx]!.view;
-    const encoder = this.device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: writeView,
-        loadOp: "load" as GPULoadOp,
-        storeOp: "store" as GPUStoreOp,
-      }],
-    });
-    pass.setPipeline(this.meshPipelineAccum);
 
     for (const ribbon of payload.ribbons) {
       if (ribbon.path.length < 2) continue;
@@ -587,12 +540,9 @@ export class WebGPUOverlayEffectsExecutor {
         taperTailRatio: 0.4,
       });
       if (mesh.vertexCount >= 2) {
-        this.uploadAndDrawMesh(pass, mesh.vertices, mesh.vertexCount, ribbon.color);
+        this.drawMeshToTarget(this.meshPipelineAccum, mesh.vertices, mesh.vertexCount, ribbon.color, writeView);
       }
     }
-
-    pass.end();
-    this.device.queue.submit([encoder.finish()]);
 
     accum.readIdx = 1 - accum.readIdx;
     this.compositeAccumToScreen(accum, presentView);
@@ -685,15 +635,15 @@ export class WebGPUOverlayEffectsExecutor {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.haloUniformBuf = device.createBuffer({
-      size: 4 + MAX_SOURCES * 8 * F,
+      size: (4 + MAX_SOURCES * 8) * F,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.ringUniformBuf = device.createBuffer({
-      size: 4 + MAX_SOURCES * 8 * F,
+      size: (4 + MAX_SOURCES * 8) * F,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.frostUniformBuf = device.createBuffer({
-      size: 4 + MAX_SOURCES * 8 * F,
+      size: (4 + MAX_SOURCES * 8) * F,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.decayUniformBuf = device.createBuffer({
@@ -946,14 +896,14 @@ export class WebGPUOverlayEffectsExecutor {
     this.device.queue.submit([encoder.finish()]);
   }
 
-  private uploadAndDrawMesh(
-    pass: GPURenderPassEncoder,
+  private drawMeshToTarget(
+    pipeline: GPURenderPipeline,
     vertices: Float32Array,
     vertexCount: number,
     color: readonly number[],
+    targetView: GPUTextureView,
   ): void {
-    const byteLen = vertices.byteLength;
-    if (byteLen > this.meshVertexBuf.size) return;
+    if (vertices.byteLength > this.meshVertexBuf.size) return;
 
     this.device.queue.writeBuffer(
       this.meshVertexBuf, 0,
@@ -970,13 +920,25 @@ export class WebGPUOverlayEffectsExecutor {
       entries: [{ binding: 0, resource: { buffer: this.meshUniformBuf } }],
     });
 
+    const encoder = this.device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: targetView,
+        loadOp: "load" as GPULoadOp,
+        storeOp: "store" as GPUStoreOp,
+      }],
+    });
+    pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
     pass.setVertexBuffer(0, this.meshVertexBuf);
     pass.draw(vertexCount);
+    pass.end();
+    this.device.queue.submit([encoder.finish()]);
   }
 
   private drawLineSegment(
-    pass: GPURenderPassEncoder,
+    pipeline: GPURenderPipeline,
+    targetView: GPUTextureView,
     from: [number, number],
     to: [number, number],
     thickness: number,
@@ -993,12 +955,13 @@ export class WebGPUOverlayEffectsExecutor {
       taperTailRatio: 1.0,
     });
     if (mesh.vertexCount >= 2) {
-      this.uploadAndDrawMesh(pass, mesh.vertices, mesh.vertexCount, color);
+      this.drawMeshToTarget(pipeline, mesh.vertices, mesh.vertexCount, color, targetView);
     }
   }
 
   private drawDot(
-    pass: GPURenderPassEncoder,
+    pipeline: GPURenderPipeline,
+    targetView: GPUTextureView,
     pos: [number, number],
     thickness: number,
     color: readonly number[],
@@ -1015,7 +978,7 @@ export class WebGPUOverlayEffectsExecutor {
       taperTailRatio: 1.0,
     });
     if (mesh.vertexCount >= 2) {
-      this.uploadAndDrawMesh(pass, mesh.vertices, mesh.vertexCount, color);
+      this.drawMeshToTarget(pipeline, mesh.vertices, mesh.vertexCount, color, targetView);
     }
   }
 
@@ -1049,7 +1012,8 @@ export class WebGPUOverlayEffectsExecutor {
   }
 
   private drawBranches(
-    pass: GPURenderPassEncoder,
+    pipeline: GPURenderPipeline,
+    targetView: GPUTextureView,
     mainPath: Point2D[],
     arc: {
       from: [number, number]; to: [number, number];
@@ -1082,7 +1046,7 @@ export class WebGPUOverlayEffectsExecutor {
         taperTailRatio: 0.3,
       });
       if (mesh.vertexCount >= 2) {
-        this.uploadAndDrawMesh(pass, mesh.vertices, mesh.vertexCount, arc.color);
+        this.drawMeshToTarget(pipeline, mesh.vertices, mesh.vertexCount, arc.color, targetView);
       }
     }
   }
