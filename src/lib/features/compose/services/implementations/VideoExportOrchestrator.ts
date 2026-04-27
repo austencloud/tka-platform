@@ -235,13 +235,16 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
       playbackController.jumpToStep(0);
 
-      // Invalidate the fire frame cache BEFORE clearing canvases. The cache
-      // may be "warm" from normal playback and would blit stale fire frames
-      // during frame-by-frame export instead of running fresh simulation.
-      fireCacheInvalidation.trigger();
+      // Invalidate the fire frame cache (but NOT the simulation FBOs) so the
+      // renderer records fresh frames during export. The Navier-Stokes simulation
+      // is already warm from normal playback — nuking it produces a cold start
+      // that looks nothing like the preview.
+      fireCacheInvalidation.triggerCacheOnly();
 
-      // Clear all overlay canvases (trails, fire, charcoal, LED) so residual
-      // effects from the user's previous playback don't bleed into frame 1.
+      // Clear non-WebGL overlay canvases (trails, LED) so residual effects from
+      // the user's previous playback don't bleed into frame 1. Skip WebGL canvases
+      // (fire/charcoal) — the resize trick destroys the GL context and nukes the
+      // warm simulation state. Fire will overwrite its canvas on the next render.
       const container = canvas.parentElement;
       if (container) {
         for (const overlay of container.querySelectorAll("canvas")) {
@@ -249,11 +252,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           const ctx = overlay.getContext("2d");
           if (ctx) {
             ctx.clearRect(0, 0, overlay.width, overlay.height);
-          } else {
-            // WebGL canvas - resize trick forces clear
-            const w = overlay.width;
-            overlay.width = 0;
-            overlay.width = w;
           }
         }
       }
@@ -391,57 +389,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         (CROSSFADE_DURATION_MS / 1000) * fps
       );
       let framesSinceTransition = 0;
-
-      // Fire warmup: the fire fluid simulation is stateful — heat, velocity, and
-      // pressure fields accumulate over many frames to reach steady state. The export
-      // clears the simulation at the start, so without warmup the fire looks completely
-      // different from what the user sees during normal playback. Run one silent loop
-      // of the motion (no frame capture) so the simulation reaches steady state.
-      const activeEffect = visibilityManager.getActiveEffect();
-      const needsSimulationWarmup = activeEffect === 'fire' || activeEffect === 'charcoal';
-
-      if (needsSimulationWarmup && totalDurationUnits > 0) {
-        const warmupSeconds = totalDurationUnits * secondsPerBeatUnit;
-        const warmupFrames = Math.ceil(warmupSeconds * fps);
-
-        for (let w = 0; w < warmupFrames; w++) {
-          if (this.shouldCancel) throw new Error("Export cancelled");
-
-          const warmupTime = (w / warmupFrames) * totalDurationUnits;
-          const rawStep = this.timeToBeat(warmupTime, cumulativeDurations, stepDurations);
-          const warmupVirtualMs = (w / fps) * 1000;
-          panelState.setVirtualTime(warmupVirtualMs);
-          playbackController.calculateStateForStep(rawStep + 1);
-
-          await this.waitForAnimationFrame();
-          await this.waitForAnimationFrame();
-        }
-
-        // Simulation is warm. Clear drawing buffers (not simulation FBOs),
-        // re-invalidate cache so it records fresh during actual capture.
-        fireCacheInvalidation.trigger();
-        await this.waitForAnimationFrame();
-
-        const container2 = canvas.parentElement;
-        if (container2) {
-          for (const overlay of container2.querySelectorAll("canvas")) {
-            if (overlay === canvas) continue;
-            const ctx2d = overlay.getContext("2d");
-            if (ctx2d) {
-              ctx2d.clearRect(0, 0, overlay.width, overlay.height);
-            } else {
-              const ow = overlay.width;
-              overlay.width = 0;
-              overlay.width = ow;
-            }
-          }
-        }
-
-        playbackController.calculateStateForStep(0);
-        panelState.setVirtualTime(0);
-        await this.waitForAnimationFrame();
-        await this.waitForAnimationFrame();
-      }
 
       // Frame duration in microseconds for WebCodecs timestamps
       const frameDurationMicros = Math.round(1_000_000 / fps);

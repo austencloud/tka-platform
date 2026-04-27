@@ -40,6 +40,12 @@ export interface IFireOverlayRenderer {
   clearSimulation(): void;
 
   /**
+   * Invalidate the frame cache without clearing simulation FBOs.
+   * Keeps the warm Navier-Stokes state while forcing fresh frame recording.
+   */
+  invalidateFrameCache(): void;
+
+  /**
    * Clean up WebGL resources and remove canvas from DOM.
    */
   dispose(): void;
