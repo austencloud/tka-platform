@@ -11,8 +11,19 @@ Reads from / writes to a headless BrowseEngine instance.
   import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
   import FavoritesFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";
   import LengthFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LengthFilterChip.svelte";
+  import LOOPFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LOOPFilterChip.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseEngine } from "../engine/types";
+
+  const LOOP_FILTER_COLORS: Record<string, string> = {
+    "component:rotated_halved": "#36c3ff",
+    "component:rotated_quartered": "#36c3ff",
+    "component:mirrored": "#6F2DA8",
+    "component:flipped": "#e91e63",
+    "component:swapped": "#26e600",
+    "component:inverted": "#eb7d00",
+    "component:rewound": "#00bcd4",
+  };
 
   interface Props {
     engine: BrowseEngine;
@@ -47,6 +58,11 @@ Reads from / writes to a headless BrowseEngine instance.
     return f?.locked ?? false;
   });
 
+  const activeLoopComponent = $derived.by(() => {
+    const f = engine.activeFilters.get("cap_type");
+    return f ? (f.value as string) : null;
+  });
+
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
@@ -67,6 +83,18 @@ Reads from / writes to a headless BrowseEngine instance.
     hapticService?.trigger("selection");
     if (length == null) engine.removeFilter("length");
     else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} beats`, "#f59e0b");
+  }
+
+  function handleLoopSelect(value: string | null) {
+    hapticService?.trigger("selection");
+    if (value == null) engine.removeFilter("cap_type");
+    else {
+      const label = value.startsWith("component:")
+        ? value.slice("component:".length).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+        : value;
+      const info = LOOP_FILTER_COLORS[value];
+      engine.addFilter(BrowseFilterType.LOOP_TYPE, value, label, info ?? "#8b5cf6");
+    }
   }
 
   function handleDismissChip(typeKey: string) {
@@ -102,6 +130,12 @@ Reads from / writes to a headless BrowseEngine instance.
         getFilteredCount={engine.getFilteredCount.bind(engine)}
       />
     {/if}
+
+    <LOOPFilterChip
+      activeValue={activeLoopComponent}
+      loopTypeCounts={engine.loopTypeCounts}
+      onSelect={handleLoopSelect}
+    />
   </div>
 
   <!-- Active filter chips row -->
@@ -310,6 +344,12 @@ Reads from / writes to a headless BrowseEngine instance.
     background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
     color: var(--semantic-error);
     border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  @container gallery (min-width: 900px) {
+    .browse-filter-bar {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
