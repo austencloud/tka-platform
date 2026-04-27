@@ -4,10 +4,10 @@
  * Coordinates frame capture, encoding, and final delivery for MP4/WebM exports.
  *
  * Supports two encoding paths:
- *   1. Background encoder (preferred) — uses a Web Worker with WebCodecs + mp4-muxer
+ *   1. Background encoder (preferred) - uses a Web Worker with WebCodecs + mp4-muxer
  *      for off-main-thread encoding. Captures ImageData per frame, transfers zero-copy
  *      to the worker, and receives the finished MP4 blob.
- *   2. Inline encoder (fallback) — uses the legacy VideoExporter on the main thread.
+ *   2. Inline encoder (fallback) - uses the legacy VideoExporter on the main thread.
  *      Retained for browsers without WebCodecs or when the background encoder is
  *      unavailable.
  */
@@ -84,7 +84,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     const visibilityManager = getAnimationVisibilityManager();
     const showWordHeader = visibilityManager.getVisibility("wordHeader");
     const showProgressBar = visibilityManager.getVisibility("progressBar");
-    // Header/progress bar heights at SOURCE resolution — used only for
+    // Header/progress bar heights at SOURCE resolution - used only for
     // aspect ratio calculation so the output dimensions stay correct.
     const srcHeaderHeight = showWordHeader
       ? this.canvasRenderer.getHeaderHeight(canvas.width)
@@ -123,7 +123,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     const rotationSliceSize: SliceSize | undefined =
       loopDisplayForExport?.rotationSliceSize;
 
-    // Resolve FPS early — used by both encoder paths and frame calculations
+    // Resolve FPS early - used by both encoder paths and frame calculations
     const fps = options.fps ?? VIDEO_EXPORT_FPS;
 
     // Calculate source dimensions from the live canvas (includes header + progress bar)
@@ -156,7 +156,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     }
 
     // ---------------------------------------------------------------------------
-    // Encoder setup — background (MP4) vs inline (WebM fallback)
+    // Encoder setup - background (MP4) vs inline (WebM fallback)
     // ---------------------------------------------------------------------------
     let inlineExporter: {
       addFrame: (c: HTMLCanvasElement) => Promise<void>;
@@ -185,7 +185,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const totalTimelineSeconds = earlyTotalDuration * secondsPerBeat;
       const totalFramesEstimate = Math.ceil(totalTimelineSeconds * fps);
 
-      // Wire progress from worker — only used during the finalize phase.
+      // Wire progress from worker - only used during the finalize phase.
       // During capture, the main loop reports its own progress; the worker
       // encodes frames concurrently but we don't surface that to the UI
       // to avoid rapid "capturing"/"encoding" flicker.
@@ -250,7 +250,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           if (ctx) {
             ctx.clearRect(0, 0, overlay.width, overlay.height);
           } else {
-            // WebGL canvas — resize trick forces clear
+            // WebGL canvas - resize trick forces clear
             const w = overlay.width;
             overlay.width = 0;
             overlay.width = w;
@@ -269,7 +269,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         await this.waitForAnimationFrame();
       }
 
-      // Build step durations array — each step's relative duration (default 1)
+      // Build step durations array - each step's relative duration (default 1)
       const steps = panelState.sequenceData?.steps ?? [];
       const stepDurations = steps.map((s) => s.duration ?? 1);
       const totalDurationUnits = stepDurations.reduce((sum, d) => sum + d, 0) || panelState.totalSteps;
@@ -308,7 +308,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         cumulative += d;
       }
 
-      // Keyframe interval — emit a keyframe every 2 seconds for seekability
+      // Keyframe interval - emit a keyframe every 2 seconds for seekability
       const keyframeInterval = fps * 2;
 
       // Check if composite mode is enabled
@@ -392,6 +392,57 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       );
       let framesSinceTransition = 0;
 
+      // Fire warmup: the fire fluid simulation is stateful — heat, velocity, and
+      // pressure fields accumulate over many frames to reach steady state. The export
+      // clears the simulation at the start, so without warmup the fire looks completely
+      // different from what the user sees during normal playback. Run one silent loop
+      // of the motion (no frame capture) so the simulation reaches steady state.
+      const activeEffect = visibilityManager.getActiveEffect();
+      const needsSimulationWarmup = activeEffect === 'fire' || activeEffect === 'charcoal';
+
+      if (needsSimulationWarmup && totalDurationUnits > 0) {
+        const warmupSeconds = totalDurationUnits * secondsPerBeatUnit;
+        const warmupFrames = Math.ceil(warmupSeconds * fps);
+
+        for (let w = 0; w < warmupFrames; w++) {
+          if (this.shouldCancel) throw new Error("Export cancelled");
+
+          const warmupTime = (w / warmupFrames) * totalDurationUnits;
+          const rawStep = this.timeToBeat(warmupTime, cumulativeDurations, stepDurations);
+          const warmupVirtualMs = (w / fps) * 1000;
+          panelState.setVirtualTime(warmupVirtualMs);
+          playbackController.calculateStateForStep(rawStep + 1);
+
+          await this.waitForAnimationFrame();
+          await this.waitForAnimationFrame();
+        }
+
+        // Simulation is warm. Clear drawing buffers (not simulation FBOs),
+        // re-invalidate cache so it records fresh during actual capture.
+        fireCacheInvalidation.trigger();
+        await this.waitForAnimationFrame();
+
+        const container2 = canvas.parentElement;
+        if (container2) {
+          for (const overlay of container2.querySelectorAll("canvas")) {
+            if (overlay === canvas) continue;
+            const ctx2d = overlay.getContext("2d");
+            if (ctx2d) {
+              ctx2d.clearRect(0, 0, overlay.width, overlay.height);
+            } else {
+              const ow = overlay.width;
+              overlay.width = 0;
+              overlay.width = ow;
+            }
+          }
+        }
+
+        playbackController.calculateStateForStep(0);
+        panelState.setVirtualTime(0);
+        await this.waitForAnimationFrame();
+        await this.waitForAnimationFrame();
+      }
+
       // Frame duration in microseconds for WebCodecs timestamps
       const frameDurationMicros = Math.round(1_000_000 / fps);
 
@@ -421,19 +472,19 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         const motionEnd = motionStart + motionLoopUnits;
 
         if (startPositionDuration > 0 && timeProgress < motionStart) {
-          // Start position phase — show initial pose, no glyph (once, at the beginning)
+          // Start position phase - show initial pose, no glyph (once, at the beginning)
           playbackPosition = timeProgress / startPositionDuration;
           stepIndex = -1;
           isInStartPosition = true;
           playbackController.calculateStateForStep(playbackPosition);
         } else if (endPositionHoldDuration > 0 && timeProgress >= motionEnd) {
-          // End position hold — freeze on the completed last motion step (once, at the end)
+          // End position hold - freeze on the completed last motion step (once, at the end)
           playbackPosition = steps.length + 1;
           stepIndex = steps.length - 1;
           isInEndHold = true;
           playbackController.calculateStateForStep(playbackPosition);
         } else {
-          // Motion steps phase — wrap time modulo one loop so N iterations play
+          // Motion steps phase - wrap time modulo one loop so N iterations play
           // back-to-back with no inter-iteration hold. Offset by +1 for the
           // animation engine's step convention (step 0 = start, 1+ = motion).
           const motionTime = timeProgress - motionStart;
@@ -451,7 +502,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
         // Guard: if the live canvas temporarily lost dimensions (Svelte re-render
         // or PixiJS resize), wait for recovery. If it doesn't recover, skip
-        // rendering this frame — the offscreen canvas still holds the previous
+        // rendering this frame - the offscreen canvas still holds the previous
         // frame's content, so the encoder will duplicate it (brief freeze in
         // the video, much better than aborting the entire export).
         let canvasAvailable = canvas.width > 0 && canvas.height > 0;
@@ -573,7 +624,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           }
 
           // Render TKA glyph if enabled (pre-rendered includes letter + dash + turns)
-          // Dark mode is already baked into the pre-rendered image — no ctx.filter needed
+          // Dark mode is already baked into the pre-rendered image - no ctx.filter needed
           if (showTkaGlyph) {
             // Render fading-out glyph (if in crossfade and previous exists)
             if (inCrossfade && previousGlyph?.image && fadeOutOpacity > 0) {
@@ -670,7 +721,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         }
 
         // -----------------------------------------------------------------------
-        // Capture frame — offscreen canvas is already at output resolution
+        // Capture frame - offscreen canvas is already at output resolution
         // -----------------------------------------------------------------------
         if (useBackgroundEncoder) {
           const frameData = offscreenCtx.getImageData(
@@ -710,7 +761,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
 
       // -----------------------------------------------------------------------
-      // Finalize — flush encoder and download
+      // Finalize - flush encoder and download
       // -----------------------------------------------------------------------
       onProgress({ progress: 0, stage: "encoding" });
 
@@ -754,7 +805,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         this.compositeRenderer.dispose();
       }
 
-      // Invalidate fire frame cache — the frame-by-frame jumpToStep capture
+      // Invalidate fire frame cache - the frame-by-frame jumpToStep capture
       // desyncs the cached fire simulation from the actual animation position.
       fireCacheInvalidation.trigger();
 

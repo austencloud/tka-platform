@@ -708,7 +708,7 @@ export class WebGPUBackend implements RenderBackend {
   ): void {
     const device = this.device!;
     const ctx = this.context!;
-    const pipeline = this.pipelines.get("composite");
+    const pipeline = this.pipelines.get("display");
     if (!pipeline) return;
 
     const uniformBuf = device.createBuffer({
@@ -872,6 +872,22 @@ export class WebGPUBackend implements RenderBackend {
       ],
     );
 
+    this.compileFullscreenPipeline(
+      "display",
+      FULLSCREEN_VERT_WGSL,
+      COMPOSITE_FRAG_WGSL,
+      [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: { type: "uniform" },
+        },
+      ],
+      this.presentFormat,
+    );
+
     this.compileTrailMeshPipeline();
   }
 
@@ -880,6 +896,7 @@ export class WebGPUBackend implements RenderBackend {
     vertWGSL: string,
     fragWGSL: string,
     layoutEntries: GPUBindGroupLayoutEntry[],
+    format: GPUTextureFormat = "rgba8unorm",
   ): void {
     const device = this.device!;
 
@@ -901,7 +918,7 @@ export class WebGPUBackend implements RenderBackend {
         entryPoint: "main",
         targets: [
           {
-            format: "rgba8unorm",
+            format,
             blend: {
               color: {
                 srcFactor: "one",
