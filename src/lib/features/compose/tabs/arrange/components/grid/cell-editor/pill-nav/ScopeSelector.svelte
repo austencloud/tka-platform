@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ScopeLevel, PillId } from './types';
-  import { PILL_CONFIGS } from './types';
+  import type { PillId } from '$lib/shared/sequence-viewer/components/pill-nav/pill-types';
+  import { type ScopeLevel, PILL_SCOPE_CONFIG } from '../state/cell-editor-panel-state.svelte';
 
   let {
     activePill,
@@ -16,7 +16,7 @@
     onScopeChange: (scope: ScopeLevel) => void;
   } = $props();
 
-  const pillConfig = $derived(PILL_CONFIGS.find(p => p.id === activePill)!);
+  const pillConfig = $derived(PILL_SCOPE_CONFIG.find(p => p.id === activePill)!);
   const availableScopes = $derived.by(() => {
     let scopes = pillConfig.scopes;
     if (layerCount <= 1) scopes = scopes.filter(s => s !== 'layer');
