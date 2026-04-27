@@ -11,7 +11,7 @@ Uses the user's chosen icons from the Design Lab (2026-01-21):
 - Rewound: fa-backward
 - Freeform: fa-infinity
 
-The rotated icon swaps based on rotationSliceSize so a performer can tell
+The rotated icon swaps based on rotationPeriod so a performer can tell
 at a glance whether the sequence rotates every half (2 reps, 180° each) or
 every quarter (4 reps, 90° each) without reading the label.
 
@@ -22,8 +22,9 @@ Used in:
 -->
 <script lang="ts">
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOP_ICON_GAP_SCALE } from "@tka/render-composition";
+  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
 
   interface Props {
     activeComponents: Set<LOOPComponent>;
@@ -33,7 +34,7 @@ Used in:
      * the legacy fa-rotate default, so any caller that hasn't been updated
      * continues to look the same as before.
      */
-    rotationSliceSize?: SliceSize;
+    rotationPeriod?: Period;
     size?: number;
     darkMode?: boolean;
     showFreeformWhenEmpty?: boolean;
@@ -41,7 +42,7 @@ Used in:
 
   let {
     activeComponents,
-    rotationSliceSize,
+    rotationPeriod,
     size = 16,
     darkMode = true,
     showFreeformWhenEmpty = true,
@@ -49,11 +50,11 @@ Used in:
 
   // Icon configuration - matches Design Lab choices.
   // Rotated's icon + label gets overridden at render time based on
-  // rotationSliceSize (quartered → fa-arrows-spin). Keeping the map entry
+  // rotationPeriod (quartered → fa-arrows-spin). Keeping the map entry
   // as the halved-default means every non-rotated primitive stays driven
   // from a single source of truth.
   // Reserved orientation primitives (ZONE_HOLD_INVERT / FLIP / CROSS) are
-  // intentionally absent — see primitive-discovery rule and Phase 2 filter.
+  // intentionally absent - see primitive-discovery rule and Phase 2 filter.
   const primitiveIcons: Partial<Record<LOOPComponent, {
     faClass: string;
     color: string;
@@ -119,7 +120,7 @@ Used in:
   );
 
   const isQuarteredRotation = $derived(
-    rotationSliceSize === SliceSize.QUARTERED
+    rotationPeriod === Period.QUARTERED
   );
 
   // Pick the icon for a component, applying the quartered-rotation override
@@ -176,12 +177,18 @@ Used in:
     {#each activeList as component}
       {@const icon = iconFor(component)}
       {#if icon}
-        <i
-          class={icon.faClass}
-          style="font-size: {size}px; color: {icon.color};"
-          aria-hidden="true"
-          title={icon.label}
-        ></i>
+        {#if component === LOOPComponent.SWAPPED}
+          <span title={icon.label} style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
+            <SwapIcon size="{size}px" />
+          </span>
+        {:else}
+          <i
+            class={icon.faClass}
+            style="font-size: {size}px; color: {icon.color};"
+            aria-hidden="true"
+            title={icon.label}
+          ></i>
+        {/if}
       {/if}
     {/each}
   {/if}

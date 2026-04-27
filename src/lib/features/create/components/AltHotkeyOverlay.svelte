@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { getCreateModuleContext } from "../shared/context/create-module-context";
@@ -111,7 +112,7 @@
     return propType !== PropType.HAND;
   }
 
-  // Sequence action launchers — set the sub-drawer, then open the actions panel
+  // Sequence action launchers - set the sub-drawer, then open the actions panel
   const actionButtons = [
     { label: "Duration", icon: "fa-clock", color: "#f472b6", bgTint: "rgba(244,114,182,0.12)", drawer: "duration" as const },
     { label: "Extend", icon: "fa-expand", color: "#38bdf8", bgTint: "rgba(56,189,248,0.12)", drawer: "extend" as const },
@@ -138,7 +139,7 @@
 
   let overlayEl: HTMLDivElement | undefined = $state();
 
-  // Alt key toggle — instant on keydown, ignore repeats
+  // Alt key toggle - instant on keydown, ignore repeats
   // Also: Escape dismisses, click outside dismisses
   $effect(() => {
     if (isMobile || typeof window === "undefined") return;
@@ -149,7 +150,7 @@
         if (isInputFocused()) return;
         e.preventDefault();
 
-        // Alt only opens — never closes. Use X, Escape, or click outside to dismiss.
+        // Alt only opens - never closes. Use X, Escape, or click outside to dismiss.
         if (!visible) {
           fadeOut = false;
           visible = true;
@@ -197,14 +198,14 @@
     role="toolbar"
     aria-label="Keyboard shortcuts (Alt held)"
   >
-    <!-- Alt badge — compact pill -->
+    <!-- Alt badge - compact pill -->
     <div class="alt-badge-section">
       <span class="alt-key-badge">Alt</span>
     </div>
 
     <div class="divider"></div>
 
-    <!-- Rotate section — stacked vertically to fill height -->
+    <!-- Rotate section - stacked vertically to fill height -->
     <div class="section">
       <span class="section-label">Rotate</span>
       <div class="rotate-col">
@@ -239,7 +240,11 @@
             title="{t.label} (Alt+{t.key})"
           >
             <span class="icon-badge" style="background: {t.bgTint}; color: {t.color};">
-              <i class="fas {t.icon}" aria-hidden="true"></i>
+              {#if t.type === "swapColors"}
+                <SwapIcon size="14px" />
+              {:else}
+                <i class="fas {t.icon}" aria-hidden="true"></i>
+              {/if}
             </span>
             <span class="item-label">{t.label}</span>
             <span class="key-badge" style="background: {t.keyBg}; border-color: {t.keyBorder}; color: {t.keyColor};">{t.key}</span>
@@ -326,7 +331,7 @@
 
     <div class="divider"></div>
 
-    <!-- Close button — inline as last flex item -->
+    <!-- Close button - inline as last flex item -->
     <button class="close-btn" onclick={dismiss} title="Close (Alt)" aria-label="Close shortcut overlay">
       <i class="fas fa-xmark" aria-hidden="true"></i>
     </button>
@@ -371,7 +376,7 @@
     to { opacity: 0; transform: translateX(-50%) translateY(-8px); }
   }
 
-  /* ===== Alt badge — compact pill ===== */
+  /* ===== Alt badge - compact pill ===== */
   .alt-badge-section {
     display: flex;
     align-items: center;
@@ -463,7 +468,7 @@
   .transform-item:disabled,
   .action-item:disabled { opacity: 0.3; cursor: default; }
 
-  /* ===== Rotate — stacked vertically ===== */
+  /* ===== Rotate - stacked vertically ===== */
   .rotate-col {
     display: flex;
     flex-direction: column;
@@ -483,7 +488,7 @@
   .rotate-icon { background: rgba(59, 130, 246, 0.12); color: #60a5fa; font-size: 14px; }
   .rotate-key { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); color: #7ba3ff; }
 
-  /* ===== Transforms — 3x2 grid ===== */
+  /* ===== Transforms - 3x2 grid ===== */
   .transform-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -529,7 +534,7 @@
     line-height: 1.4;
   }
 
-  /* ===== Actions — 2x2 grid ===== */
+  /* ===== Actions - 2x2 grid ===== */
   .actions-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -547,7 +552,7 @@
     min-width: 56px;
   }
 
-  /* ===== Presets — 5x2 grid ===== */
+  /* ===== Presets - 5x2 grid ===== */
   .preset-row {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -612,7 +617,7 @@
 
   .edit-btn i { font-size: 9px; }
 
-  /* ===== Close button — inline flex item ===== */
+  /* ===== Close button - inline flex item ===== */
   .close-btn {
     display: flex;
     align-items: center;

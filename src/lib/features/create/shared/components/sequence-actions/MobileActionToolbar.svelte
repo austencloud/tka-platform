@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import MobileActionButton from "./MobileActionButton.svelte";
+  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
 
   type Category = "transform" | "patterns" | "edit";
@@ -177,16 +178,31 @@
     aria-label="{activeCategory} actions"
   >
     {#each activeActions as action (action.id + action.label)}
-      <MobileActionButton
-        icon={action.icon}
-        label={action.label}
-        btnColor={action.btnColor}
-        disabled={action.disabled ?? false}
-        unavailable={action.unavailable ?? false}
-        highlighted={action.highlighted ?? false}
-        onAction={action.action}
-        onLongPress={() => handleLongPress(action.id)}
-      />
+      {#if action.id === "swap"}
+        <MobileActionButton
+          icon={action.icon}
+          label={action.label}
+          btnColor={action.btnColor}
+          disabled={action.disabled ?? false}
+          unavailable={action.unavailable ?? false}
+          highlighted={action.highlighted ?? false}
+          onAction={action.action}
+          onLongPress={() => handleLongPress(action.id)}
+        >
+          {#snippet customIcon()}<SwapIcon size="16px" />{/snippet}
+        </MobileActionButton>
+      {:else}
+        <MobileActionButton
+          icon={action.icon}
+          label={action.label}
+          btnColor={action.btnColor}
+          disabled={action.disabled ?? false}
+          unavailable={action.unavailable ?? false}
+          highlighted={action.highlighted ?? false}
+          onAction={action.action}
+          onLongPress={() => handleLongPress(action.id)}
+        />
+      {/if}
     {/each}
   </div>
 </div>
