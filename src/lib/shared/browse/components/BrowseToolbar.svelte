@@ -13,6 +13,11 @@
   import type { BrowseEngine } from "../engine/types";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
   import ExpandableSearchBar from "$lib/features/browse/shared/components/ExpandableSearchBar.svelte";
+  import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
+  import FavoritesFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";
+  import LengthFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LengthFilterChip.svelte";
+  import LOOPFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LOOPFilterChip.svelte";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { SequenceSource } from "../engine/types";
 
   interface Props {
@@ -140,6 +145,67 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Inline filter state (wide screens only — mirrors BrowseFilterBar)
+  // ---------------------------------------------------------------------------
+
+  const activeLevel = $derived.by(() => {
+    const f = engine.activeFilters.get("difficulty");
+    return f ? (f.value as number) : null;
+  });
+
+  const isFavoritesActive = $derived(engine.activeFilters.has("favorites"));
+
+  const activeLength = $derived.by(() => {
+    const f = engine.activeFilters.get("length");
+    return f && !f.locked ? (f.value as number) : null;
+  });
+
+  const hasLengthConstraint = $derived.by(() => {
+    const f = engine.activeFilters.get("length");
+    return f?.locked ?? false;
+  });
+
+  function handleLevelSelect(level: number | null) {
+    if (level == null) engine.removeFilter("difficulty");
+    else engine.addFilter(BrowseFilterType.DIFFICULTY, level, `Level ${level}`, "var(--semantic-info)");
+  }
+
+  function handleFavoritesToggle(active: boolean) {
+    if (active) engine.addFilter(BrowseFilterType.FAVORITES, true, "Favorites", "#ec4899");
+    else engine.removeFilter("favorites");
+  }
+
+  function handleLengthSelect(length: number | null) {
+    if (length == null) engine.removeFilter("length");
+    else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} beats`, "#f59e0b");
+  }
+
+  const activeLoopComponent = $derived.by(() => {
+    const f = engine.activeFilters.get("cap_type");
+    return f ? (f.value as string) : null;
+  });
+
+  const LOOP_FILTER_COLORS: Record<string, string> = {
+    "component:rotated_halved": "#36c3ff",
+    "component:rotated_quartered": "#36c3ff",
+    "component:mirrored": "#6F2DA8",
+    "component:flipped": "#e91e63",
+    "component:swapped": "#26e600",
+    "component:inverted": "#eb7d00",
+    "component:rewound": "#00bcd4",
+  };
+
+  function handleLoopSelect(value: string | null) {
+    if (value == null) engine.removeFilter("cap_type");
+    else {
+      const label = value.startsWith("component:")
+        ? value.slice("component:".length).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+        : value;
+      engine.addFilter(BrowseFilterType.LOOP_TYPE, value, label, LOOP_FILTER_COLORS[value] ?? "#8b5cf6");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Source toggle
   // ---------------------------------------------------------------------------
 
@@ -242,7 +308,34 @@
     {/if}
   </div>
 
-  <!-- 3. ExpandableSearchBar -->
+  <!-- 3. Inline filter chips (wide screens only) -->
+  <span class="toolbar-divider" aria-hidden="true"></span>
+  <div class="inline-filters" role="toolbar" aria-label="Filter options">
+    <LevelFilterChip
+      {activeLevel}
+      onSelect={handleLevelSelect}
+      getFilteredCount={engine.getFilteredCount.bind(engine)}
+    />
+    <FavoritesFilterChip
+      active={isFavoritesActive}
+      onToggle={handleFavoritesToggle}
+    />
+    {#if !hasLengthConstraint}
+      <LengthFilterChip
+        {activeLength}
+        availableLengths={engine.availableLengths as number[]}
+        onSelect={handleLengthSelect}
+        getFilteredCount={engine.getFilteredCount.bind(engine)}
+      />
+    {/if}
+    <LOOPFilterChip
+      activeValue={activeLoopComponent}
+      loopTypeCounts={engine.loopTypeCounts}
+      onSelect={handleLoopSelect}
+    />
+  </div>
+
+  <!-- 4. ExpandableSearchBar -->
   <div class="search-slot">
     <ExpandableSearchBar
       onSearch={(q) => engine.setSearch(q)}
@@ -252,7 +345,7 @@
     />
   </div>
 
-  <!-- 4. Result count -->
+  <!-- 5. Result count -->
   <span class="result-count" aria-live="polite" aria-atomic="true">
     {engine.resultCount} {engine.resultCount === 1 ? "sequence" : "sequences"}
   </span>
@@ -485,6 +578,37 @@
     0% { transform: scale(0); opacity: 0; }
     60% { transform: scale(1.2); }
     100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ---- Inline filters (wide only) ---- */
+  .inline-filters {
+    display: none;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    flex-shrink: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .inline-filters::-webkit-scrollbar { display: none; }
+
+  .inline-filters :global(button),
+  .inline-filters :global(.filter-chip) {
+    flex-shrink: 0;
+  }
+
+  .toolbar-divider {
+    display: none;
+    width: 1px;
+    height: 24px;
+    background: color-mix(in srgb, var(--theme-text) 15%, transparent);
+    flex-shrink: 0;
+  }
+
+  @container gallery (min-width: 900px) {
+    .inline-filters { display: flex; }
+    .toolbar-divider { display: block; }
   }
 
   /* ---- Search slot ---- */
