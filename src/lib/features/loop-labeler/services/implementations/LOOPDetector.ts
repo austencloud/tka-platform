@@ -20,6 +20,7 @@ import type {
 import type {
   InternalStepPair,
   CandidateInfo,
+  ExtractedStep,
 } from "../../domain/models/internal-step-models";
 import type { ComponentId } from "../../domain/constants/loop-components";
 import {
@@ -82,7 +83,7 @@ function periodFromIntervals(
  *
  * Merge semantics: when the same LOOPComponent appears in both domains, the
  * result has `domain: "both"`. Otherwise each component keeps its originating
- * domain. Reserved primitives from either side flow through unchanged —
+ * domain. Reserved primitives from either side flow through unchanged -
  * consumer resolvers strip them via RESERVED_ORIENTATION_PRIMITIVES.
  */
 function mergeComponents(
@@ -279,6 +280,18 @@ export class LOOPDetector implements ILOOPDetector {
         t.includes("rotated_90") || t.includes("90_ccw") || t.includes("90_cw")
     );
 
+    // Guard: if 90° position rotation exists but the motion types differ
+    // between quartered pairs, this isn't a true quartered loop. Example:
+    // EΨDΨDΨEΨ has 90° position rotation between beats (1,3) but beat 1
+    // is anti and beat 3 is pro — the motions change, so the fundamental
+    // period is 2 (halved), not 4. Fall through to halved detection.
+    if (rotation90Patterns.length > 0) {
+      const quarterLength = Math.floor(steps.length / 4);
+      if (quarterLength > 0 && !this.quarteredMotionsConsistent(steps, quarterLength)) {
+        rotation90Patterns = [];
+      }
+    }
+
     // Check for compound patterns if no common 90° pattern found
     let compoundPattern: CompoundPattern | undefined;
     const halvedOnlyTransformations: string[] = [];
@@ -298,16 +311,22 @@ export class LOOPDetector implements ILOOPDetector {
       }
     }
 
-    // Try modular detection if no uniform pattern found
+    // Try modular detection if no uniform pattern found — but only if
+    // motions are consistent across quarters (the same guard that rejects
+    // false-positive uniform quartered also applies to modular quartered).
     if (rotation90Patterns.length === 0) {
-      const modularResult = this.detectModularQuarteredPattern(
-        quarteredStepPairs,
-        rotationDirection,
-        polyrhythmic,
-        layeredPath
-      );
-      if (modularResult) {
-        return modularResult;
+      const qLen = Math.floor(steps.length / 4);
+      if (qLen > 0 && this.quarteredMotionsConsistent(steps, qLen)) {
+        const modularResult = this.detectModularQuarteredPattern(
+          quarteredStepPairs,
+          rotationDirection,
+          polyrhythmic,
+          layeredPath
+        );
+        if (modularResult) {
+          this.enrichWithHalvedPrimitives(modularResult, halvedStepPairs);
+          return modularResult;
+        }
       }
       return null;
     }
@@ -373,7 +392,7 @@ export class LOOPDetector implements ILOOPDetector {
         }
       : this.analysisService.groupStepPairsByPattern(quarteredStepPairs);
 
-    return {
+    const quarteredResult: LOOPDetectionResult = {
       loopType,
       components: derivedComponents,
       transformationIntervals: derivedIntervals,
@@ -395,6 +414,9 @@ export class LOOPDetector implements ILOOPDetector {
       period: periodFromIntervals(derivedIntervals, true),
       componentsDetailed: componentsToDetailed(derivedComponents),
     };
+    // Enrich with halved-level primitives not captured by quartered analysis
+    this.enrichWithHalvedPrimitives(quarteredResult, halvedStepPairs);
+    return quarteredResult;
   }
 
   private detectCompoundPattern(
@@ -477,19 +499,35 @@ export class LOOPDetector implements ILOOPDetector {
       ),
     ];
 
+    // Detect ALL halved-level components, not just swapped. A compound
+    // pattern can layer swapped + inverted + mirrored + flipped at 180°
+    // on top of a 90° rotation.
     const halvedOnlyTransformations = ["swapped"];
+    const halvedPrimitives = ["inverted", "mirrored", "flipped"] as const;
+    for (const primitive of halvedPrimitives) {
+      const allHave = halvedStepPairs.every((pair) =>
+        pair.rawTransformations.some((t) => t.includes(primitive))
+      );
+      if (allHave) {
+        halvedOnlyTransformations.push(primitive);
+      }
+    }
+
     const rotationDesc =
       rotationDirection === "ccw"
         ? "90° CCW Rotated"
         : rotationDirection === "cw"
           ? "90° CW Rotated"
           : "90° Rotated";
+    const halvedDesc = halvedOnlyTransformations
+      .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
+      .join(" + ");
 
     const compoundPattern: CompoundPattern = {
       isCompound: true,
       quarteredTransformations: ["rotated"],
       halvedTransformations: halvedOnlyTransformations,
-      description: `${rotationDesc} + Swapped (180°)`,
+      description: `${rotationDesc} + ${halvedDesc} (180°)`,
     };
 
     return { rotation90Patterns, compoundPattern, halvedOnlyTransformations };
@@ -856,6 +894,67 @@ export class LOOPDetector implements ILOOPDetector {
       period: periodFromIntervals(intervals, true),
       componentsDetailed: componentsToDetailed(components),
     };
+  }
+
+  /**
+   * Check halved step pairs for 180°-level primitives (inverted, mirrored,
+   * flipped) and add them to an existing detection result. This handles
+   * compound patterns where a quartered rotation has additional transformations
+   * at the halved level that the quartered-only analysis missed.
+   */
+  private quarteredMotionsConsistent(
+    steps: ExtractedStep[],
+    quarterLength: number
+  ): boolean {
+    for (let offset = 0; offset < quarterLength; offset++) {
+      let firstInverted: boolean | null = null;
+      for (let q = 0; q < 4; q++) {
+        const i = q * quarterLength + offset;
+        const j = ((q + 1) % 4) * quarterLength + offset;
+        const s1 = steps[i];
+        const s2 = steps[j];
+        if (!s1 || !s2) continue;
+        const inverted =
+          s1.blue.motionType !== s2.blue.motionType ||
+          s1.red.motionType !== s2.red.motionType;
+        if (firstInverted === null) {
+          firstInverted = inverted;
+        } else if (inverted !== firstInverted) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private enrichWithHalvedPrimitives(
+    result: LOOPDetectionResult,
+    halvedStepPairs: InternalStepPair[]
+  ): void {
+    if (halvedStepPairs.length === 0) return;
+
+    const halvedPrimitives = ["inverted", "mirrored", "flipped"] as const;
+    for (const primitive of halvedPrimitives) {
+      if (result.components.includes(primitive as ComponentId)) continue;
+      const allHave = halvedStepPairs.every((pair) =>
+        pair.rawTransformations.some((t) => t.includes(primitive))
+      );
+      if (allHave) {
+        result.components.push(primitive as ComponentId);
+        result.componentsDetailed.push({
+          component: componentIdToLOOPComponent(primitive as ComponentId)!,
+          domain: "location",
+        });
+        if (result.transformationIntervals) {
+          if (primitive === "inverted")
+            result.transformationIntervals.invert = "halved";
+          if (primitive === "mirrored")
+            result.transformationIntervals.mirror = "halved";
+          if (primitive === "flipped")
+            result.transformationIntervals.flip = "halved";
+        }
+      }
+    }
   }
 }
 

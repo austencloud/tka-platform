@@ -29,7 +29,7 @@
     resultCount = 0,
   }: Props = $props();
 
-  // Local state — initialized empty; the $effect below syncs the prop value
+  // Local state - initialized empty; the $effect below syncs the prop value
   // on mount (and on subsequent changes) to avoid capturing the initial prop
   // value outside a reactive context (svelte state_referenced_locally).
   let isExpanded = $state(false);
@@ -37,6 +37,9 @@
   let inputRef: HTMLInputElement | null = $state(null);
   let containerRef: HTMLDivElement | null = $state(null);
   let showVirtualKeyboard = $state(false);
+  const hasFinePointer =
+    typeof window !== "undefined" &&
+    window.matchMedia("(pointer: fine)").matches;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Track the last value received from the parent to avoid reset loops
@@ -60,12 +63,12 @@
   function handleExpand(event: MouseEvent) {
     event.stopPropagation();
     isExpanded = true;
-    showVirtualKeyboard = true;
+    if (!hasFinePointer) showVirtualKeyboard = true;
     setTimeout(() => inputRef?.focus(), 0);
   }
 
   function handleFocus() {
-    showVirtualKeyboard = true;
+    if (!hasFinePointer) showVirtualKeyboard = true;
   }
 
   function handleCollapse() {
@@ -209,7 +212,7 @@
         onfocus={handleFocus}
         {placeholder}
         aria-label={t('browse_search_sequences')}
-        inputmode="none"
+        inputmode={hasFinePointer ? undefined : "none"}
       />
       {#if inputValue}
         <button
