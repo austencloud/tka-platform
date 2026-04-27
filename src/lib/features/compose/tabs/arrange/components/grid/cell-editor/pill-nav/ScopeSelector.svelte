@@ -26,6 +26,7 @@
   const hasScopes = $derived(availableScopes.length > 0);
 
   const SCOPE_ICONS: Record<ScopeLevel, string> = {
+    grid: 'fa-grid',
     cell: 'fa-border-all',
     layer: 'fa-layer-group',
     hand: 'fa-hand',
@@ -33,6 +34,7 @@
   };
 
   const SCOPE_LABELS: Record<ScopeLevel, string> = {
+    grid: 'Grid',
     cell: 'Cell',
     layer: 'Layer',
     hand: 'Hand',

@@ -1,41 +1,27 @@
-<!--
-  CellEditorPanel.svelte
-
-  Root component for the redesigned cell editor panel.
-  Replaces CellEditor.svelte with a chip-based dashboard layout.
-  Preserves the same props interface for backward compatibility
-  and adds optional new callbacks for cell property controls.
--->
 <script lang="ts">
   import type { GridCell } from "../../../state/arrange-grid-state.svelte";
   import type {
     TransformType,
     CellMediaType,
     CellEffect,
+    PropColors,
   } from "../../../../../compose/domain/types";
   import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-  import { createCellEditorPanelState } from "./state/cell-editor-panel-state.svelte";
+  import type { PillId } from "$lib/shared/sequence-viewer/components/pill-nav/pill-types";
+  import { buildPillSpecs } from "$lib/shared/sequence-viewer/components/pill-nav/pill-types";
+  import IconRailNav from "$lib/shared/sequence-viewer/components/pill-nav/IconRailNav.svelte";
+  import ScopeBreadcrumb, { type BreadcrumbSegment } from "./ScopeBreadcrumb.svelte";
+  import { createCellEditorPanelState, type ScopeLevel } from "./state/cell-editor-panel-state.svelte";
+  import ScopeSelector from "./pill-nav/ScopeSelector.svelte";
   import LayerSection from "./LayerSection.svelte";
-  import ChipGrid from "./ChipGrid.svelte";
   import TransformSection from "./sections/TransformSection.svelte";
   import SpeedSection from "./sections/SpeedSection.svelte";
+  import ColorsSection from "./sections/ColorsSection.svelte";
   import UnifiedEffectsSection from "./sections/UnifiedEffectsSection.svelte";
   import UnifiedEffortSection from "./sections/UnifiedEffortSection.svelte";
-  import ColorsSection from "./sections/ColorsSection.svelte";
   import OffsetSection from "./sections/OffsetSection.svelte";
   import DisplaySection from "./sections/DisplaySection.svelte";
-  import PillNav from './pill-nav/PillNav.svelte';
-  import ModeToggle from './pill-nav/ModeToggle.svelte';
-  import ScopeSelector from './pill-nav/ScopeSelector.svelte';
-  import EffectsPillBody from './pill-nav/bodies/EffectsPillBody.svelte';
-  import StylePillBody from './pill-nav/bodies/StylePillBody.svelte';
-  import PlaybackPillBody from './pill-nav/bodies/PlaybackPillBody.svelte';
-  import DisplayPillBody from './pill-nav/bodies/DisplayPillBody.svelte';
-  import ExportPillBody from './pill-nav/bodies/ExportPillBody.svelte';
-  import type { PillId } from './pill-nav/types';
-
-  const MAX_LAYERS = 4;
 
   interface CellEditorProps {
     cell: GridCell;
@@ -52,12 +38,11 @@
     onCopyCell?: () => void;
     onPasteLayer?: () => void;
     onTransformLayer?: (layerIndex: number, transformType: TransformType) => void;
-
     onSetSpeed?: (speed: number) => void;
     onSetEffect?: (effect: CellEffect) => void;
     onSetTrailMode?: (mode: TrailMode) => void;
     onSetEffort?: (effort: string) => void;
-    onSetColors?: (colors: import('$lib/features/compose/compose/domain/types').PropColors) => void;
+    onSetColors?: (colors: PropColors) => void;
     onSetBlueVisible?: (visible: boolean) => void;
     onSetRedVisible?: (visible: boolean) => void;
     onSetOffset?: (offset: number) => void;
@@ -66,8 +51,6 @@
   }
 
   const p: CellEditorProps = $props();
-  // Access cell through props object (p.cell) in reactive contexts to avoid state_referenced_locally.
-  // Alias other props for convenience since they aren't captured in $derived/$effect closures.
   const cell = $derived(p.cell);
   const cellIndex = $derived(p.cellIndex);
   const clipboardHasData = $derived(p.clipboardHasData ?? false);
@@ -75,8 +58,6 @@
 
   const panelState = createCellEditorPanelState();
 
-  // Reset state when the selected cell changes.
-  // Track cell.id reactively via $derived to avoid state_referenced_locally warning.
   const currentCellId = $derived(cell.id);
   let previousCellId: string | null = null;
   $effect(() => {
@@ -86,46 +67,95 @@
     previousCellId = currentCellId;
   });
 
-  const sizeLabel = $derived(
-    cell.colSpan === 1 && cell.rowSpan === 1
-      ? "1\u00d71"
-      : `${cell.colSpan}\u00d7${cell.rowSpan}`
+  // ── Pill specs with derived summaries ──
+
+  const effectsSummary = $derived(
+    cell.effect && cell.effect !== "none"
+      ? cell.effect.charAt(0).toUpperCase() + cell.effect.slice(1)
+      : "None"
   );
 
-  const showSizeBadge = $derived(cell.colSpan > 1 || cell.rowSpan > 1);
+  const effortLabel = $derived(cell.effort ?? "Linear");
+  const colorLabel = $derived.by(() => {
+    const colors = cell.layers[0]?.propColors;
+    if (!colors) return "Blue/Red";
+    const labels: Record<string, string> = {
+      "#3b82f6": "Blue/Red", "#a855f7": "Purple/Orange",
+      "#10b981": "Emerald/Pink", "#06b6d4": "Cyan/Yellow",
+    };
+    return labels[colors.left] ?? "Custom";
+  });
+  const styleSummary = $derived(`${effortLabel} · ${colorLabel}`);
 
-  const pillSummaries = $derived<Record<PillId, string>>({
-    effects: cell.effect && cell.effect !== 'none' ? cell.effect.charAt(0).toUpperCase() + cell.effect.slice(1) : 'None',
-    style: cell.effort ?? 'Linear',
-    playback: `${Math.round((cell.speedMultiplier ?? 1) * 60)} BPM`,
-    display: 'Anim',
-    export: '1080p',
+  const playbackSummary = $derived(
+    `${(cell.speedMultiplier ?? 1).toFixed(1)}x · +${cell.beatOffset}`
+  );
+
+  const displaySummary = $derived(cell.mediaType === "choreo-card" ? "Card" : "Anim");
+
+  const exportSummary = $derived("1080p · 30fps");
+
+  const effortAccent = $derived.by(() => {
+    if (!cell.effort || cell.effort === "none") return "#94a3b8";
+    const colors: Record<string, string> = {
+      linear: "#94a3b8", smooth: "#60a5fa", sharp: "#f97316",
+      bounce: "#a855f7", elastic: "#34d399",
+    };
+    return colors[cell.effort] ?? "#94a3b8";
   });
 
-  function handleToggleBlueVisibility() {
-    const current = cell.blueMotionVisible !== false;
-    p.onSetBlueVisible?.(!current);
+  const pillSpecs = $derived(
+    buildPillSpecs({
+      effects: { icon: "fa-wand-magic-sparkles", label: "EFFECTS", summary: effectsSummary },
+      effort: { label: "STYLE", summary: styleSummary, accentColor: effortAccent },
+      playback: { icon: "fa-play", label: "PLAYBACK", summary: playbackSummary },
+      display: { icon: "fa-eye", label: "DISPLAY", summary: displaySummary },
+      export: { icon: "fa-download", label: "EXPORT", summary: exportSummary },
+    })
+  );
+
+  // ── Breadcrumb segments ──
+
+  const breadcrumbSegments = $derived.by<BreadcrumbSegment[]>(() => {
+    const segs: BreadcrumbSegment[] = [{ level: "grid", label: "Grid" }];
+    segs.push({ level: "cell", label: `Cell ${cellIndex + 1}` });
+    if (
+      panelState.scopeLevel === "layer" ||
+      panelState.scopeLevel === "hand" ||
+      panelState.scopeLevel === "tip"
+    ) {
+      segs.push({ level: "layer", label: "L1" });
+    }
+    return segs;
+  });
+
+  function handleBreadcrumbNav(level: ScopeLevel) {
+    panelState.setScopeLevel(level);
   }
 
-  function handleToggleRedVisibility() {
-    const current = cell.redMotionVisible !== false;
-    p.onSetRedVisible?.(!current);
-  }
+  // ── Handlers ──
 
   function handleTransform(type: TransformType) {
     p.onTransformLayer?.(0, type);
   }
+
+  function handleToggleBlueVisibility() {
+    p.onSetBlueVisible?.(cell.blueMotionVisible === false);
+  }
+
+  function handleToggleRedVisibility() {
+    p.onSetRedVisible?.(cell.redMotionVisible === false);
+  }
+
+  const blueVisible = $derived(cell.blueMotionVisible !== false);
+  const redVisible = $derived(cell.redMotionVisible !== false);
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     const key = e.key.toLowerCase();
     const shift = e.shiftKey;
     const map: Record<string, TransformType> = {
-      m: "mirror",
-      v: "flip",
-      s: "swapColors",
-      i: "invert",
-      f: "shiftStart",
+      m: "mirror", v: "flip", s: "swapColors", i: "invert", f: "shiftStart",
     };
     if (shift && key === "r") {
       handleTransform("rewind");
@@ -139,270 +169,298 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="cell-editor-panel">
-  <!-- Header -->
-  <header class="panel-header">
-    <div class="header-left">
-      <h3 class="panel-title">Cell {cellIndex + 1}</h3>
-      <div class="header-badges">
-        {#if showSizeBadge}
-          <span class="size-badge" title="Drag cell edges to resize">
-            {sizeLabel}
-          </span>
-        {/if}
-        {#if cell.layers.length > 0}
-          <span class="layer-ratio-badge">
-            {cell.layers.length}/{MAX_LAYERS}
-          </span>
-        {/if}
-      </div>
-    </div>
-  </header>
-
-  <!-- Layers -->
-  <LayerSection
-    {cell}
-    {clipboardHasData}
-    {transformingLayer}
-    onAddSequence={p.onAddSequence}
-    onRemoveLayer={p.onRemoveLayer}
-    onCopyLayer={p.onCopyLayer}
-    onPasteLayer={p.onPasteLayer}
+<div class="cell-editor-rail-layout">
+  <!-- Icon Rail (left) -->
+  <IconRailNav
+    pills={pillSpecs}
+    activeId={panelState.activePill}
+    onSelect={(id) => panelState.setActivePill(id)}
   />
 
-  <!-- Control Chips / Pill Nav -->
-  {#if cell.layers.length > 0}
-    {#if panelState.usePillNav}
-      <ModeToggle
-        mode={panelState.editorMode}
-        onModeChange={mode => panelState.setEditorMode(mode)}
-      />
+  <!-- Main Panel (right) -->
+  <div class="cell-editor-main">
+    <!-- Breadcrumb -->
+    <ScopeBreadcrumb
+      segments={breadcrumbSegments}
+      onNavigate={handleBreadcrumbNav}
+    />
 
-      <PillNav
-        activePill={panelState.activePill}
-        summaries={pillSummaries}
-        onPillChange={pill => panelState.setActivePill(pill)}
-      />
-
-      {#if panelState.editorMode === 'advanced'}
-        <ScopeSelector
-          activePill={panelState.activePill}
-          scopeLevel={panelState.scopeLevel}
-          layerCount={cell.layers.length}
-          echoActive={(cell.effect as string) === 'echo'}
-          onScopeChange={level => panelState.setScopeLevel(level)}
+    <!-- Layers section (visible at cell/grid scope) -->
+    {#if cell.layers.length > 0 && (panelState.scopeLevel === "cell" || panelState.scopeLevel === "grid")}
+      <div class="layers-zone">
+        <LayerSection
+          {cell}
+          {clipboardHasData}
+          {transformingLayer}
+          onAddSequence={p.onAddSequence}
+          onRemoveLayer={p.onRemoveLayer}
+          onCopyLayer={p.onCopyLayer}
+          onPasteLayer={p.onPasteLayer}
         />
-      {/if}
+      </div>
+    {/if}
 
-      <div class="pill-body" id="pill-body-{panelState.activePill}" role="tabpanel">
-        {#if panelState.activePill === 'effects'}
-          <EffectsPillBody
-            currentEffect={cell.effect ?? 'none'}
+    <!-- Pill Body (scrollable) -->
+    {#if cell.layers.length > 0}
+      <div class="pill-body-scroll" role="region" aria-label="{panelState.activePill} settings">
+        {#if panelState.activePill === "effects"}
+          <UnifiedEffectsSection
+            currentEffect={cell.effect ?? "none"}
             currentTrailMode={cell.trailMode}
-            tipEffectMap={cell.tipEffectMap ?? {}}
-            onSetEffect={effect => p.onSetEffect?.(effect as any)}
-            onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
-            onUpdateTipEffectMap={map => p.onSetTipEffectMap?.(map)}
+            currentMap={cell.tipEffectMap ?? {}}
+            bluePropType="staff"
+            redPropType="staff"
+            onSetEffect={(effect) => p.onSetEffect?.(effect)}
+            onSetTrailMode={(mode) => p.onSetTrailMode?.(mode)}
+            onUpdateMap={(map) => p.onSetTipEffectMap?.(map)}
           />
-        {:else if panelState.activePill === 'style'}
-          <StylePillBody
-            {panelState}
-            currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
-            currentEffort={cell.effort}
-            tipEffortMap={cell.tipEffortMap ?? {}}
-            onTransform={handleTransform}
-            onSetColors={colors => p.onSetColors?.(colors)}
-            onSetEffort={effort => p.onSetEffort?.(effort)}
-            onUpdateTipEffortMap={map => p.onSetTipEffortMap?.(map)}
-          />
-        {:else if panelState.activePill === 'playback'}
-          <PlaybackPillBody
+
+        {:else if panelState.activePill === "effort"}
+          <div class="style-sections">
+            <TransformSection {panelState} onTransform={handleTransform} />
+            <ColorsSection
+              currentColors={cell.layers[0]?.propColors ?? { left: "#3b82f6", right: "#ef4444" }}
+              onSetColors={(colors) => p.onSetColors?.(colors)}
+            />
+            <UnifiedEffortSection
+              currentEffort={cell.effort}
+              currentMap={cell.tipEffortMap ?? {}}
+              bluePropType="staff"
+              redPropType="staff"
+              onSetEffort={(effort) => p.onSetEffort?.(effort)}
+              onUpdateMap={(map) => p.onSetTipEffortMap?.(map)}
+            />
+            <div class="visibility-section">
+              <span class="section-label">VISIBILITY</span>
+              <div class="visibility-row">
+                <button
+                  type="button"
+                  class="vis-btn"
+                  class:active={blueVisible}
+                  style:--vis-color="#60a5fa"
+                  aria-pressed={blueVisible}
+                  onclick={handleToggleBlueVisibility}
+                >
+                  <i class="fas fa-eye" aria-hidden="true"></i> Blue
+                </button>
+                <button
+                  type="button"
+                  class="vis-btn"
+                  class:active={redVisible}
+                  style:--vis-color="#dc2626"
+                  aria-pressed={redVisible}
+                  onclick={handleToggleRedVisibility}
+                >
+                  <i class="fas fa-eye" aria-hidden="true"></i> Red
+                </button>
+              </div>
+            </div>
+          </div>
+
+        {:else if panelState.activePill === "playback"}
+          <SpeedSection
             currentSpeed={cell.speedMultiplier ?? 1.0}
-            currentOffset={cell.beatOffset}
-            layerCount={cell.layers.length}
-            onSetSpeed={speed => p.onSetSpeed?.(speed)}
-            onSetOffset={offset => p.onSetOffset?.(offset)}
+            onSetSpeed={(speed) => p.onSetSpeed?.(speed)}
           />
-        {:else if panelState.activePill === 'display'}
-          <DisplayPillBody
+          <OffsetSection
+            currentOffset={cell.beatOffset}
+            onSetOffset={(offset) => p.onSetOffset?.(offset)}
+          />
+
+        {:else if panelState.activePill === "display"}
+          <DisplaySection
             currentMediaType={cell.mediaType}
             layerCount={cell.layers.length}
-            blueVisible={cell.blueMotionVisible !== false}
-            redVisible={cell.redMotionVisible !== false}
-            onMediaTypeChange={type => p.onMediaTypeChange(type)}
-            onToggleBlueVisibility={handleToggleBlueVisibility}
-            onToggleRedVisibility={handleToggleRedVisibility}
+            onMediaTypeChange={(type) => p.onMediaTypeChange(type)}
           />
-        {:else if panelState.activePill === 'export'}
-          <ExportPillBody />
+
+        {:else if panelState.activePill === "export"}
+          <div class="export-section">
+            <button class="download-btn" type="button">
+              <i class="fas fa-download" aria-hidden="true"></i>
+              Download Arrangement
+            </button>
+          </div>
         {/if}
       </div>
-    {:else}
-      <ChipGrid
-        {cell}
-        {panelState}
-        onToggleBlueVisibility={handleToggleBlueVisibility}
-        onToggleRedVisibility={handleToggleRedVisibility}
-      />
 
-      {#if panelState.expandedSection === 'transform'}
-        <TransformSection {panelState} onTransform={handleTransform} />
-      {:else if panelState.expandedSection === 'speed'}
-        <SpeedSection
-          currentSpeed={cell.speedMultiplier ?? 1.0}
-          onSetSpeed={speed => p.onSetSpeed?.(speed)}
-        />
-      {:else if panelState.expandedSection === 'effects'}
-        <UnifiedEffectsSection
-          currentEffect={cell.effect ?? "none"}
-          currentTrailMode={cell.trailMode}
-          currentMap={cell.tipEffectMap ?? {}}
-          bluePropType="staff"
-          redPropType="staff"
-          onSetEffect={effect => p.onSetEffect?.(effect)}
-          onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
-          onUpdateMap={map => p.onSetTipEffectMap?.(map)}
-        />
-      {:else if panelState.expandedSection === 'colors'}
-        <ColorsSection
-          currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
-          onSetColors={colors => p.onSetColors?.(colors)}
-        />
-      {:else if panelState.expandedSection === 'effort'}
-        <UnifiedEffortSection
-          currentEffort={cell.effort}
-          currentMap={cell.tipEffortMap ?? {}}
-          bluePropType="staff"
-          redPropType="staff"
-          onSetEffort={effort => p.onSetEffort?.(effort)}
-          onUpdateMap={map => p.onSetTipEffortMap?.(map)}
-        />
-      {:else if panelState.expandedSection === 'offset'}
-        <OffsetSection
-          currentOffset={cell.beatOffset}
-          onSetOffset={offset => p.onSetOffset?.(offset)}
-        />
-      {:else if panelState.expandedSection === 'display'}
-        <DisplaySection
-          currentMediaType={cell.mediaType}
-          layerCount={cell.layers.length}
-          onMediaTypeChange={type => p.onMediaTypeChange(type)}
-        />
-      {/if}
-    {/if}
-  {/if}
-
-  <!-- Footer actions -->
-  {#if cell.layers.length > 0}
-    <div class="panel-footer">
-      {#if p.onCopyCell}
-        <button class="footer-btn copy-all-btn" onclick={p.onCopyCell}>
-          <i class="fas fa-copy" aria-hidden="true"></i>
-          Copy All
+      <!-- Footer -->
+      <div class="panel-footer">
+        {#if p.onCopyCell}
+          <button class="footer-btn copy-all-btn" type="button" onclick={p.onCopyCell}>
+            <i class="fas fa-copy" aria-hidden="true"></i>
+            Copy All
+          </button>
+        {/if}
+        <button class="footer-btn clear-all-btn" type="button" onclick={p.onClearCell}>
+          <i class="fas fa-trash-alt" aria-hidden="true"></i>
+          Clear All
         </button>
-      {/if}
-      <button class="footer-btn clear-all-btn" onclick={p.onClearCell}>
-        <i class="fas fa-trash-alt" aria-hidden="true"></i>
-        Clear All
-      </button>
-    </div>
-  {/if}
+      </div>
+    {:else}
+      <div class="empty-state">
+        <LayerSection
+          {cell}
+          {clipboardHasData}
+          {transformingLayer}
+          onAddSequence={p.onAddSequence}
+          onRemoveLayer={p.onRemoveLayer}
+          onCopyLayer={p.onCopyLayer}
+          onPasteLayer={p.onPasteLayer}
+        />
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .cell-editor-panel {
-    position: relative;
+  /* ── Rail Layout ── */
+  .cell-editor-rail-layout {
     display: flex;
-    flex-direction: column;
-    gap: var(--section-gap);
-    padding: clamp(10px, 2.5cqi, 16px);
+    min-height: 0;
+    flex: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-panel, #0f1119);
     container-type: inline-size;
     container-name: celleditorpanel;
 
-    /* ── Design tokens (inherited by all children) ── */
-
-    /* Shape */
+    /* Design tokens (inherited by children) */
     --chip-radius: 22px;
     --action-radius: 10px;
     --badge-radius: 4px;
-
-    /* Surfaces */
     --surface-idle: rgba(255, 255, 255, 0.05);
     --surface-hover: rgba(255, 255, 255, 0.08);
     --surface-active-pct: 12%;
-
-    /* Strokes */
     --stroke-idle: rgba(255, 255, 255, 0.08);
     --stroke-hover: rgba(255, 255, 255, 0.15);
     --stroke-active-pct: 35%;
-
-    /* Spacing */
     --chip-gap: clamp(6px, 1.5cqi, 8px);
     --group-gap: clamp(10px, 2.5cqi, 14px);
     --section-gap: clamp(12px, 3cqi, 20px);
   }
 
-  /* Header */
-  .panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: clamp(8px, 2cqi, 14px);
-    border-bottom: 1px solid rgba(139, 92, 246, 0.12);
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: clamp(6px, 2cqi, 10px);
-  }
-
-  .panel-title {
-    margin: 0;
-    font-size: clamp(0.9rem, 3.5cqi, 1.1rem);
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
-  .header-badges {
-    display: flex;
-    align-items: center;
-    gap: clamp(4px, 1cqi, 6px);
-  }
-
-  .size-badge {
-    font-size: clamp(0.65rem, 2cqi, 0.75rem);
-    color: var(--theme-accent, #8b5cf6);
-    padding: 2px clamp(6px, 1.5cqi, 8px);
-    background: rgba(139, 92, 246, 0.15);
-    border-radius: var(--badge-radius);
-    cursor: help;
-  }
-
-  .layer-ratio-badge {
-    font-size: clamp(0.65rem, 2cqi, 0.75rem);
-    color: rgba(167, 139, 250, 0.8);
-    padding: 2px clamp(6px, 1.5cqi, 8px);
-    background: rgba(139, 92, 246, 0.12);
-    border-radius: var(--badge-radius);
-  }
-
-  /* Pill body */
-  .pill-body {
+  .cell-editor-main {
     flex: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    min-width: 0;
+    min-height: 0;
   }
 
-  /* Footer */
-  .panel-footer {
-    margin-top: auto;
+  /* ── Layers zone ── */
+  .layers-zone {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    flex-shrink: 0;
+  }
+
+  /* ── Pill body (scrollable) ── */
+  .pill-body-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 10px;
     display: flex;
-    gap: var(--chip-gap);
-    padding-top: var(--group-gap);
-    border-top: 1px solid var(--stroke-idle);
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .style-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ── Visibility toggles (inside Style pill) ── */
+  .visibility-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .visibility-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .vis-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 44px;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+
+  .vis-btn.active {
+    background: color-mix(in srgb, var(--vis-color) 12%, transparent);
+    border-color: color-mix(in srgb, var(--vis-color) 30%, transparent);
+    color: color-mix(in srgb, var(--vis-color) 100%, white 30%);
+  }
+
+  .vis-btn i {
+    font-size: 11px;
+  }
+
+  /* ── Export section ── */
+  .export-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .download-btn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 150ms ease;
+  }
+
+  .download-btn:hover {
+    opacity: 0.9;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    flex: 1;
+    padding: 10px;
+  }
+
+  /* ── Footer ── */
+  .panel-footer {
+    flex-shrink: 0;
+    display: flex;
+    gap: var(--chip-gap, 6px);
+    padding: 8px 10px;
+    border-top: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
   }
 
   .footer-btn {
@@ -410,11 +468,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--chip-gap);
+    gap: 6px;
     min-height: 44px;
     padding: 10px 14px;
-    border-radius: var(--action-radius);
-    font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
+    border-radius: var(--action-radius, 10px);
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: background 150ms ease, border-color 150ms ease;
@@ -443,7 +501,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .footer-btn {
+    .vis-btn,
+    .footer-btn,
+    .download-btn {
       transition: none;
     }
   }
