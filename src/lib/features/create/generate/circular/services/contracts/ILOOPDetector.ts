@@ -7,7 +7,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { LOOPType, SliceSize } from "../../domain/models/circular-models";
+import type { LOOPType, Period } from "../../domain/models/circular-models";
 import type { LOOPComponent } from "../../../shared/domain/models/generate-models";
 
 /**
@@ -15,7 +15,7 @@ import type { LOOPComponent } from "../../../shared/domain/models/generate-model
  */
 export interface IntervalTransformation {
   /** The interval at which this transformation occurs */
-  interval: SliceSize;
+  interval: Period;
   /** The transformation component detected */
   component: LOOPComponent;
   /** Human-readable description */
@@ -46,8 +46,8 @@ export interface LOOPDetectionResult {
   /** The detected LOOP type (null if circular but not a recognized pattern) */
   loopType: LOOPType | null;
 
-  /** Slice size for rotational patterns (HALVED = 180°, QUARTERED = 90°) */
-  sliceSize: SliceSize | null;
+  /** Period for rotational patterns (HALVED = 180°, QUARTERED = 90°) */
+  period: Period | null;
 
   /**
    * Detection confidence level:
