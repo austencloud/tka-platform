@@ -25,7 +25,7 @@
 
   type PresetLayoutType =
     | "single" | "vertical" | "horizontal" | "line"
-    | "square" | "hero-thumbs" | "main-banner" | "pip"
+    | "square" | "filmstrip" | "tower" | "hero-thumbs" | "main-banner" | "pip"
     | "split-half" | "quad" | "gallery";
 
   interface Props {
