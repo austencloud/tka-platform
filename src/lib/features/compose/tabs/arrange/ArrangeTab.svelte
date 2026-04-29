@@ -79,6 +79,8 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
       | "horizontal"
       | "line"
       | "square"
+      | "filmstrip"
+      | "tower"
       | "hero-thumbs"
       | "main-banner"
       | "pip"

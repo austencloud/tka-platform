@@ -1,25 +1,38 @@
 <!--
   GridLayoutControls.svelte
 
-  Grid dimension picker + spanning presets for the arrange grid.
-  8x8 grid of cells using the old toggle-grid visual style.
-  Active cells (within current dimensions) are filled accent with checkmarks.
-  Click any cell to set grid dimensions to that position.
+  Modern grid dimension picker with smart preset cards and compact hover grid.
+  Preset cards are the primary interaction — most users pick a known layout.
+  The compact 8×8 hover grid serves power users who want exact dimensions.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+
   type PresetType =
     | "single"
     | "vertical"
     | "horizontal"
     | "line"
     | "square"
+    | "filmstrip"
+    | "tower"
     | "hero-thumbs"
     | "main-banner"
     | "pip"
     | "split-half"
     | "quad"
     | "gallery";
+
+  interface PresetCard {
+    id: PresetType;
+    label: string;
+    /** CSS grid-template-columns for the thumbnail */
+    thumbCols: string;
+    /** CSS grid-template-rows for the thumbnail */
+    thumbRows: string;
+    /** Spans for each visual block: [colSpan, rowSpan][] */
+    blocks: [number, number][];
+  }
 
   let {
     gridRows,
@@ -40,23 +53,127 @@
   } = $props();
 
   const haptic = getHapticFeedback();
-
   const MAX_GRID = 8;
 
-  // --- Hover preview state ---
+  // --- Preset cards ---
+  const presets: PresetCard[] = [
+    {
+      id: "single",
+      label: "Solo",
+      thumbCols: "1fr",
+      thumbRows: "1fr",
+      blocks: [[1, 1]],
+    },
+    {
+      id: "horizontal",
+      label: "Duo",
+      thumbCols: "1fr 1fr",
+      thumbRows: "1fr",
+      blocks: [[1, 1], [1, 1]],
+    },
+    {
+      id: "vertical",
+      label: "Stack",
+      thumbCols: "1fr",
+      thumbRows: "1fr 1fr",
+      blocks: [[1, 1], [1, 1]],
+    },
+    {
+      id: "square",
+      label: "Quad",
+      thumbCols: "1fr 1fr",
+      thumbRows: "1fr 1fr",
+      blocks: [[1, 1], [1, 1], [1, 1], [1, 1]],
+    },
+    {
+      id: "gallery",
+      label: "Gallery",
+      thumbCols: "1fr 1fr 1fr",
+      thumbRows: "1fr 1fr 1fr",
+      blocks: [[1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1]],
+    },
+    {
+      id: "filmstrip",
+      label: "Filmstrip",
+      thumbCols: "1fr 1fr 1fr 1fr",
+      thumbRows: "1fr",
+      blocks: [[1, 1], [1, 1], [1, 1], [1, 1]],
+    },
+    {
+      id: "tower",
+      label: "Tower",
+      thumbCols: "1fr",
+      thumbRows: "1fr 1fr 1fr 1fr",
+      blocks: [[1, 1], [1, 1], [1, 1], [1, 1]],
+    },
+    {
+      id: "hero-thumbs",
+      label: "Hero + Thumbs",
+      thumbCols: "repeat(5, 1fr)",
+      thumbRows: "repeat(5, 1fr) 1fr",
+      blocks: [[5, 5], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1]],
+    },
+    {
+      id: "main-banner",
+      label: "Banner + Main",
+      thumbCols: "1fr",
+      thumbRows: "5fr 1fr",
+      blocks: [[1, 1], [1, 1]],
+    },
+    {
+      id: "pip",
+      label: "Picture-in-Picture",
+      thumbCols: "repeat(6, 1fr)",
+      thumbRows: "repeat(6, 1fr)",
+      blocks: [[5, 6], [1, 1]],
+    },
+    {
+      id: "split-half",
+      label: "Split View",
+      thumbCols: "1fr 1fr",
+      thumbRows: "1fr",
+      blocks: [[1, 1], [1, 1]],
+    },
+  ];
+
+  /** Map preset IDs to their effective grid dimensions for active-state matching */
+  const presetDimensions: Record<string, { rows: number; cols: number } | null> = {
+    single: { rows: 1, cols: 1 },
+    horizontal: { rows: 1, cols: 2 },
+    vertical: { rows: 2, cols: 1 },
+    square: { rows: 2, cols: 2 },
+    gallery: { rows: 3, cols: 3 },
+    filmstrip: { rows: 1, cols: 4 },
+    tower: { rows: 4, cols: 1 },
+    // Spanning presets use fixed grids but with spanning cells
+    "hero-thumbs": { rows: 6, cols: 5 },
+    "main-banner": { rows: 6, cols: 6 },
+    pip: { rows: 6, cols: 6 },
+    "split-half": { rows: 4, cols: 2 },
+    quad: { rows: 6, cols: 6 },
+  };
+
+  function isPresetActive(preset: PresetCard): boolean {
+    const dims = presetDimensions[preset.id];
+    if (!dims) return false;
+    return gridRows === dims.rows && gridCols === dims.cols;
+  }
+
+  // --- Compact hover grid state ---
   let hoverRows = $state<number | null>(null);
   let hoverCols = $state<number | null>(null);
 
   const displayRows = $derived(hoverRows ?? gridRows);
   const displayCols = $derived(hoverCols ?? gridCols);
-  const displayTotal = $derived(displayRows * displayCols);
   const isPreviewing = $derived(hoverRows !== null || hoverCols !== null);
 
   // --- Confirmation state ---
   let pendingPreset = $state<PresetType | null>(null);
   let pendingDimensions = $state<{ rows: number; cols: number } | null>(null);
 
-  // --- Grid cells ---
+  const hasPending = $derived(pendingPreset !== null || pendingDimensions !== null);
+
+  // --- Compact grid cells ---
   const gridPositions = Array.from({ length: MAX_GRID * MAX_GRID }, (_, i) => ({
     row: Math.floor(i / MAX_GRID),
     col: i % MAX_GRID,
@@ -134,37 +251,14 @@
     }
   }
 
-  // --- Quick sizes ---
-  const quickSizes: { rows: number; cols: number; label: string }[] = [
-    { rows: 1, cols: 1, label: "1×1" },
-    { rows: 2, cols: 1, label: "2×1" },
-    { rows: 1, cols: 2, label: "1×2" },
-    { rows: 2, cols: 2, label: "2×2" },
-    { rows: 2, cols: 3, label: "2×3" },
-    { rows: 3, cols: 2, label: "3×2" },
-    { rows: 3, cols: 3, label: "3×3" },
-    { rows: 4, cols: 4, label: "4×4" },
-  ];
-
-  function handleQuickSize(rows: number, cols: number) {
-    if (rows === gridRows && cols === gridCols) return;
+  // --- Preset handler ---
+  function handlePresetClick(preset: PresetCard) {
     haptic.trigger("selection");
     if (hasContent) {
-      pendingDimensions = { rows, cols };
-      pendingPreset = null;
-    } else {
-      onSetDimensions(rows, cols);
-    }
-  }
-
-  // --- Spanning presets ---
-  function handleSpanningPreset(preset: PresetType) {
-    haptic.trigger("selection");
-    if (hasContent) {
-      pendingPreset = preset;
+      pendingPreset = preset.id;
       pendingDimensions = null;
     } else {
-      onPresetLayout(preset);
+      onPresetLayout(preset.id);
     }
   }
 
@@ -187,12 +281,62 @@
 </script>
 
 <div class="grid-layout-controls">
-  <!-- Interactive Grid -->
-  <div class="grid-section">
+  <!-- ====== PRESET CARDS ====== -->
+  <section class="presets-section">
+    <span class="section-header">Layouts</span>
+    <div class="preset-grid">
+      {#each presets as preset (preset.id)}
+        {@const active = isPresetActive(preset)}
+        <button
+          class="preset-card"
+          class:active
+          onclick={() => handlePresetClick(preset)}
+          aria-label="{preset.label} layout"
+          aria-pressed={active}
+        >
+          <div
+            class="preset-thumb"
+            style:grid-template-columns={preset.thumbCols}
+            style:grid-template-rows={preset.thumbRows}
+          >
+            {#each preset.blocks as [colSpan, rowSpan]}
+              <span
+                class="thumb-block"
+                class:active
+                style:grid-column={colSpan > 1 ? `span ${colSpan}` : undefined}
+                style:grid-row={rowSpan > 1 ? `span ${rowSpan}` : undefined}
+              ></span>
+            {/each}
+          </div>
+          <span class="preset-label">{preset.label}</span>
+        </button>
+      {/each}
+    </div>
+  </section>
+
+  <!-- ====== CONFIRMATION BAR ====== -->
+  {#if hasPending}
+    <div
+      class="confirm-bar"
+      role="alertdialog"
+      aria-label="Confirm layout change"
+    >
+      <span class="confirm-icon">
+        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+      </span>
+      <span class="confirm-text">Will clear affected cells</span>
+      <button class="confirm-btn cancel" onclick={cancelChange}>Cancel</button>
+      <button class="confirm-btn apply" onclick={confirmChange}>Apply</button>
+    </div>
+  {/if}
+
+  <!-- ====== COMPACT HOVER GRID ====== -->
+  <section class="custom-section">
+    <span class="section-header">Custom Size</span>
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
-      class="toggle-grid"
+      class="compact-grid"
       role="toolbar"
       aria-label="Grid dimensions: {gridRows} rows by {gridCols} columns"
       tabindex="0"
@@ -202,559 +346,270 @@
       {#each gridPositions as pos (pos.row * MAX_GRID + pos.col)}
         {@const state = getCellState(pos.row, pos.col)}
         <button
-          class="grid-cell"
-          class:enabled={state === "active"}
+          class="mini-cell"
+          class:active={state === "active"}
           class:preview={state === "preview"}
           tabindex="-1"
           aria-label="Set grid to {pos.col + 1} columns by {pos.row + 1} rows"
           onpointerenter={() => handleCellPointerEnter(pos.row, pos.col)}
           onclick={() => handleCellClick(pos.row, pos.col)}
-        >
-          {#if state === "active"}
-            <i class="fas fa-check" aria-hidden="true"></i>
-          {/if}
-        </button>
+        ></button>
       {/each}
     </div>
-
-    <!-- Dimension Label -->
-    <div class="count-label" aria-live="polite">
-      <span class="count-value" class:previewing={isPreviewing}>
+    <div class="dimension-label" aria-live="polite">
+      <span class="dim-value" class:previewing={isPreviewing}>
         {displayCols} &times; {displayRows}
       </span>
-      <span class="count-text">
-        ({displayTotal} {displayTotal === 1 ? "cell" : "cells"})
-      </span>
     </div>
-  </div>
-
-  <!-- Confirmation Bar (shared by all presets/sizes) -->
-  {#if pendingPreset || pendingDimensions}
-    <div
-      class="confirm-bar"
-      role="alertdialog"
-      aria-label="Confirm layout change"
-    >
-      <p class="confirm-text">
-        Sequences in affected cells will be cleared.
-      </p>
-      <div class="confirm-actions">
-        <button class="confirm-cancel" onclick={cancelChange}>
-          Cancel
-        </button>
-        <button class="confirm-apply" onclick={confirmChange}>
-          Change Layout
-        </button>
-      </div>
-      <p class="confirm-hint">Ctrl+Z to undo after applying</p>
-    </div>
-  {/if}
-
-  <!-- Quick Sizes -->
-  <div class="presets-section">
-    <span class="presets-label">Quick Sizes</span>
-    <div class="quick-sizes">
-      {#each quickSizes as qs (qs.label)}
-        {@const isActive = gridRows === qs.rows && gridCols === qs.cols}
-        <button
-          class="quick-size-chip"
-          class:active={isActive}
-          onclick={() => handleQuickSize(qs.rows, qs.cols)}
-          aria-label="Set grid to {qs.cols} columns by {qs.rows} rows"
-          aria-pressed={isActive}
-          title="{qs.label} grid"
-        >
-          {qs.label}
-        </button>
-      {/each}
-    </div>
-  </div>
-
-  <!-- Spanning Layouts -->
-  <div class="presets-section">
-    <span class="presets-label">Spanning Layouts</span>
-    <div class="spanning-presets">
-      <button
-        class="preset-btn"
-        onclick={() => handleSpanningPreset("hero-thumbs")}
-        aria-label="Hero with thumbnails layout"
-        title="5x5 hero + thumbnails"
-      >
-        <div class="preset-icon hero-thumbs">
-          <span class="span-5x5"></span>
-          <span class="span-1x1"></span>
-          <span class="span-1x1"></span>
-          <span class="span-1x1"></span>
-          <span class="span-1x1"></span>
-          <span class="span-1x1"></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handleSpanningPreset("main-banner")}
-        aria-label="Main with banner layout"
-        title="6x5 main + banner"
-      >
-        <div class="preset-icon main-banner">
-          <span class="span-6x5"></span>
-          <span class="span-6x1"></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handleSpanningPreset("pip")}
-        aria-label="Picture-in-picture layout"
-        title="Large main + small overlay"
-      >
-        <div class="preset-icon pip">
-          <span class="span-5x6"></span>
-          <span class="span-1x1"></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handleSpanningPreset("split-half")}
-        aria-label="Split half layout"
-        title="2 columns, each full height"
-      >
-        <div class="preset-icon split-half">
-          <span class="span-left"></span>
-          <span class="span-right"></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handleSpanningPreset("quad")}
-        aria-label="Quad layout"
-        title="4 equal quadrants"
-      >
-        <div class="preset-icon quad">
-          <span class="span-q"></span>
-          <span class="span-q"></span>
-          <span class="span-q"></span>
-          <span class="span-q"></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handleSpanningPreset("gallery")}
-        aria-label="Gallery layout"
-        title="3x3 equal grid"
-      >
-        <div class="preset-icon gallery">
-          {#each Array(9) as _}
-            <span class="span-g"></span>
-          {/each}
-        </div>
-      </button>
-    </div>
-  </div>
+  </section>
 </div>
 
 <style>
   .grid-layout-controls {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg, 16px);
-    padding: var(--spacing-md, 12px);
+    gap: 16px;
+    padding: 12px;
   }
 
-  /* ====== GRID SECTION ====== */
-  .grid-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-md, 12px);
-  }
-
-  .toggle-grid {
-    display: grid;
-    grid-template-rows: repeat(8, 1fr);
-    grid-template-columns: repeat(8, 1fr);
-    gap: 4px;
-    padding: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-lg, 12px);
-    outline: none;
-  }
-
-  .toggle-grid:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .grid-cell {
-    aspect-ratio: 1;
-    min-width: 28px;
-    min-height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: var(--border-radius-md, 8px);
-    cursor: pointer;
-    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-tap-highlight-color: transparent;
-    color: transparent;
-    padding: 0;
-  }
-
-  .grid-cell i {
-    font-size: 12px;
-    transition: transform 150ms ease;
-  }
-
-  .grid-cell.enabled {
-    background: var(--theme-accent, #8b5cf6);
-    border: 2px solid var(--theme-accent, #8b5cf6);
-    color: white;
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-  }
-
-  .grid-cell.preview {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 15%,
-      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
-    );
-    border: 2px solid
-      color-mix(
-        in srgb,
-        var(--theme-accent, #8b5cf6) 40%,
-        transparent
-      );
-  }
-
-  @media (hover: hover) {
-    .grid-cell:not(.enabled):not(.preview):hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-    }
-
-    .grid-cell.enabled:hover {
-      background: var(--theme-accent-hover, #7c3aed);
-      transform: scale(1.05);
-    }
-  }
-
-  .grid-cell:active {
-    transform: scale(0.95);
-  }
-
-  .grid-cell:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  /* ====== COUNT LABEL ====== */
-  .count-label {
-    display: flex;
-    align-items: baseline;
-    gap: var(--spacing-xs, 4px);
-  }
-
-  .count-value {
-    font-size: var(--font-size-lg, 20px);
-    font-weight: 700;
-    color: var(--theme-text, white);
-    font-variant-numeric: tabular-nums;
-    transition: color 150ms ease;
-  }
-
-  .count-value.previewing {
-    color: var(--theme-accent, #8b5cf6);
-  }
-
-  .count-text {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  /* ====== PRESETS SECTION ====== */
-  .presets-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .presets-label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  /* ====== SECTION HEADERS ====== */
+  .section-header {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.45);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
   }
 
-  /* ====== QUICK SIZES ====== */
-  .quick-sizes {
-    display: flex;
-    flex-wrap: wrap;
+  /* ====== PRESET CARDS ====== */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
 
-  .quick-size-chip {
-    min-width: 44px;
-    min-height: 34px;
-    padding: 4px 10px;
+  .preset-card {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
+    gap: 6px;
+    padding: 8px 4px 6px;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
     cursor: pointer;
     transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
   }
 
-  .quick-size-chip.active {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 25%,
-      var(--theme-card-bg, rgba(18, 18, 28, 0.98))
-    );
-    border-color: var(--theme-accent, #8b5cf6);
-    color: white;
-    box-shadow: 0 1px 6px rgba(139, 92, 246, 0.25);
+  .preset-card.active {
+    background: color-mix(in srgb, #8b5cf6 14%, transparent);
+    border-color: color-mix(in srgb, #8b5cf6 50%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, #8b5cf6 20%, transparent);
   }
 
   @media (hover: hover) {
-    .quick-size-chip:not(.active):hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-      color: var(--theme-text, white);
+    .preset-card:not(.active):hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
     }
   }
 
-  .quick-size-chip:active {
-    transform: scale(0.95);
+  .preset-card:active {
+    transform: scale(0.96);
   }
 
-  .quick-size-chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
+  .preset-card:focus-visible {
+    outline: 2px solid #8b5cf6;
     outline-offset: 2px;
   }
 
-  .spanning-presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .preset-btn {
-    flex: 1 1 calc(33.333% - 6px);
-    min-width: 44px;
-    min-height: var(--min-touch-target);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-sm, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
-    cursor: pointer;
-    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  @media (hover: hover) {
-    .preset-btn:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    }
-  }
-
-  .preset-btn:active {
-    transform: scale(0.95);
-  }
-
-  .preset-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  /* Preset icons */
-  .preset-icon {
+  /* ====== PRESET THUMBNAILS ====== */
+  .preset-thumb {
     display: grid;
-    gap: 1px;
+    gap: 2px;
+    width: 36px;
+    height: 36px;
   }
 
-  .preset-icon span {
-    background: var(--theme-accent, #8b5cf6);
+  .thumb-block {
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 2px;
-    opacity: 0.7;
+    min-width: 0;
+    min-height: 0;
   }
 
-  .preset-icon.hero-thumbs {
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    width: 24px;
-    height: 24px;
+  .thumb-block.active {
+    background: #8b5cf6;
+    opacity: 0.85;
   }
 
-  .preset-icon.hero-thumbs .span-5x5 {
-    grid-column: span 5;
-    grid-row: span 5;
+  .preset-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
-  .preset-icon.hero-thumbs .span-1x1 {
-    grid-column: span 1;
-    grid-row: span 1;
-  }
-
-  .preset-icon.main-banner {
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    width: 24px;
-    height: 24px;
-  }
-
-  .preset-icon.main-banner .span-6x5 {
-    grid-column: span 6;
-    grid-row: span 5;
-  }
-
-  .preset-icon.main-banner .span-6x1 {
-    grid-column: span 6;
-    grid-row: span 1;
-  }
-
-  .preset-icon.pip {
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    width: 24px;
-    height: 24px;
-  }
-
-  .preset-icon.pip .span-5x6 {
-    grid-column: span 5;
-    grid-row: span 6;
-  }
-
-  .preset-icon.pip .span-1x1 {
-    grid-column: span 1;
-    grid-row: span 1;
-  }
-
-  .preset-icon.split-half {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr;
-    width: 24px;
-    height: 24px;
-  }
-
-  .preset-icon.split-half .span-left,
-  .preset-icon.split-half .span-right {
-    grid-row: 1;
-  }
-
-  .preset-icon.quad {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    width: 24px;
-    height: 24px;
-  }
-
-  .preset-icon.quad .span-q {
-    /* each quadrant fills one cell */
-  }
-
-  .preset-icon.gallery {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    width: 24px;
-    height: 24px;
-  }
-
-  .preset-icon.gallery .span-g {
-    /* each cell fills one slot */
+  .preset-card.active .preset-label {
+    color: rgba(255, 255, 255, 0.9);
   }
 
   /* ====== CONFIRMATION BAR ====== */
   .confirm-bar {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: var(--spacing-sm, 8px);
-    padding: var(--spacing-md, 12px);
+    gap: 8px;
+    padding: 6px 8px;
     background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: var(--border-radius-md, 8px);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 8px;
+  }
+
+  .confirm-icon {
+    color: rgba(239, 68, 68, 0.8);
+    font-size: 12px;
+    flex-shrink: 0;
   }
 
   .confirm-text {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text, white);
-    text-align: center;
-    line-height: 1.4;
-  }
-
-  .confirm-actions {
-    display: flex;
-    gap: var(--spacing-sm, 8px);
-    width: 100%;
-  }
-
-  .confirm-cancel,
-  .confirm-apply {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
     flex: 1;
-    min-height: 40px;
-    padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
+    min-width: 0;
+  }
+
+  .confirm-btn {
+    flex-shrink: 0;
+    padding: 4px 10px;
     border: none;
-    border-radius: var(--border-radius-md, 8px);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 150ms ease;
+    transition: background 120ms ease;
   }
 
-  .confirm-cancel {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  .confirm-btn.cancel {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .confirm-apply {
-    background: rgba(239, 68, 68, 0.7);
+  .confirm-btn.apply {
+    background: rgba(239, 68, 68, 0.65);
     color: white;
   }
 
   @media (hover: hover) {
-    .confirm-cancel:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    .confirm-btn.cancel:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
-
-    .confirm-apply:hover {
-      background: rgba(239, 68, 68, 0.9);
+    .confirm-btn.apply:hover {
+      background: rgba(239, 68, 68, 0.85);
     }
   }
 
-  .confirm-cancel:focus-visible,
-  .confirm-apply:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
+  .confirm-btn:focus-visible {
+    outline: 2px solid #8b5cf6;
     outline-offset: 2px;
   }
 
-  .confirm-hint {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  /* ====== COMPACT HOVER GRID ====== */
+  .custom-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .custom-section .section-header {
+    align-self: flex-start;
+  }
+
+  .compact-grid {
+    display: grid;
+    grid-template-rows: repeat(8, 1fr);
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    outline: none;
+    width: fit-content;
+  }
+
+  .compact-grid:focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 2px;
+  }
+
+  .mini-cell {
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mini-cell.active {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+  }
+
+  .mini-cell.preview {
+    background: color-mix(in srgb, #8b5cf6 25%, transparent);
+    border-color: color-mix(in srgb, #8b5cf6 40%, transparent);
+  }
+
+  @media (hover: hover) {
+    .mini-cell:not(.active):not(.preview):hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  .mini-cell:focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 1px;
+  }
+
+  /* ====== DIMENSION LABEL ====== */
+  .dimension-label {
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  .dim-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+    font-variant-numeric: tabular-nums;
+    transition: color 150ms ease;
+  }
+
+  .dim-value.previewing {
+    color: #8b5cf6;
   }
 
   /* ====== REDUCED MOTION ====== */
   @media (prefers-reduced-motion: reduce) {
-    .grid-cell,
-    .grid-cell i,
-    .preset-btn,
-    .quick-size-chip,
-    .confirm-cancel,
-    .confirm-apply {
+    .preset-card,
+    .mini-cell,
+    .confirm-btn,
+    .dim-value {
       transition: none;
     }
   }

@@ -486,7 +486,7 @@ function createArrangeGridState() {
 
     resetCellSpan(cellId: string) { this.setCellSpan(cellId, 1, 1); },
 
-    setPresetLayout(preset: "single" | "vertical" | "horizontal" | "line" | "square" | "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery") {
+    setPresetLayout(preset: "single" | "vertical" | "horizontal" | "line" | "square" | "filmstrip" | "tower" | "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery") {
       withUndo("SET_PRESET_LAYOUT", `Set layout: ${preset}`, () => {
         if (preset === "hero-thumbs" || preset === "main-banner" || preset === "pip" || preset === "split-half" || preset === "quad" || preset === "gallery") {
           applySpanningPreset(preset);
@@ -498,6 +498,8 @@ function createArrangeGridState() {
           case "horizontal": gridRows = 1; gridCols = 2; break;
           case "line": gridRows = 1; gridCols = 6; break;
           case "square": gridRows = 2; gridCols = 2; break;
+          case "filmstrip": gridRows = 1; gridCols = 4; break;
+          case "tower": gridRows = 4; gridCols = 1; break;
         }
         cells = cells.map((cell) => ({ ...cell, colSpan: 1, rowSpan: 1 }));
         selectedCellId = null;
