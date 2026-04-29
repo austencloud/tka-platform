@@ -27,7 +27,7 @@ import type { CellMediaType, PropColors } from "../../../compose/domain/types";
 import type { Composition } from "../../../compose/domain/types";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
-// compose-arrange-container dissolved — services accessed via module singleton getters
+// compose-arrange-container dissolved - services accessed via module singleton getters
 import type {
   ArrangeUndoOperationType,
   ArrangeGridSnapshot,
@@ -158,7 +158,7 @@ function createArrangeGridState() {
   let currentStep = $state(0);
   let playbackBpm = $state(120);
 
-  // Playback polling — only runs during active playback to avoid burning
+  // Playback polling - only runs during active playback to avoid burning
   // a permanent RAF loop. With 16+ cells, each RAF callback triggers Svelte
   // effects → engine.update() → triggerRender(), so idle polling wastes
   // significant CPU and causes false frame drop warnings.
@@ -175,7 +175,7 @@ function createArrangeGridState() {
         // Keep polling while playing or during step animation
         playbackPollId = requestAnimationFrame(poll);
       } else {
-        // Playback stopped and no step animation — stop polling
+        // Playback stopped and no step animation - stop polling
         playbackPollId = null;
       }
     }
@@ -265,7 +265,7 @@ function createArrangeGridState() {
     return beatCalculator.calculateTotalBeats(cells, skipStartPosition, gridRows, gridCols);
   }
 
-  function applySpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip"): void {
+  function applySpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery"): void {
     const newCells = cells.map((cell) => ({
       ...cell, colSpan: 1, rowSpan: 1, layers: [] as TunnelLayerConfig[],
     }));
@@ -287,6 +287,30 @@ function createArrangeGridState() {
         gridRows = 6; gridCols = 6;
         const mainCell = newCells[getCellIndex(0, 0)];
         if (mainCell) newCells[getCellIndex(0, 0)] = { ...mainCell, colSpan: 5, rowSpan: 6 };
+        break;
+      }
+      case "split-half": {
+        gridRows = 4; gridCols = 2;
+        const leftCell = newCells[getCellIndex(0, 0)];
+        if (leftCell) newCells[getCellIndex(0, 0)] = { ...leftCell, colSpan: 1, rowSpan: 4 };
+        const rightCell = newCells[getCellIndex(0, 1)];
+        if (rightCell) newCells[getCellIndex(0, 1)] = { ...rightCell, colSpan: 1, rowSpan: 4 };
+        break;
+      }
+      case "quad": {
+        gridRows = 6; gridCols = 6;
+        const tl = newCells[getCellIndex(0, 0)];
+        if (tl) newCells[getCellIndex(0, 0)] = { ...tl, colSpan: 3, rowSpan: 3 };
+        const tr = newCells[getCellIndex(0, 3)];
+        if (tr) newCells[getCellIndex(0, 3)] = { ...tr, colSpan: 3, rowSpan: 3 };
+        const bl = newCells[getCellIndex(3, 0)];
+        if (bl) newCells[getCellIndex(3, 0)] = { ...bl, colSpan: 3, rowSpan: 3 };
+        const br = newCells[getCellIndex(3, 3)];
+        if (br) newCells[getCellIndex(3, 3)] = { ...br, colSpan: 3, rowSpan: 3 };
+        break;
+      }
+      case "gallery": {
+        gridRows = 3; gridCols = 3;
         break;
       }
     }
@@ -462,9 +486,9 @@ function createArrangeGridState() {
 
     resetCellSpan(cellId: string) { this.setCellSpan(cellId, 1, 1); },
 
-    setPresetLayout(preset: "single" | "vertical" | "horizontal" | "line" | "square" | "hero-thumbs" | "main-banner" | "pip") {
+    setPresetLayout(preset: "single" | "vertical" | "horizontal" | "line" | "square" | "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery") {
       withUndo("SET_PRESET_LAYOUT", `Set layout: ${preset}`, () => {
-        if (preset === "hero-thumbs" || preset === "main-banner" || preset === "pip") {
+        if (preset === "hero-thumbs" || preset === "main-banner" || preset === "pip" || preset === "split-half" || preset === "quad" || preset === "gallery") {
           applySpanningPreset(preset);
           return;
         }
@@ -481,7 +505,7 @@ function createArrangeGridState() {
       });
     },
 
-    setSpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip") {
+    setSpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery") {
       withUndo("SET_PRESET_LAYOUT", `Set layout: ${preset}`, () => { applySpanningPreset(preset); });
     },
 

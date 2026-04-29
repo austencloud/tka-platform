@@ -16,7 +16,10 @@
     | "square"
     | "hero-thumbs"
     | "main-banner"
-    | "pip";
+    | "pip"
+    | "split-half"
+    | "quad"
+    | "gallery";
 
   let {
     gridRows,
@@ -131,6 +134,29 @@
     }
   }
 
+  // --- Quick sizes ---
+  const quickSizes: { rows: number; cols: number; label: string }[] = [
+    { rows: 1, cols: 1, label: "1×1" },
+    { rows: 2, cols: 1, label: "2×1" },
+    { rows: 1, cols: 2, label: "1×2" },
+    { rows: 2, cols: 2, label: "2×2" },
+    { rows: 2, cols: 3, label: "2×3" },
+    { rows: 3, cols: 2, label: "3×2" },
+    { rows: 3, cols: 3, label: "3×3" },
+    { rows: 4, cols: 4, label: "4×4" },
+  ];
+
+  function handleQuickSize(rows: number, cols: number) {
+    if (rows === gridRows && cols === gridCols) return;
+    haptic.trigger("selection");
+    if (hasContent) {
+      pendingDimensions = { rows, cols };
+      pendingPreset = null;
+    } else {
+      onSetDimensions(rows, cols);
+    }
+  }
+
   // --- Spanning presets ---
   function handleSpanningPreset(preset: PresetType) {
     haptic.trigger("selection");
@@ -202,70 +228,126 @@
     </div>
   </div>
 
-  <!-- Layout Presets -->
-  <div class="presets-section">
-    <span class="presets-label">Presets</span>
+  <!-- Confirmation Bar (shared by all presets/sizes) -->
+  {#if pendingPreset || pendingDimensions}
+    <div
+      class="confirm-bar"
+      role="alertdialog"
+      aria-label="Confirm layout change"
+    >
+      <p class="confirm-text">
+        Sequences in affected cells will be cleared.
+      </p>
+      <div class="confirm-actions">
+        <button class="confirm-cancel" onclick={cancelChange}>
+          Cancel
+        </button>
+        <button class="confirm-apply" onclick={confirmChange}>
+          Change Layout
+        </button>
+      </div>
+      <p class="confirm-hint">Ctrl+Z to undo after applying</p>
+    </div>
+  {/if}
 
-    {#if pendingPreset || pendingDimensions}
-      <div
-        class="confirm-bar"
-        role="alertdialog"
-        aria-label="Confirm layout change"
+  <!-- Quick Sizes -->
+  <div class="presets-section">
+    <span class="presets-label">Quick Sizes</span>
+    <div class="quick-sizes">
+      {#each quickSizes as qs (qs.label)}
+        {@const isActive = gridRows === qs.rows && gridCols === qs.cols}
+        <button
+          class="quick-size-chip"
+          class:active={isActive}
+          onclick={() => handleQuickSize(qs.rows, qs.cols)}
+          aria-label="Set grid to {qs.cols} columns by {qs.rows} rows"
+          aria-pressed={isActive}
+          title="{qs.label} grid"
+        >
+          {qs.label}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <!-- Spanning Layouts -->
+  <div class="presets-section">
+    <span class="presets-label">Spanning Layouts</span>
+    <div class="spanning-presets">
+      <button
+        class="preset-btn"
+        onclick={() => handleSpanningPreset("hero-thumbs")}
+        aria-label="Hero with thumbnails layout"
+        title="5x5 hero + thumbnails"
       >
-        <p class="confirm-text">
-          Sequences in affected cells will be cleared.
-        </p>
-        <div class="confirm-actions">
-          <button class="confirm-cancel" onclick={cancelChange}>
-            Cancel
-          </button>
-          <button class="confirm-apply" onclick={confirmChange}>
-            Change Layout
-          </button>
+        <div class="preset-icon hero-thumbs">
+          <span class="span-5x5"></span>
+          <span class="span-1x1"></span>
+          <span class="span-1x1"></span>
+          <span class="span-1x1"></span>
+          <span class="span-1x1"></span>
+          <span class="span-1x1"></span>
         </div>
-        <p class="confirm-hint">Ctrl+Z to undo after applying</p>
-      </div>
-    {:else}
-      <div class="spanning-presets">
-        <button
-          class="preset-btn"
-          onclick={() => handleSpanningPreset("hero-thumbs")}
-          aria-label="Hero with thumbnails layout"
-          title="5x5 hero + thumbnails"
-        >
-          <div class="preset-icon hero-thumbs">
-            <span class="span-5x5"></span>
-            <span class="span-1x1"></span>
-            <span class="span-1x1"></span>
-            <span class="span-1x1"></span>
-            <span class="span-1x1"></span>
-            <span class="span-1x1"></span>
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handleSpanningPreset("main-banner")}
-          aria-label="Main with banner layout"
-          title="6x5 main + banner"
-        >
-          <div class="preset-icon main-banner">
-            <span class="span-6x5"></span>
-            <span class="span-6x1"></span>
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handleSpanningPreset("pip")}
-          aria-label="Picture-in-picture layout"
-          title="Large main + small overlay"
-        >
-          <div class="preset-icon pip">
-            <span class="span-5x6"></span>
-            <span class="span-1x1"></span>
-          </div>
-        </button>
-      </div>
-    {/if}
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handleSpanningPreset("main-banner")}
+        aria-label="Main with banner layout"
+        title="6x5 main + banner"
+      >
+        <div class="preset-icon main-banner">
+          <span class="span-6x5"></span>
+          <span class="span-6x1"></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handleSpanningPreset("pip")}
+        aria-label="Picture-in-picture layout"
+        title="Large main + small overlay"
+      >
+        <div class="preset-icon pip">
+          <span class="span-5x6"></span>
+          <span class="span-1x1"></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handleSpanningPreset("split-half")}
+        aria-label="Split half layout"
+        title="2 columns, each full height"
+      >
+        <div class="preset-icon split-half">
+          <span class="span-left"></span>
+          <span class="span-right"></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handleSpanningPreset("quad")}
+        aria-label="Quad layout"
+        title="4 equal quadrants"
+      >
+        <div class="preset-icon quad">
+          <span class="span-q"></span>
+          <span class="span-q"></span>
+          <span class="span-q"></span>
+          <span class="span-q"></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handleSpanningPreset("gallery")}
+        aria-label="Gallery layout"
+        title="3x3 equal grid"
+      >
+        <div class="preset-icon gallery">
+          {#each Array(9) as _}
+            <span class="span-g"></span>
+          {/each}
+        </div>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -404,13 +486,69 @@
     letter-spacing: 0.5px;
   }
 
+  /* ====== QUICK SIZES ====== */
+  .quick-sizes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .quick-size-chip {
+    min-width: 44px;
+    min-height: 34px;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    cursor: pointer;
+    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .quick-size-chip.active {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 25%,
+      var(--theme-card-bg, rgba(18, 18, 28, 0.98))
+    );
+    border-color: var(--theme-accent, #8b5cf6);
+    color: white;
+    box-shadow: 0 1px 6px rgba(139, 92, 246, 0.25);
+  }
+
+  @media (hover: hover) {
+    .quick-size-chip:not(.active):hover {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+      color: var(--theme-text, white);
+    }
+  }
+
+  .quick-size-chip:active {
+    transform: scale(0.95);
+  }
+
+  .quick-size-chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
   .spanning-presets {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--spacing-sm, 8px);
   }
 
   .preset-btn {
-    flex: 1;
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 44px;
     min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
@@ -503,6 +641,40 @@
     grid-row: span 1;
   }
 
+  .preset-icon.split-half {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+    width: 24px;
+    height: 24px;
+  }
+
+  .preset-icon.split-half .span-left,
+  .preset-icon.split-half .span-right {
+    grid-row: 1;
+  }
+
+  .preset-icon.quad {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    width: 24px;
+    height: 24px;
+  }
+
+  .preset-icon.quad .span-q {
+    /* each quadrant fills one cell */
+  }
+
+  .preset-icon.gallery {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 24px;
+    height: 24px;
+  }
+
+  .preset-icon.gallery .span-g {
+    /* each cell fills one slot */
+  }
+
   /* ====== CONFIRMATION BAR ====== */
   .confirm-bar {
     display: flex;
@@ -580,6 +752,7 @@
     .grid-cell,
     .grid-cell i,
     .preset-btn,
+    .quick-size-chip,
     .confirm-cancel,
     .confirm-apply {
       transition: none;

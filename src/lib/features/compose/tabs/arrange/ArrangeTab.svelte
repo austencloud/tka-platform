@@ -21,7 +21,8 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
 
   import { arrangeGridState, type GridCell } from "./state/arrange-grid-state.svelte";
   import CompositionGrid from "./components/grid/CompositionGrid.svelte";
-  import ArrangeSidebar from "./components/sidebar/ArrangeSidebar.svelte";
+  import CellEditorPanel from "./components/grid/cell-editor/CellEditorPanel.svelte";
+  import PlaybackBar from "./components/shared/PlaybackBar.svelte";
   import StaggerControls from "./components/shared/StaggerControls.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import SaveCompositionModal from "./components/grid/SaveCompositionModal.svelte";
@@ -81,6 +82,9 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
       | "hero-thumbs"
       | "main-banner"
       | "pip"
+      | "split-half"
+      | "quad"
+      | "gallery"
   ) {
     gridState.setPresetLayout(preset);
   }
@@ -415,10 +419,30 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
           onSelectCell={handleSelectCell}
           onSetCellSpan={handleSetCellSpan}
         />
+
+        {#if gridState.hasAnyLayers}
+          <div class="playback-strip">
+            <PlaybackBar
+              isPlaying={gridState.isPlaying}
+              currentStep={gridState.currentStep}
+              totalSteps={gridState.totalSteps}
+              bpm={gridState.bpm}
+              skipStartPosition={gridState.skipStartPosition}
+              onPlayPause={handlePlayPause}
+              onStop={handleStop}
+              onStepHalfBack={handleStepHalfBack}
+              onStepHalfFwd={handleStepHalfFwd}
+              onStepFullBack={handleStepFullBack}
+              onStepFullFwd={handleStepFullFwd}
+              onBpmChange={handleBpmChange}
+              onToggleLoop={handleToggleLoop}
+            />
+          </div>
+        {/if}
       </div>
 
       <!-- Right: Unified Sidebar -->
-      <ArrangeSidebar
+      <CellEditorPanel
         gridRows={gridState.gridRows}
         gridCols={gridState.gridCols}
         hasContent={gridState.hasAnyLayers}
@@ -426,7 +450,7 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
         onSetGridCols={handleSetGridCols}
         onSetDimensions={handleSetDimensions}
         onPresetLayout={handlePresetLayout}
-        selectedCell={selectedCell}
+        cell={selectedCell}
         cellIndex={selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) : 0}
         clipboardHasData={gridState.clipboard !== null}
         transformingLayer={gridState.transformingLayer}
@@ -449,20 +473,6 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
         onSetColors={selectedCell ? (colors) => gridState.setCellPropColors(selectedCell.id, colors) : undefined}
         onSetTipEffectMap={selectedCell ? (map) => gridState.setCellTipEffectMap(selectedCell.id, map) : undefined}
         onSetTipEffortMap={selectedCell ? (map) => gridState.setCellTipEffortMap(selectedCell.id, map) : undefined}
-        hasAnyLayers={gridState.hasAnyLayers}
-        isPlaying={gridState.isPlaying}
-        currentStep={gridState.currentStep}
-        totalSteps={gridState.totalSteps}
-        bpm={gridState.bpm}
-        skipStartPosition={gridState.skipStartPosition}
-        onPlayPause={handlePlayPause}
-        onStop={handleStop}
-        onStepHalfBack={handleStepHalfBack}
-        onStepHalfFwd={handleStepHalfFwd}
-        onStepFullBack={handleStepFullBack}
-        onStepFullFwd={handleStepFullFwd}
-        onBpmChange={handleBpmChange}
-        onToggleLoop={handleToggleLoop}
       />
     </div>
   {/if}
@@ -550,10 +560,19 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
   /* Canvas area - left side */
   .canvas-area {
     position: relative;
+    display: flex;
+    flex-direction: column;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-radius: var(--border-radius-lg);
     overflow: hidden;
     min-height: 0;
+  }
+
+  .playback-strip {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.2);
   }
 
   /* Canvas utility buttons (top-left) */

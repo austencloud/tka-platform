@@ -13,7 +13,6 @@
   import IconRailNav from "$lib/shared/sequence-viewer/components/pill-nav/IconRailNav.svelte";
   import ScopeBreadcrumb, { type BreadcrumbSegment } from "./ScopeBreadcrumb.svelte";
   import { createCellEditorPanelState, type ScopeLevel } from "./state/cell-editor-panel-state.svelte";
-  import ScopeSelector from "./pill-nav/ScopeSelector.svelte";
   import LayerSection from "./LayerSection.svelte";
   import TransformSection from "./sections/TransformSection.svelte";
   import SpeedSection from "./sections/SpeedSection.svelte";
@@ -22,9 +21,25 @@
   import UnifiedEffortSection from "./sections/UnifiedEffortSection.svelte";
   import OffsetSection from "./sections/OffsetSection.svelte";
   import DisplaySection from "./sections/DisplaySection.svelte";
+  import GridLayoutControls from "../GridLayoutControls.svelte";
 
-  interface CellEditorProps {
-    cell: GridCell;
+  type PresetLayoutType =
+    | "single" | "vertical" | "horizontal" | "line"
+    | "square" | "hero-thumbs" | "main-banner" | "pip"
+    | "split-half" | "quad" | "gallery";
+
+  interface Props {
+    // Grid layout
+    gridRows: number;
+    gridCols: number;
+    hasContent: boolean;
+    onSetGridRows: (n: number) => void;
+    onSetGridCols: (n: number) => void;
+    onSetDimensions: (rows: number, cols: number) => void;
+    onPresetLayout: (preset: PresetLayoutType) => void;
+
+    // Cell editor (null when no cell selected)
+    cell: GridCell | null;
     cellIndex: number;
     clipboardHasData?: boolean;
     transformingLayer?: { cellId: string; layerIndex: number } | null;
@@ -32,7 +47,6 @@
     onRemoveLayer: (layerIndex: number) => void;
     onEditLayerOffset: (layerIndex: number) => void;
     onClearCell: () => void;
-    onRemoveCell?: () => void;
     onMediaTypeChange: (mediaType: CellMediaType) => void;
     onCopyLayer?: (layerIndex: number) => void;
     onCopyCell?: () => void;
@@ -50,7 +64,7 @@
     onSetTipEffortMap?: (map: TipEffortMap) => void;
   }
 
-  const p: CellEditorProps = $props();
+  const p: Props = $props();
   const cell = $derived(p.cell);
   const cellIndex = $derived(p.cellIndex);
   const clipboardHasData = $derived(p.clipboardHasData ?? false);
@@ -58,26 +72,36 @@
 
   const panelState = createCellEditorPanelState();
 
-  const currentCellId = $derived(cell.id);
-  let previousCellId: string | null = null;
+  // Auto-switch to grid pill when cell deselected, effects when selected
+  let prevCellId: string | null = null;
   $effect(() => {
-    if (previousCellId !== null && currentCellId !== previousCellId) {
-      panelState.resetForNewCell();
+    const id = cell?.id ?? null;
+    if (id !== prevCellId) {
+      if (id === null) {
+        panelState.setActivePill("grid");
+      } else if (prevCellId === null) {
+        panelState.setActivePill("effects");
+      }
+      if (id !== null && prevCellId !== null) {
+        panelState.resetForNewCell();
+      }
+      prevCellId = id;
     }
-    previousCellId = currentCellId;
   });
 
-  // ── Pill specs with derived summaries ──
+  // ── Pill specs ──
+
+  const gridSummary = $derived(`${p.gridCols}×${p.gridRows}`);
 
   const effectsSummary = $derived(
-    cell.effect && cell.effect !== "none"
+    cell?.effect && cell.effect !== "none"
       ? cell.effect.charAt(0).toUpperCase() + cell.effect.slice(1)
       : "None"
   );
 
-  const effortLabel = $derived(cell.effort ?? "Linear");
+  const effortLabel = $derived(cell?.effort ?? "Linear");
   const colorLabel = $derived.by(() => {
-    const colors = cell.layers[0]?.propColors;
+    const colors = cell?.layers[0]?.propColors;
     if (!colors) return "Blue/Red";
     const labels: Record<string, string> = {
       "#3b82f6": "Blue/Red", "#a855f7": "Purple/Orange",
@@ -88,15 +112,14 @@
   const styleSummary = $derived(`${effortLabel} · ${colorLabel}`);
 
   const playbackSummary = $derived(
-    `${(cell.speedMultiplier ?? 1).toFixed(1)}x · +${cell.beatOffset}`
+    `${(cell?.speedMultiplier ?? 1).toFixed(1)}x · +${cell?.beatOffset ?? 0}`
   );
 
-  const displaySummary = $derived(cell.mediaType === "choreo-card" ? "Card" : "Anim");
-
+  const displaySummary = $derived(cell?.mediaType === "choreo-card" ? "Card" : "Anim");
   const exportSummary = $derived("1080p · 30fps");
 
   const effortAccent = $derived.by(() => {
-    if (!cell.effort || cell.effort === "none") return "#94a3b8";
+    if (!cell?.effort || cell.effort === "none") return "#94a3b8";
     const colors: Record<string, string> = {
       linear: "#94a3b8", smooth: "#60a5fa", sharp: "#f97316",
       bounce: "#a855f7", elastic: "#34d399",
@@ -104,33 +127,52 @@
     return colors[cell.effort] ?? "#94a3b8";
   });
 
+  const layersSummary = $derived(
+    cell ? `${cell.layers.length}/4` : "0/4"
+  );
+
   const pillSpecs = $derived(
     buildPillSpecs({
-      effects: { icon: "fa-wand-magic-sparkles", label: "EFFECTS", summary: effectsSummary },
-      effort: { label: "STYLE", summary: styleSummary, accentColor: effortAccent },
-      playback: { icon: "fa-play", label: "PLAYBACK", summary: playbackSummary },
-      display: { icon: "fa-eye", label: "DISPLAY", summary: displaySummary },
-      export: { icon: "fa-download", label: "EXPORT", summary: exportSummary },
+      grid: { icon: "fa-th", label: "GRID", summary: gridSummary },
+      ...(cell ? {
+        layers: { icon: "fa-layer-group", label: "LAYERS", summary: layersSummary },
+        effects: { icon: "fa-wand-magic-sparkles", label: "EFFECTS", summary: effectsSummary },
+        effort: { label: "STYLE", summary: styleSummary, accentColor: effortAccent },
+        playback: { icon: "fa-play", label: "PLAYBACK", summary: playbackSummary },
+        display: { icon: "fa-eye", label: "DISPLAY", summary: displaySummary },
+        export: { icon: "fa-download", label: "EXPORT", summary: exportSummary },
+      } : {}),
     })
   );
 
-  // ── Breadcrumb segments ──
+  // ── Breadcrumb ──
+
+  const pillLabels: Record<PillId, string> = {
+    grid: "Grid", layers: "Layers", effects: "Effects",
+    effort: "Style", playback: "Playback", display: "Display", export: "Export",
+  };
 
   const breadcrumbSegments = $derived.by<BreadcrumbSegment[]>(() => {
-    const segs: BreadcrumbSegment[] = [{ level: "grid", label: "Grid" }];
-    segs.push({ level: "cell", label: `Cell ${cellIndex + 1}` });
-    if (
-      panelState.scopeLevel === "layer" ||
-      panelState.scopeLevel === "hand" ||
-      panelState.scopeLevel === "tip"
-    ) {
-      segs.push({ level: "layer", label: "L1" });
+    const rootLabel = pillLabels[panelState.activePill] ?? "Grid";
+    const segs: BreadcrumbSegment[] = [{ level: "grid", label: rootLabel }];
+    if (cell) {
+      segs.push({ level: "cell", label: `Cell ${cellIndex + 1}` });
+      if (
+        panelState.scopeLevel === "layer" ||
+        panelState.scopeLevel === "hand" ||
+        panelState.scopeLevel === "tip"
+      ) {
+        segs.push({ level: "layer", label: "L1" });
+      }
     }
     return segs;
   });
 
   function handleBreadcrumbNav(level: ScopeLevel) {
     panelState.setScopeLevel(level);
+    if (level === "grid") {
+      panelState.setActivePill("grid");
+    }
   }
 
   // ── Handlers ──
@@ -140,17 +182,20 @@
   }
 
   function handleToggleBlueVisibility() {
+    if (!cell) return;
     p.onSetBlueVisible?.(cell.blueMotionVisible === false);
   }
 
   function handleToggleRedVisibility() {
+    if (!cell) return;
     p.onSetRedVisible?.(cell.redMotionVisible === false);
   }
 
-  const blueVisible = $derived(cell.blueMotionVisible !== false);
-  const redVisible = $derived(cell.redMotionVisible !== false);
+  const blueVisible = $derived(cell ? cell.blueMotionVisible !== false : true);
+  const redVisible = $derived(cell ? cell.redMotionVisible !== false : true);
 
   function handleKeydown(e: KeyboardEvent) {
+    if (!cell) return;
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     const key = e.key.toLowerCase();
     const shift = e.shiftKey;
@@ -170,155 +215,169 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="cell-editor-rail-layout">
-  <!-- Icon Rail (left) -->
   <IconRailNav
     pills={pillSpecs}
     activeId={panelState.activePill}
     onSelect={(id) => panelState.setActivePill(id)}
   />
 
-  <!-- Main Panel (right) -->
   <div class="cell-editor-main">
-    <!-- Breadcrumb -->
     <ScopeBreadcrumb
       segments={breadcrumbSegments}
       onNavigate={handleBreadcrumbNav}
     />
 
-    <!-- Layers section (visible at cell/grid scope) -->
-    {#if cell.layers.length > 0 && (panelState.scopeLevel === "cell" || panelState.scopeLevel === "grid")}
-      <div class="layers-zone">
-        <LayerSection
-          {cell}
-          {clipboardHasData}
-          {transformingLayer}
-          onAddSequence={p.onAddSequence}
-          onRemoveLayer={p.onRemoveLayer}
-          onCopyLayer={p.onCopyLayer}
-          onPasteLayer={p.onPasteLayer}
+    {#if panelState.activePill === "grid"}
+      <!-- Grid layout controls -->
+      <div class="pill-body-scroll" role="region" aria-label="Grid settings">
+        <GridLayoutControls
+          gridRows={p.gridRows}
+          gridCols={p.gridCols}
+          hasContent={p.hasContent}
+          onSetGridRows={p.onSetGridRows}
+          onSetGridCols={p.onSetGridCols}
+          onSetDimensions={p.onSetDimensions}
+          onPresetLayout={p.onPresetLayout}
         />
       </div>
-    {/if}
 
-    <!-- Pill Body (scrollable) -->
-    {#if cell.layers.length > 0}
-      <div class="pill-body-scroll" role="region" aria-label="{panelState.activePill} settings">
-        {#if panelState.activePill === "effects"}
-          <UnifiedEffectsSection
-            currentEffect={cell.effect ?? "none"}
-            currentTrailMode={cell.trailMode}
-            currentMap={cell.tipEffectMap ?? {}}
-            bluePropType="staff"
-            redPropType="staff"
-            onSetEffect={(effect) => p.onSetEffect?.(effect)}
-            onSetTrailMode={(mode) => p.onSetTrailMode?.(mode)}
-            onUpdateMap={(map) => p.onSetTipEffectMap?.(map)}
+    {:else if cell}
+      {#if panelState.activePill === "layers"}
+        <div class="pill-body-scroll" role="region" aria-label="Layer management">
+          <LayerSection
+            {cell}
+            {clipboardHasData}
+            {transformingLayer}
+            onAddSequence={p.onAddSequence}
+            onRemoveLayer={p.onRemoveLayer}
+            onCopyLayer={p.onCopyLayer}
+            onPasteLayer={p.onPasteLayer}
           />
+        </div>
 
-        {:else if panelState.activePill === "effort"}
-          <div class="style-sections">
-            <TransformSection {panelState} onTransform={handleTransform} />
-            <ColorsSection
-              currentColors={cell.layers[0]?.propColors ?? { left: "#3b82f6", right: "#ef4444" }}
-              onSetColors={(colors) => p.onSetColors?.(colors)}
-            />
-            <UnifiedEffortSection
-              currentEffort={cell.effort}
-              currentMap={cell.tipEffortMap ?? {}}
+      {:else if cell.layers.length > 0}
+        <div class="pill-body-scroll" role="region" aria-label="{panelState.activePill} settings">
+          {#if panelState.activePill === "effects"}
+            <UnifiedEffectsSection
+              currentEffect={cell.effect ?? "none"}
+              currentTrailMode={cell.trailMode}
+              currentMap={cell.tipEffectMap ?? {}}
               bluePropType="staff"
               redPropType="staff"
-              onSetEffort={(effort) => p.onSetEffort?.(effort)}
-              onUpdateMap={(map) => p.onSetTipEffortMap?.(map)}
+              onSetEffect={(effect) => p.onSetEffect?.(effect)}
+              onSetTrailMode={(mode) => p.onSetTrailMode?.(mode)}
+              onUpdateMap={(map) => p.onSetTipEffectMap?.(map)}
             />
-            <div class="visibility-section">
-              <span class="section-label">VISIBILITY</span>
-              <div class="visibility-row">
-                <button
-                  type="button"
-                  class="vis-btn"
-                  class:active={blueVisible}
-                  style:--vis-color="#60a5fa"
-                  aria-pressed={blueVisible}
-                  onclick={handleToggleBlueVisibility}
-                >
-                  <i class="fas fa-eye" aria-hidden="true"></i> Blue
-                </button>
-                <button
-                  type="button"
-                  class="vis-btn"
-                  class:active={redVisible}
-                  style:--vis-color="#dc2626"
-                  aria-pressed={redVisible}
-                  onclick={handleToggleRedVisibility}
-                >
-                  <i class="fas fa-eye" aria-hidden="true"></i> Red
-                </button>
+
+          {:else if panelState.activePill === "effort"}
+            <div class="style-sections">
+              <TransformSection {panelState} onTransform={handleTransform} />
+              <ColorsSection
+                currentColors={cell.layers[0]?.propColors ?? { left: "#3b82f6", right: "#ef4444" }}
+                onSetColors={(colors) => p.onSetColors?.(colors)}
+              />
+              <UnifiedEffortSection
+                currentEffort={cell.effort}
+                currentMap={cell.tipEffortMap ?? {}}
+                bluePropType="staff"
+                redPropType="staff"
+                onSetEffort={(effort) => p.onSetEffort?.(effort)}
+                onUpdateMap={(map) => p.onSetTipEffortMap?.(map)}
+              />
+              <div class="visibility-section">
+                <span class="section-label">VISIBILITY</span>
+                <div class="visibility-row">
+                  <button
+                    type="button"
+                    class="vis-btn"
+                    class:active={blueVisible}
+                    style:--vis-color="#60a5fa"
+                    aria-pressed={blueVisible}
+                    onclick={handleToggleBlueVisibility}
+                  >
+                    <i class="fas fa-eye" aria-hidden="true"></i> Blue
+                  </button>
+                  <button
+                    type="button"
+                    class="vis-btn"
+                    class:active={redVisible}
+                    style:--vis-color="#dc2626"
+                    aria-pressed={redVisible}
+                    onclick={handleToggleRedVisibility}
+                  >
+                    <i class="fas fa-eye" aria-hidden="true"></i> Red
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-        {:else if panelState.activePill === "playback"}
-          <SpeedSection
-            currentSpeed={cell.speedMultiplier ?? 1.0}
-            onSetSpeed={(speed) => p.onSetSpeed?.(speed)}
-          />
-          <OffsetSection
-            currentOffset={cell.beatOffset}
-            onSetOffset={(offset) => p.onSetOffset?.(offset)}
-          />
+          {:else if panelState.activePill === "playback"}
+            <SpeedSection
+              currentSpeed={cell.speedMultiplier ?? 1.0}
+              onSetSpeed={(speed) => p.onSetSpeed?.(speed)}
+            />
+            <OffsetSection
+              currentOffset={cell.beatOffset}
+              onSetOffset={(offset) => p.onSetOffset?.(offset)}
+            />
 
-        {:else if panelState.activePill === "display"}
-          <DisplaySection
-            currentMediaType={cell.mediaType}
-            layerCount={cell.layers.length}
-            onMediaTypeChange={(type) => p.onMediaTypeChange(type)}
-          />
+          {:else if panelState.activePill === "display"}
+            <DisplaySection
+              currentMediaType={cell.mediaType}
+              layerCount={cell.layers.length}
+              onMediaTypeChange={(type) => p.onMediaTypeChange(type)}
+            />
 
-        {:else if panelState.activePill === "export"}
-          <div class="export-section">
-            <button class="download-btn" type="button">
-              <i class="fas fa-download" aria-hidden="true"></i>
-              Download Arrangement
+          {:else if panelState.activePill === "export"}
+            <div class="export-section">
+              <button class="download-btn" type="button">
+                <i class="fas fa-download" aria-hidden="true"></i>
+                Download Arrangement
+              </button>
+            </div>
+          {/if}
+        </div>
+
+        <div class="panel-footer">
+          {#if p.onCopyCell}
+            <button class="footer-btn copy-all-btn" type="button" onclick={p.onCopyCell}>
+              <i class="fas fa-copy" aria-hidden="true"></i>
+              Copy All
             </button>
-          </div>
-        {/if}
-      </div>
-
-      <!-- Footer -->
-      <div class="panel-footer">
-        {#if p.onCopyCell}
-          <button class="footer-btn copy-all-btn" type="button" onclick={p.onCopyCell}>
-            <i class="fas fa-copy" aria-hidden="true"></i>
-            Copy All
+          {/if}
+          <button class="footer-btn clear-all-btn" type="button" onclick={p.onClearCell}>
+            <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            Clear All
           </button>
-        {/if}
-        <button class="footer-btn clear-all-btn" type="button" onclick={p.onClearCell}>
-          <i class="fas fa-trash-alt" aria-hidden="true"></i>
-          Clear All
-        </button>
-      </div>
+        </div>
+      {:else}
+        <div class="empty-state">
+          <i class="fas fa-layer-group" aria-hidden="true"></i>
+          <span>No sequences yet</span>
+          <button
+            type="button"
+            class="go-layers-btn"
+            onclick={() => panelState.setActivePill("layers")}
+          >
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            Add in Layers
+          </button>
+        </div>
+      {/if}
+
     {:else}
       <div class="empty-state">
-        <LayerSection
-          {cell}
-          {clipboardHasData}
-          {transformingLayer}
-          onAddSequence={p.onAddSequence}
-          onRemoveLayer={p.onRemoveLayer}
-          onCopyLayer={p.onCopyLayer}
-          onPasteLayer={p.onPasteLayer}
-        />
+        <i class="fas fa-mouse-pointer" aria-hidden="true"></i>
+        <span>Click a cell to edit</span>
       </div>
     {/if}
   </div>
 </div>
 
 <style>
-  /* ── Rail Layout ── */
   .cell-editor-rail-layout {
     display: flex;
-    min-height: 0;
-    flex: 1;
+    height: 100%;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -326,7 +385,6 @@
     container-type: inline-size;
     container-name: celleditorpanel;
 
-    /* Design tokens (inherited by children) */
     --chip-radius: 22px;
     --action-radius: 10px;
     --badge-radius: 4px;
@@ -349,14 +407,6 @@
     min-height: 0;
   }
 
-  /* ── Layers zone ── */
-  .layers-zone {
-    padding: 8px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    flex-shrink: 0;
-  }
-
-  /* ── Pill body (scrollable) ── */
   .pill-body-scroll {
     flex: 1;
     overflow-y: auto;
@@ -373,7 +423,6 @@
     gap: 10px;
   }
 
-  /* ── Visibility toggles (inside Style pill) ── */
   .visibility-section {
     display: flex;
     flex-direction: column;
@@ -416,11 +465,8 @@
     color: color-mix(in srgb, var(--vis-color) 100%, white 30%);
   }
 
-  .vis-btn i {
-    font-size: 11px;
-  }
+  .vis-btn i { font-size: 11px; }
 
-  /* ── Export section ── */
   .export-section {
     display: flex;
     flex-direction: column;
@@ -444,17 +490,46 @@
     transition: opacity 150ms ease;
   }
 
-  .download-btn:hover {
-    opacity: 0.9;
-  }
+  .download-btn:hover { opacity: 0.9; }
 
-  /* ── Empty state ── */
   .empty-state {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.15);
+    font-size: 12px;
+    font-style: italic;
     padding: 10px;
   }
 
-  /* ── Footer ── */
+  .empty-state i {
+    font-size: 18px;
+    opacity: 0.5;
+  }
+
+  .go-layers-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(139, 92, 246, 0.9);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+
+  .go-layers-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+  }
+
   .panel-footer {
     flex-shrink: 0;
     display: flex;
@@ -503,8 +578,6 @@
   @media (prefers-reduced-motion: reduce) {
     .vis-btn,
     .footer-btn,
-    .download-btn {
-      transition: none;
-    }
+    .download-btn { transition: none; }
   }
 </style>
