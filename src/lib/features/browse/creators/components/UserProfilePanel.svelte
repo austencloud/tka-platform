@@ -24,7 +24,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
-  import ProfileStatsGrid from "./profile/ProfileStatsGrid.svelte";
   import ProfileTabs from "./profile/ProfileTabs.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
@@ -280,8 +279,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
         onFollowToggle={handleFollowToggle}
       />
 
-      <ProfileStatsGrid {userProfile} />
-
       <ProfileTabs
         {activeTab}
         {userProfile}
@@ -354,10 +351,8 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     padding: clamp(16px, 4cqi, 32px);
   }
 
-  /* Inner content wrapper for max-width constraint */
   .profile-content > :global(*) {
     width: 100%;
-    max-width: 900px;
     flex-shrink: 0;
   }
 
