@@ -268,7 +268,7 @@ export class CandidateFormatter implements ICandidateFormatter {
 
   buildCandidateDesignations(
     allCommon: string[],
-    interval: "halved" | "quartered",
+    interval: 2 | 4,
     rotationDirection: "cw" | "ccw" | null
   ): CandidateInfo[] {
     const candidates: CandidateInfo[] = [];
@@ -297,7 +297,7 @@ export class CandidateFormatter implements ICandidateFormatter {
           components: components as ComponentId[],
           intervals: {},
           rotationDirection: null,
-          label: `repeated @${interval === "halved" ? "1/2" : "1/4"}`,
+          label: `repeated @${interval === 2 ? "1/2" : "1/4"}`,
           description: "Repeated (same motion)",
         });
         continue;
@@ -305,12 +305,11 @@ export class CandidateFormatter implements ICandidateFormatter {
 
       let label = components.join("+");
       // Only show rotation direction for 90° rotations
-      if (direction && interval === "quartered")
-        label += ` (${direction.toUpperCase()})`;
-      if (interval === "quartered") label += " @1/4";
-      else if (interval === "halved") label += " @1/2";
+      if (direction && interval === 4) label += ` (${direction.toUpperCase()})`;
+      if (interval === 4) label += " @1/4";
+      else if (interval === 2) label += " @1/2";
 
-      const effectiveDirection = interval === "quartered" ? direction : null;
+      const effectiveDirection = interval === 4 ? direction : null;
 
       candidates.push({
         transformation,

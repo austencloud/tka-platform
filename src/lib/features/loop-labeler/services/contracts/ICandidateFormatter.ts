@@ -54,7 +54,7 @@ export interface ICandidateFormatter {
    */
   buildCandidateDesignations(
     allCommon: string[],
-    interval: "halved" | "quartered",
+    interval: 2 | 4,
     rotationDirection: "cw" | "ccw" | null
   ): CandidateInfo[];
 

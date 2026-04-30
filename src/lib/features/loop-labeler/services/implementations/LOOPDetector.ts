@@ -71,11 +71,11 @@ function periodFromIntervals(
   isCircular: boolean
 ): number {
   if (!isCircular) return 1;
-  const values = Object.values(intervals);
+  const values = Object.values(intervals).filter(
+    (v): v is number => typeof v === "number"
+  );
   if (values.length === 0) return 1;
-  if (values.some((v) => v === "quartered")) return 4;
-  if (values.some((v) => v === "halved")) return 2;
-  return 1;
+  return Math.max(...values);
 }
 
 /**
@@ -340,7 +340,7 @@ export class LOOPDetector implements ILOOPDetector {
         )
       : this.formattingService.buildCandidateDesignations(
           rotation90Patterns,
-          "quartered",
+          4,
           rotationDirection
         );
 
@@ -549,7 +549,7 @@ export class LOOPDetector implements ILOOPDetector {
 
     const candidateInfos = this.formattingService.buildCandidateDesignations(
       allHalvedCommon,
-      "halved",
+      2,
       rotationDirection
     );
     const commonTransformation = allHalvedCommon[0]!;
@@ -561,14 +561,11 @@ export class LOOPDetector implements ILOOPDetector {
     }
 
     const derivedIntervals: TransformationIntervals = {};
-    if (derivedComponents.includes("inverted"))
-      derivedIntervals.invert = "halved";
-    if (derivedComponents.includes("rotated"))
-      derivedIntervals.rotation = "halved";
-    if (derivedComponents.includes("swapped")) derivedIntervals.swap = "halved";
-    if (derivedComponents.includes("mirrored"))
-      derivedIntervals.mirror = "halved";
-    if (derivedComponents.includes("flipped")) derivedIntervals.flip = "halved";
+    if (derivedComponents.includes("inverted")) derivedIntervals.invert = 2;
+    if (derivedComponents.includes("rotated")) derivedIntervals.rotation = 2;
+    if (derivedComponents.includes("swapped")) derivedIntervals.swap = 2;
+    if (derivedComponents.includes("mirrored")) derivedIntervals.mirror = 2;
+    if (derivedComponents.includes("flipped")) derivedIntervals.flip = 2;
 
     return {
       loopType: derivedComponents.sort().join("_"),
@@ -701,12 +698,12 @@ export class LOOPDetector implements ILOOPDetector {
     rotationDirection: "cw" | "ccw" | null
   ): CandidateInfo[] {
     const compoundIntervals: TransformationIntervals = {
-      rotation: "quartered",
+      rotation: 4,
     };
     if (halvedOnlyTransformations.includes("swapped"))
-      compoundIntervals.swap = "halved";
+      compoundIntervals.swap = 2;
     if (halvedOnlyTransformations.includes("inverted"))
-      compoundIntervals.invert = "halved";
+      compoundIntervals.invert = 2;
 
     const rotDir =
       rotationDirection === "ccw"
@@ -739,21 +736,21 @@ export class LOOPDetector implements ILOOPDetector {
     halvedTransformations?: string[]
   ): TransformationIntervals {
     const intervals: TransformationIntervals = {};
-    if (components.includes("rotated")) intervals.rotation = "quartered";
+    if (components.includes("rotated")) intervals.rotation = 4;
 
     if (halvedTransformations?.includes("swapped")) {
-      intervals.swap = "halved";
+      intervals.swap = 2;
     } else if (components.includes("swapped")) {
-      intervals.swap = "quartered";
+      intervals.swap = 4;
     }
 
     if (halvedTransformations?.includes("inverted")) {
-      intervals.invert = "halved";
+      intervals.invert = 2;
     } else if (components.includes("inverted")) {
-      intervals.invert = "quartered";
+      intervals.invert = 4;
     }
 
-    if (components.includes("mirrored")) intervals.mirror = "quartered";
+    if (components.includes("mirrored")) intervals.mirror = 4;
     return intervals;
   }
 
@@ -830,12 +827,11 @@ export class LOOPDetector implements ILOOPDetector {
       components.push("swapped");
     }
 
-    // Build intervals - base is quartered, swap is positional
+    // Build intervals - base is quartered, swap is also quartered for modular patterns
     const intervals: TransformationIntervals = {};
-    if (components.includes("rotated")) intervals.rotation = "quartered";
+    if (components.includes("rotated")) intervals.rotation = 4;
     if (components.includes("swapped")) {
-      // Use the swap rhythm as the interval description
-      intervals.swap = `positional:${modularAnalysis.swapRhythm}`;
+      intervals.swap = 4;
     }
 
     // Build loopType
@@ -946,12 +942,9 @@ export class LOOPDetector implements ILOOPDetector {
           domain: "location",
         });
         if (result.transformationIntervals) {
-          if (primitive === "inverted")
-            result.transformationIntervals.invert = "halved";
-          if (primitive === "mirrored")
-            result.transformationIntervals.mirror = "halved";
-          if (primitive === "flipped")
-            result.transformationIntervals.flip = "halved";
+          if (primitive === "inverted") result.transformationIntervals.invert = 2;
+          if (primitive === "mirrored") result.transformationIntervals.mirror = 2;
+          if (primitive === "flipped") result.transformationIntervals.flip = 2;
         }
       }
     }

@@ -65,8 +65,8 @@
     const config = getIntervalConfig(id);
     if (!config) return "";
     const val = transformationIntervals[config.key];
-    if (val === "halved") return "½";
-    if (val === "quartered") return "¼";
+    if (val === 2) return "½";
+    if (val === 4) return "¼";
     return "";
   }
 
@@ -135,22 +135,20 @@
             <div class="interval-row">
               <button
                 class="interval-chip"
-                class:active={transformationIntervals[intervalConfig.key] ===
-                  "halved"}
+                class:active={transformationIntervals[intervalConfig.key] === 2}
                 style="--chip-color: {intervalConfig.color}"
-                onclick={() => onSetInterval(intervalConfig.key, "halved")}
+                onclick={() => onSetInterval(intervalConfig.key, 2)}
                 aria-label="Set {component.label} interval to halved"
-                aria-pressed={transformationIntervals[intervalConfig.key] === "halved"}
+                aria-pressed={transformationIntervals[intervalConfig.key] === 2}
                 >½</button
               >
               <button
                 class="interval-chip"
-                class:active={transformationIntervals[intervalConfig.key] ===
-                  "quartered"}
+                class:active={transformationIntervals[intervalConfig.key] === 4}
                 style="--chip-color: {intervalConfig.color}"
-                onclick={() => onSetInterval(intervalConfig.key, "quartered")}
+                onclick={() => onSetInterval(intervalConfig.key, 4)}
                 aria-label="Set {component.label} interval to quartered"
-                aria-pressed={transformationIntervals[intervalConfig.key] === "quartered"}
+                aria-pressed={transformationIntervals[intervalConfig.key] === 4}
                 >¼</button
               >
             </div>

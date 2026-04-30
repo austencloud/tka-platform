@@ -16,7 +16,7 @@ import type {
   TransformationInterval,
 } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
-import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 /**
  * Map component IDs to their corresponding interval keys
@@ -114,9 +114,11 @@ export function createWholeModeState(): WholeModeState {
       selectedPeriod = size;
       // Also update transformationIntervals.rotation for backwards compatibility
       if (size) {
+        const intervalValue: TransformationInterval =
+          size === Period.QUARTERED ? 4 : 2;
         transformationIntervals = {
           ...transformationIntervals,
-          rotation: size,
+          rotation: intervalValue,
         };
       }
     },
@@ -131,10 +133,9 @@ export function createWholeModeState(): WholeModeState {
       };
       // Keep selectedPeriod in sync for backwards compatibility
       if (transformation === "rotation") {
-        selectedPeriod =
-          interval === "halved" || interval === "quartered"
-            ? (interval as Period)
-            : null;
+        if (interval === 2) selectedPeriod = Period.HALVED;
+        else if (interval === 4) selectedPeriod = Period.QUARTERED;
+        else selectedPeriod = null;
       }
     },
 

@@ -42,7 +42,7 @@
       .filter(([_, v]) => v)
       .map(
         ([k, v]) =>
-          `${k}: ${v === "halved" ? "½" : v === "quartered" ? "¼" : v}`
+          `${k}: ${v === 2 ? "½" : v === 4 ? "¼" : v}`
       );
     return entries.length > 0 ? `(${entries.join(", ")})` : "";
   }

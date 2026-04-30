@@ -10,13 +10,12 @@ import type { StepPairRelationship } from "./steppair-models";
 /**
  * Transformation interval - when does a transformation apply?
  *
- * For a sequence divided into sections (e.g., 4 quarters for 16 steps):
- * - "halved": transformation applies at midpoint (sections 1-2 same, 3-4 transformed)
- * - "quartered": transformation applies every quarter
- * - "none": transformation doesn't apply
- * - Custom patterns for complex sequences (e.g., "1,3" means sections 1 and 3 are base, 2 and 4 are transformed)
+ * Numeric period: how many passes of the sequence are needed before the
+ * transformation identity repeats.
+ * - 2: transformation applies at midpoint (halved, 180° rotation)
+ * - 4: transformation applies every quarter (quartered, 90° rotation)
  */
-export type TransformationInterval = "none" | "halved" | "quartered" | string;
+export type TransformationInterval = 2 | 4;
 
 /**
  * Section grouping patterns - which sections share the same base vs transformed
@@ -113,19 +112,19 @@ export function describeTransformationIntervals(
 ): string {
   const parts: string[] = [];
 
-  if (intervals.rotation && intervals.rotation !== "none") {
+  if (intervals.rotation) {
     parts.push(`rot:${intervals.rotation}`);
   }
-  if (intervals.swap && intervals.swap !== "none") {
+  if (intervals.swap) {
     parts.push(`swap:${intervals.swap}`);
   }
-  if (intervals.mirror && intervals.mirror !== "none") {
+  if (intervals.mirror) {
     parts.push(`mir:${intervals.mirror}`);
   }
-  if (intervals.flip && intervals.flip !== "none") {
+  if (intervals.flip) {
     parts.push(`flip:${intervals.flip}`);
   }
-  if (intervals.invert && intervals.invert !== "none") {
+  if (intervals.invert) {
     parts.push(`inv:${intervals.invert}`);
   }
 

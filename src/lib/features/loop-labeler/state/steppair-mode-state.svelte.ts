@@ -143,8 +143,8 @@ export function createBeatPairModeState(): StepPairModeState {
           ? transformationIntervals[intervalKey]
           : undefined;
 
-        if (interval === "halved") return `½ ${label}`;
-        if (interval === "quartered") return `¼ ${label}`;
+        if (interval === 2) return `½ ${label}`;
+        if (interval === 4) return `¼ ${label}`;
         return label;
       });
 
