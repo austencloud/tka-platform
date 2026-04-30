@@ -1,12 +1,5 @@
 <script lang="ts">
-
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
-  /**
-   * UserProfilePanel (Browse Module)
-   * Comprehensive user profile view with sequences, stats, and achievements
-   * Responsive design for mobile and desktop
-   */
-
+  import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { doc, setDoc } from "firebase/firestore";
@@ -19,14 +12,17 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { creatorsViewState } from "../state/creators-view-state.svelte";
   import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
+  import ProfileShowcase from "./profile/ProfileShowcase.svelte";
   import ProfileTabs from "./profile/ProfileTabs.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
+  import FollowersModal from "./profile/FollowersModal.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   interface Props {
@@ -36,44 +32,40 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
 
   let { userId, onUserDeleted }: Props = $props();
 
-  import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-
   let userProfile = $state<EnhancedUserProfile | null>(null);
   let userSequences = $state<LibrarySequence[]>([]);
-  let followingUsers = $state<UserProfile[]>([]);
-  let followingLoading = $state(false);
-  let followingLoaded = $state(false);
-  let followerUsers = $state<UserProfile[]>([]);
-  let followersLoading = $state(false);
-  let followersLoaded = $state(false);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let followInProgress = $state(false);
-  let activeTab = $state<"gallery" | "followers" | "following">("gallery");
+
+  // Followers/Following modal state
+  let followersModalOpen = $state(false);
+  let followersModalType = $state<"followers" | "following">("followers");
+  let followerUsers = $state<UserProfile[]>([]);
+  let followingUsers = $state<UserProfile[]>([]);
+  let followersLoading = $state(false);
+  let followingLoading = $state(false);
+  let followersLoaded = $state(false);
+  let followingLoaded = $state(false);
 
   // Services
   let userService: IUserRepository;
   let libraryService: ILibraryRepository;
   let hapticService: IHapticFeedback;
 
-  // Get current user ID
   const currentUserId = $derived(authState.user?.uid);
-
-  // Check if viewing own profile
   const isOwnProfile = $derived(currentUserId === userId);
-
-  // Check if current user is admin (for admin controls)
   const isAdmin = $derived(authState.isAdmin);
 
-  // Handler for admin updates
+  const modalUsers = $derived(followersModalType === "followers" ? followerUsers : followingUsers);
+  const modalLoading = $derived(followersModalType === "followers" ? followersLoading : followingLoading);
+
   function handleAdminUpdate(updates: Partial<EnhancedUserProfile>) {
     if (userProfile) {
       userProfile = { ...userProfile, ...updates };
     }
   }
 
-  // Write the correct sequence count to Firestore when the denormalized
-  // counter has drifted from the actual number of sequences.
   async function reconcileCount(uid: string, actualCount: number) {
     try {
       const firestore = await getFirestoreInstance();
@@ -89,12 +81,10 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
 
   onMount(async () => {
     try {
-      // Resolve services
       userService = getUserRepository();
       libraryService = getLibraryRepository();
       hapticService = getHapticFeedback();
 
-      // Load user profile with current user context for follow status
       userProfile = await userService.getUserProfile(userId, currentUserId);
 
       if (!userProfile) {
@@ -103,20 +93,13 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
         return;
       }
 
-      // Load user's sequences from Firestore
-      // If viewing someone else's profile, only show public sequences (Firestore rules)
       userSequences = await libraryService.getUserSequences(userId, {
         visibility: isOwnProfile ? undefined : "public",
       });
 
-      // Always use the actual loaded sequence count as the source of truth.
-      // The denormalized sequenceCount field on the user doc can drift when
-      // increment writes fail silently. Overwrite it every time we have real data.
       const actualCount = userSequences.length;
       if (userProfile.sequenceCount !== actualCount) {
         userProfile = { ...userProfile, sequenceCount: actualCount };
-        // Write the correct count back to Firestore (non-blocking).
-        // Works for own profile (isOwner rule) and admin viewing others.
         void reconcileCount(userId, actualCount);
       }
 
@@ -130,39 +113,24 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
 
   function handleBack() {
     hapticService?.trigger("selection");
-    // Use unified navigation state to go back to previous location
     const location = browseNavigationState.goBack();
 
     if (!location || location.view === "list") {
-      // No history or going back to list view
       creatorsViewState.goBack();
     } else if (
       location.view === "profile" &&
       location.contextId &&
       location.contextId !== userId
     ) {
-      // Going back to a different profile
       creatorsViewState.viewUserProfile(location.contextId);
     } else {
-      // Fallback: go back to list
       creatorsViewState.goBack();
     }
   }
 
   async function handleFollowToggle() {
-    if (!currentUserId || !userProfile) {
-      console.warn("[UserProfilePanel] Must be logged in to follow users");
-      return;
-    }
-
-    if (isOwnProfile) {
-      console.warn("[UserProfilePanel] Cannot follow yourself");
-      return;
-    }
-
-    if (followInProgress) {
-      return;
-    }
+    if (!currentUserId || !userProfile) return;
+    if (isOwnProfile || followInProgress) return;
 
     followInProgress = true;
     hapticService?.trigger("selection");
@@ -170,7 +138,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     try {
       if (userProfile.isFollowing) {
         await userService.unfollowUser(currentUserId, userId);
-        // Optimistic update
         userProfile = {
           ...userProfile,
           isFollowing: false,
@@ -178,7 +145,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
         };
       } else {
         await userService.followUser(currentUserId, userId);
-        // Optimistic update
         userProfile = {
           ...userProfile,
           isFollowing: true,
@@ -203,52 +169,43 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     });
   }
 
-  async function loadFollowingUsers() {
-    if (followingLoaded || followingLoading) return;
-
-    followingLoading = true;
-    try {
-      followingUsers = await userService.getFollowing(userId, 50);
-      followingLoaded = true;
-    } catch (err) {
-      console.error("[UserProfilePanel] Error loading following users:", err);
-      error = "Failed to load following list";
-    } finally {
-      followingLoading = false;
-    }
-  }
-
   async function loadFollowerUsers() {
     if (followersLoaded || followersLoading) return;
-
     followersLoading = true;
     try {
       followerUsers = await userService.getFollowers(userId, 50);
       followersLoaded = true;
     } catch (err) {
       console.error("[UserProfilePanel] Error loading followers:", err);
-      error = "Failed to load followers list";
     } finally {
       followersLoading = false;
     }
   }
 
-  function handleUserCardClick(user: UserProfile) {
-    hapticService?.trigger("selection");
-    // Navigate to user profile using unified navigation state
-    browseNavigationState.viewCreatorProfile(user.id, user.displayName);
+  async function loadFollowingUsers() {
+    if (followingLoaded || followingLoading) return;
+    followingLoading = true;
+    try {
+      followingUsers = await userService.getFollowing(userId, 50);
+      followingLoaded = true;
+    } catch (err) {
+      console.error("[UserProfilePanel] Error loading following:", err);
+    } finally {
+      followingLoading = false;
+    }
   }
 
-  // Load following/followers when tabs are selected
-  $effect(() => {
-    if (activeTab === "following" && !followingLoaded && userService) {
-      loadFollowingUsers();
-    }
-    if (activeTab === "followers" && !followersLoaded && userService) {
-      loadFollowerUsers();
-    }
-  });
+  function openFollowersModal(type: "followers" | "following") {
+    followersModalType = type;
+    followersModalOpen = true;
+    if (type === "followers") loadFollowerUsers();
+    else loadFollowingUsers();
+  }
 
+  function handleUserCardClick(user: UserProfile) {
+    hapticService?.trigger("selection");
+    browseNavigationState.viewCreatorProfile(user.id, user.displayName);
+  }
 </script>
 
 <div class="profile-panel">
@@ -269,7 +226,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   {:else}
     <ProfileHeaderBar onBack={handleBack} />
 
-    <!-- Scrollable content -->
     <div class="profile-content">
       <ProfileHeroSection
         {userProfile}
@@ -277,22 +233,20 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
         {isOwnProfile}
         {followInProgress}
         onFollowToggle={handleFollowToggle}
+        onFollowersClick={() => openFollowersModal("followers")}
+        onFollowingClick={() => openFollowersModal("following")}
+      />
+
+      <ProfileShowcase
+        pinnedItems={userProfile.pinnedItems ?? []}
+        {isOwnProfile}
       />
 
       <ProfileTabs
-        {activeTab}
-        {userProfile}
         {userSequences}
-        {followerUsers}
-        {followingUsers}
-        {followersLoading}
-        {followingLoading}
-        onTabChange={(tab) => (activeTab = tab)}
         onSequenceClick={handleSequenceClick}
-        onUserClick={handleUserCardClick}
       />
 
-      <!-- Your Connection Section (only when logged in, viewing someone else) -->
       {#if currentUserId && !isOwnProfile}
         <ProfileConnectionSection
           targetUserId={userId}
@@ -300,7 +254,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
         />
       {/if}
 
-      <!-- Admin Controls (only visible to admins, not on own profile) -->
       {#if isAdmin && !isOwnProfile}
         <ProfileAdminSection
           {userProfile}
@@ -309,13 +262,18 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
         />
       {/if}
     </div>
+
+    <FollowersModal
+      bind:open={followersModalOpen}
+      listType={followersModalType}
+      users={modalUsers}
+      isLoading={modalLoading}
+      onUserClick={handleUserCardClick}
+    />
   {/if}
 </div>
 
 <style>
-  /* ═══════════════════════════════════════════════════════════════════════════
-     USER PROFILE PANEL - Centered content layout matching Settings pattern
-     ═══════════════════════════════════════════════════════════════════════════ */
   .profile-panel {
     container-type: inline-size;
     container-name: profile-panel;
@@ -344,7 +302,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     overflow-x: hidden;
     min-height: 0;
 
-    /* Centered content container - matches Settings ProfileTab */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -356,9 +313,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     flex-shrink: 0;
   }
 
-  /* ════════════════════════════════════════════════════════════════════════
-     RESPONSIVE BREAKPOINTS
-     ════════════════════════════════════════════════════════════════════════ */
   @container profile-panel (max-width: 768px) {
     .profile-content {
       padding: clamp(12px, 3cqi, 20px);
@@ -371,7 +325,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     }
   }
 
-  /* Large screens - generous breathing room */
   @container profile-panel (min-width: 1400px) {
     .profile-content {
       padding: clamp(32px, 5cqi, 48px);
