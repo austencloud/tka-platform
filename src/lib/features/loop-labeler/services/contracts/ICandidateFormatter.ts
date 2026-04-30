@@ -31,32 +31,8 @@ export interface ICandidateFormatter {
     rawTransformations: string[]
   ): FormattedTransformations;
 
-  /**
-   * Derive components from a transformation pattern.
-   */
+  /** @deprecated Pipeline Stage 6 (build-candidates) supersedes this for uniform detection. Retained for modular fallback path. */
   deriveComponentsFromPattern(pattern: string): ComponentId[];
-
-  /**
-   * Extract rotation direction from a transformation pattern.
-   */
-  extractRotationDirection(pattern: string): "cw" | "ccw" | null;
-
-  /**
-   * Format a human-readable description for a candidate designation.
-   */
-  formatCandidateDescription(
-    transformation: string,
-    direction: "cw" | "ccw" | null
-  ): string;
-
-  /**
-   * Build candidate designations from common transformations.
-   */
-  buildCandidateDesignations(
-    allCommon: string[],
-    interval: 2 | 4,
-    rotationDirection: "cw" | "ccw" | null
-  ): CandidateInfo[];
 
   /**
    * Convert CandidateInfo to CandidateDesignation.
