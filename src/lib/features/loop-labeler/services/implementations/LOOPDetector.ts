@@ -972,7 +972,7 @@ export class LOOPDetector implements ILOOPDetector {
   ): void {
     if (halvedStepPairs.length === 0) return;
 
-    const halvedPrimitives = ["inverted", "mirrored", "flipped"] as const;
+    const halvedPrimitives = ["inverted", "mirrored", "flipped", "swapped"] as const;
     for (const primitive of halvedPrimitives) {
       if (result.components.includes(primitive as ComponentId)) continue;
       const allHave = halvedStepPairs.every((pair) =>
@@ -988,6 +988,7 @@ export class LOOPDetector implements ILOOPDetector {
           if (primitive === "inverted") result.transformationIntervals.invert = 2;
           if (primitive === "mirrored") result.transformationIntervals.mirror = 2;
           if (primitive === "flipped") result.transformationIntervals.flip = 2;
+          if (primitive === "swapped") result.transformationIntervals.swap = 2;
         }
       }
     }
