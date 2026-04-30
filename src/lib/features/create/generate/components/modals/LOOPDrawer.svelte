@@ -61,7 +61,7 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
-  /* Hug content — don't stretch to viewport min/max */
+  /* Hug content - don't stretch to viewport min/max */
   :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"]) {
     min-height: 0;
   }

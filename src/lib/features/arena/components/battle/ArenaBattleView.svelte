@@ -49,7 +49,7 @@
   let transitioning = $state(false);
   let showKeyboardHints = $state(true);
 
-  // Prop type per matchup — both sides show the same prop
+  // Prop type per matchup - both sides show the same prop
   let randomPropMode = $state(true);
   let matchupPropType = $state<PropType>(pickRandomPropType());
   let propDrawerOpen = $state(false);
@@ -61,7 +61,7 @@
 
   function toggleRandomProp() {
     if (randomPropMode) {
-      // Already random — open drawer to pick a specific one
+      // Already random - open drawer to pick a specific one
       propDrawerOpen = true;
     } else {
       // Switch back to random

@@ -1,10 +1,10 @@
 /**
- * Geometry Web Worker — converts SerializedTileBuckets into transferable
+ * Geometry Web Worker - converts SerializedTileBuckets into transferable
  * Float32Arrays so mesh creation on the main thread never blocks on data prep.
  *
  * The worker runs a simple priority queue: lower priority numbers process first.
  * Cancel messages remove a pending roomId from the queue without processing it.
- * Only one request is processed at a time — no parallelism inside the worker.
+ * Only one request is processed at a time - no parallelism inside the worker.
  *
  * No Three.js here. Everything is plain typed arrays and postMessage transfers.
  */
@@ -29,7 +29,7 @@ const queue: QueueEntry[] = [];
 let processing = false;
 
 function enqueue(entry: QueueEntry): void {
-  // Replace an existing entry for the same roomId if one exists — the new
+  // Replace an existing entry for the same roomId if one exists - the new
   // request has fresher data and possibly a different priority.
   const existing = queue.findIndex((e) => e.roomId === entry.roomId);
   if (existing !== -1) {

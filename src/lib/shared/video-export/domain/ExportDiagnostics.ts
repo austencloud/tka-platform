@@ -34,7 +34,7 @@ export class ExportDiagnostics {
   private currentTickFrameCount = 0;
   private lastRafTimestamp = -1;
 
-  // Per-frame scratch — set by startFrame, consumed by mark* methods
+  // Per-frame scratch - set by startFrame, consumed by mark* methods
   private frameStart = 0;
   private afterDrawImage = 0;
   private afterCapture = 0;

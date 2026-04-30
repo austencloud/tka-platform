@@ -11,6 +11,7 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   type FilterMode = "all" | "unlabeled" | "labeled" | "unknown";
 
@@ -189,7 +190,7 @@
           </div>
           <!-- Card footer -->
           <div class="card-footer">
-            <span class="card-word">{seq.word}</span>
+            <span class="card-word"><TKAWordGlyph word={seq.word} height={11} darkMode /></span>
             <span class="card-meta">{seq.sequenceLength}b</span>
           </div>
         </button>

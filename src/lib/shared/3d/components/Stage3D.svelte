@@ -3,7 +3,7 @@
    * Stage3D
    *
    * A rustic wooden performance stage centered at world origin. Styled
-   * as a low campground/festival platform — individual plank strips
+   * as a low campground/festival platform - individual plank strips
    * sitting on short thick legs, raised above the ground so it reads
    * as a real physical thing rather than a floating panel.
    *
@@ -12,7 +12,7 @@
    *      the avatar move relative to a fixed reference (foot offset
    *      sliders in collision lab, or sequence choreography in the
    *      main viewer).
-   *   2. Make "downstage" visually obvious — a warm glowing footlight
+   *   2. Make "downstage" visually obvious - a warm glowing footlight
    *      strip along the +Z edge (toward the audience), plus color-coded
    *      side cues on stage-right (+X, red) and stage-left (-X, green),
    *      so rotation is readable at a glance.
@@ -20,7 +20,7 @@
    * Convention (matches Mixamo + collision lab + sequence viewer):
    * character-right = +X, forward = +Z (toward audience), up = +Y.
    *
-   * The stage stays at world origin in X and Z — performers walk ON
+   * The stage stays at world origin in X and Z - performers walk ON
    * TOP of it via their rig root offset. Only Y tracks the ground level
    * so it sits flush with whatever environment is active.
    */
@@ -53,7 +53,7 @@
 
   // ─── Stage geometry constants (all in meters) ─────────────────────
 
-  // Alias for readability — matches the prop value
+  // Alias for readability - matches the prop value
   const DECK_HEIGHT = $derived(height);
 
   /** Thickness of each plank. */
@@ -166,7 +166,7 @@
   // is narrower (in Z depth) than the deck planks and uses the same
   // wood color palette so they read as part of the same structure.
 
-  const STAIR_WIDTH = 0.8;        // X extent — centered on stage
+  const STAIR_WIDTH = 0.8;        // X extent - centered on stage
   const STAIR_DEPTH = 0.22;       // Z extent per tread
   const STEP_COUNT = 3;
   const stepHeight = $derived(DECK_TOP / STEP_COUNT); // Even divisions to reach ground
@@ -198,7 +198,7 @@
   <!--
     Support legs. Thick wooden posts at each corner, inset from the
     edge of the deck. Visible as short stubs peeking out beneath the
-    skirt — they sell the "real raised platform" feel.
+    skirt - they sell the "real raised platform" feel.
   -->
   {#each legPositions as [x, z]}
     <T.Mesh position={[x, legCenterY, z]} castShadow>
@@ -379,7 +379,7 @@
     from the front corners of the deck.
   -->
   {#each torchPositions as torch}
-    <!-- Wooden post — base sits on deck top -->
+    <!-- Wooden post - base sits on deck top -->
     <T.Mesh
       position={[torch.x, DECK_TOP + TORCH_HEIGHT / 2, torch.z]}
     >

@@ -61,7 +61,7 @@ type GeneratorParam =
   | "propContinuity"
   | "turnIntensity"
   | "loopType"
-  | "sliceSize";
+  | "period";
 
 const PARAM_ALIASES: Record<string, GeneratorParam> = {
   // level
@@ -91,9 +91,9 @@ const PARAM_ALIASES: Record<string, GeneratorParam> = {
   "loop type": "loopType",
   loop: "loopType",
   "loop kind": "loopType",
-  // sliceSize
-  slice: "sliceSize",
-  "slice size": "sliceSize",
+  // period
+  slice: "period",
+  "slice size": "period",
 };
 
 // ============================================================================
@@ -174,8 +174,8 @@ const HELP_TOPIC_ALIASES: Record<string, GeneratorHelpId> = {
   spinning: "turn-intensity",
   "loop type": "loop-type",
   "loop kind": "loop-type",
-  slice: "slice-size",
-  "slice size": "slice-size",
+  slice: "period",
+  "slice size": "period",
   "start end": "start-end",
   "start and end": "start-end",
   "start position": "start-end",
@@ -223,7 +223,7 @@ export class GeneratorSubInterpreter implements ISubInterpreter {
     // Only match if generator ref is available (panel mounted)
     if (!getGeneratorVoiceRef()) return null;
 
-    // Generate trigger (exact phrase match — highest priority within generator)
+    // Generate trigger (exact phrase match - highest priority within generator)
     if (GENERATE_PHRASES.has(text)) {
       return this.build("generate", "", text);
     }
@@ -341,7 +341,7 @@ export class GeneratorSubInterpreter implements ISubInterpreter {
         return GRID_MODE_ALIASES[spoken] ?? null;
       case "propContinuity":
         return CONTINUITY_ALIASES[spoken] ?? null;
-      case "sliceSize":
+      case "period":
         return SLICE_SIZE_ALIASES[spoken] ?? null;
       case "loopType":
         return LOOP_TYPE_ALIASES[spoken] ?? null;

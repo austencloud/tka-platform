@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TKA Letter A — Greek Mosaic (~500 BC)</title>
+  <title>TKA Letter A - Greek Mosaic (~500 BC)</title>
   <style>
     body {
       margin: 0;
@@ -68,7 +68,7 @@
       return ((seed >>> 0) / 0xffffffff);
     }
 
-    // Color palettes — each tile gets a slight variation within its palette
+    // Color palettes - each tile gets a slight variation within its palette
     const PALETTES = {
       cream:    ['#F5E6CC', '#EDD9B5', '#F0DEC0', '#E8D5A8', '#F7ECCA', '#EAD9B3', '#F2E2C0', '#E6D4A8'],
       blue:     ['#2B4C7E', '#1F3A6E', '#2E527A', '#263E72', '#304F80', '#1D3868', '#325476', '#284470'],
@@ -93,7 +93,7 @@
     }
 
     // ─────────────────────────────────────────────
-    // Tessera grid — each cell stores a palette key
+    // Tessera grid - each cell stores a palette key
     // ─────────────────────────────────────────────
     const grid = Array.from({ length: ROWS }, () => Array(COLS).fill('cream'));
 
@@ -214,7 +214,7 @@
         }
       }
 
-      // Greek key meander — top edge
+      // Greek key meander - top edge
       const keyStart = border + 2;
       const keySize = 3; // repeating unit in tiles
 
@@ -267,7 +267,7 @@
         else setTile(COLS - ky - 1, r, 'gold');
       }
 
-      // Proper Greek key meander — horizontal top strip
+      // Proper Greek key meander - horizontal top strip
       const mT = border + 2; // meander row top
       const mB = border + 4; // meander row bottom
       const mBorder = border + 2;
@@ -404,7 +404,7 @@
         return;
       }
 
-      // Arc — use paintCurve with control point pulled outward along the
+      // Arc - use paintCurve with control point pulled outward along the
       // arc's mid-angle so the Bezier bows past the perimeter (mosaic-style
       // sweep, like the original hardcoded letter-A arcs).
       const dir = G.handDirection(hand) || 'cw';
@@ -427,11 +427,11 @@
     }
 
     function drawGridDots() {
-      // Background grid circle boundary ring first — dark outer, olive inner.
+      // Background grid circle boundary ring first - dark outer, olive inner.
       paintRing(CX, CY, RADIUS + 14, RADIUS + 6, 'charcoal');
       paintRing(CX, CY, RADIUS + 5, RADIUS - 1, 'olive');
 
-      // 8 cardinal/intercardinal anchor dots — outer dark, inner color, gold core.
+      // 8 cardinal/intercardinal anchor dots - outer dark, inner color, gold core.
       DIRECTIONS.forEach(d => {
         const p = GRID_POINTS[d];
         paintCircle(p.x, p.y, 12, 'charcoal');
@@ -502,7 +502,7 @@
     //
     // Letter A has a hand-authored pixel bitmap that reads perfectly in the
     // tile-space aesthetic. For any other letter we fall back to a charcoal
-    // painted glyph in the same corner — the tile grain is lost for non-A
+    // painted glyph in the same corner - the tile grain is lost for non-A
     // but the letter still reads. We paint the fallback onto the canvas
     // AFTER tile rasterization, via a small deferred flag.
     // ─────────────────────────────────────────────
@@ -588,7 +588,7 @@
           ctx.translate(cx, cy);
           ctx.rotate(angle);
 
-          // Slightly irregular tile shapes — vary width/height slightly
+          // Slightly irregular tile shapes - vary width/height slightly
           const wVar = size * (0.88 + rng() * 0.14);
           const hVar = size * (0.88 + rng() * 0.14);
 
@@ -663,7 +663,7 @@
     }
 
     // ─────────────────────────────────────────────
-    // Main build sequence — data-driven
+    // Main build sequence - data-driven
     // ─────────────────────────────────────────────
     function render(data, canonical, meta) {
       // Reset seed + tile grid so every re-render is deterministic and
@@ -706,7 +706,7 @@
       drawAgingEffects();
     }
 
-    // Default pictograph — Letter A. Also used when this HTML is opened
+    // Default pictograph - Letter A. Also used when this HTML is opened
     // directly without a parent posting pictograph data.
     const DEFAULT_PICTOGRAPH = {
       letter: 'A',

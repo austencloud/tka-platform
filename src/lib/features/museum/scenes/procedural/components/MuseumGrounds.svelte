@@ -24,7 +24,7 @@
     museumState.setLayout(layout);
   });
 
-  // Placeholder thumbnail resolver — returns undefined for now.
+  // Placeholder thumbnail resolver - returns undefined for now.
   // Phase 4 will wire this to Firebase/cloud thumbnail URLs.
   function getThumbnailUrl(_sequenceId: string): string | undefined {
     return undefined;

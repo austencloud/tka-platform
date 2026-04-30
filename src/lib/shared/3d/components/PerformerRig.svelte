@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * PerformerRig — Unified 3D Transform Hierarchy
+   * PerformerRig - Unified 3D Transform Hierarchy
    *
    * One T.Group owns position + facingAngle. Avatar, grid, props, and
    * effects are all children. The scene graph guarantees frame-perfect
    * attachment. No manual cos/sin. No STAGE_LIFT trick.
    *
    * Hierarchy:
-   *   PerformerRig (T.Group) — position=[x, groundOffset, z], rotation.y=facingAngle
+   *   PerformerRig (T.Group) - position=[x, groundOffset, z], rotation.y=facingAngle
    *   ├── Avatar3D (conditional)
    *   ├── Grid (conditional, dual-wheel renders two wheel grids)
    *   ├── Blue HandAnchor → PropAnchor
@@ -41,7 +41,7 @@
   // Constant sets to avoid allocating new Set objects on every reactive update.
   const WHEEL_ONLY = new Set([Plane.WHEEL]);
 
-  // Safe access to viewer visibility — PerformerRig is used in museum/realm
+  // Safe access to viewer visibility - PerformerRig is used in museum/realm
   // contexts where this context won't exist. Defaults to true (both visible).
   const _viewerVisibility = tryGetViewerVisibilityContext();
   const blueVisible = $derived(_viewerVisibility?.blueMotion ?? true);
@@ -71,7 +71,7 @@
     bluePropType?: PropType;
     redPropType?: PropType;
 
-    // Prop state overrides (for dual-wheel mode — caller swaps before passing)
+    // Prop state overrides (for dual-wheel mode - caller swaps before passing)
     bluePropState?: PropState3D | null;
     redPropState?: PropState3D | null;
 
@@ -93,7 +93,7 @@
 
     /** When true, facingAngle is driven by root motion yawDelta from
      *  the animation clip (accumulated each frame). When false (default),
-     *  facingAngle is consumer-authoritative — the rig rotation matches
+     *  facingAngle is consumer-authoritative - the rig rotation matches
      *  whatever the consumer passes in. */
     animationDrivenYaw?: boolean;
     /** Callback fired after each yawDelta integration when animationDrivenYaw
@@ -188,7 +188,7 @@
     if (!avatarState.hasSequence || avatarState.totalSteps <= 1) return null;
 
     const currentIdx = avatarState.currentStepIndex;
-    // Beat 0 is the start position — no "from" heading to compare
+    // Beat 0 is the start position - no "from" heading to compare
     if (currentIdx === 0) return null;
 
     const currentHeading = getHeadingForBeat(currentIdx);
@@ -220,7 +220,7 @@
     if (turnRequest) {
       turnTargetHeading = turnRequest.toHeading;
     } else if (turnTargetHeading !== null) {
-      // Turn just completed — snap avatarState to post-turn heading
+      // Turn just completed - snap avatarState to post-turn heading
       avatarState.snapFacingAngle(turnTargetHeading);
       turnTargetHeading = null;
     }
@@ -229,7 +229,7 @@
   // When the consumer changes facingAngle externally (e.g., scrubbing the
   // timeline, snapping to a new beat), sync the accumulator. In animation-
   // driven mode we only re-sync on explicit external changes, not on
-  // internal integrations — otherwise the external sync would immediately
+  // internal integrations - otherwise the external sync would immediately
   // undo every yawDelta increment.
   $effect(() => {
     if (!effectiveAnimDrivenYaw) {
@@ -251,11 +251,11 @@
     z: isDualWheel ? 0 : gridOffset,
   });
 
-  // PropAnchor refs — Avatar3D reads world positions from these for IK targeting.
+  // PropAnchor refs - Avatar3D reads world positions from these for IK targeting.
   let bluePropAnchorRef = $state<Group | undefined>(undefined);
   let redPropAnchorRef = $state<Group | undefined>(undefined);
 
-  // Effects group ref — imperative renderers add meshes here so they
+  // Effects group ref - imperative renderers add meshes here so they
   // inherit the rig's transform.
   let effectsGroupRef = $state<Group | undefined>(undefined);
 </script>

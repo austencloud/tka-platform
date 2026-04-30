@@ -2,7 +2,7 @@
   HandPathBuilderLab.svelte - Hand Path Builder lab tab
 
   Tap grid locations to draw spatial hand paths for blue and red hands.
-  No rotation — pure geometric paths through grid positions.
+  No rotation - pure geometric paths through grid positions.
   Output: HandPathData objects saved to Firestore via HandPathRepository.
 
   Workflow:
@@ -128,7 +128,7 @@
       onPointClick={(loc) => builder.addLocation(loc)}
     >
       {#snippet animationLayer()}
-        <!-- Hand points and center — rendered here instead of Canvas2D grid
+        <!-- Hand points and center - rendered here instead of Canvas2D grid
              to avoid outer points and layer 2 clutter -->
         <circle cx="475" cy="475" r="6" fill="var(--dm-grid-color, #d0d0d0)" opacity="0.6" />
         {#each gridHandPoints as pt (pt.location)}
@@ -218,7 +218,7 @@
     border-radius: 20px;
   }
 
-  /* Zoom in on the grid — hands are small so we don't need the prop
+  /* Zoom in on the grid - hands are small so we don't need the prop
      buffer space that the assemble tab requires for staffs/fans */
   .grid-area :global(.interactive-canvas-wrapper) {
     transform: scale(1.85);

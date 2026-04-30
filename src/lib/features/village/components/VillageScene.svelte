@@ -1,5 +1,5 @@
 <!--
-  VillageScene — Threlte 3D scene rendering the village simulation.
+  VillageScene - Threlte 3D scene rendering the village simulation.
   Uses useFrame to sync ECS engine state to avatars each frame.
 -->
 <script lang="ts">

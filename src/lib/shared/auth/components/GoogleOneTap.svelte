@@ -1,7 +1,7 @@
 <script module lang="ts">
   // GoogleOneTap mounts on multiple surfaces (landing page, auth drawer,
   // sequence viewer). The Google Identity library only wants one initialize()
-  // call per page load — additional calls produce a GSI_LOGGER warning and
+  // call per page load - additional calls produce a GSI_LOGGER warning and
   // only the last config wins (which would silently break whichever surface
   // mounted first).
   //

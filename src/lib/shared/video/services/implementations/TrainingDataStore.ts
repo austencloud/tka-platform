@@ -7,8 +7,8 @@
  * as JSON for offline model training.
  *
  * IndexedDB indexes:
- *   - "source"     — quick filter by originating module
- *   - "frameIndex" — find all annotations for a given frame
+ *   - "source"     - quick filter by originating module
+ *   - "frameIndex" - find all annotations for a given frame
  */
 
 import type {

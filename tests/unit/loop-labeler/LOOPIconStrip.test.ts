@@ -1,8 +1,8 @@
 /**
- * Icon-picker logic for slice-aware rotated glyphs.
+ * Icon-picker logic for period-aware rotated glyphs.
  *
  * The Svelte component LOOPIconStrip.svelte and the canvas renderer
- * renderLoopIconStrip() both have to agree on: "when rotationSliceSize is
+ * renderLoopIconStrip() both have to agree on: "when rotationPeriod is
  * quartered, the rotated slot draws fa-arrows-spin instead of fa-rotate."
  * If these ever drift the live app will show one icon and the exported
  * image a different one.
@@ -89,8 +89,8 @@ function makeFakeCtx() {
   return { ctx: ctx as CanvasRenderingContext2D, calls };
 }
 
-describe("renderLoopIconStrip slice-size picker", () => {
-  it("draws the rotated color when ROTATED is active (any slice size)", () => {
+describe("renderLoopIconStrip period picker", () => {
+  it("draws the rotated color when ROTATED is active (any period)", () => {
     const { ctx, calls } = makeFakeCtx();
     const components = new Set(["rotated" as const]);
 
@@ -139,7 +139,7 @@ describe("renderLoopIconStrip slice-size picker", () => {
     expect(quarteredOps).not.toBe(halvedOps);
   });
 
-  it("defaults to the halved rotated path when slice size is omitted", () => {
+  it("defaults to the halved rotated path when period is omitted", () => {
     const omitted = makeFakeCtx();
     renderLoopIconStrip(
       omitted.ctx,
@@ -162,24 +162,24 @@ describe("renderLoopIconStrip slice-size picker", () => {
       "halved"
     );
 
-    // "Undefined slice size" and "halved" must render the same glyph so
+    // Undefined period and "halved" must render the same glyph so
     // existing call sites that haven't been updated yet don't regress.
     expect(omitted.calls[0]?.drawOps).toBe(halved.calls[0]?.drawOps);
   });
 
-  it("renders all active components exactly once regardless of slice size", () => {
+  it("renders all active components exactly once regardless of period", () => {
     const { ctx, calls } = makeFakeCtx();
     const components = new Set(["rotated" as const, "swapped" as const]);
 
     renderLoopIconStrip(ctx, components, 100, 50, 20, true, false, "quartered");
 
-    // 2 icons → 2 fills. Quartered must not add, remove, or double any
-    // other primitive.
-    expect(calls.length).toBe(2);
-    // Rotated's #36c3ff and swapped's #26e600 both appear.
+    // rotated = 1 fill, swapped bicolor = 2 fills → 3 total.
+    expect(calls.length).toBe(3);
+    // Rotated's brand color + swapped's bicolor pair (blue + red).
     const colors = calls.map((c) => c.fillStyle);
     expect(colors).toContain("#36c3ff");
-    expect(colors).toContain("#26e600");
+    expect(colors).toContain("#3575E2");
+    expect(colors).toContain("#ED1C24");
   });
 
   it("returns totalWidth accounting for all active icons and gaps", () => {
@@ -199,5 +199,61 @@ describe("renderLoopIconStrip slice-size picker", () => {
 
     // 2 icons × 20px + 1 gap = 40 + ≥2.
     expect(result.totalWidth).toBeGreaterThanOrEqual(42);
+  });
+
+  it("draws a distinct icon path for quartered inversion (checkerboard vs circle-half)", () => {
+    const halved = makeFakeCtx();
+    renderLoopIconStrip(
+      halved.ctx,
+      new Set(["inverted" as const]),
+      100, 50, 20, true, false,
+      undefined, "halved"
+    );
+
+    const quartered = makeFakeCtx();
+    renderLoopIconStrip(
+      quartered.ctx,
+      new Set(["inverted" as const]),
+      100, 50, 20, true, false,
+      undefined, "quartered"
+    );
+
+    expect(halved.calls).toHaveLength(1);
+    expect(quartered.calls).toHaveLength(1);
+    const halvedOps = halved.calls[0]?.drawOps ?? 0;
+    const quarteredOps = quartered.calls[0]?.drawOps ?? 0;
+    expect(halvedOps).toBeGreaterThan(0);
+    expect(quarteredOps).toBeGreaterThan(0);
+    expect(quarteredOps).not.toBe(halvedOps);
+  });
+
+  it("defaults to the halved inverted path when inversionPeriod is omitted", () => {
+    const omitted = makeFakeCtx();
+    renderLoopIconStrip(
+      omitted.ctx,
+      new Set(["inverted" as const]),
+      100, 50, 20, true, false
+    );
+    const halved = makeFakeCtx();
+    renderLoopIconStrip(
+      halved.ctx,
+      new Set(["inverted" as const]),
+      100, 50, 20, true, false,
+      undefined, "halved"
+    );
+
+    expect(omitted.calls[0]?.drawOps).toBe(halved.calls[0]?.drawOps);
+  });
+
+  it("draws the inverted color for both halved and quartered inversion", () => {
+    const { ctx, calls } = makeFakeCtx();
+    renderLoopIconStrip(
+      ctx,
+      new Set(["inverted" as const]),
+      100, 50, 20, true, false,
+      undefined, "quartered"
+    );
+
+    expect(calls.some((c) => c.fillStyle === "#eb7d00")).toBe(true);
   });
 });

@@ -19,7 +19,7 @@ import { RECIPE_PREFIX, TAG_TO_LOOP_TYPE } from "../contracts/ICompositionalEnco
 import type { ICompositionalDecoder } from "../contracts/ICompositionalEncoder";
 import {
   getLoopExecutor,
-  getSliceSizeForTag,
+  getPeriodForTag,
   computeRecipeHash,
   enrichStepsWithGridPositions,
 } from "./compositional-utils";
@@ -75,7 +75,7 @@ export class CompositionalDecoder implements ICompositionalDecoder {
       throw new Error(`No executor available for tag "${tag}"`);
     }
 
-    const sliceSize = getSliceSizeForTag(tag);
+    const period = getPeriodForTag(tag);
 
     // Prepare input: executor expects start position at index 0, then seed beats.
     const inputSteps = [...(seedSequence.steps as StepData[])];
@@ -104,7 +104,7 @@ export class CompositionalDecoder implements ICompositionalDecoder {
       inputSteps.unshift(startStep);
     }
 
-    const reconstructedSteps = executor.executeLOOP(inputSteps, sliceSize);
+    const reconstructedSteps = executor.executeLOOP(inputSteps, period);
 
     // Separate start position back out
     const startPositionStep = reconstructedSteps.shift();
@@ -124,7 +124,7 @@ export class CompositionalDecoder implements ICompositionalDecoder {
     const fullSequence: SequenceData = {
       ...seedSequence,
       steps: reconstructedSteps,
-      word: this.expandWord(seedSequence.word || "", sliceSize),
+      word: this.expandWord(seedSequence.word || "", period),
       startPosition: restoredStartPos ?? seedSequence.startPosition,
       startingPosition: restoredStartPos ?? seedSequence.startingPosition,
     };
@@ -144,8 +144,8 @@ export class CompositionalDecoder implements ICompositionalDecoder {
     return flatEncoded;
   }
 
-  private expandWord(seedWord: string, sliceSize: string): string {
-    const repeatCount = sliceSize === "quartered" ? 4 : 2;
+  private expandWord(seedWord: string, period: string): string {
+    const repeatCount = period === "quartered" ? 4 : 2;
     return seedWord.repeat(repeatCount);
   }
 }

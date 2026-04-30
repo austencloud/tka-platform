@@ -98,7 +98,7 @@ export const LETTER_TRIAD: LetterTriadData[] = [
     redMotion: MotionType.ANTI,
     pattern: "synthesis",
     patternLabel: "Pro + Anti",
-    description: "One hand rotates with, one against — the hybrid",
+    description: "One hand rotates with, one against - the hybrid",
   },
 ];
 
@@ -240,7 +240,7 @@ export const MOTION_TYPE_TRIAD: MotionTypeTriadData[] = [
     label: "Static",
     pattern: "antithesis",
     patternLabel: "No Movement",
-    description: "The prop stays in place (0 steps) — no grid movement at all",
+    description: "The prop stays in place (0 steps) - no grid movement at all",
     intensity: "Minimal",
   },
   {
@@ -256,7 +256,7 @@ export const MOTION_TYPE_TRIAD: MotionTypeTriadData[] = [
     label: "Shift",
     pattern: "synthesis",
     patternLabel: "Adjacent Position",
-    description: "The prop moves to an adjacent position (1 step) — TWO variations: clockwise or counter-clockwise",
+    description: "The prop moves to an adjacent position (1 step) - TWO variations: clockwise or counter-clockwise",
     intensity: "Medium",
     variations: 2,
   },
@@ -342,7 +342,7 @@ export const CORE_PATTERN = {
   title: "The Core Pattern",
   subtitle: "Binary Synthesis",
   description: `Throughout The Kinetic Alphabet, a single mathematical pattern repeats at multiple levels:
-    Two elements exist as opposites of each other, and a third element fuses them—containing aspects of both.
+    Two elements exist as opposites of each other, and a third element fuses them-containing aspects of both.
     The fusion is often twice as large or has two internal halves.`,
   diagram: {
     thesis: "Thesis",

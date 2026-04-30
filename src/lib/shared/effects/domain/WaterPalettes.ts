@@ -1,7 +1,7 @@
 /**
  * Water palette registry.
  *
- * Backend-agnostic — both 2D (Water2DRenderer) and 3D (WaterRenderer3D)
+ * Backend-agnostic - both 2D (Water2DRenderer) and 3D (WaterRenderer3D)
  * resolve a WaterIntent's palette field through `resolveWaterPalette()`
  * and then sample core/edge/highlight/splashTint/puddleTint as needed.
  */
@@ -10,15 +10,15 @@ import type { WaterIntent } from "./EffectsConfig";
 
 export interface WaterPalette {
   readonly id: WaterIntent["palette"];
-  /** Hex — dense droplet core. */
+  /** Hex - dense droplet core. */
   readonly core: string;
-  /** Hex — droplet rim. */
+  /** Hex - droplet rim. */
   readonly edge: string;
-  /** Hex — specular / wet sheen. */
+  /** Hex - specular / wet sheen. */
   readonly highlight: string;
-  /** Hex — splash burst tint (1f.iv). */
+  /** Hex - splash burst tint (1f.iv). */
   readonly splashTint: string;
-  /** Hex — ground-puddle tint (1f.iv). */
+  /** Hex - ground-puddle tint (1f.iv). */
   readonly puddleTint: string;
   /** True suppresses ground puddles (spirit palette). */
   readonly suppressPuddles?: boolean;

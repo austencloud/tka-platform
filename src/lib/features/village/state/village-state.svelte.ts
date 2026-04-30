@@ -1,5 +1,5 @@
 /**
- * Village State — Reactive bridge between headless ECS engine and Svelte/Threlte renderer.
+ * Village State - Reactive bridge between headless ECS engine and Svelte/Threlte renderer.
  *
  * The engine writes to plain ECS components. This state factory reads those components
  * each frame and pushes values into AvatarInstanceState wrappers that drive Avatar3D.
@@ -124,7 +124,7 @@ export function createVillageState(
 			let renderState = avatarStateMap.get(entity.id);
 
 			if (!renderState) {
-				// New entity — create AvatarInstanceState wrapper
+				// New entity - create AvatarInstanceState wrapper
 				const instanceState = createAvatarInstanceState(
 					{
 						id: entity.id,
@@ -151,7 +151,7 @@ export function createVillageState(
 				mapChanged = true;
 			}
 
-			// Set interpolation targets from engine (don't snap — lerp happens in lerpAvatars)
+			// Set interpolation targets from engine (don't snap - lerp happens in lerpAvatars)
 			renderState.targetX = entity.transform.x;
 			renderState.targetZ = entity.transform.z;
 			renderState.targetFacingAngle = entity.transform.facingAngle;
@@ -205,7 +205,7 @@ export function createVillageState(
 				// doesn't call updateLocomotion() which lerps toward the target.
 				inst.snapFacingAngle(Math.atan2(dx, dz));
 			} else {
-				// Idle — snap toward engine's facing (e.g. facing partner during teaching)
+				// Idle - snap toward engine's facing (e.g. facing partner during teaching)
 				const currentAngle = inst.facingAngle;
 				let angleDiff =
 					renderState.targetFacingAngle - currentAngle;
@@ -255,7 +255,7 @@ export function createVillageState(
 				}
 			}
 		} else {
-			// Not performing — stop playback
+			// Not performing - stop playback
 			if (instanceState.isPlaying) {
 				instanceState.pause();
 				instanceState.reset();

@@ -26,9 +26,9 @@ export interface RandomSequenceGenerationOptions {
   maxAttempts?: number;
   /** Optional letter sources from parsing (tracks which letters are bridges) */
   letterSources?: LetterSource[];
-  /** Difficulty level — filters variations by max turn count */
+  /** Difficulty level - filters variations by max turn count */
   level?: DifficultyLevel;
-  /** Turn intensity bias (0.0-2.0) — biases weighted selection toward higher or lower turns */
+  /** Turn intensity bias (0.0-2.0) - biases weighted selection toward higher or lower turns */
   turnIntensity?: number;
 }
 

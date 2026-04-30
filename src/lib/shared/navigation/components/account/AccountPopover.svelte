@@ -110,7 +110,7 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
     // (swapping in premium modules, pulling the user avatar, etc.), there's
     // no stale "Sign In" menu hanging over the top of it. Visually the user
     // sees the popover dismiss, the OAuth popup take focus, then the signed-in
-    // app on return — no double-update flash.
+    // app on return - no double-update flash.
     onClose();
     try {
       const authenticator = getAuthenticator();
@@ -134,7 +134,7 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
     return createPropPreferenceState(persister, userId);
   });
 
-  // Profile completeness nudges — each disappears once the user completes the action
+  // Profile completeness nudges - each disappears once the user completes the action
   const needsPhoto = $derived(isAuthenticated && !photoURL);
   const needsProp = $derived(
     isAuthenticated && propState && !propState.loading && !propState.favoriteProp
@@ -155,7 +155,7 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
     bind:this={popoverEl}
     style={popoverStyle}
   >
-    <!-- Identity header — clickable when authenticated, navigates to Settings > Account -->
+    <!-- Identity header - clickable when authenticated, navigates to Settings > Account -->
     {#if isAuthenticated}
       <button
         class="identity-header interactive"

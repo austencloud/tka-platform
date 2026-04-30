@@ -18,7 +18,7 @@ const STORAGE_KEY = "museum-editor-overrides";
 export interface PositionOverride {
   /** World-space X (Three.js) */
   x: number;
-  /** World-space Y (Three.js) — vertical */
+  /** World-space Y (Three.js) - vertical */
   y: number;
   /** World-space Z (Three.js) */
   z: number;

@@ -63,7 +63,7 @@ export function initPostHog(): void {
       maskInputOptions: {
         password: true,
       },
-      // Tell rrweb to skip elements with this class — their subtree won't be
+      // Tell rrweb to skip elements with this class - their subtree won't be
       // observed by MutationObserver, eliminating the 6x overhead on DOM-heavy
       // areas like the virtualized gallery grid. Blocked elements appear as
       // same-size placeholder rectangles in replay.

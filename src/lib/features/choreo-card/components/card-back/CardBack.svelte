@@ -1,5 +1,5 @@
 <!--
-  V7 "Brand-forward" — Choreo Cards branding as the hero, flexible content slots.
+  V7 "Brand-forward" - Choreo Cards branding as the hero, flexible content slots.
 
   Designed for physical printed cards. Fills its parent container and
   scales proportionally using container query units (cqi).
@@ -9,7 +9,7 @@
     Content: Mandala (fixed center), deck designation labels (TKA + VTG)
     Footer:  Start position pictograph (left, shows props for chaining) | (future: duration) | step count
 
-  Level badge and LOOP icons are NOT on the physical card — they live in the
+  Level badge and LOOP icons are NOT on the physical card - they live in the
   software's sequence viewer. This keeps the printed card as its own clean
   artifact that doesn't try to mirror the software UI.
 -->
@@ -49,7 +49,7 @@ import { onMount } from "svelte";
 
 <!-- Outer: themed gradient border -->
 <div class="border-frame" style="background: {theme.borderGradient};">
-  <!-- Inner: full flex column — header, content, footer all flow naturally -->
+  <!-- Inner: full flex column - header, content, footer all flow naturally -->
   <div class="back" style="background: {theme.background};">
     <CardBackDecorations theme={settingsService.settings.backgroundType ?? "nightSky"} />
 

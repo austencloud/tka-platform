@@ -8,7 +8,7 @@
  *   combined: 24 × 24 = 576 poses
  *
  * Cross-plane combinations (blue on wall, red on wheel, etc.) are exactly
- * where the hard collision cases live — a single-plane catalog would miss
+ * where the hard collision cases live - a single-plane catalog would miss
  * the main problem the lab exists to solve.
  *
  * The enumeration order is deterministic:
@@ -36,7 +36,7 @@ const PLANE_CODE: Record<Plane, string> = {
   [Plane.WALL]: "w",
   [Plane.WHEEL]: "h",
   [Plane.FLOOR]: "f",
-  // Fusion planes — not enumerated in Phase 1 but listed for exhaustiveness
+  // Fusion planes - not enumerated in Phase 1 but listed for exhaustiveness
   [Plane.RIGHT_SHIELD]: "rs",
   [Plane.LEFT_SHIELD]: "ls",
   [Plane.FORWARD_RAMP]: "fr",

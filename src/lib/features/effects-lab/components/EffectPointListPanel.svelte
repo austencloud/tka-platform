@@ -6,11 +6,11 @@
   shared by all effects.
 
   Keyboard navigation:
-    Up/Down arrows  — move between points
-    Enter           — focus dx input for editing
-    Tab             — dx → dy → next point's dx (skips action buttons)
-    Escape          — return focus to point row
-    Delete          — delete selected point
+    Up/Down arrows  - move between points
+    Enter           - focus dx input for editing
+    Tab             - dx → dy → next point's dx (skips action buttons)
+    Escape          - return focus to point row
+    Delete          - delete selected point
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -150,7 +150,7 @@
             // else: let Tab naturally leave the list
           }
         } else {
-          // Shift+Tab: reverse — dy → dx → previous point's dy
+          // Shift+Tab: reverse - dy → dx → previous point's dy
           if (field === "dy") {
             e.preventDefault();
             const dxInput = dxInputEls[pointIndex];
@@ -185,7 +185,7 @@
               });
             }
           } else {
-            // Last point — return to row
+            // Last point - return to row
             rowEls[pointIndex]?.focus();
           }
         }

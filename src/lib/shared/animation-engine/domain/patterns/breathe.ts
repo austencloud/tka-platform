@@ -19,7 +19,7 @@ export function evaluateBreathe(ctx: TipEvaluationContext): LedColor {
 
 /**
  * Pulse pattern: sharp flash followed by exponential decay.
- * Like a strobe with a long tail — bright at the top of each cycle,
+ * Like a strobe with a long tail - bright at the top of each cycle,
  * then fades quickly to black. More energetic than Breathe.
  */
 export function evaluatePulse(ctx: TipEvaluationContext): LedColor {

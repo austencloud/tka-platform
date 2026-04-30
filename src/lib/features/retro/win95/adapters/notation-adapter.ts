@@ -189,7 +189,7 @@ export async function saveRetroSequence(
   const repo = getLibraryRepository() as ILibraryRepository;
 
   // Turn "FIRFLOWB" into "Firflowb" as a display-friendly name.
-  // The user chose the name in the DOS save dialog — keep it simple.
+  // The user chose the name in the DOS save dialog - keep it simple.
   const humanName = dosName
     .replace(/_/g, " ")
     .toLowerCase()

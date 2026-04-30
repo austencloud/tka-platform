@@ -8,7 +8,7 @@
  *
  * Petals have persistent particle state (falling particles + per-petal
  * sway phase), so unlike bloom we do NOT clear accumulated state on each
- * frame — only the canvas pixels. The pool is cleared on dispose() or
+ * frame - only the canvas pixels. The pool is cleared on dispose() or
  * explicit clear().
  */
 

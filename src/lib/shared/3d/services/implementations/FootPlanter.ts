@@ -13,7 +13,7 @@
  * 5. Adjust Hips Y so the lowest planted foot doesn't over-extend the chain
  * 6. Blend between animation pose and IK solution based on contact weight
  *
- * Uses the same IKSolver.solveTwoBone() that arm IK uses — the math is
+ * Uses the same IKSolver.solveTwoBone() that arm IK uses - the math is
  * identical, just applied to leg chains with a forward pole hint (knees
  * bend forward, not backward like elbows).
  */
@@ -83,7 +83,7 @@ export class FootPlanter implements IFootPlanter {
   private rightLegChain: BoneChain | null = null;
 
   // Per-leg hinge axes derived from bind-pose rest directions at init time.
-  // These never change during playback — the knee is a hinge, not a ball joint.
+  // These never change during playback - the knee is a hinge, not a ball joint.
   private leftKneeHingeAxis = new Vector3(1, 0, 0);
   private rightKneeHingeAxis = new Vector3(1, 0, 0);
 
@@ -110,7 +110,7 @@ export class FootPlanter implements IFootPlanter {
     this.initialized = !!(this.leftLegChain && this.rightLegChain);
 
     if (!this.initialized) {
-      console.warn("[FootPlanter] Leg chains not available — foot IK disabled");
+      console.warn("[FootPlanter] Leg chains not available - foot IK disabled");
       return;
     }
 
@@ -132,7 +132,7 @@ export class FootPlanter implements IFootPlanter {
     if (!this.initialized || !this.skeleton || !this.legIKSolver) return;
     if (!this.leftLegChain || !this.rightLegChain) return;
 
-    // Skip foot planting during airborne states — let the animation play freely
+    // Skip foot planting during airborne states - let the animation play freely
     if (
       input.locomotionState === LocomotionState.JUMPING ||
       input.locomotionState === LocomotionState.FALLING
@@ -237,7 +237,7 @@ export class FootPlanter implements IFootPlanter {
     const dz = currentPos.z - foot.prevWorldPos.z;
     const rawVelocity = Math.sqrt(dx * dx + dy * dy + dz * dz) / dt;
 
-    // Exponential smoothing — 0.3 gives quick response while filtering spikes
+    // Exponential smoothing - 0.3 gives quick response while filtering spikes
     const smoothFactor = 0.3;
     foot.smoothedVelocity += (rawVelocity - foot.smoothedVelocity) * smoothFactor;
     // NOTE: prevWorldPos is updated in the main update() method AFTER velocity
@@ -260,7 +260,7 @@ export class FootPlanter implements IFootPlanter {
   ): void {
     // Contact curve path: if the current clip has authored curves, use them
     // instead of velocity detection. Curves are authoritative because turn
-    // clips have pivot feet with zero velocity for their entire stance phase —
+    // clips have pivot feet with zero velocity for their entire stance phase -
     // the velocity heuristic would either lock too aggressively or miss the
     // planting entirely depending on how the threshold is tuned.
     if (
@@ -289,7 +289,7 @@ export class FootPlanter implements IFootPlanter {
       return;
     }
 
-    // Velocity fallback (existing behavior — preserved exactly)
+    // Velocity fallback (existing behavior - preserved exactly)
     const threshold = this.config.contactVelocityThreshold;
 
     if (foot.smoothedVelocity < threshold) {
@@ -303,7 +303,7 @@ export class FootPlanter implements IFootPlanter {
         );
         foot.isLocked = true;
       } else {
-        // Already locked — check if the target has drifted too far from the hip.
+        // Already locked - check if the target has drifted too far from the hip.
         // If the character has moved but the foot is still locked at its old position,
         // the leg would stretch impossibly. Unlock when target exceeds chain reach.
         legChain.root.getWorldPosition(this.tempFootWorld);
@@ -317,7 +317,7 @@ export class FootPlanter implements IFootPlanter {
         }
       }
     } else {
-      // Foot is moving — release the lock
+      // Foot is moving - release the lock
       foot.isLocked = false;
     }
   }

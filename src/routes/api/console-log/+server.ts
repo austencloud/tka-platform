@@ -21,7 +21,7 @@ function sanitizeLogInput(input: string): string {
 }
 
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  // Never expose in production — returns 404 so the endpoint doesn't even appear to exist
+  // Never expose in production - returns 404 so the endpoint doesn't even appear to exist
   if (!dev) {
     return new Response(null, { status: 404 });
   }

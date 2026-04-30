@@ -58,7 +58,7 @@
   <div class="data-block">
     <div class="data-row">
       <span class="key">Beat #</span>
-      <span class="val">{displayData?.stepNumber ?? "—"}</span>
+      <span class="val">{displayData?.stepNumber ?? "-"}</span>
     </div>
     <div class="data-row">
       <span class="key">Letter</span>
@@ -86,15 +86,15 @@
     </div>
     <div class="data-row">
       <span class="key">Blue Rev</span>
-      <span class="val">{displayData?.blueReversal ?? "—"}</span>
+      <span class="val">{displayData?.blueReversal ?? "-"}</span>
     </div>
     <div class="data-row">
       <span class="key">Red Rev</span>
-      <span class="val">{displayData?.redReversal ?? "—"}</span>
+      <span class="val">{displayData?.redReversal ?? "-"}</span>
     </div>
     <div class="data-row">
       <span class="key">ID</span>
-      <span class="val mono small">{displayData?.id ?? "—"}</span>
+      <span class="val mono small">{displayData?.id ?? "-"}</span>
     </div>
   </div>
 

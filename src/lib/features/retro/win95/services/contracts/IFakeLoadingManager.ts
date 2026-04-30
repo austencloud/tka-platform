@@ -1,5 +1,5 @@
 /**
- * IFakeLoadingManager — Contract for theatrical loading sequences
+ * IFakeLoadingManager - Contract for theatrical loading sequences
  *
  * Drives the lying progress bars that make TKA-OS feel authentic.
  * Progress jumps forward erratically, occasionally regresses, and

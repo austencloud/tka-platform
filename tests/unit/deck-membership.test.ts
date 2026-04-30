@@ -40,7 +40,7 @@ function deck(p: Partial<Deck>): Deck {
 
 const providers = {
   analyzeLevel: () => 1,
-  analyzeLoop: () => ({ loopType: "rotated", sliceSize: "halved" as const }),
+  analyzeLoop: () => ({ loopType: "rotated", period: "halved" as const }),
 };
 
 describe("buildSignals", () => {

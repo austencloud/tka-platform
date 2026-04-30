@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-  <title>1.0 Positions & Motions — Level 1 Guide</title>
+  <title>1.0 Positions & Motions - Level 1 Guide</title>
 </svelte:head>
 
 <h1>Positions & Motions</h1>

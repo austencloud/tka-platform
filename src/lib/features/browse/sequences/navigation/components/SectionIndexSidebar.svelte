@@ -1,5 +1,8 @@
 <script lang="ts">
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
   import type { SequenceSection } from "../../../shared/domain/models/browse-models";
+
+  const TKA_LETTER_RE = /^[a-zA-ZͰ-Ͽ⊕]-?$/;
 
   interface Props {
     sections: SequenceSection[];
@@ -195,7 +198,11 @@
           title={marker.title}
           aria-label="Jump to {marker.label}"
         >
-          {marker.label}
+          {#if TKA_LETTER_RE.test(marker.label)}
+            <TKAWordGlyph word={marker.label} height={18} />
+          {:else}
+            {marker.label}
+          {/if}
         </button>
       {/each}
     {/if}
@@ -401,6 +408,30 @@
     border-radius: 3px 0 0 3px;
     background: var(--theme-accent, #6366f1);
     box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  }
+
+  .marker :global(.glyph img) {
+    filter: brightness(0) invert(1);
+    opacity: 0.5;
+    transition: opacity 180ms ease;
+  }
+
+  .marker:hover :global(.glyph img) {
+    opacity: 1;
+  }
+
+  .marker.active :global(.glyph img) {
+    opacity: 1;
+  }
+
+  .marker :global(.dash-bar) {
+    opacity: 0.5;
+    transition: opacity 180ms ease;
+  }
+
+  .marker:hover :global(.dash-bar),
+  .marker.active :global(.dash-bar) {
+    opacity: 1;
   }
 
   .marker:focus-visible {

@@ -795,7 +795,7 @@ function detectLOOPType(sequence) {
     loopType,
     components: detectedComponents,
     confidence,
-    sliceSize: "halved",
+    period: "halved",
     details: results,
     beatPairDetails,
   };

@@ -1,7 +1,7 @@
 /**
  * Canonical effect parameter schema.
  *
- * Owned by neither 2D nor 3D — both backends translate from it via
+ * Owned by neither 2D nor 3D - both backends translate from it via
  * pure functions in src/lib/shared/effects/translators/.
  *
  * The intent layer describes what the user meant (fire intensity,
@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 14;
+export const EFFECTS_CONFIG_VERSION = 15;
 
 export type EffectType =
   | "none"
@@ -34,7 +34,8 @@ export type EffectType =
   | "smoke"
   | "ink"
   | "frost"
-  | "silk";
+  | "silk"
+  | "pulse";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -91,45 +92,45 @@ export interface CharcoalIntent {
 }
 
 export interface ZapIntent {
-  /** 0-1 — overall arc brightness + branch count. */
+  /** 0-1 - overall arc brightness + branch count. */
   intensity: number;
-  /** Hex string — color for the blue (left) hand's zap output. */
+  /** Hex string - color for the blue (left) hand's zap output. */
   leftColor: string;
-  /** Hex string — color for the red (right) hand's zap output. */
+  /** Hex string - color for the red (right) hand's zap output. */
   rightColor: string;
   /** 1-30 strikes per second. */
   frequency: number;
   /** 'arc' = tip-to-tip arc. 'crackle' = radiate from each tip. */
   mode: "arc" | "crackle";
-  /** 0-1 — probability each arc segment spawns a branch. */
+  /** 0-1 - probability each arc segment spawns a branch. */
   branching: number;
 }
 
 export interface SparklesIntent {
-  /** 0-1 — particle spawn rate multiplier. */
+  /** 0-1 - particle spawn rate multiplier. */
   rate: number;
-  /** 0-1 — particle scale multiplier. */
+  /** 0-1 - particle scale multiplier. */
   size: number;
   /** 0.1-3.0 seconds. */
   lifetime: number;
-  /** Hex string — primary tint when colorMode === "solid". */
+  /** Hex string - primary tint when colorMode === "solid". */
   color: string;
   /** Multicolor palette (3-5 hex). Used when colorMode === "palette". */
   palette: string[];
   /** "solid" = use color, "rainbow" = HSL cycle, "palette" = pick random from palette. */
   colorMode: "solid" | "rainbow" | "palette";
-  /** 0-30 px — radius around the tip particles spawn within. */
+  /** 0-30 px - radius around the tip particles spawn within. */
   spread: number;
-  /** 0-1 — 0 = floaty (low gravity), 1 = fast fall (high gravity). */
+  /** 0-1 - 0 = floaty (low gravity), 1 = fast fall (high gravity). */
   gravity: number;
   /** 'burst' = sudden bloom on motion, 'stream' = continuous, 'trail' = follows tip path. */
   mode: "burst" | "stream" | "trail";
 }
 
 export interface EchoIntent {
-  /** 0-1 — phantom peak alpha. */
+  /** 0-1 - phantom peak alpha. */
   intensity: number;
-  /** 1-8 — how many beats a phantom persists before fully fading. */
+  /** 1-8 - how many beats a phantom persists before fully fading. */
   decay: number;
   /** Capture interval in beats. 1 = every beat, 0.5 = every half-beat, 2 = every other beat. */
   interval: number;
@@ -137,20 +138,20 @@ export interface EchoIntent {
   shape: "staff" | "tips" | "both";
   /** "solid" = use color, "rainbow" = hue shifts per-beat, "prop-matched" = blue tips blue / red tips red, "gradient" = hue shifts per-phantom-age. */
   colorMode: "solid" | "rainbow" | "prop-matched" | "gradient";
-  /** Hex — when colorMode === "solid". */
+  /** Hex - when colorMode === "solid". */
   color: string;
-  /** 1-8 — stroke width / tip dot size in 2D. */
+  /** 1-8 - stroke width / tip dot size in 2D. */
   thickness: number;
 }
 
 export interface BloomIntent {
-  /** 0-1 — peak alpha at halo center. */
+  /** 0-1 - peak alpha at halo center. */
   intensity: number;
-  /** 8-200 px — halo radius in 2D. 3D billboard scales proportionally. */
+  /** 8-200 px - halo radius in 2D. 3D billboard scales proportionally. */
   radius: number;
-  /** Hex — used when colorMode === "solid". */
+  /** Hex - used when colorMode === "solid". */
   color: string;
-  /** Multicolor palette (3-5 hex) — used when colorMode === "palette". */
+  /** Multicolor palette (3-5 hex) - used when colorMode === "palette". */
   palette: string[];
   /**
    * "solid" = use color.
@@ -161,9 +162,9 @@ export interface BloomIntent {
   colorMode: "solid" | "prop-matched" | "rainbow" | "palette";
   /** "smooth" = gaussian falloff, "sharp" = tighter hot core, "ring" = hollow corona. */
   falloff: "smooth" | "sharp" | "ring";
-  /** 0-1 — breathing amplitude (0 = static halo, 1 = full on/off pulse). */
+  /** 0-1 - breathing amplitude (0 = static halo, 1 = full on/off pulse). */
   pulse: number;
-  /** 0.25-4 Hz — pulse frequency. */
+  /** 0.25-4 Hz - pulse frequency. */
   pulseRate: number;
 }
 
@@ -232,7 +233,7 @@ export interface PetalsIntent {
 
 export interface InkIntent {
   /**
-   * 0-1. Ambient drip rate at rest. Hard-capped at 0.3 in the renderer —
+   * 0-1. Ambient drip rate at rest. Hard-capped at 0.3 in the renderer -
    * ink is motion-dominant. User can still dial up but even at max it
    * stays subtle. This is ink, not rain.
    */
@@ -269,7 +270,7 @@ export interface SmokeIntent {
   /** 0-1. Overall puff size + opacity. */
   intensity: number;
   /**
-   * Named palette. Personality-laden — palette carries behavioral DNA
+   * Named palette. Personality-laden - palette carries behavioral DNA
    * (lifetime, curl bias, rise bias) alongside color. "custom" uses
    * customColor with neutral behavior defaults.
    */
@@ -322,10 +323,41 @@ export interface SilkIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
+export interface PulseIntent {
+  /** 0-1. Ring peak alpha + brightness. */
+  intensity: number;
+  /** 0-1. Max ring expansion radius. Maps to 20-200px. */
+  reach: number;
+  /** 0.2-3.0 seconds. Ring lifetime from birth to full fade. */
+  lifetime: number;
+  /** "beat" = on beat onsets, "velocity" = on acceleration threshold, "continuous" = steady emission amplified by beats. */
+  trigger: "beat" | "velocity" | "continuous";
+  /** "stroke" = thin expanding outlines, "glow" = gradient-filled halos with bright leading edge. */
+  style: "stroke" | "glow";
+  /** 1-8. Beat interval for beat trigger. */
+  beatInterval: number;
+  /** 0-1. Velocity threshold for velocity trigger. */
+  velocityThreshold: number;
+  /** 0-1. Ring stroke width or gradient band thickness. */
+  thickness: number;
+  /** Named palette. "custom" uses customColor. */
+  palette: "sonar" | "ripple" | "aurora" | "neon" | "ember" | "void" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /** Color selection mode. */
+  colorMode: "solid" | "prop-matched" | "rainbow" | "palette";
+  /** Hex - when colorMode === "solid". */
+  color: string;
+  /** Multicolor palette (3-5 hex) - when colorMode === "palette". */
+  colorPalette: string[];
+  /** Which staff end(s) emit rings. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
 /**
  * Backend-specific override storage. Populated only when the user
  * has explicitly edited a backend-only parameter via an Advanced
- * panel (Phase D). Intentionally untyped here — concrete shapes
+ * panel (Phase D). Intentionally untyped here - concrete shapes
  * live with the translators.
  */
 export interface EffectsOverrides {
@@ -359,6 +391,8 @@ export interface EffectsOverrides {
   frost3D?: Record<string, unknown>;
   silk2D?: Record<string, unknown>;
   silk3D?: Record<string, unknown>;
+  pulse2D?: Record<string, unknown>;
+  pulse3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -379,6 +413,7 @@ export interface EffectsConfig {
   ink: InkIntent;
   frost: FrostIntent;
   silk: SilkIntent;
+  pulse: PulseIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
@@ -395,6 +430,7 @@ export interface EffectsConfig {
     ink: string | null;
     frost: string | null;
     silk: string | null;
+    pulse: string | null;
   };
   overrides?: EffectsOverrides;
 }

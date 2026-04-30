@@ -126,7 +126,7 @@
       window.localStorage.removeItem("emailForSignIn");
 
       // The magic link's continueUrl already landed the user inside the app
-      // (e.g. /create). No extra navigation needed — sending them to "/" would
+      // (e.g. /create). No extra navigation needed - sending them to "/" would
       // bounce them back to the marketing landing page.
     } catch (err: any) {
       console.error(`❌ [email-link] Sign-in error:`, err);

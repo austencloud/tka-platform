@@ -8,8 +8,8 @@ import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/contr
  * proportionally sized on any canvas.
  *
  * `min()` is used so a narrow viewport (e.g. iPhone portrait) scales by
- * its constrained dimension — the one that actually limits visual real
- * estate — rather than the longer dimension.
+ * its constrained dimension - the one that actually limits visual real
+ * estate - rather than the longer dimension.
  *
  * Matches the existing sizeScale computation in Canvas2DTrailRenderer so
  * trails and the particle-based effects share one baseline.

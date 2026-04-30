@@ -1,5 +1,5 @@
 /* ==========================================================================
-   rail-tile.css — shared bento primitive
+   rail-tile.css - shared bento primitive
    Mirrors the .rail-chip visual language from RenderModeToggle / RightRail
    so mobile bento tiles and the canvas toggle chips belong to the same
    visual family.
@@ -113,7 +113,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Effort tile — border/glow uses --effort-color */
+/* Effort tile - border/glow uses --effort-color */
 .rt-tile.rt-effort {
   border-color: color-mix(in srgb, var(--effort-color, #94a3b8) 45%, rgba(255, 255, 255, 0.1));
   box-shadow: 0 4px 16px color-mix(in srgb, var(--effort-color, #94a3b8) 18%, rgba(0, 0, 0, 0.4));
@@ -123,7 +123,7 @@
   color: var(--effort-color, #94a3b8);
 }
 
-/* Inline stepper (Columns, Loops) — lives inside a tile */
+/* Inline stepper (Columns, Loops) - lives inside a tile */
 .rt-stepper {
   display: flex;
   align-items: center;
@@ -173,7 +173,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Split-pill (Theme: Light | Dark) — two halves inside a tile */
+/* Split-pill (Theme: Light | Dark) - two halves inside a tile */
 .rt-split {
   display: flex;
   padding: 3px;
@@ -252,7 +252,7 @@
 }
 
 /* ==========================================================================
-   Sheet/panel body primitives — sections, chips, rows.
+   Sheet/panel body primitives - sections, chips, rows.
    Originally defined as :global(.bento-sheet-body .rt-*) inside
    RailBentoSheet.svelte. Promoted here so the same primitives apply inside
    the desktop inline pill body (.pill-body-inline) without requiring the

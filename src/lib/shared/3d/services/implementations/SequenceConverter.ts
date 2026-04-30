@@ -179,7 +179,7 @@ export class SequenceConverter implements ISequenceConverter {
         ? {
             plane: bluePlane,
             startLocation: blueMotion.startLocation,
-            endLocation: blueMotion.startLocation, // static — no movement
+            endLocation: blueMotion.startLocation, // static - no movement
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
             turns: 0,

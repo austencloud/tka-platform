@@ -1,5 +1,5 @@
 /**
- * FileNameConverter — DOS 8.3 filename conversion
+ * FileNameConverter - DOS 8.3 filename conversion
  *
  * Converts human-readable sequence names into the 8.3 filename
  * format used by TKA-OS's FAT16 filesystem. Mimics the behavior
@@ -41,7 +41,7 @@ export class FileNameConverter implements IFileNameConverter {
 			return directCandidate;
 		}
 
-		/* Collision detected — apply ~N suffix */
+		/* Collision detected - apply ~N suffix */
 		for (let n = 1; n <= 99; n++) {
 			const suffix = `~${n}`;
 			const maxBase = 8 - suffix.length;

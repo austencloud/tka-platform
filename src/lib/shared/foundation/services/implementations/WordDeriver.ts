@@ -36,7 +36,7 @@ export class WordDeriver implements IWordDeriver {
       if (derived) return derived;
     }
 
-    // Steps aren't persisted to Firestore — they're derived at load time by the
+    // Steps aren't persisted to Firestore - they're derived at load time by the
     // hydrator. If hydration hasn't run yet, stepPairings still has the letters.
     if (sequence.stepPairings && sequence.stepPairings.length > 0) {
       const derived = sequence.stepPairings

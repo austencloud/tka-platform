@@ -1,5 +1,5 @@
 /**
- * PixelRenderer — 1995 Win95 pixel pictograph renderer.
+ * PixelRenderer - 1995 Win95 pixel pictograph renderer.
  *
  * Renders TKA pictographs at 128×128 using era-native drawing:
  *   - Flat gray grid (no anti-aliasing, no shadows)
@@ -12,7 +12,7 @@
  *
  * Extends EraRendererBase which handles SVG wrapping, image loading,
  * color tinting, coordinate scaling, and data conversion. This renderer
- * draws flat shapes in Win16 colors then dithers — the modern high-res
+ * draws flat shapes in Win16 colors then dithers - the modern high-res
  * downsample pipeline is gone.
  *
  * Domain: 1995 TKA Notation System
@@ -104,7 +104,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 	}
 
 	// --------------------------------------------------------------------------
-	// IEraRenderer — primary entry point
+	// IEraRenderer - primary entry point
 	// --------------------------------------------------------------------------
 
 	async render(
@@ -118,7 +118,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
-		// Disable smoothing — we want the hard pixel edges of Win95
+		// Disable smoothing - we want the hard pixel edges of Win95
 		ctx.imageSmoothingEnabled = false;
 
 		// White background
@@ -146,7 +146,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 	}
 
 	// --------------------------------------------------------------------------
-	// Placeholder — Win95-styled silver "?" card
+	// Placeholder - Win95-styled silver "?" card
 	// --------------------------------------------------------------------------
 
 	override renderPlaceholder(canvas: HTMLCanvasElement, size: number = 128): void {
@@ -286,7 +286,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 				this.drawTintedElement(ctx, img, drawParams, eraColor);
 				ctx.restore();
 			} catch {
-				// Non-fatal — skip this prop if asset loading fails
+				// Non-fatal - skip this prop if asset loading fails
 			}
 		}
 	}
@@ -298,7 +298,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 	/**
 	 * Draw both arrows tinted to flat Win16 colors. No shadows.
 	 *
-	 * The center adjustment formula mirrors Canvas2DDirectRenderer exactly —
+	 * The center adjustment formula mirrors Canvas2DDirectRenderer exactly -
 	 * subtract the viewBox origin (which may be negative) and add the expansion
 	 * offset so the pivot lands on the correct pixel.
 	 */
@@ -362,7 +362,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 				this.drawTintedElement(ctx, img, drawParams, eraColor);
 				ctx.restore();
 			} catch {
-				// Non-fatal — skip this arrow if asset loading fails
+				// Non-fatal - skip this arrow if asset loading fails
 			}
 		}
 	}
@@ -373,7 +373,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 
 	/**
 	 * Draw a flat gray circle at each hand position.
-	 * No highlight layers, no shadow — flat Win95 style.
+	 * No highlight layers, no shadow - flat Win95 style.
 	 */
 	private drawHandDots(
 		ctx: CanvasRenderingContext2D,
@@ -423,7 +423,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 
 	/**
 	 * Apply ordered 4×4 Bayer dithering to quantize every pixel to the nearest
-	 * Win16 palette color. Pure black and pure white pass through unchanged —
+	 * Win16 palette color. Pure black and pure white pass through unchanged -
 	 * they are already in the palette and dithering them would create noise.
 	 */
 	private applyDithering(ctx: CanvasRenderingContext2D, size: number): void {
@@ -437,7 +437,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 				const g = data[idx + 1]!;
 				const b = data[idx + 2]!;
 
-				// Skip pure white and pure black — already in palette
+				// Skip pure white and pure black - already in palette
 				if (r === 255 && g === 255 && b === 255) continue;
 				if (r === 0   && g === 0   && b === 0  ) continue;
 
@@ -464,7 +464,7 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 	 * Draw a tinted prop or arrow by mirroring the same transform pipeline as
 	 * drawElementWithTransform, then delegating to drawTintedImage.
 	 *
-	 * This is the same pattern used by XPRenderer — the transform is applied
+	 * This is the same pattern used by XPRenderer - the transform is applied
 	 * manually here so the tint OffscreenCanvas can be drawn at (0,0) within
 	 * the already-transformed context.
 	 */

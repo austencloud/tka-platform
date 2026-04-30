@@ -38,6 +38,7 @@ import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/dis
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { periodToNumber } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
 function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
@@ -123,7 +124,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       }
 
       // Detect circularity and LOOP type from step/motion data
-      const { isCircular, loopType, period } = await this.detectLoopInfo(firestore, sequence);
+      const { isCircular, loopType, period, components } = await this.detectLoopInfo(firestore, sequence);
 
       // Calculate numeric level from steps if available
       const level = sequence.steps?.length > 0
@@ -156,6 +157,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         isCircular,
         loopType,
         ...(period !== undefined && { period }),
+        ...(components && components.length > 0 && { components }),
         forkCount: sequence.forkCount ?? 0,
         viewCount: sequence.viewCount ?? 0,
         starCount: sequence.starCount ?? 0,
@@ -372,16 +374,18 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
   private async detectLoopInfo(
     firestore: Firestore,
     sequence: LibrarySequence
-  ): Promise<{ isCircular: boolean; loopType: string | null; period?: number }> {
+  ): Promise<{ isCircular: boolean; loopType: string | null; period?: number; components?: string[] }> {
     // Layer 1: Trust existing loopType on the sequence (set by LOOP generator)
     if (sequence.loopType) {
-      // Run detection anyway to get the period
+      // Run detection anyway to get the period and components
       try {
         const detection = loopDetector.detectLOOPType(sequence);
+        const display = resolveLoopDisplay(sequence);
         return {
           isCircular: true,
           loopType: sequence.loopType,
           period: detection.period ? periodToNumber(detection.period) : undefined,
+          components: display.components.size > 0 ? [...display.components] : undefined,
         };
       } catch {
         return { isCircular: true, loopType: sequence.loopType };
@@ -391,13 +395,14 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
     // Layer 2: Check loop-labels collection for human-curated override
     const curatedLoopType = await this.fetchLoopType(firestore, sequence.word);
     if (curatedLoopType) {
-      // Run detection to get the period
       try {
         const detection = loopDetector.detectLOOPType(sequence);
+        const display = resolveLoopDisplay(sequence);
         return {
           isCircular: true,
           loopType: curatedLoopType,
           period: detection.period ? periodToNumber(detection.period) : undefined,
+          components: display.components.size > 0 ? [...display.components] : undefined,
         };
       } catch {
         return { isCircular: true, loopType: curatedLoopType };
@@ -413,10 +418,12 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
     // Sequence is circular - run full LOOP type detection
     try {
       const detection = loopDetector.detectLOOPType(sequence);
+      const display = resolveLoopDisplay(sequence);
       return {
         isCircular: true,
         loopType: detection.loopType,
         period: detection.period ? periodToNumber(detection.period) : undefined,
+        components: display.components.size > 0 ? [...display.components] : undefined,
       };
     } catch (error) {
       console.warn(

@@ -7,6 +7,7 @@
   import { onMount } from "svelte";
   import type { TrainChallenge } from "../domain/models/TrainChallengeModels";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface XPBreakdown {
     baseXP: number;
@@ -94,7 +95,7 @@
       <div class="results-header">
         <h1>{t("train_training_complete")}</h1>
         {#if sequenceName}
-          <p class="sequence-name">{sequenceName}</p>
+          <p class="sequence-name"><TKAWordGlyph word={sequenceName} height={16} darkMode /></p>
         {/if}
       </div>
 

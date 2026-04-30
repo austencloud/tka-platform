@@ -215,7 +215,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     });
 
     if (allCached) {
-      // All cache hits — populate instantly, no progressive rendering
+      // All cache hits - populate instantly, no progressive rendering
       const cards: RenderedCard[] = [];
       const pairs: CardPair[] = [];
       for (const seq of seqs) {
@@ -348,7 +348,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     <div class="pages-scroll">
       {#each sheets as sheet, sheetIndex (sheetIndex)}
         <!-- Fronts page -->
-        <span class="page-label">Fronts — Sheet {sheetIndex + 1}</span>
+        <span class="page-label">Fronts - Sheet {sheetIndex + 1}</span>
         <div class="page">
           <div
             class="page-grid"
@@ -383,7 +383,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         </div>
 
         <!-- Backs page (columns mirrored for duplex) -->
-        <span class="page-label">Backs — Sheet {sheetIndex + 1}</span>
+        <span class="page-label">Backs - Sheet {sheetIndex + 1}</span>
         <div class="page">
           <div
             class="page-grid"

@@ -254,8 +254,8 @@ export class EffortHapticMapper implements IEffortHapticMapper {
 	/**
 	 * A curve event is a moment where something interesting happens:
 	 * - The curve reaches its target (first crossing of 1.0)
-	 * - A peak (local maximum) — overshoot, bounce apex
-	 * - A valley (local minimum) — bounce impact, pullback bottom
+	 * - A peak (local maximum) - overshoot, bounce apex
+	 * - A valley (local minimum) - bounce impact, pullback bottom
 	 */
 	private findCurveEvents(
 		samples: number[]
@@ -263,7 +263,7 @@ export class EffortHapticMapper implements IEffortHapticMapper {
 		const events: { t: number; magnitude: number }[] = [];
 
 		// Find the first time the curve reaches or exceeds ~0.9
-		// This is the "main hit" — always the strongest event
+		// This is the "main hit" - always the strongest event
 		let mainHitIndex = -1;
 		for (let i = 0; i < samples.length; i++) {
 			if (samples[i]! >= 0.9) {

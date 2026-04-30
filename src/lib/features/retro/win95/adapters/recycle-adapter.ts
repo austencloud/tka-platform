@@ -1,5 +1,5 @@
 /**
- * Recycle Adapter — bridges the soft-delete system into TKA-OS
+ * Recycle Adapter - bridges the soft-delete system into TKA-OS
  *
  * Maps soft-deleted LibrarySequences to DOS-style entries for the
  * Recycle Bin window. Exposes restore, purge, and empty-bin operations.

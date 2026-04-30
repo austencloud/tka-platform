@@ -1,5 +1,5 @@
 <!--
-  /1995/scribe, /1995/filemgr, etc. — Deep links into TKA-OS
+  /1995/scribe, /1995/filemgr, etc. - Deep links into TKA-OS
 
   Renders RetroDesktop and auto-opens the matching application window.
   Skips the boot sequence for deep links.

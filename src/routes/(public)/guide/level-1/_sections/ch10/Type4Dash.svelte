@@ -22,7 +22,7 @@
   ];
 </script>
 
-<GuideSection id="type-4-dash" title="Type 4 — Dash">
+<GuideSection id="type-4-dash" title="Type 4 - Dash">
   <p>
     With a Dash, one prop executes a dash and the other remains static.
   </p>

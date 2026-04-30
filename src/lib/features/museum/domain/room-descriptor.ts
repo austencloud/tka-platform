@@ -1,11 +1,11 @@
 /**
- * RoomDescriptor — lightweight cache entry that survives room teardown.
+ * RoomDescriptor - lightweight cache entry that survives room teardown.
  *
  * When the progressive loading system tears down a room's geometry (because
  * the player moved away), it keeps a RoomDescriptor in memory instead of
  * discarding all that work. When the player returns to that room, the
  * descriptor lets us skip the tile-bucketing phase and jump straight to
- * mesh creation — shaving the rebuild from ~200ms down to ~20ms.
+ * mesh creation - shaving the rebuild from ~200ms down to ~20ms.
  *
  * A descriptor is ~2-5KB in memory, compared to the full Three.js geometry
  * which can be 10-50MB. All 16 descriptors together are smaller than a
@@ -143,7 +143,7 @@ export function serializeDescriptor(desc: RoomDescriptor): string {
 
 /**
  * Restores a descriptor from the JSON string produced by serializeDescriptor().
- * Types are cast directly — the descriptor contains only plain values (no Maps,
+ * Types are cast directly - the descriptor contains only plain values (no Maps,
  * no class instances, no Three.js objects) so parse is a safe round-trip.
  */
 export function deserializeDescriptor(json: string): RoomDescriptor {

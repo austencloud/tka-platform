@@ -142,7 +142,7 @@ function createVoiceControlState() {
       try {
         const stored = sessionStorage.getItem(COMMAND_MODE_KEY);
         if (stored === "1") {
-          // Don't remove yet — enterCommandMode will re-set it.
+          // Don't remove yet - enterCommandMode will re-set it.
           // But clear it so a full page reload doesn't restore stale state.
           // We use a timestamp check instead: only restore if the flag is < 30s old.
           return true;

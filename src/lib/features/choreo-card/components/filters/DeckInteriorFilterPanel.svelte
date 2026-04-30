@@ -1,5 +1,5 @@
 <!--
-  DeckInteriorFilterPanel.svelte — Filter bar for the deck interior (Level 2).
+  DeckInteriorFilterPanel.svelte - Filter bar for the deck interior (Level 2).
   Family multi-select + start position filter.
 -->
 <script lang="ts">

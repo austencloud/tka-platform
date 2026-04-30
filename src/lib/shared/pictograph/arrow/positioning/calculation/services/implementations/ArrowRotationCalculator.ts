@@ -186,7 +186,7 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
     }
 
     // STEP 2: Use normal rotation maps (no override)
-    // For 0-turn dashes, always use the start/end pair map — rotation direction
+    // For 0-turn dashes, always use the start/end pair map - rotation direction
     // is meaningless at 0 turns and may be incorrectly set to cw/ccw
     if (isNoRotation(rotationDirection) || motion.turns === 0) {
       const key = `${motion.startLocation},${motion.endLocation}`;

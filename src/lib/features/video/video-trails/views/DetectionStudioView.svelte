@@ -21,10 +21,10 @@
   // Thumb end = the end nearest the performer's thumb (consistent grip reference).
   // Pinky end = the opposite end.
   const GUIDED_SEQUENCE: GuidedStep[] = [
-    { propIndex: 0, tipIndex: 0, label: "Left prop (blue) — thumb end", color: "#4a90d9" },
-    { propIndex: 0, tipIndex: 1, label: "Left prop (blue) — pinky end", color: "#4a90d9" },
-    { propIndex: 1, tipIndex: 0, label: "Right prop (red) — thumb end", color: "#d94a4a" },
-    { propIndex: 1, tipIndex: 1, label: "Right prop (red) — pinky end", color: "#d94a4a" },
+    { propIndex: 0, tipIndex: 0, label: "Left prop (blue) - thumb end", color: "#4a90d9" },
+    { propIndex: 0, tipIndex: 1, label: "Left prop (blue) - pinky end", color: "#4a90d9" },
+    { propIndex: 1, tipIndex: 0, label: "Right prop (red) - thumb end", color: "#d94a4a" },
+    { propIndex: 1, tipIndex: 1, label: "Right prop (red) - pinky end", color: "#d94a4a" },
   ];
 
   const { state: trailsState } = getVideoTrailsContext();
@@ -107,7 +107,7 @@
     // But actually, the cleanest approach: place a correction that nullifies it.
     // Since there's no "delete correction" method, we correct back to detected=null, corrected=null.
     // Actually, we need to remove it. Let's use correctEndpoint to set status to "accepted" with
-    // no corrected position — the corrector will pass through the detected value (which is null).
+    // no corrected position - the corrector will pass through the detected value (which is null).
     // This effectively removes the point from currentEndpoints.
     trailsState.correctEndpoint(entry.frame, {
       propIndex: entry.propIndex,
@@ -124,7 +124,7 @@
     }
   }
 
-  // Force canvas redraw counter — incremented when video seeks to a new frame,
+  // Force canvas redraw counter - incremented when video seeks to a new frame,
   // since videoElement.currentTime is a DOM property that Svelte can't track.
   let redrawTick = $state(0);
 

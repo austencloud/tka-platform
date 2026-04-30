@@ -1,9 +1,9 @@
 <!--
-  PictographHistoryLab.svelte — Synchronized pictograph gallery across 10 eras.
+  PictographHistoryLab.svelte - Synchronized pictograph gallery across 10 eras.
 
   Loads every Diamond + Box pictograph variation from the CSV dataframes and
   lets the user step through them. On each navigation, the current pictograph
-  is posted to all 10 era iframes so they re-render in sync — the same
+  is posted to all 10 era iframes so they re-render in sync - the same
   pictograph shown in 10 visual traditions simultaneously.
 
   Each era card has a feedback textarea (localStorage-persisted per
@@ -26,7 +26,7 @@
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
 
-  // Pixel size of the canonical render — each era scales it to fit its
+  // Pixel size of the canonical render - each era scales it to fit its
   // own grid diameter when compositing.
   const CANONICAL_SIZE = 500;
   const canvas2DRenderer = getCanvas2DRenderer();
@@ -88,13 +88,13 @@
 
   // ── Render mode: Smart | Canonical | Data ──
   //
-  //   "smart"     — each era gets its preferred path. Hand-drawn eras (cave,
+  //   "smart"     - each era gets its preferred path. Hand-drawn eras (cave,
   //                 egypt, mosaic, medieval, renaissance, woodblock) fall back
   //                 to their native data-driven primitives; technical/geometric
   //                 eras (blueprint, art-deco, bauhaus, punch-card) use canonical.
-  //   "canonical" — every era uses the canonical-compose path (clean SVG
+  //   "canonical" - every era uses the canonical-compose path (clean SVG
   //                 filtered through per-era palette + edge treatment).
-  //   "data"      — every era uses its native data-driven primitives. For
+  //   "data"      - every era uses its native data-driven primitives. For
   //                 technical eras this may look weaker, but lets you see each
   //                 era's hand-built vocabulary in isolation.
   type RenderMode = "smart" | "canonical" | "data";
@@ -196,7 +196,7 @@
   // real Canvas2DDirectRenderer (same pipeline the app uses everywhere). That
   // canvas contains all the correct arrows, staves, turns indicators, and
   // motion-type visuals (pro/anti/dash/float). Each era receives a fresh
-  // ImageBitmap clone to recolor and stylize — it never reinvents motion
+  // ImageBitmap clone to recolor and stylize - it never reinvents motion
   // geometry.
 
   let canonicalSource = $state<HTMLCanvasElement | null>(null);
@@ -274,7 +274,7 @@
     }
   }
 
-  // ── Data load — switches when gridMode toggles ──
+  // ── Data load - switches when gridMode toggles ──
 
   async function loadPictographs(mode: GridMode) {
     dataLoading = true;
@@ -431,7 +431,7 @@
 
       <div class="spacer"></div>
 
-      <div class="mode-toggle" title="Render mode — press M to cycle">
+      <div class="mode-toggle" title="Render mode - press M to cycle">
         <button
           class="mode-btn"
           class:active={renderMode === "smart"}
@@ -720,7 +720,7 @@
     border: none;
     display: block;
   }
-  /* Thumbnails shouldn't intercept pointer events — the overlay button does */
+  /* Thumbnails shouldn't intercept pointer events - the overlay button does */
   .era-card.thumb .era-frame iframe {
     pointer-events: none;
   }

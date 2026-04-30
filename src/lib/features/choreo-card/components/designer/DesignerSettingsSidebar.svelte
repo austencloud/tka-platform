@@ -2,7 +2,7 @@
   DesignerSettingsSidebar.svelte - Slide-out settings panel for the card designer
 
   Slides in from the right edge of the card preview area. Controls are wired
-  directly to the global state managers — the sidebar IS the control surface
+  directly to the global state managers - the sidebar IS the control surface
   for those managers, not a reflection of props passed down.
 -->
 <script lang="ts">

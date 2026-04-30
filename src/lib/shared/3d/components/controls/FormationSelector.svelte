@@ -40,7 +40,7 @@
       onclick={() => onchange(preset.id)}
       aria-label={preset.description}
       aria-pressed={value === preset.id}
-      title={disabledPresets?.has(preset.id) ? `${preset.name} — not valid for ${performerCount} performers` : preset.description}
+      title={disabledPresets?.has(preset.id) ? `${preset.name} - not valid for ${performerCount} performers` : preset.description}
       disabled={isDisabled}
     >
       <i class="fa-solid fa-{preset.icon}" aria-hidden="true"></i>

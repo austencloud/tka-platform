@@ -16,7 +16,7 @@ import {
 } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import {
   LOOPType,
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -56,7 +56,7 @@ describe("resolveLoopDisplay", () => {
 
       expect(result.components.has(LOOPComponent.ROTATED)).toBe(true);
       // Stored path can't recover slice size from a string — stays undefined.
-      expect(result.rotationSliceSize).toBeUndefined();
+      expect(result.rotationPeriod).toBeUndefined();
     });
 
     it("parses multiple components from a compound loopType", () => {
@@ -76,7 +76,7 @@ describe("resolveLoopDisplay", () => {
       const result = resolveLoopDisplay(seq);
 
       expect(result.components.size).toBe(0);
-      expect(result.rotationSliceSize).toBeUndefined();
+      expect(result.rotationPeriod).toBeUndefined();
     });
   });
 
@@ -141,7 +141,7 @@ describe("resolveLoopDisplay", () => {
       const result = resolveLoopDisplay(seq);
 
       expect(result.components.has(LOOPComponent.ROTATED)).toBe(true);
-      expect(result.rotationSliceSize).toBe(SliceSize.QUARTERED);
+      expect(result.rotationPeriod).toBe(Period.QUARTERED);
     });
 
     it("falls back to stored loopType when detection throws", () => {

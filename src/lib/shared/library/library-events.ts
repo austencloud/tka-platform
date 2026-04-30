@@ -6,11 +6,11 @@
  * THE PROBLEM:
  * The sequence detail panel (the drawer that slides open when you tap a sequence)
  * has a delete button. When you delete a sequence there, any other screen that's
- * showing that same sequence needs to remove it from its list — otherwise the
+ * showing that same sequence needs to remove it from its list - otherwise the
  * deleted sequence stays visible until the next page refresh.
  *
  * Similarly, the save panel creates new sequences that need to appear in the
- * browse gallery immediately — without a stale cache preventing them from showing.
+ * browse gallery immediately - without a stale cache preventing them from showing.
  *
  * The detail panel / save panel has no direct connection to those other screens,
  * so it can't just tell them directly.
@@ -20,13 +20,13 @@
  * Any screen that cares listens to that channel and updates its own list.
  *
  * EVENTS:
- * - tka:library-mutated        — fired after a sequence is deleted
- * - tka:library-sequence-added  — fired after a new sequence is saved
- * - tka:library-sequence-updated — fired after a sequence's metadata changes
+ * - tka:library-mutated        - fired after a sequence is deleted
+ * - tka:library-sequence-added  - fired after a new sequence is saved
+ * - tka:library-sequence-updated - fired after a sequence's metadata changes
  *
  * SCREENS THAT CURRENTLY LISTEN:
- * - browse-state-factory.svelte.ts  — the Browse gallery
- * - SequenceBrowser.svelte (Train)  — the sequence picker in Train mode
+ * - browse-state-factory.svelte.ts  - the Browse gallery
+ * - SequenceBrowser.svelte (Train)  - the sequence picker in Train mode
  *
  * TO ADD A NEW LISTENER:
  * 1. Call `onLibraryMutated(fn)`, `onLibrarySequenceAdded(fn)`, or
@@ -58,7 +58,7 @@ export function notifyLibraryMutated(sequenceId: string): void {
 
 /**
  * Listen for deleted sequences. The handler is called with the deleted sequence's ID
- * so you can remove it from your list. Returns a function that stops listening —
+ * so you can remove it from your list. Returns a function that stops listening -
  * inside a $effect this cleanup runs automatically when the screen is closed.
  *
  * @example
@@ -89,7 +89,7 @@ export function notifyLibrarySequenceAdded(sequence: SequenceData): void {
 /**
  * Listen for newly saved sequences. The handler is called with the full
  * SequenceData so the gallery can insert it without a Firestore round-trip.
- * Returns a cleanup function — inside a $effect this runs automatically.
+ * Returns a cleanup function - inside a $effect this runs automatically.
  *
  * @example
  * $effect(() => onLibrarySequenceAdded((sequence) => addToList(sequence)));
@@ -123,7 +123,7 @@ export function notifyLibrarySequenceUpdated(
 }
 
 /**
- * Listen for sequence metadata updates. Returns a cleanup function —
+ * Listen for sequence metadata updates. Returns a cleanup function -
  * inside a $effect this runs automatically when the screen is closed.
  *
  * @example

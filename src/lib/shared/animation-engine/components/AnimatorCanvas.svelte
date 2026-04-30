@@ -363,15 +363,21 @@ Last audit: 2025-12-27
       ? resolveLoopDisplay(sequenceData)
       : {
           components: new Set<LOOPComponent>(),
-          rotationSliceSize: undefined as
-            | import("$lib/features/create/generate/circular/domain/models/circular-models").SliceSize
+          rotationPeriod: undefined as
+            | import("$lib/features/create/generate/circular/domain/models/circular-models").Period
             | undefined,
+          inversionPeriod: undefined as
+            | import("$lib/features/create/generate/circular/domain/models/circular-models").Period
+            | undefined,
+          period: 1,
         }
   );
   const computedLoopComponents = $derived(
     loopDisplay.components.size > 0 ? loopDisplay.components : null
   );
-  const computedRotationSliceSize = $derived(loopDisplay.rotationSliceSize);
+  const computedRotationPeriod = $derived(loopDisplay.rotationPeriod);
+  const computedInversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const computedLoopPeriod = $derived(loopDisplay.period);
 
   // When an external caller (e.g. video export orchestrator) signals that the
   // fire frame cache is stale, invalidate it so the simulation re-records.
@@ -387,6 +393,16 @@ Last audit: 2025-12-27
       }
     }
   });
+
+  // --- EXPORT DIAGNOSTIC (remove after debugging) ---
+  if (typeof window !== 'undefined') {
+    (window as any).__tka_fire_diag = {
+      enable: () => engine.enableFireDiagnostics(),
+      disable: () => engine.disableFireDiagnostics(),
+      reset: () => engine.resetFireDiagnosticCounter(),
+      sample: () => engine.sampleFireCanvas(),
+    };
+  }
 
   // When an overlay effect (fire/charcoal/LED) fails repeatedly, the render loop
   // auto-disables it and fires this signal. Show a warning so the user knows.
@@ -555,7 +571,9 @@ Last audit: 2025-12-27
         activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
         difficultyLevel={computedDifficultyLevel}
         loopComponents={computedLoopComponents}
-        rotationSliceSize={computedRotationSliceSize}
+        rotationPeriod={computedRotationPeriod}
+        inversionPeriod={computedInversionPeriod}
+        loopPeriod={computedLoopPeriod}
       />
     </div>
 

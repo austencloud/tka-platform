@@ -40,7 +40,7 @@
 
     light.intensity = baseIntensity + (slow + medium + fast + crackle) * baseIntensity;
 
-    // Subtle color temperature shift — hotter/cooler with the flicker
+    // Subtle color temperature shift - hotter/cooler with the flicker
     const warmShift = 0.02 * Math.sin(elapsed * 2.3);
     light.color.setRGB(
       1.0,

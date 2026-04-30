@@ -22,7 +22,7 @@
     onClose: () => void;
   } = $props();
 
-  // Initialize from currentMap via $effect.pre — access through allProps to track reactively.
+  // Initialize from currentMap via $effect.pre - access through allProps to track reactively.
   // The drawer mounts fresh each time, so this runs once per lifecycle.
   let scope: Scope = $state<Scope>("cell");
   let localMap: TipEffectMap = $state<TipEffectMap>({});

@@ -41,7 +41,7 @@ export class MuseumRoomSerializer implements IMuseumRoomSerializer {
     try {
       parsed = JSON.parse(json);
     } catch {
-      errors.push({ path: "$", message: "JSON parse failed — not valid JSON" });
+      errors.push({ path: "$", message: "JSON parse failed - not valid JSON" });
       return { valid: false, errors };
     }
 

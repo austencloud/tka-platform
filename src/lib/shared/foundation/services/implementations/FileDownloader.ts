@@ -86,7 +86,7 @@ export class FileDownloader implements IFileDownloader {
 
   /**
    * Generate a safe filename from a string.
-   * Preserves Unicode letters and numbers (modern filesystems — NTFS, APFS, ext4 —
+   * Preserves Unicode letters and numbers (modern filesystems - NTFS, APFS, ext4 -
    * handle them fine). Strips only characters forbidden on Windows/macOS/Linux:
    * `< > : " / \ | ? *` and C0 control chars. Also trims trailing dots/spaces
    * (forbidden on Windows) and collapses any whitespace to single spaces.

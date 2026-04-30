@@ -1,5 +1,5 @@
 <!--
-  LevelsModule.svelte — Level progression labs (L4-L7 + Poi).
+  LevelsModule.svelte - Level progression labs (L4-L7 + Poi).
   Tabs appear in the sidebar.
 -->
 <script lang="ts">

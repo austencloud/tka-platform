@@ -9,7 +9,7 @@
   Plus a "More tuning…" button that swaps to the full existing
   *Customize.svelte component for the active effect.
 
-  Desktop EffectsPanel.svelte is untouched — this is the mobile variant.
+  Desktop EffectsPanel.svelte is untouched - this is the mobile variant.
   Shares state (VM + effects-config-context) and preset persistence with
   desktop, so switching between the two surfaces keeps settings aligned.
 -->
@@ -344,7 +344,7 @@
     display: none;
   }
 
-  /* Desktop grid variant — wraps tiles into rows that auto-fit the host width.
+  /* Desktop grid variant - wraps tiles into rows that auto-fit the host width.
      11 tiles + 8px gaps fit a 420px popover at 5 cols × 3 rows. */
   .fx-strip.grid {
     display: grid;

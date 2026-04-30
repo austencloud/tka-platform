@@ -85,11 +85,11 @@ describe("Sparkles2DRenderer", () => {
     r.render(ctx, params, tips, 1 / 60);
     const beforeCount = (r as any).particles.length;
     expect(beforeCount).toBeGreaterThan(0);
-    // Advance well past lifetime — older particles die; check life monotonicity.
+    // Advance well past lifetime - older particles die; check life monotonicity.
     for (let i = 0; i < 20; i++) r.render(ctx, params, tips, 1 / 60);
     const lives = (r as any).particles.map((p: any) => p.life);
     // Lifetime is jittered up to 1.4× the base in the renderer, so use a
-    // generous upper bound for this assertion — the point is monotonicity,
+    // generous upper bound for this assertion - the point is monotonicity,
     // not the exact cap.
     expect(Math.max(...lives, 0)).toBeLessThanOrEqual(params.lifetime * 1.4);
   });
@@ -191,7 +191,7 @@ describe("Sparkles2DRenderer scale", () => {
     const ctx = mockCtx();
     // Seed one frame so a particle exists
     r.render(ctx, baseParams, { bluePosA: { x: 10, y: 10 }, bluePosB: null, redPosA: null, redPosB: null }, 1 / 60, 1);
-    // Draw frame — triggers ctx.arc for the particle pinpoint
+    // Draw frame - triggers ctx.arc for the particle pinpoint
     const ctx2 = mockCtx();
     r.render(ctx2, baseParams, { bluePosA: { x: 10, y: 10 }, bluePosB: null, redPosA: null, redPosB: null }, 1 / 60, 1);
     const arcCalls = (ctx2.arc as unknown as { mock: { calls: unknown[][] } }).mock?.calls ?? [];

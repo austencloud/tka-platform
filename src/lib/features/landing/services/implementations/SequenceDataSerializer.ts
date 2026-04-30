@@ -22,7 +22,7 @@ export class SequenceDataSerializer implements ISequenceDataSerializer {
     if (settings) {
       sections.generationSettings = {
         loopType: settings.loopType,
-        sliceSize: settings.sliceSize,
+        period: settings.period,
         difficulty: settings.difficulty,
         turnIntensity: settings.turnIntensity,
         baseLength: settings.baseLength,

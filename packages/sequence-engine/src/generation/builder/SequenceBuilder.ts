@@ -44,9 +44,9 @@ import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js"
 import type { ConstraintOptions } from "../constraints/composition/constraint-options.js";
 import {
   LOOPType,
-  SliceSize,
+  Period,
   ROTATED_LOOP_TYPES,
-  periodFromSliceSize,
+  periodToNumber,
 } from "../../loop/loop-types.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
 import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
@@ -71,8 +71,8 @@ import { PositionReachabilityAnalyzer, type ReachabilityResult } from "../reacha
  */
 function shouldEnforcePeriod4Parity(loop: LoopOptions | undefined): boolean {
   if (!loop) return false;
-  const period = loop.period ?? periodFromSliceSize(loop.sliceSize);
-  if (period !== 4) return false;
+  const periodNum = periodToNumber(loop.period);
+  if (periodNum !== 4) return false;
   return !ROTATED_LOOP_TYPES.has(loop.type);
 }
 
@@ -184,21 +184,8 @@ export interface LoopOptions {
   /** LOOP transformation type */
   type: LOOPType;
 
-  /** How the sequence is sliced for rotation */
-  sliceSize: SliceSize;
-
-  /**
-   * Integer LOOP period (count of passes to return to identity).
-   *
-   * Supersedes `sliceSize` over the migration window:
-   *   sliceSize HALVED → period 2
-   *   sliceSize QUARTERED → period 4
-   *   (future L5/L7) → period 8
-   *
-   * When both are provided, `period` wins. When neither is provided,
-   * defaults to period derived from sliceSize via periodFromSliceSize.
-   */
-  period?: number;
+  /** Period for rotational LOOPs (HALVED = 180 deg, QUARTERED = 90 deg) */
+  period: Period;
 
   /** Whether to use targeted end-position generation */
   useTargetedGeneration?: boolean;
@@ -315,7 +302,7 @@ export class SequenceBuilder {
       requiredEndPositions = this.getAllValidEndPositions(
         options.loop.type,
         effectiveStartPosition,
-        options.loop.sliceSize,
+        options.loop.period,
       );
     }
 
@@ -350,7 +337,7 @@ export class SequenceBuilder {
             const validEnds = this.getAllValidEndPositions(
               options.loop.type,
               actualStart,
-              options.loop.sliceSize,
+              options.loop.period,
             );
             if (validEnds.size > 0 && !validEnds.has(actualEnd)) {
               lastError = `Position pair ${actualStart} -> ${actualEnd} not valid for ${options.loop.type} LOOP`;
@@ -490,7 +477,7 @@ export class SequenceBuilder {
         requiredEndPositions = this.getAllValidEndPositions(
           options.loop!.type,
           effectiveStartPosition,
-          options.loop!.sliceSize,
+          options.loop!.period,
         );
       } else if (needsLoopTargeting) {
         // No start position specified — build a position map so the beam
@@ -583,7 +570,7 @@ export class SequenceBuilder {
           requiredEndPositions = this.getAllValidEndPositions(
             options.loop!.type,
             effectiveStartPosition,
-            options.loop!.sliceSize,
+            options.loop!.period,
           );
         } else if (needsLoopTargeting) {
           loopPositionMap = this.buildLoopPositionMap(options.loop!);
@@ -921,7 +908,7 @@ export class SequenceBuilder {
 
     // Execute the LOOP transformation. The executor returns the complete
     // circular sequence (start position + seed beats + derived beats).
-    const extendedSteps = executor.executeLOOP(inputSteps, loopOptions.sliceSize);
+    const extendedSteps = executor.executeLOOP(inputSteps, loopOptions.period);
 
     // Figure out which beats are derived (everything after the original seed).
     // The original sequence had result.sequence.length steps (including start position).
@@ -941,7 +928,7 @@ export class SequenceBuilder {
     // The orientation cycle multiplier tells the renderer how many
     // times the orientation pattern repeats. For halved it's 2, quartered is 4.
     const orientationCycleMultiplier =
-      loopOptions.sliceSize === SliceSize.QUARTERED ? 4 : 2;
+      loopOptions.period === Period.QUARTERED ? 4 : 2;
 
     // Build the component labels (seed + derived segments)
     const components = [seedWord];
@@ -1024,19 +1011,19 @@ export class SequenceBuilder {
   }
 
   /**
-   * Get ALL valid end positions for a LOOP type + start position + slice size.
+   * Get ALL valid end positions for a LOOP type + start position + period.
    * For quartered rotated LOOPs, returns both CW and CCW targets.
    * For other types, returns the single valid end position.
    */
   private getAllValidEndPositions(
     loopType: LOOPType,
     startPosition: string,
-    sliceSize: SliceSize,
+    period: Period,
   ): Set<string> {
     const positions = new Set<string>();
 
     // For rotated LOOP types with quartered slice, both CW and CCW are valid
-    if (sliceSize === SliceSize.QUARTERED && ROTATED_LOOP_TYPES.has(loopType)) {
+    if (period === Period.QUARTERED && ROTATED_LOOP_TYPES.has(loopType)) {
       const cw = QUARTER_POSITION_MAP_CW[startPosition];
       const ccw = QUARTER_POSITION_MAP_CCW[startPosition];
       if (cw) positions.add(cw);
@@ -1046,7 +1033,7 @@ export class SequenceBuilder {
       const endPos = loopEndPositionSelector.determineEndPosition(
         loopType,
         startPosition,
-        sliceSize,
+        period,
       );
       if (endPos) positions.add(endPos);
     }
@@ -1071,7 +1058,7 @@ export class SequenceBuilder {
       const endPositions = this.getAllValidEndPositions(
         loopOptions.type,
         pos,
-        loopOptions.sliceSize,
+        loopOptions.period,
       );
       if (endPositions.size > 0) {
         map[pos] = Array.from(endPositions);

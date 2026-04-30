@@ -13,7 +13,7 @@
  * all need identical behavior, and without centralizing the pipeline
  * each one drifts. Previously /q and /sequence ran letter+position
  * only; the drawer host ran nothing at all. Refreshing a scanned link
- * would restore a sequence with empty word and null loopType — which
+ * would restore a sequence with empty word and null loopType - which
  * is what broke card footers and the reversal/difficulty indicators.
  *
  * Pure. No Firestore, no fetch. Motion primitives carry everything.
@@ -93,7 +93,7 @@ export async function hydrateSequence(
   const loopResult = loopDetector ? loopDetector.detectLOOPType(merged) : null;
 
   // gridMode: infer from the first beat whose motions decoded cleanly.
-  // Using the start position's motions isn't reliable — at beat 0 the
+  // Using the start position's motions isn't reliable - at beat 0 the
   // encoded form may be a blank placeholder (no motions carried).
   let gridMode: GridMode | undefined;
   if (gridModeDeriver) {

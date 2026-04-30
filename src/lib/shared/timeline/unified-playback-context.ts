@@ -6,6 +6,7 @@ export interface UnifiedPlaybackContext {
 	readonly isLooping: boolean | undefined;
 	readonly duration: number;
 	readonly elapsed: number;
+	readonly beatMarkerPositions: readonly number[];
 
 	seek(progress: number): void;
 	togglePlay(): void;

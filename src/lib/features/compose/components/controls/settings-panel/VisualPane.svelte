@@ -144,8 +144,7 @@
     updateCounter++;
   }
 
-  // Trail on/off handler with hardcoded vivid settings when enabled
-  function setTrailStyle(style: TrailVisibility) {
+  function toggleTrails(style: TrailVisibility) {
     visibilityManager.setActiveEffect(style === "on" ? "trails" : "none");
     if (style === "off") {
       animationSettings.setTrailMode(TrailMode.OFF);
@@ -240,7 +239,7 @@
     <button
       class="trail-btn"
       class:active={currentTrailStyle === "off"}
-      onclick={() => setTrailStyle("off")}
+      onclick={() => toggleTrails("off")}
       type="button"
       aria-label="Turn trails off"
       aria-pressed={currentTrailStyle === "off"}
@@ -250,7 +249,7 @@
     <button
       class="trail-btn"
       class:active={currentTrailStyle === "on"}
-      onclick={() => setTrailStyle("on")}
+      onclick={() => toggleTrails("on")}
       type="button"
       aria-label="Turn trails on"
       aria-pressed={currentTrailStyle === "on"}

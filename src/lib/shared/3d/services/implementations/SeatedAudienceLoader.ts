@@ -9,7 +9,7 @@
  *     per-seat mixer setup does zero work at mount time
  *
  * Remapping is a prefix swap (e.g. "mixamorig:" → "mixamorig") rather
- * than SkeletonUtils.retargetClip — both skeletons share the Mixamo
+ * than SkeletonUtils.retargetClip - both skeletons share the Mixamo
  * layout, they just use different naming conventions. Position tracks
  * are stripped except for a cm→m scaled Hips track that drops the
  * pelvis to seated height.
@@ -135,7 +135,7 @@ export class SeatedAudienceLoader {
 
   /**
    * Return a freshly cloned scene + pre-baked clip for a seat. After
-   * preloadAll has completed, this resolves in a microtask — the only
+   * preloadAll has completed, this resolves in a microtask - the only
    * work is a SkeletonUtils.clone of the cached scene (preserves skeleton
    * binding so each seat animates independently).
    */

@@ -9,9 +9,9 @@
  * scrub position). This interface has no concept of "time" or "playback".
  *
  * The implementation can be swapped without touching consumers:
- * - ClipBasedTurnAnimator (Phase 2 — Mixamo + mocap clips)
- * - NeuralTurnAnimator (future — motion diffusion models)
- * - MotionMatchingTurnAnimator (future — database search)
+ * - ClipBasedTurnAnimator (Phase 2 - Mixamo + mocap clips)
+ * - NeuralTurnAnimator (future - motion diffusion models)
+ * - MotionMatchingTurnAnimator (future - database search)
  */
 
 import type { Quaternion, Vector3 } from "three";
@@ -30,7 +30,7 @@ export interface TurnRequest {
 }
 
 /**
- * Output of a turn sample — everything Avatar3D needs to pose the skeleton.
+ * Output of a turn sample - everything Avatar3D needs to pose the skeleton.
  */
 export interface TurnSample {
   /** Accumulated yaw delta from phase=0 to this phase, in radians.

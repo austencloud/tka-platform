@@ -4,8 +4,8 @@ export interface SilkPalette {
   readonly id: SilkIntent["palette"];
   readonly body: string;      // ribbon center fill
   readonly edge: string;      // ribbon edge highlight
-  readonly emissive?: boolean; // ember only — uses lighter blend
-  readonly hueShift?: boolean; // ethereal only — shifts color along length
+  readonly emissive?: boolean; // ember only - uses lighter blend
+  readonly hueShift?: boolean; // ethereal only - shifts color along length
   readonly bodyAlt?: string;   // ethereal end-of-ribbon body color
   readonly edgeAlt?: string;   // ethereal end-of-ribbon edge color
 }

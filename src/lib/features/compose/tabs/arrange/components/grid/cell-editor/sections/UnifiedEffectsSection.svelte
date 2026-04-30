@@ -1,8 +1,10 @@
 <!--
   UnifiedEffectsSection.svelte
 
-  Merged effects view: pill chips (quick-apply) + scope selector + channel matrix.
-  Replaces the old EffectsSection + EffectMatrixDrawer two-step flow.
+  v4 mockup design:
+  - Cell scope: one 4×4 grid, applies to all
+  - Hand/Tip scope: compact channel rows (dot + label + badge),
+    tap row to target it, ONE grid below targets that row
 -->
 <script lang="ts">
   import type {
@@ -11,6 +13,11 @@
   } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
   import type { CellEffect } from "$lib/features/compose/compose/domain/types";
+
+  const SHIPPED_CELL_EFFECTS = new Set<string>(["none", "fire", "charcoal", "led", "trails"]);
+  function asCellEffect(e: EffectType): CellEffect {
+    return SHIPPED_CELL_EFFECTS.has(e) ? (e as CellEffect) : "none";
+  }
   import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
   type Scope = "cell" | "hand" | "tip";
@@ -35,12 +42,28 @@
     onUpdateMap: (map: TipEffectMap) => void;
   } = $props();
 
-  const effects: { value: CellEffect; label: string; icon?: string; dot?: string }[] = [
-    { value: "none", label: "None", icon: "fa-ban" },
-    { value: "fire", label: "Fire", dot: "#f97316" },
-    { value: "charcoal", label: "Charcoal", dot: "#a855f7" },
-    { value: "led", label: "LED", dot: "#22c55e" },
-    { value: "trails", label: "Trails", icon: "fa-wind" },
+  const effectGrid: {
+    value: EffectType;
+    icon: string;
+    color: string;
+    label: string;
+  }[] = [
+    { value: "trails",   icon: "fa-route",        color: "#60a5fa", label: "Trails" },
+    { value: "fire",     icon: "fa-fire",          color: "#f97316", label: "Fire" },
+    { value: "led",      icon: "fa-lightbulb",     color: "#22c55e", label: "LED" },
+    { value: "charcoal", icon: "fa-diamond",       color: "#a855f7", label: "Charcoal" },
+    { value: "zap",      icon: "fa-bolt",          color: "#eab308", label: "Zap" },
+    { value: "sparkles", icon: "fa-star",          color: "#f59e0b", label: "Sparkles" },
+    { value: "echo",     icon: "fa-clone",         color: "#06b6d4", label: "Echo" },
+    { value: "bloom",    icon: "fa-sun",           color: "#f472b6", label: "Bloom" },
+    { value: "water",    icon: "fa-droplet",       color: "#38bdf8", label: "Water" },
+    { value: "bubbles",  icon: "fa-circle-notch",  color: "#a78bfa", label: "Bubbles" },
+    { value: "petals",   icon: "fa-leaf",          color: "#34d399", label: "Petals" },
+    { value: "smoke",    icon: "fa-smog",          color: "#9ca3af", label: "Smoke" },
+    { value: "ink",      icon: "fa-paint-brush",   color: "#f87171", label: "Ink" },
+    { value: "frost",    icon: "fa-snowflake",     color: "#7dd3fc", label: "Frost" },
+    { value: "silk",     icon: "fa-wind",          color: "#c084fc", label: "Silk" },
+    { value: "pulse",    icon: "fa-bullseye",      color: "#fb923c", label: "Pulse" },
   ];
 
   const trailModes: { value: TrailMode; label: string }[] = [
@@ -51,21 +74,13 @@
 
   const scopes: { value: Scope; label: string; icon: string }[] = [
     { value: "cell", label: "Cell", icon: "fa-border-all" },
-    { value: "hand", label: "Per Hand", icon: "fa-hand" },
-    { value: "tip", label: "Per Tip", icon: "fa-crosshairs" },
+    { value: "hand", label: "Hand", icon: "fa-hand" },
+    { value: "tip", label: "Tip", icon: "fa-crosshairs" },
   ];
 
-  const effectDefs: { value: EffectType; label: string; icon: string; cssClass: string }[] = [
-    { value: "none", label: "None", icon: "fa-ban", cssClass: "eff-none" },
-    { value: "fire", label: "Fire", icon: "fa-fire", cssClass: "eff-fire" },
-    { value: "charcoal", label: "Charcoal", icon: "fa-fire", cssClass: "eff-charcoal" },
-    { value: "led", label: "LED", icon: "fa-lightbulb", cssClass: "eff-led" },
-    { value: "trails", label: "Trails", icon: "fa-wind", cssClass: "eff-trails" },
-  ];
-
-  // Scope + local map state - initialized from currentMap
   let scope: Scope = $state<Scope>("cell");
   let localMap: TipEffectMap = $state<TipEffectMap>({});
+  let targetKey: string = $state("*");
 
   $effect.pre(() => {
     scope = inferScope(currentMap);
@@ -82,55 +97,72 @@
   }
 
   const channels: ChannelRow[] = $derived.by(() => {
-    if (scope === "cell") {
-      return [{ key: "*", color: "linear-gradient(135deg, #3b82f6, #ef4444)", label: "Both" }];
-    }
     if (scope === "hand") {
       return [
         { key: "0", color: "#3b82f6", label: "Blue" },
         { key: "1", color: "#ef4444", label: "Red" },
       ];
     }
-    const rows: ChannelRow[] = [];
-    for (let t = 0; t < blueTipCount; t++) {
-      rows.push({
-        key: `0-${t}`,
-        color: "#3b82f6",
-        label: `Blue ${getTipLabel(bluePropType, t, blueTipCount)}`,
-      });
+    if (scope === "tip") {
+      const rows: ChannelRow[] = [];
+      for (let t = 0; t < blueTipCount; t++) {
+        rows.push({
+          key: `0-${t}`,
+          color: "#3b82f6",
+          label: `Blue ${getTipLabel(bluePropType, t, blueTipCount)}`,
+        });
+      }
+      for (let t = 0; t < redTipCount; t++) {
+        rows.push({
+          key: `1-${t}`,
+          color: "#ef4444",
+          label: `Red ${getTipLabel(redPropType, t, redTipCount)}`,
+        });
+      }
+      return rows;
     }
-    for (let t = 0; t < redTipCount; t++) {
-      rows.push({
-        key: `1-${t}`,
-        color: "#ef4444",
-        label: `Red ${getTipLabel(redPropType, t, redTipCount)}`,
-      });
-    }
-    return rows;
+    return [];
   });
 
+  const gridTargetEffect = $derived.by<EffectType>(() => {
+    if (scope === "cell") return currentEffect as EffectType;
+    return localMap[targetKey]?.effect ?? "none";
+  });
+
+  const gridTargetLabel = $derived.by(() => {
+    if (scope === "cell") return "SELECT EFFECT";
+    const ch = channels.find((c) => c.key === targetKey);
+    return ch ? `EFFECT FOR ${ch.label.toUpperCase()}` : "SELECT EFFECT";
+  });
+
+  const activeEffectMeta = $derived(
+    effectGrid.find((e) => e.value === gridTargetEffect)
+  );
+
+  function getEffectMeta(effect: EffectType) {
+    if (effect === "none") return { icon: "fa-ban", color: "#9ca3af", label: "None" };
+    return effectGrid.find((e) => e.value === effect) ?? { icon: "fa-ban", color: "#9ca3af", label: "None" };
+  }
+
   function getTipLabel(propType: string, tipIndex: number, tipCount: number): string {
-    if (tipCount === 1) return "tip";
-    if (tipCount === 2) return tipIndex === 0 ? "thumb" : "pinky";
-    return `tip ${tipIndex + 1}`;
+    if (tipCount === 1) return "Tip";
+    if (tipCount === 2) return tipIndex === 0 ? "Thumb" : "Pinky";
+    return `Tip ${tipIndex + 1}`;
   }
 
-  function getEffectForKey(key: string): EffectType {
-    return localMap[key]?.effect ?? "none";
-  }
-
-  function setEffect(key: string, effect: EffectType) {
-    localMap = { ...localMap, [key]: { effect } };
-    onUpdateMap(localMap);
-  }
-
-  function applyToAll(effect: CellEffect) {
-    onSetEffect(effect);
-    const newMap: TipEffectMap = {};
-    for (const ch of channels) {
-      newMap[ch.key] = { effect: effect as EffectType };
+  function handleGridTap(effect: EffectType) {
+    if (scope === "cell") {
+      const cellEffect = asCellEffect(effect);
+      if (currentEffect === cellEffect && cellEffect !== "none") {
+        onSetEffect("none");
+      } else {
+        onSetEffect(cellEffect);
+      }
+      return;
     }
-    localMap = newMap;
+    const current = localMap[targetKey]?.effect ?? "none";
+    const next = current === effect ? "none" : effect;
+    localMap = { ...localMap, [targetKey]: { effect: next } };
     onUpdateMap(localMap);
   }
 
@@ -142,6 +174,7 @@
     if (newScope === "cell") {
       const most = mostCommonEffect(Object.keys(localMap));
       newMap["*"] = { effect: most };
+      targetKey = "*";
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
         const blueKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
@@ -149,21 +182,21 @@
         newMap["0"] = { effect: mostCommonEffect(blueKeys) };
         newMap["1"] = { effect: mostCommonEffect(redKeys) };
       } else {
-        const base = localMap["*"]?.effect ?? "none";
+        const base = currentEffect as EffectType;
         newMap["0"] = { effect: base };
         newMap["1"] = { effect: base };
       }
+      targetKey = "0";
     } else {
-      if (oldScope === "cell") {
-        const base = localMap["*"]?.effect ?? "none";
-        for (let t = 0; t < blueTipCount; t++) newMap[`0-${t}`] = { effect: base };
-        for (let t = 0; t < redTipCount; t++) newMap[`1-${t}`] = { effect: base };
-      } else {
-        const blueEffect = localMap["0"]?.effect ?? "none";
-        const redEffect = localMap["1"]?.effect ?? "none";
-        for (let t = 0; t < blueTipCount; t++) newMap[`0-${t}`] = { effect: blueEffect };
-        for (let t = 0; t < redTipCount; t++) newMap[`1-${t}`] = { effect: redEffect };
-      }
+      const base = oldScope === "cell"
+        ? (currentEffect as EffectType)
+        : (localMap["0"]?.effect ?? "none");
+      const redBase = oldScope === "hand"
+        ? (localMap["1"]?.effect ?? "none")
+        : base;
+      for (let t = 0; t < blueTipCount; t++) newMap[`0-${t}`] = { effect: base };
+      for (let t = 0; t < redTipCount; t++) newMap[`1-${t}`] = { effect: redBase };
+      targetKey = "0-0";
     }
 
     scope = newScope;
@@ -177,16 +210,11 @@
       const e = localMap[k]?.effect ?? "none";
       counts[e] = (counts[e] ?? 0) + 1;
     }
-    if (Object.keys(counts).length === 0) {
-      return localMap["*"]?.effect ?? "none";
-    }
+    if (Object.keys(counts).length === 0) return currentEffect as EffectType;
     let best: EffectType = "none";
     let bestCount = 0;
     for (const [e, c] of Object.entries(counts)) {
-      if (c > bestCount) {
-        best = e as EffectType;
-        bestCount = c;
-      }
+      if (c > bestCount) { best = e as EffectType; bestCount = c; }
     }
     return best;
   }
@@ -201,49 +229,8 @@
 </script>
 
 <div class="unified-effects">
-  <!-- Quick-apply pill chips -->
-  <div class="chip-grid" role="radiogroup" aria-label="Visual effect">
-    {#each effects as effect}
-      <button
-        class="chip"
-        class:active={currentEffect === effect.value}
-        role="radio"
-        aria-checked={currentEffect === effect.value}
-        onclick={() => applyToAll(effect.value)}
-        style:--chip-color={effect.dot ?? "#60a5fa"}
-      >
-        {#if effect.icon}
-          <i class="fas {effect.icon}" aria-hidden="true"></i>
-        {:else if effect.dot}
-          <span class="color-dot" style:background={effect.dot}></span>
-        {/if}
-        {effect.label}
-      </button>
-    {/each}
-  </div>
-
-  <!-- Trail mode sub-group -->
-  {#if currentEffect === "trails"}
-    <div class="sub-group">
-      <span class="sub-label" id="trail-mode-label">TRAIL MODE</span>
-      <div class="chip-grid" role="radiogroup" aria-labelledby="trail-mode-label">
-        {#each trailModes as mode}
-          <button
-            class="chip"
-            class:active={currentTrailMode === mode.value}
-            role="radio"
-            aria-checked={currentTrailMode === mode.value}
-            onclick={() => onSetTrailMode(mode.value)}
-          >
-            {mode.label}
-          </button>
-        {/each}
-      </div>
-    </div>
-  {/if}
-
   <!-- Scope selector -->
-  <div class="scope-section">
+  <div class="scope-row">
     <span class="scope-label" id="effect-scope-label">SCOPE</span>
     <div class="scope-strip" role="radiogroup" aria-labelledby="effect-scope-label">
       {#each scopes as s}
@@ -261,125 +248,135 @@
     </div>
   </div>
 
-  <!-- Channel rows -->
-  <div class="matrix-rows">
-    {#each channels as ch (ch.key)}
-      <div class="channel">
-        <div class="channel-id">
-          <span class="channel-dot" style:background={ch.color}></span>
-          <span class="channel-name">{ch.label}</span>
-        </div>
-        <div class="channel-effects">
-          {#each effectDefs as eff}
-            <button
-              class="effect-btn {eff.cssClass}"
-              class:active={getEffectForKey(ch.key) === eff.value}
-              title={eff.label}
-              onclick={() => setEffect(ch.key, eff.value)}
-            >
-              <i class="fas {eff.icon}" aria-hidden="true"></i>
-            </button>
-          {/each}
-        </div>
-      </div>
+  <!-- Channel rows (hand/tip only) -->
+  {#if scope !== "cell"}
+    <span class="assign-label">ASSIGN PER {scope === "hand" ? "HAND" : "TIP"}</span>
+    <div class="channels">
+      {#each channels as ch (ch.key)}
+        {@const chEffect = localMap[ch.key]?.effect ?? "none"}
+        {@const meta = getEffectMeta(chEffect)}
+        {@const isTarget = targetKey === ch.key}
+        <button
+          class="ch-row"
+          class:target={isTarget}
+          onclick={() => { targetKey = ch.key; }}
+        >
+          <span class="ch-dot" style:background={ch.color}></span>
+          <span class="ch-label">{ch.label}</span>
+          <span
+            class="ch-badge"
+            class:none={chEffect === "none"}
+            style:--c={meta.color}
+          >
+            <i class="fas {meta.icon}" aria-hidden="true"></i>
+            {meta.label}
+          </span>
+        </button>
+      {/each}
+    </div>
+    <span class="grid-hint">
+      <i class="fas fa-arrow-down" aria-hidden="true"></i>
+      Grid targets: {channels.find((c) => c.key === targetKey)?.label ?? ""}
+    </span>
+  {/if}
+
+  <!-- Header -->
+  <span class="section-header">{gridTargetLabel}</span>
+
+  <!-- 4×4 icon-only grid -->
+  <div class="effect-grid" role="radiogroup" aria-label="Visual effect">
+    {#each effectGrid as eff}
+      {@const isActive = gridTargetEffect === eff.value}
+      <button
+        class="grid-cell"
+        class:active={isActive}
+        role="radio"
+        aria-checked={isActive}
+        aria-label="{eff.label}{isActive ? ' (active — tap to remove)' : ''}"
+        title={eff.label}
+        onclick={() => handleGridTap(eff.value)}
+        style:--c={eff.color}
+      >
+        <i class="fas {eff.icon}" aria-hidden="true"></i>
+      </button>
     {/each}
   </div>
 
-  <div class="hint">Tap a chip to apply to all. Change scope for per-channel control.</div>
+  <!-- Trail mode sub-group -->
+  {#if gridTargetEffect === "trails"}
+    <div class="sub-group">
+      <span class="sub-label" id="trail-mode-label">TRAIL MODE</span>
+      <div class="trail-chips" role="radiogroup" aria-labelledby="trail-mode-label">
+        {#each trailModes as mode}
+          <button
+            class="trail-chip"
+            class:active={currentTrailMode === mode.value}
+            role="radio"
+            aria-checked={currentTrailMode === mode.value}
+            onclick={() => onSetTrailMode(mode.value)}
+          >
+            {mode.label}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Customize accordion -->
+  {#if activeEffectMeta}
+    <button class="accordion-row">
+      <span class="accordion-label">Customize {activeEffectMeta.label}</span>
+      <span class="accordion-right">
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </span>
+    </button>
+  {/if}
 </div>
 
 <style>
   .unified-effects {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     animation: slideDown 180ms ease-out;
   }
 
   @keyframes slideDown {
     from { opacity: 0; transform: translateY(-6px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
-  .chip-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--chip-gap, 6px);
-  }
-
-  .chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px clamp(12px, 3cqi, 14px);
-    min-height: 44px;
-    border-radius: var(--chip-radius, 22px);
-    background: var(--surface-idle, rgba(255, 255, 255, 0.05));
-    border: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  .section-header {
     font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .chip:hover {
-    background: var(--surface-hover, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, rgba(255, 255, 255, 0.9));
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--chip-color, #f97316) var(--surface-active-pct, 12%), transparent);
-    border-color: color-mix(in srgb, var(--chip-color, #f97316) var(--stroke-active-pct, 35%), transparent);
-    color: var(--chip-color, #f97316);
-  }
-
-  .color-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .sub-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-top: 4px;
-  }
-
-  .sub-label {
-    font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
-    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
   }
 
-  /* Scope selector */
-  .scope-section {
+  /* ── Scope selector ───────────────────────────────────────── */
+  .scope-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   .scope-label {
-    font-size: 9px;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
     flex-shrink: 0;
   }
 
   .scope-strip {
     display: flex;
+    flex: 1;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
+    border-radius: 8px;
     overflow: hidden;
-    flex: 1;
   }
 
   .scope-seg {
@@ -387,132 +384,245 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 10px 8px;
+    gap: 4px;
+    padding: 6px 4px;
     min-height: 44px;
     cursor: pointer;
     font-size: 12px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.7);
     background: transparent;
     border: none;
     border-right: 1px solid rgba(255, 255, 255, 0.06);
-    transition: all 150ms ease;
+    transition: background 150ms ease, color 150ms ease;
   }
 
   .scope-seg:last-child { border-right: none; }
 
   .scope-seg:hover {
     background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.7);
   }
 
   .scope-seg.active {
     background: rgba(139, 92, 246, 0.15);
-    color: #c084fc;
+    color: #d4b4ff;
     box-shadow: inset 0 -2px 0 #a855f7;
   }
 
-  .scope-seg i { font-size: 14px; }
+  .scope-seg i { font-size: 11px; }
 
-  /* Channel rows */
-  .matrix-rows {
+  /* ── Channel rows ─────────────────────────────────────────── */
+  .assign-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .channels {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .ch-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease;
+  }
+
+  .ch-row:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .ch-row.target {
+    border-color: rgba(139, 92, 246, 0.4);
+    background: rgba(139, 92, 246, 0.06);
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15);
+  }
+
+  .ch-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ch-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 500;
+    min-width: 60px;
+  }
+
+  .ch-row.target .ch-label {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ch-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    background: color-mix(in srgb, var(--c) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+    color: var(--c);
+  }
+
+  .ch-badge i { font-size: 12px; }
+
+  .ch-badge.none {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .grid-hint {
+    font-size: 12px;
+    color: rgba(167, 139, 250, 0.9);
+    text-align: center;
+    padding: 2px 0;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  .grid-hint i { font-size: 10px; }
+
+  /* ── 4×4 icon-only grid ───────────────────────────────────── */
+  .effect-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .grid-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+
+  .grid-cell i {
+    font-size: 18px;
+    pointer-events: none;
+  }
+
+  .grid-cell:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .grid-cell.active {
+    border: 1.5px solid var(--c);
+    background: color-mix(in srgb, var(--c) 14%, transparent);
+    color: var(--c);
+  }
+
+  /* ── Trail mode ───────────────────────────────────────────── */
+  .sub-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
 
-  .channel {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    min-height: 48px;
-    transition: border-color 150ms ease;
-  }
-
-  .channel:hover { border-color: rgba(255, 255, 255, 0.12); }
-
-  .channel-id {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    min-width: 36px;
-  }
-
-  .channel-dot {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-  }
-
-  .channel-name {
-    font-size: 8px;
+  .sub-label {
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: rgba(255, 255, 255, 0.25);
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.4);
     font-weight: 600;
-    text-align: center;
   }
 
-  .channel-effects {
+  .trail-chips {
     display: flex;
-    gap: 4px;
-    flex: 1;
     flex-wrap: wrap;
+    gap: 6px;
   }
 
-  .effect-btn {
+  .trail-chip {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    min-width: 44px;
+    padding: 8px 14px;
     min-height: 44px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    cursor: pointer;
-    transition: all 120ms ease;
-  }
-
-  .effect-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  .effect-btn i {
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
     font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+  }
+
+  .trail-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .trail-chip.active {
+    background: color-mix(in srgb, #60a5fa 14%, transparent);
+    border-color: color-mix(in srgb, #60a5fa 35%, transparent);
+    color: #60a5fa;
+  }
+
+  /* ── Accordion ────────────────────────────────────────────── */
+  .accordion-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+
+  .accordion-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .accordion-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .accordion-right {
+    display: flex;
+    align-items: center;
     color: rgba(255, 255, 255, 0.4);
-  }
-
-  .effect-btn.active { border-width: 1.5px; }
-  .effect-btn.active.eff-none { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
-  .effect-btn.active.eff-none i { color: rgba(255, 255, 255, 0.7); }
-  .effect-btn.active.eff-fire { background: rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.4); }
-  .effect-btn.active.eff-fire i { color: #fb923c; }
-  .effect-btn.active.eff-charcoal { background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); }
-  .effect-btn.active.eff-charcoal i { color: #a78bfa; }
-  .effect-btn.active.eff-led { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.4); }
-  .effect-btn.active.eff-led i { color: #4ade80; }
-  .effect-btn.active.eff-trails { background: rgba(96, 165, 250, 0.15); border-color: rgba(96, 165, 250, 0.4); }
-  .effect-btn.active.eff-trails i { color: #60a5fa; }
-
-  .hint {
-    text-align: center;
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.2);
-    font-style: italic;
   }
 
+  /* ── Reduced motion ───────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .unified-effects { animation: none; }
-    .chip, .scope-seg, .effect-btn { transition: none; }
+    .grid-cell,
+    .trail-chip,
+    .accordion-row,
+    .scope-seg,
+    .ch-row { transition: none; }
   }
 </style>

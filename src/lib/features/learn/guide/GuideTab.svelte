@@ -56,7 +56,7 @@
           alt="The Kinetic Alphabet Level 1 cover"
         />
         <h1>The Kinetic Alphabet</h1>
-        <p class="subtitle">Level 1 — Positions, Motions, Letters & Words</p>
+        <p class="subtitle">Level 1 - Positions, Motions, Letters & Words</p>
         <p class="byline">Created by Austen Cloud &middot; v 0.5</p>
 
         <section class="read-me-first">
@@ -99,19 +99,19 @@
           <ol>
             <li>
               <button class="toc-card" onclick={() => handleChapterSelect("positions-motions")}>
-                <strong>1.0 — Positions & Motions</strong>
+                <strong>1.0 - Positions & Motions</strong>
                 <span>The grid, hand positions, hand motions, Types 1–6, staff positions, negative space</span>
               </button>
             </li>
             <li>
               <button class="toc-card" onclick={() => handleChapterSelect("letters")}>
-                <strong>1.1 — Letters</strong>
+                <strong>1.1 - Letters</strong>
                 <span>Codex, Type 1 letters, compound letters, gamma letters, Types 2–6</span>
               </button>
             </li>
             <li>
               <button class="toc-card" onclick={() => handleChapterSelect("words")}>
-                <strong>1.2 — Words & CAPs</strong>
+                <strong>1.2 - Words & CAPs</strong>
                 <span>Words, CAPs, reversals, 16-count sequences, 8-letter words</span>
               </button>
             </li>
@@ -142,12 +142,12 @@
       <NegativeSpace />
     {:else if activeChapter === "letters"}
       <div class="coming-soon">
-        <h1>1.1 — Letters</h1>
+        <h1>1.1 - Letters</h1>
         <p>Chapter content in Phase 2.</p>
       </div>
     {:else if activeChapter === "words"}
       <div class="coming-soon">
-        <h1>1.2 — Words & CAPs</h1>
+        <h1>1.2 - Words & CAPs</h1>
         <p>Chapter content in Phase 3.</p>
       </div>
     {/if}
@@ -183,7 +183,7 @@
     max-width: 860px;
   }
 
-  /* Typography — mirror guide.css */
+  /* Typography - mirror guide.css */
   .guide-content :global(h1) {
     font-family: "Playfair Display", Georgia, "Times New Roman", serif;
     font-style: italic;

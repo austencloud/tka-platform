@@ -1,9 +1,10 @@
 ---
-status: backlog
+status: shipped
 value: 5
 effort: S
 score: 20
-remaining: "Core live. Verify multipart for large files"
+remaining: "Multipart >100MB needs manual runtime test"
+shipped: 2026-04-26
 last_triaged: 2026-04-26
 ---
 # R2 Video Storage Migration

@@ -1,5 +1,5 @@
 <!--
-  LedStaffPreview.svelte — 2D virtual LED staff preview.
+  LedStaffPreview.svelte - 2D virtual LED staff preview.
 
   Renders the active StripPattern as a pair of horizontal LED staves,
   playing on their own internal clock. This matches how real LED props
@@ -34,7 +34,7 @@
     return pattern.frames[idx]!;
   }
 
-  // Animation loop — runs for the lifetime of the canvas element.
+  // Animation loop - runs for the lifetime of the canvas element.
   // Reads blendInfo / cycleDuration / playing at call time so updates
   // flow through without restarting the loop.
   $effect(() => {
@@ -52,7 +52,7 @@
     function draw() {
       if (!canvas || !ctx) return;
 
-      // Rich playback state — primary is the incoming pattern, secondary
+      // Rich playback state - primary is the incoming pattern, secondary
       // (when non-null) is the outgoing pattern being crossfaded out.
       const info = poi.blendInfo;
       const primary = info.primary;
@@ -84,7 +84,7 @@
       const w = canvas.width;
       const h = canvas.height;
 
-      // Black background — matches the darkened room where you'd spin
+      // Black background - matches the darkened room where you'd spin
       ctx.fillStyle = "#050508";
       ctx.fillRect(0, 0, w, h);
 
@@ -103,7 +103,7 @@
         const frameB = frameAt(primary, cyclePos);   // incoming
         const t = info.blendT;
         const oneMinusT = 1 - t;
-        // Safe ledCount — if the two clips somehow disagree, use the
+        // Safe ledCount - if the two clips somehow disagree, use the
         // smaller of the two so we don't read past either buffer.
         const safeLedCount = Math.min(
           ledCount,
@@ -144,7 +144,7 @@
   /**
    * Draw a single horizontal LED staff with glowing LEDs.
    *
-   * Layout: [grip] [LED strip] [grip] — the grips are dark end caps
+   * Layout: [grip] [LED strip] [grip] - the grips are dark end caps
    * where your hands go; the strip in the middle is where the LEDs live.
    */
   function drawStaff(
@@ -177,12 +177,12 @@
     ctx.lineWidth = 1;
     ctx.strokeRect(staffMargin + 0.5, bodyTop + 0.5, staffLength - 1, bodyHeight - 1);
 
-    // Grips — slightly darker than body, where your hands go
+    // Grips - slightly darker than body, where your hands go
     ctx.fillStyle = "#050509";
     ctx.fillRect(staffMargin, bodyTop, gripLength, bodyHeight);
     ctx.fillRect(stripEnd, bodyTop, gripLength, bodyHeight);
 
-    // Grip texture — thin horizontal lines suggesting a wrap
+    // Grip texture - thin horizontal lines suggesting a wrap
     ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
     ctx.lineWidth = 1;
     const gripLines = 4;
@@ -196,7 +196,7 @@
       ctx.stroke();
     }
 
-    // Bloom layer — faint blurred halo behind the LED strip
+    // Bloom layer - faint blurred halo behind the LED strip
     ctx.save();
     ctx.filter = `blur(${Math.round(staffH * 0.12)}px)`;
     ctx.globalAlpha = 0.5;
@@ -216,7 +216,7 @@
     }
     ctx.restore();
 
-    // Core LED strip — the bright, crisp line of LEDs
+    // Core LED strip - the bright, crisp line of LEDs
     const ledHeight = bodyHeight * 0.58;
     const ledTop = stripCy - ledHeight / 2;
     for (let led = 0; led < ledCount; led++) {
@@ -238,7 +238,7 @@
       );
     }
 
-    // Thin highlight along top of strip — specular sheen
+    // Thin highlight along top of strip - specular sheen
     ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
     ctx.fillRect(stripStart, ledTop, stripW, Math.max(1, ledHeight * 0.08));
   }

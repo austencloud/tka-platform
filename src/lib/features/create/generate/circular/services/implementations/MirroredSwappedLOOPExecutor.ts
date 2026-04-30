@@ -33,7 +33,7 @@ import {
   SWAPPED_POSITION_MAP,
   MIRRORED_SWAPPED_VALIDATION_SET,
 } from "../../domain/constants/strict-loop-position-maps";
-import type { SliceSize } from "../../domain/models/circular-models";
+import type { Period } from "../../domain/models/circular-models";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class MirroredSwappedLOOPExecutor {
@@ -43,10 +43,10 @@ export class MirroredSwappedLOOPExecutor {
    * Execute the mirrored-swapped LOOP
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param sliceSize - Ignored (mirrored-swapped LOOP always uses halved)
+   * @param period - Ignored (mirrored-swapped LOOP always uses halved)
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], _sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], _period: Period): StepData[] {
     // Validate the sequence
     this._validateSequence(sequence);
 

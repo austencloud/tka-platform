@@ -122,10 +122,10 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Set a generator parameter to a specific value",
     validTargets: [
       "level", "length", "mode", "gridMode",
-      "propContinuity", "turnIntensity", "loopType", "sliceSize",
+      "propContinuity", "turnIntensity", "loopType", "period",
     ],
     validArgs: {
-      value: "The value to set. level: 1-5, length: 1-64, mode: freeform|circular, gridMode: diamond|box, propContinuity: continuous|random, turnIntensity: 0-3, loopType: rotated|mirrored|etc., sliceSize: halved|quartered",
+      value: "The value to set. level: 1-5, length: 1-64, mode: freeform|circular, gridMode: diamond|box, propContinuity: continuous|random, turnIntensity: 0-3, loopType: rotated|mirrored|etc., period: halved|quartered",
     },
     activeInModules: ["create"],
     activeInTabs: ["generate"],
@@ -135,7 +135,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "toggle",
     description: "Cycle a generator parameter to its next value",
     validTargets: [
-      "mode", "gridMode", "propContinuity", "loopType", "sliceSize",
+      "mode", "gridMode", "propContinuity", "loopType", "period",
     ],
     activeInModules: ["create"],
     activeInTabs: ["generate"],

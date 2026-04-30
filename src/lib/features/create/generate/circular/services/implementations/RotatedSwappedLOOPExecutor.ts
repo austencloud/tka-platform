@@ -33,7 +33,7 @@ import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
 } from "../../domain/constants/circular-position-maps";
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class RotatedSwappedLOOPExecutor {
@@ -46,12 +46,12 @@ export class RotatedSwappedLOOPExecutor {
    * Execute the rotated-swapped LOOP
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param sliceSize - Slice size for the LOOP (quartered or halved)
+   * @param period - Slice size for the LOOP (quartered or halved)
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     // Validate the sequence
-    this._validateSequence(sequence, sliceSize);
+    this._validateSequence(sequence, period);
 
     // Remove start position (index 0) for processing
     const startPosition = sequence.shift();
@@ -63,7 +63,7 @@ export class RotatedSwappedLOOPExecutor {
     const sequenceLength = sequence.length;
     let entriesToAdd: number;
 
-    if (sliceSize === SliceSize.QUARTERED) {
+    if (period === Period.QUARTERED) {
       // Quartered adds 3x the original length
       entriesToAdd = sequenceLength * 3;
     } else {
@@ -84,7 +84,7 @@ export class RotatedSwappedLOOPExecutor {
         lastStep,
         nextStepNumber,
         finalIntendedLength,
-        sliceSize
+        period
       );
 
       generatedSteps.push(nextStep);
@@ -102,7 +102,7 @@ export class RotatedSwappedLOOPExecutor {
   /**
    * Validate that the sequence can perform a rotated-swapped LOOP
    */
-  private _validateSequence(sequence: StepData[], sliceSize: SliceSize): void {
+  private _validateSequence(sequence: StepData[], period: Period): void {
     if (sequence.length < 2) {
       throw new Error(
         "Sequence must have at least 2 steps (start position + 1 beat)"
@@ -119,12 +119,12 @@ export class RotatedSwappedLOOPExecutor {
     // Check if the (start, end) pair is valid for the requested slice size
     const key = `${startPos},${endPos}`;
     const validationSet =
-      sliceSize === SliceSize.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
+      period === Period.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
 
     if (!validationSet.has(key)) {
       throw new Error(
-        `Invalid position pair for rotated-swapped ${sliceSize} LOOP: ${startPos} → ${endPos}. ` +
-          `The end position must match the ${sliceSize} rotation requirement.`
+        `Invalid position pair for rotated-swapped ${period} LOOP: ${startPos} → ${endPos}. ` +
+          `The end position must match the ${period} rotation requirement.`
       );
     }
   }
@@ -137,14 +137,14 @@ export class RotatedSwappedLOOPExecutor {
     previousStep: StepData,
     stepNumber: number,
     finalIntendedLength: number,
-    sliceSize: SliceSize
+    period: Period
   ): StepData {
     // Get the corresponding beat from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
       finalIntendedLength,
-      sliceSize
+      period
     );
 
     // Calculate the rotated end position
@@ -200,9 +200,9 @@ export class RotatedSwappedLOOPExecutor {
     sequence: StepData[],
     stepNumber: number,
     finalLength: number,
-    sliceSize: SliceSize
+    period: Period
   ): StepData {
-    const indexMap = this._getIndexMap(finalLength, sliceSize);
+    const indexMap = this._getIndexMap(finalLength, period);
     const matchingStepNumber = indexMap[stepNumber];
 
     if (matchingStepNumber === undefined) {
@@ -227,26 +227,26 @@ export class RotatedSwappedLOOPExecutor {
    */
   private _getIndexMap(
     length: number,
-    sliceSize: SliceSize
+    period: Period
   ): Record<number, number> {
     const map: Record<number, number> = {};
 
     // Edge case handling
-    if (sliceSize === SliceSize.QUARTERED && length < 4) {
+    if (period === Period.QUARTERED && length < 4) {
       for (let i = 1; i <= length; i++) {
         map[i] = Math.max(i - 1, 1);
       }
       return map;
     }
 
-    if (sliceSize === SliceSize.HALVED && length < 2) {
+    if (period === Period.HALVED && length < 2) {
       for (let i = 1; i <= length; i++) {
         map[i] = Math.max(i - 1, 1);
       }
       return map;
     }
 
-    if (sliceSize === SliceSize.QUARTERED) {
+    if (period === Period.QUARTERED) {
       // Quartered: length = base * 4, so base = length / 4
       // Each quarter references the PREVIOUS quarter (chained rotation)
       const baseLength = Math.floor(length / 4);

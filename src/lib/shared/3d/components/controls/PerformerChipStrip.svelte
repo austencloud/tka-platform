@@ -12,7 +12,7 @@
    *   selected when `selectedPerformerIndex === i`.
    * - "+" chip: rightmost, enabled when `count < MAX_VIEWER_PERFORMERS`.
    *
-   * Visible whenever at least one performer exists — the "+" chip is the
+   * Visible whenever at least one performer exists - the "+" chip is the
    * only affordance for spawning a second performer, so hiding the strip
    * at count 1 would trap the user with no way to grow the group.
    */
@@ -27,7 +27,7 @@
   const canAdd = $derived(performers.length < STAGE.MAX_VIEWER_PERFORMERS);
 
   // Chip tint colors, cycled by performer index.
-  // Blue, red, purple, orange, emerald, pink, cyan, yellow — matches the
+  // Blue, red, purple, orange, emerald, pink, cyan, yellow - matches the
   // tunnel layer colors used in Compose cell layers for visual consistency.
   const CHIP_COLORS = [
     "#3b82f6", "#ef4444", "#8b5cf6", "#f97316",

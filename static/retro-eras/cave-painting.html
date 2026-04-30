@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TKA — Cave Painting (~40,000 BC)</title>
+  <title>TKA - Cave Painting (~40,000 BC)</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -44,7 +44,7 @@
 <body>
 <div class="scene">
   <canvas id="cave" width="500" height="500"></canvas>
-  <div class="caption">Grotte des Séquences — Parietal Period — ~38,000 BCE</div>
+  <div class="caption">Grotte des Séquences - Parietal Period - ~38,000 BCE</div>
 </div>
 
 <script src="./_shared/pictograph-geometry.js"></script>
@@ -53,7 +53,7 @@
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// Cave Painting Renderer — paints any pictograph in Lascaux mineral pigments.
+// Cave Painting Renderer - paints any pictograph in Lascaux mineral pigments.
 //
 // Receives RetroPictographData via PictographBridge and redraws on each change.
 // Uses PictographGeometry to resolve staff orientations and arc directions.
@@ -63,14 +63,14 @@ const canvas = document.getElementById('cave');
 const ctx = canvas.getContext('2d');
 const W = 500, H = 500;
 
-// Offscreen cache for the stone wall background — it's expensive to compute
+// Offscreen cache for the stone wall background - it's expensive to compute
 // and identical for every pictograph, so we prepare it once.
 const bgCanvas = document.createElement('canvas');
 bgCanvas.width = W;
 bgCanvas.height = H;
 const bgCtx = bgCanvas.getContext('2d');
 
-// ── Seeded PRNG (Mulberry32) — reseeded per render for determinism ───────────
+// ── Seeded PRNG (Mulberry32) - reseeded per render for determinism ───────────
 let rng = mulberry32(0xDEADBEEF);
 function mulberry32(seed) {
   return function() {
@@ -82,7 +82,7 @@ function mulberry32(seed) {
 }
 
 function seedFor(data) {
-  // Any stable hash of the pictograph identity — so navigating forward/back
+  // Any stable hash of the pictograph identity - so navigating forward/back
   // reproduces the same scatter/wobble for each letter.
   const s = `${data.letter}|${data.blueHand.location}|${data.blueHand.endLocation}|${data.blueHand.motionType}|${data.redHand.location}|${data.redHand.endLocation}|${data.redHand.motionType}`;
   let h = 0xDEADBEEF;
@@ -120,7 +120,7 @@ function fbm(x, y, octaves = 5) {
   return val / max;
 }
 
-// ── Stone wall — drawn once into bgCanvas ────────────────────────────────────
+// ── Stone wall - drawn once into bgCanvas ────────────────────────────────────
 function drawStoneWall(targetCtx) {
   targetCtx.fillStyle = '#b08060';
   targetCtx.fillRect(0, 0, W, H);
@@ -297,7 +297,7 @@ function pigmentArc(cx, cy, radius, startAngle, endAngle, color, width, opacity)
     ctx.stroke();
   }
 
-  // Arrowhead — solid
+  // Arrowhead - solid
   const endPt  = points[points.length - 1];
   const prevPt = points[points.length - 7];
   const headAngle = Math.atan2(endPt.y - prevPt.y, endPt.x - prevPt.x);
@@ -439,7 +439,7 @@ const SIENNA      = '#8a3a1a';
 const SIENNA_DARK = '#6a2610';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Glyph rendering — uses PictographGeometry to resolve every location/angle.
+// Glyph rendering - uses PictographGeometry to resolve every location/angle.
 // ─────────────────────────────────────────────────────────────────────────────
 function drawGrid() {
   const G = PictographGeometry;
@@ -501,13 +501,13 @@ function drawStaff(hand, mainColor, darkColor, tipColor) {
     pigmentStroke(a.x, a.y, b.x, b.y, mainColor, 6, 0.60, 0.7);
   }
 
-  // End caps — thumb end (a) vs pinky end (b). We don't distinguish which is
+  // End caps - thumb end (a) vs pinky end (b). We don't distinguish which is
   // which at this fidelity; both are drawn with the tip color.
   pigmentDaub(a.x, a.y, 6, tipColor,  0.80);
   pigmentDaub(b.x, b.y, 6, darkColor, 0.80);
 }
 
-// ── Letter glyph — "scratched into the stone" in the upper-right corner ─────
+// ── Letter glyph - "scratched into the stone" in the upper-right corner ─────
 function scratchedLetter(letter, cx, cy, size, opacity) {
   if (!letter) return;
   ctx.save();
@@ -573,13 +573,13 @@ function drawVignette() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Render — called on every pictograph update
+// Render - called on every pictograph update
 //
 // Two paths:
 //   1. Canonical bitmap available (parent rendered via Canvas2DDirectRenderer):
 //      recolor into charcoal/iron-oxide palette, apply pigment edge jitter,
 //      composite onto the stone background. This path inherits all correct
-//      motion semantics — pro vs anti, turns indicators, dashes, floats — from
+//      motion semantics - pro vs anti, turns indicators, dashes, floats - from
 //      the canonical renderer without reimplementing them here.
 //
 //   2. No canonical (standalone page open, or canonical render failed):
@@ -587,13 +587,13 @@ function drawVignette() {
 //      still produces a meaningful image.
 //
 // Era chrome (stone wall, scratched letter, handprint, texture, vignette) is
-// drawn identically either way — that's where this era's voice lives.
+// drawn identically either way - that's where this era's voice lives.
 // ─────────────────────────────────────────────────────────────────────────────
 const CAVE_PALETTE = {
   blue:       CHAR_DARK,
   red:        SIENNA_DARK,
   structural: '#3a2a18',
-  bg:         null,  // transparent — stone wall shows through
+  bg:         null,  // transparent - stone wall shows through
 };
 
 function render(data, canonical /* ImageBitmap | null */) {
@@ -605,13 +605,13 @@ function render(data, canonical /* ImageBitmap | null */) {
 
   if (canonical && window.PictographStylize) {
     // Path 1: pixelate + recolor + pigment pixel treatment + layered composite.
-    //   1. pixelate — downsample canonical to 90px then upsample with nearest
+    //   1. pixelate - downsample canonical to 90px then upsample with nearest
     //      neighbor so clean SVG edges become chunky pigment-scale blocks
-    //   2. recolor — map the canonical's blue/red/structural classes to
+    //   2. recolor - map the canonical's blue/red/structural classes to
     //      charcoal / iron-oxide / dark-ochre
-    //   3. pigment treatment — displace pixels along a noise field, vary
+    //   3. pigment treatment - displace pixels along a noise field, vary
     //      alpha for thickness variation, scatter darker flecks
-    //   4. multi-pass composite — draw the styled canvas three times at
+    //   4. multi-pass composite - draw the styled canvas three times at
     //      slightly different offsets and opacities so strokes feel layered
     const chunky = window.PictographStylize.pixelate(canonical, W, 90);
     const styled = window.PictographStylize.recolor(chunky, CAVE_PALETTE, W);
@@ -650,7 +650,7 @@ function render(data, canonical /* ImageBitmap | null */) {
 // Boot
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Default pictograph — rendered immediately so the page isn't blank before a
+// Default pictograph - rendered immediately so the page isn't blank before a
 // parent posts data. Also used when this HTML is opened directly.
 const DEFAULT_PICTOGRAPH = {
   letter: 'A',

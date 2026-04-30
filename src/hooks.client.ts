@@ -31,7 +31,7 @@ if (browser) {
 declare const __PWA_ENABLED__: boolean;
 
 // Dev mode: register a minimal FCM-only service worker for push notification testing
-// This doesn't use the full PWA/Workbox SW — just the Firebase messaging handler
+// This doesn't use the full PWA/Workbox SW - just the Firebase messaging handler
 if (browser && dev && "serviceWorker" in navigator) {
   navigator.serviceWorker
     .register("/firebase-messaging-sw.js", { scope: "/" })
@@ -48,12 +48,12 @@ if (browser && !dev && typeof __PWA_ENABLED__ !== "undefined" && __PWA_ENABLED__
         immediate: true,
         onRegisteredSW(_swUrl: string, registration: ServiceWorkerRegistration | undefined) {
           console.log("[PWA] Service worker registered");
-          // Register Background Sync if supported — retries failed network writes after restart
+          // Register Background Sync if supported - retries failed network writes after restart
           if (registration?.active && "sync" in registration) {
             (registration as ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } })
               .sync.register("tka-sync-queue")
               .catch(() => {
-                // Background Sync not supported in this browser — graceful degradation
+                // Background Sync not supported in this browser - graceful degradation
               });
           }
         },

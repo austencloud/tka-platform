@@ -70,7 +70,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     [MotionType.FLOAT]: "var(--semantic-success)", // Emerald for float
   };
 
-  // Position group colors — domain-specific visualization colors, no global theme equivalent
+  // Position group colors - domain-specific visualization colors, no global theme equivalent
   const POSITION_COLORS: Record<GridPositionGroup, string> = {
     [GridPositionGroup.ALPHA]: "#FF6B6B", // Red/coral for opposite
     [GridPositionGroup.BETA]: "#4ECDC4", // Teal for same

@@ -1,7 +1,7 @@
 import type { LedColor } from "../types/LedPatterns";
 import type { TipEvaluationContext } from "./context";
 
-// Direct imports of all evaluators — no lazy initialization, no side effects
+// Direct imports of all evaluators - no lazy initialization, no side effects
 import { evaluateSolid, evaluateSplit, evaluateQuad } from "./solid";
 import { evaluateBreathe, evaluatePulse, evaluateHeartbeat, evaluateColorMorph } from "./breathe";
 import { evaluateChase, evaluateComet, evaluateWave, evaluateCascade } from "./chase";
@@ -13,7 +13,7 @@ export type PatternEvaluatorFn = (ctx: TipEvaluationContext) => LedColor;
 
 /**
  * Explicit const registry. Populated at module load time.
- * No initializeRegistry() needed — anyone importing evaluatePattern()
+ * No initializeRegistry() needed - anyone importing evaluatePattern()
  * gets a fully populated registry automatically.
  */
 const EVALUATOR_REGISTRY: ReadonlyMap<string, PatternEvaluatorFn> = new Map([

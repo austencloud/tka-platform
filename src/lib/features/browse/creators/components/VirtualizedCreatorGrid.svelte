@@ -70,7 +70,7 @@
   // Gap between rows (vertical) and between cards (horizontal)
   const GAP = 12;
 
-  // Rough initial estimate — corrected by measureElement after first render
+  // Rough initial estimate - corrected by measureElement after first render
   const INITIAL_ROW_ESTIMATE = 270;
 
   // Get users for a specific row
@@ -131,7 +131,7 @@
     return () => resizeObserver.disconnect();
   });
 
-  // Virtualizer lifecycle — recreates when rowCount changes
+  // Virtualizer lifecycle - recreates when rowCount changes
   $effect(() => {
     if (!scrollElement) return;
 
@@ -154,7 +154,7 @@
     return unsubscribe;
   });
 
-  // When column count changes, row content reflows — invalidate cached measurements
+  // When column count changes, row content reflows - invalidate cached measurements
   $effect(() => {
     columnCount;
     untrack(() => virtualizerRef?.measure());

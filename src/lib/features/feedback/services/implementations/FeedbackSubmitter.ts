@@ -121,7 +121,7 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
       throw error;
     }
 
-    // Attach images — use pre-uploaded URLs if available (instant), otherwise upload now
+    // Attach images - use pre-uploaded URLs if available (instant), otherwise upload now
     if (preUploadedImageUrls && preUploadedImageUrls.length > 0) {
       try {
         await updateDoc(docRef, { imageUrls: preUploadedImageUrls });

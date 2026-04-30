@@ -98,7 +98,7 @@ function simplifyPalindromicWord(word: string): string {
       }
     }
 
-    // Must be a true palindrome (not all identical — that's a repeat, already handled)
+    // Must be a true palindrome (not all identical - that's a repeat, already handled)
     if (isPalindrome && groups[0] !== groups[1]) {
       const halfCount = Math.ceil(numGroups / 2);
       return groups.slice(0, halfCount).join("");
@@ -178,4 +178,92 @@ export function simplifyAndTruncate(
   // Truncate to maxLetters units and add ellipsis
   const truncatedUnits = letterUnits.slice(0, maxLetters);
   return truncatedUnits.join("") + "...";
+}
+
+export interface CompressedSegment {
+  tokens: string[];
+  repeat: number;
+}
+
+/**
+ * Compress a word by detecting repeated consecutive subsequences.
+ *
+ * Unlike simplifyRepeatedWord (which only handles full-word repetition like
+ * ABCABC → ABC), this detects partial runs:
+ *   "AKEAAαΦ-AAKEAAαΦ-AAAAABαΦ-BAAAABαΦ-B"
+ *   → [{tokens: [A,K,E,A,A,α,Φ-,A], repeat: 2},
+ *      {tokens: [A,A,A,A,B,α,Φ-,B], repeat: 2}]
+ *
+ * Falls back to a single segment with repeat=1 when no runs are found.
+ */
+export function compressWord(word: string): CompressedSegment[] {
+  if (!word) return [];
+  const units = splitIntoLetterUnits(word);
+  if (units.length === 0) return [];
+
+  const segments: CompressedSegment[] = [];
+  let i = 0;
+
+  while (i < units.length) {
+    let bestLen = 0;
+    let bestCount = 0;
+
+    const maxPatternLen = Math.floor((units.length - i) / 2);
+    for (let len = 1; len <= maxPatternLen; len++) {
+      const pattern = units.slice(i, i + len);
+      let count = 1;
+      let j = i + len;
+      while (j + len <= units.length && arraysEqual(units, j, pattern, len)) {
+        count++;
+        j += len;
+      }
+      const minCount = len === 1 ? 4 : 2;
+      if (count >= minCount && len * count > bestLen * bestCount) {
+        bestLen = len;
+        bestCount = count;
+      }
+    }
+
+    if (bestCount >= 2) {
+      segments.push({ tokens: units.slice(i, i + bestLen), repeat: bestCount });
+      i += bestLen * bestCount;
+    } else {
+      segments.push({ tokens: [units[i]!], repeat: 1 });
+      i++;
+    }
+  }
+
+  return mergeUnrepeatedSegments(segments);
+}
+
+function arraysEqual(source: string[], offset: number, pattern: string[], len: number): boolean {
+  for (let k = 0; k < len; k++) {
+    if (source[offset + k] !== pattern[k]) return false;
+  }
+  return true;
+}
+
+function mergeUnrepeatedSegments(segments: CompressedSegment[]): CompressedSegment[] {
+  const merged: CompressedSegment[] = [];
+  for (const seg of segments) {
+    if (seg.repeat === 1 && merged.length > 0 && merged[merged.length - 1]!.repeat === 1) {
+      merged[merged.length - 1]!.tokens.push(...seg.tokens);
+    } else {
+      merged.push(seg);
+    }
+  }
+  return merged;
+}
+
+/**
+ * Render compressed segments back to a flat display string.
+ * Repeated segments get (tokens)×N notation.
+ */
+export function compressedToDisplayString(segments: CompressedSegment[]): string {
+  return segments
+    .map((seg) => {
+      const inner = seg.tokens.join("");
+      return seg.repeat > 1 ? `(${inner})×${seg.repeat}` : inner;
+    })
+    .join("");
 }

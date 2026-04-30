@@ -24,7 +24,9 @@
 
   const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
   const loopComponents = $derived(loopDisplay.components);
-  const rotationSliceSize = $derived(loopDisplay.rotationSliceSize);
+  const rotationPeriod = $derived(loopDisplay.rotationPeriod);
+  const inversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const loopPeriod = $derived(loopDisplay.period);
 
   const hasLoop = $derived(loopComponents.size > 0);
   const level = $derived(sequence.level ?? 1);
@@ -93,7 +95,7 @@
       {#if hasLoop}
         <div class="loop">
           <div class="loop-head">
-            <LOOPIconStrip activeComponents={loopComponents} {rotationSliceSize} size={16} darkMode={false} />
+            <LOOPIconStrip activeComponents={loopComponents} {rotationPeriod} {inversionPeriod} period={loopPeriod} size={16} darkMode={false} />
             <span class="loop-label">
               {#if sliceName}{sliceName}{/if}
               {#if isRotated} Rotation{/if}

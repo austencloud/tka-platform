@@ -2,7 +2,7 @@
  * Audit logger for admin actions.
  *
  * Writes structured entries to Firestore `audit_log` collection.
- * Fire-and-forget by default — audit failures should never block
+ * Fire-and-forget by default - audit failures should never block
  * the admin operation itself.
  */
 
@@ -24,7 +24,7 @@ export interface AuditEntry {
 /**
  * Log an admin action to Firestore audit_log collection.
  *
- * This is fire-and-forget — errors are logged to console but never thrown.
+ * This is fire-and-forget - errors are logged to console but never thrown.
  */
 export function logAdminAction(entry: AuditEntry): void {
   const db = getAdminDb();

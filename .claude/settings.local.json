@@ -567,7 +567,11 @@
       "Read(//c/Users/Austen/.claude/**)",
       "Bash(NODE_OPTIONS=--max-old-space-size=8192 npx vite build)",
       "Bash(echo 'export ANTHROPIC_MODEL=claude-opus-4-6')",
-      "Read(//c/Users/Austen/**)"
+      "Read(//c/Users/Austen/**)",
+      "Bash(rm nul *)",
+      "Bash(rm .tmp-sysload.ps1)",
+      "Bash(rmdir feedback-images *)",
+      "Bash(rmdir \"~\")"
     ]
   },
   "enableAllProjectMcpServers": true,

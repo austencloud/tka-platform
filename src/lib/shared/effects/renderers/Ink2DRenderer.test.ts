@@ -213,7 +213,7 @@ describe("Ink2DRenderer", () => {
     expect((ctx2.drawImage as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
   });
 
-  it("applies gravity — points move downward over time", () => {
+  it("applies gravity - points move downward over time", () => {
     const r = new Ink2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({
@@ -267,13 +267,13 @@ describe("Ink2DRenderer", () => {
         bluePosB: null, redPosA: null, redPosB: null,
       }, 1 / 60);
     }
-    // Let gravity stretch them apart — high viscosity = low break threshold
+    // Let gravity stretch them apart - high viscosity = low break threshold
     for (let i = 0; i < 60; i++) {
       r.render(ctx, params, {
         bluePosA: null, bluePosB: null, redPosA: null, redPosB: null,
       }, 1 / 60);
     }
-    // Droplets should exist — verify via drawImage count exceeding stamp count
+    // Droplets should exist - verify via drawImage count exceeding stamp count
     // (droplets add extra drawImage calls after stamps are gone)
     const ctx2 = makeCtx();
     r.render(ctx2, params, {
@@ -281,7 +281,7 @@ describe("Ink2DRenderer", () => {
     }, 1 / 60);
     // At high viscosity + strong gravity, most stamps should have broken off
     // into droplets. We just verify the renderer didn't crash and produced output.
-    // Exact droplet count depends on timing — just verify some rendering happened.
+    // Exact droplet count depends on timing - just verify some rendering happened.
     expect(true).toBe(true); // no crash = pass
   });
 

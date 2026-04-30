@@ -3,9 +3,9 @@
  *
  * Props have variable tip counts (staff = 2 tips, fan = 5, club = 1).
  * Effects can be assigned at three granularity levels:
- *   "*"       — applies to every tip in the cell
- *   "0"/"1"   — applies to every tip on one hand's prop
- *   "0-0"     — applies to a single tip on a single prop
+ *   "*"       - applies to every tip in the cell
+ *   "0"/"1"   - applies to every tip on one hand's prop
+ *   "0-0"     - applies to a single tip on a single prop
  *
  * Resolution walks from most-specific to least-specific within
  * the cell map first, then falls through to the global map.
@@ -29,7 +29,8 @@ export type EffectType =
   | "smoke"
   | "ink"
   | "frost"
-  | "silk";
+  | "silk"
+  | "pulse";
 
 export interface TipEffectAssignment {
   effect: EffectType;
@@ -41,9 +42,9 @@ export interface TipEffortAssignment {
 
 /**
  * Key format:
- *   "*"         — cell-wide (all tips on all props)
- *   "0" / "1"   — per-hand (all tips on one prop)
- *   "0-0"       — per-tip  (single tip on one prop)
+ *   "*"         - cell-wide (all tips on all props)
+ *   "0" / "1"   - per-hand (all tips on one prop)
+ *   "0-0"       - per-tip  (single tip on one prop)
  */
 export type TipEffectMap = Record<string, TipEffectAssignment>;
 export type TipEffortMap = Record<string, TipEffortAssignment>;

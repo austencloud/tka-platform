@@ -1,5 +1,5 @@
 <!--
-PeriodCard.svelte — LOOP period selector (2, 4, 8).
+PeriodCard.svelte - LOOP period selector (2, 4, 8).
 
 Replaces SliceSizeCard. Period is the integer count of passes required for
 a LOOP to return to identity (position AND orientation):
@@ -30,7 +30,7 @@ Phase 6 of the LOOP period refactor.
     headerFontSize?: string;
   }>();
 
-  // Period 4 uses fa-arrows-spin (four-arrow spin) — this mirrors the icon-
+  // Period 4 uses fa-arrows-spin (four-arrow spin) - this mirrors the icon-
   // strip distinction added in the scope-B slice-aware icon work, but at the
   // control level so users can tell the two periods apart before generating.
   // Period 2 keeps the classic fa-rotate (two-arrow loop).

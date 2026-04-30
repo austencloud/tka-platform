@@ -135,7 +135,7 @@ export class PropPlacer implements IPropPlacer {
     gridMode: GridMode,
     visibility?: PropPlacementVisibility
   ): Promise<{ x: number; y: number }> {
-    // If this prop's partner is hidden, there is no collision — skip offset.
+    // If this prop's partner is hidden, there is no collision - skip offset.
     // Beta offset exists purely to separate two overlapping props; with one
     // hidden the remaining prop should snap back to the default hand point.
     const thisIsBlue = motionData.color === MotionColor.BLUE;

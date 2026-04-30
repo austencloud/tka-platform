@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>TKA Pictograph — Line Printer Output 1976</title>
+  <title>TKA Pictograph - Line Printer Output 1976</title>
   <style>
     body {
       margin: 0;
@@ -40,7 +40,7 @@
   const AR = 37;
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Grid points — (row, col) inside art buffer. Diamond layout.
+  // Grid points - (row, col) inside art buffer. Diamond layout.
   // ────────────────────────────────────────────────────────────────────────────
   const G = {
     N:  [1,  27],
@@ -55,7 +55,7 @@
   };
 
   // Grid perimeter geometry in CHARACTER space. Rows are ~13px tall, columns
-  // ~8px wide, so the ASCII perimeter isn't a true circle — we calibrate the
+  // ~8px wide, so the ASCII perimeter isn't a true circle - we calibrate the
   // row radius and column radius to match the existing G[] anchor points.
   //   N is 17 rows above center; E is 25 cols right of center.
   const GRID_CENTER_R = 18;
@@ -81,15 +81,15 @@
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Canonical → ASCII — downsample the 500px canonical render down to the
+  // Canonical → ASCII - downsample the 500px canonical render down to the
   // AC×AR character grid and classify each cell by its dominant color class.
   // This is Path 1: the canonical renderer already resolved every motion
   // semantic correctly (pro vs anti, dash vs arc, orientation), so we just
   // translate pixel classes into printer characters.
   //
-  //   '#' — blue-dominant pixel (blue hand ink)
-  //   '@' — red-dominant pixel  (red hand ink)
-  //   '.' — structural (grid lines / letter / anything non-colored)
+  //   '#' - blue-dominant pixel (blue hand ink)
+  //   '@' - red-dominant pixel  (red hand ink)
+  //   '.' - structural (grid lines / letter / anything non-colored)
   //
   // Chosen for visual weight: '#' and '@' are the heaviest printable ASCII
   // glyphs, matching the bold ink of the two hand colors. '.' is the lightest
@@ -122,7 +122,7 @@
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Render — rebuilds the entire line-printer page for the given pictograph.
+  // Render - rebuilds the entire line-printer page for the given pictograph.
   // ────────────────────────────────────────────────────────────────────────────
   function render(data, canonical, meta) {
     // Fresh ASCII buffer on every render so nothing leaks between updates.
@@ -134,7 +134,7 @@
     function blank2 (r, c, ch) {
       if (r >= 0 && r < AR && c >= 0 && c < AC && buf[r][c] === ' ') buf[r][c] = ch;
     }
-    // Bresenham-ish line using middle-dot (safe variant — never overwrites chars)
+    // Bresenham-ish line using middle-dot (safe variant - never overwrites chars)
     function gline (r1, c1, r2, c2, ch) {
       const marker = ch || '\xb7';
       const steps = Math.max(Math.abs(r2-r1), Math.abs(c2-c1));
@@ -163,7 +163,7 @@
       // Fallback: data-driven ASCII drawing. Kept intact for standalone opens
       // or when the parent couldn't provide a canonical bitmap.
 
-      // ── Grid lines (middle-dot) — drawn first so staves/arrows paint over ──
+      // ── Grid lines (middle-dot) - drawn first so staves/arrows paint over ──
       gline(...G.N, ...G.NE); gline(...G.NE, ...G.E);
       gline(...G.E, ...G.SE); gline(...G.SE, ...G.S);
       gline(...G.S, ...G.SW); gline(...G.SW, ...G.W);
@@ -173,15 +173,15 @@
       gline(...G.NE, ...G.SW);
       gline(...G.NW, ...G.SE);
 
-      // ── Arrows (arcs / dashes) — drawn before staves so the prop sits on top ──
+      // ── Arrows (arcs / dashes) - drawn before staves so the prop sits on top ──
       drawArrowForHand(buf, data.blueHand, '#', '^', '>');
       drawArrowForHand(buf, data.redHand,  '@', 'v', '<');
 
-      // ── Staves — drawn last so they're the most visible ink on the page ──
+      // ── Staves - drawn last so they're the most visible ink on the page ──
       drawStaffForHand(buf, data.blueHand, '#', '|');
       drawStaffForHand(buf, data.redHand,  '@', '|');
 
-      // ── Grid dots (anchors) — drawn on top so the grid stays legible ──
+      // ── Grid dots (anchors) - drawn on top so the grid stays legible ──
       for (const [pos, [r,c]] of Object.entries(G)) {
         if (pos === 'C')                            put(r, c, 'O');
         else if (['N','S','E','W'].includes(pos))   put(r, c, '+');
@@ -197,7 +197,7 @@
     put(18, 54, 'E');
 
     // ────────────────────────────────────────────────────────────────────────
-    // Staff / arrow helpers — closed over `buf`, `put`, `gline`, `glineSolid`.
+    // Staff / arrow helpers - closed over `buf`, `put`, `gline`, `glineSolid`.
     // ────────────────────────────────────────────────────────────────────────
     function drawStaffForHand(_buf, hand, bodyCh, shaftCh) {
       if (!hand || !window.PictographGeometry) return;
@@ -209,7 +209,7 @@
       const axis = G_.staffAxisAngle(endLoc, hand.orientation || 'in');
 
       // Staff length in character cells. Shorter in the col direction because
-      // columns are narrower than rows — the eye expects a roughly square feel.
+      // columns are narrower than rows - the eye expects a roughly square feel.
       const halfRows = 8;
       const halfCols = 8;
       const dr = Math.sin(axis);
@@ -255,7 +255,7 @@
         return;
       }
 
-      // Arc — sample along the perimeter in character space
+      // Arc - sample along the perimeter in character space
       const dir = G_.handDirection(hand) || 'cw';
       const angles = G_.arcAngles(handLoc(hand), handEndLoc(hand), dir);
       if (!angles) return;
@@ -270,7 +270,7 @@
         prev = pt;
       }
       if (prev) {
-        // Arrowhead at the final sample — direction from penultimate → final
+        // Arrowhead at the final sample - direction from penultimate → final
         const tPrev = (steps - 1) / steps;
         const aPrev = angles.startA + (angles.endA - angles.startA) * tPrev;
         const prevPt = anglePoint(aPrev);
@@ -305,7 +305,7 @@
     const mt   = (blue.motionType || 'static').toString().toUpperCase();
     const word = letter;
 
-    // Today's printout date — keep the 1976 fixed stamp; the "batch job" id
+    // Today's printout date - keep the 1976 fixed stamp; the "batch job" id
     // shifts per letter so each printout looks like its own run.
     const stampDate = '12/15/1976';
     const batchBase = 197612150000;
@@ -327,7 +327,7 @@
     dashes();
 
     // ── Pictograph title + blank ──────────────────────────────────────────
-    centre(`[ PICTOGRAPH OUTPUT — LETTER: ${letter} ]`, true);
+    centre(`[ PICTOGRAPH OUTPUT - LETTER: ${letter} ]`, true);
     blank();
 
     // ── Art buffer rows ───────────────────────────────────────────────────
@@ -407,7 +407,7 @@
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Canvas painting — the green-bar paper, tractor holes, and the text pass.
+  // Canvas painting - the green-bar paper, tractor holes, and the text pass.
   // Extracted so `render()` can call it on every update.
   // ────────────────────────────────────────────────────────────────────────────
   function paintPage(lines) {
@@ -482,7 +482,7 @@
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Default pictograph — rendered immediately so the page isn't blank before a
+  // Default pictograph - rendered immediately so the page isn't blank before a
   // parent posts data. Also used when this HTML is opened directly.
   // ────────────────────────────────────────────────────────────────────────────
   const DEFAULT_PICTOGRAPH = {

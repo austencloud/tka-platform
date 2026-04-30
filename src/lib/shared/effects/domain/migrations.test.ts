@@ -235,7 +235,7 @@ describe("migrateEffectsConfig", () => {
   it("migrates v8 → v9 by seeding default bubbles intent", () => {
     const v8 = {
       version: 8,
-      // No bubbles block — must seed from defaults.
+      // No bubbles block - must seed from defaults.
     };
     const out = migrateEffectsConfig(v8);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
@@ -272,7 +272,7 @@ describe("migrateEffectsConfig", () => {
   it("migrates v9 → v10 by seeding default petals intent", () => {
     const v9 = {
       version: 9,
-      // No petals block — must seed from defaults.
+      // No petals block - must seed from defaults.
     };
     const out = migrateEffectsConfig(v9);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
@@ -311,7 +311,7 @@ describe("migrateEffectsConfig", () => {
   it("migrates v10 → v11 by seeding default smoke intent", () => {
     const v10 = {
       version: 10,
-      // No smoke block — must seed from defaults.
+      // No smoke block - must seed from defaults.
     };
     const out = migrateEffectsConfig(v10);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
@@ -363,7 +363,7 @@ describe("migrateEffectsConfig", () => {
   it("migrates v11 → v12 by seeding default ink intent", () => {
     const v11 = {
       version: 11,
-      // No ink block — must seed from defaults.
+      // No ink block - must seed from defaults.
     };
     const out = migrateEffectsConfig(v11);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);

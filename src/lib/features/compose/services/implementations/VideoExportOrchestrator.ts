@@ -40,7 +40,7 @@ import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-i
 import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
@@ -120,8 +120,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         ? (loopDisplayForExport.components as unknown as Set<string>)
         : null;
 
-    const rotationSliceSize: SliceSize | undefined =
-      loopDisplayForExport?.rotationSliceSize;
+    const rotationPeriod: Period | undefined =
+      loopDisplayForExport?.rotationPeriod;
+    const inversionPeriod: Period | undefined =
+      loopDisplayForExport?.inversionPeriod;
+    const loopPeriod: number | undefined =
+      loopDisplayForExport?.period;
 
     // Resolve FPS early - used by both encoder paths and frame calculations
     const fps = options.fps ?? VIDEO_EXPORT_FPS;
@@ -235,32 +239,77 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
       playbackController.jumpToStep(0);
 
-      // Invalidate the fire frame cache (but NOT the simulation FBOs) so the
-      // renderer records fresh frames during export. The Navier-Stokes simulation
-      // is already warm from normal playback — nuking it produces a cold start
-      // that looks nothing like the preview.
-      fireCacheInvalidation.triggerCacheOnly();
+      // --- EXPORT DIAGNOSTIC: flat strings only (Objects collapse in console paste) ---
+      const diagContainer = canvas.parentElement;
+      console.log(`[export-diag] === EXPORT START === main=${canvas.width}x${canvas.height} output=${outputWidth}x${outputHeight} scale=${(outputWidth / sourceWidth).toFixed(3)}`);
+      if (diagContainer) {
+        const overlays = diagContainer.querySelectorAll("canvas");
+        overlays.forEach((ov, idx) => {
+          if (ov === canvas) return;
+          const el = ov as HTMLCanvasElement;
+          const isWebGL = !!el.getContext('webgl2');
+          console.log(`[export-diag] overlay[${idx}]: ${el.width}x${el.height} webgl=${isWebGL} z=${el.style.zIndex} data-type=${el.dataset?.overlayType ?? 'NONE'}`);
+        });
+      }
 
-      // Clear non-WebGL overlay canvases (trails, LED) so residual effects from
-      // the user's previous playback don't bleed into frame 1. Skip WebGL canvases
-      // (fire/charcoal) — the resize trick destroys the GL context and nukes the
-      // warm simulation state. Fire will overwrite its canvas on the next render.
+      // Enable fire renderer diagnostics
+      if (typeof window !== 'undefined' && (window as any).__tka_fire_diag) {
+        (window as any).__tka_fire_diag.enable();
+        console.log('[export-diag] fire diagnostics enabled');
+      }
+
+      // Clear fire/charcoal simulation FBOs, display canvas, and frame cache.
+      fireCacheInvalidation.trigger();
+      await this.waitForAnimationFrame();
+      await this.waitForAnimationFrame();
+
+      // Navier-Stokes fluid simulation needs ~60 frames to converge from
+      // zeroed state. Without warmup, the pressure field is unresolved and
+      // produces concentric ring artifacts. Run a short warmup at step 0
+      // so the simulation reaches steady state before capture begins.
+      const needsFluidWarmup =
+        visibilityManager.hasEffect("fire") ||
+        visibilityManager.hasEffect("charcoal");
+      if (needsFluidWarmup) {
+        const WARMUP_FRAMES = 60;
+        for (let w = 0; w < WARMUP_FRAMES; w++) {
+          playbackController.calculateStateForStep(0);
+          await this.waitForAnimationFrame();
+        }
+        // Drop any cached warmup frames but keep the converged simulation FBOs
+        fireCacheInvalidation.triggerCacheOnly();
+        await this.waitForAnimationFrame();
+        // Reset fire diagnostic counter so export frames get logged (warmup consumed the first 5)
+        if (typeof window !== 'undefined' && (window as any).__tka_fire_diag) {
+          (window as any).__tka_fire_diag.reset();
+          console.log('[export-diag] fire diag counter reset after warmup');
+        }
+      }
+
+      // Clear all overlay canvases: 2D (trails, LED) and WebGL display
+      // surfaces (fire, charcoal). Simulation FBOs stay warm — only the
+      // visible display canvas pixels are cleared so warmup frames don't
+      // bleed into the first captured frame.
       const container = canvas.parentElement;
       if (container) {
         for (const overlay of container.querySelectorAll("canvas")) {
           if (overlay === canvas) continue;
-          const ctx = overlay.getContext("2d");
-          if (ctx) {
-            ctx.clearRect(0, 0, overlay.width, overlay.height);
+          const ctx2d = overlay.getContext("2d");
+          if (ctx2d) {
+            ctx2d.clearRect(0, 0, overlay.width, overlay.height);
+          } else {
+            const glCtx = overlay.getContext("webgl2") as WebGL2RenderingContext | null;
+            if (glCtx) {
+              glCtx.bindFramebuffer(glCtx.FRAMEBUFFER, null);
+              glCtx.clearColor(0, 0, 0, 0);
+              glCtx.clear(glCtx.COLOR_BUFFER_BIT);
+            }
           }
         }
       }
 
       await this.delay(VIDEO_INITIAL_CAPTURE_DELAY_MS);
 
-      // If effect overrides were applied, wait for the DOM to stabilize.
-      // Toggling fire/LED/trails can trigger Svelte re-renders that
-      // temporarily destroy and recreate canvas elements.
       if (savedEffectState) {
         await this.waitForAnimationFrame();
         await this.waitForAnimationFrame();
@@ -506,11 +555,43 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               for (const overlay of overlayCanvases) {
                 if (overlay === canvas) continue; // Skip the main canvas
                 if (overlay.width === 0 || overlay.height === 0) continue; // Skip uninitialized
+
+                // --- EXPORT DIAGNOSTIC: flat strings ---
+                if (i < 3) {
+                  const el = overlay as HTMLCanvasElement;
+                  const isWebGL = !!el.getContext("webgl2");
+                  const oType = el.dataset?.overlayType ?? "NONE";
+                  const blend = oType === "emissive" ? "lighter" : "source-over";
+                  console.log(`[export-comp] f${i} overlay ${el.width}x${el.height} type=${oType} blend=${blend} webgl=${isWebGL}`);
+
+                  if (isWebGL) {
+                    const glCtx = el.getContext("webgl2") as WebGL2RenderingContext;
+                    if (glCtx) {
+                      const px = new Uint8Array(4);
+                      const w = el.width, h = el.height;
+                      glCtx.readPixels(Math.floor(w/2), Math.floor(h/2), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
+                      const center = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+                      glCtx.readPixels(Math.floor(w/2), Math.floor(h*0.25), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
+                      const quarter = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+                      glCtx.readPixels(5, 5, 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
+                      const corner = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+                      console.log(`[export-comp] f${i} pixels: center=${center} quarter=${quarter} corner=${corner}`);
+                    }
+                  }
+                }
+
+                const isEmissive = (overlay as HTMLCanvasElement).dataset?.overlayType === "emissive";
+                if (isEmissive) {
+                  offscreenCtx.globalCompositeOperation = "lighter";
+                }
                 offscreenCtx.drawImage(
                   overlay,
                   0, 0, overlay.width, overlay.height,                  // source: full overlay
                   0, canvasY, outputCanvasSize, outputCanvasSize          // dest: scaled to output
                 );
+                if (isEmissive) {
+                  offscreenCtx.globalCompositeOperation = "source-over";
+                }
               }
             }
           }
@@ -642,7 +723,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               activeStepNumber,
               difficultyLevel,
               loopComponents,
-              rotationSliceSize
+              rotationPeriod,
+              inversionPeriod,
+              loopPeriod
             );
           }
 
@@ -739,6 +822,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
       throw error;
     } finally {
+      // --- EXPORT DIAGNOSTIC cleanup ---
+      if (typeof window !== 'undefined' && (window as any).__tka_fire_diag) {
+        (window as any).__tka_fire_diag.disable();
+      }
+
       this.restoreEffectState(visibilityManager, savedEffectState);
       this.restorePlaybackState(playbackController, captureState);
       this._isExporting = false;

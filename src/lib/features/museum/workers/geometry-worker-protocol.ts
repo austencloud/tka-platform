@@ -39,7 +39,7 @@ export type GeometryWorkerRequest =
 // ─── Response types (worker → main thread) ───────────────────────────────────
 
 // A batch of instanced geometry sharing the same material.
-// positions is a flat array of [x0, z0, x1, z1, ...] pairs — Float32Array so
+// positions is a flat array of [x0, z0, x1, z1, ...] pairs - Float32Array so
 // it can be transferred zero-copy via postMessage transferables.
 export interface BatchTransfer {
   color: string;
@@ -58,7 +58,7 @@ export interface RoomBuiltResponse {
   signPositions: Float32Array;
   totalFloorInstances: number;
   totalWallInstances: number;
-  // The ArrayBuffers backing every Float32Array above — pass these as the
+  // The ArrayBuffers backing every Float32Array above - pass these as the
   // second argument to postMessage so they are transferred, not copied.
   transferables: ArrayBuffer[];
 }

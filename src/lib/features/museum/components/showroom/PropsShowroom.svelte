@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Props Showroom — A debug gallery displaying all available 3D models,
+   * Props Showroom - A debug gallery displaying all available 3D models,
    * textures, and effects. Walk around in FPS to preview assets before
    * placing them in the museum.
    *

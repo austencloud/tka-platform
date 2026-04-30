@@ -6,7 +6,7 @@ import type { IInferenceProvider } from "./village-llm-types";
  *
  * This is the default when Ollama isn't running or the user
  * toggles LLM mode off. Decisions are based on personality
- * floats encoded in the prompt — we parse them back out and
+ * floats encoded in the prompt - we parse them back out and
  * roll against them, producing the same behavior as the
  * original SocialSystem probability rolls.
  */

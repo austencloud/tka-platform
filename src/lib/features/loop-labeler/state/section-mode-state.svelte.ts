@@ -10,7 +10,7 @@ import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPL
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { LabeledSequence } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
-import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 export interface SectionModeState {
   // Beat selection
@@ -20,7 +20,7 @@ export interface SectionModeState {
 
   // Component selection
   selectedComponents: Set<ComponentId>;
-  selectedSliceSize: SliceSize | null;
+  selectedPeriod: Period | null;
 
   // Saved sections
   savedSections: SectionDesignation[];
@@ -34,7 +34,7 @@ export interface SectionModeState {
     clearBeatSelection(): void;
     setShiftHeld(held: boolean): void;
     toggleComponent(component: ComponentId): void;
-    setSliceSize(size: SliceSize | null): void;
+    setPeriod(size: Period | null): void;
     setBaseWord(baseWord: string | null): void;
     addSection(
       currentWord: string,
@@ -60,7 +60,7 @@ export function createSectionModeState(): SectionModeState {
   let lastClickedStep = $state<number | null>(null);
   let isShiftHeld = $state(false);
   let selectedComponents = $state(new Set<ComponentId>());
-  let selectedSliceSize = $state<SliceSize | null>(null);
+  let selectedPeriod = $state<Period | null>(null);
   let savedSections = $state<SectionDesignation[]>([]);
   let selectedBaseWord = $state<string | null>(null);
 
@@ -122,8 +122,8 @@ export function createSectionModeState(): SectionModeState {
       selectedComponents = newSet;
     },
 
-    setSliceSize(size: SliceSize | null) {
-      selectedSliceSize = size;
+    setPeriod(size: Period | null) {
+      selectedPeriod = size;
     },
 
     setBaseWord(baseWord: string | null) {
@@ -158,7 +158,7 @@ export function createSectionModeState(): SectionModeState {
         steps: Array.from(selectedSteps).sort((a, b) => a - b),
         components: Array.from(selectedComponents),
         loopType: derivedLoopType,
-        sliceSize: selectedComponents.has("rotated") ? selectedSliceSize : null,
+        period: selectedComponents.has("rotated") ? selectedPeriod : null,
         baseWord: selectedBaseWord ?? undefined,
       };
 
@@ -223,7 +223,7 @@ export function createSectionModeState(): SectionModeState {
       selectedComponents = new Set();
       selectedSteps = new Set();
       lastClickedStep = null;
-      selectedSliceSize = null;
+      selectedPeriod = null;
       selectedBaseWord = null;
     },
 
@@ -245,8 +245,8 @@ export function createSectionModeState(): SectionModeState {
     get selectedComponents() {
       return selectedComponents;
     },
-    get selectedSliceSize() {
-      return selectedSliceSize;
+    get selectedPeriod() {
+      return selectedPeriod;
     },
     get savedSections() {
       return savedSections;

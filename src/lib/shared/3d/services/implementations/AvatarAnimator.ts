@@ -45,11 +45,11 @@ export class AvatarAnimator implements IAvatarAnimator {
   private clavicleRaiser: IClavicleRaiser | null;
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
-  // The bone's original rest quaternion — we COMPOSE with this, never replace it
+  // The bone's original rest quaternion - we COMPOSE with this, never replace it
   private leftClavicleRestQuat = new Quaternion();
   private rightClavicleRestQuat = new Quaternion();
   private _clavicleRaiseEnabled = true;
-  // Cached shoulder rest Y positions — captured once when skeleton loads.
+  // Cached shoulder rest Y positions - captured once when skeleton loads.
   // Must NOT be read per-frame after clavicle rotation, or the elevated
   // position feeds back into the next frame and causes oscillation.
   private leftShoulderRestY = 0;
@@ -76,7 +76,7 @@ export class AvatarAnimator implements IAvatarAnimator {
   /** When true, skip SpineTwister's Hips counter-rotation so planted legs don't slide. */
   private _skipHipsTwist = false;
   private spineRestCached = false;
-  /** Which spine/head bones the model actually has — used for weight redistribution */
+  /** Which spine/head bones the model actually has - used for weight redistribution */
   private availableSpineBones = new Set<string>();
 
   /**
@@ -263,7 +263,7 @@ export class AvatarAnimator implements IAvatarAnimator {
   }
 
   private blendToTarget(_deltaTime: number): void {
-    // Hands snap directly to prop positions — no lerp.
+    // Hands snap directly to prop positions - no lerp.
     // This keeps the wrist bones strictly locked to the grid prop location
     // so they never visually detach. Body systems (clavicle, spine twist,
     // pole vectors) still use smoothingFactor for natural motion.
@@ -301,7 +301,7 @@ export class AvatarAnimator implements IAvatarAnimator {
     );
 
     // Interpolate pose hands per side. When either endpoint is null on a
-    // side we cannot lerp, so snap to the end's nullability — a hand that
+    // side we cannot lerp, so snap to the end's nullability - a hand that
     // appears mid-transition pops in at t=0 and one that vanishes drops
     // out at t=0. In practice transition targets come from set-piece
     // authoring where both hands are consistently present or absent.
@@ -356,7 +356,7 @@ export class AvatarAnimator implements IAvatarAnimator {
     const result = AvatarAnimator.cloneBodyPose(this.currentPose);
 
     // Apply layers. A layer can only influence a hand that's present in
-    // both the current pose and the layer's pose — there's nothing to
+    // both the current pose and the layer's pose - there's nothing to
     // lerp toward or from when one side is null.
     for (const layer of this.layers.values()) {
       if (layer.weight <= 0) continue;
@@ -393,7 +393,7 @@ export class AvatarAnimator implements IAvatarAnimator {
     }
 
     // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
-    // CRITICAL: Do NOT read these per-frame after clavicle is rotated — the elevated
+    // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
     // position feeds back and causes oscillation.
     if (!this.shoulderRestCached && leftChain && rightChain) {
       const leftRoot = new Vector3();
@@ -411,7 +411,7 @@ export class AvatarAnimator implements IAvatarAnimator {
       this.shoulderRestCached = true;
     }
 
-    // Cache spine bone rest quaternions once — COMPOSE with these, never replace.
+    // Cache spine bone rest quaternions once - COMPOSE with these, never replace.
     // Works with whatever bones are available (some models lack Spine2/upper_chest).
     if (!this.spineRestCached) {
       let anyFound = false;
@@ -470,7 +470,7 @@ export class AvatarAnimator implements IAvatarAnimator {
       applySpineTwist("Spine2", "spine2", twistResult.spine2);
       applySpineTwist("Neck", "neck", twistResult.neck);
       applySpineTwist("Head", "head", twistResult.head);
-      // Skip Hips counter-rotation for exhibit performers — when leg bones
+      // Skip Hips counter-rotation for exhibit performers - when leg bones
       // are stripped for foot planting, hip yaw cascades to the feet and
       // makes them slide on the ground.
       if (!this._skipHipsTwist) {
@@ -561,7 +561,7 @@ export class AvatarAnimator implements IAvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(leftChain, target);
 
-        // Save IK results BEFORE blending — .copy() would overwrite them
+        // Save IK results BEFORE blending - .copy() would overwrite them
         const ikRootQuat = leftChain.root.quaternion.clone();
         const ikMiddleQuat = leftChain.middle.quaternion.clone();
         const ikEffectorQuat = leftChain.effector.quaternion.clone();
@@ -573,7 +573,7 @@ export class AvatarAnimator implements IAvatarAnimator {
         leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
       }
-      // else: weight ~0, skip IK entirely — animation drives the arm
+      // else: weight ~0, skip IK entirely - animation drives the arm
     }
 
     if (rightChain && rightHand) {
@@ -623,7 +623,7 @@ export class AvatarAnimator implements IAvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(rightChain, target);
 
-        // Save IK results BEFORE blending — .copy() would overwrite them
+        // Save IK results BEFORE blending - .copy() would overwrite them
         const ikRootQuat = rightChain.root.quaternion.clone();
         const ikMiddleQuat = rightChain.middle.quaternion.clone();
         const ikEffectorQuat = rightChain.effector.quaternion.clone();
@@ -635,7 +635,7 @@ export class AvatarAnimator implements IAvatarAnimator {
         rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
       }
-      // else: weight ~0, skip IK entirely — animation drives the arm
+      // else: weight ~0, skip IK entirely - animation drives the arm
     }
 
     this.skeleton.updateMatrices();

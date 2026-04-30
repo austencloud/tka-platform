@@ -695,7 +695,7 @@
               <tr>
                 <td>1. Cold start</td>
                 <td>{formatMs(results.summary.visibilityChange.coldStartDuration)}</td>
-                <td>—</td>
+                <td>-</td>
                 <td class="muted">Baseline (no cache)</td>
               </tr>
               <tr class="highlight-row">

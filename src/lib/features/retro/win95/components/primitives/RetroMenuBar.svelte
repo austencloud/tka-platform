@@ -1,5 +1,5 @@
 <!--
-  RetroMenuBar — Horizontal menu bar with dropdown submenus
+  RetroMenuBar - Horizontal menu bar with dropdown submenus
 
   Core navigation element for every retro "app." Menu labels are displayed
   horizontally with an underlined hotkey letter (first letter by default).

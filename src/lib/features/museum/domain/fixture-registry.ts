@@ -18,7 +18,7 @@ export interface FixtureConfig {
   label: string;
   /** What era this fixture represents */
   era: string;
-  /** Size multiplier — 1.0 = 0.3m tall, 2.0 = 0.6m. Auto-scaled from bounding box. */
+  /** Size multiplier - 1.0 = 0.3m tall, 2.0 = 0.6m. Auto-scaled from bounding box. */
   scale: number;
   /** Y offset from the default wall mount height (1.25m) */
   yOffset: number;

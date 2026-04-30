@@ -2,7 +2,7 @@
  * Viewer Camera Player State
  *
  * Drives UnifiedCameraController in fly mode from the sequence viewer.
- * This is the CAMERA's avatar, not a performer — WASD moves this object,
+ * This is the CAMERA's avatar, not a performer - WASD moves this object,
  * not the dancer on stage. Position is a plain mutable reference shared
  * with the flycam physics provider so both sides mutate the same values
  * each frame.
@@ -49,7 +49,7 @@ export function createViewerCameraPlayerState(): {
       isMoving = input.x !== 0 || input.z !== 0;
     },
     updateMovement() {
-      // No-op — the kinematic branch is unused here because we always
+      // No-op - the kinematic branch is unused here because we always
       // supply a physics provider. Position is written by the provider.
     },
     setFacingAngle(angle: number) {

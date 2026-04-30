@@ -38,7 +38,7 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
     const stepCount = fullSequence.steps?.length ?? 0;
     const lines: string[] = [];
 
-    // Header — deduplicate repeated word in circular sequences
+    // Header - deduplicate repeated word in circular sequences
     const rawWord = fullSequence.word || fullSequence.name || "Untitled";
     lines.push(`# ${this.deduplicateWord(rawWord)}`);
     lines.push(`id: ${fullSequence.id}`);

@@ -159,7 +159,7 @@ function saveTimelineToStorage(payload: SerializedTimeline): void {
   try {
     localStorage.setItem(TIMELINE_STORAGE_KEY, JSON.stringify(payload));
   } catch {
-    // Quota exceeded or serialization failed — silently drop. The user's
+    // Quota exceeded or serialization failed - silently drop. The user's
     // in-memory timeline still works; they just won't get reload survival.
   }
 }
@@ -202,13 +202,13 @@ function loadSettings(): Partial<PersistedSettings> {
 function saveSettings(settings: PersistedSettings): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch { /* quota exceeded — ignore */ }
+  } catch { /* quota exceeded - ignore */ }
 }
 
 function saveImageDataUrl(dataUrl: string): void {
   try {
     localStorage.setItem(IMAGE_STORAGE_KEY, dataUrl);
-  } catch { /* quota exceeded — too large for localStorage, silently skip */ }
+  } catch { /* quota exceeded - too large for localStorage, silently skip */ }
 }
 
 function loadImageDataUrl(): string | null {
@@ -270,7 +270,7 @@ export function createPoiState(
   let rpm = $state(saved.rpm ?? 120);
   let showFullDisc = $state(saved.showFullDisc ?? false);
 
-  // Virtual LED staff preview state — how long one pattern loop takes on a
+  // Virtual LED staff preview state - how long one pattern loop takes on a
   // stationary staff. Own-clock playback, independent of sequence beats.
   let cycleDuration = $state(saved.cycleDuration ?? 3.0);
 
@@ -286,7 +286,7 @@ export function createPoiState(
   // small wave-square toggle. Blend is now the default. On the first load
   // after this migration ships, we upgrade any stored timeline to blend so
   // existing users see the feature working. The MIGRATION_KEY flag makes
-  // this run exactly once — future toggles to "hard" are respected.
+  // this run exactly once - future toggles to "hard" are respected.
   const BLEND_MIGRATION_KEY = "tka-poi-blend-default-migration-v1";
   if (restoredTimeline && typeof localStorage !== "undefined") {
     try {
@@ -303,7 +303,7 @@ export function createPoiState(
         localStorage.setItem(BLEND_MIGRATION_KEY, "done");
       }
     } catch {
-      // Storage unavailable — fall back to whatever was restored
+      // Storage unavailable - fall back to whatever was restored
     }
   }
 
@@ -354,7 +354,7 @@ export function createPoiState(
     libraryEntries = entries;
   });
 
-  // Reactive "is a user signed in" — reads the authState $state rune so
+  // Reactive "is a user signed in" - reads the authState $state rune so
   // this derived re-evaluates whenever sign-in / sign-out happens.
   const isAuthenticated = $derived(authState.user !== null);
 
@@ -417,7 +417,7 @@ export function createPoiState(
     };
   });
 
-  // Thin compatibility shim — any component that only needs "what's the
+  // Thin compatibility shim - any component that only needs "what's the
   // current pattern roughly" can keep reading `playbackPattern` without
   // caring about blend details. Currently read by PovSpinPreview (the
   // spinning disc) and LedStaffPreview.
@@ -440,7 +440,7 @@ export function createPoiState(
   });
 
   // Persist the pattern timeline whenever its structure changes.
-  // Deliberately does NOT read playheadBeat — playhead is ephemeral, and
+  // Deliberately does NOT read playheadBeat - playhead is ephemeral, and
   // reading it here would save on every animation frame during playback.
   $effect(() => {
     saveTimelineToStorage(serializeTimeline(patternTimeline, totalSteps, bpm));
@@ -457,7 +457,7 @@ export function createPoiState(
           activePattern.metadata.source = "image-upload";
         }
       }).catch(() => {
-        // Image restore failed — fall back to preset
+        // Image restore failed - fall back to preset
         hasUploadedImage = false;
         clearImageDataUrl();
         generateFromPreset();
@@ -511,11 +511,11 @@ export function createPoiState(
     }
 
     // Fire-and-forget: save a copy to the user's cloud image library.
-    // Silent on failure — the in-memory pattern still works even if
+    // Silent on failure - the in-memory pattern still works even if
     // the user is offline, signed out, or Firebase is unreachable.
     imageLibrary.upload(file, "upload-zone").catch((err) => {
       // Non-blocking: the in-memory pattern still works. We log so
-      // rules/network/auth issues are visible in devtools — the most
+      // rules/network/auth issues are visible in devtools - the most
       // common cause of "my image didn't show up in the library" is a
       // Firebase rules mismatch that otherwise fails silently.
       console.warn("[poi] Library upload (upload-zone) failed:", err);
@@ -577,7 +577,7 @@ export function createPoiState(
     const hi = Math.max(s, e);
 
     // Label: if the active pattern came from an image upload, use the
-    // image's filename — the activePresetId may still hold the preset
+    // image's filename - the activePresetId may still hold the preset
     // that was selected *before* the image was uploaded, which would
     // be misleading ("Rainbow Sweep" on a clip containing an X image).
     let clipLabel: string;
@@ -605,7 +605,7 @@ export function createPoiState(
 
   /**
    * Build a StripPattern from an image file and drop it as a new clip
-   * at the given beat range. Does NOT touch the active pattern — this
+   * at the given beat range. Does NOT touch the active pattern - this
    * is a pure "add a clip" operation, independent of the left-column
    * authoring state.
    */
@@ -622,7 +622,7 @@ export function createPoiState(
     const imgData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
     bitmap.close();
 
-    // Generate a fresh StripPattern — note this is a new pattern object,
+    // Generate a fresh StripPattern - note this is a new pattern object,
     // unrelated to activePattern
     const pattern = patternEngine.fromImage(imgData, ledCount);
     pattern.metadata.name = file.name.replace(/\.[^.]+$/, "");
@@ -687,7 +687,7 @@ export function createPoiState(
   }
 
   function setTotalBeats(n: number): void {
-    // Ignored while a sequence drives the beat count — the Beats scrub
+    // Ignored while a sequence drives the beat count - the Beats scrub
     // is disabled in that case, so this is a defense-in-depth no-op.
     if (loadedSequence) return;
     manualTotalBeats = Math.max(1, Math.min(128, Math.round(n)));
@@ -722,7 +722,7 @@ export function createPoiState(
   /**
    * Detach the currently loaded sequence and fall back to the manual
    * abstract-beat mode (the previous `manualTotalBeats` is preserved).
-   * Clips painted while the sequence was loaded are kept — they may
+   * Clips painted while the sequence was loaded are kept - they may
    * sit beyond the new bounds, in which case the timeline renderer
    * simply doesn't draw them.
    */
@@ -815,7 +815,7 @@ export function createPoiState(
   // ── Image library actions ────────────────────────────────────────
 
   /**
-   * Load a library entry as the active pattern — same effect as
+   * Load a library entry as the active pattern - same effect as
    * uploading its source file fresh, but without re-hitting Storage
    * for the binary (we already have a URL).
    */
@@ -830,7 +830,7 @@ export function createPoiState(
     hasUploadedImage = true;
     uploadedImageName = entry.name;
     // NOTE: deliberately does NOT overwrite the `tka-poi-image`
-    // localStorage entry. The library is the source of truth now —
+    // localStorage entry. The library is the source of truth now -
     // that localStorage slot is a guest-only fallback.
   }
 

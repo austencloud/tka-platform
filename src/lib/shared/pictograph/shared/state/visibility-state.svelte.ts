@@ -207,7 +207,7 @@ export class VisibilityStateManager {
    * Persist current visibility settings to storage
    */
   private async persistSettings(): Promise<void> {
-    // Don't persist until initial load is complete — would overwrite real values with defaults
+    // Don't persist until initial load is complete - would overwrite real values with defaults
     if (this.settingsLoadedPromise) {
       await this.settingsLoadedPromise;
     }

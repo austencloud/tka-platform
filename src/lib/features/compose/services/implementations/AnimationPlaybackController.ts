@@ -163,7 +163,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     if (!this.state) return;
 
     if (this.state.isPlaying) {
-      // Pause — clear animationTarget so resuming doesn't hit the
+      // Pause - clear animationTarget so resuming doesn't hit the
       // "already animating to this target" early-return in animateToStepInternal
       this.animationTarget = null;
       this.stopStepPlayback();
@@ -239,7 +239,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // If the caller passed an integer beat (e.g. step-cell click), preserve
     // the current fractional offset so playback continues smoothly from the
     // analogous moment of the new beat. If the caller passed a fractional
-    // beat (e.g. scrubbing the transport bar), honor that exact position —
+    // beat (e.g. scrubbing the transport bar), honor that exact position -
     // mixing in the old fraction would snap the scrubber unpredictably.
     const isIntegerBeat = clampedStep === Math.floor(clampedStep);
     const currentFraction = isIntegerBeat

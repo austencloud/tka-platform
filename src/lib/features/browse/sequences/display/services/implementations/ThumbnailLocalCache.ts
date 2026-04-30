@@ -20,11 +20,10 @@ import type {
 
 const DB_NAME = "thumbnail-local-cache";
 const STORE_NAME = "thumbnails";
-// v2: Purge all entries. Prior version cached thumbnails where propTypeOverride
-// was undefined (falling back to motion-intrinsic prop type like "fan") but the
-// cache key used PropType.STAFF as fallback. This caused wrong-prop images to be
-// served from cache (e.g., fans when user has staves selected).
-const DB_VERSION = 2;
+// v3: Purge stale LOOP icons. Prior versions baked icons from the lossy
+// loopType string ("rotated") instead of live detection, dropping compound
+// components like swap. Detection-derived icons are now authoritative.
+const DB_VERSION = 3;
 const DEFAULT_MAX_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB default limit
 
 interface CachedEntry {

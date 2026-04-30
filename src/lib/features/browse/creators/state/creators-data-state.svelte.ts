@@ -110,7 +110,7 @@ function createCreatorsDataState() {
     try {
       if (sortBy === "favoriteProp") {
         // Fetch all creators with a neutral sort, then group client-side.
-        // We use a generous limit (1000) — typical creator counts are well
+        // We use a generous limit (1000) - typical creator counts are well
         // below this, and grouping only makes sense when you can see all groups.
         const result = await repository.getUsersPaginated(
           {
@@ -158,7 +158,7 @@ function createCreatorsDataState() {
 
   /**
    * Load next page of creators (append to existing list).
-   * Not used when sortBy is "favoriteProp" — that view loads all at once.
+   * Not used when sortBy is "favoriteProp" - that view loads all at once.
    */
   async function loadMoreCreators(
     repository: IUserRepository,

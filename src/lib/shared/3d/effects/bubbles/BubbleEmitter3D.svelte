@@ -1,10 +1,10 @@
 <script lang="ts">
   /**
-   * BubbleEmitter3D — per-tip buoyant bubble emitter.
+   * BubbleEmitter3D - per-tip buoyant bubble emitter.
    *
    * Each bubble renders as a billboarded sphere (MeshBasicMaterial with
    * additive rim approximation). Bubbles rise (+y world), drift horizontally,
-   * and grow over lifetime — distinct from water droplets which fall.
+   * and grow over lifetime - distinct from water droplets which fall.
    *
    * Oil palette uses an iridescent rim color sampled from the palette
    * registry's oilIridescentRim() helper.
@@ -85,7 +85,7 @@
       const ox = (Math.random() - 0.5) * 0.04;
       const oy = (Math.random() - 0.5) * 0.04;
       const oz = (Math.random() - 0.5) * 0.04;
-      // Horizontal drift — light random chaos in XZ plane.
+      // Horizontal drift - light random chaos in XZ plane.
       const drift = 0.05;
       const jitter = 1.0 + (Math.random() - 0.5) * 2 * Math.max(0.05, params.sizeJitter);
       const r0 = baseR * jitter;

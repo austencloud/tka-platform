@@ -44,7 +44,7 @@ export interface SequenceData {
    */
   readonly word: string;
   /** Derived at load time from compositional fields (blueSoloProp + redSoloProp + stepPairings).
-   * Never persisted to Firestore — the hydrator re-derives it on every load.
+   * Never persisted to Firestore - the hydrator re-derives it on every load.
    * Consumers read this for iteration, counting, and display. */
   readonly steps: readonly StepData[];
 
@@ -113,7 +113,7 @@ export interface SequenceData {
    * Extensible metadata bag for stylistic/performance properties.
    *
    * Known keys:
-   * - `pathShape`: "arc" | "linear" — creator's intended path shape for shift interpolation.
+   * - `pathShape`: "arc" | "linear" - creator's intended path shape for shift interpolation.
    *   Absent or "arc" = default arc behavior. "linear" = straight-line shifts.
    */
   readonly metadata: Record<string, unknown>;
@@ -161,10 +161,10 @@ export interface SequenceData {
   // These are the canonical representation persisted to Firestore.
   // Optional on the type because construction sites (factories, decoders, mocks)
   // may not have them yet. The SequenceHydrator guarantees they're populated
-  // at all load/save boundaries — after hydration they're always present.
-  /** Solo prop path for the blue performer — persisted to Firestore */
+  // at all load/save boundaries - after hydration they're always present.
+  /** Solo prop path for the blue performer - persisted to Firestore */
   readonly blueSoloProp?: SoloPropData;
-  /** Solo prop path for the red performer — persisted to Firestore */
+  /** Solo prop path for the red performer - persisted to Firestore */
   readonly redSoloProp?: SoloPropData;
   /** Per-beat pairings linking each blue motion to its corresponding red motion */
   readonly stepPairings?: readonly StepPairingData[];

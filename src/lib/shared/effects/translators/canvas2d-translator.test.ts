@@ -17,7 +17,7 @@ import type {
 } from "../domain/EffectsConfig";
 import { SMOKE_PALETTES } from "../domain/SmokePalettes";
 
-describe("resolveZap2D — per-hand color", () => {
+describe("resolveZap2D - per-hand color", () => {
   it("preserves leftColor and rightColor in the output params", () => {
     const intent: ZapIntent = {
       intensity: 0.7,
@@ -33,7 +33,7 @@ describe("resolveZap2D — per-hand color", () => {
   });
 });
 
-describe("resolveSparkles2D — extended fields", () => {
+describe("resolveSparkles2D - extended fields", () => {
   it("preserves colorMode, palette, spread, gravity, mode in output params", () => {
     const intent: SparklesIntent = {
       rate: 0.7,
@@ -57,7 +57,7 @@ describe("resolveSparkles2D — extended fields", () => {
   });
 });
 
-describe("resolveBubbles2D — palette resolution + defaults", () => {
+describe("resolveBubbles2D - palette resolution + defaults", () => {
   it("resolves the soap palette for intent.palette === 'soap'", () => {
     const intent: BubblesIntent = {
       ambientEmission: 0.3,
@@ -110,7 +110,7 @@ describe("resolveBubbles2D — palette resolution + defaults", () => {
   });
 });
 
-describe("resolvePetals2D — palette resolution + defaults", () => {
+describe("resolvePetals2D - palette resolution + defaults", () => {
   it("resolves the blossom palette for intent.palette === 'blossom'", () => {
     const intent: PetalsIntent = {
       ambientEmission: 0.5,
@@ -168,7 +168,7 @@ describe("resolvePetals2D — palette resolution + defaults", () => {
   });
 });
 
-describe("resolveSmoke2D — palette carries behavior", () => {
+describe("resolveSmoke2D - palette carries behavior", () => {
   function baseIntent(overrides: Partial<SmokeIntent> = {}): SmokeIntent {
     return {
       ambientEmission: 0.5,
@@ -204,7 +204,7 @@ describe("resolveSmoke2D — palette carries behavior", () => {
 
   it("applies palette.riseBias to intent.riseSpeed and scales by riseBaseSpeed", () => {
     // genie has riseBias 0.9; intent 1.0 × 0.9 × 280 = 252
-    // (2D uses 280 px/s base — Boussinesq buoyancy target)
+    // (2D uses 280 px/s base - Boussinesq buoyancy target)
     const out = resolveSmoke2D(baseIntent({ palette: "genie", riseSpeed: 1.0 }));
     expect(out.resolvedRiseSpeed).toBeCloseTo(252.0, 4);
     expect(out.riseBaseSpeed).toBe(280);
@@ -237,7 +237,7 @@ describe("resolveSmoke2D — palette carries behavior", () => {
   });
 });
 
-describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
+describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
   function baseIntent(overrides: Partial<InkIntent> = {}): InkIntent {
     return {
       ambientEmission: 0.2,
@@ -252,12 +252,12 @@ describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
     };
   }
 
-  it("resolves the india palette — opaque pigment defaults", () => {
+  it("resolves the india palette - opaque pigment defaults", () => {
     const out = resolveInk2D(baseIntent());
     expect(out.resolvedPalette.id).toBe("india");
     expect(out.resolvedPalette.pigment).toBe("#0a0a0a");
     expect(out.resolvedPalette.edge).toBe("#1a1a1a");
-    // Default palette is opaque — source-over, NOT lighter/emissive.
+    // Default palette is opaque - source-over, NOT lighter/emissive.
     // This is the #1 visual differentiator from trails at sprint 1.
     expect(out.blendMode).toBe("source-over");
     expect(out.opacityMax).toBe(1.0);
@@ -272,7 +272,7 @@ describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
 
   it("hard-caps effectiveAmbient at 0.3 even when user dials ambient to max", () => {
     // Ink is motion-dominant by identity. User slider at 1.0 clamps to 0.3
-    // in the translator — the renderer never sees >0.3.
+    // in the translator - the renderer never sees >0.3.
     const capped = resolveInk2D(baseIntent({ ambientEmission: 1.0 }));
     expect(capped.effectiveAmbient).toBe(0.3);
     const midRange = resolveInk2D(baseIntent({ ambientEmission: 0.5 }));
@@ -282,7 +282,7 @@ describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
   });
 
   it("watercolor palette flips watercolor flag + doubles width + caps alpha", () => {
-    // Palette-carried behavior — watercolor IS watercolor, not "light ink".
+    // Palette-carried behavior - watercolor IS watercolor, not "light ink".
     const out = resolveInk2D(baseIntent({ palette: "watercolor" }));
     expect(out.resolvedPalette.watercolor).toBe(true);
     expect(out.resolvedPalette.id).toBe("watercolor");
@@ -290,7 +290,7 @@ describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
     expect(out.strokeWidthMax).toBe(36);
     // Alpha capped at 0.4 (translucent wash).
     expect(out.opacityMax).toBe(0.4);
-    // Still opaque composite — watercolor ≠ neon. The cap comes from
+    // Still opaque composite - watercolor ≠ neon. The cap comes from
     // alpha, not from switching to additive blend.
     expect(out.blendMode).toBe("source-over");
   });

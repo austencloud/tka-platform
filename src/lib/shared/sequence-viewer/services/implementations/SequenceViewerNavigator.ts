@@ -71,7 +71,7 @@ export function openSequenceViewer(
 				: cached;
 		}
 	} catch {
-		// DI not available — proceed with original sequence
+		// DI not available - proceed with original sequence
 	}
 
 	// Pre-warm pictograph cells at highest priority while the drawer animates.

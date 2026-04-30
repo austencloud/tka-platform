@@ -138,12 +138,12 @@ function generateCircleSlots(count: number): FormationSlot[] {
  * Shape evolves with count:
  *  - 1: single center
  *  - 2: side-by-side (no chevron yet)
- *  - 3: classic V — leader at front, pair behind
- *  - 4: T-shape — leader, pair, center tail
- *  - 5: widening V — leader, 2 widening pairs
- *  - 6: widening V + tail — leader, 2 pairs, deeper tail
- *  - 7: widening V — leader, 3 widening pairs
- *  - 8: widening V + tail — leader, 3 pairs, deeper tail
+ *  - 3: classic V - leader at front, pair behind
+ *  - 4: T-shape - leader, pair, center tail
+ *  - 5: widening V - leader, 2 widening pairs
+ *  - 6: widening V + tail - leader, 2 pairs, deeper tail
+ *  - 7: widening V - leader, 3 widening pairs
+ *  - 8: widening V + tail - leader, 3 pairs, deeper tail
  *
  * Algorithm: leader at (0, offset), then floor((count-1)/2) full pairs at
  * successively wider lateral offsets and deeper z, followed by an optional
@@ -231,14 +231,14 @@ function generateDiagonalSlots(count: number): FormationSlot[] {
 }
 
 /**
- * Solo formation — single performer centered behind the wall plane.
+ * Solo formation - single performer centered behind the wall plane.
  */
 function generateSoloSlots(_count: number): FormationSlot[] {
   return [{ index: 0, position: { x: 0, z: FORMATION_WALL_OFFSET } }];
 }
 
 /**
- * Tunnel stack formation — conga line along -Z, all facing the audience.
+ * Tunnel stack formation - conga line along -Z, all facing the audience.
  * 1.2m between stacked performers.
  */
 function generateTunnelStackSlots(count: number): FormationSlot[] {
@@ -250,7 +250,7 @@ function generateTunnelStackSlots(count: number): FormationSlot[] {
 }
 
 /**
- * Back-to-back formation — both performers at origin, facing opposite directions.
+ * Back-to-back formation - both performers at origin, facing opposite directions.
  */
 function generateBackToBackSlots(count: number): FormationSlot[] {
   if (count < 2) return generateSoloSlots(count);
@@ -269,7 +269,7 @@ function generateBackToBackSlots(count: number): FormationSlot[] {
 }
 
 /**
- * Facing-each-other formation — performers at ±0.5m, facing inward.
+ * Facing-each-other formation - performers at ±0.5m, facing inward.
  */
 function generateFacingEachOtherSlots(count: number): FormationSlot[] {
   if (count < 2) return generateSoloSlots(count);
@@ -288,7 +288,7 @@ function generateFacingEachOtherSlots(count: number): FormationSlot[] {
 }
 
 /**
- * Stage left/right formation — performers at ±2.5m, facing the audience.
+ * Stage left/right formation - performers at ±2.5m, facing the audience.
  */
 function generateStageLRSlots(count: number): FormationSlot[] {
   if (count < 2) return generateSoloSlots(count);
@@ -299,7 +299,7 @@ function generateStageLRSlots(count: number): FormationSlot[] {
 }
 
 /**
- * Side-by-side formation — evenly spaced along X with 1.8m between consecutive slots.
+ * Side-by-side formation - evenly spaced along X with 1.8m between consecutive slots.
  */
 function generateSideBySideSlots(count: number): FormationSlot[] {
   const spacing = 1.8;

@@ -134,7 +134,7 @@
   }
   </script>`}
 
-  <!-- JSON-LD: FAQPage — matches the visible FAQ section on this page -->
+  <!-- JSON-LD: FAQPage - matches the visible FAQ section on this page -->
   {@html `<script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -145,7 +145,7 @@
         "name": "What is The Kinetic Alphabet?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The Kinetic Alphabet (TKA) is a notation system for flow arts — like sheet music for dancers. It lets flow artists document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using pictographs and symbols."
+          "text": "The Kinetic Alphabet (TKA) is a notation system for flow arts - like sheet music for dancers. It lets flow artists document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using pictographs and symbols."
         }
       },
       {
@@ -309,7 +309,7 @@
       <article class="faq-item">
         <h3>What is The Kinetic Alphabet?</h3>
         <p>
-          The Kinetic Alphabet (TKA) is a notation system for flow arts — like sheet music for dancers. It lets flow artists document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using pictographs and symbols.
+          The Kinetic Alphabet (TKA) is a notation system for flow arts - like sheet music for dancers. It lets flow artists document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using pictographs and symbols.
         </p>
       </article>
 

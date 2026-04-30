@@ -247,7 +247,7 @@ export class PictographPreparer implements IPictographPreparer {
     const motions = this.getMotionsWithOverrides(pictograph, settings, options);
 
     // Partner-visibility lets PropPlacer suppress beta offset when this prop's
-    // partner is hidden — no collision partner means no overlap to avoid.
+    // partner is hidden - no collision partner means no overlap to avoid.
     const visibility = {
       showBlue: options?.showBlueMotion,
       showRed: options?.showRedMotion,
@@ -335,7 +335,7 @@ export class PictographPreparer implements IPictographPreparer {
    * Transform motions for hand path visualization.
    * Pro/anti become float (shows spatial trajectory without prop rotation).
    * Dash stays dash. Static stays static. Orientation is nulled out
-   * because hands don't have orientation — PropPlacer already returns
+   * because hands don't have orientation - PropPlacer already returns
    * 0° rotation for HAND propType.
    */
   private transformForHandPath(pictograph: PictographData): PictographData {

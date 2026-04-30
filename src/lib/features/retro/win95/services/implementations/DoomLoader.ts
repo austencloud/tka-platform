@@ -1,5 +1,5 @@
 /**
- * DoomLoader — Lazily loads js-dos v8 from CDN and launches DOOM shareware.
+ * DoomLoader - Lazily loads js-dos v8 from CDN and launches DOOM shareware.
  *
  * js-dos v8 uses a div container (not a canvas). The loader injects the
  * required CSS and JS from the js-dos CDN on first use, then creates a
@@ -57,7 +57,7 @@ export class DoomLoader {
 
 			if (typeof globalThis.Dos !== "function") {
 				throw new Error(
-					"js-dos failed to initialize — Dos() not found on window",
+					"js-dos failed to initialize - Dos() not found on window",
 				);
 			}
 
@@ -70,7 +70,7 @@ export class DoomLoader {
 					try {
 						instance.stop();
 					} catch {
-						// Best-effort cleanup — the emulator may already be gone
+						// Best-effort cleanup - the emulator may already be gone
 						// if the user closed the window mid-load.
 					}
 				},

@@ -18,7 +18,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ResolvedPresentation, ViewingContext } from "../services/contracts/IPresentationResolver";
 
 export interface PropContextResolverDeps {
-  /** @deprecated Not read internally — activeContext is resolved via getActiveContext() param. */
+  /** @deprecated Not read internally - activeContext is resolved via getActiveContext() param. */
   viewingContext?: ViewingContext;
 }
 
@@ -64,7 +64,7 @@ export function createPropContextResolver(deps: PropContextResolverDeps) {
         const orchestrator = getSequenceAnimationOrchestrator() as ISequenceAnimationOrchestrator;
         orchestrator.updatePropTypes(blueProp, redProp);
       } catch {
-        // Animation services not ready yet — will pick up correct props on init
+        // Animation services not ready yet - will pick up correct props on init
       }
     }
   }

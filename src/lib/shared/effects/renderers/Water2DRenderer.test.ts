@@ -186,7 +186,7 @@ describe("Water2DRenderer", () => {
     const r = new Water2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ ambientEmission: 1, motionEmission: 0 });
-    // Integrate physics — setTransform places the droplet via its f parameter
+    // Integrate physics - setTransform places the droplet via its f parameter
     // (6th arg = translation y), so tracking the max f across setTransform
     // calls is a gravity-downward check.
     for (let i = 0; i < 30; i++) {

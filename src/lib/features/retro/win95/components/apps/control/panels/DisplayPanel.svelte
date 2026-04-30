@@ -1,5 +1,5 @@
 <!--
-  Display Properties sub-panel — CRT effects, desktop color, screen saver.
+  Display Properties sub-panel - CRT effects, desktop color, screen saver.
   Tabbed layout mirroring Win95 Display Properties.
 -->
 <script lang="ts">

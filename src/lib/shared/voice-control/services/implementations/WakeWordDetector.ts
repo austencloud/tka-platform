@@ -33,7 +33,7 @@ const WAKE_PHRASES = [
 /** Max restart attempts before giving up (resets on successful start) */
 const MAX_RESTART_ATTEMPTS = 5;
 
-/** Base delay for restart backoff (ms) — used when start() itself fails */
+/** Base delay for restart backoff (ms) - used when start() itself fails */
 const RESTART_BASE_DELAY_MS = 300;
 
 /**
@@ -83,7 +83,7 @@ export class WakeWordDetector implements IWakeWordDetector {
 
   /**
    * Consecutive sessions that ended without any speech results.
-   * NOT reset by start() succeeding — only reset when we actually get speech.
+   * NOT reset by start() succeeding - only reset when we actually get speech.
    * This is what prevents the infinite restart loop on mobile.
    */
   private consecutiveSilentRestarts = 0;
@@ -240,7 +240,7 @@ export class WakeWordDetector implements IWakeWordDetector {
             console.log(`[HeyTika] Wake word + command: "${command}" (confidence: ${confidence.toFixed(2)})`);
             this.emitCommand(command, confidence);
           } else if (wakeResult === "wake_only") {
-            console.log("[HeyTika] Wake word detected (no command) — entering command mode");
+            console.log("[HeyTika] Wake word detected (no command) - entering command mode");
             this.emitWakeWordOnly();
           }
           // Otherwise: not a wake word transcript, ignore
@@ -255,7 +255,7 @@ export class WakeWordDetector implements IWakeWordDetector {
       console.warn(`[HeyTika] Speech recognition error: ${event.error}`);
       this.setState("error");
 
-      // Network/audio errors are transient — restart will be attempted via onend
+      // Network/audio errors are transient - restart will be attempted via onend
     };
 
     rec.onend = () => {
@@ -286,13 +286,13 @@ export class WakeWordDetector implements IWakeWordDetector {
    *
    * Mobile browsers kill recognition sessions frequently even with continuous=true.
    * Without this distinction, the detector enters a tight start→silence→restart loop
-   * that triggers the browser's audio indicator on every cycle — the "cha-ching" bug.
+   * that triggers the browser's audio indicator on every cycle - the "cha-ching" bug.
    */
   private scheduleRestart(): void {
     if (this.intentionallyStopped || !this.listening) return;
 
     if (this.hadResultsInSession) {
-      // Session had speech — restart quickly to keep the conversation flowing.
+      // Session had speech - restart quickly to keep the conversation flowing.
       // Reset silent counter since the user is actively speaking.
       this.consecutiveSilentRestarts = 0;
       console.log("[HeyTika] Session had results, restarting quickly");
@@ -309,7 +309,7 @@ export class WakeWordDetector implements IWakeWordDetector {
     if (this.consecutiveSilentRestarts > MAX_CONSECUTIVE_SILENT_RESTARTS) {
       console.log(
         `[HeyTika] ${MAX_CONSECUTIVE_SILENT_RESTARTS} consecutive silent sessions. ` +
-        "Pausing auto-restart — tap mic to resume."
+        "Pausing auto-restart - tap mic to resume."
       );
       this.listening = false;
       this.setState("idle");
@@ -405,7 +405,7 @@ export class WakeWordDetector implements IWakeWordDetector {
 
   /**
    * Play a short two-tone rising chime when entering command mode.
-   * Uses the Web Audio API — no external audio files needed.
+   * Uses the Web Audio API - no external audio files needed.
    * Silently no-ops if AudioContext is unavailable or still suspended.
    */
   private playCommandModeChime(): void {
@@ -419,7 +419,7 @@ export class WakeWordDetector implements IWakeWordDetector {
       this.playTone(ctx, 523.25, now, 0.08, 0.15);       // C5
       this.playTone(ctx, 659.25, now + 0.09, 0.08, 0.15); // E5
     } catch {
-      // AudioContext error — silent fallback
+      // AudioContext error - silent fallback
     }
   }
 

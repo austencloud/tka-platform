@@ -90,7 +90,7 @@ function resolveQuizDifficulty(
   // If the LLM explicitly chose non-default, respect it
   if (requestedDifficulty !== "medium") return requestedDifficulty;
 
-  // No mastery data available — keep default
+  // No mastery data available - keep default
   if (!masteryCtx) return "medium";
 
   const normalizedTopic = topic.toLowerCase();
@@ -469,7 +469,7 @@ function createTikaTools(userId: string, completedConcepts: string[], masteryCtx
 
     get_domain_topic: tool({
       description:
-        'MANDATORY for deep theoretical questions about TKA specifically (not VTG — use get_vtg_info for VTG questions). Topics include: STUV anomaly, base rotation, orientation algebra, combinatorial space, hand path modifiers, level system, position symmetry, LOOPs and compositional theory, CAPs vs LOOPs, compound letters, center-relative orientation, skewed letters, motion types. Use for "why" questions about TKA design. For VTG timing/direction, transition theory, or minimal beat shapes, use get_vtg_info instead.',
+        'MANDATORY for deep theoretical questions about TKA specifically (not VTG - use get_vtg_info for VTG questions). Topics include: STUV anomaly, base rotation, orientation algebra, combinatorial space, hand path modifiers, level system, position symmetry, LOOPs and compositional theory, CAPs vs LOOPs, compound letters, center-relative orientation, skewed letters, motion types. Use for "why" questions about TKA design. For VTG timing/direction, transition theory, or minimal beat shapes, use get_vtg_info instead.',
       inputSchema: jsonSchema<{ query: string }>({
         type: "object",
         properties: {
@@ -814,7 +814,7 @@ export const POST: RequestHandler = async (event) => {
 
     // Stream the response using the selected model
     // stopWhen controls multi-step tool use. Default is stepCountIs(1) which stops
-    // after a single tool call — the model never gets to generate text from tool results.
+    // after a single tool call - the model never gets to generate text from tool results.
     // Setting to 4 allows: tool call → result → optional 2nd tool → text response.
     const result = streamText({
       model: modelProvider.getModel(selectedModel),

@@ -26,7 +26,7 @@ export function evaluateWarmShift(ctx: TipEvaluationContext): LedColor {
   const { time, speed, ledIndex, totalLeds } = ctx;
   const t = time * speed;
   const total = Math.max(totalLeds, 1);
-  // Hue range: [0, 60/360] — reds through yellows
+  // Hue range: [0, 60/360] - reds through yellows
   const baseHue = (0.5 + 0.5 * Math.sin(t * TWO_PI)) * (60 / 360);
   const hue = baseHue + (ledIndex / total) * (30 / 360);
   return hslToRgb(hue % 1.0, 1.0, 0.5);
@@ -41,7 +41,7 @@ export function evaluateCoolShift(ctx: TipEvaluationContext): LedColor {
   const { time, speed, ledIndex, totalLeds } = ctx;
   const t = time * speed;
   const total = Math.max(totalLeds, 1);
-  // Hue range: [180/360, 240/360] — cyans through blues
+  // Hue range: [180/360, 240/360] - cyans through blues
   const range = 60 / 360;
   const baseHue = 180 / 360 + (0.5 + 0.5 * Math.sin(t * TWO_PI)) * range;
   const hue = baseHue + (ledIndex / total) * (30 / 360);
@@ -56,7 +56,7 @@ export function evaluateNeon(ctx: TipEvaluationContext): LedColor {
   const { time, speed, ledIndex, totalLeds } = ctx;
   const t = time * speed;
   const total = Math.max(totalLeds, 1);
-  // Hue range: [270/360, 330/360] — purples through magentas
+  // Hue range: [270/360, 330/360] - purples through magentas
   const range = 60 / 360;
   const baseHue = 270 / 360 + (0.5 + 0.5 * Math.sin(t * TWO_PI)) * range;
   const hue = baseHue + (ledIndex / total) * (30 / 360);

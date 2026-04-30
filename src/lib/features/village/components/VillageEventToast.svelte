@@ -1,5 +1,5 @@
 <!--
-  VillageEventToast — Floating HTML text that fades upward from an event location.
+  VillageEventToast - Floating HTML text that fades upward from an event location.
   Lightweight HTML overlay, no 3D geometry.
 -->
 <script lang="ts">

@@ -11,7 +11,7 @@ import type {
   SequenceStep,
   MotionData,
 } from "../../core/types/sequence-engine-types.js";
-import { SliceSize } from "../loop-types.js";
+import { Period } from "../loop-types.js";
 import {
   HORIZONTAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_LOCATION_MAP,
@@ -20,7 +20,7 @@ import {
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class StrictFlippedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], period: Period): SequenceStep[] {
     this.validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -29,8 +29,8 @@ export class StrictFlippedExecutor implements ILOOPExecutor {
     }
 
     const partialLength = sequence.length;
-    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
-    const totalLength = partialLength * period;
+    const periodCount = period === Period.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * periodCount;
     const stepsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;

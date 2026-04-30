@@ -180,7 +180,7 @@
         continue;
       }
 
-      // No static or cached PNG available — item will show spinner
+      // No static or cached PNG available - item will show spinner
     }
 
     images = new Map(newImages);

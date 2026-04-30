@@ -42,7 +42,7 @@ export class StickerUnitRenderer implements IStickerUnitRenderer {
       palette: LIGHT_MODE_PALETTE,
     });
 
-    // Strip the outer <svg> wrapper from the mandala — we inline its <defs> and <g>
+    // Strip the outer <svg> wrapper from the mandala - we inline its <defs> and <g>
     // into our sticker-scoped SVG.
     const mandalaInner = extractSvgInner(mandalaSvg);
 

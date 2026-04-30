@@ -173,8 +173,8 @@ export function formatPresetSummary(preset: UserSequencePreset): string {
 
 	if (preset.config.loopType) {
 		let loopStr = preset.config.loopType;
-		if (preset.config.sliceSize) {
-			loopStr += ` (${preset.config.sliceSize})`;
+		if (preset.config.period) {
+			loopStr += ` (${preset.config.period})`;
 		}
 		configParts.push(loopStr);
 	}
@@ -223,7 +223,7 @@ export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
 			icon: "🎯",
 			config: {
 				loopType: "rotated",
-				sliceSize: "quartered",
+				period: "quartered",
 				wordLength: 4,
 				constraintPreset: "smooth",
 				turnIntensity: 1,
@@ -237,7 +237,7 @@ export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
 			icon: "🪞",
 			config: {
 				loopType: "rotated",
-				sliceSize: "halved",
+				period: "halved",
 				loopComponents: ["mirrored", "inverted"],
 				constraintPreset: "smooth",
 				turnIntensity: 1,

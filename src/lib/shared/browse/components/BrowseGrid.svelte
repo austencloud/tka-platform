@@ -32,10 +32,10 @@
     onGridReady,
   }: Props = $props();
 
-  // Derived state from engine
+  // Derived state from engine — sections take priority over virtualization
   const useVirtualization = $derived(
     !disableVirtualization &&
-      !engine.sectionsEnabled &&
+      !(engine.sectionsEnabled && engine.sections.length > 0) &&
       engine.sequences.length > 50
   );
 
@@ -117,7 +117,7 @@
           <div
             class="sequences-grid grid-view"
             class:is-transitioning={engine.isTransitioning}
-            style:grid-template-columns="repeat({Math.min(engine.columnCount, section.sequences.length)}, 1fr)"
+            style:grid-template-columns="repeat({engine.columnCount}, 1fr)"
           >
             {#each section.sequences as sequence (sequence.id)}
               {@const seqVariations = getVariationsForSequence(sequence)}

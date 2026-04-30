@@ -7,6 +7,7 @@
    */
   import LinkedSequenceChip from "../../LinkedSequenceChip.svelte";
   import type { MatchedSequence, LinkedSequence } from "../../../types";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     linkedSequences: LinkedSequence[];
@@ -155,7 +156,7 @@
                 </div>
               {/if}
               <div class="candidate-info">
-                <span class="candidate-word">{seq.word}</span>
+                <span class="candidate-word"><TKAWordGlyph word={seq.word} height={13} /></span>
                 <span class="candidate-owner">by {seq.ownerName}</span>
               </div>
               <kbd class="candidate-key">{i + 1}</kbd>

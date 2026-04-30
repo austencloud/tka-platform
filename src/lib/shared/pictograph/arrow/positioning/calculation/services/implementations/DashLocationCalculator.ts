@@ -427,7 +427,7 @@ export class DashLocationCalculator implements IDashLocationCalculator {
     ) {
       // A dash with no spin direction (common for zero-turn dashes that
       // still reach this branch) has no "clockwise vs counter-clockwise"
-      // answer — the arrow just stays at its starting grid point.
+      // answer - the arrow just stays at its starting grid point.
       return motion.startLocation;
     }
 

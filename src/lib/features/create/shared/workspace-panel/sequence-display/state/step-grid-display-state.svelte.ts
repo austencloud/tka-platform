@@ -124,7 +124,7 @@ export function createStepGridDisplayState() {
     // Increment epoch so new StepCells know to animate
     animationEpoch++;
 
-    // DO NOT set isPreparingFullAnimation — existing beats must stay visible
+    // DO NOT set isPreparingFullAnimation - existing beats must stay visible
     isPreparingFullAnimation = false;
     shouldAnimateStartPosition = false;
     shouldAnimateAllSteps = false;

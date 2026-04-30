@@ -2,7 +2,7 @@
  * ILetterBreakdownGenerator
  *
  * Produces deterministic, correct letter descriptions and comparisons
- * from structured domain data. No LLM needed — everything is derivable
+ * from structured domain data. No LLM needed - everything is derivable
  * from type, positions, rotation types, and VTG mode.
  *
  * Used by MisconceptionHint and QuizMisconceptionSummary to build

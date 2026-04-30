@@ -11,7 +11,7 @@ import { getStepDataFromState, START_POSITION_BEAT_NUMBER } from "./step-data-he
 
 const logger = createComponentLogger("DurationHandler");
 
-/** Minimum duration (1 beat) — a pictograph is fundamentally square, can only stretch wider */
+/** Minimum duration (1 beat) - a pictograph is fundamentally square, can only stretch wider */
 export const MIN_DURATION = 1.0;
 
 /** Maximum duration (4 steps = 16 subdivisions) */

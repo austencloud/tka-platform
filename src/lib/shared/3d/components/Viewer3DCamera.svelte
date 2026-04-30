@@ -156,7 +156,7 @@
     try {
       localStorage.removeItem("tka-viewer3d-camera");
     } catch {
-      // Storage unavailable — harmless, defaults will be used anyway.
+      // Storage unavailable - harmless, defaults will be used anyway.
     }
   }
 
@@ -173,7 +173,7 @@
   // smoothing instead of a hand-rolled rAF lerp.
   let controlsInstance: CameraControls | null = null;
 
-  // Debounce persistence — only save after user stops orbiting for 500ms.
+  // Debounce persistence - only save after user stops orbiting for 500ms.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   const _endPos = new THREE.Vector3();
   const _endTgt = new THREE.Vector3();
@@ -184,7 +184,7 @@
 
     controls.getPosition(_endPos);
     controls.getTarget(_endTgt);
-    // Snapshot the vectors immediately — the debounced save runs
+    // Snapshot the vectors immediately - the debounced save runs
     // after 500ms by which point the user may have started another
     // drag that mutates them.
     const pos = { x: _endPos.x, y: _endPos.y, z: _endPos.z };
@@ -227,7 +227,7 @@
 
   // Per-frame tick for the camera-choreography driver. Runs every frame;
   // the state's tick() is a no-op when no preset is driving, so this is
-  // free when recording is idle. Gated off during Pass 2 export — the
+  // free when recording is idle. Gated off during Pass 2 export - the
   // offline renderer drives the camera straight from recorded keyframes,
   // and a live driver mutating `controls.azimuthAngle` would fight it.
   useTask((delta) => {
@@ -256,7 +256,7 @@
     oncreate={(c) => {
       controlsInstance = c;
       // Place the camera at the persisted / computed initial pose
-      // with no transition — we want the scene to render at the
+      // with no transition - we want the scene to render at the
       // saved spot on first paint.
       c.setLookAt(
         initialPosition.x,

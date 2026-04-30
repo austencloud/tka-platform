@@ -18,6 +18,7 @@
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
   import Viewer3DEffectPills from "./Viewer3DEffectPills.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -26,7 +27,7 @@
   import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
   import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
 
-  // Canonical effects config — single source of truth for both 2D canvas
+  // Canonical effects config - single source of truth for both 2D canvas
   // and 3D viewer effect parameters. Seeded from existing state (vm +
   // animationSettings) and kept in sync via a compat shim while Phase A
   // is in flight. Shim deleted in Phase B.
@@ -94,7 +95,7 @@
   <!-- Top bar: word label + close button -->
   <div class="top-bar">
     {#if word}
-      <span class="word-label">{word}</span>
+      <span class="word-label"><TKAWordGlyph {word} height={14} darkMode /></span>
     {/if}
     <button class="close-button" onclick={onClose} aria-label="Exit 3D view">
       ✕

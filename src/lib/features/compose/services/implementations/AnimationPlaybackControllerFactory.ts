@@ -32,7 +32,7 @@ export class AnimationPlaybackControllerFactory
 
   create(): IAnimationPlaybackController {
     // Each instance gets its own stateful services so animations don't interfere.
-    // Calculators are stateless — safe to create fresh lightweight instances.
+    // Calculators are stateless - safe to create fresh lightweight instances.
     const angleCalculator = new AngleCalculator();
     const motionCalculator = new MotionCalculator();
     const endpointCalculator = new EndpointCalculator(

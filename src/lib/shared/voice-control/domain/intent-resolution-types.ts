@@ -16,7 +16,7 @@ import type { VoiceCommand, VoiceCommandCategory } from "./voice-command-types";
 export interface IntentResolution {
   /** Resolved command(s) to dispatch. Phase 1: single command. Phase 2: compound. */
   commands: VoiceCommand[];
-  /** If true, the user asked a question — route to TIKA chat instead of dispatching */
+  /** If true, the user asked a question - route to TIKA chat instead of dispatching */
   escalateToChat: boolean;
   /** LLM confidence in its interpretation (0-1) */
   confidence: number;

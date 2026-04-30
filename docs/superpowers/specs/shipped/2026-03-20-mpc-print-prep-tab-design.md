@@ -1,9 +1,10 @@
 ---
-status: backlog
+status: shipped
 value: 4
 effort: S
 score: 16
-remaining: "Verify PDF at 822x1122px MPC spec"
+remaining: ""
+shipped: 2026-04-26
 last_triaged: 2026-04-26
 ---
 # MPC Print Prep Tab — Design Spec

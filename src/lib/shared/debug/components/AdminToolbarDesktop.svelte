@@ -199,7 +199,7 @@
 <svelte:window onpointerdown={handlePointerDownOutside} />
 
 <div class="admin-toolbar" transition:slide={{ duration: 150 }}>
-  <!-- Hidden measuring element — always rendered offscreen to get natural button width -->
+  <!-- Hidden measuring element - always rendered offscreen to get natural button width -->
   {#if !isUserPreview}
     <div class="measure-strip" bind:this={measureEl} aria-hidden="true">
       <span class="action-chip"><i class="fas fa-wand-magic-sparkles"></i><span>Preview First Run</span></span>
@@ -256,7 +256,7 @@
         </button>
       </div>
     {:else}
-      <!-- NORMAL MODE: flat single row — everything is a direct child -->
+      <!-- NORMAL MODE: flat single row - everything is a direct child -->
 
       <!-- Branding -->
       <div class="toolbar-branding">
@@ -979,7 +979,7 @@
   }
 
 
-  /* Hidden measuring strip — renders buttons offscreen to get natural width */
+  /* Hidden measuring strip - renders buttons offscreen to get natural width */
   .measure-strip {
     position: absolute;
     top: -9999px;

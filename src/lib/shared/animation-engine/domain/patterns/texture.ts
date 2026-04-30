@@ -23,7 +23,7 @@ export function evaluateSparkle(ctx: TipEvaluationContext): LedColor {
 }
 
 /**
- * Flicker pattern: gentle organic variation in brightness — like a candle.
+ * Flicker pattern: gentle organic variation in brightness - like a candle.
  * The tip is always partially lit (brightness ≥ 0.2), so it never goes dark.
  * The noise input is sampled slowly to keep the wavering slow and organic.
  */

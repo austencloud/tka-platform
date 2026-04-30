@@ -52,7 +52,7 @@
   );
   const currentLabel = $derived(chipLabels[currentMethod] ?? "Sort");
 
-  /** Duration (ms) for the popover exit animation — matches CSS transition */
+  /** Duration (ms) for the popover exit animation - matches CSS transition */
   const EXIT_ANIMATION_MS = 180;
 
   function openPopover() {

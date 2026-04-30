@@ -1,5 +1,5 @@
 /**
- * Museum Wing Soundscape Manifest — Candidate Pools
+ * Museum Wing Soundscape Manifest - Candidate Pools
  *
  * Each wing has a POOL of candidate ambient tracks. Inside the museum, the
  * user opens the audition bubble (bottom-left) to play through candidates
@@ -11,7 +11,7 @@
  *      (produced by `node scripts/search-soundscapes.cjs`)
  *
  * Audio files live in `static/audio/soundscapes/<wingId>/<candidate.file>`.
- * They are NOT in the repo — download them with `node scripts/fetch-soundscapes.cjs`.
+ * They are NOT in the repo - download them with `node scripts/fetch-soundscapes.cjs`.
  *
  * Licensing: only CC0 or CC-BY-4.0. No NonCommercial, no ShareAlike-copyleft.
  */
@@ -20,7 +20,7 @@ export type AudioLicense = "CC0" | "CC-BY-4.0";
 export type AudioSource = "freesound" | "pixabay" | "manual";
 
 export interface AudioCandidate {
-	/** Stable identifier — used as filename root and for user preferences. */
+	/** Stable identifier - used as filename root and for user preferences. */
 	id: string;
 	title: string;
 	/** Filename on disk (under static/audio/soundscapes/<wingId>/). */
@@ -33,7 +33,7 @@ export interface AudioCandidate {
 	/** Suggested playback volume 0..1. User can override. */
 	volume: number;
 	source: AudioSource;
-	/** Freesound sound ID — enables re-fetching the preview URL. */
+	/** Freesound sound ID - enables re-fetching the preview URL. */
 	freesoundId?: number;
 	/** Pixabay track ID. */
 	pixabayId?: number;
@@ -69,7 +69,7 @@ export const CURATED_WING_SOUNDSCAPES: WingSoundscape[] = [
 				volume: 0.5,
 				source: "freesound",
 				freesoundId: 177958,
-				notes: "Processed cave ambience — kept as a texture layer alongside musical picks.",
+				notes: "Processed cave ambience - kept as a texture layer alongside musical picks.",
 			},
 		],
 	},

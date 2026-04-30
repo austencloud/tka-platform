@@ -1,5 +1,5 @@
 <!--
-  CRTOverlay — Full-viewport CRT monitor simulation for TKA-OS v1.0
+  CRTOverlay - Full-viewport CRT monitor simulation for TKA-OS v1.0
 
   Five composable effect layers:
   1. Scanlines: repeating horizontal lines (2px pitch, subtle dark bands)
@@ -13,7 +13,7 @@
 
   All layers are pointer-events: none and sit above everything at z-index 9999.
   Respects prefers-reduced-motion: disables flicker and phosphor glow (animated
-  effects). Barrel distortion and fringing are geometric / static — kept on.
+  effects). Barrel distortion and fringing are geometric / static - kept on.
 
   Domain: Retro Desktop Effects
 -->
@@ -33,7 +33,7 @@
   The hidden SVG defines the barrel-distortion displacement filter.
   feTurbulence + feDisplacementMap bends the overlay image outward at the
   edges, mimicking the convex curve of real CRT glass. Keeping the scale
-  at 4 gives a 2-4px edge warp — visible on close inspection, invisible
+  at 4 gives a 2-4px edge warp - visible on close inspection, invisible
   during normal use.
 -->
 <svg class="crt-filters" aria-hidden="true" focusable="false">
@@ -65,7 +65,7 @@
 </svg>
 
 <div class="crt-overlay" class:crt-flicker={flicker}>
-  <!-- Barrel distortion layer — applies the SVG filter to a transparent div
+  <!-- Barrel distortion layer - applies the SVG filter to a transparent div
        that inherits the full overlay area. The filter bends everything behind
        it slightly. Because this sits over the shell content (not under it),
        the distortion is applied as a screen-space post-process effect. -->
@@ -78,12 +78,12 @@
     <div class="crt-vignette"></div>
   {/if}
 
-  <!-- Phosphor glow — a blurred, brightened copy of the overlay area
+  <!-- Phosphor glow - a blurred, brightened copy of the overlay area
        blended in screen mode. This makes bright elements appear to bloom
        slightly, the way real phosphor dots bleed light into their neighbors. -->
   <div class="crt-phosphor"></div>
 
-  <!-- Color fringing — two offset color shadows create red/blue lateral
+  <!-- Color fringing - two offset color shadows create red/blue lateral
        separation at edges. The opacity is intentionally imperceptible (0.04):
        you shouldn't consciously see it, but its absence would make the screen
        look too clean. -->
@@ -92,7 +92,7 @@
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Hidden SVG filter definition — no visual footprint                  */
+  /* Hidden SVG filter definition - no visual footprint                  */
   /* ------------------------------------------------------------------ */
   .crt-filters {
     position: absolute;
@@ -103,7 +103,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Overlay wrapper — fixed fullscreen, non-interactive                  */
+  /* Overlay wrapper - fixed fullscreen, non-interactive                  */
   /* ------------------------------------------------------------------ */
   .crt-overlay {
     position: absolute;
@@ -113,7 +113,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Flicker — rare opacity dips on the wrapper itself                    */
+  /* Flicker - rare opacity dips on the wrapper itself                    */
   /* ------------------------------------------------------------------ */
   .crt-flicker {
     animation: crt-flicker-cycle 8s infinite;
@@ -153,14 +153,14 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Barrel distortion — SVG displacement filter applied over the screen  */
+  /* Barrel distortion - SVG displacement filter applied over the screen  */
   /* ------------------------------------------------------------------ */
   .crt-barrel {
     position: absolute;
     inset: 0;
     /* The filter applies the displacement map defined in the SVG above.
        Because this div is transparent, the filter bends the visual of
-       whatever is drawn behind it via the screen compositor — giving the
+       whatever is drawn behind it via the screen compositor - giving the
        impression of a slightly curved glass surface. */
     filter: url(#crt-barrel);
     /*
@@ -172,7 +172,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Scanlines — horizontal dark bands every 3px                         */
+  /* Scanlines - horizontal dark bands every 3px                         */
   /* ------------------------------------------------------------------ */
   .crt-scanlines {
     position: absolute;
@@ -187,7 +187,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Vignette — radial darkening at edges and corners                    */
+  /* Vignette - radial darkening at edges and corners                    */
   /* ------------------------------------------------------------------ */
   .crt-vignette {
     position: absolute;
@@ -201,11 +201,11 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Phosphor glow — blurred brightness bloom                            */
+  /* Phosphor glow - blurred brightness bloom                            */
   /*                                                                     */
   /* A 1.5px blur with brightness boost at 6% screen opacity gives the  */
   /* soft bloom you see around bright pixels on real phosphor screens.   */
-  /* Applied only when motion is allowed — the animation of brightness   */
+  /* Applied only when motion is allowed - the animation of brightness   */
   /* interacting with flicker can feel uncomfortable for some users.     */
   /* ------------------------------------------------------------------ */
   .crt-phosphor {
@@ -228,13 +228,13 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Color fringing — lateral chromatic aberration                       */
+  /* Color fringing - lateral chromatic aberration                       */
   /*                                                                     */
   /* Real CRT electron guns for R/G/B have slight convergence errors.   */
   /* This simulates the resulting color separation at high-contrast     */
   /* edges by overlaying two semi-transparent colored layers shifted     */
   /* 0.5px in opposite horizontal directions. Opacity 0.04 keeps it    */
-  /* subconscious — you feel the age of the screen without seeing it.  */
+  /* subconscious - you feel the age of the screen without seeing it.  */
   /* ------------------------------------------------------------------ */
   .crt-fringe {
     position: absolute;
@@ -256,6 +256,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     /* Fringing is static geometry, not motion. Keep it. */
-    /* (no override needed — left as-is intentionally) */
+    /* (no override needed - left as-is intentionally) */
   }
 </style>

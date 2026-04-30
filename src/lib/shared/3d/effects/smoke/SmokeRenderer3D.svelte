@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * SmokeRenderer3D — per-tip curl-noise puff emitter for the 3D scene.
+   * SmokeRenderer3D - per-tip curl-noise puff emitter for the 3D scene.
    *
    * Each puff is a camera-facing sprite (T.Sprite + SpriteMaterial) tinted
    * by a shared CanvasTexture that encodes a radial core-to-edge gradient.
    * Motion combines:
    *   - world-up rise (+y) scaled by palette.riseBias × intent.riseSpeed
    *   - curl-noise lateral sway in the XZ plane, sampled from the shared
-   *     `SampledCurlGrid2D` utility. Curl is evaluated in 2D (XZ) only —
+   *     `SampledCurlGrid2D` utility. Curl is evaluated in 2D (XZ) only -
    *     vertical motion stays palette-controlled so puffs feel like they
    *     rise rather than tumble.
    *
@@ -17,7 +17,7 @@
    * occupation, not popping.
    *
    * The genie palette's hue-shift flag (`hueShift: true`) surfaces through
-   * params.resolvedPalette.hueShift and is ignored at 1i.i — 1i.iii will
+   * params.resolvedPalette.hueShift and is ignored at 1i.i - 1i.iii will
    * branch the material's color to sample a lifetime gradient.
    */
 
@@ -51,7 +51,7 @@
     maxAge: number;
     r0: number;
     r1: number;
-    /** Per-puff noise phase — decorrelates neighbours sampling the same curl cell. */
+    /** Per-puff noise phase - decorrelates neighbours sampling the same curl cell. */
     phase: number;
     /** Cached base alpha from intent.intensity at spawn. */
     peakAlpha: number;
@@ -66,11 +66,11 @@
   const FADE_OUT_FRACTION = 0.3;
   const FADE_IN_DURATION = 0.15;
 
-  // One curl field per renderer instance — cheap (64*64 = 4k float pairs).
+  // One curl field per renderer instance - cheap (64*64 = 4k float pairs).
   // Tests on the shared module cover determinism and bounded output.
   const curlField = new SampledCurlGrid2D(64, 16, 1 / 3);
 
-  // Shared puff texture — baked once per (core, edge) color pair. The
+  // Shared puff texture - baked once per (core, edge) color pair. The
   // radial gradient is 128x128 RGBA; multiple palettes cache separately
   // so color changes don't rebuild every frame.
   const textureCache = new Map<string, CanvasTexture>();
@@ -147,7 +147,7 @@
       spawnAccumulator -= 1;
     }
 
-    // Integrate + age + cull. Curl is 2D (XZ plane) — we want smoke to
+    // Integrate + age + cull. Curl is 2D (XZ plane) - we want smoke to
     // rise mostly vertically, with swirl in the horizontal plane.
     const curlScale = 1 / Math.max(1e-3, params.noiseScale);
     const CURL_BASE_MS = 1.2; // m/s lateral swirl at resolvedCurlStrength=1

@@ -1,5 +1,5 @@
 <!--
-  RetroDesktopIcon — Single desktop icon with selection and double-click
+  RetroDesktopIcon - Single desktop icon with selection and double-click
 
   32x32 icon area with centered label below. Single-click selects
   (white text on navy, Win95 inverted selection style). Double-click

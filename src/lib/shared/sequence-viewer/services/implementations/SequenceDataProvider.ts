@@ -65,14 +65,14 @@ export class SequenceDataProvider implements ISequenceDataProvider {
 
     const key = this.deriveCacheKey(sequence);
 
-    // Check completed prefetch cache — instant return
+    // Check completed prefetch cache - instant return
     if (key) {
       const cached = this.hydrationResults.get(key);
       if (cached) {
         return cached;
       }
 
-      // Check in-flight prefetch — await it instead of starting a new fetch
+      // Check in-flight prefetch - await it instead of starting a new fetch
       const inFlight = this.prefetchCache.get(key);
       if (inFlight) {
         return inFlight;
@@ -117,7 +117,7 @@ export class SequenceDataProvider implements ISequenceDataProvider {
   }
 
   /**
-   * Core hydration logic — tries local repo then public loader.
+   * Core hydration logic - tries local repo then public loader.
    *
    * When the sequence has a unique ID, prefer ID-based lookup so we load
    * the exact variation the user clicked rather than an arbitrary match

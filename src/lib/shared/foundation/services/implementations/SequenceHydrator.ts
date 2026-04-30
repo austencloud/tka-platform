@@ -6,6 +6,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { MotionColor, MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { handpathDirectionCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
+import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
 
 // Legacy sequences saved before SoloPropStepData carried prefloatMotionType
 // will arrive here with derived float motions whose prefloat fields are
@@ -133,7 +134,7 @@ export class SequenceHydrator implements ISequenceHydrator {
 		}
 
 		// If compositional fields are present, derive steps from them.
-		// This makes compositional fields the authoritative source of truth —
+		// This makes compositional fields the authoritative source of truth -
 		// all 173+ consumer files that read .steps get data derived from the
 		// compositional model without any code changes.
 		if (
@@ -159,7 +160,7 @@ export class SequenceHydrator implements ISequenceHydrator {
 			// a no-op for that document.
 			const steps = backfillPrefloatFromLegacySteps(derived, sequence.steps);
 
-			// Derive startPosition if missing — compositional fields don't store it,
+			// Derive startPosition if missing - compositional fields don't store it,
 			// and without it the 3D viewer has no beat-0 config (avatar plays ahead).
 			let startPosition = sequence.startPosition;
 			if (!startPosition && steps.length > 0) {
@@ -198,10 +199,13 @@ export class SequenceHydrator implements ISequenceHydrator {
 				}
 			}
 
-			return { ...sequence, steps, ...(startPosition && { startPosition }) };
+			const hydrated = { ...sequence, steps, ...(startPosition && { startPosition }) };
+			return hydrated.steps.length > 0
+				? reversalDetector.processReversals(hydrated)
+				: hydrated;
 		}
 
-		// Compositional fields missing — steps won't be derived.
+		// Compositional fields missing - steps won't be derived.
 		// This sequence either predates the migration or was saved by a code path
 		// that doesn't call ensureComposition(). See the hydrate() docstring above.
 		if (sequence.steps.length > 0 && !sequence.blueSoloProp) {
@@ -211,7 +215,9 @@ export class SequenceHydrator implements ISequenceHydrator {
 			);
 		}
 
-		return sequence;
+		return sequence.steps.length > 0
+			? reversalDetector.processReversals(sequence)
+			: sequence;
 	}
 
 	ensureComposition(sequence: SequenceData): SequenceData {

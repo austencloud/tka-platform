@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * GhostStaff3D — beat-onset phantoms of a staff in 3D.
+   * GhostStaff3D - beat-onset phantoms of a staff in 3D.
    *
    * Mirrors the 2D Echo2DRenderer behaviour: on each beat boundary
    * (`floor(currentStep / interval) > lastStepIndex`), captures the current
@@ -17,13 +17,13 @@
   import type { PropState3D } from "../../domain/models/PropState3D";
 
   interface Props {
-    /** Live prop state — read at beat onsets to capture a phantom. */
+    /** Live prop state - read at beat onsets to capture a phantom. */
     propState: PropState3D | null;
     /** Whether the effect is active (gates both capture + render). */
     enabled: boolean;
-    /** 0-1 — phantom peak alpha. */
+    /** 0-1 - phantom peak alpha. */
     intensity: number;
-    /** 1-8 — age (in intervals) at which a phantom is culled / alpha reaches 0. */
+    /** 1-8 - age (in intervals) at which a phantom is culled / alpha reaches 0. */
     decay: number;
     /** Capture interval in beats. */
     interval: number;
@@ -61,7 +61,7 @@
 
   // Ring buffer of captured phantoms. Kept as a reactive $state so Threlte
   // re-renders when we push/splice; Vector3/Quaternion are treated as opaque
-  // references — we never mutate them after capture.
+  // references - we never mutate them after capture.
   let phantoms = $state<Phantom[]>([]);
   let lastStepIndex = -1;
   let nextId = 0;

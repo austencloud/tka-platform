@@ -91,7 +91,7 @@ Variation support:
     onPrimaryAction(displayedSequence);
   }
 
-  // Debounced hover handler — avoids pre-warming during fast scroll-past
+  // Debounced hover handler - avoids pre-warming during fast scroll-past
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
   function handlePointerEnter() {
@@ -132,7 +132,7 @@ Variation support:
     const seq = displayedSequence;
     closeContextMenu();
     const propType = seq.intendedProp?.bluePropType ?? bluePropType ?? "staff";
-    // Cloud thumbnails are keyed by sequence.word (not .name) — matches PropAwareThumbnail
+    // Cloud thumbnails are keyed by sequence.word (not .name) - matches PropAwareThumbnail
     const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, propType, false);
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
   }

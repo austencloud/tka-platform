@@ -51,7 +51,7 @@ const OUTWARD_OFFSETS: Record<GridLocation, OffsetVector> = {
   [GridLocation.SOUTHEAST]: { x: +35, y: +35 },
   [GridLocation.SOUTHWEST]: { x: -35, y: +35 },
   [GridLocation.NORTHWEST]: { x: -35, y: -35 },
-  // CENTER has no meaningful outward direction — no offset applied
+  // CENTER has no meaningful outward direction - no offset applied
   [GridLocation.CENTER]:    { x:   0, y:   0 },
 };
 
@@ -88,7 +88,7 @@ export class ArrowCollisionResolver implements IArrowCollisionResolver {
 
     const offset = OUTWARD_OFFSETS[blue.endLocation];
 
-    // CENTER has zero offset — no useful outward direction, skip it
+    // CENTER has zero offset - no useful outward direction, skip it
     if (offset.x === 0 && offset.y === 0) return step;
 
     return {

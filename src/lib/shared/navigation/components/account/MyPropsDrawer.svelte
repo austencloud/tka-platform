@@ -1,8 +1,8 @@
 <!--
-  MyPropsDrawer.svelte — Two-phase modal for selecting props and picking a favorite.
+  MyPropsDrawer.svelte - Two-phase modal for selecting props and picking a favorite.
 
-  Phase 1: "What do you spin?" — curated prop family grid with multi-select
-  Phase 2: "Your go-to?" — pick one favorite from selections (shown when 2+ selected)
+  Phase 1: "What do you spin?" - curated prop family grid with multi-select
+  Phase 2: "Your go-to?" - pick one favorite from selections (shown when 2+ selected)
 
   Content morphs in place. No navigation, no step indicators.
 -->
@@ -65,7 +65,7 @@
   }
 
   function handleDone() {
-    // 1 prop selected — auto-favorite it
+    // 1 prop selected - auto-favorite it
     const singleProp = gridSelections[0];
     if (gridSelections.length === 1 && singleProp) {
       propState.setFavorite(singleProp);

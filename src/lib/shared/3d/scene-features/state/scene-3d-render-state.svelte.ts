@@ -1,5 +1,5 @@
 /**
- * Scene3DRenderConfig — scene-wide 3D render modifiers.
+ * Scene3DRenderConfig - scene-wide 3D render modifiers.
  *
  * Lives alongside the per-tip unified EffectsConfig. Motion (blur +
  * speed lines) is a whole-scene post modifier, not a per-tip effect,

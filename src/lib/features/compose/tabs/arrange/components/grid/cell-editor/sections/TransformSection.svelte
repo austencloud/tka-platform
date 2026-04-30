@@ -1,14 +1,12 @@
 <!--
   TransformSection.svelte
 
-  Expanded section for transform operations: apply-to-hand selector,
-  rotation buttons, and a 2x3 rearrange grid with color-coded icons.
+  Flat 2×3 grid of transform buttons matching the v4 mockup.
+  No Apply To selector, no rotation strip, no hotkey badges.
 -->
 <script lang="ts">
   import type { CellEditorPanelState } from "../state/cell-editor-panel-state.svelte";
   import type { TransformType } from "$lib/features/compose/compose/domain/types";
-  import type { TargetHand } from "$lib/features/compose/compose/domain/types";
-  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
 
   let {
     panelState,
@@ -18,131 +16,36 @@
     onTransform: (type: TransformType) => void;
   } = $props();
 
-  const hands: { value: TargetHand; label: string }[] = [
-    { value: "left", label: "Left" },
-    { value: "both", label: "Both" },
-    { value: "right", label: "Right" },
+  const row1: { type: TransformType; label: string; icon: string }[] = [
+    { type: "mirror", label: "Mirror", icon: "fa-left-right" },
+    { type: "flip", label: "Flip", icon: "fa-arrows-up-down" },
+    { type: "rotate45R", label: "Rotate", icon: "fa-rotate" },
   ];
 
-  const rearrangeButtons: {
-    type: TransformType;
-    label: string;
-    icon: string;
-    iconColor: string;
-    bgTint: string;
-    description: string;
-    hotkey: string;
-  }[] = [
-    {
-      type: "mirror",
-      label: "Mirror",
-      icon: "fa-left-right",
-      iconColor: "#60a5fa",
-      bgTint: "rgba(59,130,246,0.12)",
-      description: "Flip left/right",
-      hotkey: "Alt+M",
-    },
-    {
-      type: "flip",
-      label: "Flip",
-      icon: "fa-up-down",
-      iconColor: "#a78bfa",
-      bgTint: "rgba(168,85,247,0.12)",
-      description: "Flip top/bottom",
-      hotkey: "Alt+V",
-    },
-    {
-      type: "swapColors",
-      label: "Swap",
-      icon: "fa-right-left",
-      iconColor: "#fb7185",
-      bgTint: "rgba(244,63,94,0.12)",
-      description: "Switch hands",
-      hotkey: "Alt+S",
-    },
-    {
-      type: "invert",
-      label: "Invert",
-      icon: "fa-circle-half-stroke",
-      iconColor: "#fbbf24",
-      bgTint: "rgba(234,179,8,0.12)",
-      description: "Reverse direction",
-      hotkey: "Alt+I",
-    },
-    {
-      type: "shiftStart",
-      label: "Shift Start",
-      icon: "fa-step-backward",
-      iconColor: "#818cf8",
-      bgTint: "rgba(99,102,241,0.12)",
-      description: "Advance starting beat",
-      hotkey: "Alt+F",
-    },
-    {
-      type: "rewind",
-      label: "Rewind",
-      icon: "fa-backward",
-      iconColor: "#34d399",
-      bgTint: "rgba(16,185,129,0.12)",
-      description: "Play backwards",
-      hotkey: "Alt+W",
-    },
+  const row2: { type: TransformType; label: string; icon: string }[] = [
+    { type: "swapColors", label: "Swap", icon: "fa-shuffle" },
+    { type: "rewind", label: "Rewind", icon: "fa-backward" },
+    { type: "shiftStart", label: "Shift", icon: "fa-forward" },
   ];
 </script>
 
 <div class="transform-section">
-  <!-- Apply To -->
-  <div class="segment-group">
-    <div class="segment-strip" role="radiogroup" aria-label="Apply transform to">
-      {#each hands as hand}
-        <button
-          class="segment-btn"
-          class:active={panelState.applyToHand === hand.value}
-          role="radio"
-          aria-checked={panelState.applyToHand === hand.value}
-          onclick={() => panelState.setApplyToHand(hand.value)}
-        >
-          {hand.label}
-        </button>
-      {/each}
-    </div>
+  <span class="section-header">TRANSFORM</span>
+
+  <div class="btn-row" role="group" aria-label="Transform row 1">
+    {#each row1 as btn}
+      <button class="transform-btn" onclick={() => onTransform(btn.type)}>
+        <i class="fas {btn.icon}" aria-hidden="true"></i>
+        {btn.label}
+      </button>
+    {/each}
   </div>
 
-  <!-- Rotate -->
-  <span class="section-label">Rotate</span>
-  <div class="segment-strip rotate-strip" role="group" aria-label="Rotate">
-    <button class="segment-btn rotate-btn" onclick={() => onTransform("rotate45L")}>
-      <i class="fas fa-rotate-left" aria-hidden="true"></i>
-      45&deg; L
-    </button>
-    <button class="segment-btn rotate-btn" onclick={() => onTransform("rotate45R")}>
-      <i class="fas fa-rotate-right" aria-hidden="true"></i>
-      45&deg; R
-    </button>
-  </div>
-
-  <!-- Rearrange -->
-  <span class="section-label">Rearrange</span>
-  <div class="rearrange-grid" role="group" aria-label="Rearrange">
-    {#each rearrangeButtons as btn}
-      <button
-        class="rearrange-btn"
-        onclick={() => onTransform(btn.type)}
-        title="{btn.label} ({btn.hotkey})"
-      >
-        <span class="hotkey-badge">{btn.hotkey}</span>
-        <span
-          class="icon-badge"
-          style="background: {btn.bgTint}; color: {btn.iconColor};"
-        >
-          {#if btn.type === "swapColors"}
-            <SwapIcon size="14px" />
-          {:else}
-            <i class="fas {btn.icon}" aria-hidden="true"></i>
-          {/if}
-        </span>
-        <span class="btn-label">{btn.label}</span>
-        <span class="btn-desc">{btn.description}</span>
+  <div class="btn-row" role="group" aria-label="Transform row 2">
+    {#each row2 as btn}
+      <button class="transform-btn" onclick={() => onTransform(btn.type)}>
+        <i class="fas {btn.icon}" aria-hidden="true"></i>
+        {btn.label}
       </button>
     {/each}
   </div>
@@ -152,7 +55,7 @@
   .transform-section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     animation: slideDown 180ms ease-out;
   }
 
@@ -167,122 +70,48 @@
     }
   }
 
-  /* Section labels */
-  .section-label {
-    font-size: 10px;
+  .section-header {
+    font-size: 13px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
-    font-weight: 600;
-    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
   }
 
-  /* Segmented strip (shared by Apply To and Rotate) */
-  .segment-strip {
+  .btn-row {
     display: flex;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    overflow: hidden;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
-  .segment-btn {
+  .transform-btn {
     flex: 1;
     min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    background: transparent;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .segment-btn:hover {
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
-  }
-
-  .segment-btn.active {
-    color: var(--theme-accent, #a855f7);
-    box-shadow: inset 0 -2px 0 var(--theme-accent, #a855f7);
-  }
-
-  /* Rotate strip hover */
-  .rotate-btn:hover {
-    background: rgba(96, 165, 250, 0.08);
-  }
-
-  .rotate-btn:active {
-    transform: scale(0.97);
-  }
-
-  /* Rearrange grid */
-  .rearrange-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .rearrange-btn {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    min-height: 52px;
-    padding: 8px 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    gap: 5px;
+    padding: 6px 8px;
     border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12px;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: background 150ms ease, border-color 150ms ease;
   }
 
-  .rearrange-btn:hover {
-    background: rgba(255, 255, 255, 0.07);
+  .transform-btn i {
+    font-size: 11px;
+  }
+
+  .transform-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
   }
 
-  .rearrange-btn:active {
+  .transform-btn:active {
     transform: scale(0.97);
-  }
-
-  /* Icon badge */
-  .icon-badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    font-size: 14px;
-  }
-
-  /* Text labels */
-  .btn-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--theme-text, white);
-  }
-
-  .btn-desc {
-    font-size: 10px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-  }
-
-  /* Hotkey badge */
-  .hotkey-badge {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    font-size: 9px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.15));
-    pointer-events: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -290,9 +119,12 @@
       animation: none;
     }
 
-    .segment-btn,
-    .rearrange-btn {
+    .transform-btn {
       transition: none;
+    }
+
+    .transform-btn:active {
+      transform: none;
     }
   }
 </style>

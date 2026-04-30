@@ -76,6 +76,14 @@ export function createAvatarPlaybackAdapter(
 			const totalSec = 1 / av.speed;
 			return totalSec * this.overallProgress;
 		},
+		get beatMarkerPositions() {
+			const av = getAvatar();
+			if (!av || av.totalSteps <= 1) return [];
+			return Array.from(
+				{ length: av.totalSteps - 1 },
+				(_, i) => (i + 1) / av.totalSteps,
+			);
+		},
 		seek(progress: number) {
 			const av = getAvatar();
 			if (!av) return;

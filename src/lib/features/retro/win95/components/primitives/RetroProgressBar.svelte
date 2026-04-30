@@ -1,5 +1,5 @@
 <!--
-  RetroProgressBar — Chunky segmented progress indicator
+  RetroProgressBar - Chunky segmented progress indicator
 
   Renders a 98.css-styled progress bar. In segmented mode, individual
   blocks are rendered inside the track for the classic Win95 file-copy look.

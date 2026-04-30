@@ -1,5 +1,5 @@
 <!--
-  PictographContextMenuHost — Orchestrator for the pictograph right-click context menu.
+  PictographContextMenuHost - Orchestrator for the pictograph right-click context menu.
   Entries: inline visibility toggles and optional arrow adjustment items (admin only).
 -->
 <script lang="ts">

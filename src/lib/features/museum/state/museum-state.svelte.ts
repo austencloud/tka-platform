@@ -36,18 +36,18 @@ const INPUT_BUFFER_WINDOW_MS = 150;
 const CAMERA_SMOOTHING = 0.14;
 
 export function createMuseumState(grid: MuseumGrid) {
-	// Logical position — committed tile the player is on (or heading to)
+	// Logical position - committed tile the player is on (or heading to)
 	let logicalX = $state(grid.spawn.x);
 	let logicalY = $state(grid.spawn.y);
 	let targetX = $state(grid.spawn.x);
 	let targetY = $state(grid.spawn.y);
 	let playerFacing = $state<Direction>(grid.spawn.facing);
 
-	// Visual position — sub-tile float for rendering (pixels = visualPos * tileSize)
+	// Visual position - sub-tile float for rendering (pixels = visualPos * tileSize)
 	let visualX = $state(grid.spawn.x);
 	let visualY = $state(grid.spawn.y);
 
-	// Camera position — smoothed follow
+	// Camera position - smoothed follow
 	let cameraX = $state(grid.spawn.x);
 	let cameraY = $state(grid.spawn.y);
 
@@ -59,7 +59,7 @@ export function createMuseumState(grid: MuseumGrid) {
 	let isTransitioning = $state(false);
 	let currentMoveDuration = MOVE_DURATION_MS;
 
-	// Input state — managed by the game component
+	// Input state - managed by the game component
 	let heldDirections = $state(new Set<Direction>());
 	let inputBuffer = $state<{ direction: Direction; dx: number; dy: number; timestamp: number } | null>(null);
 
@@ -126,7 +126,7 @@ export function createMuseumState(grid: MuseumGrid) {
 			return startMove(dx, dy, facing);
 		}
 
-		// Diagonal move — check corner-cutting prevention
+		// Diagonal move - check corner-cutting prevention
 		const canDiag = canMoveTo(logicalX + dx, logicalY + dy)
 			&& canMoveTo(logicalX + dx, logicalY)
 			&& canMoveTo(logicalX, logicalY + dy);
@@ -145,7 +145,7 @@ export function createMuseumState(grid: MuseumGrid) {
 			return startMove(0, dy, vFacing);
 		}
 
-		// Fully blocked — just update facing
+		// Fully blocked - just update facing
 		playerFacing = facing;
 		return false;
 	}
@@ -277,7 +277,7 @@ export function createMuseumState(grid: MuseumGrid) {
 	/**
 	 * Clear all held directions. Called when the window loses focus or a
 	 * context menu opens, because keyup events fired during those states
-	 * never reach the game — leaving ghost keys that cause infinite movement.
+	 * never reach the game - leaving ghost keys that cause infinite movement.
 	 */
 	function clearAllDirections() {
 		heldDirections = new Set<Direction>();
@@ -378,7 +378,7 @@ export function createMuseumState(grid: MuseumGrid) {
 		get isMoving() { return isTransitioning; },
 		get visualFacing() { return visualFacing; },
 
-		// Visual float position (for rendering — sub-tile interpolated)
+		// Visual float position (for rendering - sub-tile interpolated)
 		get visualX() { return visualX; },
 		get visualY() { return visualY; },
 

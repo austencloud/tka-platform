@@ -199,7 +199,7 @@ export class UndoManager implements IUndoManager {
       return entry;
     }
 
-    // No filter — pop the last entry (legacy behavior)
+    // No filter - pop the last entry (legacy behavior)
     const entry = this._undoHistory.pop();
     if (!entry) {
       return null;

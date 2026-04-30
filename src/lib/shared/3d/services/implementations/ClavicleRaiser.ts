@@ -7,7 +7,7 @@
  * stiff when reaching above their shoulders.
  *
  * The real biomechanics (Inman 1944, Ludewig 2009):
- * - 0°–30° arm elevation: "setting phase" — clavicle barely moves
+ * - 0°–30° arm elevation: "setting phase" - clavicle barely moves
  * - 30°–90°: clavicle starts elevating
  * - 90°–180°: clavicle reaches max ~15° elevation
  *

@@ -61,7 +61,7 @@
   const { scene } = useThrelte();
 
   // -----------------------------------------------------------------
-  // Frozen pond — organic Shape with a Three.js Reflector for true
+  // Frozen pond - organic Shape with a Three.js Reflector for true
   // mirror reflections. Not a perfect mirror: the color parameter
   // tints the reflection toward pale ice-blue.
   // -----------------------------------------------------------------
@@ -104,7 +104,7 @@
   let pondReflector = $state<Reflector | null>(null);
 
   $effect(() => {
-    // Track only the pond config — reading pondReflector here would cause
+    // Track only the pond config - reading pondReflector here would cause
     // a read→write cycle and trip Svelte's effect_update_depth guard.
     const pond = activeConfig.pond;
     if (!pond?.enabled) {
@@ -150,7 +150,7 @@
 
   // Snow-tint: cool-shift cloned materials so the forest reads as snow-covered
   // at distance. A mild blend keeps the pine needles green-ish while frosting
-  // them toward pale-blue — closer to "dusted with snow" than "painted white".
+  // them toward pale-blue - closer to "dusted with snow" than "painted white".
   function tintSnowy(root: { traverse: (cb: (obj: unknown) => void) => void }) {
     root.traverse((obj) => {
       const m = obj as { isMesh?: boolean; material?: unknown };
@@ -251,7 +251,7 @@
   onMount(() => {
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
-        console.warn("[WinterScene] GLB loading timed out — lifting curtain");
+        console.warn("[WinterScene] GLB loading timed out - lifting curtain");
         sceneFeatures.reportReady("environment");
       }
     }, 15_000);
@@ -284,7 +284,7 @@
 {/if}
 
 <!-- Frozen pond: organic Shape with Three.js Reflector for real mirror reflection.
-     Color tint is baked into the Reflector itself — no overlay needed, and
+     Color tint is baked into the Reflector itself - no overlay needed, and
      removing it means the reflection is visible from every angle. -->
 {#if activeConfig.pond?.enabled && pondReflector}
   <T
@@ -295,7 +295,7 @@
   />
 {/if}
 
-<!-- Falling snow — #key forces remount when count/size/area/speed change so
+<!-- Falling snow - #key forces remount when count/size/area/speed change so
      the Scene Lab sliders take effect immediately (FallingParticles sizes
      its GPU buffers once at mount). -->
 {#key `${activeConfig.snow.count}|${activeConfig.snow.sizeRange[0]}|${activeConfig.snow.sizeRange[1]}|${activeConfig.snow.area.width}|${activeConfig.snow.area.height}|${activeConfig.snow.area.depth}|${activeConfig.snow.speed}|${activeConfig.snow.spin}`}

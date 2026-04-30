@@ -1,5 +1,5 @@
 <script module lang="ts">
-  // Module-scoped GLTFLoader — shared across all instances so models survive
+  // Module-scoped GLTFLoader - shared across all instances so models survive
   // realm navigation/remount without re-fetching from the network.
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   export const gltfLoader = new GLTFLoader();
@@ -64,7 +64,7 @@
   import { InteractionDetector } from "$lib/features/museum/scenes/procedural/services/implementations/InteractionDetector";
   import { setActiveMuseumState } from "$lib/features/museum/scenes/procedural/state/museum-state-bridge.svelte";
 
-  // Archive (The Kinetic Archive) — standalone via ArchiveDestination + IndoorScene
+  // Archive (The Kinetic Archive) - standalone via ArchiveDestination + IndoorScene
 
   import {
     BufferGeometry,
@@ -150,7 +150,7 @@
     performerState?: import("$lib/shared/3d/state/avatar-instance-state.svelte").AvatarInstanceState | null;
 
     /** Real-world terrain data for destinations like Hannon's Camp.
-     *  The engine does not know about specific destinations — callers
+     *  The engine does not know about specific destinations - callers
      *  import the JSON and pass it in. Required when autoLoadHannons is true. */
     terrainData?: ImportedTerrainData | null;
   }
@@ -1144,7 +1144,7 @@
     moveDirection={avatarState.moveDirection ?? { x: 0, z: 1 }}
   />
 
-  <!-- Props when sequence is loaded — positioned via parent group -->
+  <!-- Props when sequence is loaded - positioned via parent group -->
   <T.Group
     position.x={playerPosition.x}
     position.z={playerPosition.z}

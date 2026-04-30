@@ -1,5 +1,5 @@
 <!--
-  VillageDeathMark — Fading red circle on the ground at a death location.
+  VillageDeathMark - Fading red circle on the ground at a death location.
   A temporary scar that heals over time.
 -->
 <script lang="ts">

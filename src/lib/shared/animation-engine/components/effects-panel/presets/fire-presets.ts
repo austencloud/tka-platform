@@ -3,9 +3,9 @@
  *
  * Each preset sets a different FireColorCurve (4-stop temperature→color gradient)
  * that the WebGL fire renderer uses in its display shader. The curve controls
- * what the flames actually look like — cold embers through hot core.
+ * what the flames actually look like - cold embers through hot core.
  *
- * Presets are COLOR ONLY — they don't touch intensity, turbulence, or blend.
+ * Presets are COLOR ONLY - they don't touch intensity, turbulence, or blend.
  * Those settings are controlled by the sliders and apply uniformly to all presets.
  * The 4th preset ("Custom") lets users pick their own fire color.
  */
@@ -77,7 +77,7 @@ export function applyCustomFireColors(vm: AnimationVisibilityStateManager, color
   ]);
 }
 
-// ── Presets (color only — no intensity/turbulence changes) ─────────────
+// ── Presets (color only - no intensity/turbulence changes) ─────────────
 
 export const FIRE_PRESETS: EffectPreset[] = [
   {

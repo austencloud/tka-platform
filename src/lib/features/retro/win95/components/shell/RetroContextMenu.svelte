@@ -1,5 +1,5 @@
 <!--
-  RetroContextMenu — Win95-style right-click context menu
+  RetroContextMenu - Win95-style right-click context menu
 
   Positioned absolutely at mouse coordinates. Same visual style as
   the start menu (gray background, outset border, navy hover) but
@@ -26,7 +26,7 @@
   let activeSubmenuIndex = $state<number | null>(null);
 
   /* ------------------------------------------------------------------ */
-  /* Position clamping — keep menu within viewport                       */
+  /* Position clamping - keep menu within viewport                       */
   /* ------------------------------------------------------------------ */
 
   const clampedX = $derived.by(() => {

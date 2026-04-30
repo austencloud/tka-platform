@@ -68,7 +68,7 @@ export class SpecialPlacer implements ISpecialPlacer {
     const letter = pictographData.letter;
 
     // Step 1: Generate orientation key.
-    // For staff+staff, collapse to legacy bucket — radial variants are identical.
+    // For staff+staff, collapse to legacy bucket - radial variants are identical.
     const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motionData,
       pictographData
@@ -97,7 +97,7 @@ export class SpecialPlacer implements ISpecialPlacer {
     // Uses cascading lookup: Layer 3 (combination) → Layer 2 (prop-specific) → Layer 1 (base)
     // Within each layer, tries specific oriKey first, then legacy bucket fallback
     // CRITICAL: Compute legacy bucket from rawOriKey, not oriKey. For staff+staff,
-    // oriKey is already "from_layer1" — mapToLegacyBucket would parse the underscores
+    // oriKey is already "from_layer1" - mapToLegacyBucket would parse the underscores
     // as orientation separators, producing "from_layer2" (wrong layer entirely).
     const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
     const globalAdjustmentRepo = getGlobalAdjustmentRepository();
@@ -184,7 +184,7 @@ export class SpecialPlacer implements ISpecialPlacer {
     const letter = pictographData.letter;
 
     // Step 1: Generate orientation key.
-    // For staff+staff, collapse to legacy bucket — radial variants are identical.
+    // For staff+staff, collapse to legacy bucket - radial variants are identical.
     const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motionData,
       pictographData
@@ -224,7 +224,7 @@ export class SpecialPlacer implements ISpecialPlacer {
       return localStorageOverride;
     }
 
-    // Step 5: Load letter data — try specific oriKey folder, fall back to legacy
+    // Step 5: Load letter data - try specific oriKey folder, fall back to legacy
     let letterData = await this.dataService.getLetterData(
       gridMode,
       oriKey,
@@ -294,7 +294,7 @@ export class SpecialPlacer implements ISpecialPlacer {
     const letter = pictographData.letter;
 
     // Generate orientation key.
-    // For staff+staff, collapse to legacy bucket — radial variants are identical.
+    // For staff+staff, collapse to legacy bucket - radial variants are identical.
     const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motionData,
       pictographData
@@ -312,7 +312,7 @@ export class SpecialPlacer implements ISpecialPlacer {
     // Generate turns tuple
     const turnsTupleKey = this.tupleGenerator.generateTurnsTuple(pictographData);
 
-    // Load letter data from static JSON — try specific oriKey, fall back to legacy
+    // Load letter data from static JSON - try specific oriKey, fall back to legacy
     let usedOriKey = oriKey;
     let letterData = await this.dataService.getLetterData(
       gridMode,

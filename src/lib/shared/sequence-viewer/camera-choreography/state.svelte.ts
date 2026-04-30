@@ -6,9 +6,9 @@
  * that drivers use.
  *
  * Two layers:
- *  - UI layer: `activePresetId` — which tile is selected in the Export
+ *  - UI layer: `activePresetId` - which tile is selected in the Export
  *    popover. `"free"` means "no choreography, user drives the camera".
- *  - Runtime layer: `driving` + `controls` — populated while a preset
+ *  - Runtime layer: `driving` + `controls` - populated while a preset
  *    is actively driving the camera during a recording. `isDriving`
  *    reflects that recording is happening AND a non-free preset is on.
  *
@@ -89,7 +89,7 @@ export function createCameraChoreographyState() {
 
     /**
      * Attach the selected preset's driver to the live controls ref and
-     * start driving. Returns a disposer. Safe to call multiple times —
+     * start driving. Returns a disposer. Safe to call multiple times -
      * calls after the first no-op until the returned disposer runs.
      *
      * Returns null if: no controls registered, preset is "free", or

@@ -2,7 +2,7 @@
   FuseAnimationPreview.svelte
 
   Shows a live animation preview driven entirely by the shared fuse clock.
-  Does NOT run its own playback loop — instead, reactively calls
+  Does NOT run its own playback loop - instead, reactively calls
   calculateStateForStep() when currentStep changes.
 -->
 <script lang="ts">
@@ -107,7 +107,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
 			onControllerReady?.(controller!);
 
-			// Do NOT call togglePlayback() — the shared clock drives this
+			// Do NOT call togglePlayback() - the shared clock drives this
 			// Just calculate initial state
 			const stepCount = totalSteps;
 			if (stepCount > 0 && currentStep > 0) {
@@ -119,7 +119,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		});
 	});
 
-	// Drive animation from the shared clock — this is the only beat source.
+	// Drive animation from the shared clock - this is the only beat source.
 	// calculateStateForStep computes interpolated prop states for the given beat
 	// without running an internal rAF loop.
 	$effect(() => {

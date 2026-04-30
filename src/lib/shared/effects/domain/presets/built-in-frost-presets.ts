@@ -4,7 +4,7 @@ export const BUILT_IN_FROST_PRESETS: EffectsPreset[] = [
   {
     id: "frost-classic",
     name: "Classic",
-    description: "Balanced snowflakes + cold aura — blue-white ice.",
+    description: "Balanced snowflakes + cold aura - blue-white ice.",
     effectType: "frost",
     builtIn: true,
     previewColors: ["#a0d8ff", "#e0f4ff"],
@@ -23,7 +23,7 @@ export const BUILT_IN_FROST_PRESETS: EffectsPreset[] = [
   {
     id: "frost-breath",
     name: "Breath",
-    description: "Cold haze only, no snowflakes — visible exhale.",
+    description: "Cold haze only, no snowflakes - visible exhale.",
     effectType: "frost",
     builtIn: true,
     previewColors: ["#d0e8f0", "#f0f8ff"],
@@ -42,7 +42,7 @@ export const BUILT_IN_FROST_PRESETS: EffectsPreset[] = [
   {
     id: "frost-flash-freeze",
     name: "Flash Freeze",
-    description: "Fast snowflake spread on motion — sudden ice coating.",
+    description: "Fast snowflake spread on motion - sudden ice coating.",
     effectType: "frost",
     builtIn: true,
     previewColors: ["#a0d8ff", "#ffffff"],
@@ -61,7 +61,7 @@ export const BUILT_IN_FROST_PRESETS: EffectsPreset[] = [
   {
     id: "frost-black-ice",
     name: "Black Ice",
-    description: "Subtle dark frost — nearly invisible menace.",
+    description: "Subtle dark frost - nearly invisible menace.",
     effectType: "frost",
     builtIn: true,
     previewColors: ["#202830", "#405060"],
@@ -80,7 +80,7 @@ export const BUILT_IN_FROST_PRESETS: EffectsPreset[] = [
   {
     id: "frost-aurora",
     name: "Aurora",
-    description: "Glowing iridescent snowflakes — northern lights on ice.",
+    description: "Glowing iridescent snowflakes - northern lights on ice.",
     effectType: "frost",
     builtIn: true,
     previewColors: ["#60ff80", "#ff60c0"],
@@ -99,7 +99,7 @@ export const BUILT_IN_FROST_PRESETS: EffectsPreset[] = [
   {
     id: "frost-cursed",
     name: "Cursed",
-    description: "Dark purple snowflakes — corrupted ice.",
+    description: "Dark purple snowflakes - corrupted ice.",
     effectType: "frost",
     builtIn: true,
     previewColors: ["#4020a0", "#8060d0"],

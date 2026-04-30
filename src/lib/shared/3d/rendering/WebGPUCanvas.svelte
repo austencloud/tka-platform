@@ -52,7 +52,7 @@
       WebGPURendererClass = module.WebGPURenderer;
       shouldUseWebGPU = true;
     } catch {
-      // WebGPU module failed to load — fall back silently to WebGL
+      // WebGPU module failed to load - fall back silently to WebGL
     }
 
     isReady = true;

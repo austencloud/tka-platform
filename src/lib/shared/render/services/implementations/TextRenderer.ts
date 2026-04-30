@@ -20,10 +20,11 @@ import {
   DIFFICULTY_FONT_FAMILY,
   applyGradientStops,
 } from "$lib/shared/config/difficulty-styles";
-import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId, type LoopRotationSliceSize, type GlyphImageData } from "@tka/render-composition";
+import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId, type LoopRotationPeriod, type LoopInversionPeriod, type GlyphImageData, type CompressedSegment } from "@tka/render-composition";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
+import { compressWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 export class TextRenderer implements ITextRenderer {
   // Font configuration matching WordLabel component exactly
@@ -43,7 +44,7 @@ export class TextRenderer implements ITextRenderer {
    * Eagerly load all TKA letter SVGs as HTMLImageElement objects.
    * Call once at app startup (fire-and-forget from +layout.svelte).
    * Until this resolves, renderWordHeader falls back to text.
-   * Idempotent — safe to call multiple times.
+   * Idempotent - safe to call multiple times.
    */
   async preloadGlyphImages(): Promise<void> {
     if (this.glyphImageCache.size > 0) return;
@@ -56,7 +57,7 @@ export class TextRenderer implements ITextRenderer {
         const dataUrl = cache.getGlyphDataUrl(letter);
         if (!dataUrl) return Promise.resolve();
         return new Promise<void>((resolve) => {
-          const timer = setTimeout(resolve, 3000); // safety net for non-data-URL sources
+          const timer = setTimeout(resolve, 3000);
           const img = new Image();
           img.onload = () => {
             clearTimeout(timer);
@@ -80,7 +81,9 @@ export class TextRenderer implements ITextRenderer {
    * Returns an empty map if preloadGlyphImages hasn't been called yet.
    */
   buildGlyphMap(word: string): Map<string, GlyphImageData> {
-    if (!word || this.glyphImageCache.size === 0) return new Map();
+    if (!word || this.glyphImageCache.size === 0) {
+      return new Map();
+    }
     const tokens = tokenizeWord(word);
     const result = new Map<string, GlyphImageData>();
     for (const token of tokens) {
@@ -211,7 +214,9 @@ export class TextRenderer implements ITextRenderer {
     loopComponents?: Set<LOOPComponent>,
     backgroundColor?: string,
     borderColor?: string,
-    rotationSliceSize?: LoopRotationSliceSize
+    rotationPeriod?: LoopRotationPeriod,
+    inversionPeriod?: LoopInversionPeriod,
+    period?: number
   ): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
@@ -228,6 +233,8 @@ export class TextRenderer implements ITextRenderer {
     }
 
     const glyphImages = this.buildGlyphMap(word ?? "");
+    const segments = word ? compressWord(word) : undefined;
+    const hasCompression = segments && segments.some((s: CompressedSegment) => s.repeat > 1);
 
     renderHeader(ctx, {
       canvasWidth: canvas.width,
@@ -236,11 +243,14 @@ export class TextRenderer implements ITextRenderer {
       difficultyLevel,
       showDifficultyBadge,
       loopComponents: packageComponents,
-      rotationSliceSize,
+      rotationPeriod,
+      inversionPeriod,
+      period,
       darkMode,
       backgroundColor,
       borderColor,
       glyphImages: glyphImages.size > 0 ? glyphImages : undefined,
+      compressedSegments: hasCompression ? segments : undefined,
     });
   }
 

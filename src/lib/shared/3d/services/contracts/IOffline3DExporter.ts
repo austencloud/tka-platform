@@ -73,7 +73,7 @@ export interface Offline3DExportDependencies {
   /**
    * Set the current animation step for the puppet loop to distribute.
    * The puppet loop reads this value during runFrame and calls
-   * goToStep/setProgress on performers — same code path as live playback.
+   * goToStep/setProgress on performers - same code path as live playback.
    */
   setExportCurrentStep: (step: number | null) => void;
 }

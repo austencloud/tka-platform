@@ -22,7 +22,7 @@
  * IMPORTANT: End position for generation must match the rotation requirement
  */
 
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -38,10 +38,10 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
    * Execute the mirrored-rotated LOOP by composing rotation + mirroring
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param sliceSize - The slice size for rotation (halved or quartered)
+   * @param period - The slice size for rotation (halved or quartered)
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     // Validate: mirrored-rotated composition only works when the start position
     // is on the vertical axis (self-mirroring). After rotation returns to home,
     // the mirrored executor requires end == vertical_mirror(start). This is only
@@ -64,7 +64,7 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
     // Returns to home position in both cases
     const rotatedSequence = this.strictRotatedExecutor.executeLOOP(
       sequence,
-      sliceSize
+      period
     );
 
     // Step 2: Apply MIRRORED to the rotated sequence
@@ -72,7 +72,7 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
     // For example: 8 steps → 16 steps final
     const finalSequence = this.strictMirroredExecutor.executeLOOP(
       rotatedSequence,
-      SliceSize.HALVED // Not actually used by mirrored executor, but passed for consistency
+      Period.HALVED // Not actually used by mirrored executor, but passed for consistency
     );
 
     return finalSequence;

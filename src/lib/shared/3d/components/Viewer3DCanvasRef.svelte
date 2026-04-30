@@ -17,7 +17,7 @@
   // (and doesn't reliably exist at runtime), so it silently failed to capture
   // the canvas and left video export stuck on "Preparing export…" forever.
   // `canvas` is the HTMLCanvasElement threlte uses to construct the
-  // WebGLRenderer — it exists before any child component inside <Canvas>
+  // WebGLRenderer - it exists before any child component inside <Canvas>
   // mounts, so no timing dance is required. Cast through `unknown` because
   // the threlte 8.3.1 ThrelteContext .d.ts in this repo's types resolution
   // doesn't surface the `canvas` field even though it exists at runtime.

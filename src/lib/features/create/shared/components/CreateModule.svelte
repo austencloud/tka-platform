@@ -334,7 +334,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
         // Start effect coordinator (manages all reactive effects)
         setupEffectCoordinator();
 
-        // Generate a local session ID — no Firestore dependency, no auth needed
+        // Generate a local session ID - no Firestore dependency, no auth needed
         const localSessionId = crypto.randomUUID();
 
         // Start autosave immediately using the local ID; writes to Dexie regardless of auth
@@ -347,7 +347,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
 
         logger.success("Autosave started (local session)");
 
-        // Lazy session creation — only when authenticated and online.
+        // Lazy session creation - only when authenticated and online.
         // A real Firestore session is best-effort; autosave never depends on it.
         if (authState.isAuthenticated && networkStatusState.isOnline) {
           try {
@@ -758,7 +758,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     onClose={() => panelState.closeSaveToLibraryPanel()}
   />
 
-  <!-- Beat cap nudge — shown when user tries to exceed their tier's beat limit -->
+  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit -->
   {#if showBeatCapNudge}
     <div class="beat-cap-nudge-overlay">
       <AuthNudge

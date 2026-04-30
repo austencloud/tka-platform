@@ -28,7 +28,7 @@
 		<i class="fas fa-crown nudge-icon" aria-hidden="true"></i>
 		{#if preview}
 			<span class="nudge-benefit">
-				{nudge.premiumBenefit} — this will be a Premium feature.
+				{nudge.premiumBenefit} - this will be a Premium feature.
 				For now, it's on the house.
 			</span>
 		{:else}

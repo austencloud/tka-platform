@@ -9,6 +9,7 @@
   import SequenceLinkField from "../fields/SequenceLinkField.svelte";
   import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     video: ShowcaseVideo;
@@ -217,7 +218,7 @@
                   </div>
                 {/if}
                 <div class="suggestion-info">
-                  <span class="suggestion-word">{seq.word}</span>
+                  <span class="suggestion-word"><TKAWordGlyph word={seq.word} height={13} /></span>
                   <span class="suggestion-owner">by {seq.ownerName}</span>
                 </div>
                 <i class="fas fa-link suggestion-link-icon" aria-hidden="true"></i>

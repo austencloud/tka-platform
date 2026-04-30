@@ -534,7 +534,7 @@ export class CollectionManager implements ICollectionManager {
   }
 
   // ============================================================
-  // FAVORITES — delegated to FavoritesManager
+  // FAVORITES - delegated to FavoritesManager
   // These methods remain on ICollectionManager for backwards
   // compatibility but delegate to the favorites implementation.
   // ============================================================
@@ -571,7 +571,7 @@ export class CollectionManager implements ICollectionManager {
   }
 
   // ============================================================
-  // PUBLIC COLLECTIONS — delegated to PublicCollectionLoader
+  // PUBLIC COLLECTIONS - delegated to PublicCollectionLoader
   // These remain on ICollectionManager for interface compatibility.
   // New code should use IPublicCollectionLoader directly.
   // ============================================================

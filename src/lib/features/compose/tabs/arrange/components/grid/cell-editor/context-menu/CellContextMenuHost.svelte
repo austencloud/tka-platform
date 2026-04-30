@@ -1,5 +1,5 @@
 <!--
-  CellContextMenuHost — Orchestrator for the cell right-click / long-press context menu.
+  CellContextMenuHost - Orchestrator for the cell right-click / long-press context menu.
   Mirrors the cell editor panel controls into a compact context menu.
   Rebuilds menu items reactively when cell state changes.
 -->

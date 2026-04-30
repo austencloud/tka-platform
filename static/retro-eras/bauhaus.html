@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bauhaus Pictograph — TKA</title>
+  <title>Bauhaus Pictograph - TKA</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -51,11 +51,11 @@ const BAUHAUS_PALETTE = {
 
 const W = 500, H = 500;
 
-// Grid center — shifted left for asymmetric Bauhaus composition
+// Grid center - shifted left for asymmetric Bauhaus composition
 const CX = 210, CY = 240;
 const R  = 130;  // radius to grid points
 
-// Convert uppercase compass direction to {x,y} — preserved for the grid dot /
+// Convert uppercase compass direction to {x,y} - preserved for the grid dot /
 // compass label layout below.
 function gp(dir) {
   const deg = { N:-90, NE:-45, E:0, SE:45, S:90, SW:135, W:180, NW:-135 };
@@ -126,7 +126,7 @@ function drawArrowForHand(hand, color) {
   const e = G.locationPoint(endLoc,   CX, CY, R);
 
   if (hand.motionType === 'dash') {
-    // Straight Bauhaus-style line with arrowhead — thick, flat, no curves.
+    // Straight Bauhaus-style line with arrowhead - thick, flat, no curves.
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 6;
@@ -141,7 +141,7 @@ function drawArrowForHand(hand, color) {
     return;
   }
 
-  // Arc — pro / anti / float. Resolve visual direction, then draw via
+  // Arc - pro / anti / float. Resolve visual direction, then draw via
   // ctx.arc with the correct `anticlockwise` flag.
   const dir = G.handDirection(hand) || 'cw';
   const startA = G.locationAngle(startLoc);
@@ -162,7 +162,7 @@ function drawArrowForHand(hand, color) {
   ctx.restore();
 
   // Arrowhead at the arc's END, tangent to the circle at that point.
-  // Derivative of (cos θ, sin θ) at θ is (-sin θ, cos θ) — that's the CCW
+  // Derivative of (cos θ, sin θ) at θ is (-sin θ, cos θ) - that's the CCW
   // tangent. Negate for CW.
   let tanX, tanY;
   if (anticlockwise) { tanX =  Math.sin(endA); tanY = -Math.cos(endA); }
@@ -171,7 +171,7 @@ function drawArrowForHand(hand, color) {
 }
 
 // ─── Bauhaus geometric letter "A" ────────────────────────────────────────────
-// Constructed from filled polygons — diagonal legs + horizontal crossbar.
+// Constructed from filled polygons - diagonal legs + horizontal crossbar.
 // No curves, no serifs. Pure geometric form. Kept for legacy use if we want
 // to fall back to drawing the letter glyph directly; the data-driven render
 // below uses plain text for arbitrary letters.
@@ -209,7 +209,7 @@ function drawBauhausA(ox, oy, size, color) {
   ctx.restore();
 }
 
-// Big letter glyph — uses the geometric A construction for the letter 'A',
+// Big letter glyph - uses the geometric A construction for the letter 'A',
 // and falls back to a heavy Futura-style fill for any other character so
 // every pictograph in the alphabet renders something readable.
 function drawBigLetter(letter, ox, oy, size, color) {
@@ -254,25 +254,25 @@ function drawBackground() {
 }
 
 function drawBlackBar() {
-  // Thick vertical black bar — right compositional anchor.
+  // Thick vertical black bar - right compositional anchor.
   ctx.fillStyle = C.black;
   ctx.fillRect(430, 0, 70, H);
 }
 
 function drawYellowBlock() {
-  // Yellow block — bottom-left.
+  // Yellow block - bottom-left.
   ctx.fillStyle = C.yellow;
   ctx.fillRect(0, 415, 55, 85);
 }
 
 function drawRedAccent() {
-  // Red accent bar — top right.
+  // Red accent bar - top right.
   ctx.fillStyle = C.red;
   ctx.fillRect(340, 55, 90, 12);
 }
 
 function drawFrameRules() {
-  // Frame rules — top and left edges (open composition, Bauhaus style).
+  // Frame rules - top and left edges (open composition, Bauhaus style).
   ctx.strokeStyle = C.black;
   ctx.lineWidth = 2.5;
   ctx.beginPath();
@@ -424,7 +424,7 @@ function render(data, canonical /* ImageBitmap | null */, meta /* object | null 
 
   if (canonical && window.PictographStylize) {
     // Path 1: recolor canonical to Bauhaus primaries, threshold to hard
-    // edges, composite once at full opacity. No pixelation — Bauhaus is
+    // edges, composite once at full opacity. No pixelation - Bauhaus is
     // about clean geometric shapes, not chunky blocks.
     const styled = window.PictographStylize.recolor(canonical, BAUHAUS_PALETTE, W);
     window.PictographStylize.edgeTreatment(styled, 'threshold');
@@ -446,7 +446,7 @@ function render(data, canonical /* ImageBitmap | null */, meta /* object | null 
   drawDiagonalTensionLine();
 }
 
-// ─── Default pictograph — Letter A. Rendered immediately so the page isn't
+// ─── Default pictograph - Letter A. Rendered immediately so the page isn't
 //     blank when opened standalone; replaced by whatever the parent posts.
 const DEFAULT_PICTOGRAPH = {
   letter: 'A',

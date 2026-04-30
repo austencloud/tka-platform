@@ -138,7 +138,7 @@
       pulses: false,
     },
     steam: {
-      // Like smoke but from heat hitting cold air — rises faster, drifts more,
+      // Like smoke but from heat hitting cold air - rises faster, drifts more,
       // fades wispier. Used by the winter campfire.
       gravity: -0.18,
       swayAmount: 0.45,
@@ -216,7 +216,7 @@
         float halo = (1.0 - smoothstep(0.1, 0.5, dist)) * 0.6;
         alpha = core + halo;
       } else {
-        // Snowflake — four per-particle variants keyed to vColorIndex so the
+        // Snowflake - four per-particle variants keyed to vColorIndex so the
         // field reads as real snow (mix of crystals, sparkles, soft blurs).
         float variant = floor(vColorIndex);
         float angle = atan(rotated.y, rotated.x);
@@ -234,7 +234,7 @@
           float armMask = dist + (1.0 - arms) * 0.09;
           shapeAlpha = 1.0 - smoothstep(0.20, 0.36, armMask);
         } else if (variant < 2.5) {
-          // Tiny bright sparkle — short cross-spikes + bright core
+          // Tiny bright sparkle - short cross-spikes + bright core
           float spikes = max(0.0, cos(angle * 4.0) - 0.3);
           shapeAlpha = spikes * (1.0 - smoothstep(0.0, 0.32, dist)) * 1.2;
         } else {

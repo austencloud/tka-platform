@@ -205,7 +205,7 @@ export class TopologyBuilder implements ITopologyBuilder {
     for (const pg of this.pendingGrids) {
       if (!resolved.has(pg.id)) {
         throw new Error(
-          `Grid "${pg.id}" could not be positioned — no constraint chain connects it to a resolved grid.`,
+          `Grid "${pg.id}" could not be positioned - no constraint chain connects it to a resolved grid.`,
         );
       }
     }
@@ -230,8 +230,8 @@ export class TopologyBuilder implements ITopologyBuilder {
       });
 
       // For each perimeter direction, emit both:
-      // 1. Hand point (at 1x radius) — where props sit
-      // 2. Outer point (at 2x radius) — where junctions form
+      // 1. Hand point (at 1x radius) - where props sit
+      // 2. Outer point (at 2x radius) - where junctions form
       //
       // In the 950x950 grid: hand points = 150px from center, outer = 300px.
       // Both are valid world points. Junctions are detected when an outer point

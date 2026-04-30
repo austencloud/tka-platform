@@ -52,7 +52,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 	let animController = $state<IAnimationPlaybackController | null>(null);
 	let animStateRef = $state<AnimationPanelState | null>(null);
 	let animStateUnsub: (() => void) | null = null;
-	// Timestamp of the last sync state we applied locally — prevents echo loops
+	// Timestamp of the last sync state we applied locally - prevents echo loops
 	let lastAppliedSyncTimestamp = 0;
 	// Flag to suppress broadcasting while we apply remote state
 	let applyingRemoteState = false;
@@ -105,7 +105,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 				ctrl.togglePlayback();
 			}
 
-			// Apply seek (only if difference is significant — avoids jitter from continuous playback)
+			// Apply seek (only if difference is significant - avoids jitter from continuous playback)
 			const localStep = animStateRef?.currentStep ?? 0;
 			if (Math.abs(sync.currentStep - localStep) > 0.5) {
 				ctrl.seekToStep(sync.currentStep);
@@ -199,7 +199,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 		await connectState.toggleSoloMode();
 	}
 
-	// Playback controls — drive both local controller and P2P sync
+	// Playback controls - drive both local controller and P2P sync
 	function handlePlay() {
 		if (animController && !animStateRef?.isPlaying) {
 			animController.togglePlayback();

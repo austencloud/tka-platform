@@ -15,7 +15,7 @@
  * on the wrong side of the body.
  *
  * Coordinate descent from a single start point at yaw=0 cannot find
- * that solution because no incremental 11° step improves the loss —
+ * that solution because no incremental 11° step improves the loss -
  * the optimizer is stuck in a flat region where nothing reaches. So we
  * seed FOUR starting stances at yaws (0°, 90°, 180°, 270°) and descend
  * each one. The best of the four is the result. This is cheap and
@@ -29,7 +29,7 @@
  *      a. Run coordinate descent with adaptive step size.
  *      b. Track the best result across all seeds.
  *      c. Early-exit if the current best is feasible with very low loss
- *         — no point spending more eval budget on a pose we've solved.
+ *         - no point spending more eval budget on a pose we've solved.
  *   3. If the best result is still infeasible after all seeds, fall
  *      back to random restarts within the full bounds.
  *
@@ -40,11 +40,11 @@
  *
  *   reach shortfall     × 1000   (absolute disqualifier)
  *   collision depth     ×  100   (strong penalty per meter)
- *   balance violation   ×   10   (moderate — physical but ugly)
- *   joint comfort       ×    1   (mild — prefers natural arms)
- *   max extension       ×  0.5   (trivial — avoid locked-out arms)
+ *   balance violation   ×   10   (moderate - physical but ugly)
+ *   joint comfort       ×    1   (mild - prefers natural arms)
+ *   max extension       ×  0.5   (trivial - avoid locked-out arms)
  *
- * Domain: Collision Lab — automated stance search
+ * Domain: Collision Lab - automated stance search
  */
 
 import type {
@@ -68,7 +68,7 @@ const W_JOINT = 1;              // mild penalty for joint strain
 const W_STRETCH = 0.5;          // very mild penalty for near-max extension
 
 // Per-zone collision weights in units of "loss per meter of penetration".
-// Head/torso/face violations are roughly half the reach weight — strongly
+// Head/torso/face violations are roughly half the reach weight - strongly
 // avoided but not absolute disqualifiers. Arm-on-arm and prop-on-prop are
 // milder because those are expected in some configurations (beta at a
 // shared grip, for instance).
@@ -209,14 +209,14 @@ export class StanceOptimizer implements IStanceOptimizer {
   }
 
   /**
-   * Run exactly one coordinate descent from the given seed — no internal
+   * Run exactly one coordinate descent from the given seed - no internal
    * multi-start, no random restarts. Used by the candidate generator
    * which wants N distinct seeds × N independent descents, not the
    * merged best-across-seeds result of `optimize()`.
    *
    * The default budget (150 evals) is roughly a third of `optimize`'s
    * per-seed budget because the candidate generator typically calls this
-   * 6 times in quick succession — we'd rather spend the total budget
+   * 6 times in quick succession - we'd rather spend the total budget
    * spreading across many starting points than polishing one.
    */
   optimizeFromSeed(
@@ -311,7 +311,7 @@ export class StanceOptimizer implements IStanceOptimizer {
   }
 
   // -----------------------------------------------------------------------
-  // Loss function — combines simulator outputs into a single scalar that
+  // Loss function - combines simulator outputs into a single scalar that
   // the optimizer minimizes. The weights are the heart of the "what is a
   // good stance" judgment.
   // -----------------------------------------------------------------------

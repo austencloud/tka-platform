@@ -6,16 +6,16 @@
  *
  * @deprecated This type mixes engine-structural and view-layer concerns.
  * Migrate consumers to one of:
- *   - `Motion` from `@tka/tka-types` — engine/structural fields only
+ *   - `Motion` from `@tka/tka-types` - engine/structural fields only
  *     (motionType, startLocation, endLocation, rotationDirection,
  *     startOrientation, endOrientation, turns, plane, color, prefloat fields)
- *   - `MotionView` from `./MotionView` — visual/runtime fields only
+ *   - `MotionView` from `./MotionView` - visual/runtime fields only
  *     (isVisible, propType, arrowLocation, gridMode, arrowPlacementData,
  *     propPlacementData, handPath, skewSteps, skewDir)
- *   - `MotionWithView` from `./MotionView` — composition for mixed consumers
+ *   - `MotionWithView` from `./MotionView` - composition for mixed consumers
  *
  * See docs/superpowers/specs/2026-04-20-sequence-engine-unification-design.md
- * (Phase 2a — Sequence Engine Unification).
+ * (Phase 2a - Sequence Engine Unification).
  */
 
 // IMPORTANT: Import directly from specific files to avoid circular dependencies
@@ -71,12 +71,12 @@ export interface MotionData {
 
   // Which 3D plane this motion is performed on.
   // Absent/undefined = Plane.WALL (backward compatible).
-  // Only used by the 3D viewer — 2D pictographs ignore this field.
+  // Only used by the 3D viewer - 2D pictographs ignore this field.
   readonly plane?: Plane;
 }
 
 /**
- * Runtime/rendered form of MotionData — extends domain data with viewer concerns.
+ * Runtime/rendered form of MotionData - extends domain data with viewer concerns.
  *
  * StepDeriver produces DerivedMotionData by injecting propType, color, and
  * isVisible from the resolved presentation. All rendering consumers should

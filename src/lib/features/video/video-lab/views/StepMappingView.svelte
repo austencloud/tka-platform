@@ -22,7 +22,7 @@
   const { videoUrl, videoDuration, stepCount, sequence, existingStepMap, onSave, onBack }: Props =
     $props();
 
-  // Default BPM — user can adjust later in the synced preview
+  // Default BPM - user can adjust later in the synced preview
   const defaultBpm = 60;
 
   async function handleEditorSave(beatMap: StepMap): Promise<void> {

@@ -17,7 +17,7 @@ export class GalleryItemAdapter implements IGalleryItemAdapter {
       id: item.id,
       url: item.imageUrl,
       type: "image",
-      name: `${item.deviceName} — ${item.routeLabel}`,
+      name: `${item.deviceName} - ${item.routeLabel}`,
       tags: item.tagIds,
       metadata: {
         module: item.module,

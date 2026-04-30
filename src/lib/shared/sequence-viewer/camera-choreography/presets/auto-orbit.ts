@@ -3,7 +3,7 @@
  *
  * Camera orbits the primary performer at fixed radius and vertical
  * angle, completing one full counter-clockwise revolution over the
- * sequence duration. The performer ends facing the camera — the
+ * sequence duration. The performer ends facing the camera - the
  * closing azimuth matches the opening azimuth by construction.
  */
 
@@ -18,7 +18,7 @@ export const autoOrbitPreset: CameraPreset = {
   totalLoops: 1,
   apply(controls, ctx) {
     const prevSmooth = controls.smoothTime;
-    // No smoothing — the driver sets azimuth directly each tick and we
+    // No smoothing - the driver sets azimuth directly each tick and we
     // want it to land exactly where we set it, without lag.
     controls.smoothTime = 0;
 

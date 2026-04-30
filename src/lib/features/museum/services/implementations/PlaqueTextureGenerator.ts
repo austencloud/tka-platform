@@ -76,7 +76,7 @@ function whiteboardTheme(scaleFactor: number): ThemeTokens {
 }
 
 // ---------------------------------------------------------------------------
-// Font-size helpers — scale proportionally to canvas width
+// Font-size helpers - scale proportionally to canvas width
 // ---------------------------------------------------------------------------
 
 /** Reference width used to define base font sizes. */
@@ -221,7 +221,7 @@ export class PlaqueTextureGenerator implements IPlaqueTextureGenerator {
     this.drawDivider(ctx, config.width, y, padding, theme);
     y += Math.round(16 * scaleFactor);
 
-    // Body text — left-aligned, word-wrapped
+    // Body text - left-aligned, word-wrapped
     ctx.fillStyle = theme.bodyColor;
     ctx.font = `${fonts.body}px ${theme.bodyFont}`;
     ctx.textAlign = "left";
@@ -235,7 +235,7 @@ export class PlaqueTextureGenerator implements IPlaqueTextureGenerator {
       ctx.fillText(line, padding, y);
     }
 
-    // Footer — anchored near the bottom
+    // Footer - anchored near the bottom
     if (content.footer) {
       const footerY = config.height - padding - theme.borderWidth;
       ctx.fillStyle = theme.footerColor;

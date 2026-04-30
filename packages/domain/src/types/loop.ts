@@ -14,7 +14,7 @@ export interface LoopBaseComponent {
   effect?: string;
   note?: string;
   variants?: Record<string, {
-    sliceSize: string;
+    period: string;
     pattern: string;
     mentalModel: string;
   }>;

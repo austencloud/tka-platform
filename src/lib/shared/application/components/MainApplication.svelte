@@ -108,7 +108,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
   const authLoading = $derived(authState.loading);
 
   // Track whether MainInterface has been shown at least once.
-  // Once shown, never tear it down for auth loading — the loading spinner
+  // Once shown, never tear it down for auth loading - the loading spinner
   // is only for initial app startup, not mid-session auth transitions
   // (e.g., guest signing up mid-session should NOT destroy MainInterface).
   // Module-level so it survives component remounts (e.g., navigating from
@@ -211,7 +211,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
     // Run async initialization without blocking cleanup function return
     (async () => {
       try {
-        // Skip full re-initialization on HMR — if app is already initialized,
+        // Skip full re-initialization on HMR - if app is already initialized,
         // the preserved state from import.meta.hot.data means we don't need to
         // redo auth, Firestore, settings, theme, or gamification.
         if (getIsInitialized()) {
@@ -314,7 +314,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
           }
         }
 
-        // Initialize gamification system (authenticated users only — requires Firestore)
+        // Initialize gamification system (authenticated users only - requires Firestore)
         if (authState.isAuthenticated) {
           (window as any).__tkaLoadProgress?.(98, "Initializing achievements...");
           try {
@@ -505,13 +505,13 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
       onRetry={() => window.location.reload()}
     />
   {:else if showAuthLoadingSpinner}
-    <!-- Auth Loading State (initial load only — never tears down MainInterface once shown) -->
+    <!-- Auth Loading State (initial load only - never tears down MainInterface once shown) -->
     <div class="auth-loading">
       <div class="auth-loading-spinner"></div>
       <p>Warming up...</p>
     </div>
   {:else}
-    <!-- MainInterface always mounted — guest restrictions via context -->
+    <!-- MainInterface always mounted - guest restrictions via context -->
     <MainInterface />
 
     <!-- PWA migration banner for users who installed from tkascribe.com -->
@@ -520,7 +520,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
     <!-- FirstRunWizard as overlay (only for newly authenticated users) -->
     <!-- Returning users (isDone() === true) have valid local preferences
          already. The cloud sync is a background freshen, so don't blank out
-         the app with "Loading preferences..." — that looks like a full page
+         the app with "Loading preferences..." - that looks like a full page
          reload right after sign-in. Only block the UI for genuine first-run
          users whose local state isn't set up yet. -->
     {#if isAuthenticated && !firstRunState.isDone() && (firstRunState.syncInProgress || !firstRunState.cloudSynced)}

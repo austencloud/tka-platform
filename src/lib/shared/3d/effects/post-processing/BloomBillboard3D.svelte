@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * BloomBillboard3D — per-tip radial halation sprite.
+   * BloomBillboard3D - per-tip radial halation sprite.
    *
    * The 3D sibling of the Canvas2D per-tip bloom overlay. Renders one
    * camera-facing sprite per tip with a procedural radial-gradient
@@ -9,7 +9,7 @@
    * overlapping halos brighten where tips cluster.
    *
    * Pulse modulation is time-based via `performance.now()` inside a
-   * useTask loop — halos breathe regardless of playback state, matching
+   * useTask loop - halos breathe regardless of playback state, matching
    * the 2D implementation.
    *
    * Unmounts the legacy fullscreen-post-process `BloomEffect.svelte`;
@@ -23,13 +23,13 @@
   interface Props {
     /** World-space position of this tip. null = hidden. */
     position: Vector3 | null;
-    /** Global tip index 0..3 — used for palette cycling. */
+    /** Global tip index 0..3 - used for palette cycling. */
     tipIndex: number;
     /** 0 = blue prop, 1 = red prop. Used for prop-matched colorMode. */
     propIndex: 0 | 1;
-    /** Hex for the blue prop (trail color) — used for prop-matched colorMode. */
+    /** Hex for the blue prop (trail color) - used for prop-matched colorMode. */
     blueColor: string;
-    /** Hex for the red prop (trail color) — used for prop-matched colorMode. */
+    /** Hex for the red prop (trail color) - used for prop-matched colorMode. */
     redColor: string;
     /** Live bloom intent. */
     intent: BloomIntent;
@@ -104,7 +104,7 @@
       | OffscreenCanvasRenderingContext2D
       | null;
     if (!ctx) {
-      // Worst-case fallback — return an empty texture; scene stays stable.
+      // Worst-case fallback - return an empty texture; scene stays stable.
       return new CanvasTexture(canvas as HTMLCanvasElement);
     }
     const cx = size / 2;
@@ -144,7 +144,7 @@
   }
 
   // Rainbow mode keeps its own texture handle since the baseColor drifts
-  // every frame — we regenerate on a throttle rather than cache by key.
+  // every frame - we regenerate on a throttle rather than cache by key.
   let rainbowTexture: CanvasTexture | null = null;
   let lastRainbowUpdateMs = 0;
   const RAINBOW_UPDATE_INTERVAL_MS = 80; // ~12 fps on the hue

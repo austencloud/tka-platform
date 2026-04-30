@@ -18,7 +18,7 @@ import {
   getPresetOptions,
   type ConstraintOptions,
 } from "@tka/sequence-engine/generation";
-import { LOOPType, SliceSize } from "@tka/sequence-engine/loop";
+import { LOOPType, Period } from "@tka/sequence-engine/loop";
 import { MCPVariationProvider } from "./MCPVariationProvider.js";
 import type { PictographData } from "@tka/sequence-engine/generation";
 import type { SequenceStep, SequenceResult } from "./sequence-builder-adapter.js";
@@ -105,7 +105,7 @@ export interface EngineGenerationParams {
   /** LOOP type string (triggers LOOP extension) */
   loopType?: string;
   /** Slice size for LOOP rotation */
-  sliceSize?: "halved" | "quartered";
+  period?: "halved" | "quartered";
   /** Beam search width */
   beamWidth?: number;
   /** Override starting orientation for blue prop (e.g. "in", "out", "clock", "counter") */
@@ -179,10 +179,10 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
   // For LOOP generation, the user specifies total length. The seed is a fraction.
   if (params.loopType) {
     const totalLength = params.length ?? (params.word ? undefined : 8);
-    const sliceSize = params.sliceSize === "quartered"
-      ? SliceSize.QUARTERED
-      : SliceSize.HALVED;
-    const sliceMultiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+    const period = params.period === "quartered"
+      ? Period.QUARTERED
+      : Period.HALVED;
+    const sliceMultiplier = period === Period.QUARTERED ? 4 : 2;
 
     if (totalLength && !params.word) {
       options.length = Math.max(1, Math.floor(totalLength / sliceMultiplier));
@@ -195,7 +195,7 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
 
     options.loop = {
       type: engineLoopType,
-      sliceSize,
+      period,
       useTargetedGeneration: true,
     };
   } else if (params.length && !params.word) {

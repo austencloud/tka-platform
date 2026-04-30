@@ -13,7 +13,7 @@
  *   - Gravity + drag physics per particle
  *   - Temperature-based color (core -> mid -> cool over lifetime)
  *
- * Implements ICharcoalRenderer — architecturally independent from
+ * Implements ICharcoalRenderer - architecturally independent from
  * the fire overlay renderer (different physics, shaders, visual output).
  */
 
@@ -193,8 +193,8 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 	// so the halo stays the same fraction of the frame.
 	private sizeScale = 1.0;
 	// Charcoal default params (sizeMin/Max, emberGlowRadius) were tuned on
-	// a 950px canvas, so the linear size-scale is referenced to 950 — not
-	// the project-wide 500 — to preserve the look at full size.
+	// a 950px canvas, so the linear size-scale is referenced to 950 - not
+	// the project-wide 500 - to preserve the look at full size.
 	private static readonly REFERENCE_SIZE = 950;
 
 	// ======================================================================
@@ -212,6 +212,7 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		this.canvas.style.zIndex = "2";
 		this.canvas.style.background = "transparent";
 		this.canvas.setAttribute("aria-hidden", "true");
+		this.canvas.dataset.overlayType = "emissive";
 
 		this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
 		this.canvas.width = Math.round(width * this.dpr);
@@ -402,7 +403,7 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 			}
 		}
 
-		// Ambient emission during sustained movement — proportional to speed.
+		// Ambient emission during sustained movement - proportional to speed.
 		// Scaled by canvas area so small previews aren't overwhelmed.
 		const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
 
@@ -438,7 +439,7 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		if (!slot) return;
 
 		// Inherit a fraction of the tip's velocity vector.
-		// Sparks carry the tip's momentum — they fly where the tip was going
+		// Sparks carry the tip's momentum - they fly where the tip was going
 		// but slower, so the tip leaves them behind. On direction reversals,
 		// the burst system (jerk detection) creates the dramatic spark pops.
 		const inheritedVx = tip.velocityX * params.velocityInheritance;
@@ -473,7 +474,7 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 
 	/**
 	 * Spawn a low-energy particle for idle/stationary tips.
-	 * Minimal horizontal velocity — gravity pulls them straight down
+	 * Minimal horizontal velocity - gravity pulls them straight down
 	 * like embers falling off a still-burning prop.
 	 */
 	private spawnIdleParticle(tip: PropTipData, params: CharcoalSparkParams): void {
@@ -902,7 +903,7 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 
 		const emberProg = this.emberProgram!;
 
-		// Ember position buffer (vec2) — up to 16 tips max
+		// Ember position buffer (vec2) - up to 16 tips max
 		this.emberPositionData = new Float32Array(32);
 		this.emberPositionBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.emberPositionBuffer);

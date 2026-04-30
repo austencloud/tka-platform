@@ -1,5 +1,5 @@
 /**
- * XPRenderer — 2003 Windows XP era pictograph renderer.
+ * XPRenderer - 2003 Windows XP era pictograph renderer.
  *
  * Renders pictographs at 256×256 with the anti-aliased, colorful, lightly
  * glossy aesthetic of Windows XP-era software:
@@ -26,7 +26,7 @@ import { EraRendererBase } from "../../../shared/services/implementations/EraRen
 // CONSTANTS
 // ============================================================================
 
-/** Canvas size for the XP era — 256×256 matches a typical XP-era thumbnail */
+/** Canvas size for the XP era - 256×256 matches a typical XP-era thumbnail */
 const XP_SIZE = 256;
 
 /**
@@ -39,7 +39,7 @@ const VIEWBOX_SIZE = 950;
 // Lines connect opposite cardinals through center; dots mark each position.
 const GRID_CENTER = { x: 475, y: 475 };
 // Cardinal positions match Canvas2DDirectRenderer.BASE_GRID_POINTS (radius 300 from center)
-// Only 4 outer points — in box mode the whole grid rotates 45 degrees
+// Only 4 outer points - in box mode the whole grid rotates 45 degrees
 const GRID_OUTER_POINTS = [
 	{ x: 475, y: 175 }, // N
 	{ x: 775, y: 475 }, // E
@@ -58,7 +58,7 @@ const RED_COLOR = "#EE3322";
 // Hand dot radii in viewBox units
 const HAND_DOT_BASE_RADIUS_VB = 22;
 
-// TKA letter positioning — bottom-left corner of the 950-unit viewBox
+// TKA letter positioning - bottom-left corner of the 950-unit viewBox
 const LETTER_VB_X = 55;
 const LETTER_VB_Y = 855;
 
@@ -72,7 +72,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	}
 
 	// --------------------------------------------------------------------------
-	// IEraRenderer — primary entry point
+	// IEraRenderer - primary entry point
 	// --------------------------------------------------------------------------
 
 	async render(
@@ -90,7 +90,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 		ctx.imageSmoothingEnabled = true;
 		ctx.imageSmoothingQuality = "high";
 
-		// White background — matches every XP-era dialog/panel
+		// White background - matches every XP-era dialog/panel
 		ctx.fillStyle = "#FFFFFF";
 		ctx.fillRect(0, 0, size, size);
 
@@ -112,7 +112,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	}
 
 	// --------------------------------------------------------------------------
-	// Placeholder override — XP-styled "?" card
+	// Placeholder override - XP-styled "?" card
 	// --------------------------------------------------------------------------
 
 	override renderPlaceholder(canvas: HTMLCanvasElement, size: number = XP_SIZE): void {
@@ -158,13 +158,13 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 			ctx.translate(-center, -center);
 		}
 
-		// Outer dots — 3D glossy XP spheres (no lines — just dots)
+		// Outer dots - 3D glossy XP spheres (no lines - just dots)
 		const dotR = GRID_DOT_RADIUS_VB * scale;
 		for (const pt of GRID_OUTER_POINTS) {
 			this.drawGlossyDot(ctx, pt.x * scale, pt.y * scale, dotR);
 		}
 
-		// Center dot — also glossy
+		// Center dot - also glossy
 		this.drawGlossyDot(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, 12 * scale);
 
 		ctx.restore();
@@ -245,8 +245,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	 * Draw both staves with XP-era colored drop shadows.
 	 *
 	 * We draw each prop twice:
-	 *   Pass 1 — with ctx.shadow* set, draws untinted so the shadow shape is accurate
-	 *   Pass 2 — without shadow, draws tinted to apply the era color
+	 *   Pass 1 - with ctx.shadow* set, draws untinted so the shadow shape is accurate
+	 *   Pass 2 - without shadow, draws tinted to apply the era color
 	 *
 	 * This gives a clean colored-shadow + solid-color stave look that reads as
 	 * "2003 vector app" without any gradient computation.
@@ -300,12 +300,12 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 				this.drawElementWithTransform(ctx, img, drawParams);
 				ctx.restore();
 
-				// Pass 2: color tint pass (no shadow — it's already painted)
+				// Pass 2: color tint pass (no shadow - it's already painted)
 				ctx.save();
 				this.drawTintedElement(ctx, img, drawParams, eraColor);
 				ctx.restore();
 			} catch {
-				// Non-fatal — skip this prop if asset loading fails
+				// Non-fatal - skip this prop if asset loading fails
 			}
 		}
 	}
@@ -402,7 +402,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 				this.drawTintedElement(ctx, img, drawParams, eraColor);
 				ctx.restore();
 			} catch {
-				// Non-fatal — skip this arrow if asset loading fails
+				// Non-fatal - skip this arrow if asset loading fails
 			}
 		}
 	}
@@ -441,8 +441,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	 * Draw the TKA letter in the bottom-left corner.
 	 *
 	 * Technique: classic emboss effect.
-	 *   1. Draw white shadow text at (-1, -1) offset — the "raised" highlight
-	 *   2. Draw dark navy text on top — the actual letter
+	 *   1. Draw white shadow text at (-1, -1) offset - the "raised" highlight
+	 *   2. Draw dark navy text on top - the actual letter
 	 *
 	 * This is a staple of XP-era icon/label design.
 	 */
@@ -483,7 +483,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	 * This is how every WinXP panel/groupbox looks.
 	 */
 	private drawBeveledBorder(ctx: CanvasRenderingContext2D, size: number): void {
-		// Outer bevel — white highlight (top, left)
+		// Outer bevel - white highlight (top, left)
 		ctx.strokeStyle = "#FFFFFF";
 		ctx.lineWidth = 1;
 		ctx.beginPath();
@@ -492,7 +492,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 		ctx.lineTo(size - 0.5, 0);
 		ctx.stroke();
 
-		// Outer bevel — #808080 shadow (bottom, right)
+		// Outer bevel - #808080 shadow (bottom, right)
 		ctx.strokeStyle = "#808080";
 		ctx.beginPath();
 		ctx.moveTo(0, size - 0.5);
@@ -500,7 +500,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 		ctx.lineTo(size - 0.5, 0);
 		ctx.stroke();
 
-		// Inner bevel — light highlight (top, left), 1px inside outer
+		// Inner bevel - light highlight (top, left), 1px inside outer
 		ctx.strokeStyle = "#E8E8E8";
 		ctx.beginPath();
 		ctx.moveTo(1, size - 1.5);
@@ -508,7 +508,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 		ctx.lineTo(size - 1.5, 1);
 		ctx.stroke();
 
-		// Inner bevel — deep shadow (bottom, right), 1px inside outer
+		// Inner bevel - deep shadow (bottom, right), 1px inside outer
 		ctx.strokeStyle = "#686868";
 		ctx.beginPath();
 		ctx.moveTo(1, size - 1.5);
@@ -528,7 +528,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	 * we compute those here from the transform params and delegate to drawTintedImage.
 	 *
 	 * The tint replaces every opaque pixel with the era color while preserving
-	 * the original alpha mask — same technique as Canvas2DDirectRenderer.
+	 * the original alpha mask - same technique as Canvas2DDirectRenderer.
 	 */
 	private drawTintedElement(
 		ctx: CanvasRenderingContext2D,

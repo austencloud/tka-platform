@@ -16,7 +16,7 @@
  * (jsdom) that lack Path2D, SVG shapes fall back to their closest
  * procedural approximation. Production always takes the SVG path.
  *
- * Provenance note — the UXWing SVG path data and the cherry blossom
+ * Provenance note - the UXWing SVG path data and the cherry blossom
  * drawing kernel mirror constants that live in
  * `@austencloud/backgrounds` but are not re-exported by its public
  * entrypoint. Long-term fix: upstream those exports so this file can
@@ -26,7 +26,7 @@
 import type { PetalsIntent } from "./EffectsConfig";
 
 export type PetalSpriteShape =
-  // Generic procedural — used by custom palette + jsdom fallback.
+  // Generic procedural - used by custom palette + jsdom fallback.
   | "round"
   | "oval"
   | "elongated"
@@ -41,12 +41,12 @@ export type PetalSpriteShape =
   | "rounded"
   | "double"
   | "nature"
-  // Jungle — hand-authored SVG paths.
+  // Jungle - hand-authored SVG paths.
   | "monstera"
   | "banana"
   | "fern"
   | "elephant"
-  // Gold hero — hand-authored.
+  // Gold hero - hand-authored.
   | "ginkgo";
 
 export interface PetalPalette {
@@ -62,7 +62,7 @@ export interface PetalPalette {
 
 const BLOSSOM: PetalPalette = {
   id: "blossom",
-  // 1 flower for every 3 petals — flower is the hero, petals fill out the
+  // 1 flower for every 3 petals - flower is the hero, petals fill out the
   // stream off the prop.
   sprites: [
     "blossom_flower",
@@ -117,7 +117,7 @@ const GOLD: PetalPalette = {
 
 const ASH: PetalPalette = {
   id: "ash",
-  // Subset of autumn leaves — we tint them charcoal and occasionally light
+  // Subset of autumn leaves - we tint them charcoal and occasionally light
   // an ember along the rim.
   sprites: ["maple", "oak", "rounded", "double", "curved"],
   tints: ["#1a1a1a", "#333333", "#0f0a08", "#4a3d38", "#2a2020"],
@@ -271,7 +271,7 @@ const JUNGLE_LEAVES: Record<"monstera" | "banana" | "fern" | "elephant", SvgLeaf
   },
 };
 
-// Gold hero — ginkgo biloba bilobed fan.
+// Gold hero - ginkgo biloba bilobed fan.
 const GINKGO: SvgLeafData = {
   d: "M50 95 L46 70 C42 66 36 62 30 56 C22 48 16 38 14 28 C13 22 16 16 22 14 C26 13 30 14 32 18 C34 14 38 10 44 9 C48 8 51 10 52 14 L52 14 C53 10 56 8 60 9 C66 10 70 14 72 18 C74 14 78 13 82 14 C88 16 91 22 90 28 C88 38 82 48 74 56 C68 62 62 66 58 70 L54 95 Z",
   viewBox: { width: 100, height: 100 },
@@ -310,7 +310,7 @@ function getOrBuildPath(
     pathCache.set(cacheKey, scaled);
     return scaled;
   } catch {
-    // Path2D is available but the path failed to parse — extremely rare,
+    // Path2D is available but the path failed to parse - extremely rare,
     // but don't crash. Fall back to procedural.
     return null;
   }
@@ -392,7 +392,7 @@ export function drawPetalSilhouette(
 }
 
 /**
- * Ember rim — additive orange glow along the silhouette outline. Gated on
+ * Ember rim - additive orange glow along the silhouette outline. Gated on
  * the same shape dispatch so the stroke and the fill trace the same path.
  */
 export function drawPetalEmberRim(
@@ -419,7 +419,7 @@ export function drawPetalEmberRim(
         ctx.stroke(path);
         return;
       }
-      // Path2D unavailable — fall through to procedural stroke.
+      // Path2D unavailable - fall through to procedural stroke.
       strokeProceduralShape(ctx, svgData.fallback, size);
       return;
     }
@@ -436,7 +436,7 @@ export function drawPetalEmberRim(
     }
 
     if (shape === "blossom_flower" || shape === "blossom_petal") {
-      // Ember on a blossom petal: trace a simple oval — the flower's
+      // Ember on a blossom petal: trace a simple oval - the flower's
       // multi-path geometry doesn't need a per-petal outline.
       strokeProceduralShape(ctx, "oval", size);
       return;
@@ -516,7 +516,7 @@ function drawGinkgo(
 }
 
 /**
- * Blossom 5-petal flower — procedural, port of CherryBlossomPetalSystem
+ * Blossom 5-petal flower - procedural, port of CherryBlossomPetalSystem
  * drawPetal branch (isFlower === true). Paints a glow ring, 5 radial
  * petals with gradients, then a yellow stamen centre.
  */
@@ -597,7 +597,7 @@ function drawBlossomFlower(
 }
 
 /**
- * Blossom single petal — procedural ellipse with radial gradient. Drawn
+ * Blossom single petal - procedural ellipse with radial gradient. Drawn
  * upright (long axis = y).
  */
 function drawBlossomPetal(

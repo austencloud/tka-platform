@@ -1,5 +1,5 @@
 <!--
-  RetroRecycleBin — RECYCLEBIN.EXE main component
+  RetroRecycleBin - RECYCLEBIN.EXE main component
 
   Shows soft-deleted sequences from the user's library as DOS .SEQ files.
   Users can restore items back to their library, permanently delete individual
@@ -7,7 +7,7 @@
 
   Confirmations are handled inline (the dialog queue infrastructure exists but
   is not yet wired to render). The ominous Order files at the bottom are lore
-  — always present, always unrestorable.
+  - always present, always unrestorable.
 
   Domain: Retro Recycle Bin
 -->

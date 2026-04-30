@@ -4,7 +4,7 @@ export const BUILT_IN_SILK_PRESETS: EffectsPreset[] = [
   {
     id: "silk-classic",
     name: "Classic",
-    description: "Balanced satin ribbon — smooth flow.",
+    description: "Balanced satin ribbon - smooth flow.",
     effectType: "silk",
     builtIn: true,
     previewColors: ["#c0c0d0", "#ffffff"],
@@ -23,7 +23,7 @@ export const BUILT_IN_SILK_PRESETS: EffectsPreset[] = [
   {
     id: "silk-streamer",
     name: "Streamer",
-    description: "Long iridescent ribbon — maximum flutter.",
+    description: "Long iridescent ribbon - maximum flutter.",
     effectType: "silk",
     builtIn: true,
     previewColors: ["#c080ff", "#80d0ff"],
@@ -42,7 +42,7 @@ export const BUILT_IN_SILK_PRESETS: EffectsPreset[] = [
   {
     id: "silk-whip",
     name: "Whip",
-    description: "Short dark streak — snaps taut on fast moves.",
+    description: "Short dark streak - snaps taut on fast moves.",
     effectType: "silk",
     builtIn: true,
     previewColors: ["#101020", "#404060"],
@@ -61,7 +61,7 @@ export const BUILT_IN_SILK_PRESETS: EffectsPreset[] = [
   {
     id: "silk-royal",
     name: "Royal",
-    description: "Wide gold ribbon — regal, ceremonial.",
+    description: "Wide gold ribbon - regal, ceremonial.",
     effectType: "silk",
     builtIn: true,
     previewColors: ["#a07000", "#ffd700"],
@@ -80,7 +80,7 @@ export const BUILT_IN_SILK_PRESETS: EffectsPreset[] = [
   {
     id: "silk-inferno",
     name: "Inferno",
-    description: "Glowing ember ribbon — additive fire trail.",
+    description: "Glowing ember ribbon - additive fire trail.",
     effectType: "silk",
     builtIn: true,
     previewColors: ["#ff6000", "#ffcc00"],
@@ -99,7 +99,7 @@ export const BUILT_IN_SILK_PRESETS: EffectsPreset[] = [
   {
     id: "silk-phantom",
     name: "Phantom",
-    description: "Faint dark ribbon — long ghostly trail.",
+    description: "Faint dark ribbon - long ghostly trail.",
     effectType: "silk",
     builtIn: true,
     previewColors: ["#101020", "#404060"],

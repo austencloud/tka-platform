@@ -36,11 +36,11 @@
   const PEDESTAL_HEIGHT = 0.4;
   const MODEL_SCALE = 2.0; // Scale up Kenney models for visibility
 
-  // ── Shared loaders — instantiated once for the lifetime of the module ──
+  // ── Shared loaders - instantiated once for the lifetime of the module ──
   const loader = new GLTFLoader();
   const texLoader = new TextureLoader();
 
-  // ── Shared pedestal geometry and material — created once, reused across all mounts ──
+  // ── Shared pedestal geometry and material - created once, reused across all mounts ──
   const pedestalGeo = new BoxGeometry(1.2, PEDESTAL_HEIGHT, 1.2);
   const pedestalMat = new MeshStandardMaterial({ color: "#3a3028", roughness: 0.85 });
 
@@ -133,7 +133,7 @@
       const basePath = `${TEX_BASE}/${tex.id}`;
 
       try {
-        // Try to load the PBR maps — filenames vary per pack
+        // Try to load the PBR maps - filenames vary per pack
         const colorMap = texLoader.load(`${basePath}/${tex.folder}_Color.jpg`);
         colorMap.wrapS = colorMap.wrapT = RepeatWrapping;
         colorMap.repeat.set(2, 2);
@@ -224,7 +224,7 @@
     <T is={item.model} />
   </T.Group>
 
-  <!-- Name label (floating text via a small plane — we'll use a point light as marker) -->
+  <!-- Name label (floating text via a small plane - we'll use a point light as marker) -->
   <T.PointLight
     position={[x, PEDESTAL_HEIGHT + 2.5, z]}
     intensity={0.5}
@@ -265,7 +265,7 @@
   />
 {/each}
 
-<!-- Section divider label area — a warm light marks the texture section -->
+<!-- Section divider label area - a warm light marks the texture section -->
 <T.PointLight position={[-4, 3, 0]} intensity={2} color="#c8b890" distance={8} />
 
 <!-- ═══ MIRROR DEMO (end of texture wall) ═══ -->

@@ -1,5 +1,5 @@
 <!--
-  RetroDataGrid — Simple table with column headers and row selection
+  RetroDataGrid - Simple table with column headers and row selection
 
   Renders a data table with sortable-looking column headers (raised 3D),
   alternating row colors, and single-row selection. Selected row is

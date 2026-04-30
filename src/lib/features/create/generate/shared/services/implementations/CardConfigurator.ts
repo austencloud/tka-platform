@@ -3,8 +3,8 @@ import { DifficultyLevel } from "../../domain/models/generate-models";
 import {
   LOOPType,
   ROTATED_LOOP_TYPES,
-  SliceSize,
-  periodFromSliceSize,
+  Period,
+  periodToNumber,
 } from "../../../circular/domain/models/circular-models";
 import { minLength as minLengthEngine } from "@tka/sequence-engine/generation";
 import type {
@@ -18,8 +18,8 @@ import type {
  * closed-form calculator. Returns undefined when LOOP is not enabled so the
  * LengthCard falls back to its default minimum.
  *
- * Reads `period` from config if present (Phase 6 migration), otherwise falls
- * back to `sliceSize` via periodFromSliceSize.
+ * Reads `period` from config if present, otherwise falls back to
+ * periodToNumber.
  */
 function deriveLoopMinOverride(
   config: UIGenerationConfig,
@@ -28,9 +28,7 @@ function deriveLoopMinOverride(
   if (!loopEnabled) return undefined;
   const loopType = config.loopType;
   if (!loopType) return undefined;
-  const period =
-    (config as { period?: number }).period ??
-    periodFromSliceSize(config.sliceSize as SliceSize | undefined);
+  const period = periodToNumber(config.period as Period | undefined);
   const level = Number(config.level) || 1;
   // The two LOOPType enums (app circular-models + engine loop-types) are
   // string-valued and share identical members. Cast through unknown so we can
@@ -102,7 +100,7 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // Length card — always interactive, with constrained bounds in spell mode
+    // Length card - always interactive, with constrained bounds in spell mode
     const hasWord = !!(handlers.wordInputValue?.trim());
     if (hasWord) {
       const naturalDisplayLength = handlers.computedWordLength ?? handlers.wordInputValue!.trim().length;
@@ -235,25 +233,18 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // Period card (shown for all LOOP types — universal slice-awareness).
-    // Integer period values: 2 (halved), 4 (quartered). Legacy SliceSize
-    // field on config stays populated via the onPeriodChange handler until
-    // Phase 10 removes it.
-    if (showPeriodCard && handlers.handleSliceSizeChange) {
-      const currentPeriod =
-        (config as { period?: number }).period ??
-        periodFromSliceSize(config.sliceSize as SliceSize | undefined);
+    // Period card (shown for all LOOP types - universal slice-awareness).
+    // Integer period values: 2 (halved), 4 (quartered).
+    if (showPeriodCard && handlers.handlePeriodChange) {
+      const currentPeriod = periodToNumber(config.period as Period | undefined);
       cardList.push({
         id: "period",
         props: {
           currentPeriod,
-          onPeriodChange: (period: number) => {
-            // Forward to the existing sliceSize handler for backward compat.
-            // Config state will migrate to `period` directly in Phase 10; for
-            // now both fields stay in sync via this bridge.
-            const sliceSize =
-              period === 4 ? SliceSize.QUARTERED : SliceSize.HALVED;
-            handlers.handleSliceSizeChange?.(sliceSize);
+          onPeriodChange: (periodNum: number) => {
+            const periodEnum =
+              periodNum === 4 ? Period.QUARTERED : Period.HALVED;
+            handlers.handlePeriodChange?.(periodEnum);
           },
           cardIndex: cardIndex++,
         },

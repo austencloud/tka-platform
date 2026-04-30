@@ -13,7 +13,7 @@ import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { LOOPTypeResolver } from "../../../../features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
   RESERVED_ORIENTATION_PRIMITIVES,
   type LOOPComponent,
@@ -222,6 +222,9 @@ export class ImageComposer implements IImageComposer {
     if (!sequence.steps || sequence.steps.length === 0) {
       throw new Error("Sequence must have at least one beat");
     }
+
+    // Ensure glyph images are loaded for header rendering (idempotent, <1ms after first call)
+    await (this.TextRenderer as import("./TextRenderer").TextRenderer).preloadGlyphImages();
 
     // Reset per-composition stats
     this.compositionL2Hits = 0;
@@ -509,26 +512,29 @@ export class ImageComposer implements IImageComposer {
     // The header has a level badge indicator (only if addDifficultyLevel is true)
     // Parse LOOP components for glyph display.
     //
-    // We call the shared resolver to pick up rotation slice size (quartered
-    // vs halved) so the exported image shows the same fa-arrows-spin vs
-    // fa-rotate distinction the live app does. When the caller has
-    // overridden loopType explicitly (via options.loopType), fall back to
-    // the simple parser path — we can't infer slice size from a string
-    // alone, but the rotated icon stays correct in the halved default.
+    // Resolve LOOP display from live detection (steps) or structured
+    // components. The resolver is authoritative — it captures compound
+    // patterns (rotated+swapped) that the lossy loopType string drops.
+    // Fall back to parsing the loopType string only when the resolver
+    // found nothing (no steps AND no structured component data).
     const loopTypeOverride = options.loopType;
     let loopComponents: Set<LOOPComponent> | undefined;
-    let rotationSliceSize: SliceSize | undefined;
-    if (loopTypeOverride) {
+    let rotationPeriod: Period | undefined;
+
+    const display = resolveLoopDisplay(sequence);
+    rotationPeriod = display.rotationPeriod;
+    const inversionPeriod = display.inversionPeriod;
+    const loopPeriod = display.period;
+
+    if (display.components.size > 0) {
+      loopComponents = display.components;
+    } else if (loopTypeOverride) {
       const parsed = this.loopTypeResolver.parseComponents(loopTypeOverride);
       const filtered = new Set<LOOPComponent>();
       for (const c of parsed) {
         if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) filtered.add(c);
       }
       loopComponents = filtered.size > 0 ? filtered : undefined;
-    } else {
-      const display = resolveLoopDisplay(sequence);
-      loopComponents = display.components.size > 0 ? display.components : undefined;
-      rotationSliceSize = display.rotationSliceSize;
     }
     const showLoopGlyph =
       options.showLoopGlyph !== false &&
@@ -545,14 +551,21 @@ export class ImageComposer implements IImageComposer {
       // Only show word if addWord is enabled
       // Use custom name if provided and addWord is enabled, otherwise use derived word if addWord is enabled
       const displayName = options.addWord ? (options.customName || derivedWord) : "";
-      // Map the SliceSize enum (app) to the package's string literal —
+      // Map the Period enum (app) to the package's string literal -
       // the values line up ("halved"/"quartered") but typing them as a
       // union keeps the render-composition package independent of the
       // app's circular-models enum.
-      const sliceSizeForRender =
-        rotationSliceSize === SliceSize.QUARTERED
+      const periodForRender =
+        rotationPeriod === Period.QUARTERED
           ? "quartered"
-          : rotationSliceSize === SliceSize.HALVED
+          : rotationPeriod === Period.HALVED
+            ? "halved"
+            : undefined;
+
+      const inversionForRender =
+        inversionPeriod === Period.QUARTERED
+          ? "quartered"
+          : inversionPeriod === Period.HALVED
             ? "halved"
             : undefined;
 
@@ -570,7 +583,9 @@ export class ImageComposer implements IImageComposer {
         showLoopGlyph ? loopComponents : undefined,
         options.deckCard ? DECK_HEADER_BG : undefined,
         options.deckCard ? DECK_BORDER_COLOR : undefined,
-        showLoopGlyph ? sliceSizeForRender : undefined
+        showLoopGlyph ? periodForRender : undefined,
+        showLoopGlyph ? inversionForRender : undefined,
+        showLoopGlyph ? loopPeriod : undefined
       );
     }
 
@@ -616,7 +631,7 @@ export class ImageComposer implements IImageComposer {
   // When ImageComposer renders a cell for a thumbnail, also write it to
   // PictographBlobCache under the key that PreviewCellRenderer expects.
   // This means when the user clicks a sequence, the preview finds every
-  // cell already cached — instant display, zero re-rendering.
+  // cell already cached - instant display, zero re-rendering.
   // =========================================================================
 
   private writeThroughToPreviewCache(
@@ -655,7 +670,7 @@ export class ImageComposer implements IImageComposer {
       previewOptions
     );
 
-    // Fire-and-forget — preview cache write is best-effort
+    // Fire-and-forget - preview cache write is best-effort
     this.blobCache.set(previewKey, blob).catch(() => {});
   }
 
@@ -1114,7 +1129,7 @@ export class ImageComposer implements IImageComposer {
       const x = cell.col * stepSize + horizontalOffset + padding;
       const y = cell.row * stepSize + headerHeight + padding;
 
-      // Fill cell background — dark for dark mode, white for light mode
+      // Fill cell background - dark for dark mode, white for light mode
       ctx.fillStyle = isDarkMode ? "#000000" : "#ffffff";
       ctx.fillRect(
         cell.col * stepSize + horizontalOffset,
@@ -1415,7 +1430,7 @@ export class ImageComposer implements IImageComposer {
 
     // NOTE: No write-through to preview cache from the LayerCompositor path.
     // The composited canvas includes the step number drawn on it. Writing that
-    // blob under a "nonum" preview key would contaminate the preview cache —
+    // blob under a "nonum" preview key would contaminate the preview cache -
     // the shared ChoreoCard would find a blob with the wrong step number baked
     // in and also render an HTML overlay, causing doubled/ghost numbers.
     // The Canvas2D path's write-through is clean (base image only, no step number).

@@ -1,11 +1,11 @@
 /**
  * Bubble palette registry.
  *
- * Backend-agnostic — both 2D (Bubbles2DRenderer) and 3D (BubbleEmitter3D)
+ * Backend-agnostic - both 2D (Bubbles2DRenderer) and 3D (BubbleEmitter3D)
  * resolve a BubblesIntent's palette field through `resolveBubblePalette()`
  * and then sample rim / highlight / fill / popBurst as needed.
  *
- * Oil palette carries the `iridescent` flag — renderers sample a 3-stop
+ * Oil palette carries the `iridescent` flag - renderers sample a 3-stop
  * hue-over-lifetime gradient instead of the static rim color when set.
  */
 
@@ -13,15 +13,15 @@ import type { BubblesIntent } from "./EffectsConfig";
 
 export interface BubblePalette {
   readonly id: BubblesIntent["palette"];
-  /** Hex — outline color. */
+  /** Hex - outline color. */
   readonly rim: string;
-  /** Hex — specular highlight dot. */
+  /** Hex - specular highlight dot. */
   readonly highlight: string;
-  /** rgba string — transparent interior tint. */
+  /** rgba string - transparent interior tint. */
   readonly fill: string;
-  /** Hex — pop-burst fragment color. */
+  /** Hex - pop-burst fragment color. */
   readonly popBurst: string;
-  /** Oil palette flag — rim animates over lifetime instead of staying static. */
+  /** Oil palette flag - rim animates over lifetime instead of staying static. */
   readonly iridescent?: boolean;
 }
 
@@ -41,7 +41,7 @@ const CHAMPAGNE: BubblePalette = {
   popBurst: "#fff8e0",
 };
 
-// Oil's rim is sampled per-frame via oilIridescentRim() — the value stored
+// Oil's rim is sampled per-frame via oilIridescentRim() - the value stored
 // here is an initial-spawn approximation. Renderers that honor iridescence
 // should branch on the flag and call the sampler.
 const OIL: BubblePalette = {
@@ -117,7 +117,7 @@ export function deriveCustomPalette(hex: string): BubblePalette {
  *   t=1.0 → green-gold (#d0ff80)
  *
  * Renderer branches on palette.iridescent === true. Each bubble only pays
- * one extra per-frame lerp + hex conversion — cheap.
+ * one extra per-frame lerp + hex conversion - cheap.
  */
 export function oilIridescentRim(t: number): string {
   const u = clamp01(t);

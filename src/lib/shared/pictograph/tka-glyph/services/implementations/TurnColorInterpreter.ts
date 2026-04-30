@@ -5,7 +5,7 @@
  * based on the letter type and motion arrangement.
  *
  * Color is determined by which key ("blue"/"red") a motion lives under in
- * pictographData.motions — NOT by the motion.color property, which is often
+ * pictographData.motions - NOT by the motion.color property, which is often
  * undefined when data is deserialized from storage.
  *
  * Ported from legacy TurnsTupleInterpreter logic.
@@ -40,7 +40,7 @@ export class TurnColorInterpreter {
    * Determine the colors for top and bottom turn numbers.
    *
    * Color assignment is based on which motions object key ("blue"/"red")
-   * the motion was extracted from — NOT motion.color, which is unreliable
+   * the motion was extracted from - NOT motion.color, which is unreliable
    * for data loaded from storage.
    */
   interpretTurnColors(

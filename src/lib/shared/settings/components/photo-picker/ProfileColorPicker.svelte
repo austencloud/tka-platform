@@ -2,7 +2,7 @@
   ProfileColorPicker.svelte
 
   A compact color swatch picker for the user's profile accent color.
-  Collapsed by default — shows the current color and a "Change" button.
+  Collapsed by default - shows the current color and a "Change" button.
   Expanding reveals preset swatches plus a custom color swatch that
   opens the native OS color picker.
 -->
@@ -93,7 +93,7 @@
         </button>
       {/each}
 
-      <!-- Custom color swatch — opens native OS picker -->
+      <!-- Custom color swatch - opens native OS picker -->
       <button
         class="color-swatch custom-swatch"
         style="--swatch-color: {selectedColor}"
@@ -106,7 +106,7 @@
       </button>
     </div>
 
-    <!-- Hidden native color input — triggered by the custom swatch -->
+    <!-- Hidden native color input - triggered by the custom swatch -->
     <input
       bind:this={nativePickerRef}
       type="color"
@@ -259,7 +259,7 @@
     font-size: 11px;
   }
 
-  /* Hidden native input — only used to trigger the OS picker dialog */
+  /* Hidden native input - only used to trigger the OS picker dialog */
   .hidden-color-input {
     position: absolute;
     width: 0;

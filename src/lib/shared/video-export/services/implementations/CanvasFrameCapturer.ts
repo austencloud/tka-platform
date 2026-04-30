@@ -8,9 +8,9 @@ import type { ICanvasFrameCapturer } from "../contracts/ICanvasFrameCapturer";
  * CapturedFrame ready to hand to the video encoder worker.
  *
  * Preference order (2026):
- *   1. WebCodecs VideoFrame from canvas — zero-copy GPU handoff. Used on
+ *   1. WebCodecs VideoFrame from canvas - zero-copy GPU handoff. Used on
  *      Chrome 94+, Edge 94+, Safari 16.4+, Firefox 133+.
- *   2. ImageData readback — legacy main-thread copy. Only reached on
+ *   2. ImageData readback - legacy main-thread copy. Only reached on
  *      Firefox <133 and ancient browsers, which also use the worker's
  *      WASM encode path.
  *
@@ -40,12 +40,12 @@ export class CanvasFrameCapturer implements ICanvasFrameCapturer {
       // Construct a VideoFrame directly from the canvas. The browser
       // keeps the pixel data GPU-resident and hands us a transferable
       // handle. VideoFrame requires .close() exactly once by the final
-      // consumer — in this pipeline that's the worker after encode().
+      // consumer - in this pipeline that's the worker after encode().
       const frame = new VideoFrame(canvas, { timestamp: timestampMicros });
       return { kind: "video-frame", frame, timestampMicros, width, height };
     }
 
-    // Legacy path — forces a full GPU→CPU pixel readback. Only reached
+    // Legacy path - forces a full GPU→CPU pixel readback. Only reached
     // on browsers without WebCodecs, which also use the WASM encoder in
     // the worker and therefore need raw RGBA bytes anyway.
     const ctx = canvas.getContext("2d");

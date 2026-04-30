@@ -36,6 +36,7 @@
   import type { IThumbnailLocalCache } from "../services/contracts/IThumbnailLocalCache";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -198,7 +199,7 @@
     if (thumbnailUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(thumbnailUrl);
     }
-    // Skip all cache tiers on re-render — the whole point of clearing is to
+    // Skip all cache tiers on re-render - the whole point of clearing is to
     // get a fresh render. Without this, stale static/local thumbnails (e.g.
     // ones rendered before LOOP detection existed) would be served again.
     skipCacheOnNextRequest = true;
@@ -228,7 +229,7 @@
       orchestrator.cancel({ hash: currentKeyHash });
     }
 
-    // Don't revoke blob URLs that are in the memory cache — other components may reuse them.
+    // Don't revoke blob URLs that are in the memory cache - other components may reuse them.
     // The memory cache handles revocation on LRU eviction.
     if (thumbnailUrl?.startsWith("blob:") && orchestrator && !orchestrator.getCached(currentKeyHash ?? "")) {
       URL.revokeObjectURL(thumbnailUrl);
@@ -306,7 +307,7 @@
     }
     currentKeyHash = key.hash;
 
-    // Synchronous memory cache check — instant on revisits, no placeholder flash
+    // Synchronous memory cache check - instant on revisits, no placeholder flash
     if (!skipCacheOnNextRequest) {
       const cached = orchestrator.getCached(key.hash);
       if (cached) {
@@ -347,7 +348,7 @@
         // Only apply if still current
         if (key.hash === currentKeyHash) {
           thumbnailUrl = result.url;
-          // Ensure loading overlay clears — prevents race where a re-queued
+          // Ensure loading overlay clears - prevents race where a re-queued
           // render sets status back to "queued" while thumbnailUrl persists
           status = { state: "complete", url: result.url ?? "" };
         }
@@ -490,12 +491,12 @@
   {:else if hasError}
     <div class="error-placeholder" aria-label="Failed to load">
       <span class="error-icon">!</span>
-      <span class="placeholder-word">{displayName}</span>
+      <div class="placeholder-glyph"><TKAWordGlyph word={displayName} height={24} darkMode={!lightMode} /></div>
     </div>
   {:else}
     <!-- Unified placeholder: always shows word, conditionally shows loading indicators -->
     <div class="loading-placeholder" aria-label={isLoading ? statusLabel : "Waiting to load"}>
-      <span class="placeholder-word">{displayName}</span>
+      <div class="placeholder-glyph"><TKAWordGlyph word={displayName} height={24} darkMode={!lightMode} /></div>
       {#if isLoading}
         <div class="loading-indicator">
           <ProgressRing percent={-1} size={24} strokeWidth={2} />
@@ -618,18 +619,12 @@
     }
   }
 
-  .placeholder-word {
-    /* Scale with container - larger base, scales down for small containers */
-    font-size: clamp(16px, 6cqi, 28px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-    text-align: center;
+  .placeholder-glyph {
     max-width: 95%;
-    line-height: 1.15;
     opacity: 0.95;
-    /* Allow wrapping for long words, but break anywhere if needed */
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
   }
 
   .loading-indicator {
@@ -678,9 +673,6 @@
 
   /* Container query responsive sizing */
   @container choreo-card (max-width: 249px) {
-    .placeholder-word {
-      font-size: clamp(12px, 5cqi, 18px);
-    }
     .loading-indicator {
       gap: 4px;
     }
@@ -694,9 +686,6 @@
 
   /* Very small cards - hide some elements */
   @container choreo-card (max-width: 149px) {
-    .placeholder-word {
-      font-size: clamp(10px, 4cqi, 14px);
-    }
     .loading-status {
       display: none;
     }

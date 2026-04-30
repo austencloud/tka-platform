@@ -39,7 +39,7 @@
     isExporting = true;
     try {
       const bytes = await exporter.export(stickerState.sheet, { getPaths: getPrimitivePaths });
-      // Cast to ArrayBuffer slice — Uint8Array.buffer can be SharedArrayBuffer in the
+      // Cast to ArrayBuffer slice - Uint8Array.buffer can be SharedArrayBuffer in the
       // DOM type lib, but pdf-lib always returns plain ArrayBuffer-backed bytes.
       const blob = new Blob([bytes as unknown as Uint8Array<ArrayBuffer>], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -79,13 +79,13 @@
   <details class="help">
     <summary>How to print</summary>
     <div class="help-content">
-      <h4>StickerYou — Make Your Own Page</h4>
+      <h4>StickerYou - Make Your Own Page</h4>
       <p>Go to stickeryou.com, pick "Custom Stickers Sticker Sheet," upload the PDF, and order. Supports single mixed sheets.</p>
 
-      <h4>StickerApp — Custom sheets</h4>
+      <h4>StickerApp - Custom sheets</h4>
       <p>Go to stickerapp.com, pick "Sticker sheet," upload the PDF. Select quantity 1 if doing a one-off.</p>
 
-      <h4>Silhouette Cameo 5 — Print & Cut</h4>
+      <h4>Silhouette Cameo 5 - Print & Cut</h4>
       <p>Open Silhouette Studio, import the PDF, send the art layer to a printer with sticker paper loaded, load the printed sheet into the Cameo for cutting. Registration marks are included.</p>
 
       <h4>Self-print + circle punch</h4>

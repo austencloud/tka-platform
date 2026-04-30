@@ -169,7 +169,7 @@
       : ""
   );
 
-  // Mobile toolbar submit button — upload state derivations
+  // Mobile toolbar submit button - upload state derivations
   const isToolbarUploading = $derived(
     formState.isSubmitting && formState.uploadProgress?.phase === "uploading"
   );

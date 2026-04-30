@@ -485,9 +485,9 @@ export function registerCreateShortcuts(
   });
 
   // ==================== Sequence Transforms ====================
-  // Alt+key hotkeys for sequence transforms — require explicit intent, no accidental triggers
+  // Alt+key hotkeys for sequence transforms - require explicit intent, no accidental triggers
 
-  // Alt+M — Mirror sequence (flip left/right)
+  // Alt+M - Mirror sequence (flip left/right)
   service.register({
     id: "create.transform-mirror",
     label: "Mirror Sequence",
@@ -514,7 +514,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+V — Flip sequence
+  // Alt+V - Flip sequence
   service.register({
     id: "create.transform-flip",
     label: "Flip Sequence",
@@ -541,7 +541,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+X — Swap hands (swap colors). Was Alt+S but Chrome/extensions steal it.
+  // Alt+X - Swap hands (swap colors). Was Alt+S but Chrome/extensions steal it.
   service.register({
     id: "create.transform-swap-hands",
     label: "Swap Hands",
@@ -568,7 +568,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+I — Invert sequence
+  // Alt+I - Invert sequence
   service.register({
     id: "create.transform-invert",
     label: "Invert Sequence",
@@ -595,7 +595,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+F — Shift start (move first beat to end)
+  // Alt+F - Shift start (move first beat to end)
   service.register({
     id: "create.transform-shift-start",
     label: "Shift Start",
@@ -622,7 +622,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+W — Rewind/Reverse sequence
+  // Alt+W - Rewind/Reverse sequence
   service.register({
     id: "create.transform-rewind",
     label: "Rewind Sequence",
@@ -649,7 +649,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+R — Rotate sequence clockwise (45°)
+  // Alt+R - Rotate sequence clockwise (45°)
   service.register({
     id: "create.transform-rotate-cw",
     label: "Rotate Clockwise",
@@ -676,7 +676,7 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+L — Rotate sequence counter-clockwise (45°)
+  // Alt+L - Rotate sequence counter-clockwise (45°)
   service.register({
     id: "create.transform-rotate-ccw",
     label: "Rotate Counter-Clockwise",

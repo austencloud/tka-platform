@@ -15,22 +15,22 @@ export type TileType =
   | "pedestal"
   | "trigger"
   | "corridor"
-  | "rope"          // Barrier — visible, solid, not interactable (VTG Wing rope-off)
-  | "scaffolding"   // Construction Zone — visible clutter, solid
-  | "sign"             // Readable sign — interactable, not solid
-  | "sequence-screen"; // TV screen showing sequence footage — solid, interactable
+  | "rope"          // Barrier - visible, solid, not interactable (VTG Wing rope-off)
+  | "scaffolding"   // Construction Zone - visible clutter, solid
+  | "sign"             // Readable sign - interactable, not solid
+  | "sequence-screen"; // TV screen showing sequence footage - solid, interactable
 
 export type FloorMaterial = "stone" | "marble" | "wood" | "dirt" | "sandstone";
 export type Direction = "north" | "south" | "east" | "west";
 export type WingTheme =
-  | "cave"          // Wing 1: Ancient Origins — torchlight, stone
-  | "classical"     // Wing 2: Egypt/Greece — oil lamps, warm
-  | "renaissance"   // Wing 3: Da Vinci — natural light, studio
-  | "industrial"    // Wing 4: Victorian — gas lamps, brass
+  | "cave"          // Wing 1: Ancient Origins - torchlight, stone
+  | "classical"     // Wing 2: Egypt/Greece - oil lamps, warm
+  | "renaissance"   // Wing 3: Da Vinci - natural light, studio
+  | "industrial"    // Wing 4: Victorian - gas lamps, brass
   | "digital"       // Wing 5: CRT glow, fluorescent
-  | "institutional" // Wing 6: Suppression — sterile, bureaucratic
-  | "gallery"       // Wing 7: Vessel Hall — spotlights
-  | "modern"        // Wing 8: Modern Vessel — dramatic
+  | "institutional" // Wing 6: Suppression - sterile, bureaucratic
+  | "gallery"       // Wing 7: Vessel Hall - spotlights
+  | "modern"        // Wing 8: Modern Vessel - dramatic
   | "futuristic"    // Futures Chamber
   | "outdoor"       // Ending rooms
   | "construction"  // Construction Zone / Janitor's Closet

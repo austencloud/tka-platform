@@ -81,7 +81,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
         );
       });
     } else {
-      // Already on — open the overlay to configure
+      // Already on - open the overlay to configure
       panelState.openLOOPPanel(
         currentLOOPType,
         selectedComponents,

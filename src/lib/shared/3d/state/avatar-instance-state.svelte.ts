@@ -43,7 +43,7 @@ const FIGURE_Z = 0;
  *
  * When both hands are on the same preset plane, use the matching preset mode
  * (WALL or DUAL_WHEEL) so the renderer produces the intended spatial layout.
- * DUAL_WHEEL is required when both hands are on WHEEL — a single wheel plane
+ * DUAL_WHEEL is required when both hands are on WHEEL - a single wheel plane
  * can't hold both hands without overlap through the avatar.
  *
  * Any other combination falls back to CUSTOM (per-hand independent).
@@ -165,7 +165,7 @@ export function createAvatarInstanceState(
   // Target facing angle for smooth rotation
   let targetFacingAngle = $state(_initialFacing);
 
-  // Rotation speed in radians per second — fast enough to feel responsive,
+  // Rotation speed in radians per second - fast enough to feel responsive,
   // slow enough to look smooth. 12 rad/s ≈ 180° in ~0.26s.
   const ROTATION_SPEED = 12;
 
@@ -274,7 +274,7 @@ export function createAvatarInstanceState(
 
   // Effort easing: the 2D animator lets the user pick named easing profiles
   // (glide, punch, elastic, etc.) that reshape how progress flows within
-  // each beat. The same curves apply cleanly here — we just transform the
+  // each beat. The same curves apply cleanly here - we just transform the
   // raw progress that feeds into prop interpolation.
   const phraseInterpolator = new PhraseInterpolator();
 
@@ -288,7 +288,7 @@ export function createAvatarInstanceState(
 
   // Resolves the active configs + eased progress for the current frame.
   // In phrase mode, easing can smear across beat boundaries, so the blue/red
-  // configs here may come from a different step than currentStepIndex — this
+  // configs here may come from a different step than currentStepIndex - this
   // matches how the 2D orchestrator picks a target step inside a phrase.
   // stepConfigs[0] is the start pose, so motion beat N lives at stepConfigs[N].
   const easedFrame = $derived.by(() => {
@@ -413,13 +413,13 @@ export function createAvatarInstanceState(
         facingAngle: 0,
         bluePlane: customBluePlane,
         redPlane: customRedPlane,
-        // No rotationPlane — each hand rotates on its own position plane
+        // No rotationPlane - each hand rotates on its own position plane
         blueLateralOffset: 0,
         redLateralOffset: 0,
       };
     }
     const base = PLANE_MODE_CONFIGS[mode];
-    // Dual-wheel no longer needs special overrides — the unified rotation
+    // Dual-wheel no longer needs special overrides - the unified rotation
     // pipeline handles wheel plane correctly without skipFacingTransform
     // or rotationPlane overrides. Avatar faces forward, lateral offsets
     // place each hand's wheel plane to the sides.
@@ -449,7 +449,7 @@ export function createAvatarInstanceState(
 
   /**
    * Set a single hand's plane independently. The PlaneMode is derived from
-   * the combined assignment — both hands on Wheel becomes DUAL_WHEEL (needed
+   * the combined assignment - both hands on Wheel becomes DUAL_WHEEL (needed
    * for lateral rendering), both on Wall becomes WALL, anything else becomes
    * CUSTOM. Re-converts the sequence with the effective config.
    */
@@ -467,7 +467,7 @@ export function createAvatarInstanceState(
    * Set a specific beat's plane for one hand. Switches to CUSTOM mode
    * and re-applies all per-beat overrides to the step configs.
    *
-   * Always forces CUSTOM — per-beat overrides are intentional deviations
+   * Always forces CUSTOM - per-beat overrides are intentional deviations
    * from the sequence-wide setting, so they can never map to a preset mode
    * regardless of what the global hand assignment would derive.
    */
@@ -677,7 +677,7 @@ export function createAvatarInstanceState(
   }
 
   // ============================================
-  // Performer Settings (setter functions — _settings declared near top)
+  // Performer Settings (setter functions - _settings declared near top)
   // ============================================
 
   function setEffort(effortId: EffortId): void {

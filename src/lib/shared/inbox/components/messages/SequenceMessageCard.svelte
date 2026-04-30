@@ -14,6 +14,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     attachment: MessageAttachment;
@@ -59,10 +60,10 @@
 
     // Best: explicit cloud word (new messages)
     add(sequenceCloudWord);
-    // Next: sequenceWord — for public sequences this is usually the raw word
+    // Next: sequenceWord - for public sequences this is usually the raw word
     // (displayName and intendedWord are typically undefined)
     add(sequenceWord);
-    // Last: sequenceName (seq.name) — can have prefixes like "Circular" that
+    // Last: sequenceName (seq.name) - can have prefixes like "Circular" that
     // don't match cloud storage, so try this after the raw word
     add(sequenceName);
 
@@ -75,7 +76,7 @@
     return candidates;
   });
 
-  // Index into the candidates list — incremented by onerror
+  // Index into the candidates list - incremented by onerror
   let candidateIndex = $state(0);
   const thumbnailUrl = $derived(thumbnailCandidates[candidateIndex] ?? null);
   const authorName = $derived(attachment.metadata?.sequenceAuthor);
@@ -146,7 +147,13 @@
       {/if}
 
       <div class="card-info">
-        <h4 class="sequence-title">{sequenceWord}</h4>
+        <h4 class="sequence-title">
+          {#if attachment.metadata?.sequenceWord}
+            <TKAWordGlyph word={attachment.metadata.sequenceWord} height={16} darkMode />
+          {:else}
+            {sequenceWord}
+          {/if}
+        </h4>
 
         {#if sequenceName && sequenceName !== sequenceWord}
           <p class="sequence-name">{sequenceName}</p>

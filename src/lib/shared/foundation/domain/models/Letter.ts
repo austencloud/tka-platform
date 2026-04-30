@@ -50,7 +50,7 @@ export enum Letter {
   THETA_DASH = "Θ-",
   OMEGA_DASH = "Ω-",
 
-  // Type4: Dash (4 Greek dash letters — one dashes, one static)
+  // Type4: Dash (4 Greek dash letters - one dashes, one static)
   PHI = "Φ",
   PSI = "Ψ",
   LAMBDA = "Λ",

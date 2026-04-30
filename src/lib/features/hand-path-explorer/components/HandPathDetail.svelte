@@ -47,7 +47,7 @@
   }
 
   function displayName(seq: { name: string; displayName?: string; intendedWord?: string; word: string }): string {
-    return seq.displayName ?? seq.intendedWord ?? seq.word ?? seq.name ?? "—";
+    return seq.displayName ?? seq.intendedWord ?? seq.word ?? seq.name ?? "-";
   }
 </script>
 

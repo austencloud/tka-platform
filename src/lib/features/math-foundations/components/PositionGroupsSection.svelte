@@ -53,7 +53,7 @@
       <div class="insight">
         <p>
           Gamma has <strong>twice as many</strong> positions because it's the fusion.
-          It contains two internal halves (1-8 and 9-16) that are themselves opposites of each other—
+          It contains two internal halves (1-8 and 9-16) that are themselves opposites of each other-
           mirroring the Alpha/Beta opposition <em>inside</em> itself.
         </p>
       </div>

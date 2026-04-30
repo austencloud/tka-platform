@@ -24,7 +24,7 @@
 
   /**
    * Module-level SVG cache shared across all InlinePictograph instances.
-   * Keyed by "letter-variation-gridMode[-propType]" — same key pattern as PNG cache.
+   * Keyed by "letter-variation-gridMode[-propType]" - same key pattern as PNG cache.
    * Themeable SVGs work in both light/dark mode, so one cache entry serves all themes.
    */
   const svgCache = new Map<string, string>();

@@ -25,7 +25,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import {
     ROTATED_LOOP_TYPES,
     LOOPType,
-    SliceSize,
+    Period,
   } from "../circular/domain/models/circular-models";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -119,7 +119,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   let computedWordLength = $state<number | undefined>(undefined);
   let requiredBridgeCount = $state<number>(0);
   let naturalLength = $state<number>(0);
-  // The LOOP-multiplied natural length (without extra bridges) — used as the floor for the stepper
+  // The LOOP-multiplied natural length (without extra bridges) - used as the floor for the stepper
   let naturalDisplayLength = $state<number>(0);
 
   $effect(() => {
@@ -134,7 +134,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       }
       return;
     }
-    computeWordLength(word, config.loopEnabled, config.loopType, config.sliceSize);
+    computeWordLength(word, config.loopEnabled, config.loopType, config.period);
   });
 
   // Reset spell target when the word itself changes
@@ -153,7 +153,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     word: string,
     loopEnabled: boolean,
     loopType: string,
-    sliceSize: string
+    period: string
   ) {
     try {
       const graph = await spellServiceLoader.getTransitionGraph();
@@ -187,14 +187,14 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       naturalLength = originalLetters.length + bridgeCount;
 
       // Helper to apply LOOP multiplication to a pre-LOOP beat count.
-      // Does NOT add +1 for a LOOP bridge beat — a bridge is only inserted
+      // Does NOT add +1 for a LOOP bridge beat - a bridge is only inserted
       // when the sequence can't directly connect back to start, and we
       // can't know that until actual generation runs. The displayed count
       // should match the most common case (direct extension, no bridge).
       function applyLoopMultiplier(beats: number): number {
         if (!loopEnabled) return beats;
         const multiplier = ROTATED_LOOP_TYPES.has(loopType as LOOPType)
-          ? (sliceSize === SliceSize.QUARTERED ? 4 : 2)
+          ? (period === Period.QUARTERED ? 4 : 2)
           : 2;
         return beats * multiplier;
       }
@@ -222,7 +222,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       const isRotatedType = ROTATED_LOOP_TYPES.has(config.loopType as LOOPType);
       let multiplier: number;
       if (isRotatedType) {
-        multiplier = config.sliceSize === SliceSize.QUARTERED ? 4 : 2;
+        multiplier = config.period === Period.QUARTERED ? 4 : 2;
       } else {
         multiplier = 2;
       }
@@ -282,12 +282,8 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     const currentType = config.loopType as LOOPType;
     const isRotated = ROTATED_LOOP_TYPES.has(currentType);
     if (!isRotated && newLevelNum < 3) {
-      if (config.sliceSize === SliceSize.QUARTERED) {
-        updates.sliceSize = SliceSize.HALVED;
-      }
-      const currentPeriod = (config as { period?: number }).period;
-      if (currentPeriod === 4) {
-        (updates as { period?: number }).period = 2;
+      if (config.period === Period.QUARTERED) {
+        updates.period = Period.HALVED;
       }
     }
 
@@ -339,12 +335,8 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       isRotated || (!isRewound && levelNum >= 3);
 
     if (!supportsPeriodFour) {
-      if (config.sliceSize === SliceSize.QUARTERED) {
-        updates.sliceSize = SliceSize.HALVED;
-      }
-      const currentPeriod = (config as { period?: number }).period;
-      if (currentPeriod === 4) {
-        (updates as { period?: number }).period = 2;
+      if (config.period === Period.QUARTERED) {
+        updates.period = Period.HALVED;
       }
     }
 
@@ -403,7 +395,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     if (!cardConfigService || !currentLevel) return [];
 
     // Explicit reads so Svelte registers these as reactive dependencies.
-    // The slice-size card's visibility depends on both values.
+    // The period card's visibility depends on both values.
     const loopEnabled = config.loopEnabled;
     const _loopType = config.loopType;
     void _loopType;
@@ -420,7 +412,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
         handleGridModeChange: withFavoriteDeselect(handleGridModeChange),
         handleGenerationModeChange: () => {}, // No-op: mode is now derived from word presence
         handleLOOPTypeChange: withFavoriteDeselect(handleLOOPTypeChange),
-        handleSliceSizeChange: withFavoriteDeselect((sliceSize: any) => updateConfig({ sliceSize })),
+        handlePeriodChange: withFavoriteDeselect((period: any) => updateConfig({ period })),
         handleConstraintPresetChange: withFavoriteDeselect(handleConstraintPresetChange),
         handleHandPathModeChange: withFavoriteDeselect(handleHandPathModeChange),
         handleMotionTypeFilterChange: withFavoriteDeselect(handleMotionTypeFilterChange),
@@ -491,7 +483,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
       {:else if card.id === "loop"}
         <ConsolidatedLOOPCard {...card.props as any} />
       {:else if card.id === "period"}
-        <PeriodCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
+        <PeriodCard {...card.props as any} color={cardColors.period.color} shadowColor={cardColors.period.shadowColor} />
       {:else if card.id === "preset"}
         <PresetCard
           {...card.props as any}

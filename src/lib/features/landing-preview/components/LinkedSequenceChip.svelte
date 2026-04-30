@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LinkedSequence } from "../types";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequence: LinkedSequence;
@@ -22,7 +23,7 @@
     </div>
   {/if}
   <div class="info">
-    <span class="word">{sequence.word}</span>
+    <span class="word"><TKAWordGlyph word={sequence.word} height={13} /></span>
     {#if sequence.ownerName}
       <span class="owner">by {sequence.ownerName}</span>
     {/if}

@@ -26,7 +26,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  /* SPA: kill all overscroll — pull-to-refresh destroys DI/auth/editor state,
+  /* SPA: kill all overscroll - pull-to-refresh destroys DI/auth/editor state,
      iOS rubber-banding is cosmetic noise, horizontal swipe triggers back nav */
   overscroll-behavior: none;
   /* PWA: Prevent Android gesture navigation interference */

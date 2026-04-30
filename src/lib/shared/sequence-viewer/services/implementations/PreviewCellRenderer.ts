@@ -50,7 +50,7 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     // Generate cache key via shared deriver (same keys as CellPreWarmer)
     const cacheKey = cellCacheKeyDeriver.deriveCacheKey(pictographData, stepNumber, isDark, options);
 
-    // Check IndexedDB cache first — blob URL creation is instant
+    // Check IndexedDB cache first - blob URL creation is instant
     try {
       const cachedBlob = await pictographBlobCache.get(cacheKey);
       if (cachedBlob) {
@@ -84,7 +84,7 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     // Motion visibility is a render-layer concern, not a data-layer one.
     // The pictograph still represents a two-hand beat; we just hide one
     // layer at draw time via showBlueMotion/showRedMotion in renderOptions.
-    // Stripping the motion here would corrupt dash arrow positioning —
+    // Stripping the motion here would corrupt dash arrow positioning -
     // dashes read cross-motion data to disambiguate rotation and mirroring.
     const dataForRender = soloFiltered;
 
@@ -95,14 +95,14 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       redPropType: effectiveRedProp,
       handPathMode: isHandPath,
       // Visibility flows into prop placement so a solo-visible prop skips
-      // the beta offset — no partner to collide with.
+      // the beta offset - no partner to collide with.
       showBlueMotion: options.showBlueMotion,
       showRedMotion: options.showRedMotion,
     });
 
     // Render options for layer compositor
     // Motion-visibility solo: exactly one color toggled on. Single-hand
-    // pictographs are effectively solo — letters, VTG, and position glyphs
+    // pictographs are effectively solo - letters, VTG, and position glyphs
     // all describe hand PAIRS and are meaningless for one hand alone.
     const isMotionSolo =
       (options.showBlueMotion === true && options.showRedMotion === false) ||
@@ -120,7 +120,7 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       showBlueMotion: options.showBlueMotion,
       showRedMotion: options.showRedMotion,
       // VTG/elemental/positions suppressed in any single-hand view
-      // (same reasoning as TKA/reversals — single-hand views drop letters).
+      // (same reasoning as TKA/reversals - single-hand views drop letters).
       showVTG: suppressOverlays ? false : (options.showVTG ?? false),
       showElemental: suppressOverlays ? false : (options.showElemental ?? false),
       showPositions: suppressOverlays ? false : (options.showPositions ?? false),
@@ -128,7 +128,7 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
 
     // Visibility settings
     // Suppress TKA glyphs and reversals in hand path mode AND solo view mode.
-    // Letters require both hands — they're meaningless for single-prop rendering.
+    // Letters require both hands - they're meaningless for single-prop rendering.
     const visibility: LayerVisibility = {
       showTKA: suppressOverlays ? false : (options.showTKA ?? true),
       showReversals: suppressOverlays ? false : (options.showReversals ?? true),
@@ -149,7 +149,7 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       // Ignore cache write errors
     });
 
-    // Return blob URL — caller must revoke when done
+    // Return blob URL - caller must revoke when done
     return URL.createObjectURL(blob);
   }
 

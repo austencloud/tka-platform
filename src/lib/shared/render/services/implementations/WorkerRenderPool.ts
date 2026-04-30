@@ -77,7 +77,7 @@ export class WorkerRenderPool implements IWorkerRenderPool {
       try {
         return await this.renderOnWorker(preparedData, options, visibility, stepNumber);
       } catch {
-        // Worker failed — fall back to main-thread rendering silently
+        // Worker failed - fall back to main-thread rendering silently
         return this.renderOnMainThread(preparedData, options, visibility, stepNumber);
       }
     }
@@ -117,7 +117,7 @@ export class WorkerRenderPool implements IWorkerRenderPool {
 
   private async doInitialize(): Promise<void> {
     if (!this.useWorkers) {
-      // No worker support — fall back to main thread
+      // No worker support - fall back to main thread
       this.initialized = true;
       return;
     }
@@ -156,7 +156,7 @@ export class WorkerRenderPool implements IWorkerRenderPool {
             }, 10000);
 
             // If the worker module fails to load, onerror fires before
-            // any message exchange — reject immediately instead of
+            // any message exchange - reject immediately instead of
             // waiting for the 10s timeout.
             worker.onerror = (error) => {
               clearTimeout(timeout);

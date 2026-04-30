@@ -40,7 +40,7 @@ export function createStickerLabState(
     },
 
     addPrimitive(ref: MandalaPrimitiveRef): void {
-      // Deduplicate by shapeHash — one shape tile per sheet entry.
+      // Deduplicate by shapeHash - one shape tile per sheet entry.
       const existing = sheet.stickers.find(
         (s) => s.primitiveRef.shapeHash === ref.shapeHash
       );

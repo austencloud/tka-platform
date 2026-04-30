@@ -1,5 +1,5 @@
 /**
- * Shared Effect Points Persister — Firebase + localStorage
+ * Shared Effect Points Persister - Firebase + localStorage
  *
  * Stores full point data (position + effect-specific properties) for all
  * prop types in a single Firestore document (`config/effectPoints`). All
@@ -224,7 +224,7 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 			};
 
 			for (const key of keysToWrite) {
-				// Skip internal sentinel — trail assignments handled below
+				// Skip internal sentinel - trail assignments handled below
 				if (key === "__trailAssignments__") continue;
 				const pts = this.points[key];
 				if (pts) {
@@ -413,7 +413,7 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 				this.trailAssignments = assignments;
 			}
 		} catch {
-			// Corrupted cache — start fresh
+			// Corrupted cache - start fresh
 		}
 	}
 

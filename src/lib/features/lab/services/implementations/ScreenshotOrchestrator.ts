@@ -1,5 +1,5 @@
 /**
- * ScreenshotOrchestrator — Builds route/device trees and drives the capture endpoints.
+ * ScreenshotOrchestrator - Builds route/device trees and drives the capture endpoints.
  *
  * Device and route configs are hardcoded here to avoid importing test files
  * into the app bundle. Keep in sync with tests/screenshots/devices.ts.
@@ -15,7 +15,7 @@ import type {
   CaptureJobStatus,
 } from "../contracts/IScreenshotOrchestrator";
 
-// Hardcoded device list — mirrors tests/screenshots/devices.ts
+// Hardcoded device list - mirrors tests/screenshots/devices.ts
 const DEVICES: DeviceInfo[] = [
   { slug: "iphone-se", name: "iPhone SE", width: 375, height: 667, category: "phone" },
   { slug: "iphone-16-pro", name: "iPhone 16 Pro", width: 393, height: 852, category: "phone" },
@@ -28,7 +28,7 @@ const DEVICES: DeviceInfo[] = [
   { slug: "desktop-fhd", name: "Desktop FHD", width: 1920, height: 1080, category: "desktop" },
 ];
 
-// Hardcoded route list — mirrors tests/screenshots/devices.ts
+// Hardcoded route list - mirrors tests/screenshots/devices.ts
 const ROUTES: RouteNode[] = [
   // Public
   { label: "landing", moduleId: "public", requiresAuth: false },

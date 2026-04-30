@@ -71,7 +71,7 @@ describe("Bubbles2DRenderer", () => {
       motionEmission: 0,
       ambientSpawnRate: 60,
     });
-    // One second of frames at 60fps — should reliably spawn many bubbles.
+    // One second of frames at 60fps - should reliably spawn many bubbles.
     for (let i = 0; i < 60; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
@@ -133,7 +133,7 @@ describe("Bubbles2DRenderer", () => {
     for (let i = 0; i < 120; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    // Can't directly read pool size externally — assert via draw-call rate.
+    // Can't directly read pool size externally - assert via draw-call rate.
     // With poolSize=50, each frame draws at most ~50 bubbles × (fill + stroke
     // + highlight) + pop fragments. Frame-over-frame call count should be
     // bounded. Absent pool cap, this would explode unboundedly.
@@ -179,7 +179,7 @@ describe("Bubbles2DRenderer", () => {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
     r.dispose();
-    // Call render again after dispose — should not crash.
+    // Call render again after dispose - should not crash.
     r.render(ctx, params, ALL_TIPS, 1 / 60);
     expect(true).toBe(true);
   });

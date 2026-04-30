@@ -1,5 +1,5 @@
 <!--
-  RetroMobileWarning — VGA display requirement dialog for TKA-OS v1.0
+  RetroMobileWarning - VGA display requirement dialog for TKA-OS v1.0
 
   Shown on screens under 768px width. Full-screen teal background with
   a centered Win95-style dialog warning about minimum display requirements.

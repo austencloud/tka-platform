@@ -13,7 +13,7 @@
  */
 
 import type { SequenceStep } from "../sequence-builder.js";
-import { LOOPType, SliceSize } from "./loop-types.js";
+import { LOOPType, Period } from "./loop-types.js";
 import { HALVED_LOOPS, QUARTERED_LOOPS } from "./loop-validator.js";
 import { findLetterByMotions } from "./letter-lookup.js";
 
@@ -52,7 +52,7 @@ export interface LOOPExecutionResult {
   /** Derived word from the transformation (may differ from seed) */
   derivedWord: string;
   loopType: LOOPType;
-  sliceSize: SliceSize;
+  period: Period;
   isCircular: boolean;
   /** Which beat indices are derived (not part of seed) */
   derivedBeatIndices: number[];
@@ -210,7 +210,7 @@ function executeRewound(
       seedWord: word,
       derivedWord: "",
       loopType: LOOPType.REWOUND,
-      sliceSize: SliceSize.HALVED,
+      period: Period.HALVED,
       isCircular: false,
       derivedBeatIndices: [],
       error: "Sequence must have at least 2 steps (start position + 1 beat)",
@@ -274,7 +274,7 @@ function executeRewound(
     seedWord: word,
     derivedWord,
     loopType: LOOPType.REWOUND,
-    sliceSize: SliceSize.HALVED,
+    period: Period.HALVED,
     isCircular: true,
     derivedBeatIndices,
   };
@@ -350,7 +350,7 @@ function createRewoundMotion(
 function executeStrictRotated(
   steps: SequenceStep[],
   word: string,
-  sliceSize: SliceSize,
+  period: Period,
   allPictographs: PictographData[]
 ): LOOPExecutionResult {
   // Validate sequence
@@ -363,7 +363,7 @@ function executeStrictRotated(
       seedWord: word,
       derivedWord: "",
       loopType: LOOPType.ROTATED,
-      sliceSize,
+      period,
       isCircular: false,
       derivedBeatIndices: [],
       error: "Sequence must have at least 2 steps (start position + 1 beat)",
@@ -378,7 +378,7 @@ function executeStrictRotated(
   const endPos = actualSteps[actualSteps.length - 1]!.endPosition;
   const positionPair = `${startPos},${endPos}`;
 
-  const validationSet = sliceSize === SliceSize.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
+  const validationSet = period === Period.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
   if (!validationSet.has(positionPair)) {
     return {
       success: false,
@@ -388,17 +388,17 @@ function executeStrictRotated(
       seedWord: word,
       derivedWord: "",
       loopType: LOOPType.ROTATED,
-      sliceSize,
+      period,
       isCircular: false,
       derivedBeatIndices: [],
-      error: `Invalid position pair for ${sliceSize} LOOP: ${startPos} → ${endPos}`,
+      error: `Invalid position pair for ${period} LOOP: ${startPos} → ${endPos}`,
     };
   }
 
   // Calculate how many steps to generate
   const originalLength = actualSteps.length;
   const entriesToAdd =
-    sliceSize === SliceSize.HALVED
+    period === Period.HALVED
       ? originalLength
       : originalLength * 3;
 
@@ -413,7 +413,7 @@ function executeStrictRotated(
     const finalIntendedLength = originalLength + entriesToAdd;
 
     // Get the corresponding beat from the first section
-    const matchingIndex = getMatchingIndex(nextStepNumber, finalIntendedLength, sliceSize);
+    const matchingIndex = getMatchingIndex(nextStepNumber, finalIntendedLength, period);
     const matchingStep = allStepsForGeneration[matchingIndex - 1];
 
     if (!matchingStep) {
@@ -425,7 +425,7 @@ function executeStrictRotated(
         seedWord: word,
         derivedWord: "",
         loopType: LOOPType.ROTATED,
-        sliceSize,
+        period,
         isCircular: false,
         derivedBeatIndices: [],
         error: `Failed to find matching step at index ${matchingIndex}`,
@@ -470,7 +470,7 @@ function executeStrictRotated(
     seedWord: word,
     derivedWord,
     loopType: LOOPType.ROTATED,
-    sliceSize,
+    period,
     isCircular: true,
     derivedBeatIndices,
   };
@@ -482,9 +482,9 @@ function executeStrictRotated(
 function getMatchingIndex(
   stepNumber: number,
   finalLength: number,
-  sliceSize: SliceSize
+  period: Period
 ): number {
-  if (sliceSize === SliceSize.QUARTERED) {
+  if (period === Period.QUARTERED) {
     const quarterLength = Math.floor(finalLength / 4);
     return stepNumber > quarterLength ? stepNumber - quarterLength : stepNumber;
   } else {
@@ -593,14 +593,14 @@ function getLocationIndex(loc: string): number {
  * @param steps - The sequence steps (including start position)
  * @param word - The seed word
  * @param loopType - Type of LOOP transformation
- * @param sliceSize - Halved (180°) or Quartered (90°)
+ * @param period - Halved (180°) or Quartered (90°)
  * @param allPictographs - Pictograph data for letter derivation
  */
 export function executeLOOP(
   steps: SequenceStep[],
   word: string,
   loopType: LOOPType,
-  sliceSize: SliceSize = SliceSize.HALVED,
+  period: Period = Period.HALVED,
   allPictographs: PictographData[] = []
 ): LOOPExecutionResult {
   switch (loopType) {
@@ -608,7 +608,7 @@ export function executeLOOP(
       return executeRewound(steps, word, allPictographs);
 
     case LOOPType.ROTATED:
-      return executeStrictRotated(steps, word, sliceSize, allPictographs);
+      return executeStrictRotated(steps, word, period, allPictographs);
 
     default:
       return {
@@ -619,7 +619,7 @@ export function executeLOOP(
         seedWord: word,
         derivedWord: "",
         loopType,
-        sliceSize,
+        period,
         isCircular: false,
         derivedBeatIndices: [],
         error: `LOOP type "${loopType}" is not yet implemented. Supported types: REWOUND, ROTATED`,

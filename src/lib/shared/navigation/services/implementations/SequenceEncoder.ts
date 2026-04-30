@@ -179,7 +179,7 @@ export class SequenceEncoder implements ISequenceEncoder {
    *
    * Pure motion data only. Sequence-level fields (word, loopType,
    * isCircular, gridMode, letters, positions) are derived at decode
-   * time from the motion primitives — see decode() for where the
+   * time from the motion primitives - see decode() for where the
    * derivers run.
    */
   encode(sequence: SequenceData): string {
@@ -596,7 +596,7 @@ export class SequenceEncoder implements ISequenceEncoder {
       return this.decode(flatEncoded);
     }
 
-    // Flat encoding — use existing decompression logic
+    // Flat encoding - use existing decompression logic
     return this.decodeWithCompression(data);
   }
 
@@ -714,17 +714,22 @@ export class SequenceEncoder implements ISequenceEncoder {
     const endLoc = LOCATION_ENCODE[motion.endLocation];
     const startOrient = ORIENTATION_ENCODE[motion.startOrientation];
     const endOrient = ORIENTATION_ENCODE[motion.endOrientation];
-    // Static and dash motions legitimately have no rotation direction.
-    // Fall back to the NO_ROTATION encoding so the motion still round-trips
-    // through the URL instead of being rejected as "missing required fields".
+    // Legacy Firestore docs may store "no_rotation" (snake_case) instead of
+    // "noRotation" (camelCase). Normalize before lookup so all motions encode.
+    const normalizedRotDir =
+      motion.rotationDirection === ("no_rotation" as RotationDirection)
+        ? RotationDirection.NO_ROTATION
+        : motion.rotationDirection;
     const rotation =
-      ROTATION_ENCODE[motion.rotationDirection] ??
+      ROTATION_ENCODE[normalizedRotDir] ??
       (motion.motionType === "static" || motion.motionType === "dash"
         ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
         : undefined);
     const turns = motion.turns === "fl" ? "f" : String(motion.turns);
     const type = MOTION_TYPE_ENCODE[motion.motionType];
-    const prop = PROP_TYPE_ENCODE[motion.propType];
+    // propType is a viewer preference, not sequence data — legacy Firestore
+    // docs may omit it entirely. Default to STAFF (same as createMotionData).
+    const prop = PROP_TYPE_ENCODE[motion.propType] ?? PROP_TYPE_ENCODE[PropType.STAFF];
 
     if (
       !startLoc ||

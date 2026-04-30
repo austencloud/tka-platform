@@ -1,7 +1,7 @@
 /**
  * ISmokeOverlayRenderer
  *
- * Interface for the Canvas2D smoke overlay — per-tip curl-noise puff
+ * Interface for the Canvas2D smoke overlay - per-tip curl-noise puff
  * emitter with palette-driven color + behavior. Wraps `Smoke2DRenderer`
  * and owns its own absolutely-positioned canvas element, following the
  * bloom/echo/water/bubbles/petals overlay pattern.

@@ -199,7 +199,7 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
-  /* ─── Bio section (kept inline — small) ──────────────────────────────────── */
+  /* ─── Bio section (kept inline - small) ──────────────────────────────────── */
 
   .section-card {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));

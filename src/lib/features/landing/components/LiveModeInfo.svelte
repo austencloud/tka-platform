@@ -26,9 +26,9 @@
       .replace("Strict ", "");
   }
 
-  // Format slice size
-  function formatSliceSize(sliceSize: string): string {
-    return sliceSize.toLowerCase();
+  // Format period
+  function formatPeriod(period: string): string {
+    return period.toLowerCase();
   }
 </script>
 
@@ -44,8 +44,8 @@
         {formatLoopType(broadcastState.currentSequence.loopType)}
       </span>
       <span class="separator">·</span>
-      <span class="slice-size">
-        {formatSliceSize(broadcastState.currentSequence.sliceSize)}
+      <span class="period">
+        {formatPeriod(broadcastState.currentSequence.period)}
       </span>
       <span class="separator">·</span>
       <span class="step-count">

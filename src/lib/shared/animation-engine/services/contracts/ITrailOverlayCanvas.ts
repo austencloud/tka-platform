@@ -1,6 +1,7 @@
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import type { AdditionalLayerRenderData } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
+import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 export interface TrailOverlayRenderParams {
   blueTrailPoints: TrailPoint[];
@@ -11,7 +12,7 @@ export interface TrailOverlayRenderParams {
   hasBlue: boolean;
   hasRed: boolean;
   additionalLayers?: AdditionalLayerRenderData[];
-  /** Raw prop states — overlay reads positions directly (fire-renderer pattern) */
+  /** Raw prop states - overlay reads positions directly (fire-renderer pattern) */
   blueProp?: PropState | null;
   redProp?: PropState | null;
   /** Prop type names for correct trail endpoint resolution */
@@ -19,6 +20,8 @@ export interface TrailOverlayRenderParams {
   redPropType?: string | null;
   /** Current animation time in ms (performance.now() or virtualTime) */
   currentTime: number;
+  /** Per-tip effect assignments — gates which tips capture trail points */
+  tipEffectMap?: TipEffectMap;
 }
 
 export interface ITrailOverlayCanvas {

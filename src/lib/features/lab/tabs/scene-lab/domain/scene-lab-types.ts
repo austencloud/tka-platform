@@ -1,7 +1,7 @@
 /**
  * Scene Lab Types
  *
- * Scene identifier union — add new IDs here as we build new scenes.
+ * Scene identifier union - add new IDs here as we build new scenes.
  */
 
 export type SceneId = "winter" | "forest-firefly" | "forest-autumn";

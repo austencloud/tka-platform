@@ -4,7 +4,7 @@
  * Draws the "How to Read a Choreo Card" (front) and "Your Deck" (back)
  * info cards on Canvas 2D at MPC print dimensions.
  *
- * Content is static — no per-sequence data — so canvases are cached
+ * Content is static - no per-sequence data - so canvases are cached
  * after first render.
  */
 
@@ -135,7 +135,7 @@ export class InfoCardCanvasRenderer implements IInfoCardCanvasRenderer {
     const pronItems = [
       ["Α", "Alpha"], ["Β", "Beta"], ["Γ", "Gamma"], ["Σ", "Sigma"],
       ["Δ", "Delta"], ["Θ", "Theta"], ["Ω", "Omega"], ["Φ", "Phi"],
-      ["Ψ", "Psi"], ["Λ", "Lambda"], ["τ", "Tau"], ["—", "Dash"],
+      ["Ψ", "Psi"], ["Λ", "Lambda"], ["τ", "Tau"], ["-", "Dash"],
     ];
 
     const colCount = 4;

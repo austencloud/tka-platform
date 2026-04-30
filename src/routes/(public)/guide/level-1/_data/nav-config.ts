@@ -3,18 +3,18 @@ import type { GuideNavChapter } from "./guide-types";
 export const guideChapters: GuideNavChapter[] = [
   {
     slug: "positions-motions",
-    title: "1.0 — Positions & Motions",
+    title: "1.0 - Positions & Motions",
     sections: [
       { id: "the-grid", title: "The Grid" },
       { id: "hand-positions", title: "Hand Positions" },
       { id: "hand-motions", title: "Hand Motions" },
-      { id: "type-1-alpha-beta", title: "Type 1 — Dual-Shifts" },
+      { id: "type-1-alpha-beta", title: "Type 1 - Dual-Shifts" },
       { id: "type-1-gamma", title: "Gamma" },
-      { id: "type-2-shifts", title: "Type 2 — Shifts" },
-      { id: "type-3-cross-shifts", title: "Type 3 — Cross-Shifts" },
-      { id: "type-4-dash", title: "Type 4 — Dash" },
-      { id: "type-5-dual-dash", title: "Type 5 — Dual-Dash" },
-      { id: "type-6-static", title: "Type 6 — Static" },
+      { id: "type-2-shifts", title: "Type 2 - Shifts" },
+      { id: "type-3-cross-shifts", title: "Type 3 - Cross-Shifts" },
+      { id: "type-4-dash", title: "Type 4 - Dash" },
+      { id: "type-5-dual-dash", title: "Type 5 - Dual-Dash" },
+      { id: "type-6-static", title: "Type 6 - Static" },
       { id: "staff-positions", title: "Staff Positions" },
       { id: "staff-motions", title: "Staff Motions" },
       { id: "negative-space", title: "Negative Space" },
@@ -22,10 +22,10 @@ export const guideChapters: GuideNavChapter[] = [
   },
   {
     slug: "letters",
-    title: "1.1 — Letters",
+    title: "1.1 - Letters",
     sections: [
-      { id: "codex-type-1-2", title: "Codex — Type 1/2" },
-      { id: "codex-type-3-6", title: "Codex — Type 3–6" },
+      { id: "codex-type-1-2", title: "Codex - Type 1/2" },
+      { id: "codex-type-3-6", title: "Codex - Type 3–6" },
       { id: "type-1-letters", title: "Type 1 Letters" },
       { id: "alpha-beta-words", title: "Alpha/Beta Words" },
       { id: "compound-letters", title: "Compound Letters" },
@@ -39,7 +39,7 @@ export const guideChapters: GuideNavChapter[] = [
   },
   {
     slug: "words",
-    title: "1.2 — Words & CAPs",
+    title: "1.2 - Words & CAPs",
     sections: [
       { id: "words-intro", title: "Words" },
       { id: "caps", title: "CAPs" },

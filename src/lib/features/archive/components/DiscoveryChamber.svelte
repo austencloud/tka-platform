@@ -4,7 +4,7 @@
 	 *
 	 * Provides the exhibit content, torch lighting, and cave ambiance
 	 * for the Discovery Chamber. Room geometry (walls, floor, ceiling)
-	 * is rendered by IndoorScene — this component only adds:
+	 * is rendered by IndoorScene - this component only adds:
 	 *   - Tablet exhibit at the pedestal position
 	 *   - Torch lights at mount positions
 	 *   - Cave-specific lighting (ambient, hemisphere)
@@ -39,7 +39,7 @@
 		};
 	});
 
-	// World offset for positioning objects — $derived to track props.solvedRoom reactively
+	// World offset for positioning objects - $derived to track props.solvedRoom reactively
 	const ox = $derived(props.solvedRoom.worldOffset.x);
 	const oy = $derived(props.solvedRoom.worldOffset.y);
 	const oz = $derived(props.solvedRoom.worldOffset.z);

@@ -191,8 +191,8 @@ export function registerGlobalShortcuts(
 
       // Show toast notification
       const message = newValue
-        ? "Dark Mode enabled — press L to toggle"
-        : "Dark Mode disabled — press L to toggle";
+        ? "Dark Mode enabled - press L to toggle"
+        : "Dark Mode disabled - press L to toggle";
       toast.info(message, 2500);
     },
   });

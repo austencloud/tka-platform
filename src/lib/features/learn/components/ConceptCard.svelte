@@ -30,7 +30,7 @@ Displays:
 
   const isClickable = $derived(status !== "locked");
 
-  // Status colors — referenced via --status-color CSS custom property
+  // Status colors - referenced via --status-color CSS custom property
   const statusColors: Record<ConceptStatus, string> = {
     locked: "var(--theme-text-dim, #6B7280)",
     available: "var(--prop-blue, #4A90E2)",

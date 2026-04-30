@@ -1,5 +1,5 @@
 <!--
-  RetroIcon — Pixel art SVG icon renderer for TKA-OS v1.0
+  RetroIcon - Pixel art SVG icon renderer for TKA-OS v1.0
 
   Renders a 32x32 pixel art SVG from the RETRO_ICONS library at the
   specified display size. Uses image-rendering: pixelated for crisp

@@ -469,7 +469,7 @@ export function buildSequenceWithEndConstraint(
 
 export interface LoopConstraint {
   loopType: "rewound" | "rotated";
-  sliceSize: "halved" | "quartered";
+  period: "halved" | "quartered";
   noBridges?: boolean;
 }
 
@@ -480,7 +480,7 @@ function extractPositionGroup(position: string): string {
 
 function computeValidEndPositionsForRotatedLoop(
   startPosition: string,
-  sliceSize: "halved" | "quartered",
+  period: "halved" | "quartered",
 ): string[] {
   const match = startPosition.match(/^([a-z]+)(\d+)$/);
   if (!match) return [];
@@ -501,7 +501,7 @@ function computeValidEndPositionsForRotatedLoop(
   const normalizedNum = num - baseOffset;
   const validEndPositions: string[] = [];
 
-  if (sliceSize === "halved") {
+  if (period === "halved") {
     const halfRotated = ((normalizedNum - 1 + 4) % groupSize) + 1 + baseOffset;
     validEndPositions.push(`${group}${halfRotated}`);
   } else {
@@ -539,7 +539,7 @@ export function buildSequenceForLoop(
 
     const startPosition = baseResult.startPosition;
     const endPosition = baseResult.endPosition;
-    const validEndPositions = computeValidEndPositionsForRotatedLoop(startPosition, loopConstraint.sliceSize);
+    const validEndPositions = computeValidEndPositionsForRotatedLoop(startPosition, loopConstraint.period);
 
     lastEndPosition = endPosition;
     lastValidEndPositions = validEndPositions;
@@ -568,7 +568,7 @@ export function buildSequenceForLoop(
   // Fallback: try with end-position constraint
   const lastResult = buildSequenceFromLetters(letters, allPictographs, 1);
   if (lastResult.isValid) {
-    const validEnds = computeValidEndPositionsForRotatedLoop(lastResult.startPosition, loopConstraint.sliceSize);
+    const validEnds = computeValidEndPositionsForRotatedLoop(lastResult.startPosition, loopConstraint.period);
     if (validEnds.length > 0) {
       // Try to add bridge letters to reach a valid end position
       const bridgeCandidates: Array<{ letter: PictographData; targetPosition: string }> = [];

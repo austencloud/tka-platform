@@ -22,7 +22,7 @@
     new Vector3(0, 1.7, 6),      // End: first-person position
   );
 
-  // The lookAt target also transitions — from floor center to eye-level ahead
+  // The lookAt target also transitions - from floor center to eye-level ahead
   const TARGET_CURVE = new CubicBezierCurve3(
     new Vector3(0, 0, 0),        // Start: floor center (what top-down sees)
     new Vector3(0, 0, 0),        // Control 1: stay on floor

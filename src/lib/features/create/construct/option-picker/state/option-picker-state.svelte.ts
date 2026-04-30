@@ -217,7 +217,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     error = null;
     sortMethod = "type";
     lastSequenceId = null;
-    // Do NOT reset isContinuousOnly — it's a persisted user preference
+    // Do NOT reset isContinuousOnly - it's a persisted user preference
     currentSequence = [];
     lastClickedSlot = null;
   }

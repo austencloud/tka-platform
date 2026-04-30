@@ -1,5 +1,5 @@
 <!--
-  RetroClippy — Staff Clippy assistant for TKA-OS v1.0
+  RetroClippy - Staff Clippy assistant for TKA-OS v1.0
 
   A brown staff SVG with googly eyes that track the mouse cursor,
   positioned in the bottom-right corner above the taskbar. Rotates
@@ -179,7 +179,7 @@
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Container — fixed bottom-right                                      */
+  /* Container - fixed bottom-right                                      */
   /* ------------------------------------------------------------------ */
   .clippy-container {
     position: absolute;

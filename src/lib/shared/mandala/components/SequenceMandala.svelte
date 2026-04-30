@@ -28,7 +28,7 @@
 	import type { IMandalaRenderer } from "../services/contracts/IMandalaRenderer";
 
 	interface Props {
-		// SequenceData — typed as any to avoid circular import issues across module boundaries
+		// SequenceData - typed as any to avoid circular import issues across module boundaries
 		sequence: any;
 		mode?: MandalaMode;
 		style?: "stroke" | "filled";
@@ -43,7 +43,7 @@
 		 */
 		darkMode?: boolean;
 		/**
-		 * Explicit prop type overrides for geometry — used when the host needs
+		 * Explicit prop type overrides for geometry - used when the host needs
 		 * the mandala to reflect a specific prop (e.g. landing page forcing
 		 * staff) rather than the user's current settings.
 		 */
@@ -89,7 +89,7 @@
 		renderer = getMandalaRenderer();
 	});
 
-	// Derive geometry from sequence steps — recomputes whenever sequence or
+	// Derive geometry from sequence steps - recomputes whenever sequence or
 	// prop type changes, so switching from staff to fan redraws the mandala
 	// with the fan's 5-tip geometry instead of the staff's 2-tip geometry.
 	const paths = $derived.by((): MandalaPaths | null => {
@@ -99,10 +99,10 @@
 		return calculator.calculate(sequence.steps, blueProp, redProp);
 	});
 
-	// Effective dark-mode flag — explicit prop wins, otherwise fall back to global settings.
+	// Effective dark-mode flag - explicit prop wins, otherwise fall back to global settings.
 	const effectiveDarkMode = $derived(darkMode ?? settingsService.settings.darkMode);
 
-	// Derive render options — card-back mode omits grid dots and background for a clean embed.
+	// Derive render options - card-back mode omits grid dots and background for a clean embed.
 	// Palette mirrors the actual pictograph arrow colors (--dm-motion-*) so the
 	// mandala's red/blue match what the user sees in the beat cells.
 	const renderOptions = $derived.by((): MandalaRenderOptions => {

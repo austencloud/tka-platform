@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Led3D — Threlte component for 3D LED effect.
+   * Led3D - Threlte component for 3D LED effect.
    *
    * Wraps LedRenderer3D with a useTask frame loop. Receives per-LED tip
    * positions and colors from the EffectOrchestrator3D, feeds them to the

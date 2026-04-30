@@ -191,7 +191,7 @@ export class GlobalArrowAdjustmentPersister
   }
 
   /**
-   * Append a history record. Fire-and-forget — never blocks the main operation.
+   * Append a history record. Fire-and-forget - never blocks the main operation.
    */
   private async appendHistory(
     input: {

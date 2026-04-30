@@ -64,11 +64,11 @@
   }
 
   function formatDate(ts: { toDate?: () => Date; seconds?: number } | null | undefined): string {
-    if (!ts) return "—";
+    if (!ts) return "-";
     // Firebase Timestamp has toDate(); plain objects from tests may have seconds
     if (typeof ts.toDate === "function") return ts.toDate().toLocaleDateString();
     if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleDateString();
-    return "—";
+    return "-";
   }
 </script>
 

@@ -1,12 +1,12 @@
 /**
- * settings-adapter — Persistence for TKA-OS desktop settings.
+ * settings-adapter - Persistence for TKA-OS desktop settings.
  *
  * Two-layer persistence:
  *   1. localStorage (fast, instant load, survives page refresh)
  *   2. Firebase via settingsState (cross-device sync, best-effort)
  *
  * The settingsState bridge is intentionally wrapped in try/catch because
- * the retro module boots before auth completes — Firebase will just get
+ * the retro module boots before auth completes - Firebase will just get
  * updated the next time settings change from an authenticated session.
  *
  * Domain: Retro Desktop Shell
@@ -35,7 +35,7 @@ const RETRO_DEFAULTS: RetroSettings = {
 };
 
 /**
- * Load retro settings. Reads from localStorage immediately — no async needed.
+ * Load retro settings. Reads from localStorage immediately - no async needed.
  * Falls back to built-in defaults if nothing is stored yet.
  */
 export function loadRetroSettings(): RetroSettings {
@@ -45,7 +45,7 @@ export function loadRetroSettings(): RetroSettings {
       return { ...RETRO_DEFAULTS, ...JSON.parse(stored) };
     }
   } catch {
-    // Corrupted storage — start fresh from defaults.
+    // Corrupted storage - start fresh from defaults.
   }
   return { ...RETRO_DEFAULTS };
 }
@@ -61,7 +61,7 @@ export function saveRetroSettings(settings: Partial<RetroSettings>): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
   } catch {
-    // Quota exceeded or private browsing — silently skip storage.
+    // Quota exceeded or private browsing - silently skip storage.
   }
 
   // Best-effort Firebase sync via settingsService singleton
@@ -77,7 +77,7 @@ export function saveRetroSettings(settings: Partial<RetroSettings>): void {
         );
       }
     }).catch(() => {
-      // Settings module not ready — Firebase sync will happen next save.
+      // Settings module not ready - Firebase sync will happen next save.
     });
   } catch {
     // Silently skip.

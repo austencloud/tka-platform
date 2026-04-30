@@ -191,7 +191,7 @@ export class ArenaOrchestrator implements IArenaOrchestrator {
   }
 
   private prefetchNextMatchup(): void {
-    // Run async without blocking — enrich with full data so it's ready
+    // Run async without blocking - enrich with full data so it's ready
     Promise.resolve().then(async () => {
       const raw = this.buildMatchup();
       this.nextMatchup = raw ? await this.enrichMatchup(raw) : null;

@@ -10,10 +10,10 @@
  * StrictMirroredLOOPExecutor.
  *
  * Period 4 structure:
- *   Q1 (beats 1..N)     — partial
- *   Q2 (beats N+1..2N)  — blue/red swapped version of Q1
- *   Q3 (beats 2N+1..3N) — copy of Q1 at advanced orientation
- *   Q4 (beats 3N+1..4N) — swapped version of Q3
+ *   Q1 (beats 1..N)     - partial
+ *   Q2 (beats N+1..2N)  - blue/red swapped version of Q1
+ *   Q3 (beats 2N+1..3N) - copy of Q1 at advanced orientation
+ *   Q4 (beats 3N+1..4N) - swapped version of Q3
  */
 
 import {
@@ -28,7 +28,7 @@ import {
   SWAPPED_POSITION_MAP,
   SWAPPED_LOOP_VALIDATION_SET,
 } from "../../domain/constants/strict-loop-position-maps";
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class StrictSwappedLOOPExecutor {
@@ -37,7 +37,7 @@ export class StrictSwappedLOOPExecutor {
     private gridPositionDeriver: IGridPositionDeriver
   ) {}
 
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -46,8 +46,8 @@ export class StrictSwappedLOOPExecutor {
     }
 
     const partialLength = sequence.length;
-    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
-    const totalLength = partialLength * period;
+    const periodCount = period === Period.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * periodCount;
     const beatsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;

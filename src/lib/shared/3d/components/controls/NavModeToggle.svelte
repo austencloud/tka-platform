@@ -4,7 +4,7 @@
    *
    * Three-way segmented control for the sequence viewer's navigation mode:
    * Orbit (drag to rotate around subject), Fly (WASD + mouse look, no gravity),
-   * Walk (grounded first-person — planned; currently disabled with a tooltip).
+   * Walk (grounded first-person - planned; currently disabled with a tooltip).
    *
    * Lives in the top-left of the 3D canvas overlay.
    */
@@ -28,19 +28,19 @@
       value: "orbit",
       label: "Orbit",
       icon: "fa-circle-notch",
-      title: "Orbit — drag to rotate around the performer",
+      title: "Orbit - drag to rotate around the performer",
     },
     {
       value: "fly",
       label: "Fly",
       icon: "fa-dove",
-      title: "Fly — WASD + mouse look, click canvas for pointer lock",
+      title: "Fly - WASD + mouse look, click canvas for pointer lock",
     },
     {
       value: "walk",
       label: "Walk",
       icon: "fa-shoe-prints",
-      title: "Walk — coming soon (grounded first-person)",
+      title: "Walk - coming soon (grounded first-person)",
       disabled: true,
     },
   ];
@@ -126,7 +126,7 @@
     font-size: 11px;
   }
 
-  /* Collapse labels on narrow overlays — icon-only */
+  /* Collapse labels on narrow overlays - icon-only */
   @container (max-width: 360px) {
     .segment-label {
       display: none;

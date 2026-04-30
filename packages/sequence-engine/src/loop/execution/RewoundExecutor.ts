@@ -8,10 +8,10 @@
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
 import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
-import type { SliceSize } from "../loop-types.js";
+import type { Period } from "../loop-types.js";
 
 export class RewoundExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], _sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], _period: Period): SequenceStep[] {
     if (sequence.length < 2) {
       throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
     }

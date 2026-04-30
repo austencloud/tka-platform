@@ -167,7 +167,7 @@ export function resolveBubbles3D(
     motionSpawnRate: 30,
     motionReferenceSpeed: 3.0,
     // 0.2 m/s at buoyancy=0 → 1.6 m/s at buoyancy=1. Bubbles always rise
-    // at least a little — a motionless bubble looks dead.
+    // at least a little - a motionless bubble looks dead.
     riseSpeed: 0.2 + intent.buoyancy * 1.4,
     // 1.0-3.0s lifetime driven by intensity (bigger bubbles last longer
     // before max-size pop takes over).
@@ -233,7 +233,7 @@ export function resolveSmoke3D(
 /**
  * Resolve ink for the 3D backend.
  *
- * Sprint 1 is a pure params echo — no 3D ink renderer exists yet. The
+ * Sprint 1 is a pure params echo - no 3D ink renderer exists yet. The
  * translator pre-composes the stroke-width/alpha/material decisions so
  * when 3D ink ships in a later phase it doesn't need to re-derive these
  * from raw intent. World-unit tunings mirror the 2D translator's px
@@ -246,7 +246,7 @@ export function resolveSmoke3D(
  * Palette-carried behavior matches the 2D translator: watercolor caps
  * opacity at 0.4 + doubles width; neon flips emissiveMaterial true so
  * the 3D renderer uses additive blend instead of flat-shaded. Those
- * five other palettes stay opaque — the default ink read in 3D is
+ * five other palettes stay opaque - the default ink read in 3D is
  * pigment, not glow.
  */
 export function resolveInk3D(

@@ -2,10 +2,10 @@
  * Layout Validator
  *
  * Validates a built museum grid for correctness:
- * 1. Flood-fill from spawn — every room must be reachable
- * 2. Overlap detection — no two rooms share bounding rectangles
- * 3. Spawn on walkable tile — player isn't stuck in a wall
- * 4. Door alignment — doors land on wall tiles (not void or floor interior)
+ * 1. Flood-fill from spawn - every room must be reachable
+ * 2. Overlap detection - no two rooms share bounding rectangles
+ * 3. Spawn on walkable tile - player isn't stuck in a wall
+ * 4. Door alignment - doors land on wall tiles (not void or floor interior)
  */
 
 import type { ILayoutValidator } from "../contracts/ILayoutValidator";

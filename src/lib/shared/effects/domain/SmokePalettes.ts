@@ -3,7 +3,7 @@
  *
  * First effect where palette carries **behavioral multipliers** (lifetime,
  * curl bias, rise bias) in addition to color slots. Rationale: smoke
- * palettes read as different effects entirely — incense is a thin thread
+ * palettes read as different effects entirely - incense is a thin thread
  * of mist, fog is a dense wall, genie is a fast colored swirl. Exposing
  * lifetime/curl/rise as separate user sliders would force the user to
  * rebuild each personality themselves on top of default behavior; baking
@@ -15,7 +15,7 @@
  *
  * Spec: docs/superpowers/specs/2026-04-15-effects-phase-1i-smoke-design.md
  *
- * Backend-agnostic — both 2D (Smoke2DRenderer) and 3D (SmokeRenderer3D)
+ * Backend-agnostic - both 2D (Smoke2DRenderer) and 3D (SmokeRenderer3D)
  * resolve a SmokeIntent's palette field through `resolveSmokePalette()`
  * and then sample core/edge/lifetime/curlBias/riseBias as needed.
  */
@@ -24,11 +24,11 @@ import type { SmokeIntent } from "./EffectsConfig";
 
 export interface SmokePalette {
   readonly id: SmokeIntent["palette"];
-  /** Hex — dense puff interior. */
+  /** Hex - dense puff interior. */
   readonly core: string;
-  /** Hex — puff rim / fade color. */
+  /** Hex - puff rim / fade color. */
   readonly edge: string;
-  /** Seconds — base lifetime before per-particle jitter. */
+  /** Seconds - base lifetime before per-particle jitter. */
   readonly lifetime: number;
   /** 0-2 multiplier on the user's curlStrength. */
   readonly curlBias: number;

@@ -1,12 +1,12 @@
 /**
  * EffectRendererManager
  *
- * Owns all 14 effect overlay renderers (fire, charcoal, LED, zap, sparkles,
- * echo, bloom, water, bubbles, petals, smoke, ink, frost, silk).
+ * Owns all 15 effect overlay renderers (fire, charcoal, LED, zap, sparkles,
+ * echo, bloom, water, bubbles, petals, smoke, ink, frost, silk, pulse).
  * Handles initialize/destroy lifecycle, config sync, and layer ordering.
  *
  * Extracted from AnimationEngine to reduce its line count.
- * This is a plain TypeScript class — no Svelte reactivity needed.
+ * This is a plain TypeScript class - no Svelte reactivity needed.
  */
 
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
@@ -26,8 +26,9 @@ import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
 import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
 import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
+import type { IPulseOverlayRenderer } from "../contracts/IPulseOverlayRenderer";
 import type { IAnimationRenderLoop } from "../contracts/IAnimationRenderLoop";
-import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
+import type { EffectType, TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
 import type { FireOverlayConfig } from "../../domain/types/FireTypes";
 import { DEFAULT_FIRE_CONFIG } from "../../domain/types/FireTypes";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
@@ -50,6 +51,7 @@ import { SmokeOverlayRenderer } from "./SmokeOverlayRenderer";
 import { InkOverlayRenderer } from "./InkOverlayRenderer";
 import { FrostOverlayRenderer } from "./FrostOverlayRenderer";
 import { SilkOverlayRenderer } from "./SilkOverlayRenderer";
+import { PulseOverlayRenderer } from "./PulseOverlayRenderer";
 import { TrailOverlayWebGL2 } from "./TrailOverlayWebGL2";
 import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
 
@@ -75,6 +77,7 @@ export class EffectRendererManager {
   inkRenderer: IInkOverlayRenderer | null = null;
   frostRenderer: IFrostOverlayRenderer | null = null;
   silkRenderer: ISilkOverlayRenderer | null = null;
+  pulseRenderer: IPulseOverlayRenderer | null = null;
 
   // ── Configs ─────────────────────────────────────────────────────────
   fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
@@ -99,6 +102,7 @@ export class EffectRendererManager {
   prevHasInkTips = false;
   prevHasFrostTips = false;
   prevHasSilkTips = false;
+  prevHasPulseTips = false;
 
   // ── Dependencies (injected) ─────────────────────────────────────────
   private containerElement: HTMLDivElement | null = null;
@@ -214,7 +218,7 @@ export class EffectRendererManager {
 
   /**
    * Initialize or destroy the zap (lightning) overlay based on prevHasZapTips.
-   * Mirrors syncCharcoalOverlay — the zap overlay is a Canvas2D layer that
+   * Mirrors syncCharcoalOverlay - the zap overlay is a Canvas2D layer that
    * draws procedural arcs between prop tips on top of fire/trails.
    */
   syncZapOverlay(): void {
@@ -583,6 +587,37 @@ export class EffectRendererManager {
     this.triggerRender();
   }
 
+  syncPulseOverlay(): void {
+    const enabled = this.prevHasPulseTips;
+
+    if (enabled) {
+      if (!this.pulseRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.pulseRenderer = new PulseOverlayRenderer();
+        const success = this.pulseRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize,
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            pulseRenderer: this.pulseRenderer,
+          });
+        } else {
+          this.pulseRenderer = null;
+        }
+      }
+    } else {
+      if (this.pulseRenderer?.isInitialized()) {
+        this.pulseRenderer.dispose();
+        this.pulseRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ pulseRenderer: null });
+    }
+
+    this.triggerRender();
+  }
+
   /**
    * Initialize or destroy the LED overlay based on config.enabled.
    * Creates the WebGL canvas lazily on first enable, removes on disable.
@@ -678,9 +713,12 @@ export class EffectRendererManager {
   /**
    * Set per-cell tip effect map. When provided, this map takes priority
    * over the global visibility manager's map in getFrameParams().
+   * Also syncs renderer lifecycle flags so per-cell assignments
+   * correctly initialize/destroy overlay renderers.
    */
   setCellTipEffectMap(map: TipEffectMap | undefined): void {
     this.cellTipEffectMap = map;
+    this.syncEffectFlagsFromEffectiveMap();
   }
 
   /**
@@ -689,6 +727,58 @@ export class EffectRendererManager {
    */
   setCellTipEffortMap(map: TipEffortMap | undefined): void {
     this.cellTipEffortMap = map;
+  }
+
+  // ── Effective-map queries ────────────────────────────────────────────
+
+  /**
+   * Check whether any tip in the effective map (cell-level override first,
+   * then global VM map) is assigned the given effect.
+   */
+  hasEffectInEffectiveMap(effect: EffectType): boolean {
+    const effectiveMap = this.cellTipEffectMap ??
+      (this.getVM ? this.getVM().getTipEffectMap() : {});
+    return Object.values(effectiveMap).some(a => a.effect === effect);
+  }
+
+  /**
+   * Re-derive all prevHasXTips flags (and ledConfig.enabled) from the
+   * effective tipEffectMap. Called when the cell-level map changes so that
+   * per-cell assignments correctly spin up / tear down overlay renderers.
+   */
+  private syncEffectFlagsFromEffectiveMap(): void {
+    const syncFlag = (
+      effect: EffectType,
+      prev: boolean,
+      set: (v: boolean) => void,
+      sync: () => void,
+    ): void => {
+      const has = this.hasEffectInEffectiveMap(effect);
+      if (has !== prev) {
+        set(has);
+        sync();
+      }
+    };
+
+    syncFlag("fire", this.prevHasFireTips, v => { this.prevHasFireTips = v; }, () => this.syncFireOverlay());
+    syncFlag("charcoal", this.prevHasCharcoalTips, v => { this.prevHasCharcoalTips = v; }, () => this.syncCharcoalOverlay());
+    syncFlag("zap", this.prevHasZapTips, v => { this.prevHasZapTips = v; }, () => this.syncZapOverlay());
+    syncFlag("sparkles", this.prevHasSparklesTips, v => { this.prevHasSparklesTips = v; }, () => this.syncSparklesOverlay());
+    syncFlag("echo", this.prevHasEchoTips, v => { this.prevHasEchoTips = v; }, () => this.syncEchoOverlay());
+    syncFlag("bloom", this.prevHasBloomTips, v => { this.prevHasBloomTips = v; }, () => this.syncBloomOverlay());
+    syncFlag("water", this.prevHasWaterTips, v => { this.prevHasWaterTips = v; }, () => this.syncWaterOverlay());
+    syncFlag("bubbles", this.prevHasBubblesTips, v => { this.prevHasBubblesTips = v; }, () => this.syncBubblesOverlay());
+    syncFlag("petals", this.prevHasPetalsTips, v => { this.prevHasPetalsTips = v; }, () => this.syncPetalsOverlay());
+    syncFlag("smoke", this.prevHasSmokeTips, v => { this.prevHasSmokeTips = v; }, () => this.syncSmokeOverlay());
+    syncFlag("ink", this.prevHasInkTips, v => { this.prevHasInkTips = v; }, () => this.syncInkOverlay());
+    syncFlag("frost", this.prevHasFrostTips, v => { this.prevHasFrostTips = v; }, () => this.syncFrostOverlay());
+    syncFlag("silk", this.prevHasSilkTips, v => { this.prevHasSilkTips = v; }, () => this.syncSilkOverlay());
+    syncFlag("pulse", this.prevHasPulseTips, v => { this.prevHasPulseTips = v; }, () => this.syncPulseOverlay());
+
+    const hasLed = this.hasEffectInEffectiveMap("led");
+    if (hasLed !== this.ledConfig.enabled) {
+      this.setLedConfig({ enabled: hasLed });
+    }
   }
 
   // ── Layer Ordering ──────────────────────────────────────────────────
@@ -719,6 +809,7 @@ export class EffectRendererManager {
     apply("ink", this.inkRenderer);
     apply("frost", this.frostRenderer);
     apply("silk", this.silkRenderer);
+    apply("pulse", this.pulseRenderer);
   }
 
   // ── Trail Overlay Factory ───────────────────────────────────────────
@@ -758,6 +849,7 @@ export class EffectRendererManager {
     this.inkRenderer?.resize(newSize, newSize);
     this.frostRenderer?.resize(newSize, newSize);
     this.silkRenderer?.resize(newSize, newSize);
+    this.pulseRenderer?.resize(newSize, newSize);
     this.charcoalRenderer?.resize(newSize, newSize);
     // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
     // Without this, after HMR the tracker uses stale positions from the old size.
@@ -840,6 +932,9 @@ export class EffectRendererManager {
     if (this.prevHasSilkTips && !this.silkRenderer?.isInitialized()) {
       this.syncSilkOverlay();
     }
+    if (this.prevHasPulseTips && !this.pulseRenderer?.isInitialized()) {
+      this.syncPulseOverlay();
+    }
   }
 
   /**
@@ -858,7 +953,7 @@ export class EffectRendererManager {
    * batched setLedConfig() call.
    */
   diffLedConfigFromVM(vm: AnimationVisibilityStateManager): Partial<LedOverlayConfig> {
-    const ledEnabled = vm.hasEffect("led");
+    const ledEnabled = this.hasEffectInEffectiveMap("led");
     const ledPatternId = vm.getLedPatternId();
     const ledColor = vm.getLedPrimaryColor();
     const ledSecondaryColor = vm.getLedSecondaryColor();
@@ -919,6 +1014,8 @@ export class EffectRendererManager {
     this.frostRenderer = null;
     this.silkRenderer?.dispose();
     this.silkRenderer = null;
+    this.pulseRenderer?.dispose();
+    this.pulseRenderer = null;
   }
 
   // ── Private helpers ─────────────────────────────────────────────────

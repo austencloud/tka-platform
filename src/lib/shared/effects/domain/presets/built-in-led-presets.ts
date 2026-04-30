@@ -4,7 +4,7 @@ export const BUILT_IN_LED_PRESETS: EffectsPreset[] = [
   {
     id: "led-green-glow",
     name: "Green Glow",
-    description: "Solid green at high brightness — the classic pixel poi look.",
+    description: "Solid green at high brightness - the classic pixel poi look.",
     effectType: "led",
     builtIn: true,
     previewColors: ["#00ff88", "#00ff88"],

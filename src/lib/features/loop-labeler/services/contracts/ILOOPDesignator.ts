@@ -1,4 +1,4 @@
-import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 /**
  * Base LOOP component ID
@@ -19,7 +19,7 @@ export type ComponentId =
 export interface LOOPDesignation {
   components: ComponentId[];
   loopType: string | null;
-  sliceSize?: SliceSize | null; // Only relevant when "rotated" component is selected
+  period?: Period | null; // Only relevant when "rotated" component is selected
 }
 
 /**
@@ -29,7 +29,7 @@ export interface SectionDesignation {
   steps: number[]; // Beat numbers in this section
   components: ComponentId[];
   loopType: string | null;
-  sliceSize?: SliceSize | null; // Only relevant when "rotated" component is selected
+  period?: Period | null; // Only relevant when "rotated" component is selected
 }
 
 /**

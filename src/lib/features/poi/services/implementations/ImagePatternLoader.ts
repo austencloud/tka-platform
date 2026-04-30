@@ -8,14 +8,14 @@ import type { StripPattern, StripFrame } from "../../domain/StripPattern";
  * - **Disc mode** (default): Tiles the image around the disc with pre-warping
  *   so each copy appears undistorted. Same approach as Ignis Pixel Utility.
  *   The image repeats N times around the circle, wider at the outer edge,
- *   narrower near the hub — compensating for the polar geometry.
+ *   narrower near the hub - compensating for the polar geometry.
  *
- * - **Strip mode**: Raw import — each column = one frame, each row = one LED.
+ * - **Strip mode**: Raw import - each column = one frame, each row = one LED.
  *   For pre-made POV strip images from other tools.
  */
 export class ImagePatternLoader implements IImagePatternLoader {
   /**
-   * Hub fraction — must match the disc renderer's innerRadius ratio.
+   * Hub fraction - must match the disc renderer's innerRadius ratio.
    */
   static readonly HUB_FRACTION = 0.15;
 
@@ -32,8 +32,8 @@ export class ImagePatternLoader implements IImagePatternLoader {
    * 1. Calculates how many times the image tiles around the disc based on
    *    its aspect ratio (so each copy has correct proportions at mid-radius).
    * 2. For each strip pixel (frame, led), maps to the source image with
-   *    radius-dependent horizontal scaling — wider at outer edge, narrower
-   *    near hub — so the disc preview shows undistorted copies.
+   *    radius-dependent horizontal scaling - wider at outer edge, narrower
+   *    near hub - so the disc preview shows undistorted copies.
    */
   fromDiscImage(imageData: ImageData, targetLedCount: number): StripPattern {
     const { width: imgW, height: imgH, data: pixelData } = imageData;
@@ -120,7 +120,7 @@ export class ImagePatternLoader implements IImagePatternLoader {
   }
 
   /**
-   * Strip mode — each column = one frame, each row = one LED.
+   * Strip mode - each column = one frame, each row = one LED.
    * For importing pre-made POV strip images from other tools.
    */
   fromStripImage(imageData: ImageData, targetLedCount: number): StripPattern {

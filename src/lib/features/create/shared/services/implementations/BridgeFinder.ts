@@ -25,7 +25,7 @@ import type { IOrientationAlignmentCalculator } from "../contracts/IOrientationA
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   LOOPType,
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
   HALVED_LOOPS,
@@ -188,31 +188,31 @@ export class BridgeFinder implements IBridgeFinder {
     newEndPosition: GridPosition
   ): {
     available: LOOPOption[];
-    sliceSize: SliceSize;
+    period: Period;
   } {
     const positionPair = `${startPosition},${newEndPosition}`;
     const isHalvedValid = HALVED_LOOPS.has(positionPair);
     const isQuarteredValid = QUARTERED_LOOPS.has(positionPair);
     const isAlreadyComplete = newEndPosition === startPosition;
 
-    let sliceSize = SliceSize.HALVED;
+    let period = Period.HALVED;
     if (isQuarteredValid) {
-      sliceSize = SliceSize.QUARTERED;
+      period = Period.QUARTERED;
     }
 
     // Get LOOP options from validator
     const { available } = this.loopValidator.getLOOPOptionsForPositionPair(
       startPosition,
       newEndPosition,
-      sliceSize
+      period
     );
 
     // If it's already complete or has valid LOOP position, return available options
     if (isAlreadyComplete || isHalvedValid || isQuarteredValid) {
-      return { available, sliceSize };
+      return { available, period };
     }
 
-    return { available: [], sliceSize };
+    return { available: [], period };
   }
 
   /**

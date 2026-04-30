@@ -93,11 +93,11 @@ export function openSequenceOverlay(
 	}
 
 	// Reflect the sequence in the URL using the same short-code system QR codes
-	// use. This way, HMR and hard-refresh land back on the same viewer — the
+	// use. This way, HMR and hard-refresh land back on the same viewer - the
 	// drawer bootstrap watcher picks up ?v=<code> and reopens the drawer.
 	// Content-addressed: replaying the same sequence returns the same code.
 	if (!options?.fromUrl && typeof window !== 'undefined') {
-		// Strip any stale ?v= from a prior sequence synchronously — if we
+		// Strip any stale ?v= from a prior sequence synchronously - if we
 		// don't, the URL will show the previous code until the new mint
 		// completes, and if the new mint fails silently the wrong code stays.
 		const url = new URL(window.location.href);
@@ -111,7 +111,7 @@ export function openSequenceOverlay(
 	}
 }
 
-/** Resolves once authState.loading flips false — lets mint wait for Firebase
+/** Resolves once authState.loading flips false - lets mint wait for Firebase
  *  auth to settle before writing, so the fast-click-after-reload case still
  *  gets the canonical 6-char code instead of falling back to the long inline
  *  encoding. Gives up after 5s (Firebase auth usually settles in <1s; if it
@@ -157,7 +157,7 @@ async function mintAndSyncShortCode(sequence: SequenceData, token: number): Prom
 			code = offline.code;
 		} catch (offlineError) {
 			console.warn(
-				'[SequenceViewerOverlay] URL sync failed — neither Firestore nor offline encoding succeeded.',
+				'[SequenceViewerOverlay] URL sync failed - neither Firestore nor offline encoding succeeded.',
 				{ firebaseError, offlineError },
 			);
 			return;
@@ -178,7 +178,7 @@ async function mintAndSyncShortCode(sequence: SequenceData, token: number): Prom
  * (or popstate handler will call this when back is pressed).
  */
 export function closeSequenceOverlay(): void {
-	// Strip ?v= from the URL unconditionally — the drawer is closing, so no
+	// Strip ?v= from the URL unconditionally - the drawer is closing, so no
 	// sequence should be reflected in the URL. Doing this here instead of
 	// relying on the dismiss handler's history.back() means the URL stays
 	// in sync even when the in-app mint never ran (offline, unauthenticated,

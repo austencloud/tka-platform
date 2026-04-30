@@ -131,7 +131,7 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
 
     try {
       const hash = getSequencePathHash(seqData, totalSteps, stepDurationMs);
-      // Check global cache first — avoids re-precomputing after drag-to-move
+      // Check global cache first - avoids re-precomputing after drag-to-move
       const cached = globalPathCacheMap.get(hash);
       if (cached?.isValid()) {
         this.pathCache = cached;

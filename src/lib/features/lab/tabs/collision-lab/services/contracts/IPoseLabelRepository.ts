@@ -9,7 +9,7 @@ export interface IPoseLabelRepository {
   /**
    * Load all labels. Merges the canonical committed JSON (if present)
    * with any newer localStorage changes. Unlabeled poses are not
-   * present in the returned map — callers should treat missing keys
+   * present in the returned map - callers should treat missing keys
    * as "unlabeled".
    */
   loadAll(): Promise<Record<string, PoseLabel>>;

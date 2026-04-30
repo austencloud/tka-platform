@@ -6,7 +6,7 @@ import type {
 } from "../../domain/models/generate-models";
 import type {
   LOOPType,
-  SliceSize,
+  Period,
 } from "../../../circular/domain/models/circular-models";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -38,7 +38,7 @@ export interface CardHandlers {
   /** @deprecated Mode is now derived from word presence. Kept for interface compat. */
   handleGenerationModeChange?: (mode: GenerationMode) => void;
   handleLOOPTypeChange: (loopType: LOOPType) => void;
-  handleSliceSizeChange: (sliceSize: SliceSize) => void;
+  handlePeriodChange: (period: Period) => void;
   handleStartEndChange?: (options: StartEndOptions) => void;
   handleGenerateClick?: () => Promise<void>;
   // Style card handlers
@@ -65,7 +65,7 @@ export interface CardHandlers {
     extraBridges: number;
     totalBridges: number;
     naturalLength: number;
-    /** LOOP-multiplied natural length (without extras) — the stepper floor */
+    /** LOOP-multiplied natural length (without extras) - the stepper floor */
     naturalDisplayLength: number;
   };
   // Trigger value that increments when positions are reset due to grid mode change

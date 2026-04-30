@@ -7,7 +7,7 @@
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { LOOPType, SliceSize } from "../circular/domain/models/circular-models";
+import { LOOPType, Period } from "../circular/domain/models/circular-models";
 import {
   GenerationMode,
   PropContinuity,
@@ -30,7 +30,7 @@ interface SerializedConfig {
   turnIntensity: number;
   gridMode: GridMode;
   propContinuity: PropContinuity;
-  sliceSize: SliceSize;
+  period: Period;
   loopType: LOOPType;
   timestamp: number;
   // 3-axis constraint system
@@ -56,7 +56,7 @@ function saveConfig(config: UIGenerationConfig): void {
       turnIntensity: config.turnIntensity,
       gridMode: config.gridMode as GridMode,
       propContinuity: config.propContinuity as PropContinuity,
-      sliceSize: config.sliceSize as SliceSize,
+      period: config.period as Period,
       loopType: config.loopType as LOOPType,
       timestamp: Date.now(),
       constraintPreset: config.constraintPreset,
@@ -116,8 +116,8 @@ function loadConfig(): UIGenerationConfig | null {
     if (data.propContinuity !== undefined) {
       result.propContinuity = data.propContinuity as PropContinuity;
     }
-    if (data.sliceSize !== undefined) {
-      result.sliceSize = data.sliceSize as SliceSize;
+    if (data.period !== undefined) {
+      result.period = data.period as Period;
     }
     if (data.loopType !== undefined) {
       // Migrate legacy "strict_*" prefixed LOOP types → clean names
@@ -179,7 +179,7 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   turnIntensity: 1.0,
   gridMode: GridMode.DIAMOND,
   propContinuity: PropContinuity.CONTINUOUS,
-  sliceSize: SliceSize.HALVED,
+  period: Period.HALVED,
   loopType: LOOPType.ROTATED,
   constraintPreset: "smooth",
   handPathMode: "mixed",
@@ -195,7 +195,7 @@ const GUEST_DEFAULT_OVERRIDES: Partial<UIGenerationConfig> = {
   level: 1,
   loopEnabled: true,
   loopType: LOOPType.ROTATED,
-  sliceSize: SliceSize.QUARTERED,
+  period: Period.QUARTERED,
 };
 
 // ===== Simple State Creator =====
@@ -306,8 +306,8 @@ export function createGenerationConfigState(
     updateConfig({ propContinuity: value });
   }
 
-  function onSliceSizeChanged(value: SliceSize) {
-    updateConfig({ sliceSize: value });
+  function onPeriodChanged(value: Period) {
+    updateConfig({ period: value });
   }
 
   function onLOOPTypeChanged(event: CustomEvent) {
@@ -337,7 +337,7 @@ export function createGenerationConfigState(
     onGridModeChanged,
     onGenerationModeChanged,
     onPropContinuityChanged,
-    onSliceSizeChanged,
+    onPeriodChanged,
     onLOOPTypeChanged,
   };
 }

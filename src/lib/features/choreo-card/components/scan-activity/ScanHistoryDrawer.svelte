@@ -81,7 +81,7 @@
           {#each events as e}
             <div class="event">
               <span class="when">{new Date(e.timestamp).toLocaleString()}</span>
-              <span class="where">{e.city ?? "—"}, {e.country ?? "—"}</span>
+              <span class="where">{e.city ?? "-"}, {e.country ?? "-"}</span>
               <span class="who">
                 {#if e.userId}signed-in{:else}anonymous{/if}
                 {#if e.deviceId}· device {e.deviceId.slice(0, 6)}…{/if}

@@ -6,7 +6,7 @@
  * shortcut commands (GENERATE, SPELL), and the REGISTER easter egg.
  * Unrecognized input produces the canonical "Bad command or file name" error.
  *
- * Input is case-insensitive — the parser uppercases before matching.
+ * Input is case-insensitive - the parser uppercases before matching.
  *
  * Domain: Retro DOS Era
  */

@@ -1,7 +1,7 @@
 /**
  * IBubblesOverlayRenderer
  *
- * Interface for the Canvas2D bubbles overlay — per-tip buoyant emitter with
+ * Interface for the Canvas2D bubbles overlay - per-tip buoyant emitter with
  * palette-driven shading. Wraps `Bubbles2DRenderer` and owns its own absolutely-
  * positioned canvas element, following the bloom/echo/water overlay pattern.
  *

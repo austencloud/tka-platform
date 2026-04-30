@@ -189,7 +189,7 @@
       </div>
     </div>
 
-    <!-- Application tracker — side panel that widens the modal -->
+    <!-- Application tracker - side panel that widens the modal -->
     {#if showTracker}
       <div class="tracker-side" data-animate="4">
         <h3 class="tracker-heading">My Application</h3>

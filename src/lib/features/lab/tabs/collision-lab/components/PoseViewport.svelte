@@ -2,7 +2,7 @@
   /**
    * PoseViewport
    *
-   * Renders the current collision-lab pose inside the shared Scene3D —
+   * Renders the current collision-lab pose inside the shared Scene3D -
    * the same scene used by the sequence viewer, so we get the forest
    * environment, grid planes, orbit controls, and lighting for free.
    *
@@ -19,7 +19,7 @@
    *
    * This nesting is the whole trick for correct IK. Avatar3D reads the
    * PropAnchor refs' world positions as IK targets, and Three.js computes
-   * those via the transform chain — so the props always sit on the visible
+   * those via the transform chain - so the props always sit on the visible
    * grid regardless of where the avatar is standing or which way it faces.
    *
    * Scene3D also gets `avatarPositions=[footOffset]` so its internal Grid3D
@@ -129,7 +129,7 @@
   /**
    * Show the grid for both hands' planes. For same-plane poses this is
    * a single plane; for cross-plane poses (the main reason this lab
-   * exists) it's two planes — a wall + wheel intersection, for example.
+   * exists) it's two planes - a wall + wheel intersection, for example.
    */
   const visiblePlanes = $derived.by<Set<Plane>>(() => {
     const pose = labCtx.state.currentPose;
@@ -161,7 +161,7 @@
     { x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0, facingAngle: 0 },
   ];
 
-  // PropAnchor refs — Avatar3D reads world positions from these for IK.
+  // PropAnchor refs - Avatar3D reads world positions from these for IK.
   let bluePropAnchorRef = $state<Group | undefined>(undefined);
   let redPropAnchorRef = $state<Group | undefined>(undefined);
 
@@ -243,7 +243,7 @@
           BUT: since Scene3D renders its grid at its own origin (not at
           rig root + gridOffset), we'd double up the offset if we nested
           our props under the rig. So instead, we keep this group at the
-          SAME world position as Scene3D's grid — by NOT applying the rig
+          SAME world position as Scene3D's grid - by NOT applying the rig
           transform. That means props at grid-local coordinates line up.
         -->
       </T.Group>

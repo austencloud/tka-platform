@@ -31,8 +31,8 @@ import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   );
 
   function formatParamValue(value: unknown): string {
-    if (value === null || value === undefined) return "—";
-    if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+    if (value === null || value === undefined) return "-";
+    if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
     return String(value);
   }
 
@@ -54,7 +54,7 @@ import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
       lines.push("Parameters:");
       for (const [key, value] of Object.entries(additionalData)) {
         const display = formatParamValue(value);
-        if (display !== "—")
+        if (display !== "-")
           lines.push(`  ${formatParamLabel(key)}: ${display}`);
       }
     }
@@ -213,7 +213,7 @@ import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
               {#if additionalData}
                 {#each Object.entries(additionalData) as [key, value]}
                   {@const display = formatParamValue(value)}
-                  {#if display !== "—"}
+                  {#if display !== "-"}
                     <span class="param-label">{formatParamLabel(key)}</span>
                     <span class="param-value">{display}</span>
                   {/if}

@@ -96,7 +96,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   const urlBlueProp = $derived($page.url.searchParams.get("bp"));
   const urlRedProp = $derived($page.url.searchParams.get("rp"));
 
-  // Guest preview mode — forces unauthenticated view for debugging shared link UX
+  // Guest preview mode - forces unauthenticated view for debugging shared link UX
   const forceGuest = $derived($page.url.searchParams.get("guest") === "1");
 
   // Sequence loading state
@@ -163,7 +163,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       registerDrawer(drawerId, handleBack);
     }
 
-    // Start sequence loading immediately — don't wait for services
+    // Start sequence loading immediately - don't wait for services
     void initializeRoute();
   });
 
@@ -206,7 +206,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
 
     if (urlBirthday && !seq.birthday) {
-      // Parse YYYYMMDD back into a Date — restore to birthday (original creation date),
+      // Parse YYYYMMDD back into a Date - restore to birthday (original creation date),
       // not createdAt (when added to library), so the field round-trips correctly
       const y = urlBirthday.slice(0, 4);
       const m = urlBirthday.slice(4, 6);
@@ -267,7 +267,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         } as SequenceData;
       }
     } catch {
-      // Silent failure — progressive enhancement only
+      // Silent failure - progressive enhancement only
     }
   }
 
@@ -364,7 +364,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       const shortCodeManager = getShortCodeManager();
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
 
-      // Fire-and-forget scan telemetry — only for genuine scans (not
+      // Fire-and-forget scan telemetry - only for genuine scans (not
       // refreshes or back/forward navigations or repeat session visits).
       const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
       if (
@@ -604,7 +604,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
                 />
               {/if}
 
-              <!-- Single persistent ViewerSplitPane — never destroyed, CSS grid transitions handle focus -->
+              <!-- Single persistent ViewerSplitPane - never destroyed, CSS grid transitions handle focus -->
               <ViewerSplitPane
                 sequence={ctx.effectiveSequence}
                 renderMode={isMobile ? '2d' : ctx.renderMode}
@@ -853,7 +853,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   /* Desktop: always a grid so the sidebar column can transition smoothly
-     from 0px to 560px. Use 0px (not 0fr) — fr and px can't interpolate. */
+     from 0px to 560px. Use 0px (not 0fr) - fr and px can't interpolate. */
   .viewer-and-export.desktop {
     display: grid;
     grid-template-columns: 1fr 0px;
@@ -872,7 +872,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     grid-template-columns: 1fr var(--export-sidebar-width);
   }
 
-  /* Export panel — grid child on desktop, flex child on mobile */
+  /* Export panel - grid child on desktop, flex child on mobile */
   .export-panel-container {
     overflow: hidden;
     overflow-y: auto;
@@ -898,7 +898,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  /* Footer — CSS grid row collapse for smooth height animation.
+  /* Footer - CSS grid row collapse for smooth height animation.
      grid-template-rows: 1fr → 0fr collapses without layout jumps. */
   .footer-collapse {
     display: grid;

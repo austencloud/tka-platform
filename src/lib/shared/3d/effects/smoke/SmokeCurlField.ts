@@ -2,7 +2,7 @@
  * Curl-noise sampling utility for smoke motion.
  *
  * Shared between 2D (Smoke2DRenderer) and 3D (SmokeRenderer3D). Authentic
- * swirling smoke requires a divergence-free velocity field — plain
+ * swirling smoke requires a divergence-free velocity field - plain
  * simplex noise produces sources and sinks, which stack particles on hot
  * spots instead of curling around them. Curl-noise solves this by taking
  * the rotation of a potential field: the resulting velocity is zero-
@@ -22,7 +22,7 @@
  * it approaches the spec's "tight" budget. If profiling shows this
  * dominates, `SampledCurlGrid2D` pre-bakes a 256×256 RGBA field of
  * (vx,vy) pairs at grid-node resolution, which makes per-particle
- * sampling a bilinear lookup — roughly 30x faster for the same quality.
+ * sampling a bilinear lookup - roughly 30x faster for the same quality.
  * The grid is regenerated whenever `time` advances past `regenerateEvery`
  * seconds so the field still evolves.
  */
@@ -120,7 +120,7 @@ export function simplex2D(x: number, y: number): number {
  * 2D curl-noise velocity from a scalar potential.
  *
  * Curl of a 2D scalar field φ is (∂φ/∂y, −∂φ/∂x). We animate the field
- * in time by evaluating a 3D-projection — offsetting the simplex lookup
+ * in time by evaluating a 3D-projection - offsetting the simplex lookup
  * by a time-dependent shift in a third pseudo-axis via a second sample
  * at an orthogonal phase. The result is a smoothly-evolving divergence-
  * free field in the XY plane.
@@ -149,13 +149,13 @@ export function curl2D(
  * Pre-baked curl-noise field on a regular grid, with bilinear sampling.
  *
  * The grid stores the (vx, vy) output of `curl2D` at each node. Per-
- * particle sampling becomes 4 node lookups + 2 lerps — roughly 30x
+ * particle sampling becomes 4 node lookups + 2 lerps - roughly 30x
  * faster than re-evaluating simplex on every particle every frame.
  *
  * Regeneration is amortized: the grid lives for `regenerateEvery` seconds
  * of simulation time, then is re-baked against the new `time` value.
  * With `regenerateEvery = 1/3` (≈3 Hz) and a 64×64 grid, that's ~12k
- * simplex calls per regeneration — one 4ms hiccup every 333ms, versus
+ * simplex calls per regeneration - one 4ms hiccup every 333ms, versus
  * 245k calls/sec continuously.
  *
  * World-space → grid-space mapping: the `domainSize` is the world-units
@@ -165,7 +165,7 @@ export function curl2D(
 export class SampledCurlGrid2D {
   private readonly size: number;
   private readonly domain: number;
-  private readonly cells: Float32Array; // size*size*2 — (vx, vy) per node
+  private readonly cells: Float32Array; // size*size*2 - (vx, vy) per node
   private bakedAt = -Infinity;
   private readonly regenerateEvery: number;
 

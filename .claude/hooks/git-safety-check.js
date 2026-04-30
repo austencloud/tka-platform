@@ -23,7 +23,7 @@ const rules = [
   { pattern: /git\s+add\s+\.\s*($|[;&|])/, msg: "git add . stages EVERYTHING including other sessions' work. Add specific files by name." },
 
   // Stash (any form — requires explicit user permission per CLAUDE.md)
-  { pattern: /git\s+stash\b/, msg: "git stash requires explicit user permission. Suggest committing instead." },
+  { pattern: /git\s+stash\b/, msg: "ABSOLUTELY FORBIDDEN. git stash destroys other sessions' uncommitted work. NEVER stash. Commit specific files instead." },
 
   // Branch creation (ALL work happens on main per CLAUDE.md)
   { pattern: /git\s+checkout\s+-b\s/, msg: "Branch creation is forbidden. All work happens on main." },

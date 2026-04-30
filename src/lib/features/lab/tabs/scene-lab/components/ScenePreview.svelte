@@ -8,9 +8,9 @@
    * - Orbit: standard OrbitControls (drag to rotate, scroll to zoom). Good
    *   for external-view tuning.
    * - Walk: grounded avatar that walks around with WASD. Gravity applies,
-   *   feet planted on snow. V cycles 1st/3rd person — in 3rd person you see
+   *   feet planted on snow. V cycles 1st/3rd person - in 3rd person you see
    *   the character walking. Uses the kinematic fallback path (no Rapier).
-   * - Fly: noclip free-fly — frictionless, no gravity, ground is irrelevant.
+   * - Fly: noclip free-fly - frictionless, no gravity, ground is irrelevant.
    *   First-person only, no visible avatar. For aerial scene exploration.
    */
 
@@ -30,7 +30,7 @@
 
   const { state: labState } = getSceneLabContext();
 
-  // Player state — shared by walk + fly modes so position persists across toggles.
+  // Player state - shared by walk + fly modes so position persists across toggles.
   const player = createSceneLabPlayerState();
 
   type CamMode = "orbit" | "walk" | "fly";
@@ -52,7 +52,7 @@
   // ground plane at userProportionsState.groundY (~-1.5m) using a shoulder-
   // centric convention where y=0 is shoulder level. We bridge the two by
   // shifting the scene content up so its ground lands where the controller
-  // expects feet — then avatar and scene agree on where the floor is.
+  // expects feet - then avatar and scene agree on where the floor is.
   const CAPSULE_HALF_EXTENT = 0.85;
   const sceneShiftY = $derived(
     -userProportionsState.groundY - CAPSULE_HALF_EXTENT
@@ -102,7 +102,7 @@
 
     if (changed) {
       clamping = true;
-      // No transition — the clamp should feel like a hard wall, not
+      // No transition - the clamp should feel like a hard wall, not
       // a rubber-band. setLookAt sets both at once so the dolly
       // distance stays intact.
       controls.setLookAt(
@@ -193,7 +193,7 @@
       />
     {:else if camMode === "fly"}
       <!-- Fly: physicsProvider always reports noclip, so controller takes its
-           full-3D-forward path — no gravity, pitch lifts you. First-person
+           full-3D-forward path - no gravity, pitch lifts you. First-person
            only, no avatar body. -->
       <UnifiedCameraController
         destinationId="scene-lab-fly"
@@ -245,7 +245,7 @@
     <button
       class:active={camMode === "orbit"}
       onclick={() => (camMode = "orbit")}
-      title="Orbit — drag to rotate, scroll to zoom"
+      title="Orbit - drag to rotate, scroll to zoom"
     >
       <i class="fas fa-rotate"></i> Orbit
     </button>
@@ -255,7 +255,7 @@
         camMode = "walk";
         player.resetSpawn();
       }}
-      title="Walk — grounded avatar, WASD to walk, V for 1st/3rd person"
+      title="Walk - grounded avatar, WASD to walk, V for 1st/3rd person"
     >
       <i class="fas fa-person-walking"></i> Walk
     </button>
@@ -265,7 +265,7 @@
         camMode = "fly";
         player.resetSpawn();
       }}
-      title="Fly — noclip free-flight, WASD + look direction"
+      title="Fly - noclip free-flight, WASD + look direction"
     >
       <i class="fas fa-feather"></i> Fly
     </button>
@@ -288,7 +288,7 @@
         onclick={() => {
           if (activeCameraMode !== CameraMode.THIRD_PERSON) togglePersonMode();
         }}
-        title="Third person — see your avatar (V)"
+        title="Third person - see your avatar (V)"
       >
         <i class="fas fa-user"></i> 3rd
       </button>

@@ -1,7 +1,7 @@
 /**
  * Placeable Object Registry
  *
- * Unified flat catalog of everything that can be placed in the museum editor —
+ * Unified flat catalog of everything that can be placed in the museum editor -
  * wall fixtures, floor furniture, and anything else the placement system supports.
  *
  * The picker panel browses this list. The placement system reads it to know where

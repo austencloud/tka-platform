@@ -19,12 +19,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
-import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { LOOP_TYPE_TAGS, RECIPE_PREFIX } from "../contracts/ICompositionalEncoder";
 import type { ICompositionalEncoder } from "../contracts/ICompositionalEncoder";
 import {
   getLoopExecutor,
-  getSliceSizeForTag,
+  getPeriodForTag,
   computeRecipeHash,
   enrichStepsWithGridPositions,
 } from "./compositional-utils";
@@ -50,20 +50,20 @@ export class CompositionalEncoder implements ICompositionalEncoder {
     // Step 2: Get the tag for this LOOP type.
     // Compound LOOP types (swapped_inverted, rotated_swapped, etc.) won't
     // have an entry in LOOP_TYPE_TAGS and will return null here. This is
-    // intentional — compound types fall back to flat encoding per the spec.
+    // intentional - compound types fall back to flat encoding per the spec.
     const loopTypeValue = String(detection.loopType);
     const tag = LOOP_TYPE_TAGS[loopTypeValue];
     if (!tag) return null;
 
-    // Step 3: Determine slice size.
-    // For rotated LOOPs, the detector returns the slice size directly.
-    // For non-rotated LOOPs (mirrored, flipped, etc.), sliceSize is null
-    // in the detection result — they're always HALVED.
-    const sliceSize = detection.sliceSize ?? SliceSize.HALVED;
+    // Step 3: Determine period.
+    // For rotated LOOPs, the detector returns the period directly.
+    // For non-rotated LOOPs (mirrored, flipped, etc.), period is null
+    // in the detection result - they're always HALVED.
+    const period = detection.period ?? Period.HALVED;
 
     // Step 4: Extract seed beats
     const seedSize =
-      sliceSize === SliceSize.QUARTERED
+      period === Period.QUARTERED
         ? Math.floor(sequence.steps.length / 4)
         : Math.floor(sequence.steps.length / 2);
     const seedSteps = sequence.steps.slice(0, seedSize);
@@ -80,7 +80,7 @@ export class CompositionalEncoder implements ICompositionalEncoder {
     };
     const seedEncoded = this.flatEncoder.encode(seedSequence);
 
-    // Step 6: Round-trip verify — reconstruct from seed and compare.
+    // Step 6: Round-trip verify - reconstruct from seed and compare.
     // Audit fix #6: hash is computed on uncompressed flat encoding (this.encode),
     // not on the compressed version (this.encodeWithCompression).
     const reconstructed = await this.reconstruct(
@@ -93,7 +93,7 @@ export class CompositionalEncoder implements ICompositionalEncoder {
     const reconstructedFlat = this.flatEncoder.encode(reconstructed);
     if (reconstructedFlat !== flatEncoded) {
       console.warn(
-        "[CompositionalEncoder] Round-trip mismatch — falling back to flat"
+        "[CompositionalEncoder] Round-trip mismatch - falling back to flat"
       );
       return null;
     }
@@ -120,7 +120,7 @@ export class CompositionalEncoder implements ICompositionalEncoder {
       const executor = await getLoopExecutor(tag);
       if (!executor) return null;
 
-      const sliceSize = getSliceSizeForTag(tag);
+      const period = getPeriodForTag(tag);
 
       // executeLOOP mutates the input array, so spread a copy.
       // It expects the start position at index 0, then seed beats.
@@ -153,7 +153,7 @@ export class CompositionalEncoder implements ICompositionalEncoder {
         inputSteps.unshift(startStep);
       }
 
-      const reconstructedSteps = executor.executeLOOP(inputSteps, sliceSize);
+      const reconstructedSteps = executor.executeLOOP(inputSteps, period);
 
       // The executor returns steps WITH the start position at index 0.
       // Separate them back out to match the original structure.

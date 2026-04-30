@@ -1,5 +1,5 @@
 <!--
-  RetroTutor — TUTOR.EXE HyperCard-style lessons app
+  RetroTutor - TUTOR.EXE HyperCard-style lessons app
 
   Three-tab educational app: Concepts (page-card metaphor with navigation),
   Quiz (multiple-choice with scoring), and Codex (master-detail reference).

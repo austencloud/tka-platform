@@ -35,7 +35,7 @@ export function createFlycamPhysicsProvider(
       return true;
     },
     setNoclip() {
-      // permanent noclip — ignore
+      // permanent noclip - ignore
     },
   };
 }

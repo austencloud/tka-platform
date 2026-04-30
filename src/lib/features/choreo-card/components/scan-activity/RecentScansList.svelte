@@ -22,7 +22,7 @@
 <div class="list">
   {#each rows as r (r.code + r.timestamp)}
     <button class="row" aria-label="View scan {r.code}" onclick={() => onRowClick(r.code)}>
-      <span class="city">{r.city ?? "—"}</span>
+      <span class="city">{r.city ?? "-"}</span>
       <span class="code">{r.code}</span>
       <span class="when">{ago(r.timestamp)}</span>
     </button>

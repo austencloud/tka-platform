@@ -145,7 +145,7 @@
         }
         parent = parent.parent;
       }
-      if (isGizmo) return null; // Click was on gizmo — don't change selection
+      if (isGizmo) return null; // Click was on gizmo - don't change selection
 
       // Skip instanced meshes (walls, floors, ceilings)
       if ((hit.object as any).isInstancedMesh) continue;
@@ -174,7 +174,7 @@
   function handlePointerDown(event: PointerEvent) {
     if (event.button !== 0) return; // Left click only
     if (gizmoDragging) return;
-    // Don't interfere with placement mode — PlacementGhost handles clicks
+    // Don't interfere with placement mode - PlacementGhost handles clicks
     if (museum3dEditorState.placementDef) return;
 
     // Defer so TransformControls processes first
@@ -274,7 +274,7 @@
     const dz = (nfz * forward + nrz * strafe) * speed;
     const dy = vertical * speed;
 
-    // Move both camera and orbit target together — OrbitControls maintains
+    // Move both camera and orbit target together - OrbitControls maintains
     // the relative offset between camera and target automatically.
     cam.position.x += dx;
     cam.position.y += dy;

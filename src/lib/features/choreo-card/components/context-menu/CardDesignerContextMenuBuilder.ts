@@ -8,7 +8,7 @@ import type { ContextMenuEntry } from "$lib/shared/components/context-menu/conte
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
 export interface ChoreoCardContextMenuDeps {
-  /** Optional — when provided, adds a "Card Settings…" entry. CardDesigner uses this to toggle its sidebar. */
+  /** Optional - when provided, adds a "Card Settings…" entry. CardDesigner uses this to toggle its sidebar. */
   onOpenSettings?: () => void;
   onRerender?: () => void;
   onSendTo?: () => void;

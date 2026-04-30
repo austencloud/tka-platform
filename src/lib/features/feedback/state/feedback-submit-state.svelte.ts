@@ -50,13 +50,13 @@ export function createFeedbackSubmitState() {
   // Submission status
   let submitStatus = $state<FeedbackSubmitStatus>("idle");
 
-  // Upload progress — non-null while submitting with images (fallback path)
+  // Upload progress - non-null while submitting with images (fallback path)
   let uploadProgress = $state<FeedbackUploadProgress | null>(null);
 
-  // Per-image staging state — tracks upload progress for each attached image
+  // Per-image staging state - tracks upload progress for each attached image
   let stagedImages = $state<Map<File, StagedImageState>>(new Map());
 
-  // Active upload handles for cancellation on removal (not reactive — internal bookkeeping)
+  // Active upload handles for cancellation on removal (not reactive - internal bookkeeping)
   const uploadHandles = new Map<File, StagedUploadHandle>();
 
   // Derived state
@@ -84,7 +84,7 @@ export function createFeedbackSubmitState() {
     });
     stagedImages = next;
 
-    // Handle completion/failure (fire and forget — state is updated via callback)
+    // Handle completion/failure (fire and forget - state is updated via callback)
     handle.promise.catch(() => {
       // Error state already set via the onProgress callback
     });
@@ -99,7 +99,7 @@ export function createFeedbackSubmitState() {
 
     const state = stagedImages.get(file);
     if (state?.status === "uploaded" && state.storagePath) {
-      // Already uploaded — delete from staging
+      // Already uploaded - delete from staging
       imageStager.deleteStaged(state.storagePath);
     }
 
@@ -108,7 +108,7 @@ export function createFeedbackSubmitState() {
     stagedImages = next;
   }
 
-  // Image staging — imperative triggers, not reactive effects.
+  // Image staging - imperative triggers, not reactive effects.
   // Effects would die when the component that created the singleton unmounts.
   function addImage(file: File) {
     images.push(file);
@@ -184,7 +184,7 @@ export function createFeedbackSubmitState() {
       });
 
       if (hasPending) {
-        // Wait silently — thumbnail progress already shows per-image state
+        // Wait silently - thumbnail progress already shows per-image state
         try {
           await Promise.all(pendingHandles.map((h) => h.promise));
         } catch {

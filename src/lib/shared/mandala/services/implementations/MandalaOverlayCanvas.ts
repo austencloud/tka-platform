@@ -43,7 +43,7 @@ export class MandalaOverlayCanvas implements IMandalaOverlayCanvas {
 	// so we don't show stale content from a different part of the sequence.
 	private lastStep = -1;
 
-	// Let props settle before drawing — the first few frames often have
+	// Let props settle before drawing - the first few frames often have
 	// props at intermediate positions before the animation engine places
 	// them, which produces artifact lines
 	private warmupFramesRemaining = OVERLAY_WARMUP_FRAMES;
@@ -114,7 +114,7 @@ export class MandalaOverlayCanvas implements IMandalaOverlayCanvas {
 
 		const { preparedPaths, progress, config, deltaTime, currentStep } = params;
 
-		// Let props settle before capturing — first frames often have
+		// Let props settle before capturing - first frames often have
 		// intermediate positions that produce artifact lines
 		if (this.warmupFramesRemaining > 0) {
 			this.warmupFramesRemaining--;
@@ -146,7 +146,7 @@ export class MandalaOverlayCanvas implements IMandalaOverlayCanvas {
 
 			const easedRamp = this.fadeRampProgress * this.fadeRampProgress;
 
-			// Use a long fade duration — about 1.5x the loop for gentle tail
+			// Use a long fade duration - about 1.5x the loop for gentle tail
 			const fadeDurationMs = 12000 * (config.fadeDurationMultiplier ?? 1.0);
 			const fadeAmount = this.computeFadeAmount(fadeDurationMs, deltaTime) * easedRamp;
 

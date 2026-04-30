@@ -8,7 +8,7 @@
  * The key composes PictographKeyHasher (single source of truth for all
  * motion and visibility properties) with cell-specific dimensions (size,
  * step number, browseViewMode). Any new field added to PictographKeyHasher
- * automatically flows through — no second place to update.
+ * automatically flows through - no second place to update.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";

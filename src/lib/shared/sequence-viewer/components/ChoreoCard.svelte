@@ -6,7 +6,7 @@
   - CardHeader (difficulty badge + LOOP glyph + word title)
   - CardGridLayout (grid section with cells, QR, mandalas)
   - CardFooter (name, notes, birthday)
-  - CellRenderer (per-cell images, overlays — used by CardGridLayout)
+  - CellRenderer (per-cell images, overlays - used by CardGridLayout)
 
   Owns: motion visibility, solo mode, context menu, animation/interactions,
   responsive containment, cell rendering pipeline, caching.
@@ -267,14 +267,14 @@
   let crossfadeActive = $state(false);
   let crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
   // Initialize to the prop value so the first render has the correct dark mode class.
-  // Do NOT initialize to false — that causes a one-frame flash where backgrounds
+  // Do NOT initialize to false - that causes a one-frame flash where backgrounds
   // render in light mode even though the images are rendered for dark mode.
   let activeDarkMode = $state(untrack(() => darkMode));
   let lastContentKey = "";
   let lastImageKey = "";
   // Tracks the portion of the render key that drives GRID STRUCTURE (cell
   // count, columns, durations, start-position row). Crossfade-swaps are
-  // only safe when this is unchanged — otherwise cells might shift
+  // only safe when this is unchanged - otherwise cells might shift
   // between old/new rows mid-transition and read as visual glitches.
   let lastGridStableKey = "";
 
@@ -298,10 +298,10 @@
   const showTKA = $derived(visibilitySettings?.tkaGlyph ?? true);
   const showReversals = $derived(visibilitySettings?.reversalIndicators ?? true);
 
-  // Motion visibility — when one hand is hidden, the sequence is a hand-path
+  // Motion visibility - when one hand is hidden, the sequence is a hand-path
   // view: letters and word become meaningless (letters are defined by both
   // hands combined), so we suppress the word heading. Level/LOOP stay.
-  // Glyph visibility — VTG/elemental/positions read from VM too so toggling
+  // Glyph visibility - VTG/elemental/positions read from VM too so toggling
   // those in the export panel invalidates the preview cache.
   const vm = getVisibilityStateManager();
   let glyphVisibilityVersion = $state(0);
@@ -320,7 +320,7 @@
     compositionManager.unregisterObserver(onCompositionChanged);
   });
 
-  // Start-position layout — "row" puts start in a top row spanning all columns,
+  // Start-position layout - "row" puts start in a top row spanning all columns,
   // "column" puts start in a left column. Per-step-count override, falls back
   // to global default. Read reactively via compositionVersion.
   const startPositionLayout = $derived.by<"row" | "column">(() => {
@@ -350,7 +350,7 @@
     return vm.getRawGlyphVisibility("positionsGlyph");
   });
 
-  // QR code state — generated async, cached by sequence ID + dark mode.
+  // QR code state - generated async, cached by sequence ID + dark mode.
   // The grid cell is always reserved (via qrGridPosition) so layout doesn't
   // shift when the QR image loads in.
   let qrDataUrl = $state<string | null>(null);
@@ -403,7 +403,7 @@
       return;
     }
 
-    // Generate async — read prop values outside the async callback
+    // Generate async - read prop values outside the async callback
     // to avoid tracking additional reactive dependencies
     const seq = sequence;
     const isDark = darkMode;
@@ -430,7 +430,7 @@
         }
       })
       .catch(() => {
-        // QR is optional — don't block the card
+        // QR is optional - don't block the card
       });
   });
 
@@ -451,7 +451,9 @@
   const loopComponents = $derived(
     loopDisplay.components.size > 0 ? loopDisplay.components : null
   );
-  const loopRotationSliceSize = $derived(loopDisplay.rotationSliceSize);
+  const loopRotationPeriod = $derived(loopDisplay.rotationPeriod);
+  const loopInversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const loopPeriod = $derived(loopDisplay.period);
 
   // Solo mode: hide dual-prop metadata (word, letters, difficulty, LOOP)
   // When browseViewMode has granularity "solo", we're showing one prop/hand only.
@@ -485,7 +487,7 @@
   const hasPathShapeMetadata = $derived(sequence?.metadata?.pathShape === "linear");
   const showFooter = $derived(showCreatorName || showNotes || showBirthday || hasPathShapeMetadata);
 
-  // Format birthday date — use the sequence's saved birthday when available.
+  // Format birthday date - use the sequence's saved birthday when available.
   // Values from Firestore may arrive as Timestamp objects instead of Date,
   // so coerce to Date before calling Date methods.
   const birthdayDate = $derived.by(() => {
@@ -500,7 +502,7 @@
   // Effective username
   const effectiveUserName = $derived(userName || authState.user?.displayName || "");
 
-  // Level badge colors — single source of truth shared with the image compositor
+  // Level badge colors - single source of truth shared with the image compositor
   const currentLevelStyle = $derived.by(() => {
     const style = DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
     return { bg: style.cssBg, border: style.border, text: style.text };
@@ -525,7 +527,7 @@
       }));
   });
 
-  // Effective columns — synchronously computed from layout tables so the grid
+  // Effective columns - synchronously computed from layout tables so the grid
   // updates immediately when includeStartPosition toggles (before async re-render).
   // Row layout: start sits in the top row, no extra column is added.
   // Column layout: start sits in its own left column, so beat cols + 1.
@@ -570,7 +572,7 @@
     prevEffectiveColumns = cols;
   });
 
-  // Effective rows — must match effective columns to keep aspect ratio correct.
+  // Effective rows - must match effective columns to keep aspect ratio correct.
   // When the column count comes from any override (prop, composition manager,
   // or isLongSequence), derive rows from that count instead of the layout table
   // (which assumes its own column count and would produce wrong rows).
@@ -603,7 +605,7 @@
     // Column layout only: mandala fill needs at least one col-1 empty between
     // start and QR. 6-count naturally lays out as 4×2 (packed); when mandala
     // is on, expand to 4×3 so col 1 has a single empty cell (Full mandala).
-    // Row layout doesn't need this — mandalas go in the top row alongside
+    // Row layout doesn't need this - mandalas go in the top row alongside
     // start/QR and don't require an extra row.
     if (
       showMandala
@@ -636,7 +638,7 @@
   const mandalaLayoutOverride = $derived(mandalaResult.layoutOverride);
   const mandalaPlacements = $derived(mandalaResult.placements);
 
-  // Final effective dims — override wins for the 4-count horizontal case.
+  // Final effective dims - override wins for the 4-count horizontal case.
   const effectiveColumns = $derived(mandalaLayoutOverride?.cols ?? baseColumns);
   const effectiveRows = $derived(mandalaLayoutOverride?.rows ?? baseRows);
 
@@ -645,7 +647,7 @@
   const previewAspectRatio = $derived.by(() => {
     if (!effectiveColumns || !effectiveRows) return 1;
 
-    // Width in cell units — use effectiveColumns so the aspect ratio updates
+    // Width in cell units - use effectiveColumns so the aspect ratio updates
     // instantly when includeStartPosition toggles (before async re-render).
     const gridWidth = effectiveColumns;
 
@@ -743,7 +745,7 @@
       bluePropType,
       redPropType,
       catDogModeEnabled,
-      // Never bake step numbers into the rendered blob — identical pictographs
+      // Never bake step numbers into the rendered blob - identical pictographs
       // at different beats must share the same cached image. Step numbers are
       // rendered as HTML overlays on top of the <img> instead.
       showStepNumbers: false,
@@ -895,7 +897,7 @@
 
   /**
    * Fast relayout: update grid positions and column/row counts without re-rendering images.
-   * Used when only columnCount or includeStartPosition changes — the pictograph images
+   * Used when only columnCount or includeStartPosition changes - the pictograph images
    * are identical, only their positions in the grid change.
    */
   function relayoutCells() {
@@ -951,7 +953,7 @@
       let cols: number;
       let rws: number;
 
-      // Detect mixed durations — determines uniform grid vs timeline rows
+      // Detect mixed durations - determines uniform grid vs timeline rows
       const mixed = detectMixedDurations(sequence.steps);
       hasMixedDurations = mixed;
 
@@ -1021,10 +1023,10 @@
       // Build render options once for all cells
       const renderOptions = buildRenderOptions();
 
-      // Only render the current mode — halves total render count
+      // Only render the current mode - halves total render count
       const isDark = darkMode;
 
-      // Check global cache — avoids re-rendering after drag-to-move
+      // Check global cache - avoids re-rendering after drag-to-move
       const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
       const cached = globalPreviewCache.get(cacheKey);
       if (cached && cached.columns === cols && cached.rows === rws) {
@@ -1058,7 +1060,7 @@
       }
 
       // Pre-populate ALL cells with placeholders immediately.
-      // This gives the grid its full dimensions from frame one — no layout shift
+      // This gives the grid its full dimensions from frame one - no layout shift
       // as individual cells render. Cells show a spinner until loaded.
       const placeholderCells: CellData[] = [];
 
@@ -1088,7 +1090,7 @@
       // The containerElement (.choreo-card-root) has parent-determined dimensions
       // (width: 100%; height: 100%), so its size is valid even before cells exist.
       // Without this, the first frame shows auto-sized content that snaps to
-      // calculated dimensions on the next frame — a visible jump.
+      // calculated dimensions on the next frame - a visible jump.
       updateContainedDimensions();
       if (containedWidth && cols > 0) {
         const newCw = containedWidth / cols;
@@ -1107,7 +1109,7 @@
       const totalCellCount = placeholderCells.length;
       let loadedCount = 0;
 
-      // Build per-cell render tasks ahead of time — we need the pictograph data,
+      // Build per-cell render tasks ahead of time - we need the pictograph data,
       // cell options (for mixed-duration widthMultiplier), and cache key for each.
       interface CellTask {
         cellIndex: number;           // -1 for start, 0..n-1 for steps
@@ -1181,7 +1183,7 @@
           const run = async () => {
             try {
               const imageUrl = await previewCellRenderer.renderCell(task.data, task.stepNumber, isDark, task.options);
-              // Only apply if the cell is still the placeholder we queued — a
+              // Only apply if the cell is still the placeholder we queued - a
               // later renderAllCells() may have replaced it with a newer render.
               const current = cells[cellArrayIndex];
               if (current && current.index === task.cellIndex && !current.isLoaded) {
@@ -1213,7 +1215,7 @@
         durationColCount,
       });
 
-      // Now safe to revoke old blob URLs — new ones are in the DOM
+      // Now safe to revoke old blob URLs - new ones are in the DOM
       for (const url of oldBlobUrls) {
         URL.revokeObjectURL(url);
       }
@@ -1260,7 +1262,7 @@
     // Flush any pending cleanup timer from a previous cross-fade BEFORE
     // reading the cache. Without this, a rapid toggle (dark→light→dark within
     // 400ms) can pull URLs from the cache that the pending timer is about to
-    // revoke — causing ERR_FILE_NOT_FOUND when the timer fires during our await.
+    // revoke - causing ERR_FILE_NOT_FOUND when the timer fires during our await.
     if (crossfadeTimer) {
       clearTimeout(crossfadeTimer);
       crossfadeTimer = null;
@@ -1272,7 +1274,7 @@
       const isDark = darkMode;
       const renderOptions = buildRenderOptions();
 
-      // Check global cache first — may already have the target mode rendered
+      // Check global cache first - may already have the target mode rendered
       const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
       const cached = globalPreviewCache.get(cacheKey);
 
@@ -1343,7 +1345,7 @@
       crossfadeActive = true;
 
       // Clean up after the CSS transition completes.
-      // Don't revoke fadeOutUrl blob URLs here — they may still be referenced
+      // Don't revoke fadeOutUrl blob URLs here - they may still be referenced
       // by globalPreviewCache entries for other modes (e.g. the opposite
       // motion-visibility state). Revoking them poisons the cache, causing
       // ERR_FILE_NOT_FOUND on the next toggle. URLs are revoked later by
@@ -1519,7 +1521,7 @@
 
   // Calculate "contain" dimensions - fill container while maintaining aspect ratio
   function updateContainedDimensions() {
-    // Don't recalculate during cell loading — aspect ratio and container
+    // Don't recalculate during cell loading - aspect ratio and container
     // size are stable, but ResizeObserver firings from cell content swaps
     // can cause micro-fluctuations that shift the card.
     if (suppressObserverUpdates) return;
@@ -1559,7 +1561,7 @@
         const widthConstrained = containerWidth;
         const hFromWidth = containerWidth / contentRatio;
         if (Number.isFinite(hFromWidth) && hFromWidth > containerHeight) {
-          // Card would be taller than container — constrain by height instead
+          // Card would be taller than container - constrain by height instead
           newHeight = containerHeight;
           const w = containerHeight * contentRatio;
           newWidth = Number.isFinite(w) ? w : null;
@@ -1613,7 +1615,7 @@
 
   // Track cell width for responsive sizing using ResizeObserver
   function updateCellWidth() {
-    // Don't update cellWidth while cells are loading sequentially —
+    // Don't update cellWidth while cells are loading sequentially -
     // fractional size changes from cell content swaps cascade into
     // header/footer height changes that cause visible jumps.
     if (suppressObserverUpdates) return;
@@ -1668,7 +1670,7 @@
 
     // Image key: props that affect the actual pictograph images (NOT grid positions).
     // effectiveColumns is included here so column count changes trigger a full
-    // re-render (not just relayout) — the grid structure, pass dividers, and
+    // re-render (not just relayout) - the grid structure, pass dividers, and
     // cell sizes all change when columns change.
     const gv = `${svtg ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}`;
     const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-cols:${effCols}-mv:${sbm ? "1" : "0"}${srm ? "1" : "0"}-gv:${gv}`;
@@ -1694,7 +1696,7 @@
     // Grid-structure key: anything that changes row/column count or cell
     // positions. When this is unchanged we can safely reuse the crossfade
     // path for image-content swaps (motion visibility toggle, glyph
-    // overlays, etc.) — each cell keeps its slot, only its image changes.
+    // overlays, etc.) - each cell keeps its slot, only its image changes.
     const gridStableKey = `${stepCount}-${durationKey}-cols:${effCols}-isp:${isp}`;
     const gridStable = gridStableKey === lastGridStableKey && cellsLoaded;
 
@@ -1713,7 +1715,7 @@
         relayoutCells();
       });
     } else if (gridStable && imageChanged) {
-      // Grid structure stable, only cell images need to swap — reuse the
+      // Grid structure stable, only cell images need to swap - reuse the
       // crossfade path so the transition reads as a smooth fade rather
       // than a visible pop. Covers motion-visibility toggles, VTG /
       // elemental / positions overlays, TKA glyph, reversal dots, etc.
@@ -1791,7 +1793,7 @@
 
   // Auto-scroll to keep highlighted step visible during playback.
   // Uses manual scrollTop instead of scrollIntoView() because scrollIntoView
-  // scrolls ALL ancestor scroll containers — on the landing page this causes
+  // scrolls ALL ancestor scroll containers - on the landing page this causes
   // the entire page to jump to the top when the sequence loops.
   $effect(() => {
     const stepIdx = highlightedStepIndex;
@@ -1816,7 +1818,7 @@
     }
   });
 
-  // Watch rerenderTrigger — parent increments to force a full cache-clearing re-render
+  // Watch rerenderTrigger - parent increments to force a full cache-clearing re-render
   let lastRerenderTrigger = 0;
   $effect(() => {
     const trigger = rerenderTrigger;
@@ -1840,7 +1842,7 @@
     // Synchronous cache probe: if the global cache already has this exact render,
     // populate cells immediately so the first paint shows content instead of a
     // loading skeleton flash. renderAllCells() would also hit the cache, but it's
-    // async — the component renders at least one frame with isLoading=true first.
+    // async - the component renders at least one frame with isLoading=true first.
     if (sequence?.steps?.length) {
       const renderOptions = buildRenderOptions();
       const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, darkMode, startPositionLayout);
@@ -1940,7 +1942,9 @@
         {wordVisible}
         {showLoopGlyph}
         {loopComponents}
-        {loopRotationSliceSize}
+        {loopRotationPeriod}
+        {loopInversionPeriod}
+        {loopPeriod}
         {scaledHeaderHeight}
         {badgeSize}
         {badgePadding}

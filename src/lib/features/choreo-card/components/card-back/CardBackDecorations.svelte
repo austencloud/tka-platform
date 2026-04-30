@@ -1,5 +1,5 @@
 <!--
-  CardBackDecorations.svelte — Theme-specific SVG decorations
+  CardBackDecorations.svelte - Theme-specific SVG decorations
 
   Renders inline SVG elements positioned behind card text.
   Uses actual shapes from the background package: real leaf SVG paths,
@@ -84,7 +84,7 @@
     <ellipse cx="130" cy="460" rx="120" ry="30" fill="#50dcb4" opacity="0.04" filter="url(#aurora-blur)"/>
     <ellipse cx="360" cy="390" rx="100" ry="25" fill="#50dcb4" opacity="0.03" filter="url(#aurora-blur)"/>
 
-    <!-- COMET: modeled on the actual CometSystem — nucleus, coma, dual tails, debris -->
+    <!-- COMET: modeled on the actual CometSystem - nucleus, coma, dual tails, debris -->
     <!-- Positioned in upper-right empty area, arcing across -->
     <g transform="translate(410, 105)" opacity="0.45">
       <defs>
@@ -220,7 +220,7 @@
     <path d="M420,0 L400,300 L450,300Z" fill="#0891b2" opacity="0.015"/>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- TROPICAL FISH 1 — large, lower right area                     -->
+    <!-- TROPICAL FISH 1 - large, lower right area                     -->
     <!-- Rounder body, luminous rainbow gradient, gossamer fins        -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <g transform="translate(370,555) scale(-1,1)" opacity="0.22" filter="url(#fish-glow)">
@@ -261,7 +261,7 @@
       <line x1="34" y1="1" x2="44" y2="10" stroke="#065f82" stroke-width="0.25" opacity="0.35"/>
       <line x1="34" y1="1" x2="44" y2="14" stroke="#065f82" stroke-width="0.25" opacity="0.4"/>
       <line x1="34" y1="1" x2="43" y2="18" stroke="#065f82" stroke-width="0.25" opacity="0.5"/>
-      <!-- Eye: layered for depth — sclera, iris, pupil, highlight -->
+      <!-- Eye: layered for depth - sclera, iris, pupil, highlight -->
       <circle cx="-20" cy="-8" r="5" fill="#0a1628" opacity="0.8"/>
       <circle cx="-20" cy="-8" r="4" fill="#164e63" opacity="0.6"/>
       <circle cx="-20" cy="-8" r="2.5" fill="#001122" opacity="0.8"/>
@@ -271,7 +271,7 @@
     </g>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- TROPICAL FISH 2 — smaller, upper area                        -->
+    <!-- TROPICAL FISH 2 - smaller, upper area                        -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <g transform="translate(400,185) scale(0.65)" opacity="0.17" filter="url(#fish-glow)">
       <path d="M-26,0 C-24,-15 -14,-24 -4,-25 C8,-25 18,-20 24,-12 C28,-6 30,-2 30,0 C30,3 28,8 24,14 C18,22 8,25 -4,25 C-14,24 -24,14 -26,0Z" fill="url(#f2-body)"/>
@@ -300,7 +300,7 @@
     </g>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- JELLYFISH — luminous translucent bell, flowing tentacles      -->
+    <!-- JELLYFISH - luminous translucent bell, flowing tentacles      -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <g transform="translate(95,345)" opacity="0.2">
       <!-- Ambient glow (blurred) -->

@@ -83,7 +83,7 @@
           });
         }
       } catch {
-        // eachDayOfInterval throws if start > end — skip malformed data
+        // eachDayOfInterval throws if start > end - skip malformed data
       }
 
       // Deadline entry
@@ -155,7 +155,7 @@
   </div>
 
   <!-- Month grid -->
-  <div class="month-grid" role="grid" aria-label="Monthly calendar — {monthTitle}">
+  <div class="month-grid" role="grid" aria-label="Monthly calendar - {monthTitle}">
     <!-- Day name header row -->
     <div class="header-row" role="row">
       {#each DAY_NAMES as name}

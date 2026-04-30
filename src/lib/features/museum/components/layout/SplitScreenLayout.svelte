@@ -49,7 +49,7 @@
     const x = e.clientX - rect.left;
     // When panels are swapped, the divider's DOM position still represents the
     // left pane width, but the content inside is reversed. We invert the raw
-    // fraction so `ratio` always means "left-content panel fraction" — dragging
+    // fraction so `ratio` always means "left-content panel fraction" - dragging
     // right always makes the left-content panel larger, never triggers a swap.
     const rawFraction = x / rect.width;
     const newRatio = Math.max(

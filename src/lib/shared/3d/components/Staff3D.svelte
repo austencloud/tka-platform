@@ -68,7 +68,7 @@
   };
   const palette = $derived(colors[color]);
 
-  // Rotation only — position is handled by the parent PerformerRig scene graph.
+  // Rotation only - position is handled by the parent PerformerRig scene graph.
   // Facing rotation is inherited from the PerformerRig parent group.
   const rotation = $derived(computePropRotation(propState));
 

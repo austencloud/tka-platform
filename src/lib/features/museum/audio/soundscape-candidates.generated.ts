@@ -1,5 +1,5 @@
 /**
- * AUTO-GENERATED — do not edit by hand.
+ * AUTO-GENERATED - do not edit by hand.
  *
  * Produced by `node scripts/search-soundscapes.cjs`. Each run overwrites
  * this file with fresh candidates from the Freesound API (and Pixabay when

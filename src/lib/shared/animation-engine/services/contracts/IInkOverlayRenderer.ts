@@ -1,7 +1,7 @@
 /**
  * IInkOverlayRenderer
  *
- * Interface for the Canvas2D ink overlay — per-tip stroke path builder
+ * Interface for the Canvas2D ink overlay - per-tip stroke path builder
  * with variable lineWidth from velocity. Wraps `Ink2DRenderer` and owns
  * its own absolutely-positioned canvas element, following the smoke /
  * bloom / petals overlay pattern.

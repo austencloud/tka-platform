@@ -8,7 +8,7 @@
  * matching Storage path.
  */
 export interface PoiImageLibraryEntry {
-  /** Content hash (SHA-256 hex, first 16 bytes) — doubles as doc ID and Storage filename */
+  /** Content hash (SHA-256 hex, first 16 bytes) - doubles as doc ID and Storage filename */
   id: string;
   /** User-facing name, defaults to the original filename (no extension). Editable. */
   name: string;
@@ -23,8 +23,8 @@ export interface PoiImageLibraryEntry {
   height: number;
   /** MIME type: "image/png" | "image/jpeg" | "image/bmp" | "image/webp" */
   contentType: string;
-  /** Client-side upload timestamp (ms since epoch) — safe for display */
+  /** Client-side upload timestamp (ms since epoch) - safe for display */
   uploadedAt: number;
-  /** Where the upload came from — useful for analytics / debugging */
+  /** Where the upload came from - useful for analytics / debugging */
   source: "upload-zone" | "timeline-drop";
 }

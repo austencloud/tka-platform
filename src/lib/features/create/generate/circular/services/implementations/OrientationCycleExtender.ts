@@ -8,7 +8,7 @@
  * For example, a swapped LOOP starting at alpha6 in box mode might need
  * 2 passes: the first pass ends with non-radial orientations, and the
  * second pass (same motions, different start orientations) returns to radial.
- * Since the pictographs differ between passes, a repeat sign wouldn't work —
+ * Since the pictographs differ between passes, a repeat sign wouldn't work -
  * the performer needs to see the actual beat pictographs.
  *
  * ## Usage

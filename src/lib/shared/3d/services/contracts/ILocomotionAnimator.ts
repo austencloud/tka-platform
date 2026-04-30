@@ -34,7 +34,7 @@ export interface AnimationUrls {
   backward: string;
   strafeLeft: string;
   strafeRight: string;
-  /** Jump ascent clip (optional — needed for jump/fall/land states) */
+  /** Jump ascent clip (optional - needed for jump/fall/land states) */
   jump?: string;
   /** Sustained fall loop (optional) */
   fall?: string;
@@ -68,7 +68,7 @@ export interface LocomotionConfig {
   /**
    * Strip leg bone rotation tracks from the idle clip so feet stay
    * perfectly planted. Used for exhibit performers that stand in
-   * place during sequence playback — upper body gets idle sway but
+   * place during sequence playback - upper body gets idle sway but
    * legs remain in bind pose. Default: false.
    */
   stripLegBones?: boolean;

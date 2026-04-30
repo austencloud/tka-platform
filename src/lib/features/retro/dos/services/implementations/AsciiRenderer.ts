@@ -492,7 +492,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 
 		const stavesOn = !layers || layers.staves !== false;
 
-		// Hand markers (B/R/X) are redundant when staves are visible —
+		// Hand markers (B/R/X) are redundant when staves are visible -
 		// the staff color already identifies which hand is which.
 		if ((!layers || layers.hands !== false) && !stavesOn) {
 			this.placeHand(buffer, data.blueHand, handCoords);
@@ -622,7 +622,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// Minimal layout matching the real pictograph grid: 8 perimeter locations
 	// floating around a center point. No connecting lines.
 	//
-	// Layout (26 rows, 66 cols) — aspect-corrected for monospace ~2:1 ratio:
+	// Layout (26 rows, 66 cols) - aspect-corrected for monospace ~2:1 ratio:
 	//
 	//  Row 0:                        O                          N  (col 32)
 	//  Row 4:            O                           O          NW (col 16), NE (col 48)
@@ -632,7 +632,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// ========================================================================
 
 	private drawDiamondGrid(_buffer: Cell[][], _height: number): void {
-		// No grid lines — perimeter locations and center are placed by
+		// No grid lines - perimeter locations and center are placed by
 		// placePositionDots and the center marker in renderPictograph.
 	}
 
@@ -642,7 +642,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// Minimal layout matching the real pictograph grid: 8 perimeter locations
 	// floating around a center point. No connecting lines or edges.
 	//
-	// Layout (22 rows, 66 cols) — aspect-corrected for monospace ~2:1 ratio:
+	// Layout (22 rows, 66 cols) - aspect-corrected for monospace ~2:1 ratio:
 	//
 	//  Row 0:    O                                   O    NW (col 12), NE (col 52)
 	//  Row 4:                    O                        N  (col 32)
@@ -652,7 +652,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// ========================================================================
 
 	private drawBoxGrid(_buffer: Cell[][], _height: number): void {
-		// No grid lines — perimeter locations and center are placed by
+		// No grid lines - perimeter locations and center are placed by
 		// placePositionDots and the center marker in renderPictograph.
 	}
 

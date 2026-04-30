@@ -50,7 +50,7 @@
   const undoButtonText = $derived(() => {
     if (!CreateModuleState.canUndo) return "Nothing to Undo";
 
-    // Assemble tab uses per-step undo — no history entries to inspect
+    // Assemble tab uses per-step undo - no history entries to inspect
     if (isAssembleTab) {
       const builder = CreateModuleState.assembleTabState?.assembleBuilderState;
       if (builder?.phase === "placing") return "Undo Placement";

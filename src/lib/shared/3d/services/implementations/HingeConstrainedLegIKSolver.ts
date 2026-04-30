@@ -8,7 +8,7 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
  *
  * Two-bone analytic IK where the knee is constrained to rotate only
  * around a single hinge axis (the sagittal axis of the UpLeg). This is
- * what prevents knee splay — the classic failure mode of generic
+ * what prevents knee splay - the classic failure mode of generic
  * FABRIK / CCD solvers when applied to humanoid legs.
  *
  * Algorithm (inspired by Unity's TwoBoneIKConstraint and Unreal's
@@ -16,7 +16,7 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
  *   1. Clamp target distance to [|L1-L2|, L1+L2] to avoid degenerate cases.
  *   2. Compute knee bend angle from law of cosines and apply it as a
  *      local-space rotation around the hinge axis.
- *   3. Verify the knee bent toward poleDirection — if the hinge axis
+ *   3. Verify the knee bent toward poleDirection - if the hinge axis
  *      sign is inverted, the knee could silently bend backward while
  *      the foot still reaches the target. Flip the bend if needed.
  *   4. Aim the UpLeg so that after the knee bend, the foot lands on
@@ -82,16 +82,16 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
     hip.updateMatrixWorld(true);
     knee.updateMatrixWorld(true);
 
-    // After the knee bend, the foot is somewhere in world space — not at
+    // After the knee bend, the foot is somewhere in world space - not at
     // target. Aim the UpLeg so the hip→foot direction matches hip→target
     // direction.
     foot.getWorldPosition(this.tempCurrentFootWorld);
 
-    // Pole direction check — ensure the knee will end up bent toward
+    // Pole direction check - ensure the knee will end up bent toward
     // poleDirection after the aim step. Without this, hinge axis sign
     // differences between left/right legs (from the cross-product
     // calibration in Task 4) can produce backward-bending knees that
-    // still reach the target via the aim rotation — visually wrong but
+    // still reach the target via the aim rotation - visually wrong but
     // numerically undetectable from foot position alone.
     //
     // Geometric reasoning: the aim step is a rigid rotation of the
@@ -100,7 +100,7 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
     // currently is (because aim "seesaws" foot to target while knee
     // swings the other way). So the test is: if the current foot is
     // on the SAME side as poleDirection, the knee will end up on the
-    // wrong side — flip.
+    // wrong side - flip.
     this.tempChordMidpoint
       .addVectors(hipWorld, footTarget)
       .multiplyScalar(0.5);
@@ -185,18 +185,18 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
         }
         foot.updateMatrixWorld(true);
       }
-      // Degenerate case: footForward parallel to groundNormal — skip alignment
+      // Degenerate case: footForward parallel to groundNormal - skip alignment
     }
 
     if (weight < 1) {
       // Weight blending: slerp from original rotation toward the solved
-      // rotation. Save the solved rotations first — otherwise restoring
+      // rotation. Save the solved rotations first - otherwise restoring
       // origHipQuat into hip.quaternion and then slerping toward
       // hip.quaternion would self-slerp and silently discard the solve.
       //
       // The foot must be blended alongside hip and knee. Otherwise during
       // FootPlanter contact blend ramps (weight < 1), the foot would snap
-      // to fully-aligned while the rest of the leg is partially blended —
+      // to fully-aligned while the rest of the leg is partially blended -
       // producing a visible kink at the ankle.
       this.tempSolvedHip.copy(hip.quaternion);
       this.tempSolvedKnee.copy(knee.quaternion);

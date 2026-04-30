@@ -11,7 +11,7 @@
  *   loop 3: performer 3, Auto-orbit
  *
  * v1 renders sequentially. Real quad-split (4 simultaneous cameras
- * composited into one frame) is a followup — see spec §3.4 v1 note.
+ * composited into one frame) is a followup - see spec §3.4 v1 note.
  * Path to quad-split: per-camera render target, compose to the final
  * backing canvas each frame in the recording pipeline.
  */

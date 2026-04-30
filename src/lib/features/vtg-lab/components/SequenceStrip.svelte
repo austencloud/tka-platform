@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * SequenceStrip — renders a 4-step VTG cycle as a horizontal strip
+	 * SequenceStrip - renders a 4-step VTG cycle as a horizontal strip
 	 * of pictographs with beat labels, rotation badges, and position info.
 	 */
 

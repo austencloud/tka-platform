@@ -1,4 +1,8 @@
 <script lang="ts">
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+
+  const TKA_LETTER_RE = /^[a-zA-ZͰ-Ͽ⊕]-?$/;
+
   const { title } = $props<{
     title: string;
   }>();
@@ -25,7 +29,13 @@
 <div class="section-header">
   <div class="section-header-content">
     <div class="section-title-row">
-      <h3 class="section-title">{parsed.label}</h3>
+      <h3 class="section-title">
+        {#if TKA_LETTER_RE.test(parsed.label)}
+          <TKAWordGlyph word={parsed.label} height={16} />
+        {:else}
+          {parsed.label}
+        {/if}
+      </h3>
       {#if parsed.steps}
         <span class="section-meta">{parsed.steps} beats</span>
       {/if}
@@ -66,6 +76,12 @@
     white-space: nowrap;
     flex-shrink: 0;
     letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+  }
+
+  .section-title :global(.glyph img) {
+    filter: brightness(0) invert(1);
   }
 
   .section-meta {

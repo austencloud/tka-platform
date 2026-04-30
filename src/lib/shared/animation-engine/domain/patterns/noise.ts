@@ -3,10 +3,10 @@
  *
  * Based on Stefan Gustavson's simplex noise (public domain, 2012).
  * Adapted to TypeScript with pre-allocated gradient tables and zero
- * heap allocation per call — safe to call per-tip per-frame at 60fps.
+ * heap allocation per call - safe to call per-tip per-frame at 60fps.
  *
  * Returns a value in [-1, 1] for any (x, y) input pair.
- * The output is entirely determined by the input — no internal state,
+ * The output is entirely determined by the input - no internal state,
  * no random seeds, same values every run.
  */
 
@@ -88,7 +88,7 @@ export function simplex2d(x: number, y: number): number {
   const x2 = x0 - 1 + 2 * G2;
   const y2 = y0 - 1 + 2 * G2;
 
-  // Hashed gradient indices — use bitwise AND 255 instead of modulo.
+  // Hashed gradient indices - use bitwise AND 255 instead of modulo.
   const ii = i & 255;
   const jj = j & 255;
   const gi0 = PERM_MOD12[ii      + PERM[jj     ]!]!;

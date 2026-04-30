@@ -77,8 +77,6 @@ Elastic License 2.0. See licenses/ELv2.txt for the full text.
 
   - The full Composer application (src/)
   - @tka/render-composition (packages/render-composition/)
-  - @tka/pictograph         (packages/pictograph/)
-  - @tka/animation-renderer (packages/animation-renderer/)
 
 This includes but is not limited to:
   - The 55+ feature modules (src/lib/features/)

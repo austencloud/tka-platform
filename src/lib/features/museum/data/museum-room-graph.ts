@@ -26,17 +26,17 @@ export const MUSEUM_ROOMS: RoomNode[] = [
     theme: "institutional",
     minInteriorHeight: 48,
     description:
-      "A long marble hallway — the grand entrance to The Kinetic Archive. " +
+      "A long marble hallway - the grand entrance to The Kinetic Archive. " +
       "Brass letters above the double doors. A guest book podium with a warm desk lamp " +
       "sits in the center. The archway at the far end leads into darkness.",
     devNotes:
-      "ENTRANCE LOBBY — GRAND HALLWAY\n" +
+      "ENTRANCE LOBBY - GRAND HALLWAY\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "16 tiles wide × 50 tiles long (8m × 25m)\n" +
       "PURPOSE: First impression. Processional walk. Grounding moment.\n" +
       "\n" +
       "SPATIAL BEATS (south to north):\n" +
-      "  Rows 44-40: Arrival — door, mat, coat rack. 'This is a real building.'\n" +
+      "  Rows 44-40: Arrival - door, mat, coat rack. 'This is a real building.'\n" +
       "  Rows 39-26: Empty hallway. Footsteps echo. Podium light pulls you forward.\n" +
       "  Rows 25-22: Guest book podium. First interaction. Warm lamp pool.\n" +
       "  Rows 21-16: Bulletin board + reception window. 'Someone worked here.'\n" +
@@ -103,10 +103,10 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: First 'holy shit' moment. Ancient origins, reverent.\n" +
       "\n" +
-      "SPATIAL BEAT: tight — low ceiling feeling, torchlight only\n" +
+      "SPATIAL BEAT: tight - low ceiling feeling, torchlight only\n" +
       "\n" +
       "Two performers doing crude sequences with wooden clubs.\n" +
-      "Lascaux tablets are the first real exhibits — set the bar.\n" +
+      "Lascaux tablets are the first real exhibits - set the bar.\n" +
       "House on the Rock energy: cramped, obsessive, firelit.\n" +
       "TODO: torch flicker particles, cave ambient drip audio\n" +
       "\n" +
@@ -184,12 +184,12 @@ export const MUSEUM_ROOMS: RoomNode[] = [
     devNotes:
       "EGYPTIAN WING\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "PURPOSE: Formalization. Knowledge gets organized — and gatekept.\n" +
+      "PURPOSE: Formalization. Knowledge gets organized - and gatekept.\n" +
       "\n" +
-      "SPATIAL BEAT: open — tall ceilings, sandstone warmth, pillared hall\n" +
+      "SPATIAL BEAT: open - tall ceilings, sandstone warmth, pillared hall\n" +
       "\n" +
       "First hint of deliberate restriction. Priesthood controls access.\n" +
-      "Oil lamps instead of torches — warmer, more institutional.\n" +
+      "Oil lamps instead of torches - warmer, more institutional.\n" +
       "TODO: pillar props (stone columns at quarter points)\n" +
       "TODO: amphora exhibit content\n" +
       "\n" +
@@ -258,7 +258,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Da Vinci's workshop. Knowledge alive, then scattered.\n" +
       "\n" +
-      "SPATIAL BEAT: intimate — wood and light, notebooks everywhere\n" +
+      "SPATIAL BEAT: intimate - wood and light, notebooks everywhere\n" +
       "\n" +
       "Natural light. First room that feels like a real place someone worked in.\n" +
       "Codex pages on walls are interactive (zoom on approach).\n" +
@@ -315,7 +315,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
     material: "marble",
     theme: "industrial",
     description:
-      "Gas lamps and brass fittings. The Victorian era brought mechanization to kinetic notation — " +
+      "Gas lamps and brass fittings. The Victorian era brought mechanization to kinetic notation - " +
       "and the first systematic suppression. Patents filed, patents recalled. " +
       "Inventors discredited by scandal. The method is never explained.",
     devNotes:
@@ -323,11 +323,11 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Industrialization meets suppression. Patents recalled.\n" +
       "\n" +
-      "SPATIAL BEAT: open — high ceilings, brass, gas lamps\n" +
+      "SPATIAL BEAT: open - high ceilings, brass, gas lamps\n" +
       "\n" +
       "Hub room: connects to digital (north), construction-zone (south).\n" +
       "Portraits of discredited inventors line the east wall.\n" +
-      "The method is never explained — visitor should start asking why.\n" +
+      "The method is never explained - visitor should start asking why.\n" +
       "TODO: gas lamp light effect (warmer, steadier than torches)\n" +
       "\n" +
       "TONE: Distinguished rot. Something is very wrong and everyone is polite about it.",
@@ -393,7 +393,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Knowledge escapes to digital. 3400 users. BBS era.\n" +
       "\n" +
-      "SPATIAL BEAT: tight — CRT glow, fluorescent hum, server closet feel\n" +
+      "SPATIAL BEAT: tight - CRT glow, fluorescent hum, server closet feel\n" +
       "\n" +
       "Tonal shift: first modern-era room. No more stone and wood.\n" +
       "Terminal is interactive (type commands, get fake BBS responses).\n" +
@@ -458,7 +458,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: The reveal. The Order is named. Everything clicks.\n" +
       "\n" +
-      "SPATIAL BEAT: open — huge room, institutional sterile, oppressive\n" +
+      "SPATIAL BEAT: open - huge room, institutional sterile, oppressive\n" +
       "\n" +
       "Biggest information-dense room. Six exhibits.\n" +
       "Closed Palm symbol appears on every surface.\n" +
@@ -525,7 +525,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Placeholder. Under renovation. Joke about scope creep.\n" +
       "\n" +
-      "SPATIAL BEAT: tight — smallest real room, construction dust\n" +
+      "SPATIAL BEAT: tight - smallest real room, construction dust\n" +
       "\n" +
       "Side branch off digital wing. Dead end.\n" +
       "The renovation notice IS the joke. [DATE NOT FOUND] is permanent.\n" +
@@ -579,10 +579,10 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: The seam between eras. 23 years of decay.\n" +
       "\n" +
-      "SPATIAL BEAT: tight — narrow corridor-room, claustrophobic\n" +
+      "SPATIAL BEAT: tight - narrow corridor-room, claustrophobic\n" +
       "\n" +
       "Smallest main-path room. Narrow on purpose.\n" +
-      "No exhibits — the room itself IS the exhibit.\n" +
+      "No exhibits - the room itself IS the exhibit.\n" +
       "Filing cabinets, scattered papers, water stains.\n" +
       "Transitional: institutional suppression → handmade gallery.\n" +
       "TODO: water drip particles, ceiling cracks\n" +
@@ -616,18 +616,18 @@ export const MUSEUM_ROOMS: RoomNode[] = [
     theme: "gallery",
     description:
       "Warm wood floors, steady torchlight. Someone has been living here. " +
-      "The exhibits are handmade — sticky notes evolving into proper signs. " +
+      "The exhibits are handmade - sticky notes evolving into proper signs. " +
       "This is where the museum stops being an archive and starts being an invitation.",
     devNotes:
       "K'S GALLERY\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: The heart. K's space. Handmade, warm, alive.\n" +
       "\n" +
-      "SPATIAL BEAT: open — warm wood, torchlight, someone lives here\n" +
+      "SPATIAL BEAT: open - warm wood, torchlight, someone lives here\n" +
       "\n" +
       "Biggest emotional room. The archive becomes an invitation.\n" +
       "Sticky notes evolving into proper signs = K learning to be a curator.\n" +
-      "Scribe performer in center — the first friendly NPC.\n" +
+      "Scribe performer in center - the first friendly NPC.\n" +
       "House on the Rock energy: obsessive personal collection.\n" +
       "TODO: K's bedroll in a corner (lived-in detail)\n" +
       "TODO: practice-wall exhibit with real sequence viewer\n" +
@@ -697,7 +697,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Containment. The Order's final argument.\n" +
       "\n" +
-      "SPATIAL BEAT: tight — oppressive, walls closing in\n" +
+      "SPATIAL BEAT: tight - oppressive, walls closing in\n" +
       "\n" +
       "Three containment exhibits on north wall. Dense, aggressive.\n" +
       "Closed Palm symbols stamped everywhere.\n" +
@@ -748,13 +748,13 @@ export const MUSEUM_ROOMS: RoomNode[] = [
     description:
       "Cubicle walls for flow artists. Three feet apart with walls between them. " +
       "Each person has something whole and beautiful. The problem isn't that anyone's piece " +
-      "is incomplete — it's that nobody's sharing it.",
+      "is incomplete - it's that nobody's sharing it.",
     devNotes:
       "ROOM OF ISOLATION\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Beautiful fragments kept apart. The cost of not sharing.\n" +
       "\n" +
-      "SPATIAL BEAT: open — large room subdivided by cubicle walls\n" +
+      "SPATIAL BEAT: open - large room subdivided by cubicle walls\n" +
       "\n" +
       "Paradox room: big space that feels small because of internal walls.\n" +
       "Each cubicle has a beautiful sequence fragment.\n" +
@@ -800,7 +800,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: The payoff. Real spinning. Together. Outdoors.\n" +
       "\n" +
-      "SPATIAL BEAT: open — outdoors, sky visible, birds, trees\n" +
+      "SPATIAL BEAT: open - outdoors, sky visible, birds, trees\n" +
       "\n" +
       "Four performers spinning together. Imperfect technique.\n" +
       "After fear + isolation, this is the emotional release.\n" +
@@ -854,7 +854,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Commercial contrast. Dusty merch from a dead society.\n" +
       "\n" +
-      "SPATIAL BEAT: open — bright, commercial, jarring after the outdoors\n" +
+      "SPATIAL BEAT: open - bright, commercial, jarring after the outdoors\n" +
       "\n" +
       "Mannequin cashier is the only NPC. Does not move.\n" +
       "Crumpled $20 on the floor. Shelves of branded Closed Palm merch.\n" +
@@ -893,7 +893,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: Staff only. Scaffolding. The seam shows.\n" +
       "\n" +
-      "SPATIAL BEAT: tight — work lights, hard hat required\n" +
+      "SPATIAL BEAT: tight - work lights, hard hat required\n" +
       "\n" +
       "Side branch off Victorian. Feels like you're not supposed to be here.\n" +
       "Leads to janitor's closet (the meta reveal).\n" +
@@ -946,7 +946,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "PURPOSE: The meta reveal. Austen's fake museum ideas. Stanley Parable.\n" +
       "\n" +
-      "SPATIAL BEAT: wtf — tiny, bare bulb, foam core scraps\n" +
+      "SPATIAL BEAT: wtf - tiny, bare bulb, foam core scraps\n" +
       "\n" +
       "The whiteboard IS the exhibit: AUSTEN'S FAKE MUSEUM IDEAS.\n" +
       "Mannequin with photograph taped to face. No plaque.\n" +

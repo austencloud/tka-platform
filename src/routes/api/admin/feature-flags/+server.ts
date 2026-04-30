@@ -293,7 +293,7 @@ export const PATCH: RequestHandler = async (event) => {
     console.error("[feature-flags] PATCH Error:", err);
 
     // SvelteKit HttpError (from throw error(status, message))
-    // Return as JSON directly — SvelteKit strips 5xx messages if we re-throw
+    // Return as JSON directly - SvelteKit strips 5xx messages if we re-throw
     if (typeof err === "object" && err !== null && "status" in err && "body" in err) {
       const httpErr = err as { status: number; body: { message: string } };
       return json(

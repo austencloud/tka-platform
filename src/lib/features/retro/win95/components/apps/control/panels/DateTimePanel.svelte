@@ -1,5 +1,5 @@
 <!--
-  Date/Time Properties sub-panel — live clock display.
+  Date/Time Properties sub-panel - live clock display.
 -->
 <script lang="ts">
   import RetroButton from "../../../primitives/RetroButton.svelte";

@@ -64,14 +64,14 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
-  /* Bottom sheet on mobile — auto-size to content, don't take full screen */
+  /* Bottom sheet on mobile - auto-size to content, don't take full screen */
   :global(.drawer-content.customize-drawer-sheet[data-placement="bottom"]) {
     height: auto;
     min-height: auto;
     max-height: 85dvh;
   }
 
-  /* Right-side panel on desktop — use full create panel width like LOOP drawer */
+  /* Right-side panel on desktop - use full create panel width like LOOP drawer */
 
   .customize-drawer-content {
     display: flex;
@@ -89,7 +89,7 @@
   }
 
 
-  /* Override CustomizeExpandedOverlay when inside drawer — fill height, no inner border */
+  /* Override CustomizeExpandedOverlay when inside drawer - fill height, no inner border */
   .customize-drawer-content > :global(.customize-expanded-overlay) {
     position: static;
     flex: 1;
@@ -121,7 +121,7 @@
     gap: 10px;
   }
 
-  /* Tight accordion content padding — maximize space for pictographs */
+  /* Tight accordion content padding - maximize space for pictographs */
   .customize-drawer-content > :global(.customize-expanded-overlay .accordion-content) {
     padding: 10px 8px 12px;
     gap: 10px;

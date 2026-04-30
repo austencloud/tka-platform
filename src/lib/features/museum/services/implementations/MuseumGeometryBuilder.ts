@@ -54,7 +54,7 @@ const WING_WALL_COLORS: Record<WingTheme, string> = {
   retail: "#2a2220",
 };
 
-// Per-wing ambient color/intensity — used by room light computation
+// Per-wing ambient color/intensity - used by room light computation
 const WING_AMBIENT: Record<WingTheme, { color: string; intensity: number }> = {
   cave:          { color: "#8a6030", intensity: 0.8 },
   classical:     { color: "#a08050", intensity: 1.0 },
@@ -136,7 +136,7 @@ export interface TorchPosition {
   wallOffsetX: number;
   wallOffsetZ: number;
   wingTheme: WingTheme;
-  /** Persistence ID from PlacementPersister — only set on manually placed torches */
+  /** Persistence ID from PlacementPersister - only set on manually placed torches */
   placementId?: string;
 }
 
@@ -148,7 +148,7 @@ export interface LightPosition {
   z: number;
 }
 
-/** Per-room ambient fill light — replaces the single global AmbientLight */
+/** Per-room ambient fill light - replaces the single global AmbientLight */
 export interface RoomLight {
   wingId: string;
   theme: WingTheme;
@@ -226,7 +226,7 @@ export interface MuseumGeometryDryRun {
 
 /**
  * Phase 1 of geometry building: bucket all tiles by material/theme.
- * Pure data structures — no Three.js, no WebGL. Safe to run in vitest/jsdom.
+ * Pure data structures - no Three.js, no WebGL. Safe to run in vitest/jsdom.
  * Used by buildMuseumGeometry internally and by performance tests directly.
  */
 export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
@@ -404,7 +404,7 @@ export interface PerRoomBuckets {
 /**
  * Partition tiles by wing for per-room streaming. Each tile is assigned to
  * exactly one room (by wing bounds) or to the corridor bucket (if outside
- * all wing bounds). Pure data — no Three.js.
+ * all wing bounds). Pure data - no Three.js.
  */
 export function bucketMuseumTilesByRoom(grid: MuseumGrid): PerRoomBuckets {
   // Build wing lookup: tile → wingId
@@ -481,7 +481,7 @@ export interface RoomChunk {
   ceilingMesh: BatchedMeshData | null;
   pedestalMesh: BatchedMesh | null;
   signMesh: BatchedMesh | null;
-  /** @deprecated No longer rendered — MuseumPerformerStation3D owns the visual platform */
+  /** @deprecated No longer rendered - MuseumPerformerStation3D owns the visual platform */
   performerMesh: null;
   torchPositions: TorchPosition[];
   plaquePlacements: PlaquePlacement[];
@@ -497,7 +497,7 @@ let sharedFloorGeo: BoxGeometry | null = null;
 let sharedWallGeo: BoxGeometry | null = null;
 let sharedPedestalGeo: BoxGeometry | null = null;
 let sharedSignGeo: BoxGeometry | null = null;
-// Performer geo removed — MuseumPerformerStation3D renders its own platform
+// Performer geo removed - MuseumPerformerStation3D renders its own platform
 
 function getSharedGeometries() {
   if (!sharedFloorGeo) sharedFloorGeo = new BoxGeometry(TILE_SIZE - 0.02, 0.05, TILE_SIZE - 0.02);
@@ -549,7 +549,7 @@ export async function buildRoomChunk(
     return { mesh: batch, instanceIds };
   }
 
-  // Floor batches — one per material bucket
+  // Floor batches - one per material bucket
   const floorMeshes: BatchedMeshData[] = [];
   for (const [, bucket] of buckets.floorBuckets) {
     if (bucket.positions.length === 0) continue;
@@ -563,7 +563,7 @@ export async function buildRoomChunk(
 
   await yieldToMain();
 
-  // Wall batches — one per theme/color bucket
+  // Wall batches - one per theme/color bucket
   const wallMeshes: BatchedMeshData[] = [];
   for (const [, bucket] of buckets.wallBuckets) {
     if (bucket.positions.length === 0) continue;
@@ -580,7 +580,7 @@ export async function buildRoomChunk(
 
   await yieldToMain();
 
-  // Ceiling batch — all floor positions at WALL_HEIGHT.
+  // Ceiling batch - all floor positions at WALL_HEIGHT.
   // All rooms share identical ceiling appearance, so we cache the material
   // (same pattern as floor/wall PBR cache) instead of creating one per room.
   const allFloorPositions: { x: number; z: number }[] = [];
@@ -601,7 +601,7 @@ export async function buildRoomChunk(
     ceilingMesh = { mesh, instanceIds };
   }
 
-  // Props — small batches
+  // Props - small batches
   let pedestalMesh: BatchedMesh | null = null;
   if (buckets.pedestalPositions.length > 0) {
     const mat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.pedestal! });
@@ -614,7 +614,7 @@ export async function buildRoomChunk(
     signMesh = buildBatch(signGeo, mat, buckets.signPositions, 0.5).mesh;
   }
 
-  // Performer mesh intentionally skipped — MuseumPerformerStation3D renders its own platform
+  // Performer mesh intentionally skipped - MuseumPerformerStation3D renders its own platform
 
   // Exhibit light positions (from plaques in this chunk)
   const exhibitLightPositions: LightPosition[] = buckets.plaquePlacements.map((p, i) => ({
@@ -637,7 +637,7 @@ export async function buildRoomChunk(
     }
   }
 
-  // Sunlight shafts (for outdoor wings) — warm directional pools of light
+  // Sunlight shafts (for outdoor wings) - warm directional pools of light
   // simulating sunlight streaming down through open sky
   const sunlightPositions: LightPosition[] = [];
   if (wing && wing.theme === "outdoor") {
@@ -740,10 +740,10 @@ export function disposeRoomChunk(chunk: RoomChunk): void {
   if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.dispose();
   if (chunk.pedestalMesh) chunk.pedestalMesh.dispose();
   if (chunk.signMesh) chunk.signMesh.dispose();
-  // performerMesh is always null — platform rendered by MuseumPerformerStation3D
+  // performerMesh is always null - platform rendered by MuseumPerformerStation3D
 }
 
-/* Legacy buildMuseumGeometry removed — replaced by buildRoomChunk with BatchedMesh.
+/* Legacy buildMuseumGeometry removed - replaced by buildRoomChunk with BatchedMesh.
 export async function buildMuseumGeometry(
   grid: MuseumGrid,
   onProgress?: (phase: string) => void,
@@ -838,7 +838,7 @@ export async function buildMuseumGeometry(
   // ── Phase 5: Pedestals, signs ──
   const pedestalGeo = new BoxGeometry(TILE_SIZE * 0.7, 0.5, TILE_SIZE * 0.7);
   const signGeo = new BoxGeometry(TILE_SIZE * 0.6, 0.4, 0.06);
-  // Performer geo intentionally skipped — MuseumPerformerStation3D renders its own platform
+  // Performer geo intentionally skipped - MuseumPerformerStation3D renders its own platform
 
   let pedestalMesh: InstancedMesh | null = null;
   if (pedestalPositions.length > 0) {
@@ -889,7 +889,7 @@ export async function buildMuseumGeometry(
     }
   }
 
-  // Per-room ambient fill lights — one PointLight per room (or a grid for large rooms)
+  // Per-room ambient fill lights - one PointLight per room (or a grid for large rooms)
   const roomLights: RoomLight[] = [];
   for (const wing of grid.wings) {
     const b = wing.bounds;

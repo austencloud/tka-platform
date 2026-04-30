@@ -348,7 +348,7 @@ export class LeaderboardManager implements ILeaderboardManager {
             callback(leaderboardData);
           },
           (error) => {
-            // Expected on sign-out — the listener is about to be cleaned up.
+            // Expected on sign-out - the listener is about to be cleaned up.
             if (isPermissionDeniedError(error)) return;
             console.error(
               "[LeaderboardManager] Error in leaderboard subscription:",

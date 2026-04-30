@@ -62,7 +62,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   const ctx = getCreateModuleContext();
   const { CreateModuleState } = ctx;
 
-  // Only show drag handle on mobile (bottom sheet) — on desktop the panel
+  // Only show drag handle on mobile (bottom sheet) - on desktop the panel
   // slides from the right, so a horizontal handle implies wrong swipe direction
   const isBottomSheet = $derived(!ctx.layout.shouldUseSideBySideLayout);
 
@@ -203,7 +203,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
   const duplicateCount = $derived(duplicateCheck.existingSequences.length);
 
-  // Exact duplicate detection — compares motion content hash against library.
+  // Exact duplicate detection - compares motion content hash against library.
   // If the user already saved this exact sequence (same orientations, turns,
   // positions), we show "Already saved" instead of the save button.
   let isExactDuplicate = $state(false);
@@ -211,7 +211,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   try {
     contentHasher = getContentHasher() as unknown as ISequenceContentHasher;
   } catch {
-    // Hasher not available — duplicate check won't run, save still works
+    // Hasher not available - duplicate check won't run, save still works
   }
 
   $effect(() => {
@@ -868,7 +868,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   }
 
   /* Fixed-height slot so duplicate/saved status doesn't cause layout shift */
-  /* Compact info row — prop type + variation/saved status as inline tags */
+  /* Compact info row - prop type + variation/saved status as inline tags */
   .info-row {
     display: flex;
     align-items: center;
@@ -916,7 +916,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
     opacity: 1;
   }
 
-  /* Saved state button — green checkmark instead of purple gradient */
+  /* Saved state button - green checkmark instead of purple gradient */
   .button-saved {
     background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent) !important;
     box-shadow: none !important;

@@ -1,5 +1,5 @@
 <!--
-  SocialModule.svelte — Community map and nearby spinner sync.
+  SocialModule.svelte - Community map and nearby spinner sync.
   Tabs appear in the sidebar. Navigation handled by the nav system.
 -->
 <script lang="ts">

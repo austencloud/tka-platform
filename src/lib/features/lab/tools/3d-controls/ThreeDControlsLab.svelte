@@ -2,7 +2,7 @@
   ThreeDControlsLab.svelte
 
   Live demo of archived 3D viewer controls driving an actual 3D scene.
-  Tap grid points, adjust turns, toggle props — see it happen in 3D.
+  Tap grid points, adjust turns, toggle props - see it happen in 3D.
 
   Archive source: archive/dead-code-2026-03-11/categories/3d-scenes-environments/
 -->

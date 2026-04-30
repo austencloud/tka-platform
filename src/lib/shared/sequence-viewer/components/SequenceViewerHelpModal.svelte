@@ -51,26 +51,26 @@
       <HelpSection icon="fa-image" title="Image Mode" {accentColor}>
         <p>View your sequence as a static image showing all steps at once.</p>
         <ul>
-          <li><strong>Toggle options</strong> — Show/hide beat numbers, word, grid</li>
-          <li><strong>Dark/light</strong> — Switch background for export</li>
+          <li><strong>Toggle options</strong> - Show/hide beat numbers, word, grid</li>
+          <li><strong>Dark/light</strong> - Switch background for export</li>
         </ul>
       </HelpSection>
 
       <HelpSection icon="fa-play-circle" title="Animation Mode" {accentColor}>
         <p>Watch your sequence animate with smooth prop movements.</p>
         <ul>
-          <li><strong>Play/Pause</strong> — Control playback</li>
-          <li><strong>Speed</strong> — Adjust animation speed (0.5x - 2x)</li>
-          <li><strong>Loop</strong> — Set how many times to repeat</li>
+          <li><strong>Play/Pause</strong> - Control playback</li>
+          <li><strong>Speed</strong> - Adjust animation speed (0.5x - 2x)</li>
+          <li><strong>Loop</strong> - Set how many times to repeat</li>
         </ul>
       </HelpSection>
 
       <HelpSection icon="fa-download" title="Export" {accentColor}>
         <p>Save or share your sequence in different formats.</p>
         <ul>
-          <li><strong>Image</strong> — Download as PNG</li>
-          <li><strong>Animation</strong> — Export as GIF or video</li>
-          <li><strong>Copy</strong> — Copy image to clipboard</li>
+          <li><strong>Image</strong> - Download as PNG</li>
+          <li><strong>Animation</strong> - Export as GIF or video</li>
+          <li><strong>Copy</strong> - Copy image to clipboard</li>
         </ul>
       </HelpSection>
 

@@ -205,7 +205,7 @@ class ImageCompositionStateManager {
    * Save settings to Firebase for authenticated users
    */
   private saveToFirebase(): void {
-    // Spread to create a plain object — settingsService.updateSetting uses === reference
+    // Spread to create a plain object - settingsService.updateSetting uses === reference
     // equality to skip no-ops, and passing the same $state proxy would always match.
     void settingsService.updateSetting("imageExport", { ...this.settings });
   }
@@ -385,7 +385,7 @@ class ImageCompositionStateManager {
    */
   setStartPositionLayoutForStepCount(stepCount: number, value: "row" | "column"): void {
     if (value === this.settings.startPositionLayout) {
-      // Matches global default — remove override to keep storage clean
+      // Matches global default - remove override to keep storage clean
       delete this.settings.startPositionLayoutOverrides[String(stepCount)];
     } else {
       this.settings.startPositionLayoutOverrides[String(stepCount)] = value;

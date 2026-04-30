@@ -1,5 +1,5 @@
 <!--
-  VillageLabTab — Lab tab root for the TKA Village cultural simulation.
+  VillageLabTab - Lab tab root for the TKA Village cultural simulation.
   Mounts Threlte canvas with village scene + control panel sidebar.
 -->
 <script lang="ts">
@@ -33,7 +33,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
 	const propInterpolator = getPropStateInterpolator();
 	const sequenceConverter = getSequenceConverter();
 
-	// Create state synchronously during component init — required for setContext
+	// Create state synchronously during component init - required for setContext
 	let villageState: VillageState | null = null;
 	let visualState: VillageVisualState | null = null;
 	if (propInterpolator && sequenceConverter) {

@@ -208,7 +208,7 @@ export class ReversalDetector implements IReversalDetector {
       return motionData.rotationDirection;
     }
 
-    // Static and dash motions legitimately have no rotation — the prop doesn't
+    // Static and dash motions legitimately have no rotation - the prop doesn't
     // spin during these motions, so rotationDirection is intentionally absent.
     // Treat the missing value as "noRotation" rather than warning.
     if (motionData.motionType === "static" || motionData.motionType === "dash") {
@@ -216,7 +216,7 @@ export class ReversalDetector implements IReversalDetector {
     }
 
     // Pro/anti/float motions should always have a rotationDirection. If one
-    // really is missing here it's bad data — warn and fall through to cw so
+    // really is missing here it's bad data - warn and fall through to cw so
     // downstream reversal detection doesn't crash.
     console.warn(
       `Missing rotationDirection for ${color} at step ${beat.stepNumber}. ` +

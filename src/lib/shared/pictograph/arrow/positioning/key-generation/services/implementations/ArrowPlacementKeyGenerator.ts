@@ -169,7 +169,7 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
       hasNonRadialProps = nonRadialOrientations.includes(availableOri);
       hasHybridOrientation = false;
 
-      // Can't determine position without both hands — default to alpha
+      // Can't determine position without both hands - default to alpha
       return {
         hasRadialProps,
         hasNonRadialProps,

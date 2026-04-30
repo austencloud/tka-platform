@@ -9,7 +9,7 @@ export function museumPlacementPlugin(): Plugin {
     name: 'museum-placement-writer',
     handleHotUpdate({ file }: { file: string }) {
       if (file.includes('museum-manual-placements')) {
-        // Suppress HMR — the placement was already added to the live scene
+        // Suppress HMR - the placement was already added to the live scene
         return [];
       }
       return undefined;
@@ -27,7 +27,7 @@ export function museumPlacementPlugin(): Plugin {
         req.on('end', () => {
           try {
             // Persister sends raw TypeScript content as text/plain,
-            // or JSON { content: "..." } — handle both
+            // or JSON { content: "..." } - handle both
             let content: string;
             try {
               const parsed = JSON.parse(body);

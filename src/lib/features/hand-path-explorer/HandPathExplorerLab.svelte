@@ -56,7 +56,7 @@
     {/if}
   </div>
 
-  <!-- Detail panel — slides in when a path is selected -->
+  <!-- Detail panel - slides in when a path is selected -->
   {#if state.selectedGroup !== null}
     <div class="explorer__detail-panel">
       <HandPathDetail group={state.selectedGroup} />

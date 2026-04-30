@@ -21,7 +21,7 @@ import {
 } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { SwappedInvertedLOOPExecutor } from "../../../src/lib/features/create/generate/circular/services/implementations/SwappedInvertedLOOPExecutor";
 import type { IOrientationCalculator } from "../../../src/lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import { SliceSize } from "../../../src/lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "../../../src/lib/features/create/generate/circular/domain/models/circular-models";
 
 // Mock OrientationCalculator that passes through unchanged
 const mockOrientationCalculator: IOrientationCalculator = {
@@ -148,7 +148,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
       ];
 
       // Execute the LOOP
-      const result = executor.executeLOOP([...inputSequence], SliceSize.HALVED);
+      const result = executor.executeLOOP([...inputSequence], Period.HALVED);
 
       // Should have 5 beats total: start + 2 original + 2 generated
       expect(result.length).toBe(5);
@@ -283,7 +283,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
       ];
 
       expect(() => {
-        executor.executeLOOP([...invalidSequence], SliceSize.HALVED);
+        executor.executeLOOP([...invalidSequence], Period.HALVED);
       }).toThrow(/Invalid position pair for swapped-inverted LOOP/);
     });
   });

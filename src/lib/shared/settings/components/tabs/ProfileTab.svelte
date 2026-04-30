@@ -98,7 +98,7 @@
   // Google photo URL persisted in Firestore (survives avatar switches)
   let savedGooglePhotoUrl = $state<string | null>(null);
 
-  // Photo picker state — survives refresh/HMR via sessionStorage
+  // Photo picker state - survives refresh/HMR via sessionStorage
   const PHOTO_PICKER_KEY = "tka_photo_picker_open";
   let showPhotoPicker = $state(
     typeof sessionStorage !== "undefined" &&

@@ -140,7 +140,7 @@
     const gridMode = gallery.gridMode ?? "diamond";
 
     // Step 1: Try SVG for all items sequentially (one at a time to avoid
-    // overwhelming the rate limiter — multiple gallery instances may be
+    // overwhelming the rate limiter - multiple gallery instances may be
     // fetching simultaneously, and each SVG render is server-side work)
     const allItems = gallery.items.map((item) => ({
       letter: item.letter,
@@ -202,7 +202,7 @@
           }
         }
       } catch {
-        // SVG fetch failed — fall through to PNG
+        // SVG fetch failed - fall through to PNG
       }
 
       itemsNeedingPng.push({ letter, variation });
@@ -212,7 +212,7 @@
     svgMarkups = new Map(newSvgMarkups);
 
     // Step 2: Fall back to PNG for any items that failed SVG
-    // Only check static files and IndexedDB — do NOT re-hit the API,
+    // Only check static files and IndexedDB - do NOT re-hit the API,
     // since the SVG request already consumed our rate limit budget
     for (const { letter, variation } of itemsNeedingPng) {
       const staticKey = buildStaticKey(letter, variation);
@@ -234,7 +234,7 @@
         continue;
       }
 
-      // No static or cached PNG available — item will show spinner
+      // No static or cached PNG available - item will show spinner
       // (we don't re-hit the API here to avoid rate limiting)
     }
 

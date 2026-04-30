@@ -169,7 +169,7 @@ export class UserDocumentManager implements IUserDocumentManager {
         };
 
         // Only update googlePhotoURL if we have a fresh one from the provider.
-        // Don't null it out — the provider's photoURL becomes null after the
+        // Don't null it out - the provider's photoURL becomes null after the
         // user switches to a generated avatar, but we want to keep the
         // original so "Use Google Photo" always works.
         if (googlePhotoURL) {

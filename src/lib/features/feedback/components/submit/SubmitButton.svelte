@@ -37,7 +37,7 @@
     aria-busy={isSubmitting}
     style:--progress="{progressPercent}%"
   >
-    <!-- Progress fill layer — sits behind button content, fills left-to-right -->
+    <!-- Progress fill layer - sits behind button content, fills left-to-right -->
     {#if isUploading}
       <div class="progress-fill" aria-hidden="true"></div>
     {/if}
@@ -93,7 +93,7 @@
     background: color-mix(in srgb, var(--active-type-color) 40%, black);
   }
 
-  /* Progress fill — a bright layer that scales from 0% to 100% width */
+  /* Progress fill - a bright layer that scales from 0% to 100% width */
   .progress-fill {
     position: absolute;
     inset: 0;

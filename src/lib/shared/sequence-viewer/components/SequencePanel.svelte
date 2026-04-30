@@ -27,7 +27,7 @@
 
   import SequenceViewer from "./SequenceViewer.svelte";
   import QuickShareRow from "./QuickShareRow.svelte";
-  // ExportControlsSection removed — edit mode now uses inline action buttons
+  // ExportControlsSection removed - edit mode now uses inline action buttons
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { browseNavigationState } from "$lib/features/browse/shared/state/browse-navigation-state.svelte";

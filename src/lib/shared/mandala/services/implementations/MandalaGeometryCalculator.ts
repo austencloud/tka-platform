@@ -257,7 +257,7 @@ function interpolate(
 		return { x, y, staffAngle };
 	}
 
-	// Arc interpolation (PRO, ANTI, FLOAT — all shift-family motions)
+	// Arc interpolation (PRO, ANTI, FLOAT - all shift-family motions)
 	const centerAngle = lerpAngle(startCenterAngle, targetCenterAngle, t);
 	const x = Math.cos(centerAngle);
 	const y = Math.sin(centerAngle);
@@ -449,8 +449,8 @@ function getTipOffsetsForProp(propType: string | undefined): TipOffset[] {
 		return fallback;
 	}
 
-	// Unilateral props (fan, club, hoop, triad) trace only their primary tip —
-	// the center/outermost point — matching the trail system's behavior.
+	// Unilateral props (fan, club, hoop, triad) trace only their primary tip -
+	// the center/outermost point - matching the trail system's behavior.
 	if (propType && !isBilateralProp(propType) && points.length > 1) {
 		const middleIndex = Math.floor(points.length / 2);
 		return [points[middleIndex]!];
@@ -458,7 +458,7 @@ function getTipOffsetsForProp(propType: string | undefined): TipOffset[] {
 
 	// Bilateral props with exactly 2 tips (staff, buugeng) use both as-is.
 	// Bilateral props with 4+ tips (doublestar, quiad) use only the 2 tips
-	// closest to the vertical center axis (smallest |dx|) — the horizontal
+	// closest to the vertical center axis (smallest |dx|) - the horizontal
 	// tips trace redundant paths that clutter the mandala.
 	if (points.length > 2) {
 		const sorted = [...points].sort((a, b) => Math.abs(a.dx) - Math.abs(b.dx));
@@ -504,7 +504,7 @@ function isNearGrid(point: MandalaPoint, grid: Set<string>, cellSize: number): b
 /**
  * Spatial proximity detection: for each point in `queryPoints`, check whether
  * ANY point in `referencePoints` occupies a nearby grid cell.
- * O(n + m) total — O(m) to build the grid, O(n) to query.
+ * O(n + m) total - O(m) to build the grid, O(n) to query.
  */
 function detectOverlapMask(
 	queryPoints: MandalaPoint[],
@@ -636,7 +636,7 @@ export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
 
 
 		// Look up tip attachment points for each hand's prop type.
-		// Different props have different numbers of tips — staff has 2,
+		// Different props have different numbers of tips - staff has 2,
 		// fan has 5, club has 1, etc. Each tip traces its own mandala path.
 		const blueTips = getTipOffsetsForProp(_bluePropType);
 		const redTips = getTipOffsetsForProp(_redPropType);

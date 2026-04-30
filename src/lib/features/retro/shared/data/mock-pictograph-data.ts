@@ -3,7 +3,7 @@
  *
  * Maps uppercase letters to simplified RetroPictographData. Each letter
  * gets a deterministic grid configuration that looks plausible on the
- * diamond grid. Not accurate TKA — this is the Bellweather Institute's
+ * diamond grid. Not accurate TKA - this is the Bellweather Institute's
  * best approximation circa 1995.
  *
  * Domain: Retro SCRIBE App
@@ -25,9 +25,9 @@ import {
  * Cycles through visually distinct positions.
  */
 const POSITION_PAIRS: [GridLocation, GridLocation][] = [
-	[GridLocation.NORTH, GridLocation.SOUTH], // opposite cardinal — alpha-like
-	[GridLocation.NORTH, GridLocation.NORTH], // same cardinal — beta-like
-	[GridLocation.NORTH, GridLocation.EAST], // adjacent cardinal — gamma-like
+	[GridLocation.NORTH, GridLocation.SOUTH], // opposite cardinal - alpha-like
+	[GridLocation.NORTH, GridLocation.NORTH], // same cardinal - beta-like
+	[GridLocation.NORTH, GridLocation.EAST], // adjacent cardinal - gamma-like
 	[GridLocation.EAST, GridLocation.WEST], // opposite cardinal
 	[GridLocation.EAST, GridLocation.EAST], // same cardinal
 	[GridLocation.SOUTH, GridLocation.WEST], // adjacent cardinal

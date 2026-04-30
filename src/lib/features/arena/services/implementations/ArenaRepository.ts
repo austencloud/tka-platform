@@ -52,7 +52,7 @@ export class ArenaRepository implements IArenaRepository {
     const publicSnap = await getDocs(collection(firestore, PUBLIC_SEQUENCES_COLLECTION));
     const candidates: MatchupCandidate[] = [];
 
-    // publicSequences is a lightweight index — steps live in the source doc.
+    // publicSequences is a lightweight index - steps live in the source doc.
     // Build entries from the index, then batch-fetch full data via sourceRef.
     const pendingEntries: Array<{
       entry: ArenaEntry;
@@ -65,7 +65,7 @@ export class ArenaRepository implements IArenaRepository {
       const word = raw.word as string | undefined;
       if (!word) continue;
 
-      // Arena is loop-only — skip sequences without a labeled loop type
+      // Arena is loop-only - skip sequences without a labeled loop type
       const loopType = raw.loopType as string | null | undefined;
       if (!loopType) continue;
 
@@ -80,7 +80,7 @@ export class ArenaRepository implements IArenaRepository {
       const rating = await this.getOrCreateRating(entry);
 
       // Build lightweight SequenceData from the index document.
-      // Steps are NOT stored in publicSequences — full data is fetched
+      // Steps are NOT stored in publicSequences - full data is fetched
       // on demand via sourceRef when a matchup is presented.
       const data: SequenceData = {
         id: seqDoc.id,

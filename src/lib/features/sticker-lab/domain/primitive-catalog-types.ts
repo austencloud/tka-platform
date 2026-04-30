@@ -7,7 +7,7 @@ import type { MandalaPrimitiveRef } from "./sticker-types";
  * Stage A: shapeHash and ultraHash are sequenceId proxies.
  * Stage B: replaced by geometric SHA-256 hashes from MandalaCanonicalizer.
  *
- * `paths` is nullable because Stage A ships entries without pre-baked paths —
+ * `paths` is nullable because Stage A ships entries without pre-baked paths -
  * the mandala-paths-cache falls back to the sequence repository at runtime.
  */
 export interface PrimitiveCatalogEntry {
@@ -16,7 +16,7 @@ export interface PrimitiveCatalogEntry {
   ultraHash: string;
   displayName: string;
   /**
-   * Pre-baked MandalaPaths. Null in Stage A — paths are resolved at runtime
+   * Pre-baked MandalaPaths. Null in Stage A - paths are resolved at runtime
    * via the sequence repository fallback in mandala-paths-cache.
    */
   paths: MandalaPaths | null;
@@ -26,7 +26,7 @@ export interface PrimitiveCatalogEntry {
     word: string;
     loopType: string;
   };
-  /** Symmetry order derived from geometry (Stage A: always 1 — not yet computed). */
+  /** Symmetry order derived from geometry (Stage A: always 1 - not yet computed). */
   symmetryOrder: number;
   /** Distinct ultra-equivalent variants within this shape class (Stage A: always 1). */
   ultraCount: number;

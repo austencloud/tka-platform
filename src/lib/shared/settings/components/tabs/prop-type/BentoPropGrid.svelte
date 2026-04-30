@@ -40,7 +40,7 @@
   }>();
 
   // Family definitions: one base prop per family, grouped by section.
-  // Deactivated props are filtered out — see DEACTIVATED_PROP_TYPES in registry.
+  // Deactivated props are filtered out - see DEACTIVATED_PROP_TYPES in registry.
   const PROP_FAMILIES: { label: string; bases: PropType[] }[] = [
     {
       label: "Staves & Clubs",
@@ -120,7 +120,7 @@
     </header>
   {/if}
 
-  <!-- Scrollable family grid — clicking the dimmed backdrop collapses variants -->
+  <!-- Scrollable family grid - clicking the dimmed backdrop collapses variants -->
   <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
   <div
     class="grid-scroll themed-scrollbar"

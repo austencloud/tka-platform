@@ -37,6 +37,14 @@ import type { IAuthenticator } from "../contracts/IAuthenticator";
 
 export class Authenticator implements IAuthenticator {
   async signInWithGoogle(): Promise<void> {
+    const { isDesktop } = await import("$lib/shared/desktop/isDesktop");
+    if (isDesktop()) {
+      const { signInWithDesktopOAuth } = await import(
+        "$lib/shared/desktop/TauriAuthBridge"
+      );
+      await signInWithDesktopOAuth();
+      return;
+    }
     const provider = new GoogleAuthProvider();
     provider.addScope("email");
     provider.addScope("profile");

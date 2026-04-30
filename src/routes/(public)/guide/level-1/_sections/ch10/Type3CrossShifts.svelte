@@ -23,7 +23,7 @@
   ];
 </script>
 
-<GuideSection id="type-3-cross-shifts" title="Type 3 — Cross-Shifts">
+<GuideSection id="type-3-cross-shifts" title="Type 3 - Cross-Shifts">
   <p>
     A Cross-Shift combines a shift and a dash.
     Since a dash has further to travel, it moves slightly faster.

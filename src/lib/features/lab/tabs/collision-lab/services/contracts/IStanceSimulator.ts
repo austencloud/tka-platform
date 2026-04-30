@@ -18,7 +18,7 @@
  * It uses the same sphere + line-segment primitives with the same radii so
  * its "clear" answer agrees with what the reviewer will see in the 3D viewport.
  *
- * Domain: Collision Lab — automated stance search
+ * Domain: Collision Lab - automated stance search
  */
 
 import type { Vector3 } from "three";
@@ -36,7 +36,7 @@ import type { StancePose } from "../../domain/types";
  * Mixamo skeleton or supplied as anthropometric constants.
  */
 export interface RestPoseGeometry {
-  /** Local Y of the hips bone — usually 0 since we anchor here. */
+  /** Local Y of the hips bone - usually 0 since we anchor here. */
   hipsY: number;
   /** Local position of Spine1 relative to hips. The spine pitch rotates
    *  everything above this joint forward. */
@@ -55,7 +55,7 @@ export interface RestPoseGeometry {
   upperArmLength: number;
   /** Forearm length in meters (elbow to hand). */
   forearmLength: number;
-  /** Lateral foot half-offset in rest stance — half the distance between
+  /** Lateral foot half-offset in rest stance - half the distance between
    *  feet along the X axis in local frame. Used for the balance check. */
   footHalfWidth: number;
   /** Radius of the head bounding sphere. */
@@ -84,7 +84,7 @@ export interface SimPropTarget {
 
 /** A single collision reported by the simulator. */
 export interface SimCollision {
-  /** Human-readable zone name — same vocabulary as CollisionDetector. */
+  /** Human-readable zone name - same vocabulary as CollisionDetector. */
   zone:
     | "prop-through-head"
     | "prop-through-torso"

@@ -5,7 +5,7 @@
    * A small, standalone 3D viewport that renders the avatar + two props
    * at a specific stance. Unlike `PoseViewport`, this component takes the
    * stance and hand definitions as props instead of reading them from
-   * the collision-lab context — so six instances can coexist on the page,
+   * the collision-lab context - so six instances can coexist on the page,
    * each showing a different candidate stance for the same pose.
    *
    * Used as the content of a `CandidateCard`. The parent card is
@@ -14,7 +14,7 @@
    *
    * Orbit controls are disabled so a tap on the card can be handled by
    * the card's click handler rather than stolen by the camera. Collision
-   * detection is also disabled — the card shows the pre-computed sim
+   * detection is also disabled - the card shows the pre-computed sim
    * result via a status pill, not a live collision readout.
    */
 
@@ -130,7 +130,7 @@
   const THUMB_CAMERA_POSITION: [number, number, number] = [1.7, 1.5, 1.7];
   const THUMB_CAMERA_TARGET: [number, number, number] = [0, 1.0, 0];
 
-  // PropAnchor refs — Avatar3D reads world positions from these for IK.
+  // PropAnchor refs - Avatar3D reads world positions from these for IK.
   let bluePropAnchorRef = $state<Group | undefined>(undefined);
   let redPropAnchorRef = $state<Group | undefined>(undefined);
 </script>

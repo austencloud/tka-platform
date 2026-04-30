@@ -3,7 +3,7 @@
 
   // One TextureLoader shared across all FramedSequence instances.
   // Creating a loader per-instance (or per prop change inside a $effect)
-  // was wasteful — the loader itself is stateless and safe to share.
+  // was wasteful - the loader itself is stateless and safe to share.
   const sharedLoader = new THREE.TextureLoader();
   sharedLoader.setCrossOrigin("anonymous");
 </script>

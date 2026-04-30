@@ -24,7 +24,7 @@
   } = $props();
 
   const timeAgo = $derived.by(() => {
-    if (!entry.lastScannedAt) return "—";
+    if (!entry.lastScannedAt) return "-";
     const ms = Date.now() - new Date(entry.lastScannedAt).getTime();
     const m = Math.floor(ms / 60000);
     if (m < 1) return "now";
@@ -43,7 +43,7 @@
   <button
     class="scard placeholder"
     onclick={() => onOpen(entry.code)}
-    aria-label={`${entry.word} — restoration failed. Click for details.`}
+    aria-label={`${entry.word} - restoration failed. Click for details.`}
     type="button"
   >
     <span class="badge badge-error" aria-hidden="true">!</span>
@@ -56,7 +56,7 @@
       <div class="cell"></div>
     </div>
     <div class="footer-strip">
-      <span class="loc">—</span>
+      <span class="loc">-</span>
       <span class="ago err">check</span>
     </div>
   </button>
@@ -81,7 +81,7 @@
       />
     </div>
     <div class="footer-strip">
-      <span class="loc">{entry.lastCity ?? "—"}</span>
+      <span class="loc">{entry.lastCity ?? "-"}</span>
       <span class="ago">{timeAgo}</span>
     </div>
   </div>

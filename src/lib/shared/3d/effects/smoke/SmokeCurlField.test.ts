@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { simplex2D, curl2D, SampledCurlGrid2D } from "./SmokeCurlField";
 
 describe("simplex2D", () => {
-  it("is deterministic — same (x,y) yields same value across calls", () => {
+  it("is deterministic - same (x,y) yields same value across calls", () => {
     for (let i = 0; i < 50; i++) {
       const x = (i * 0.317) % 7.0;
       const y = (i * 0.591) % 11.0;
@@ -12,7 +12,7 @@ describe("simplex2D", () => {
     }
   });
 
-  it("covers a bounded range — sampled values fall within [-1.5, 1.5]", () => {
+  it("covers a bounded range - sampled values fall within [-1.5, 1.5]", () => {
     // Stefan Gustavson's 2D simplex is formally bounded to ~[-1,1]; we
     // loosen the range slightly to catch regressions without making the
     // test flaky on floating-point edge cases.
@@ -38,7 +38,7 @@ describe("curl2D", () => {
     expect(a.vy).toBe(b.vy);
   });
 
-  it("evolves over time — same position produces different velocity at t=0 vs t=5", () => {
+  it("evolves over time - same position produces different velocity at t=0 vs t=5", () => {
     const a = curl2D(1.5, 2.3, 0);
     const b = curl2D(1.5, 2.3, 5);
     const deltaX = Math.abs(a.vx - b.vx);
@@ -46,7 +46,7 @@ describe("curl2D", () => {
     expect(deltaX + deltaY).toBeGreaterThan(0);
   });
 
-  it("produces roughly divergence-free flow — random positions don't explode", () => {
+  it("produces roughly divergence-free flow - random positions don't explode", () => {
     // Curl-noise is divergence-free by construction. We can't prove that
     // from finite samples but we can assert that velocities stay bounded
     // (not explosively growing) and non-degenerate (not collapsing to
@@ -96,7 +96,7 @@ describe("SampledCurlGrid2D", () => {
     grid.bake(0);
     const inside = grid.sample(1.0, 1.0, 0);
     const wrapped = grid.sample(1.0 + 8, 1.0 + 8, 0);
-    // Exact wrap — positions 8 units apart with domain=8 must sample
+    // Exact wrap - positions 8 units apart with domain=8 must sample
     // the same grid node.
     expect(wrapped.vx).toBeCloseTo(inside.vx, 6);
     expect(wrapped.vy).toBeCloseTo(inside.vy, 6);

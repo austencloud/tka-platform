@@ -19,7 +19,7 @@ export interface CardColors {
   gridMode: CardColorSet;
   continuity: CardColorSet;
   turnIntensity: CardColorSet;
-  sliceSize: CardColorSet;
+  period: CardColorSet;
   startEnd: CardColorSet;
   duration: CardColorSet;
   wordInput: CardColorSet;
@@ -55,7 +55,7 @@ const DEFAULT_COLORS: CardColors = {
     color: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
     shadowColor: "140deg 70% 45%",
   },
-  sliceSize: {
+  period: {
     color: "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%)",
     shadowColor: "330deg 75% 55%",
   },
@@ -116,7 +116,7 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
     color: "linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%)",
     shadowColor: "160deg 75% 35%",
   },
-  sliceSize: {
+  period: {
     // Deep rose/magenta - vibrant
     color: "linear-gradient(135deg, #db2777 0%, #be185d 50%, #9d174d 100%)",
     shadowColor: "330deg 80% 45%",

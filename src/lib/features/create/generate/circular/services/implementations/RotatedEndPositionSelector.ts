@@ -15,21 +15,21 @@ import {
   QUARTER_POSITION_MAP_CCW,
   QUARTER_POSITION_MAP_CW,
 } from "../../domain/constants/circular-position-maps";
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 
 export class RotatedEndPositionSelector {
   /**
    * Determine the required end position for a rotated LOOP
    *
-   * @param sliceSize - Whether the rotation is halved (180°) or quartered (90°)
+   * @param period - Whether the rotation is halved (180°) or quartered (90°)
    * @param startPosition - The starting position of the sequence
    * @returns The required end position to complete the rotation
    */
   determineRotatedEndPosition(
-    sliceSize: SliceSize,
+    period: Period,
     startPosition: GridPosition
   ): GridPosition {
-    if (sliceSize === SliceSize.QUARTERED) {
+    if (period === Period.QUARTERED) {
       // For quartered LOOPs, randomly choose between clockwise and counter-clockwise
       // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
       const cwEndPosition = QUARTER_POSITION_MAP_CW[startPosition]!;
@@ -38,7 +38,7 @@ export class RotatedEndPositionSelector {
       // Randomly select one
       return Math.random() < 0.5 ? cwEndPosition : ccwEndPosition;
     }
-    // SliceSize.HALVED
+    // Period.HALVED
     // For halved LOOPs, use the opposite position (180° rotation)
     // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
     return HALF_POSITION_MAP[startPosition]!;
@@ -47,20 +47,20 @@ export class RotatedEndPositionSelector {
   /**
    * Check if a given (start, end) position pair is valid for the slice size
    *
-   * @param sliceSize - The slice size to validate against
+   * @param period - The slice size to validate against
    * @param startPosition - The start position
    * @param endPosition - The end position
    * @returns Whether the position pair is valid for the given slice size
    */
   isValidRotatedPair(
-    sliceSize: SliceSize,
+    period: Period,
     startPosition: GridPosition,
     endPosition: GridPosition
   ): boolean {
-    if (sliceSize === SliceSize.HALVED) {
+    if (period === Period.HALVED) {
       return HALF_POSITION_MAP[startPosition] === endPosition;
     }
-    // SliceSize.QUARTERED
+    // Period.QUARTERED
     const cwEndPosition = QUARTER_POSITION_MAP_CW[startPosition];
     const ccwEndPosition = QUARTER_POSITION_MAP_CCW[startPosition];
     return endPosition === cwEndPosition || endPosition === ccwEndPosition;

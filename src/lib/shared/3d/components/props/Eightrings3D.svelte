@@ -59,7 +59,7 @@
 
 {#if visible}
   <T.Group {rotation} layers={propLayer}>
-    <!-- Upper ring (thumb end, +Y) — tilted forward for figure-8 crossing -->
+    <!-- Upper ring (thumb end, +Y) - tilted forward for figure-8 crossing -->
     <T.Mesh position={[0, ringOffset, 0]} rotation={[ringTilt, 0, 0]}>
       <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
       <T.MeshStandardMaterial
@@ -69,7 +69,7 @@
       />
     </T.Mesh>
 
-    <!-- Lower ring (pinky end, -Y) — tilted backward for figure-8 crossing -->
+    <!-- Lower ring (pinky end, -Y) - tilted backward for figure-8 crossing -->
     <T.Mesh position={[0, -ringOffset, 0]} rotation={[-ringTilt, 0, 0]}>
       <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
       <T.MeshStandardMaterial

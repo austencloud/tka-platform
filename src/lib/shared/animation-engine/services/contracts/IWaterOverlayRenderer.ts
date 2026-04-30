@@ -1,7 +1,7 @@
 /**
  * IWaterOverlayRenderer
  *
- * Interface for the Canvas2D water overlay — per-tip droplet emitter with
+ * Interface for the Canvas2D water overlay - per-tip droplet emitter with
  * palette-driven shading. Wraps `Water2DRenderer` and owns its own absolutely-
  * positioned canvas element, following the bloom/echo/sparkles overlay pattern.
  *

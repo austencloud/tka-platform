@@ -1,5 +1,5 @@
 <!--
-  RetroCards — CARDS.EXE main component
+  RetroCards - CARDS.EXE main component
 
   Choreo card viewer for TKA-OS. Displays real sequences from the user's
   library as choreo cards with pixelated pictograph beats rendered via
@@ -224,7 +224,7 @@
           {/each}
         </div>
 
-        <!-- Word label — individual letters spaced out -->
+        <!-- Word label - individual letters spaced out -->
         <div class="card-word-label">
           {currentCard.word.split("").join(" - ")}
         </div>
@@ -271,7 +271,7 @@
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Shell layout — fills parent window body                             */
+  /* Shell layout - fills parent window body                             */
   /* ------------------------------------------------------------------ */
   .cards-shell {
     display: flex;
@@ -297,7 +297,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Card viewport — sunken scrollable display area                      */
+  /* Card viewport - sunken scrollable display area                      */
   /* ------------------------------------------------------------------ */
   .cards-viewport {
     flex: 1;
@@ -333,7 +333,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Card frame — the actual card with border                            */
+  /* Card frame - the actual card with border                            */
   /* ------------------------------------------------------------------ */
   .card-frame {
     display: flex;

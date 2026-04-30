@@ -149,7 +149,7 @@ describe("Smoke2DRenderer", () => {
     expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
   });
 
-  it("caps pool size — steady-state fills bounded by poolSize", () => {
+  it("caps pool size - steady-state fills bounded by poolSize", () => {
     const r = new Smoke2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({
@@ -172,7 +172,7 @@ describe("Smoke2DRenderer", () => {
     expect(perFrame).toBeLessThanOrEqual(params.poolSize + 4);
   });
 
-  it("puffs rise (negative vy — screen-space upward) under positive riseSpeed", () => {
+  it("puffs rise (negative vy - screen-space upward) under positive riseSpeed", () => {
     const r = new Smoke2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({
@@ -196,7 +196,7 @@ describe("Smoke2DRenderer", () => {
     expect(minY).toBeLessThan(400);
   });
 
-  it("lifetime decay — pool drains after spawn stops", () => {
+  it("lifetime decay - pool drains after spawn stops", () => {
     const r = new Smoke2DRenderer();
     const ctx = makeCtx();
     // Short lifetime so we can observe decay within the test budget.
@@ -221,7 +221,7 @@ describe("Smoke2DRenderer", () => {
       motionEmission: 0,
       lifetimeSeconds: 0.3,
     });
-    // 0.6s of decay — all puffs from the 0.3s lifetime should die.
+    // 0.6s of decay - all puffs from the 0.3s lifetime should die.
     for (let i = 0; i < 36; i++) {
       r.render(ctx, decayParams, ALL_TIPS, 1 / 60);
     }
@@ -234,9 +234,9 @@ describe("Smoke2DRenderer", () => {
       r.render(ctx2, decayParams, ALL_TIPS, 1 / 60);
     }
     expect((ctx2.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
-    // Sanity — we did draw something during spawn.
+    // Sanity - we did draw something during spawn.
     expect(fillsWithSpawn).toBeGreaterThan(0);
-    // Sanity — draws during decay were fewer than the active-spawn era.
+    // Sanity - draws during decay were fewer than the active-spawn era.
     expect(fillsAfter).toBeGreaterThanOrEqual(fillsWithSpawn);
   });
 

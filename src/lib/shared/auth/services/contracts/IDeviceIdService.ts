@@ -1,5 +1,5 @@
 /**
- * DeviceIdService — per-browser stable identifier.
+ * DeviceIdService - per-browser stable identifier.
  *
  * Used to group anonymous scans into a "scanner profile" and to link
  * anonymous activity to a signed-in user account after first sign-in.

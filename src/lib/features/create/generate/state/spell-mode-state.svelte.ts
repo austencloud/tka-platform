@@ -2,7 +2,7 @@
  * Spell Mode State - Lightweight reactive state for spell mode within Generate tab
  *
  * Manages word input, expanded word, and letter sources.
- * Spell-specific fields only — generation config (level, grid, constraints)
+ * Spell-specific fields only - generation config (level, grid, constraints)
  * comes from the shared UIGenerationConfig.
  */
 

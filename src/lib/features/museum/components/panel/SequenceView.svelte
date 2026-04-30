@@ -38,7 +38,7 @@
       {/each}
     </div>
     <p class="strip-label">
-      "{sequence.word}" — {sequence.steps.length} beats
+      "{sequence.word}" - {sequence.steps.length} beats
     </p>
   </div>
 {:else}

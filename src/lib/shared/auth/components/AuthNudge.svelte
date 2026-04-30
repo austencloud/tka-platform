@@ -14,7 +14,7 @@
   const text = $derived(AUTH_NUDGE_TEXTS[trigger]);
   const isScribeNudge = $derived(trigger === "beat-cap-composer");
   const buttonText = $derived(
-    isScribeNudge ? "Become a Scribe" : "Create Account — free"
+    isScribeNudge ? "Become a Scribe" : "Create Account - free"
   );
 </script>
 

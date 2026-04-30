@@ -213,7 +213,7 @@ void main() {
 // gas next to cool ambient air) trigger Kelvin-Helmholtz instability.
 // On a coarse grid, numerical dissipation kills this instability before
 // it can grow. Curl noise injects physically-plausible vorticity at the
-// flame boundary to compensate — divergence-free by construction, so
+// flame boundary to compensate - divergence-free by construction, so
 // the pressure solver passes it through untouched.
 //
 // Reference: Bridson et al., "Curl-Noise for Procedural Fluid Flow"
@@ -233,7 +233,7 @@ uniform float u_dt;
 uniform float u_time;
 uniform float u_strength;      // curl noise amplitude
 
-// 2D gradient noise (Perlin-style) — less blocky than value noise,
+// 2D gradient noise (Perlin-style) - less blocky than value noise,
 // avoids the axis-aligned artifacts that look artificial in fire.
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -280,7 +280,7 @@ void main() {
   vec2 vel = texture(u_velocity, v_uv).xy;
   float temp = texture(u_temperature, v_uv).x;
 
-  // Compute temperature gradient magnitude — this tells us where
+  // Compute temperature gradient magnitude - this tells us where
   // the flame boundary is (steep gradient = hot/cold interface).
   float tL = texture(u_temperature, v_uv - vec2(u_texelSize.x, 0.0)).x;
   float tR = texture(u_temperature, v_uv + vec2(u_texelSize.x, 0.0)).x;
@@ -468,7 +468,7 @@ void main() {
 //   Layer 1: Fluid sim trail (wake behind the moving wick)
 //   Layer 2: Wick cores (always-bright flame at each tip position)
 //
-// The wick itself is always on fire — constant bright flame.
+// The wick itself is always on fire - constant bright flame.
 // Speed only affects how long the trailing wake extends behind it.
 // ============================================================
 
@@ -681,7 +681,8 @@ void main() {
   // Additive bloom: bright areas glow beyond their bounds
   vec4 combined = scene + bloom * u_bloomStrength;
 
-  // Premultiplied alpha output
-  fragColor = vec4(combined.rgb, max(combined.a, max(combined.r, max(combined.g, combined.b))));
+  // Premultiplied alpha: bloom adds light but doesn't inflate coverage.
+  // RGB may exceed alpha (emissive glow) — valid premultiplied, composites additively.
+  fragColor = vec4(combined.rgb, min(combined.a, 1.0));
 }
 `;

@@ -600,7 +600,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
    * whether cardinal (diamond) or intercardinal (box) locations are used.
    * Falls back to GridMode.DIAMOND when motion data is absent.
    *
-   * This is the authoritative source of truth — the stored sequence.gridMode
+   * This is the authoritative source of truth - the stored sequence.gridMode
    * field may be stale (e.g., published before gridMode was tracked).
    */
   private deriveSequenceGridMode(sequence: SequenceData): GridMode {
@@ -639,11 +639,11 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
       if (blueIsDiamond && redIsDiamond) return GridMode.DIAMOND;
       if (blueIsBox && redIsBox) return GridMode.BOX;
-      // Mixed/skewed — use DIAMOND as safe default
+      // Mixed/skewed - use DIAMOND as safe default
       return GridMode.DIAMOND;
     }
 
-    // No usable motion data — fall back to stored field, then DIAMOND
+    // No usable motion data - fall back to stored field, then DIAMOND
     return sequence.gridMode ?? GridMode.DIAMOND;
   }
 

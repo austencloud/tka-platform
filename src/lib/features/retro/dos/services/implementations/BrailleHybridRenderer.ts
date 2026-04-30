@@ -7,10 +7,10 @@
  * giving 2x horizontal and 4x vertical sub-pixel resolution over plain ASCII.
  *
  * Render pipeline (order matters):
- *   1. Grid skeleton — outer dots, center marker, hand dots → ASCII layer
- *   2. Orientation staves — directional lines with thumb caps → ASCII layer
- *   3. Motion arrows — Bezier curves, skipping occupied cells → Braille layer
- *   4. Composite — ASCII wins where active, Braille fills gaps → HTML output
+ *   1. Grid skeleton - outer dots, center marker, hand dots → ASCII layer
+ *   2. Orientation staves - directional lines with thumb caps → ASCII layer
+ *   3. Motion arrows - Bezier curves, skipping occupied cells → Braille layer
+ *   4. Composite - ASCII wins where active, Braille fills gaps → HTML output
  *
  * Domain: Retro DOS Era
  */
@@ -58,7 +58,7 @@ const PIXEL_MAP = [
 	[0x40, 0x80], // row 3: left=dot7, right=dot8
 ];
 
-// Arrow curve parameters — see spec for tuning guidance
+// Arrow curve parameters - see spec for tuning guidance
 const RADIAL_PUSH = 20;
 const DOT_GAP = 10;
 const BULGE_FACTOR = 0.55;
@@ -892,7 +892,7 @@ export class BrailleHybridRenderer implements IAsciiRenderer {
 	}
 
 	// ========================================================================
-	// STEP 4: COMPOSITE — merge ASCII + Braille into HTML output
+	// STEP 4: COMPOSITE - merge ASCII + Braille into HTML output
 	// ========================================================================
 
 	private composite(braille: BrailleLayer, ascii: AsciiLayer, height: number): string[] {

@@ -24,7 +24,7 @@
   async function handleJoin() {
     if (!nearbyRoom || joining) return;
 
-    // Capture room data before any async work — the reactive value can become
+    // Capture room data before any async work - the reactive value can become
     // null if the room is removed from Firebase mid-operation (onDisconnect cleanup).
     const room = { ...nearbyRoom };
 

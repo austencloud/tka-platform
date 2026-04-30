@@ -147,7 +147,7 @@ even when Svelte recreates the component instance.
     const settings = getSettings();
 
     // Determine the actual prop type being rendered.
-    // If motionData explicitly says HAND, trust it — the preparer preserves HAND
+    // If motionData explicitly says HAND, trust it - the preparer preserves HAND
     // when the source data uses it (e.g. PositionVisualizer, Assembly mode).
     // Otherwise, settings prop type takes precedence over stored prop type.
     let actualPropType: PropType | string | undefined;

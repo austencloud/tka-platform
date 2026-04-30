@@ -11,8 +11,8 @@
 import {
   LOOPType,
   LOOPTypeValue,
-  SliceSize,
-  SliceSizeValue,
+  Period,
+  PeriodValue,
   StepBeatData,
   MotionData,
 } from "./types";
@@ -39,7 +39,7 @@ function cloneStep(beat: StepBeatData): StepBeatData {
  */
 function validateSequence(
   sequence: StepBeatData[],
-  sliceSize: SliceSizeValue,
+  period: PeriodValue,
   loopType: LOOPTypeValue
 ): void {
   if (sequence.length < 2) {
@@ -64,11 +64,11 @@ function validateSequence(
 
   if (isRotatedLoop) {
     const key = `${startPos},${endPos}`;
-    const validationSet = sliceSize === SliceSize.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
+    const validationSet = period === Period.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
 
     if (!validationSet.has(key)) {
       throw new Error(
-        `Invalid position pair for ${sliceSize} ${loopType}: ${startPos} → ${endPos}`
+        `Invalid position pair for ${period} ${loopType}: ${startPos} → ${endPos}`
       );
     }
   }
@@ -77,8 +77,8 @@ function validateSequence(
 /**
  * Calculate how many beats to add based on slice size
  */
-function calculateEntriesToAdd(sequenceLength: number, sliceSize: SliceSizeValue): number {
-  if (sliceSize === SliceSize.HALVED) {
+function calculateEntriesToAdd(sequenceLength: number, period: PeriodValue): number {
+  if (period === Period.HALVED) {
     return sequenceLength; // Double the sequence
   }
   return sequenceLength * 3; // Quadruple the sequence
@@ -87,10 +87,10 @@ function calculateEntriesToAdd(sequenceLength: number, sliceSize: SliceSizeValue
 /**
  * Get index mapping for retrieving corresponding beats from first section
  */
-function getIndexMap(sliceSize: SliceSizeValue, length: number): Record<number, number> {
+function getIndexMap(period: PeriodValue, length: number): Record<number, number> {
   const map: Record<number, number> = {};
 
-  if (sliceSize === SliceSize.QUARTERED) {
+  if (period === Period.QUARTERED) {
     const quarterLength = Math.floor(length / 4);
     for (let i = quarterLength + 1; i <= length; i++) {
       map[i] = i - quarterLength;
@@ -202,13 +202,13 @@ function calculateEndPosition(blueEndLoc: string, redEndLoc: string): string | n
  */
 function executeStrictRotated(
   sequence: StepBeatData[],
-  sliceSize: SliceSizeValue
+  period: PeriodValue
 ): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
-  const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
+  const entriesToAdd = calculateEntriesToAdd(sequenceLength, period);
   const finalLength = sequenceLength + entriesToAdd;
-  const indexMap = getIndexMap(sliceSize, finalLength);
+  const indexMap = getIndexMap(period, finalLength);
 
   let lastStep = sequence[sequence.length - 1]!;
   let nextStepNumber = lastStep.stepNumber + 1;
@@ -252,11 +252,11 @@ function executeStrictRotated(
  */
 function executeStrictMirrored(
   sequence: StepBeatData[],
-  sliceSize: SliceSizeValue
+  period: PeriodValue
 ): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
-  const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
+  const entriesToAdd = calculateEntriesToAdd(sequenceLength, period);
 
   let lastStep = sequence[sequence.length - 1]!;
   let nextStepNumber = lastStep.stepNumber + 1;
@@ -307,11 +307,11 @@ function executeStrictMirrored(
  */
 function executeStrictSwapped(
   sequence: StepBeatData[],
-  sliceSize: SliceSizeValue
+  period: PeriodValue
 ): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
-  const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
+  const entriesToAdd = calculateEntriesToAdd(sequenceLength, period);
 
   let lastStep = sequence[sequence.length - 1]!;
   let nextStepNumber = lastStep.stepNumber + 1;
@@ -355,11 +355,11 @@ function executeStrictSwapped(
  */
 function executeStrictInverted(
   sequence: StepBeatData[],
-  sliceSize: SliceSizeValue
+  period: PeriodValue
 ): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
-  const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
+  const entriesToAdd = calculateEntriesToAdd(sequenceLength, period);
 
   let lastStep = sequence[sequence.length - 1]!;
   let nextStepNumber = lastStep.stepNumber + 1;
@@ -402,14 +402,14 @@ function executeStrictInverted(
  */
 function executeCompoundLoop(
   sequence: StepBeatData[],
-  sliceSize: SliceSizeValue,
+  period: PeriodValue,
   loopType: LOOPTypeValue
 ): StepBeatData[] {
   const startPosition = sequence.shift()!;
   const sequenceLength = sequence.length;
-  const entriesToAdd = calculateEntriesToAdd(sequenceLength, sliceSize);
+  const entriesToAdd = calculateEntriesToAdd(sequenceLength, period);
   const finalLength = sequenceLength + entriesToAdd;
-  const indexMap = getIndexMap(sliceSize, finalLength);
+  const indexMap = getIndexMap(period, finalLength);
 
   let lastStep = sequence[sequence.length - 1]!;
   let nextStepNumber = lastStep.stepNumber + 1;
@@ -521,27 +521,27 @@ function executeCompoundLoop(
 export function executeLOOP(
   partialBeats: StepBeatData[],
   loopType: LOOPTypeValue,
-  sliceSize: SliceSizeValue
+  period: PeriodValue
 ): StepBeatData[] {
   // Clone the beats to avoid mutation
   const sequence = partialBeats.map(cloneStep);
 
   // Validate sequence
-  validateSequence(sequence, sliceSize, loopType);
+  validateSequence(sequence, period, loopType);
 
   // Execute appropriate LOOP type
   switch (loopType) {
     case LOOPType.ROTATED:
-      return executeStrictRotated(sequence, sliceSize);
+      return executeStrictRotated(sequence, period);
 
     case LOOPType.MIRRORED:
-      return executeStrictMirrored(sequence, sliceSize);
+      return executeStrictMirrored(sequence, period);
 
     case LOOPType.SWAPPED:
-      return executeStrictSwapped(sequence, sliceSize);
+      return executeStrictSwapped(sequence, period);
 
     case LOOPType.INVERTED:
-      return executeStrictInverted(sequence, sliceSize);
+      return executeStrictInverted(sequence, period);
 
     case LOOPType.ROTATED_SWAPPED:
     case LOOPType.MIRRORED_SWAPPED:
@@ -550,12 +550,12 @@ export function executeLOOP(
     case LOOPType.MIRRORED_ROTATED:
     case LOOPType.SWAPPED_INVERTED:
     case LOOPType.MIRRORED_INVERTED_ROTATED:
-      return executeCompoundLoop(sequence, sliceSize, loopType);
+      return executeCompoundLoop(sequence, period, loopType);
 
     default:
       // Fallback to strict rotated
       console.warn(`Unknown LOOP type: ${loopType}, using ROTATED`);
-      return executeStrictRotated(sequence, sliceSize);
+      return executeStrictRotated(sequence, period);
   }
 }
 
@@ -566,7 +566,7 @@ export function executeLOOP(
 export function determineEndPosition(
   loopType: LOOPTypeValue,
   startPosition: string,
-  sliceSize: SliceSizeValue
+  period: PeriodValue
 ): string {
   // For rotated LOOPs, end position is rotated from start
   const isRotatedLoop = [
@@ -578,7 +578,7 @@ export function determineEndPosition(
   ].includes(loopType as any);
 
   if (isRotatedLoop) {
-    if (sliceSize === SliceSize.HALVED) {
+    if (period === Period.HALVED) {
       return HALF_POSITION_MAP[startPosition] ?? startPosition;
     } else {
       // For quartered, use clockwise quarter rotation

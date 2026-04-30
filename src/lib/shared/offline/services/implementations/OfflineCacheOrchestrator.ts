@@ -4,9 +4,9 @@
  * Coordinates proactive background caching so the app works offline.
  *
  * Two tasks run in sequence after the gallery first loads:
- *  1. Gallery metadata — persisted automatically by GalleryOfflineCache whenever
+ *  1. Gallery metadata - persisted automatically by GalleryOfflineCache whenever
  *     PublicSequencesLoader fetches from Firestore. Nothing to do here.
- *  2. Thumbnail prefetch — download each sequence's first thumbnail into
+ *  2. Thumbnail prefetch - download each sequence's first thumbnail into
  *     ThumbnailLocalCache so the gallery renders without network.
  *
  * Background mode throttles concurrency to connection quality so the prefetch
@@ -41,7 +41,7 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
 
     const stats = await this.galleryCache.getStats();
     if (stats.count === 0) {
-      // Gallery hasn't loaded yet — nothing to prefetch.
+      // Gallery hasn't loaded yet - nothing to prefetch.
       return;
     }
 
@@ -72,7 +72,7 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
       galleryLastSyncedAt: galleryStats.lastSyncedAt,
       thumbnailsCached: thumbnailStats.count,
       thumbnailsSizeBytes: thumbnailStats.sizeBytes,
-      propSvgsCached: true, // Always true — prop SVGs are in Workbox precache
+      propSvgsCached: true, // Always true - prop SVGs are in Workbox precache
       isOfflineReady: galleryStats.count > 0,
     };
   }
@@ -117,7 +117,7 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
       for (let i = 0; i < withThumbnails.length; i += concurrency) {
         if (this.cancelled) break;
 
-        // Pause while the tab is hidden — save battery on mobile.
+        // Pause while the tab is hidden - save battery on mobile.
         if (typeof document !== "undefined" && document.hidden) {
           await this.waitForVisible();
         }
@@ -137,7 +137,7 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
           batch.map(async (sequence) => {
             const url = sequence.thumbnails[0];
 
-            // Skip already-cached entries — avoids redundant fetches.
+            // Skip already-cached entries - avoids redundant fetches.
             if (await this.thumbnailCache.has(url)) return;
 
             try {

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * RoomPicker — teleport button + overlay for jumping between museum rooms.
+   * RoomPicker - teleport button + overlay for jumping between museum rooms.
    *
    * A small compass button in the top-right opens a grid overlay of all rooms.
    * Clicking a room teleports the player there and closes the overlay.

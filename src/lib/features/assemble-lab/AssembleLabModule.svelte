@@ -40,7 +40,7 @@
       builderState.setShowCenter(saved.preferredShowCenter);
     }
   } catch {
-    // Settings unavailable — use defaults
+    // Settings unavailable - use defaults
   }
 
   $effect(() => {

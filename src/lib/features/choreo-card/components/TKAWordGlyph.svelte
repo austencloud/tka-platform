@@ -1,48 +1,56 @@
 <script lang="ts">
   import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-  import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
+  import { compressWord, type CompressedSegment } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   interface Props {
     word: string;
     /** Height of each glyph in px. Dash bar scales proportionally. */
     height?: number;
+    darkMode?: boolean;
   }
 
-  let { word, height = 32 }: Props = $props();
+  let { word, height = 32, darkMode = false }: Props = $props();
 
   const cache = getGlyphCache();
 
-  // Dash bar dimensions as fractions of glyph height.
-  // Derived from Dash.svelte constants (DASH_H=20, DASH_W=70) relative to
-  // a typical letter natural height of ~65px in the trimmed SVG viewBox.
-  const DASH_HEIGHT_RATIO = 0.31;
-  const DASH_WIDTH_RATIO = 1.08;
+  const DASH_HEIGHT_RATIO = 0.20;
+  const DASH_WIDTH_RATIO = 0.70;
+  const DASH_GAP_RATIO = 0.10;
+  const LETTER_GAP_RATIO = 0.12;
+  const DOT_SIZE_RATIO = 0.15;
+  const GROUP_GAP_RATIO = 0.35;
 
-  const tokens = $derived(word ? tokenizeWord(word) : []);
+  const segments = $derived(word ? compressWord(word) : []);
+  const hasCompression = $derived(segments.some((s: CompressedSegment) => s.repeat > 1));
 </script>
 
-{#if tokens.length > 0}
-  <div class="tka-word-glyph" style="height: {height}px">
-    {#each tokens as token}
-      {@const baseLetter = isDashLetter(token) ? getBaseLetter(token) : token}
-      {@const dataUrl = cache.getGlyphDataUrl(baseLetter)}
-      {#if dataUrl}
-        <span class="glyph">
-          <img
-            src={dataUrl}
-            alt={token}
-            height={height}
-            draggable="false"
-          />
-          {#if isDashLetter(token)}
-            <span
-              class="dash-bar"
-              style="height: {height * DASH_HEIGHT_RATIO}px; width: {height * DASH_WIDTH_RATIO}px;"
-            ></span>
-          {/if}
-        </span>
+{#if segments.length > 0}
+  <div class="tka-word-glyph" class:dark-mode={darkMode} style="height: {height}px;">
+    {#each segments as segment, segIdx}
+      {#if segIdx > 0 && hasCompression}
+        <span
+          class="group-dot"
+          style="width: {height * DOT_SIZE_RATIO}px; height: {height * DOT_SIZE_RATIO}px; margin: 0 {height * GROUP_GAP_RATIO * 0.5}px;"
+        ></span>
       {/if}
+      <span class="token-row" style="gap: {height * LETTER_GAP_RATIO}px;">
+        {#each segment.tokens as token}
+          {@const baseLetter = isDashLetter(token) ? getBaseLetter(token) : token}
+          {@const dataUrl = cache.getGlyphDataUrl(baseLetter)}
+          {#if dataUrl}
+            <span class="glyph" style="gap: {height * DASH_GAP_RATIO}px;">
+              <img src={dataUrl} alt={token} height={height} draggable="false" />
+              {#if isDashLetter(token)}
+                <span
+                  class="dash-bar"
+                  style="height: {height * DASH_HEIGHT_RATIO}px; width: {height * DASH_WIDTH_RATIO}px;"
+                ></span>
+              {/if}
+            </span>
+          {/if}
+        {/each}
+      </span>
     {/each}
   </div>
 {/if}
@@ -51,14 +59,17 @@
   .tka-word-glyph {
     display: flex;
     align-items: center;
-    gap: 0.15em;
     overflow: hidden;
+  }
+
+  .token-row {
+    display: flex;
+    align-items: center;
   }
 
   .glyph {
     display: flex;
     align-items: center;
-    gap: 0.1em;
     flex-shrink: 0;
   }
 
@@ -67,10 +78,22 @@
     width: auto;
   }
 
+  .dark-mode .glyph img {
+    filter: invert(0.9);
+  }
+
   .dash-bar {
     display: inline-block;
     background: currentColor;
     border-radius: 9999px;
+    flex-shrink: 0;
+  }
+
+  .group-dot {
+    display: inline-block;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
     flex-shrink: 0;
   }
 </style>

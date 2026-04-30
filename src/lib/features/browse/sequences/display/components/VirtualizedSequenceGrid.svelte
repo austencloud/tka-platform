@@ -17,7 +17,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { getVariationGrouper } from "../getVariationGrouper";
   import { getLayoutCalculator } from "$lib/shared/render/getLayoutCalculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
-  import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
+
 
   /**
    * The virtualizer needs to know each row's height before it renders.
@@ -98,7 +98,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     if (containerWidth === 0) return 2;
 
     if (pinchColumnOverride !== undefined) {
-      return Math.max(2, Math.min(gridZoomManager.maxColumns, pinchColumnOverride));
+      const maxForWidth = containerWidth < 480 ? 2 : containerWidth < 800 ? 3 : containerWidth < 1200 ? 4 : 5;
+      return Math.max(2, Math.min(maxForWidth, pinchColumnOverride));
     }
 
     if (containerWidth >= 1400) return 5;
@@ -110,7 +111,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   const rowCount = $derived(Math.ceil(sequences.length / columnCount));
 
   // Per-row height estimation: use the tallest card in each row.
-  // This is the key fix for the overlap bug — the old code used a single
+  // This is the key fix for the overlap bug - the old code used a single
   // sample which broke when rows had mixed beat counts.
   // Row height = tallest card in the row. The virtualizer's `gap: 16` option
   // adds spacing between rows separately, so we don't add it here.
@@ -151,7 +152,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     sequenceDataProvider.prefetch(seq);
   }
 
-  // Single virtualizer instance — created once, recreated when deps change.
+  // Single virtualizer instance - created once, recreated when deps change.
   // Uses per-row estimateSize for accurate initial layout, plus measureElement
   // for pixel-perfect correction after render.
   type VirtualizerInstance = SvelteVirtualizer<HTMLDivElement, Element>;
@@ -208,7 +209,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         const width = entry.contentRect.width;
         if (width > 0) {
           containerWidth = width;
-          gridZoomManager.updateContainerWidth(width);
           if (currentVirtualizer) currentVirtualizer.measure();
         }
       }
@@ -222,7 +222,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         const width = scrollElement.getBoundingClientRect().width;
         if (width > 0) {
           containerWidth = width;
-          gridZoomManager.updateContainerWidth(width);
         }
       }
     });

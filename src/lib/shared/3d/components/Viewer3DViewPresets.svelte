@@ -4,8 +4,8 @@
    *
    * Camera angle presets for the 3D viewer: Main, Back, Side, Top, 3/4.
    * All presets look at the grid center. Grid center is mode-dependent:
-   * - Wall mode: (0, 0, 0.3) — gridOffset forward of avatar
-   * - Dual-wheel: (0, 0, 0) — midpoint between the two lateral grids
+   * - Wall mode: (0, 0, 0.3) - gridOffset forward of avatar
+   * - Dual-wheel: (0, 0, 0) - midpoint between the two lateral grids
    *
    * Distance is computed from FOV + viewport size so the grid fills the view.
    */
@@ -22,7 +22,7 @@
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
   const isDualWheel = $derived(avatarState?.planeMode === PlaneMode.DUAL_WHEEL);
 
-  // Grid center in world space — depends on plane mode.
+  // Grid center in world space - depends on plane mode.
   // Wall: grid T.Group at z = gridOffset = 0.3. Y=0 is shoulder height.
   // Dual-wheel: two grids at x = ±0.4, z = 0. Midpoint is origin.
   const gridCenter = $derived({
@@ -59,7 +59,7 @@
     return computeDistanceForWidth(sceneWidth);
   }
 
-  // Side views use a consistent distance regardless of mode —
+  // Side views use a consistent distance regardless of mode -
   // midpoint between single-grid and dual-grid widths.
   function computeSideDistance(): number {
     const singleWidth = GRID_RADIUS * 2;

@@ -1,5 +1,5 @@
 /**
- * Village Visual State — Toggle states, event toast queue, and camera auto-focus scoring.
+ * Village Visual State - Toggle states, event toast queue, and camera auto-focus scoring.
  *
  * Separated from the core village-state because these are purely visual concerns
  * that don't affect the ECS simulation.
@@ -39,7 +39,7 @@ export interface VillageVisualState {
 	// Death marks
 	readonly deathMarks: DeathMark[];
 
-	// Relight flash — sequenceIds currently mid-flash
+	// Relight flash - sequenceIds currently mid-flash
 	readonly relightingMonuments: Set<string>;
 
 	// Toggle setters
@@ -57,7 +57,7 @@ export interface VillageVisualState {
 	addDeathMark(entity: VillageEntity, currentTick: number): void;
 	tickDeathMarks(currentTick: number): void;
 
-	// Relight flash — spikes emissive on a monument for 1300ms
+	// Relight flash - spikes emissive on a monument for 1300ms
 	triggerRelight(sequenceId: string): void;
 }
 

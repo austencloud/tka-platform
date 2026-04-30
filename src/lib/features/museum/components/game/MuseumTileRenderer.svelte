@@ -107,7 +107,7 @@
     border: 1px solid rgba(200, 180, 140, 0.2);
   }
 
-  /* ---- Exhibit panel — display frame on the wall ---- */
+  /* ---- Exhibit panel - display frame on the wall ---- */
 
   .tile-exhibit {
     background: #12123a;
@@ -132,7 +132,7 @@
     color: #c8b890;
   }
 
-  /* ---- Performer station — raised green stage ---- */
+  /* ---- Performer station - raised green stage ---- */
 
   .tile-performer {
     background: #0e2e0e;
@@ -159,7 +159,7 @@
     color: #7ad67a;
   }
 
-  /* ---- Pedestal — solid raised stone block ---- */
+  /* ---- Pedestal - solid raised stone block ---- */
 
   .tile-pedestal {
     background: #3a3028;
@@ -188,7 +188,7 @@
     color: #b8a870;
   }
 
-  /* ---- Torch — bigger flame, strong glow ---- */
+  /* ---- Torch - bigger flame, strong glow ---- */
 
   .tile-torch {
     background: #2a2520;

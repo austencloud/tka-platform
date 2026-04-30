@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TKA — Art Deco Pictograph (1925)</title>
+  <title>TKA - Art Deco Pictograph (1925)</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -348,7 +348,7 @@
     blue:       '#1A6FFF',   // electric blue
     red:        '#CC1530',   // ruby
     structural: '#D4AF37',   // gold
-    bg:         null,        // transparent — era chrome shows through
+    bg:         null,        // transparent - era chrome shows through
   };
 
   // ─── Grid positions (8-point compass on a 160-radius circle) ─────────────
@@ -1009,8 +1009,8 @@
       // Resolve the hand's visual direction of travel from motion type +
       // rotationDirection. PictographGeometry returns visual CW/CCW using
       // canvas convention (y-down, so visual CW = angle increasing).
-      // drawDecoArc inverts this internally — its "ccw" parameter yields an
-      // increasing-angle sweep — so we flip here to match.
+      // drawDecoArc inverts this internally - its "ccw" parameter yields an
+      // increasing-angle sweep - so we flip here to match.
       const visualDir = (window.PictographGeometry && window.PictographGeometry.handDirection(hand))
         || (hand.motionType === 'pro' ? 'cw' : 'ccw');
       const decoDir = visualDir === 'cw' ? 'ccw' : 'cw';
@@ -1180,9 +1180,9 @@
   // Two paths:
   //   1. Canonical bitmap available (parent rendered via Canvas2DDirectRenderer):
   //      recolor the canonical into our electric blue / ruby / gold palette
-  //      with flat hard edges (Art Deco is crisp — no pixelation) and
+  //      with flat hard edges (Art Deco is crisp - no pixelation) and
   //      composite over the chrome. This inherits all correct motion semantics
-  //      — pro vs anti, turn indicators, dashes, floats — from the canonical
+  //      - pro vs anti, turn indicators, dashes, floats - from the canonical
   //      renderer without reimplementing them here.
   //
   //   2. No canonical (standalone page open, or canonical render failed):
@@ -1191,13 +1191,13 @@
   //
   // Era chrome (background, sunburst, border, decorative band, corner fans,
   // pinstripes, center disc, letter, motion label, title banner) is drawn
-  // identically either way — that's where this era's voice lives.
+  // identically either way - that's where this era's voice lives.
   function render(data, canonical, meta) {
     ctx.clearRect(0, 0, W, H);
 
     const pts = buildGridPoints(data.gridMode);
 
-    // Chrome — underlay (always drawn first)
+    // Chrome - underlay (always drawn first)
     drawBackground();
     drawSunburst();
     drawBorder();
@@ -1219,7 +1219,7 @@
       drawHandDots(pts, data);
     }
 
-    // Chrome — overlay (drawn on top so letter/disc/banner stay legible)
+    // Chrome - overlay (drawn on top so letter/disc/banner stay legible)
     drawCenterDisc();
     drawLetter(data.letter);
     drawMotionLabel(data);

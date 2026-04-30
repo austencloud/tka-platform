@@ -1,5 +1,5 @@
 /**
- * fire-noise.glsl.ts — 3D Simplex Noise for volumetric fire raymarching.
+ * fire-noise.glsl.ts - 3D Simplex Noise for volumetric fire raymarching.
  *
  * Stefan Gustavson's webgl-noise simplex3D implementation, inlined as a GLSL
  * string constant. Two+ octaves of this noise produce the turbulent internal
@@ -11,7 +11,7 @@
 
 export const simplex3dNoise = /* glsl */ `
 //
-// 3D Simplex Noise — Stefan Gustavson (webgl-noise)
+// 3D Simplex Noise - Stefan Gustavson (webgl-noise)
 //
 vec3 mod289_v3(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289_v4(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }

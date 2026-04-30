@@ -123,7 +123,7 @@
       primaryFailed = true;
       return;
     }
-    // Fallback also failed — show initials
+    // Fallback also failed - show initials
     fallbackFailed = true;
     imageLoaded = false;
     onerror?.();

@@ -244,7 +244,7 @@
       await localCache.clear();
 
       // Nuke ALL remaining in-memory caches (URL cache, knownExists, static manifest)
-      // This forces every subsequent thumbnail request to render fresh — including
+      // This forces every subsequent thumbnail request to render fresh - including
       // thumbnails that scroll into view later, not just currently visible ones
       const orchestrator = getThumbnailRenderOrchestrator();
       orchestrator.invalidateAllCaches();

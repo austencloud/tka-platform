@@ -222,7 +222,7 @@
       }
     } catch (error) {
       console.error("Failed to save prop preference to profile:", error);
-      // Non-blocking — onboarding continues even if profile save fails
+      // Non-blocking - onboarding continues even if profile save fails
     }
 
     handleNext("pictographMode");

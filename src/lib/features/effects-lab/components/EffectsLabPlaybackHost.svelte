@@ -53,14 +53,14 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   const STORAGE_KEY = "effects-lab-state";
   const visibilityManager = getAnimationVisibilityManager();
 
-  // Shared effects config state — single source of truth for per-effect intents
+  // Shared effects config state - single source of truth for per-effect intents
   // (zap, sparkles, echo, bloom today). The Customize panels write here via
   // getEffectsConfigContext(); the AnimatorCanvas reads the same state each
   // frame so slider changes flow straight to the canvas.
   const effectsConfigState = createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
 
-  // ─── Persisted state (playback only — effect params managed by VM) ────
+  // ─── Persisted state (playback only - effect params managed by VM) ────
   interface EffectsLabPersistedState {
     sequenceId: string | null;
     bpm: number;
@@ -106,7 +106,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   // The EffectsPanel writes to the VM; we read from it to know which mode
   // is active for the canvas conditional props and accent color theming.
   let vmActiveMode = $state<
-    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "echo" | "bloom" | "water" | "bubbles" | "petals" | "smoke" | "ink" | "frost" | "silk" | "none"
+    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "echo" | "bloom" | "water" | "bubbles" | "petals" | "smoke" | "ink" | "frost" | "silk" | "pulse" | "none"
   >("none");
 
   function syncActiveMode() {

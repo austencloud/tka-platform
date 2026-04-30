@@ -7,10 +7,10 @@
  * pre-extracted and processed sequentially.
  *
  * This avoids two problems with sharing the train module's singleton:
- * 1. VIDEO mode requires monotonically increasing timestamps — if the
+ * 1. VIDEO mode requires monotonically increasing timestamps - if the
  *    camera was used first, video frame timestamps (starting at 0)
  *    would violate monotonicity.
- * 2. VIDEO mode's detect() API differs from IMAGE mode — calling the
+ * 2. VIDEO mode's detect() API differs from IMAGE mode - calling the
  *    wrong one throws at runtime.
  */
 

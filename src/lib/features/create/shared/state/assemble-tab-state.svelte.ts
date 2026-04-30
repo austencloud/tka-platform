@@ -184,7 +184,7 @@ export function createAssembleTabState(
     });
   }
 
-  // Start the bridge immediately — $effect.root() doesn't need component context
+  // Start the bridge immediately - $effect.root() doesn't need component context
   startReactiveBridge();
 
   // ============================================================================
@@ -236,7 +236,7 @@ export function createAssembleTabState(
     // Initialization
     initializeAssembleTab,
 
-    // Cleanup — call when Create module unmounts
+    // Cleanup - call when Create module unmounts
     destroy: () => {
       if (cleanupEffects) {
         cleanupEffects();

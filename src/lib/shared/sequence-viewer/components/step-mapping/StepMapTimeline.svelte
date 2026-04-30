@@ -55,7 +55,7 @@
     // If tapping a marker handle, let that handler take over
     if (draggingIndex >= 0) return;
 
-    // Start scrubbing — seek immediately and continue on move
+    // Start scrubbing - seek immediately and continue on move
     isScrubbing = true;
     const target = event.currentTarget as HTMLElement;
     target.setPointerCapture(event.pointerId);

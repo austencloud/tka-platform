@@ -365,7 +365,7 @@
             </button>
           {/if}
 
-          <!-- Overflow menu for secondary actions — self-hides when no items -->
+          <!-- Overflow menu for secondary actions - self-hides when no items -->
           <ViewerOverflowMenu
             {isPublished}
             {onCopyLink}
@@ -381,7 +381,7 @@
   {:else}
     <!-- Desktop: tempo (shrink) | transport (fixed center) | actions (shrink) -->
     <div class="desktop-row">
-      <!-- Left: tempo controls — takes whatever space it needs, no more -->
+      <!-- Left: tempo controls - takes whatever space it needs, no more -->
       <div class="footer-side footer-left">
         <div class="tempo-section">
           <TempoControl
@@ -394,7 +394,7 @@
         </div>
       </div>
 
-      <!-- Center: play + step controls — fixed width, always centered -->
+      <!-- Center: play + step controls - fixed width, always centered -->
       <div class="footer-center">
         {#if onRestartToStart}
           <button
@@ -425,7 +425,7 @@
         </button>
       </div>
 
-      <!-- Right: action buttons — takes whatever space it needs -->
+      <!-- Right: action buttons - takes whatever space it needs -->
       <div class="footer-side footer-right">
         <div class="actions-section">
           <!-- Favorite heart -->

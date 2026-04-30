@@ -1,5 +1,5 @@
 <!--
-  RetroToolbar — Row of icon buttons with tooltips
+  RetroToolbar - Row of icon buttons with tooltips
 
   Renders a horizontal row of raised toolbar buttons. Each button can
   contain arbitrary HTML for its icon (pixel art SVG, font icon, etc.).

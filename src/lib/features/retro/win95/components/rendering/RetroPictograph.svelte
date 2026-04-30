@@ -1,5 +1,5 @@
 <!--
-  RetroPictograph — 16-color pixelated pictograph canvas
+  RetroPictograph - 16-color pixelated pictograph canvas
 
   Renders a single TKA pictograph beat as chunky pixel art
   using the PixelRenderer service. Internal resolution is 64x64,

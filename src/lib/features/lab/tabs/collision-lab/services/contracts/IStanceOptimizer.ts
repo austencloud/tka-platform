@@ -6,11 +6,11 @@
  * pitch) that minimize a loss function combining reachability, collision
  * depth, balance, and joint comfort.
  *
- * The optimizer is gradient-free — it uses coordinate descent with an
+ * The optimizer is gradient-free - it uses coordinate descent with an
  * adaptive step size, which works well for the 4-dimensional search
  * space and doesn't need differentiable physics.
  *
- * Domain: Collision Lab — automated stance search
+ * Domain: Collision Lab - automated stance search
  */
 
 import type { Vector3 } from "three";
@@ -19,7 +19,7 @@ import type { IStanceSimulator, SimPropTarget, SimResult } from "./IStanceSimula
 
 /**
  * The pose targets the optimizer is trying to satisfy. This is a subset
- * of the full PoseDefinition — the optimizer only needs to know where the
+ * of the full PoseDefinition - the optimizer only needs to know where the
  * hands must land, not which enum values represent them.
  */
 export interface OptimizerInput {
@@ -41,7 +41,7 @@ export interface OptimizerResult {
   stance: StancePose;
   /** Scalar loss of that stance (lower is better). */
   loss: number;
-  /** The raw sim result for the best stance — lets the UI show
+  /** The raw sim result for the best stance - lets the UI show
    *  reachability / collision details without re-running the sim. */
   simResult: SimResult;
   /** Number of evaluations actually performed. Useful for perf tuning. */
@@ -66,7 +66,7 @@ export interface IStanceOptimizer {
 
   /**
    * Run a single coordinate-descent pass from exactly one seed stance.
-   * Unlike `optimize`, this does NOT do multi-start — it honors the seed
+   * Unlike `optimize`, this does NOT do multi-start - it honors the seed
    * literally and refines from there. The multiple-choice candidate
    * generator uses this to build N visually-distinct solutions, one per
    * hand-chosen seed, each stuck in its own basin of the loss surface.

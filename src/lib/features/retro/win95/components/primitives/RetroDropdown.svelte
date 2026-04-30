@@ -1,5 +1,5 @@
 <!--
-  RetroDropdown — 98.css-styled <select> element
+  RetroDropdown - 98.css-styled <select> element
 
   Wraps a native <select> with 98.css's sunken field styling.
   Value is bindable for two-way data flow.

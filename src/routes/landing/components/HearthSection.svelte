@@ -53,7 +53,7 @@
       if (full && full.steps.length > 0) {
         heroStep = full.steps[0] ?? null;
 
-        // Build pictograph data with staves forced — the canonical TKA prop
+        // Build pictograph data with staves forced - the canonical TKA prop
         if (heroStep) {
           const forceStaff = (motion: any) =>
             motion ? { ...motion, propType: PropType.STAFF } : undefined;

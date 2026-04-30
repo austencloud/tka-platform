@@ -17,7 +17,7 @@
  */
 
 import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
-import { LOOPType, SliceSize, type LOOPOption, type LOOPValidationResult } from "../loop-types.js";
+import { LOOPType, Period, type LOOPOption, type LOOPValidationResult } from "../loop-types.js";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
@@ -58,7 +58,7 @@ export interface ExtensionAnalysis {
  */
 export interface ExtensionOptions {
   loopType: LOOPType;
-  sliceSize?: SliceSize;
+  period?: Period;
 }
 
 // ============================================================================
@@ -108,7 +108,7 @@ export class SequenceExtender {
     const isAlreadyComplete = currentEndPosition === startPosition;
 
     let extensionType: ExtensionType = "not_extendable";
-    let sliceSize = SliceSize.HALVED;
+    let period = Period.HALVED;
 
     if (isAlreadyComplete) {
       extensionType = "already_complete";
@@ -116,14 +116,14 @@ export class SequenceExtender {
       extensionType = "half_rotation";
     } else if (isQuarteredValid) {
       extensionType = "quarter_rotation";
-      sliceSize = SliceSize.QUARTERED;
+      period = Period.QUARTERED;
     }
 
     // Get LOOP options filtered by validity for this position pair
     const { available, unavailable } = getLOOPOptionsForPositionPair(
       startPosition,
       currentEndPosition,
-      sliceSize
+      period
     );
 
     const canExtend = available.length > 0;
@@ -164,7 +164,7 @@ export class SequenceExtender {
    * Generate extension steps for a sequence using a LOOP executor.
    *
    * @param steps - Full step array (step 0 = start position, rest = beats)
-   * @param options - LOOP type and slice size for extension
+   * @param options - LOOP type and period for extension
    * @returns New steps to append after the original sequence
    */
   generateExtensionSteps(
@@ -178,11 +178,11 @@ export class SequenceExtender {
     }
 
     const { loopType } = options;
-    const sliceSize =
-      options.sliceSize ??
+    const period =
+      options.period ??
       (analysis.extensionType === "quarter_rotation"
-        ? SliceSize.QUARTERED
-        : SliceSize.HALVED);
+        ? Period.QUARTERED
+        : Period.HALVED);
 
     // Get the executor for the selected LOOP type
     const executor = this.executorSelector.getExecutor(loopType);
@@ -198,7 +198,7 @@ export class SequenceExtender {
     const originalLength = letterSteps.length;
 
     // Execute the LOOP transformation
-    const completedSteps = executor.executeLOOP(letterSteps, sliceSize);
+    const completedSteps = executor.executeLOOP(letterSteps, period);
 
     // Return only the new steps (after the original beats)
     return completedSteps.slice(originalLength);

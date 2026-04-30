@@ -5,7 +5,7 @@
 
   Minimal page that plays a cached MP4 video of the scanned sequence,
   or renders one on-device via a headless worker if uncached.
-  No full app bundle — no SequenceViewerOrchestrator, no animation
+  No full app bundle - no SequenceViewerOrchestrator, no animation
   engine, no 3D renderer.
 
   URL format: /q/{shortCode}

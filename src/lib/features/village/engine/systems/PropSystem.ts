@@ -147,7 +147,7 @@ export class PropSystem {
 			}
 		}
 
-		// Check for craft completion — entity has waited long enough
+		// Check for craft completion - entity has waited long enough
 		for (const entity of world.entities) {
 			if (entity.social.state !== "commissioning") continue;
 			if (entity.social.idleTimer < MAKER_CRAFT_DURATION) continue;

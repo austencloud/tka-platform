@@ -57,7 +57,7 @@ export interface PropTipData {
   tipIndex: number;
   /** Relative flame size (affects splat radius and fuel injection) */
   flameScale: number;
-  /** Acceleration magnitude — |velocity_delta| / dt (viewbox units/s^2). 0 on first frame. */
+  /** Acceleration magnitude - |velocity_delta| / dt (viewbox units/s^2). 0 on first frame. */
   jerk: number;
 }
 
@@ -93,13 +93,13 @@ export interface FireFrameInput {
   propColors?: [PropFlameColor, PropFlameColor];
   /** Set to true on the frame where the animation loops back to the start */
   loopDetected?: boolean;
-  /** Playback speed multiplier (1.0 = 60 BPM). Used for cache invalidation — different speeds produce different fire physics. */
+  /** Playback speed multiplier (1.0 = 60 BPM). Used for cache invalidation - different speeds produce different fire physics. */
   playbackSpeed?: number;
   /** Changes when the sequence content changes. Invalidates fire cache so stale frames don't replay over new props. */
   sequenceContentHash?: string;
   /** Time relative to the start of the current loop (ms). Used for timestamp-indexed cache playback. */
   relativeTime?: number;
-  /** Whether the sequence loops seamlessly (end position = start position). When true, fire should NOT be cleared on loop — it should continue naturally. */
+  /** Whether the sequence loops seamlessly (end position = start position). When true, fire should NOT be cleared on loop - it should continue naturally. */
   isSeamlesslyLoopable?: boolean;
 }
 
@@ -167,7 +167,7 @@ export interface FireOverlayConfig {
   fuelRendererType?: FuelRendererType;
   /** Color curve for the fluid renderer display pass */
   colorCurve?: FireColorCurve;
-  /** Disable frame caching — forces live simulation every frame. Use when external
+  /** Disable frame caching - forces live simulation every frame. Use when external
    *  easing/timing makes cached frames drift from actual prop positions (e.g. effort labs). */
   disableFrameCache?: boolean;
   /** Charcoal spark params (only used when useCharcoal is true) */
@@ -181,7 +181,7 @@ export interface FireOverlayConfig {
   /**
    * Jacobi pressure-solve iterations per frame.
    * Higher = more accurate pressure field, but more GPU draw calls.
-   * Fire doesn't need physical accuracy — visual plausibility is sufficient.
+   * Fire doesn't need physical accuracy - visual plausibility is sufficient.
    *   20 = default (single instance, no visible difference from 30)
    *   15 = 2-4 simultaneous instances
    *   10 = 5+ simultaneous instances
@@ -189,7 +189,7 @@ export interface FireOverlayConfig {
   jacobiIterations?: number;
 }
 
-/** Default physics parameters — tuned for fire spinning (shorter trails, wick-focused) */
+/** Default physics parameters - tuned for fire spinning (shorter trails, wick-focused) */
 export const DEFAULT_PHYSICS: FirePhysicsParams = {
   splatRadius: 0.018,
   fuelAmount: 0.55,
@@ -213,7 +213,7 @@ export const DEFAULT_FIRE_CONFIG: FireOverlayConfig = {
   intensity: 1.0,
   flameHeight: 1.0,
   velocityReactive: true,
-  quality: 2, // 128×128 grid — fire is inherently noisy, higher resolution is imperceptible
+  quality: 2, // 128×128 grid - fire is inherently noisy, higher resolution is imperceptible
 };
 
 /**
@@ -233,10 +233,10 @@ export const DEFAULT_PROP_FLAME_COLORS: [PropFlameColor, PropFlameColor] = [
 ];
 
 // ============================================================================
-// BASE CONSTANTS — White gas physics/colors as the canonical baseline
+// BASE CONSTANTS - White gas physics/colors as the canonical baseline
 // ============================================================================
 
-/** White gas fluid physics — bright, fast burn, the standard for fire spinning */
+/** White gas fluid physics - bright, fast burn, the standard for fire spinning */
 export const BASE_FIRE_PHYSICS: FirePhysicsParams = {
   splatRadius: 0.012,
   fuelAmount: 1.0,
@@ -255,7 +255,7 @@ export const BASE_FIRE_PHYSICS: FirePhysicsParams = {
   gravity: 0,
 };
 
-/** White gas color curve — natural fire colors */
+/** White gas color curve - natural fire colors */
 export const BASE_COLOR_CURVE: FireColorCurve = {
   coldColor: [0.2, 0.02, 0.0],
   midColor: [0.9, 0.15, 0.0],
@@ -287,7 +287,7 @@ export const CHARCOAL_FIRE_PHYSICS: FirePhysicsParams = {
   gravity: -10000.0,
 };
 
-/** Charcoal color curve — steel-wool orange/white palette */
+/** Charcoal color curve - steel-wool orange/white palette */
 export const CHARCOAL_COLOR_CURVE: FireColorCurve = {
   coldColor: [0.4, 0.08, 0.0],
   midColor: [0.9, 0.3, 0.02],
@@ -296,7 +296,7 @@ export const CHARCOAL_COLOR_CURVE: FireColorCurve = {
 };
 
 // ============================================================================
-// SLIDER-TO-PHYSICS MAPPING — Maps user-facing 0-1 sliders to physics params
+// SLIDER-TO-PHYSICS MAPPING - Maps user-facing 0-1 sliders to physics params
 // ============================================================================
 
 function lerp(a: number, b: number, t: number): number {

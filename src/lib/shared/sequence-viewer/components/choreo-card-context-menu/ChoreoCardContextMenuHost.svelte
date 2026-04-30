@@ -1,5 +1,5 @@
 <!--
-  ChoreoCardContextMenuHost — Orchestrates the ChoreoCard right-click context menu.
+  ChoreoCardContextMenuHost - Orchestrates the ChoreoCard right-click context menu.
   Includes inline column picker plus optional Re-render and Send to actions.
 -->
 <script lang="ts">

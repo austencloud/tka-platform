@@ -12,7 +12,7 @@ import { DIFFICULTY_LEVELS, DIFFICULTY_FONT_FAMILY } from "$lib/shared/config/di
 import {
   LOOP_TYPE_LABELS,
   ROTATED_LOOP_TYPES,
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -59,9 +59,9 @@ export interface CardBackData {
   anatomy: SequenceAnatomy;
   hasLoop: boolean;
   loopComponents: Set<LOOPComponent>;
-  /** Slice size for the rotated component, when ROTATED is active.
+  /** Period for the rotated component, when ROTATED is active.
    *  Lets the front card pick fa-rotate (halved) vs fa-arrows-spin (quartered). */
-  rotationSliceSize: SliceSize | undefined;
+  rotationPeriod: Period | undefined;
   loopLabel: string | null;
   loopExplanation: LOOPExplanation | null;
   sliceName: string | null;
@@ -224,7 +224,7 @@ function deriveStartPositionGroup(sequence: SequenceData): string | null {
   // Explicit field (most reliable when present)
   if (sequence.startingPositionGroup) return sequence.startingPositionGroup;
 
-  // From StartPositionData — try gridPosition, endPosition, startPosition
+  // From StartPositionData - try gridPosition, endPosition, startPosition
   const sp = sequence.startPosition ?? sequence.startingPosition;
   if (sp) {
     const fromGrid = extractGroup(sp.gridPosition as string | undefined);
@@ -362,7 +362,7 @@ export function deriveVtgRatio(sequence: SequenceData): string | null {
       if (uniformValue === null) {
         uniformValue = t;
       } else if (t !== uniformValue) {
-        return null; // Mixed turns — ratio is meaningless
+        return null; // Mixed turns - ratio is meaningless
       }
     }
   }
@@ -391,7 +391,7 @@ function deriveUniformTurnFormat(entries: TurnGlyphEntry[]): string | null {
 /**
  * Build the TKA deck designation string from sequence properties.
  * Format: "{Halved|Quartered} {LoopType} {TurnPattern} {ReversalPattern} {GridMode}"
- * Only built for LOOP sequences — returns null for non-LOOP sequences.
+ * Only built for LOOP sequences - returns null for non-LOOP sequences.
  */
 function deriveTkaDesignation(
   sliceName: string | null,
@@ -419,7 +419,7 @@ function capitalize(s: string): string {
 
 export function deriveCardBackData(
   sequence: SequenceData,
-  // Kept for call-site compatibility — the shared loop-display resolver
+  // Kept for call-site compatibility - the shared loop-display resolver
   // owns the SequenceData→SequenceEntry conversion internally now.
   _converter: ISequenceToEntryConverter | null,
   explainer: ILOOPExplainer | null = null
@@ -435,7 +435,7 @@ export function deriveCardBackData(
   // detection can't run (short sequences, etc).
   const loopDisplay = resolveLoopDisplay(sequence);
   const loopComponents = loopDisplay.components;
-  const rotationSliceSize = loopDisplay.rotationSliceSize;
+  const rotationPeriod = loopDisplay.rotationPeriod;
 
   // Generate rich LOOP explanation when the explainer is available
   let loopExplanation: LOOPExplanation | null = null;
@@ -478,7 +478,7 @@ export function deriveCardBackData(
     anatomy,
     hasLoop: loopComponents.size > 0,
     loopComponents,
-    rotationSliceSize,
+    rotationPeriod,
     loopLabel,
     loopExplanation,
     sliceName,

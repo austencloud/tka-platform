@@ -59,12 +59,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     onGridReady?: (api: VirtualGridApi) => void;
   }>();
 
-  // Virtualize only flat (non-sectioned) grids with many items.
-  // When showSections is true, use the section-based layout which
-  // renders proper section headers and doesn't need virtualization.
   const useVirtualization = $derived(
     !disableVirtualization &&
-      !showSections &&
       sequences.length > VIRTUALIZATION_THRESHOLD &&
       viewMode === "grid"
   );
@@ -130,10 +126,12 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     // Default to 2 until we've measured the container
     if (containerWidth === 0) return 2;
 
-    // When zoom override is active (pinch or stepper), use it but
-    // clamp to the per-breakpoint max so you can't get 5 cols on a phone.
+    // When zoom override is active (pinch or stepper), use the override
+    // directly — the caller already clamps to its own min/max range.
+    // Only guard against absurdly small containers (< 480px → max 2).
     if (pinchColumnOverride !== undefined) {
-      return Math.max(2, Math.min(gridZoomManager.maxColumns, pinchColumnOverride));
+      const localMax = containerWidth < 480 ? 2 : containerWidth < 800 ? 3 : 8;
+      return Math.max(2, Math.min(localMax, pinchColumnOverride));
     }
 
     // Responsive defaults when no override is set
@@ -143,7 +141,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     return 2;
   });
 
-  // Reactive ResizeObserver — re-creates when containerRef becomes available.
+  // Reactive ResizeObserver - re-creates when containerRef becomes available.
   // This solves the timing issue where onMount fires before bind:this populates the ref.
   $effect(() => {
     const target = containerRef;
@@ -154,6 +152,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         const newWidth = entry.contentRect.width;
         if (newWidth > 0) {
           containerWidth = newWidth;
+          gridZoomManager.updateContainerWidth(newWidth);
         }
       }
     });
@@ -165,6 +164,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       const width = target.getBoundingClientRect().width;
       if (width > 0) {
         containerWidth = width;
+        gridZoomManager.updateContainerWidth(width);
       }
     });
 

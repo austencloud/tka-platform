@@ -30,8 +30,8 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import {
   LOOPType,
-  SliceSize,
-  periodFromSliceSize,
+  Period,
+  periodToNumber,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { loopViabilityService } from "$lib/features/create/generate/shared/services/implementations/LoopViabilityService";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -76,9 +76,7 @@ export function createGenerationActionsState(
       // forbids (e.g. quartered mirrored), preventing silent period-2
       // downgrade. See docs/superpowers/specs/2026-04-19-loop-period-viability-design.md.
       if (options.loopType) {
-        const period =
-          (options as { period?: number }).period ??
-          periodFromSliceSize(options.sliceSize);
+        const period = periodToNumber(options.period);
         const viability = loopViabilityService.check({
           loopType: options.loopType,
           period,
@@ -135,7 +133,7 @@ export function createGenerationActionsState(
         }
       }
 
-      // Enforce tier beat cap post-generation — handles words with bridge letters
+      // Enforce tier beat cap post-generation - handles words with bridge letters
       // that push the sequence beyond what the user's tier allows.
       const tier = resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role));
       const maxSteps = getMaxBeats(tier);
@@ -154,7 +152,7 @@ export function createGenerationActionsState(
       // Auto-close orientation cycle so the user never sees a "Complete
       // Cycle" button. If the generated sequence's orientations don't
       // return to start after one pass, extend it here via the same
-      // extender that previously backed the Complete Cycle button —
+      // extender that previously backed the Complete Cycle button -
       // silent, atomic, no extra click.
       if ((generatedSequence.orientationCycleCount ?? 1) > 1) {
         generatedSequence =
@@ -187,7 +185,7 @@ export function createGenerationActionsState(
               gridMode: options.gridMode,
               difficulty: options.difficulty,
               loopType: options.loopType,
-              sliceSize: options.sliceSize,
+              period: options.period,
               constraintPreset: options.constraintPreset,
               handPathMode: options.handPathMode,
               motionTypeFilter: options.motionTypeFilter,
@@ -209,7 +207,7 @@ export function createGenerationActionsState(
     }
   }
 
-  // Lazy-resolved spell services — used only for word parsing (Greek aliases,
+  // Lazy-resolved spell services - used only for word parsing (Greek aliases,
   // bridge-letter expansion, target-length padding). The actual sequence
   // generation goes through generationOrchestrator (same path as freeform + MCP).
   let spellOrchestrator: IVariationExplorationOrchestrator | null = null;
@@ -314,7 +312,7 @@ export function createGenerationActionsState(
       // Spell and freeform both route through generationOrchestrator →
       // SequenceBuilder → BeamSearch. The engine parses letters, allocates
       // turns, resolves rotation directions for static/dash+turns beats,
-      // applies LOOP extension, and runs orientation propagation — identical
+      // applies LOOP extension, and runs orientation propagation - identical
       // to what MCP does. The spell-only pre-step is word parsing + target-
       // length bridge extension (finalLetters above); post-step is spellData
       // metadata attachment.
@@ -322,7 +320,7 @@ export function createGenerationActionsState(
       const isLoop = !!config?.loopEnabled;
 
       const loopType = (config?.loopType as LOOPType) || LOOPType.STRICT_REWOUND;
-      const sliceSize = (config?.sliceSize as SliceSize) || SliceSize.HALVED;
+      const period = (config?.period as Period) || Period.HALVED;
 
       // Generate the word sequence WITHOUT engine-level LOOP. Word-based
       // generation can't auto-append bridges to reach LOOP-compatible end
@@ -352,7 +350,7 @@ export function createGenerationActionsState(
         generatedSequence = await applySpellLoopExtension(
           generatedSequence,
           loopType,
-          sliceSize,
+          period,
           finalLetterSources,
         );
       }
@@ -389,7 +387,7 @@ export function createGenerationActionsState(
         }
       }
 
-      // Enforce tier beat cap post-generation — spell sequences with bridge letters
+      // Enforce tier beat cap post-generation - spell sequences with bridge letters
       // can exceed the user's allowed length.
       const spellTier = resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role));
       const spellMaxBeats = getMaxBeats(spellTier);
@@ -436,7 +434,7 @@ export function createGenerationActionsState(
                 turnIntensity: cfg?.turnIntensity,
                 loopEnabled: cfg?.loopEnabled,
                 loopType: cfg?.loopType,
-                sliceSize: cfg?.sliceSize,
+                period: cfg?.period,
               };
             })(),
           },
@@ -455,13 +453,13 @@ export function createGenerationActionsState(
    * 3. Update letterSources and spell metadata accordingly
    *
    * Required for word-based LOOP because the engine's buildByWord can't
-   * auto-append bridge letters to reach LOOP-compatible end positions —
+   * auto-append bridge letters to reach LOOP-compatible end positions -
    * the word's letters are fixed.
    */
   async function applySpellLoopExtension(
     sequence: SequenceData,
     loopType: LOOPType,
-    sliceSize: SliceSize,
+    period: Period,
     letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>,
   ): Promise<SequenceData> {
     try {
@@ -469,16 +467,16 @@ export function createGenerationActionsState(
       const analysis = sequenceExtender.analyzeSequence(sequence);
       if (analysis.canExtend) {
         try {
-          const extended = await sequenceExtender.extendSequence(sequence, { loopType, sliceSize });
+          const extended = await sequenceExtender.extendSequence(sequence, { loopType, period });
           if (extended) {
             return updateLoopMetadata(extended, sequence, letterSources);
           }
         } catch {
-          // Direct extension failed — fall through to bridge-finding
+          // Direct extension failed - fall through to bridge-finding
         }
       }
 
-      // Path B: Not directly extendable — find a bridge letter to make it LOOP-compatible
+      // Path B: Not directly extendable - find a bridge letter to make it LOOP-compatible
       const circularizationOptions = await sequenceExtender.getCircularizationOptions(sequence);
       const extensionOptions = await sequenceExtender.getAllExtensionOptions(sequence);
       const allBridgeOptions = [...circularizationOptions, ...extensionOptions];
@@ -488,7 +486,7 @@ export function createGenerationActionsState(
         return sequence;
       }
 
-      const expectedRotation = sliceSize === SliceSize.QUARTERED ? "quarter" : "half";
+      const expectedRotation = period === Period.QUARTERED ? "quarter" : "half";
       const compatibleBridges = allBridgeOptions.filter((opt) => {
         const hasLoopType = opt.availableLOOPs.some((l) => l.loopType === loopType);
         if (!hasLoopType) return false;
@@ -499,7 +497,7 @@ export function createGenerationActionsState(
       });
 
       if (compatibleBridges.length === 0) {
-        console.warn("[SpellGenerate] No bridge options compatible with", loopType, sliceSize);
+        console.warn("[SpellGenerate] No bridge options compatible with", loopType, period);
         return sequence;
       }
 
@@ -512,7 +510,7 @@ export function createGenerationActionsState(
         bridgeLetter,
         loopType,
         bestBridge.pictographData,
-        sliceSize,
+        period,
       );
 
       if (!extended) return sequence;

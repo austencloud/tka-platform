@@ -16,7 +16,7 @@
 
   let advancedOpen = $state(false);
 
-  // Spec §6.2 #3 — 3D export option domains.
+  // Spec §6.2 #3 - 3D export option domains.
   const RESOLUTIONS: VideoResolution[] = [720, 1080, 2160, 4320];
   function resLabel(r: VideoResolution): string {
     return r === 2160 ? "4K" : r === 4320 ? "8K" : String(r);

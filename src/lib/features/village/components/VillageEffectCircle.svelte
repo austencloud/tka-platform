@@ -1,5 +1,5 @@
 <!--
-  VillageEffectCircle — Ground ring colored by effect affinity with point light.
+  VillageEffectCircle - Ground ring colored by effect affinity with point light.
   Steady opacity (no pulse), distinguishing from jam circles which pulse.
 -->
 <script lang="ts">

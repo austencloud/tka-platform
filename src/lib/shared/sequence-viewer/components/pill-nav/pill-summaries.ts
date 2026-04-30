@@ -12,7 +12,7 @@
 /**
  * Single record of every boolean visibility flag the Display pill exposes.
  * Grid is included as a regular field so the denominator is genuinely
- * arity-derived from this record — no hardcoded `+1`.
+ * arity-derived from this record - no hardcoded `+1`.
  */
 export interface DisplayFlags {
   tkaGlyph: boolean;
@@ -31,7 +31,7 @@ export type PathShape = "arc" | "linear";
  *
  * Path shape is a binary choice between two valid options (arc vs linear),
  * not on/off, so it is surfaced explicitly rather than counted. The
- * denominator is derived from the input arity — adding a new field to
+ * denominator is derived from the input arity - adding a new field to
  * DisplayFlags automatically updates the "/ N" denominator.
  */
 export function computeDisplaySummary(
@@ -50,7 +50,7 @@ export function computeDisplaySummary(
 
 /**
  * Returns the active effect's display name, "Off" for "none"/missing, or
- * "Custom" if the id isn't registered in the label map (a drift guard —
+ * "Custom" if the id isn't registered in the label map (a drift guard -
  * prevents raw kebab-case from leaking to users when a new effect ships in
  * state before its label entry is added).
  *
@@ -86,7 +86,7 @@ export type PlaybackModeLike = "continuous" | "step";
  * Silent-failure hardening: BPM must be finite and positive. Upstream
  * corruption (NaN, 0, negative) would otherwise render literally as
  * "NaN BPM" / "0 BPM" to the user, obscuring that the state store is
- * broken. The "— BPM" fallback is a visible "something is wrong" signal,
+ * broken. The "- BPM" fallback is a visible "something is wrong" signal,
  * and the warn surfaces the root cause in dev tools.
  */
 export function computePlaybackSummary(
@@ -96,7 +96,7 @@ export function computePlaybackSummary(
   const modeLabel = mode === "step" ? "Step" : "Cont.";
   if (!Number.isFinite(bpm) || bpm <= 0) {
     console.warn("[pill-summaries] invalid bpm:", bpm);
-    return `— BPM • ${modeLabel}`;
+    return `- BPM • ${modeLabel}`;
   }
   return `${bpm} BPM • ${modeLabel}`;
 }
@@ -114,14 +114,14 @@ export interface ExportSummaryInput {
 
 /** Canonical resolutions the export pipeline supports. Any other value is
  *  either a state bug or an untested configuration; we render a visible
- *  "—" fallback rather than a plausible-looking garbage label. */
+ *  "-" fallback rather than a plausible-looking garbage label. */
 const CANONICAL_RESOLUTIONS = new Set<number>([720, 1080, 2160, 4320]);
 
 export function computeExportSummary(input: ExportSummaryInput): string {
   const { resolution: r, fps, loopCount, renderMode } = input;
   if (!CANONICAL_RESOLUTIONS.has(r) || !Number.isFinite(fps) || fps <= 0) {
     console.warn("[pill-summaries] invalid export input:", { resolution: r, fps });
-    return "— • — fps";
+    return "- • - fps";
   }
   const resLabel = renderMode === "3d"
     ? `${r}×${r}`

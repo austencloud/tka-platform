@@ -31,7 +31,7 @@ export const load: LayoutLoad = async () => {
           resolve();
         }
       }, 50);
-      // Timeout after 5 seconds — if auth hasn't initialized, reject
+      // Timeout after 5 seconds - if auth hasn't initialized, reject
       setTimeout(() => {
         clearInterval(check);
         resolve();

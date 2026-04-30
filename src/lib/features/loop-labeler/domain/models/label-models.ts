@@ -3,7 +3,7 @@
  */
 
 import type { ComponentId } from "../constants/loop-components";
-import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { SectionDesignation } from "./section-models";
 import type { StepPairRelationship } from "./steppair-models";
 
@@ -49,7 +49,7 @@ export interface LOOPDesignation {
   loopType: string | null;
 
   /** @deprecated Use transformationIntervals.rotation instead */
-  sliceSize?: SliceSize | null;
+  period?: Period | null;
 
   /** Per-transformation interval configuration */
   transformationIntervals?: TransformationIntervals;

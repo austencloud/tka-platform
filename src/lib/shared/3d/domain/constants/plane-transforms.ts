@@ -39,23 +39,23 @@ export const GRID_RADIUS_3D = 0.52;
  */
 export const CANVAS_TO_3D_SCALE = GRID_RADIUS_3D / 143;
 
-// 1/√2 — shared constant for all 45° fusion plane normals
+// 1/√2 - shared constant for all 45° fusion plane normals
 const S2 = 1 / Math.sqrt(2);
 
 /**
  * Unit normals for all 9 planes, pointing toward their canonical viewer.
  *
  * Primary planes align with world axes. Fusion planes are the normalized
- * bisectors of their two parent primaries — each component is 1/√2 so the
+ * bisectors of their two parent primaries - each component is 1/√2 so the
  * vector has unit length and bisects the 90° angle exactly.
  */
 export const PLANE_NORMALS: Record<Plane, Vector3> = {
-  // Primary planes — single axis
+  // Primary planes - single axis
   [Plane.WALL]:          new Vector3(0,    0,   1),   // +Z toward audience
   [Plane.WHEEL]:         new Vector3(1,    0,   0),   // +X performer's right
   [Plane.FLOOR]:         new Vector3(0,    1,   0),   // +Y up
 
-  // Fusion planes — bisectors of two primaries
+  // Fusion planes - bisectors of two primaries
   [Plane.RIGHT_SHIELD]:  new Vector3( S2,  0,   S2),  // Wall ∧ Wheel, right
   [Plane.LEFT_SHIELD]:   new Vector3(-S2,  0,   S2),  // Wall ∧ Wheel, left
   [Plane.FORWARD_RAMP]:  new Vector3(0,    S2, -S2),  // Wall ∧ Floor, top toward audience

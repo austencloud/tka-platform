@@ -1,5 +1,5 @@
 <!--
-  HandPoseEditor.svelte — Debug tool for authoring finger grip poses.
+  HandPoseEditor.svelte - Debug tool for authoring finger grip poses.
   Two-tab layout: Browse (taxonomy gallery) and Edit (sliders).
   Uses the standard Mixamo avatar with a clipping plane at the wrist
   to show only the hand. Lab tab only.
@@ -97,7 +97,7 @@
   // Meshes for SkeletonUpdater
   let skinnedMeshes = $state<any[]>([]);
 
-  // Staff radius (scene units) — the cylinder the hand wraps around
+  // Staff radius (scene units) - the cylinder the hand wraps around
   const STAFF_RADIUS = 0.008;
 
   // Grip tightness: 1 = full geometric wrap, lower = more relaxed
@@ -106,7 +106,7 @@
   // Staff mesh ref so we can update its position/rotation from sliders
   let staffMesh: Mesh | null = null;
 
-  // Staff offset in hand bone local space — tweakable via Edit tab
+  // Staff offset in hand bone local space - tweakable via Edit tab
   let staffOffsetX = $state(0.023);
   let staffOffsetY = $state(0.075);
   let staffOffsetZ = $state(0.031);
@@ -175,7 +175,7 @@
     foreArm.getWorldPosition(elbowPos);
     hand.getWorldPosition(handPos);
 
-    // Normal points from elbow toward hand — keeps everything on the hand side
+    // Normal points from elbow toward hand - keeps everything on the hand side
     const normal = handPos.clone().sub(elbowPos).normalize();
 
     // Cut just above the wrist: 80% along forearm from elbow to hand

@@ -13,5 +13,5 @@ export {
 } from "@tka/render-composition";
 export type { DifficultyLevel, GradientStop } from "@tka/render-composition";
 
-// Backwards-compat alias — the package calls it DifficultyLevel
+// Backwards-compat alias - the package calls it DifficultyLevel
 export type { DifficultyLevel as DifficultyLevelStyle } from "@tka/render-composition";

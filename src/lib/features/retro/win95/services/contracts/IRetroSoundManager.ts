@@ -1,9 +1,9 @@
 /**
- * IRetroSoundManager — Contract for 8-bit synthesized UI sounds
+ * IRetroSoundManager - Contract for 8-bit synthesized UI sounds
  *
  * Provides Web Audio API synthesized sound effects that evoke a
  * mid-90s operating system. All sounds are generated procedurally
- * from oscillators — no audio files needed.
+ * from oscillators - no audio files needed.
  *
  * Domain: Retro Desktop Shell
  */
@@ -24,37 +24,37 @@ export interface IRetroSoundManager {
 	/** 440Hz square wave tone. 100ms. */
 	beep(): void;
 
-	/** Ascending two-note sine chord — window opening. */
+	/** Ascending two-note sine chord - window opening. */
 	windowOpen(): void;
 
-	/** Descending two-note sine chord — window closing. */
+	/** Descending two-note sine chord - window closing. */
 	windowClose(): void;
 
-	/** Short downward swoosh — window minimize. */
+	/** Short downward swoosh - window minimize. */
 	minimize(): void;
 
-	/** Short upward sweep — window maximize/restore. */
+	/** Short upward sweep - window maximize/restore. */
 	maximize(): void;
 
-	/** Soft pop — generic menu appears. */
+	/** Soft pop - generic menu appears. */
 	menuOpen(): void;
 
-	/** Iconic two-tone chime — Start menu opens. */
+	/** Iconic two-tone chime - Start menu opens. */
 	startMenu(): void;
 
 	/**
-	 * Rapid mechanical clicking — emulates a floppy drive seeking
+	 * Rapid mechanical clicking - emulates a floppy drive seeking
 	 * during data loading operations.
 	 */
 	floppySeek(): void;
 
-	/** Hollow clunk — file moved to Recycle Bin. */
+	/** Hollow clunk - file moved to Recycle Bin. */
 	recycle(): void;
 
-	/** Welcoming ascending arpeggio — successful login. */
+	/** Welcoming ascending arpeggio - successful login. */
 	loginSuccess(): void;
 
-	/** Harsh descending buzz — failed login attempt. */
+	/** Harsh descending buzz - failed login attempt. */
 	loginFail(): void;
 
 	/** Set master volume. Clamped to 0.0 - 1.0. */

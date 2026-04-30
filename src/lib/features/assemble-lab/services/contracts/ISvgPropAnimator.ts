@@ -10,7 +10,7 @@ export interface AnimationParams {
   startPosition: GridLocation;
   /** Grid location to animate toward */
   endPosition: GridLocation;
-  /** CW or CCW — determines pro vs anti for shifts */
+  /** CW or CCW - determines pro vs anti for shifts */
   rotationDirection: RotationDirection;
   /** Number of additional turns (0, 0.5, 1, ...) */
   turnCount: number;

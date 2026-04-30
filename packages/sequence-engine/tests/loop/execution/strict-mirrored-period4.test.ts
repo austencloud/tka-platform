@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from "vitest";
 import { StrictMirroredExecutor } from "../../../src/loop/execution/StrictMirroredExecutor.js";
-import { SliceSize } from "../../../src/loop/loop-types.js";
+import { Period } from "../../../src/loop/loop-types.js";
 import type {
   SequenceStep,
   MotionData,
@@ -63,7 +63,7 @@ describe("StrictMirroredExecutor — halved (period 2)", () => {
       makeStep(2, "alpha1", "alpha8"),
     ];
 
-    const result = executor.executeLOOP(seq, SliceSize.HALVED);
+    const result = executor.executeLOOP(seq, Period.HALVED);
 
     // 1 start + 2 partial + 2 mirror = 5 entries
     expect(result).toHaveLength(5);
@@ -79,7 +79,7 @@ describe("StrictMirroredExecutor — quartered (period 4)", () => {
       makeStep(2, "alpha1", "alpha8"),
     ];
 
-    const result = executor.executeLOOP(seq, SliceSize.QUARTERED);
+    const result = executor.executeLOOP(seq, Period.QUARTERED);
 
     // 1 start + 2 partial + 2 (Q2 mirror) + 2 (Q3 copy) + 2 (Q4 mirror) = 9
     expect(result).toHaveLength(9);
@@ -93,7 +93,7 @@ describe("StrictMirroredExecutor — quartered (period 4)", () => {
       makeStep(2, "alpha1", "alpha8", "I"),
     ];
 
-    const result = executor.executeLOOP(seq, SliceSize.QUARTERED);
+    const result = executor.executeLOOP(seq, Period.QUARTERED);
 
     // Q1 letters (indices 1-2 in result): Y, I
     // Q3 letters (indices 5-6 in result) should also be Y, I (copy of Q1)
@@ -111,7 +111,7 @@ describe("StrictMirroredExecutor — quartered (period 4)", () => {
       makeStep(2, "alpha1", "alpha8", "I"),
     ];
 
-    const result = executor.executeLOOP(seq, SliceSize.QUARTERED);
+    const result = executor.executeLOOP(seq, Period.QUARTERED);
 
     // Q2 is at result[3..4], Q4 is at result[7..8]
     // They should have the same letter structure (both are mirror passes)
@@ -126,7 +126,7 @@ describe("StrictMirroredExecutor — quartered (period 4)", () => {
       makeStep(1, "alpha2", "alpha8"),
     ];
 
-    const result = executor.executeLOOP(seq, SliceSize.QUARTERED);
+    const result = executor.executeLOOP(seq, Period.QUARTERED);
 
     // 1 start + 1 Q1 + 1 Q2 + 1 Q3 + 1 Q4 = 5
     expect(result).toHaveLength(5);

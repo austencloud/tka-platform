@@ -1,4 +1,4 @@
-<!-- PropFamilyCard.svelte — Individual toggleable prop family card -->
+<!-- PropFamilyCard.svelte - Individual toggleable prop family card -->
 <script lang="ts">
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";

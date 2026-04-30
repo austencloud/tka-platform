@@ -6,7 +6,7 @@
  * Hinge-constrained two-bone IK specialized for humanoid legs.
  * Unlike the generic IIKSolver (which treats every joint as freely
  * rotating, suitable for arms), this solver constrains the knee to
- * rotate only around a single axis — the sagittal axis of the UpLeg.
+ * rotate only around a single axis - the sagittal axis of the UpLeg.
  * This is what prevents the knee splay artifacts that caused
  * FootPlanter to be disabled.
  *
@@ -33,7 +33,7 @@ export interface LegIKInput {
   footForward: Vector3;
   /** Sagittal hinge axis in UpLeg local space.
    *  Derived at skeleton-build time from the cross product of the
-   *  rest-pose UpLeg direction and the rest-pose Leg direction —
+   *  rest-pose UpLeg direction and the rest-pose Leg direction -
    *  that gives the axis perpendicular to the natural bend plane. */
   kneeHingeAxis: Vector3;
   /** Forward vector biasing the knee bend direction. Prevents the
@@ -45,7 +45,7 @@ export interface LegIKInput {
 
 export interface ILegIKSolver {
   /**
-   * Solve leg IK in place — modifies the bones in `input.chain`
+   * Solve leg IK in place - modifies the bones in `input.chain`
    * to satisfy the target within the hinge constraint.
    *
    * Stateless: same input produces same output, no internal memory.

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Pictograph Bridge — postMessage contract between the History Lab parent
+// Pictograph Bridge - postMessage contract between the History Lab parent
 // and every era renderer iframe.
 //
 // Parent → Iframe:
@@ -16,7 +16,7 @@
 //   <script>
 //     PictographBridge.onPictograph(function(data, canonical, meta) {
 //       // data:      RetroPictographData
-//       // canonical: ImageBitmap | null — the real pictograph render,
+//       // canonical: ImageBitmap | null - the real pictograph render,
 //       //            ready to recolor + composite via PictographStylize
 //       // meta:      { canonicalSize: number } | null
 //     });
@@ -53,7 +53,7 @@
     try {
       window.parent.postMessage({ type: "ready" }, "*");
     } catch {
-      // iframe may be cross-origin or standalone — ignore
+      // iframe may be cross-origin or standalone - ignore
     }
   }
   if (document.readyState === "loading") {

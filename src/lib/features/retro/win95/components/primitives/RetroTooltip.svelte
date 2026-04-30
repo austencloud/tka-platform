@@ -1,5 +1,5 @@
 <!--
-  RetroTooltip — Win95-style pale yellow tooltip
+  RetroTooltip - Win95-style pale yellow tooltip
 
   Positioned absolutely near the target element. Shows after a delay
   on mouseenter, hides on mouseleave. Classic Win95 tooltip: #FFFFE1

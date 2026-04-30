@@ -2,9 +2,9 @@
   PhaseVerificationPanel - Accept, correct, or reject phase output
 
   Three actions:
-  1. "Looks right" — accept the output as-is (training pair saved as accepted)
-  2. "Wrong at beat N" — open correction UI for a specific beat
-  3. "Try again" — reject and re-run the pipeline
+  1. "Looks right" - accept the output as-is (training pair saved as accepted)
+  2. "Wrong at beat N" - open correction UI for a specific beat
+  3. "Try again" - reject and re-run the pipeline
 
   When correcting, shows a GridPositionPicker for each hand per beat.
 -->

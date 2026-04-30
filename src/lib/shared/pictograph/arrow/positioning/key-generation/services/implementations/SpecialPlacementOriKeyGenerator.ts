@@ -10,7 +10,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 export class SpecialPlacementOriKeyGenerator implements ISpecialPlacementOriKeyGenerator {
   /**
    * Generate an orientation key based on start orientations of both hands.
-   * The folder names use "from" — the orientation the motion comes FROM.
+   * The folder names use "from" - the orientation the motion comes FROM.
    * "from_layer1" = both hands start from radial (in/out).
    * "from_layer2" = both hands start from nonradial (clock/counter).
    * Returns "{blueStartOri}_{redStartOri}" (e.g., "in_in", "counter_clock").
@@ -34,7 +34,7 @@ export class SpecialPlacementOriKeyGenerator implements ISpecialPlacementOriKeyG
   }
 
   /**
-   * For staff+staff, collapse to legacy bucket — radial in/out differences
+   * For staff+staff, collapse to legacy bucket - radial in/out differences
    * don't affect arrow positioning on staves. For any non-staff prop, the
    * specific orientation matters visually, so return it unchanged.
    */

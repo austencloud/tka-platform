@@ -7,7 +7,7 @@
  * z-index sits above the trails canvas (1) but below LED (which composites
  * via WebGL on its own layer).
  *
- * The overlay canvas is fully cleared each frame before drawing — Zap2DRenderer
+ * The overlay canvas is fully cleared each frame before drawing - Zap2DRenderer
  * uses additive blending, so we don't want stale arcs from the previous frame
  * to fade in/out unpredictably. Procedural midpoint-displacement regenerates
  * arcs every few frames inside the renderer to produce the flicker.
@@ -46,7 +46,7 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
 
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-      // Browser refused 2D context — bail without attaching to the DOM.
+      // Browser refused 2D context - bail without attaching to the DOM.
       return false;
     }
 
@@ -72,11 +72,11 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
     const ctx = this.ctx;
     if (!ctx) return;
 
-    // Always clear — the underlying renderer uses 'lighter' composite, so
+    // Always clear - the underlying renderer uses 'lighter' composite, so
     // residual pixels from the previous frame would accumulate brightness.
     ctx.clearRect(0, 0, this.width, this.height);
 
-    // If no tips at all, we already cleared — nothing more to draw.
+    // If no tips at all, we already cleared - nothing more to draw.
     if (!tips.bluePosA && !tips.bluePosB && !tips.redPosA && !tips.redPosB) {
       return;
     }

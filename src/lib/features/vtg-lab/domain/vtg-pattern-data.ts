@@ -4,13 +4,13 @@
  * Complete enumeration of all VTG modes mapped to TKA letters.
  * Data sourced from vtg-calculator.ts lookup tables and compound-letters.json.
  *
- * Classification rules (Diamond grid mode — the default):
- *   SS (Split-Same):     A, B, C       — alpha→alpha, fixed
- *   TS (Together-Same):  G, H, I       — beta→beta, fixed
- *   TO (Together-Opp):   D, E, F       — beta→alpha, position-dependent*
- *   SO (Split-Opp):      J, K, L       — alpha→beta, position-dependent*
- *   QS (Quarter-Same):   S, T, U, V    — gamma→gamma, fixed
- *   QO (Quarter-Opp):    M, N, O, P, Q, R — gamma→gamma, fixed
+ * Classification rules (Diamond grid mode - the default):
+ *   SS (Split-Same):     A, B, C       - alpha→alpha, fixed
+ *   TS (Together-Same):  G, H, I       - beta→beta, fixed
+ *   TO (Together-Opp):   D, E, F       - beta→alpha, position-dependent*
+ *   SO (Split-Opp):      J, K, L       - alpha→beta, position-dependent*
+ *   QS (Quarter-Same):   S, T, U, V    - gamma→gamma, fixed
+ *   QO (Quarter-Opp):    M, N, O, P, Q, R - gamma→gamma, fixed
  *
  * * D/E/F default to TO in Diamond mode but classify as SO at beta3/beta7.
  *   J/K/L default to TO in Diamond mode but classify as SO at alpha1/alpha5.
@@ -42,7 +42,7 @@ function entry(
 }
 
 // ---------------------------------------------------------------------------
-// SS — Split-Same (A, B, C)
+// SS - Split-Same (A, B, C)
 // ---------------------------------------------------------------------------
 
 const SS_GROUPS: RotationGroup[] = [
@@ -64,7 +64,7 @@ const SS_GROUPS: RotationGroup[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// TS — Together-Same (G, H, I)
+// TS - Together-Same (G, H, I)
 // ---------------------------------------------------------------------------
 
 const TS_GROUPS: RotationGroup[] = [
@@ -86,7 +86,7 @@ const TS_GROUPS: RotationGroup[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// TO — Together-Opposite (D, E, F)
+// TO - Together-Opposite (D, E, F)
 // ---------------------------------------------------------------------------
 
 const TO_NOTE =
@@ -135,7 +135,7 @@ const TO_COMPOUNDS: CompoundInfo[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// SO — Split-Opposite (J, K, L)
+// SO - Split-Opposite (J, K, L)
 // ---------------------------------------------------------------------------
 
 const SO_NOTE =
@@ -162,7 +162,7 @@ const SO_GROUPS: RotationGroup[] = [
 const SO_COMPOUNDS: CompoundInfo[] = TO_COMPOUNDS; // Same compounds, other half
 
 // ---------------------------------------------------------------------------
-// QS — Quarter-Same (S, T, U, V)
+// QS - Quarter-Same (S, T, U, V)
 // ---------------------------------------------------------------------------
 
 const QS_GROUPS: RotationGroup[] = [
@@ -185,7 +185,7 @@ const QS_GROUPS: RotationGroup[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// QO — Quarter-Opposite (M, N, O, P, Q, R)
+// QO - Quarter-Opposite (M, N, O, P, Q, R)
 // ---------------------------------------------------------------------------
 
 const QO_GROUPS: RotationGroup[] = [

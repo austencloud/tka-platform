@@ -307,7 +307,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
   }
 
   const modalTitle = $derived(
-    `Adjust ${arrowColor === "blue" ? "Blue" : "Red"} Arrow — ${stepData.letter || "Start"}`
+    `Adjust ${arrowColor === "blue" ? "Blue" : "Red"} Arrow - ${stepData.letter || "Start"}`
   );
 </script>
 

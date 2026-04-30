@@ -32,7 +32,7 @@ export function isGenuineScan(code: string): boolean {
     if (sessionStorage.getItem(key)) return false;
     sessionStorage.setItem(key, "1");
   } catch {
-    // Private mode / storage disabled — default to counting the scan.
+    // Private mode / storage disabled - default to counting the scan.
   }
 
   return true;

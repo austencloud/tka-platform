@@ -42,13 +42,13 @@ export interface FootPlanterInput {
  */
 export interface FootPlanterConfig {
   /** Foot velocity threshold below which the foot is considered "planted" (units/sec).
-   *  Default: 0.15 — low enough to catch the stance phase of a walk cycle. */
+   *  Default: 0.15 - low enough to catch the stance phase of a walk cycle. */
   contactVelocityThreshold?: number;
   /** How quickly the IK blend weight ramps up when a foot enters contact (seconds).
-   *  Default: 0.08 — fast enough to not see the foot drift. */
+   *  Default: 0.08 - fast enough to not see the foot drift. */
   lockBlendInTime?: number;
   /** How quickly the IK blend weight ramps down when a foot lifts off (seconds).
-   *  Default: 0.15 — slightly slower so the unlock isn't jarring. */
+   *  Default: 0.15 - slightly slower so the unlock isn't jarring. */
   lockBlendOutTime?: number;
   /** Maximum pelvis height adjustment (scene units). Prevents extreme corrections.
    *  Default: 0.1 */

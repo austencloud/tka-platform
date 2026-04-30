@@ -4,7 +4,7 @@ export type StickerSize = "3in-round"; // versioned string; Phase 2 may add "2in
 export type StickerPresentation = "pure"; // Phase 1 only value; Phase 2 may add "word-label", "qr"
 export type SheetSize = "8.5x11" | "13x19";
 
-/** Reference to a LOOP sequence — used as a back-link annotation only. */
+/** Reference to a LOOP sequence - used as a back-link annotation only. */
 export interface LoopRef {
   readonly sequenceId: string;
   readonly word: string;      // denormalized for display

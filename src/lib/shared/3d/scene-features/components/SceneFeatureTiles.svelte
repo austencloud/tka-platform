@@ -2,7 +2,7 @@
   /**
    * SceneFeatureTiles
    *
-   * Scene tab content for Viewer3DGearPopover — thumbnail-per-feature tile grid.
+   * Scene tab content for Viewer3DGearPopover - thumbnail-per-feature tile grid.
    * Active tiles get a colored glow + status dot. Async features show a shimmer
    * while loading (enabled but not yet reported ready).
    */

@@ -142,7 +142,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
     }
 
     if (filtered.length === 0) {
-      // Don't clear preparedOptions — keep old ones visible so grid
+      // Don't clear preparedOptions - keep old ones visible so grid
       // slots stay mounted and can transition when new data arrives
       return;
     }
@@ -155,7 +155,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
 
   // (Continuous sync handled by single effect above)
 
-  // Handle option selection — run load+prepare as a direct async pipeline
+  // Handle option selection - run load+prepare as a direct async pipeline
   // in parallel with the step grid animation. Bypasses the reactive hops
   // (parent updates sequence → prop flows back → load effect → prepare effect)
   // which would serialize the two animations.
@@ -182,7 +182,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
     (async () => {
       try {
         await pickerState!.loadOptions(nextSequence, currentGridMode);
-        // Immediately prepare — don't wait for reactive effect scheduling
+        // Immediately prepare - don't wait for reactive effect scheduling
         let filtered = pickerState!.filteredOptions;
         // Apply external filter predicate if provided (e.g., loop-only for tutorials)
         if (filterPredicate) {

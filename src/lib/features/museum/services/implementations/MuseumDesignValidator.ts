@@ -231,9 +231,9 @@ export class MuseumDesignValidator implements IMuseumDesignValidator {
         exhibitTileKeys.add(tileKey(ex.tileX, ex.tileY));
       }
     }
-    // Remove the anchor tile itself — it's the destination, not a blocker
+    // Remove the anchor tile itself - it's the destination, not a blocker
     exhibitTileKeys.delete(tileKey(anchorPos.x, anchorPos.y));
-    // Remove the doorway tile — it's the origin
+    // Remove the doorway tile - it's the origin
     exhibitTileKeys.delete(tileKey(doorCenter.x, doorCenter.y));
 
     for (const point of line) {

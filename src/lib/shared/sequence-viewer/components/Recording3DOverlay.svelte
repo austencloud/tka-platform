@@ -14,7 +14,7 @@
     isRecording: boolean;
     elapsed: number;
     onStop: () => void;
-    /** Pass 2 export state — when non-null, show full progress overlay */
+    /** Pass 2 export state - when non-null, show full progress overlay */
     exportProgress: VideoExportProgress | null;
     isExporting: boolean;
     onCancelExport: () => void;

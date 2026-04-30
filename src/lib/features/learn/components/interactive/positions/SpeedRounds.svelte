@@ -34,7 +34,7 @@ import { onDestroy } from 'svelte';
   const hapticService = getHapticFeedback();
 
   // =========================================================================
-  // Question Pool — Tiered by Difficulty
+  // Question Pool - Tiered by Difficulty
   // =========================================================================
 
   /** Obvious positions: opposite cardinals (alpha), same cardinal (beta), adjacent cardinals (gamma). */

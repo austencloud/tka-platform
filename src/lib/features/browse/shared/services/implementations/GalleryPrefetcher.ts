@@ -56,7 +56,7 @@ export class GalleryPrefetcher implements IGalleryPrefetcher {
   }
 
   private async doPrefetch(): Promise<void> {
-    // Phase 1: Warm from IndexedDB (fast — local disk)
+    // Phase 1: Warm from IndexedDB (fast - local disk)
     try {
       const hasCache = await this.offlineCache.hasCachedData();
       if (hasCache) {

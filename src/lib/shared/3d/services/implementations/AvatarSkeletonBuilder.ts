@@ -67,7 +67,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
 
 /**
  * Mapping of canonical finger bone names to common GLTF naming conventions.
- * Built at module load time — one entry per hand × 15 bones.
+ * Built at module load time - one entry per hand × 15 bones.
  *
  * Supported conventions:
  *   Mixamo:          LeftHandThumb1
@@ -303,7 +303,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
 
   /**
    * Build leg IK chains (UpLeg -> Leg -> Foot) for foot planting.
-   * Same pattern as arm chains — two-bone IK with rest directions.
+   * Same pattern as arm chains - two-bone IK with rest directions.
    */
   private buildLegChains(): void {
     // Left leg
@@ -359,7 +359,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    * Uses the skeleton's own bone array (same objects the GPU skinning references)
    * rather than scene-graph lookup, which can return different object instances.
    *
-   * Returns null if ANY of the 30 bones cannot be found — graceful degradation
+   * Returns null if ANY of the 30 bones cannot be found - graceful degradation
    * for low-poly models that omit finger rigs entirely.
    */
   private buildFingerChains(_root: Object3D): FingerChains | null {

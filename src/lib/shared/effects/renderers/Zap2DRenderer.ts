@@ -158,7 +158,7 @@ export class Zap2DRenderer {
       stroke = grad;
     }
 
-    // Glow pass — use the gradient (or solid). shadowColor needs a string.
+    // Glow pass - use the gradient (or solid). shadowColor needs a string.
     ctx.strokeStyle = stroke;
     ctx.shadowColor = startColor; // gradient halo isn't supported; pick start as approximation
     ctx.shadowBlur = params.glowBlur * scale;
@@ -169,7 +169,7 @@ export class Zap2DRenderer {
     for (let i = 1; i < path.length; i++) ctx.lineTo(path[i]!.x, path[i]!.y);
     ctx.stroke();
 
-    // Core pass — bright white center for the lightning hot core.
+    // Core pass - bright white center for the lightning hot core.
     ctx.strokeStyle = "#ffffff";
     ctx.shadowBlur = params.glowBlur * 0.5 * scale;
     ctx.lineWidth = params.lineWidth * scale;

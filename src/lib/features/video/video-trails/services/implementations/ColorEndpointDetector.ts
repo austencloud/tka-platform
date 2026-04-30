@@ -157,7 +157,7 @@ export class ColorEndpointDetector implements IEndpointDetector {
 				}
 			}
 
-			// Discard specks smaller than minArea — they're likely noise.
+			// Discard specks smaller than minArea - they're likely noise.
 			if (component.length >= minArea) {
 				let sumX = 0,
 					sumY = 0,

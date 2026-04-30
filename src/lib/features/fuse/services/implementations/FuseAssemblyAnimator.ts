@@ -44,7 +44,7 @@ export class FuseAssemblyAnimator implements IFuseAssemblyAnimator {
 		rightEl: HTMLElement,
 		targetEl: HTMLElement
 	): Promise<void> {
-		// Respect reduced motion preference — skip animation entirely
+		// Respect reduced motion preference - skip animation entirely
 		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 			return;
 		}

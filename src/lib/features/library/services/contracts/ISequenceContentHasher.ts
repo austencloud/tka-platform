@@ -6,7 +6,7 @@
  * Everything else (name, tags, thumbnails, visibility) is excluded because those are
  * user annotations on top of the motion content, not the content itself.
  *
- * Two sequences with the same content hash are the same variation — even if created
+ * Two sequences with the same content hash are the same variation - even if created
  * by different users with different names. Two sequences with different hashes are
  * different variations and deserve separate documents with separate birthdays.
  */

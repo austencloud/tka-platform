@@ -2,7 +2,7 @@
   Unified builder surface. Composes AnimatorCanvas (Canvas2D rendering)
   with HitTargetOverlay (click detection) and an optional animation
   overlay layer. Parents construct PropState objects and handle click
-  callbacks — this component is a pure pass-through.
+  callbacks - this component is a pure pass-through.
 
   Layer stack:
     z-index  0: Canvas2D (AnimatorCanvas)
@@ -119,7 +119,7 @@
     pointer-events: none;
   }
 
-  /* Remove AnimatorCanvas internal border — InteractiveCanvas owns the border.
+  /* Remove AnimatorCanvas internal border - InteractiveCanvas owns the border.
      This ensures the canvas fills the wrapper edge-to-edge so SVG overlay
      coordinates (950x950 viewBox) align pixel-perfectly with the Canvas2D grid. */
   .interactive-canvas-wrapper :global(.content-wrapper) {

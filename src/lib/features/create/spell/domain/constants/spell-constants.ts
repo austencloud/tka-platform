@@ -75,7 +75,7 @@ export const GREEK_LETTER_PALETTE = {
 
 /**
  * Inverse of the rename-panel Greek shorthand (sig → Σ, etc.).
- * Used for ASCII-safe filenames — "VΛ-" becomes "Vlam-" instead of "V_-".
+ * Used for ASCII-safe filenames - "VΛ-" becomes "Vlam-" instead of "V_-".
  */
 export const GREEK_TO_ASCII: Record<string, string> = {
   Σ: "sig", Δ: "del", Θ: "the", Ω: "ome",

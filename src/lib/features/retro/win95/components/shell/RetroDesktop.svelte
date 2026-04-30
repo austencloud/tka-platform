@@ -1,5 +1,5 @@
 <!--
-  RetroDesktop — Root shell component for TKA-OS v1.0
+  RetroDesktop - Root shell component for TKA-OS v1.0
 
   Composes the full Win95-style desktop experience:
   - Teal #008080 background filling the viewport
@@ -167,7 +167,7 @@
   });
 
   /* ------------------------------------------------------------------ */
-  /* Start menu sound — play chime each time the menu opens             */
+  /* Start menu sound - play chime each time the menu opens             */
   /* ------------------------------------------------------------------ */
 
   $effect(() => {
@@ -399,7 +399,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* DOOM easter egg — type "DOOM" anywhere on the desktop               */
+  /* DOOM easter egg - type "DOOM" anywhere on the desktop               */
   /* ------------------------------------------------------------------ */
 
   let doomBuffer = "";
@@ -604,7 +604,7 @@
   /* ------------------------------------------------------------------ */
 
   function handleKeyboardShortcut(e: KeyboardEvent) {
-    // Don't capture when focused on input/textarea — let them handle their own keys
+    // Don't capture when focused on input/textarea - let them handle their own keys
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
     // Alt+F4: Close the active (focused) window
@@ -835,7 +835,7 @@
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Layer 1: Desk — dark background filling the viewport                */
+  /* Layer 1: Desk - dark background filling the viewport                */
   /* ------------------------------------------------------------------ */
   .retro-desk {
     background: #1a1410;
@@ -850,7 +850,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Layer 2: Monitor — beige plastic CRT bezel                          */
+  /* Layer 2: Monitor - beige plastic CRT bezel                          */
   /* ------------------------------------------------------------------ */
   .retro-monitor {
     position: relative;
@@ -867,7 +867,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Layer 3: Screen — inset glass area inside the bezel                 */
+  /* Layer 3: Screen - inset glass area inside the bezel                 */
   /* ------------------------------------------------------------------ */
   .retro-screen {
     width: 100%;
@@ -879,7 +879,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Brand label — centered in the bottom bezel padding                  */
+  /* Brand label - centered in the bottom bezel padding                  */
   /* ------------------------------------------------------------------ */
   .retro-monitor-label {
     position: absolute;
@@ -910,7 +910,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Shell — the OS fills the screen area                                */
+  /* Shell - the OS fills the screen area                                */
   /* ------------------------------------------------------------------ */
   .retro-shell {
     width: 100%;
@@ -944,7 +944,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Desktop icon grid — left column                                     */
+  /* Desktop icon grid - left column                                     */
   /* ------------------------------------------------------------------ */
   .desktop-icon-grid {
     position: absolute;
@@ -957,7 +957,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Recycle Bin — bottom-right                                          */
+  /* Recycle Bin - bottom-right                                          */
   /* ------------------------------------------------------------------ */
   .recycle-bin-position {
     position: absolute;

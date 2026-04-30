@@ -5,7 +5,7 @@
  * Resolves effect configs, caches loopability/hand presence.
  *
  * Extracted from AnimationEngine to reduce its line count.
- * This is a plain TypeScript class — no Svelte reactivity needed.
+ * This is a plain TypeScript class - no Svelte reactivity needed.
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -31,6 +31,7 @@ import type {
   Ink2DParams,
   Petals2DParams,
   Silk2DParams,
+  Pulse2DParams,
   Smoke2DParams,
   Sparkles2DParams,
   Water2DParams,
@@ -44,6 +45,7 @@ import {
   resolveInk2D,
   resolvePetals2D,
   resolveSilk2D,
+  resolvePulse2D,
   resolveSmoke2D,
   resolveSparkles2D,
   resolveWater2D,
@@ -57,6 +59,7 @@ import type {
   InkIntent,
   PetalsIntent,
   SilkIntent,
+  PulseIntent,
   SmokeIntent,
   SparklesIntent,
   WaterIntent,
@@ -92,6 +95,8 @@ export class FrameParameterBuilder {
   private prevFrostIntentRef: FrostIntent | null = null;
   private silkConfig: Silk2DParams = resolveSilk2D(DEFAULT_EFFECTS_CONFIG.silk);
   private prevSilkIntentRef: SilkIntent | null = null;
+  private pulseConfig: Pulse2DParams = resolvePulse2D(DEFAULT_EFFECTS_CONFIG.pulse);
+  private prevPulseIntentRef: PulseIntent | null = null;
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
 
   // ── Loopability cache ───────────────────────────────────────────────
@@ -148,6 +153,7 @@ export class FrameParameterBuilder {
     inkConfig: null,
     frostConfig: null,
     silkConfig: null,
+    pulseConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -241,16 +247,16 @@ export class FrameParameterBuilder {
     fp.bluePropType = bluePropType;
     fp.redPropType = redPropType;
 
-    // Fire/charcoal overlay config — pass when either effect is active
+    // Fire/charcoal overlay config - pass when either effect is active
     fp.fireConfig = (prevHasFireTips || prevHasCharcoalTips) ? erm.fireConfig : null;
     fp.darkMode = prevDarkMode;
-    // Prop colors for colored flames — use VM's custom colors if set, else default blue/red
+    // Prop colors for colored flames - use VM's custom colors if set, else default blue/red
     fp.propColors = getVM()?.getFirePropColors() ?? DEFAULT_PROP_FLAME_COLORS;
 
     // LED overlay config
     fp.ledConfig = erm.ledConfig.enabled ? erm.ledConfig : null;
 
-    // Zap (lightning) overlay config — re-resolve when the shared
+    // Zap (lightning) overlay config - re-resolve when the shared
     // EffectsConfigState reports a changed ZapIntent. JSON diff mirrors the
     // prevCharcoalParamsJson pattern: cheap to compare, zero alloc when stable,
     // one re-resolve per slider tick when the user is actively tweaking.
@@ -264,7 +270,7 @@ export class FrameParameterBuilder {
     }
     fp.zapConfig = erm.prevHasZapTips ? this.zapConfig : null;
 
-    // Sparkles overlay config — re-resolve when SparklesIntent changes via
+    // Sparkles overlay config - re-resolve when SparklesIntent changes via
     // reference identity (Phase 1b pattern; cheaper than JSON diff and safe
     // because EffectsConfigState assigns a fresh object on every updateSparkles).
     if (effectsConfigState) {
@@ -276,7 +282,7 @@ export class FrameParameterBuilder {
     }
     fp.sparklesConfig = erm.prevHasSparklesTips ? this.sparklesConfig : null;
 
-    // Echo overlay config — re-resolve when EchoIntent changes via
+    // Echo overlay config - re-resolve when EchoIntent changes via
     // reference identity (mirrors sparkles; cheap and EffectsConfigState
     // assigns a fresh object on every updateEcho).
     if (effectsConfigState) {
@@ -288,7 +294,7 @@ export class FrameParameterBuilder {
     }
     fp.echoConfig = erm.prevHasEchoTips ? this.echoConfig : null;
 
-    // Bloom overlay config — re-resolve when BloomIntent changes via
+    // Bloom overlay config - re-resolve when BloomIntent changes via
     // reference identity (mirrors echo/sparkles; EffectsConfigState
     // assigns a fresh object on every updateBloom).
     if (effectsConfigState) {
@@ -300,7 +306,7 @@ export class FrameParameterBuilder {
     }
     fp.bloomConfig = erm.prevHasBloomTips ? this.bloomConfig : null;
 
-    // Water overlay config — re-resolve when WaterIntent changes via
+    // Water overlay config - re-resolve when WaterIntent changes via
     // reference identity (same pattern as bloom/echo/sparkles).
     if (effectsConfigState) {
       const intent = effectsConfigState.water;
@@ -311,7 +317,7 @@ export class FrameParameterBuilder {
     }
     fp.waterConfig = erm.prevHasWaterTips ? this.waterConfig : null;
 
-    // Bubbles overlay config — same reference-identity diff pattern.
+    // Bubbles overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
       const intent = effectsConfigState.bubbles;
       if (intent !== this.prevBubblesIntentRef) {
@@ -321,7 +327,7 @@ export class FrameParameterBuilder {
     }
     fp.bubblesConfig = erm.prevHasBubblesTips ? this.bubblesConfig : null;
 
-    // Petals overlay config — same reference-identity diff pattern.
+    // Petals overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
       const intent = effectsConfigState.petals;
       if (intent !== this.prevPetalsIntentRef) {
@@ -331,7 +337,7 @@ export class FrameParameterBuilder {
     }
     fp.petalsConfig = erm.prevHasPetalsTips ? this.petalsConfig : null;
 
-    // Smoke overlay config — same reference-identity diff pattern.
+    // Smoke overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
       const intent = effectsConfigState.smoke;
       if (intent !== this.prevSmokeIntentRef) {
@@ -341,7 +347,7 @@ export class FrameParameterBuilder {
     }
     fp.smokeConfig = erm.prevHasSmokeTips ? this.smokeConfig : null;
 
-    // Ink overlay config — same reference-identity diff pattern.
+    // Ink overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
       const intent = effectsConfigState.ink;
       if (intent !== this.prevInkIntentRef) {
@@ -351,7 +357,7 @@ export class FrameParameterBuilder {
     }
     fp.inkConfig = erm.prevHasInkTips ? this.inkConfig : null;
 
-    // Frost overlay config — same reference-identity diff pattern.
+    // Frost overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
       const intent = effectsConfigState.frost;
       if (intent !== this.prevFrostIntentRef) {
@@ -361,7 +367,7 @@ export class FrameParameterBuilder {
     }
     fp.frostConfig = erm.prevHasFrostTips ? this.frostConfig : null;
 
-    // Silk overlay config — same reference-identity diff pattern.
+    // Silk overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
       const intent = effectsConfigState.silk;
       if (intent !== this.prevSilkIntentRef) {
@@ -370,6 +376,16 @@ export class FrameParameterBuilder {
       }
     }
     fp.silkConfig = erm.prevHasSilkTips ? this.silkConfig : null;
+
+    // Pulse overlay config - same reference-identity diff pattern.
+    if (effectsConfigState) {
+      const intent = effectsConfigState.pulse;
+      if (intent !== this.prevPulseIntentRef) {
+        this.prevPulseIntentRef = intent;
+        this.pulseConfig = resolvePulse2D(intent);
+      }
+    }
+    fp.pulseConfig = erm.prevHasPulseTips ? this.pulseConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
@@ -419,7 +435,7 @@ export class FrameParameterBuilder {
   getSequenceContentHash(seq: SequenceData): string {
     const stepCount = seq.steps?.length || 0;
     // Build a compact fingerprint of each step's motion data.
-    // Transforms change startLocation, endLocation, rotationDirection, orientations —
+    // Transforms change startLocation, endLocation, rotationDirection, orientations -
     // we must detect these changes to re-precompute path caches.
     const motionFingerprint = seq.steps
       ?.map((s) => {

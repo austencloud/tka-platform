@@ -1,5 +1,5 @@
 <!--
-  DeckListFilterPanel.svelte — Filter bar for the collection page (Level 1).
+  DeckListFilterPanel.svelte - Filter bar for the collection page (Level 1).
   Composes FilterChipRow + individual chips from Browse module.
 -->
 <script lang="ts">

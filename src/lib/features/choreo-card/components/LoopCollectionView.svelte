@@ -149,7 +149,7 @@
     </div>
   {/if}
 
-  <!-- Axis toggle — only show tabs with 2+ distinct values -->
+  <!-- Axis toggle - only show tabs with 2+ distinct values -->
   {#if visibleAxes.length > 1}
     <div class="axis-toggle" role="tablist" aria-label="Browse axis">
       {#each visibleAxes as axis (axis.id)}
@@ -178,7 +178,7 @@
     onGridModeChange={(g) => activeGridMode = g}
   />
 
-  <!-- Grid content or drill-down list — vertically centered in remaining space -->
+  <!-- Grid content or drill-down list - vertically centered in remaining space -->
   <div class="grid-content">
     {#if drillFilter}
       <!-- Drill-down: filtered deck list -->

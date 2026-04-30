@@ -14,7 +14,7 @@ export type GeneratorHelpId =
   | "prop-continuity"
   | "turn-intensity"
   | "loop-type"
-  | "slice-size"
+  | "period"
   | "duration-rhythm"
   | "start-end"
   | "favorite"
@@ -143,9 +143,9 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     tip: "Try different LOOP types with the same settings to see how they change the feel.",
   },
   {
-    id: "slice-size",
+    id: "period",
     icon: "fa-circle-half-stroke",
-    name: "Slice Size",
+    name: "Period",
     color: "#06b6d4",
     shortDesc: "Quartered vs Halved",
     fullDesc:

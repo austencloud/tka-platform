@@ -55,7 +55,7 @@ export class ImageStager implements IImageStager {
           },
           async () => {
             if (cancelled) {
-              // Upload finished but we were cancelled — clean up the file
+              // Upload finished but we were cancelled - clean up the file
               try {
                 await deleteObject(storageRef);
               } catch {
@@ -102,7 +102,7 @@ export class ImageStager implements IImageStager {
       const storageRef = ref(storage, storagePath);
       await deleteObject(storageRef);
     } catch (error) {
-      // Best effort — file may already be gone or never fully uploaded
+      // Best effort - file may already be gone or never fully uploaded
       console.warn(
         "[ImageStager] Failed to delete staged file:",
         storagePath,

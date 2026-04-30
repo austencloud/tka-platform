@@ -72,7 +72,7 @@ function hasMovement(motion: MotionData): boolean {
 /**
  * Enhance a motion for invert demos by adding turns=1 only to dash motions.
  * Shifts already show pro/anti distinction at 0 turns, but dashes at 0 turns
- * have no rotation direction — so we add 1 turn to make the invert visible.
+ * have no rotation direction - so we add 1 turn to make the invert visible.
  *
  * When adding turns, we must also assign a rotation direction (CW) since the
  * original 0-turn dash had NO_ROTATION. Without a direction, the arrow
@@ -83,7 +83,7 @@ function enhanceMotionForInvert(motion: MotionData): MotionData {
   if (currentTurns > 0) {
     return motion; // Already has turns - no change needed
   }
-  // Only dash motions need enhancement — at 0 turns they have no direction
+  // Only dash motions need enhancement - at 0 turns they have no direction
   if (motion.motionType !== MotionType.DASH) {
     return motion;
   }

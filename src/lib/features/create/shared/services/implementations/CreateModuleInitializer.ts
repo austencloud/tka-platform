@@ -21,7 +21,7 @@ import { createCreateModuleState } from "$lib/features/create/shared/state/creat
 import { createConstructTabState } from "$lib/features/create/shared/state/construct-tab-state.svelte";
 // ARCHIVED: createAssemblerTabState import removed (Feb 2026)
 import { createGeneratorTabState } from "$lib/features/create/shared/state/generator-tab-state.svelte";
-// REMOVED: createSpellTabState — Spell mode unified into Generate tab (Feb 2026)
+// REMOVED: createSpellTabState - Spell mode unified into Generate tab (Feb 2026)
 import { createAssembleTabState } from "$lib/features/create/shared/state/assemble-tab-state.svelte";
 import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 import type { IStepOperator } from "../contracts/IStepOperator";
@@ -110,7 +110,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       this.sequenceValidationService
     );
 
-    // REMOVED: spellTabState creation — Spell mode unified into Generate tab (Feb 2026)
+    // REMOVED: spellTabState creation - Spell mode unified into Generate tab (Feb 2026)
 
     const assembleTabState = createAssembleTabState(
       this.sequenceService,
@@ -125,7 +125,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     CreateModuleState.constructorTabState = constructTabState; // Main accessor (triggers setter for _constructorTabState)
     // ARCHIVED: assemblerTabState removed (Feb 2026)
     CreateModuleState.generatorTabState = generatorTabState;
-    // REMOVED: spellTabState assignment — Spell mode unified into Generate tab (Feb 2026)
+    // REMOVED: spellTabState assignment - Spell mode unified into Generate tab (Feb 2026)
     CreateModuleState.assembleTabState = assembleTabState;
 
     // Initialize services
@@ -134,7 +134,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     // Initialize tab states (but NOT persistence - that's done after deep link check)
     await constructTabState.initializeConstructTab();
     await generatorTabState.initializeGeneratorTab();
-    // REMOVED: spellTabState.initializeSpellTab() — Spell mode unified into Generate tab (Feb 2026)
+    // REMOVED: spellTabState.initializeSpellTab() - Spell mode unified into Generate tab (Feb 2026)
     await assembleTabState.initializeAssembleTab();
 
     // Note: Event callbacks configured separately via configureEventCallbacks()
@@ -148,7 +148,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       CreateModuleState,
       constructTabState,
       generatorTabState,
-      // REMOVED: spellTabState — Spell mode unified into Generate tab (Feb 2026)
+      // REMOVED: spellTabState - Spell mode unified into Generate tab (Feb 2026)
       assembleTabState,
 
       // Core services

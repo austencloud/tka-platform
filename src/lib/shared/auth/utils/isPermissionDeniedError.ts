@@ -3,7 +3,7 @@
  *
  * When a user signs out, any onSnapshot listener that was reading a protected
  * collection will fire its error callback with this code. That's the normal,
- * expected lifecycle — not a broken connection. Error handlers use this helper
+ * expected lifecycle - not a broken connection. Error handlers use this helper
  * to suppress scary "Lost connection" toasts in that case.
  */
 export function isPermissionDeniedError(error: unknown): boolean {

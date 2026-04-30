@@ -62,7 +62,7 @@ export const staticNonRadialCounterClockwiseMap: Record<GridLocation, number> =
  * ROTATION OVERRIDE MAPS
  * Used when rotation_override flag is set for specific pictograph configurations.
  * Values are calibrated against the web's normal maps (where cw and ccw are
- * intentionally aliased) — SVG mirroring handles the visual direction difference.
+ * intentionally aliased) - SVG mirroring handles the visual direction difference.
  * Selection uses START orientation, matching the legacy desktop calculator.
  */
 

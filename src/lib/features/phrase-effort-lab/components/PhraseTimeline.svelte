@@ -91,7 +91,7 @@
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
     role="application"
-    aria-label="Effort timeline — drag to paint phrases"
+    aria-label="Effort timeline - drag to paint phrases"
   >
     {#each beats as beat}
       <div

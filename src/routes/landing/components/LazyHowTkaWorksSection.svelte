@@ -65,7 +65,7 @@
       </button>
     </div>
   {:else}
-    <!-- Structural skeleton — visible pulsing cards while loading -->
+    <!-- Structural skeleton - visible pulsing cards while loading -->
     <div class="how-section-skeleton skeleton-pulse" aria-hidden="true">
       <div class="sk-heading"></div>
       <div class="sk-grid">
@@ -95,7 +95,7 @@
     padding: 80px 24px;
   }
 
-  /* Heading placeholder — matches "How TKA works" h2 height */
+  /* Heading placeholder - matches "How TKA works" h2 height */
   .sk-heading {
     height: 48px;
     width: 300px;

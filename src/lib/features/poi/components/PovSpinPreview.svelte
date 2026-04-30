@@ -1,13 +1,13 @@
 <!--
-  PovSpinPreview.svelte — Spinning POV simulation of a StripPattern.
+  PovSpinPreview.svelte - Spinning POV simulation of a StripPattern.
 
   Simulates real persistence-of-vision physics: a single staff line sweeps
   around the circle, and the trail of light fades behind it. Your eye
-  integrates the fading trail into the full image — just like watching
+  integrates the fading trail into the full image - just like watching
   a pixel poi performer in a dark room.
 
   The disc image (all frames mapped to angles) is pre-rendered once.
-  Each animation frame, only the persistence window is drawn — a wedge
+  Each animation frame, only the persistence window is drawn - a wedge
   from the staff's current angle backwards, with alpha fading from
   bright (leading edge) to black (trailing edge).
 -->
@@ -156,7 +156,7 @@
 
       // Resolve which pre-rendered disc the trail should sweep over.
       // During a crossfade we alpha-composite secondary (outgoing) and
-      // primary (incoming) into a reusable blend canvas — source-over
+      // primary (incoming) into a reusable blend canvas - source-over
       // with alpha is mathematically per-pixel RGB lerp, so the blend
       // walks smoothly between the two patterns. Outside transitions
       // it's just the primary disc.
@@ -265,7 +265,7 @@
           const frameIdx = Math.floor((normalizedAngle / (Math.PI * 2)) * frameCount) % frameCount;
           const frame = frames[frameIdx]!;
 
-          // Outgoing-clip frame sampled at the same angular phase —
+          // Outgoing-clip frame sampled at the same angular phase -
           // guards against ledCount / frameCount mismatch between the
           // two clips so we never read past either buffer.
           let secondaryFrame: { colors: Uint8Array } | null = null;
@@ -333,7 +333,7 @@
           }
         }
 
-        // Outer rim glow — faint ring at the disc edge
+        // Outer rim glow - faint ring at the disc edge
         const rimGlow = ctx.createRadialGradient(cx, cy, drawRadius * 0.92, cx, cy, drawRadius * 1.08);
         rimGlow.addColorStop(0, "transparent");
         rimGlow.addColorStop(0.5, "rgba(120, 180, 255, 0.04)");
@@ -344,7 +344,7 @@
         ctx.fill();
       }
 
-      // Center hub — dark disc matching real poi hardware
+      // Center hub - dark disc matching real poi hardware
       const hubRadius = drawRadius * 0.15;
       ctx.beginPath();
       ctx.arc(cx, cy, hubRadius, 0, Math.PI * 2);

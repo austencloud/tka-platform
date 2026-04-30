@@ -11,7 +11,7 @@
  * The builder produces the absolute minimum data needed:
  *   - color (blue/red)
  *   - start and end location
- *   - handPath direction (CW, CCW, DASH, or STATIC — derived from locations)
+ *   - handPath direction (CW, CCW, DASH, or STATIC - derived from locations)
  *
  * Everything the render pipeline needs beyond that (motionType, turns, propType)
  * is derived from these core fields at creation time via createMotionData defaults.
@@ -74,7 +74,7 @@ export class HandPathDataBuilder implements IHandPathDataBuilder {
 
     if (!bluePart || !redPart) {
       throw new Error(
-        `Invalid hand path ID — expected "blue|red" format: "${handPathId}"`
+        `Invalid hand path ID - expected "blue|red" format: "${handPathId}"`
       );
     }
 

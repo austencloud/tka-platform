@@ -12,7 +12,7 @@ type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
 const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
 /**
- * A single in-flight water droplet. Once released it's on rails — position
+ * A single in-flight water droplet. Once released it's on rails - position
  * is computed from the release state plus ballistic motion (gravity only).
  */
 interface WaterDroplet {
@@ -28,7 +28,7 @@ interface WaterDroplet {
   maxAge: number;
   /** Droplet radius in world px (SSFR density-based sizing). */
   radius: number;
-  /** Base sprite rotation (radians). For stationary spawns only — motion
+  /** Base sprite rotation (radians). For stationary spawns only - motion
    *  droplets rotate to face their flight direction. */
   rotation: number;
   /** Radians/sec of rotation (slow tumble). */
@@ -45,7 +45,7 @@ const SPRITE_SIZE = 128;
 type SpewStyle = "splash" | "flow" | "mist";
 
 /**
- * Per-style tuning table. Each style is a complete visual language — not a
+ * Per-style tuning table. Each style is a complete visual language - not a
  * "strength slider". Splash = chunky discrete throws, Flow = continuous
  * thin streaks, Mist = fine high-count spray.
  */
@@ -58,7 +58,7 @@ interface StyleTuning {
   ambientMult: number;
   /** Motion-driven spawn multiplier. */
   motionMult: number;
-  /** 1/px — higher = more elongation per unit velocity. */
+  /** 1/px - higher = more elongation per unit velocity. */
   stretchPerSpeed: number;
   /** Max stretch factor under motion, before surface-tension adjustment. */
   stretchLimitBase: number;
@@ -127,7 +127,7 @@ const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
     coneHalfMin: 0.11,
     motionFracBase: 0.75,
     kickPerSpeed: 120,
-    // Subtle wet sheen halo around each droplet — fog pass at low alpha
+    // Subtle wet sheen halo around each droplet - fog pass at low alpha
     // gives the "atmospheric moisture" feel without smearing shapes.
     atmosphericBlur: 2.5,
     fogAlpha: 0.4,
@@ -155,7 +155,7 @@ const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
     atmosphericBlur: 7,
     fogAlpha: 0.9,
     dropletAlpha: 0.22,
-    // Mist already has heavy atmospheric blur — adding trails on top
+    // Mist already has heavy atmospheric blur - adding trails on top
     // smears into unreadable fog. Skip.
     trailCount: 0,
     trailStep: 0,
@@ -171,14 +171,14 @@ const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
  * refraction) isn't viable at 60fps. Instead we **pre-bake** the SSFR
  * shading into a droplet sprite on a cached canvas: four layered radial
  * gradients encode dark-rim Fresnel, saturated body, upper-left specular,
- * and lower-right refraction caustic — exactly what a screen-space shader
+ * and lower-right refraction caustic - exactly what a screen-space shader
  * would compute per-pixel, just done once and stamped per droplet.
  *
  * Each droplet is then one drawImage call with translate + rotate + scale,
  * stretched along velocity (SSFR's velocity-elongation) and sized per
  * density band (SSFR's density sizing: isolated = small, clustered = large).
  * When droplets overlap they naturally read as thicker/darker water because
- * the sprite already has alpha fall-off at the edges — accumulation through
+ * the sprite already has alpha fall-off at the edges - accumulation through
  * source-over compositing produces the volumetric look that metaball
  * blur-and-threshold can't.
  *
@@ -229,7 +229,7 @@ export class Water2DRenderer {
         vx = (tip.x - last.x) / dt;
         vy = (tip.y - last.y) / dt;
       }
-      // EMA smoothing — raw per-frame delta is noisy and makes spawn rate
+      // EMA smoothing - raw per-frame delta is noisy and makes spawn rate
       // flicker on top of the intended motion curve.
       const prev = this.smoothedVelocity[key];
       const alpha = 1 - Math.pow(0.6, dt * 60);
@@ -252,7 +252,7 @@ export class Water2DRenderer {
       if (last) { last.x = tip.x; last.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
-    // 2. Age + evict (in-place compaction — zero allocation).
+    // 2. Age + evict (in-place compaction - zero allocation).
     let writeIdx = 0;
     for (let i = 0; i < this.droplets.length; i++) {
       const d = this.droplets[i]!;
@@ -269,7 +269,7 @@ export class Water2DRenderer {
     if (!sprite) return;
 
     // 4. Route drawing: styles with atmospheric blur render droplets to an
-    //    offscreen canvas, then composite to main in two passes — blurred
+    //    offscreen canvas, then composite to main in two passes - blurred
     //    fog (wet haze / diffuse mist) + crisp droplets on top. Splash
     //    skips the offscreen for perf and draws direct.
     if (tuning.atmosphericBlur > 0 && this.probeFilter(ctx)) {
@@ -296,7 +296,7 @@ export class Water2DRenderer {
     tuning: StyleTuning,
     g: number,
   ): void {
-    // Stamp each droplet — the entire shading model is baked into the
+    // Stamp each droplet - the entire shading model is baked into the
     // sprite, so this loop only handles placement, rotation, stretch,
     // and fade.
     const prevComposite = ctx.globalCompositeOperation;
@@ -473,7 +473,7 @@ export class Water2DRenderer {
     if (n > slots) n = slots;
     if (n <= 0) return;
 
-    // Shed direction — droplets fly opposite tip motion. Cone width and
+    // Shed direction - droplets fly opposite tip motion. Cone width and
     // inheritance come from the style tuning, so flow draws tight trailing
     // streams while mist fans widely.
     const motionDir = speedPx > 1 ? Math.atan2(vy, vx) : 0;
@@ -544,7 +544,7 @@ export class Water2DRenderer {
 
 /**
  * Cached pre-baked droplet sprite. Regenerates whenever the palette or
- * clarity changes — keyed on a signature string so per-frame lookups are
+ * clarity changes - keyed on a signature string so per-frame lookups are
  * cheap. The sprite encodes everything a real SSFR shader would compute
  * per-pixel (Fresnel rim darkening, body refraction absorption, specular
  * highlight, caustic focus spot) as four layered radial gradients.
@@ -587,7 +587,7 @@ function renderDropletSprite(
   const R = SPRITE_SIZE * 0.42;
   ctx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
 
-  // Layer 1 — BODY. Radial gradient from a slightly-lit interior to the
+  // Layer 1 - BODY. Radial gradient from a slightly-lit interior to the
   // saturated rim. Alpha goes to 0 at R so the droplet has a soft (but
   // not blurred) edge. Clarity reduces interior opacity so you see through
   // the drop more.
@@ -609,10 +609,10 @@ function renderDropletSprite(
   ctx.arc(cx, cy, R, 0, TAU);
   ctx.fill();
 
-  // Layer 2 — BACKLIT RIM. Additive bright ring near the drop's edge.
+  // Layer 2 - BACKLIT RIM. Additive bright ring near the drop's edge.
   // On a *dark* background (our pictograph canvas), real water drops
   // exhibit a bright silhouette rim from light backlighting through the
-  // thin edge of the drop — the OPPOSITE of Fresnel-dark-rim which is
+  // thin edge of the drop - the OPPOSITE of Fresnel-dark-rim which is
   // only correct for light backgrounds. This is what makes real photos
   // of water drops against dark bg look luminous instead of outlined.
   ctx.globalCompositeOperation = "lighter";
@@ -626,10 +626,10 @@ function renderDropletSprite(
   ctx.arc(cx, cy, R, 0, TAU);
   ctx.fill();
 
-  // Layer 3 — SPECULAR HIGHLIGHT. Assumes a single light source from the
+  // Layer 3 - SPECULAR HIGHLIGHT. Assumes a single light source from the
   // upper-left, so specular peaks there. Additive so it lights on top of
   // the body without tinting it. This is what reads as "wet surface
-  // catching light" — the feature SSFR's Fresnel + GGX produces.
+  // catching light" - the feature SSFR's Fresnel + GGX produces.
   ctx.globalCompositeOperation = "lighter";
   const specCx = cx - R * 0.38;
   const specCy = cy - R * 0.42;
@@ -643,10 +643,10 @@ function renderDropletSprite(
   ctx.arc(specCx, specCy, specR, 0, TAU);
   ctx.fill();
 
-  // Layer 4 — REFRACTION CAUSTIC. Bright focal spot on the lower-right
+  // Layer 4 - REFRACTION CAUSTIC. Bright focal spot on the lower-right
   // interior where light passing through the drop converges. This is the
   // subtle "glowy bottom" that makes real water drops photograph as
-  // luminous — without it they look like painted blobs. SSFR gets this
+  // luminous - without it they look like painted blobs. SSFR gets this
   // for free from its refraction-offset math; we bake it in.
   const caustCx = cx + R * 0.24;
   const caustCy = cy + R * 0.32;

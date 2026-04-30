@@ -6,10 +6,10 @@
  * known reversal patterns in `reversal-patterns.ts`.
  *
  * Signature symbols (per beat):
- *   P — both hands reversed
- *   R — red reversed, blue continuous
- *   B — blue reversed, red continuous
- *   - — neither reversed
+ *   P - both hands reversed
+ *   R - red reversed, blue continuous
+ *   B - blue reversed, red continuous
+ *   - - neither reversed
  *
  * A sequence matches a pattern when the pattern's base sequence, repeated
  * modulo its period to the sequence length, equals the observed signature.

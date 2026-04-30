@@ -4,7 +4,7 @@
   and visually compare start positions when chaining cards together.
 
   Renders with a transparent background so the grid dots and props
-  float directly on the card back's gradient — no box/container.
+  float directly on the card back's gradient - no box/container.
 
   Uses PictographPreparer + PictographRenderer directly (no PictographContainer)
   so it works both in live Svelte rendering and offscreen html2canvas capture.
@@ -16,7 +16,7 @@
   import PictographRenderer from "$lib/shared/pictograph/shared/components/PictographRenderer.svelte";
 
   interface Props {
-    /** Start position data (extends PictographData) — has motions with prop info */
+    /** Start position data (extends PictographData) - has motions with prop info */
     pictographData: PictographData;
   }
 

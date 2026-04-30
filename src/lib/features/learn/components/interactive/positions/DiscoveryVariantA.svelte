@@ -142,7 +142,7 @@ interface Props {
 
   {#if experienceState.allDiscovered}
     <button class="advance-btn" onclick={handleAdvanceToQuiz}>
-      All found — ready for the quiz?
+      All found - ready for the quiz?
     </button>
   {/if}
 </div>
@@ -198,7 +198,7 @@ interface Props {
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Primary action — clear, prominent */
+  /* Primary action - clear, prominent */
   .primary-btn {
     padding: 0.75rem 2rem;
     font-size: var(--font-size-min, 14px);
@@ -216,7 +216,7 @@ interface Props {
     box-shadow: 0 4px 16px rgba(34, 211, 238, 0.3);
   }
 
-  /* Secondary action — subtle */
+  /* Secondary action - subtle */
   .secondary-btn {
     padding: 0.4rem 1rem;
     font-size: var(--font-size-compact, 12px);

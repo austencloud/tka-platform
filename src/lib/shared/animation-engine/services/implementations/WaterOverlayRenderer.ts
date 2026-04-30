@@ -7,7 +7,7 @@
  * events:none, z-index above trails.
  *
  * Water has persistent particle state (droplet pool), so unlike bloom we
- * do NOT clear the accumulated droplets on each frame — only the canvas
+ * do NOT clear the accumulated droplets on each frame - only the canvas
  * pixels. The pool is cleared on dispose() or explicit clear().
  */
 
@@ -41,7 +41,7 @@ export class WaterOverlayRenderer implements IWaterOverlayRenderer {
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
-    // Same z-index band as bloom/echo/sparkles — composited above trails.
+    // Same z-index band as bloom/echo/sparkles - composited above trails.
     canvas.style.zIndex = "2";
     canvas.style.background = "transparent";
 

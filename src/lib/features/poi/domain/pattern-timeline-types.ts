@@ -1,5 +1,5 @@
 /**
- * Pattern timeline — places StripPattern "clips" onto a beat grid so
+ * Pattern timeline - places StripPattern "clips" onto a beat grid so
  * different patterns play at different moments. A clip is a frozen
  * snapshot of a pattern (taken at paint time), so later edits to the
  * active pattern don't retroactively change already-placed clips.
@@ -15,7 +15,7 @@ export interface PatternClip {
   readonly id: string;
   /** 1-based, inclusive */
   readonly startStep: number;
-  /** Inclusive — a clip [3,5] covers the musical range [3.0, 6.0) */
+  /** Inclusive - a clip [3,5] covers the musical range [3.0, 6.0) */
   readonly endStep: number;
   /** Snapshot of the pattern at the moment the clip was painted */
   readonly pattern: StripPattern;
@@ -57,7 +57,7 @@ export function createPatternClip(
 
 export function createEmptyPatternTimeline(): PatternTimeline {
   // Blend is the default because the whole point of the timeline is
-  // smooth transitions between clips — a hard cut is the special-case
+  // smooth transitions between clips - a hard cut is the special-case
   // stylistic choice, not the baseline. 2-step fade ≈ 1 second at
   // 120bpm, wide enough to actually see the crossfade. Users who want
   // hard cuts can flip the transition toggle in the lane controls.
@@ -68,7 +68,7 @@ export function createEmptyPatternTimeline(): PatternTimeline {
  * Find the clip covering a given fractional beat, or null if the beat
  * falls in a gap. Assumes clips are sorted and non-overlapping.
  *
- * A clip [3,5] is considered active for beats in [3.0, 6.0) — the clip
+ * A clip [3,5] is considered active for beats in [3.0, 6.0) - the clip
  * "owns" the full duration of its last beat.
  */
 export function findClipAtBeat(
@@ -93,14 +93,14 @@ export function insertClip(
   const updated: PatternClip[] = [];
 
   for (const existing of timeline.clips) {
-    // Completely covered by new clip — remove
+    // Completely covered by new clip - remove
     if (
       existing.startStep >= newClip.startStep &&
       existing.endStep <= newClip.endStep
     ) {
       continue;
     }
-    // Existing wraps around new clip — split into two pieces
+    // Existing wraps around new clip - split into two pieces
     if (
       existing.startStep < newClip.startStep &&
       existing.endStep > newClip.endStep
@@ -113,7 +113,7 @@ export function insertClip(
       });
       continue;
     }
-    // Overlaps the left side of new clip — trim existing's right edge
+    // Overlaps the left side of new clip - trim existing's right edge
     if (
       existing.startStep < newClip.startStep &&
       existing.endStep >= newClip.startStep
@@ -121,7 +121,7 @@ export function insertClip(
       updated.push({ ...existing, endStep: newClip.startStep - 1 });
       continue;
     }
-    // Overlaps the right side of new clip — trim existing's left edge
+    // Overlaps the right side of new clip - trim existing's left edge
     if (
       existing.startStep <= newClip.endStep &&
       existing.endStep > newClip.endStep

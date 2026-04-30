@@ -4,7 +4,7 @@
  * Mirrors the smoke palette pattern but with stroke-specific color slots:
  * `pigment` (stroke core), `edge` (feathering), `splatterTint` (sprint-2
  * burst particle color), `poolTint` (sprint-2 ground decal color). Flags
- * `watercolor` and `emissive` alter renderer behavior — see spec
+ * `watercolor` and `emissive` alter renderer behavior - see spec
  * docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md.
  *
  * Sprint 1 (1j.i) reads only `pigment`, `edge`, and the two flags in the
@@ -20,23 +20,23 @@ import type { InkIntent } from "$lib/shared/effects/domain/EffectsConfig";
 
 export interface InkPalette {
   readonly id: InkIntent["palette"];
-  /** Hex — stroke core color (dense center of the brush path). */
+  /** Hex - stroke core color (dense center of the brush path). */
   readonly pigment: string;
-  /** Hex — stroke edge / feathering color. */
+  /** Hex - stroke edge / feathering color. */
   readonly edge: string;
-  /** Hex — sprint-2 splatter burst particle color. */
+  /** Hex - sprint-2 splatter burst particle color. */
   readonly splatterTint: string;
-  /** Hex — sprint-2 ground pool decal color. */
+  /** Hex - sprint-2 ground pool decal color. */
   readonly poolTint: string;
   /**
-   * True on the neon palette only — switches the renderer from
+   * True on the neon palette only - switches the renderer from
    * source-over (opaque pigment) to `lighter` additive blend so the
    * stroke glows. One palette that glows reinforces the "default ink is
    * opaque, not emissive" read.
    */
   readonly emissive?: boolean;
   /**
-   * True on the watercolor palette — renderer caps alpha at 0.4,
+   * True on the watercolor palette - renderer caps alpha at 0.4,
    * multiplies stroke width by 2 for wider bleed, and (1j.iv) suppresses
    * ground pooling since watercolor evaporates.
    */
@@ -64,7 +64,7 @@ const WATERCOLOR: InkPalette = {
   pigment: "#4080c0",
   edge: "#80b0e0",
   splatterTint: "#6098d0",
-  // Watercolor evaporates — poolTint unused but kept for type completeness.
+  // Watercolor evaporates - poolTint unused but kept for type completeness.
   poolTint: "#80b0e0",
   watercolor: true,
 };
@@ -110,7 +110,7 @@ export const INK_PALETTES = {
  *   edge         = +15% L
  *   splatterTint = base
  *   poolTint     = -30% L
- * No flags — custom strokes are opaque (matches default ink identity).
+ * No flags - custom strokes are opaque (matches default ink identity).
  */
 export function resolveInkPalette(intent: InkIntent): InkPalette {
   if (intent.palette !== "custom") {

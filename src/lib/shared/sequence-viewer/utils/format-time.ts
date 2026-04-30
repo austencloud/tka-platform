@@ -2,7 +2,7 @@
  * Format a duration in seconds as `m:ss` (e.g. 75 → "1:15").
  *
  * Shared by viewer transport, beat mapping editor, quiz timer, spotlight video,
- * and synced playback — everywhere a compact minute:second readout is needed.
+ * and synced playback - everywhere a compact minute:second readout is needed.
  * Variants that emit milliseconds, decimals, or conditional prefixes keep their
  * local implementations.
  */

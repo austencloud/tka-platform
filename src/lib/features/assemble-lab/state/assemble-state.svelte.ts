@@ -54,12 +54,12 @@ export function createAssembleState() {
   let rotationDirection = $state<RotationDirection>(RotationDirection.CLOCKWISE);
   let turnCount = $state<number>(0);
 
-  // Animation callback — set by the component to trigger SvgPropAnimator
+  // Animation callback - set by the component to trigger SvgPropAnimator
   let onAnimationRequest = $state<
     ((step: BuilderStep) => Promise<void>) | null
   >(null);
 
-  // Undo animation callback — plays the reverse animation before state is modified
+  // Undo animation callback - plays the reverse animation before state is modified
   let onUndoAnimationRequest = $state<
     ((step: BuilderStep, wasPlacement: boolean) => Promise<void>) | null
   >(null);
@@ -82,7 +82,7 @@ export function createAssembleState() {
   );
   const canChangeGridMode = $derived(blueSteps.length === 0 && redSteps.length === 0);
 
-  /** First click — place prop at a grid point */
+  /** First click - place prop at a grid point */
   function placeFirstPoint(location: GridLocation): void {
     currentPosition = location;
     // Center uses compass orientations, perimeter uses radial orientations
@@ -92,10 +92,10 @@ export function createAssembleState() {
     phase = "placing";
   }
 
-  // Action queued during animation — executed when animation completes
+  // Action queued during animation - executed when animation completes
   let pendingAction: (() => void) | null = null;
 
-  /** Subsequent clicks — create a motion from currentPosition to the clicked point */
+  /** Subsequent clicks - create a motion from currentPosition to the clicked point */
   async function addMotion(endLocation: GridLocation): Promise<void> {
     if (currentPosition === null) return;
 
@@ -127,7 +127,7 @@ export function createAssembleState() {
       ? onAnimationRequest(step)
       : Promise.resolve();
 
-    // Add step immediately — workspace reacts in parallel with prop animation
+    // Add step immediately - workspace reacts in parallel with prop animation
     if (activeHand === MotionColor.BLUE) {
       blueSteps = [...blueSteps, step];
     } else {
@@ -150,7 +150,7 @@ export function createAssembleState() {
     }
   }
 
-  /** Main click handler — routes to placeFirstPoint or addMotion */
+  /** Main click handler - routes to placeFirstPoint or addMotion */
   function handlePointClick(location: GridLocation): void {
     if (phase === "animating") return; // ignore during animation
 
@@ -186,7 +186,7 @@ export function createAssembleState() {
     if (phase === "animating") return; // block during animation
 
     if (phase === "placing" && currentPosition !== null) {
-      // Undo the initial placement — animate scale-out then remove
+      // Undo the initial placement - animate scale-out then remove
       phase = "animating";
       if (onUndoAnimationRequest) {
         // Create a dummy step representing the placement (start = end = current)
@@ -406,7 +406,7 @@ function normPos(angle: number): number {
   return n < 0 ? n + TWO_PI : n;
 }
 
-/** Normalize angle to (-PI, PI] — shortest signed delta */
+/** Normalize angle to (-PI, PI] - shortest signed delta */
 function normSigned(angle: number): number {
   const n = normPos(angle);
   return n > PI ? n - TWO_PI : n;
@@ -438,7 +438,7 @@ function staffAngleToOrientation(staffAngle: number, centerAngle: number): Orien
 
 /** Check if two grid locations are diametrically opposite (dash) */
 function isOpposite(a: GridLocation, b: GridLocation): boolean {
-  // Center is never opposite to anything — center motions are hash-in/hash-out
+  // Center is never opposite to anything - center motions are hash-in/hash-out
   if (a === GridLocation.CENTER || b === GridLocation.CENTER) return false;
   const angleA = LOCATION_ANGLES[a];
   const angleB = LOCATION_ANGLES[b];
@@ -448,7 +448,7 @@ function isOpposite(a: GridLocation, b: GridLocation): boolean {
 
 // ─── Hash orientation translation ─────────────────────────────────────────────
 // When hashing between perimeter and center, the prop's absolute direction
-// stays the same — we translate between radial (in/out/clock/counter) and
+// stays the same - we translate between radial (in/out/clock/counter) and
 // compass (centerN/centerE/etc.) orientation systems.
 //
 // Map: [perimeterLocation][radialOrientation] → centerOrientation
@@ -480,7 +480,7 @@ for (const [loc, oriMap] of Object.entries(RADIAL_TO_CENTER)) {
 /**
  * Calculate end orientation accounting for arc-based staff rotation.
  *
- * For shifts, the arc itself rotates the staff — pro shifts preserve orientation,
+ * For shifts, the arc itself rotates the staff - pro shifts preserve orientation,
  * anti shifts reverse it (even at 0 turns). For dashes and statics, only turn
  * count matters. This mirrors the exact math in SvgPropAnimator.
  *

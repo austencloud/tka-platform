@@ -43,11 +43,11 @@ export interface PrepareOptions {
    *  pro/anti → float, propType → HAND, orientation → null. */
   handPathMode?: boolean;
 
-  /** When false, the blue prop is hidden at render time — suppresses beta offset
+  /** When false, the blue prop is hidden at render time - suppresses beta offset
    *  for the red prop since there is no collision partner to avoid. Undefined/true
    *  means visible (both props rendered, full beta offset applied). */
   showBlueMotion?: boolean;
-  /** When false, the red prop is hidden at render time — suppresses beta offset
+  /** When false, the red prop is hidden at render time - suppresses beta offset
    *  for the blue prop. Undefined/true means visible. */
   showRedMotion?: boolean;
 }

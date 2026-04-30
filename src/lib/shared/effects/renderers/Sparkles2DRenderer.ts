@@ -61,7 +61,7 @@ export class Sparkles2DRenderer {
     //    on-screen density (not just the spawn rate, which was being masked
     //    by a static cap once rate crossed ~0.08).
     //    Per-tip allocation prevents the first tip in iteration order from
-    //    consuming the whole budget — without it, sparkles appear to come
+    //    consuming the whole budget - without it, sparkles appear to come
     //    from only one tip.
     const effectiveMax = Math.max(
       MIN_LIVE_PARTICLES,
@@ -85,7 +85,7 @@ export class Sparkles2DRenderer {
       if (lp) { lp.x = tip.x; lp.y = tip.y; } else { this.lastTipPos[key] = { x: tip.x, y: tip.y }; }
     }
 
-    // 2. Step physics + cull dead particles (in-place compaction — zero allocation).
+    // 2. Step physics + cull dead particles (in-place compaction - zero allocation).
     const gravityPx = params.gravity * 200 * scale;
     let writeIdx = 0;
     for (let i = 0; i < this.particles.length; i++) {
@@ -101,7 +101,7 @@ export class Sparkles2DRenderer {
     }
     this.particles.length = writeIdx;
 
-    // 3. Draw — each particle is a 4-point star (cross + smaller diagonal cross)
+    // 3. Draw - each particle is a 4-point star (cross + smaller diagonal cross)
     //    with a bright pinpoint core. Sin-modulated alpha = twinkle. The cross
     //    shape + scintillation is what differentiates sparkles from charcoal's
     //    additive-glow blobs.
@@ -188,7 +188,7 @@ export class Sparkles2DRenderer {
       const dist = Math.sqrt(dx * dx + dy * dy);
       // Motion threshold is px/frame at reference size; scale with canvas.
       if (dist < BURST_MOTION_THRESHOLD * scale) return;
-      // `dist / 10` keeps ratio invariant — distance already scales with canvas
+      // `dist / 10` keeps ratio invariant - distance already scales with canvas
       // (tips are in canvas px), so the divisor scales too.
       spawnCount = Math.max(1, Math.floor(baseCount * (1 + dist / (10 * scale))));
     } else {
@@ -201,7 +201,7 @@ export class Sparkles2DRenderer {
 
     for (let i = 0; i < spawnCount; i++) {
       // Origin: AT the tip (no scatter) so all particles emerge from the same
-      // point and burst outward — that's what reads as "bursting from the tip"
+      // point and burst outward - that's what reads as "bursting from the tip"
       // rather than "appearing in a fuzzy area".
       let originX = tip.x;
       let originY = tip.y;

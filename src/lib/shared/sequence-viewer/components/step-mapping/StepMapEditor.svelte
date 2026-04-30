@@ -117,7 +117,7 @@
 
   function seekTo(time: number) {
     const clamped = Math.max(0, Math.min(time, videoDuration));
-    // Update display immediately — don't wait for the video to decode
+    // Update display immediately - don't wait for the video to decode
     currentTime = clamped;
     if (videoEl) videoEl.currentTime = clamped;
   }

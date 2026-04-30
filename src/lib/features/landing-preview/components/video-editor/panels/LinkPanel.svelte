@@ -7,6 +7,7 @@
   import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     video: ShowcaseVideo;
@@ -99,7 +100,7 @@
               {/if}
             </div>
             <div class="sequence-info">
-              <span class="sequence-word">{seq.word}</span>
+              <span class="sequence-word"><TKAWordGlyph word={seq.word} height={13} /></span>
               <span class="sequence-name">{seq.name}</span>
               <span class="sequence-owner">
                 <i class="fas fa-user" aria-hidden="true"></i>

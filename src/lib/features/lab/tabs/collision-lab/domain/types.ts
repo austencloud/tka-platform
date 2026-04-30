@@ -68,7 +68,7 @@ export interface CollisionSnapshot {
 /**
  * The exact floor position and upper-body adjustment that was active
  * when the reviewer committed a label. Captured inline so labels are
- * self-describing — no external preset table needed.
+ * self-describing - no external preset table needed.
  */
 export interface StancePose {
   /** Side-to-side offset in meters. Positive = performer's right. */
@@ -85,7 +85,7 @@ export interface PoseLabel {
   poseId: string;
   status: LabelStatus;
   /**
-   * The committed stance — either the picked candidate's stance, or
+   * The committed stance - either the picked candidate's stance, or
    * (if the reviewer dragged the tweak sliders after picking) the
    * manually adjusted version of it. Always what the reviewer said "yes,
    * this is the stance to remember for this pose".

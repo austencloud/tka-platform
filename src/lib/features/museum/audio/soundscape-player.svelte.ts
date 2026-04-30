@@ -44,7 +44,7 @@ function savePrefs(prefs: WingPrefs): void {
 	try {
 		localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
 	} catch {
-		/* localStorage full / blocked — non-fatal */
+		/* localStorage full / blocked - non-fatal */
 	}
 }
 
@@ -163,7 +163,7 @@ export function createSoundscapePlayer() {
 				isPlaying = hasUserInteracted;
 			})
 			.catch(() => {
-				// Autoplay blocked — will resume on unlock.
+				// Autoplay blocked - will resume on unlock.
 				isPlaying = false;
 			});
 

@@ -183,7 +183,7 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(bleed, bleed, contentW, contentH);
 
-    // 6. Draw sequence image — deckCard mode produces exact content dimensions, draw 1:1
+    // 6. Draw sequence image - deckCard mode produces exact content dimensions, draw 1:1
     ctx.drawImage(sequenceCanvas, bleed, bleed, contentW, contentH);
 
     ctx.restore(); // inner clip

@@ -72,7 +72,7 @@ function deriveStepGridMode(
  * it. Knowing one (motion type) plus the path direction yields the other.
  *
  * Returns undefined when the rotation cannot be derived (e.g. dash hand
- * paths, or a float without a stored prefloatMotionType — which means the
+ * paths, or a float without a stored prefloatMotionType - which means the
  * data predates the prefloat-preservation fix).
  */
 function derivePrefloatRotation(
@@ -162,7 +162,7 @@ export class StepDeriver implements IStepDeriver {
     // will silently skip beats or access out-of-bounds indices.
     if (blueSoloProp.steps.length !== count || redSoloProp.steps.length !== count) {
       throw new Error(
-        `StepDeriver: step array length mismatch — ` +
+        `StepDeriver: step array length mismatch - ` +
           `blue=${blueSoloProp.steps.length}, ` +
           `red=${redSoloProp.steps.length}, ` +
           `pairings=${count}`
@@ -215,7 +215,7 @@ export class StepDeriver implements IStepDeriver {
       redSoloProp.startLocation
     );
 
-    // Start position motions are STATIC — the props are held still.
+    // Start position motions are STATIC - the props are held still.
     const blueMotion = createMotionData({
       startLocation: blueSoloProp.startLocation,
       endLocation: blueSoloProp.startLocation,

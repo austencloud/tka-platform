@@ -1,5 +1,5 @@
 <!--
-  SkeletonUpdater.svelte — Runs inside Threlte Canvas context.
+  SkeletonUpdater.svelte - Runs inside Threlte Canvas context.
   Updates skeleton matrices every frame so bone changes are visible immediately.
   Optionally applies a clipping plane to isolate the hand.
 -->

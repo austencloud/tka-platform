@@ -9,7 +9,7 @@
  *   TrackingMode.LEFT_END  = "left_end"
  *   TrackingMode.RIGHT_END = "right_end"
  *   TrackingMode.BOTH_ENDS = "both_ends"
- * No translation table is needed — the value is passed through directly.
+ * No translation table is needed - the value is passed through directly.
  */
 
 import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -44,11 +44,11 @@ export function seedTrailsFromAnimationSettings(state: EffectsConfigState): void
 
 /**
  * Bind a live listener. Returns a no-op disposer because
- * animation-settings-state uses Svelte 5 runes without an observer API —
+ * animation-settings-state uses Svelte 5 runes without an observer API -
  * callers must wrap this in a consumer-side $effect that re-calls
  * seedTrailsFromAnimationSettings when rune fields change.
  */
 export function bindAnimationSettingsToEffectsConfig(state: EffectsConfigState): () => void {
   seedTrailsFromAnimationSettings(state);
-  return () => { /* noop — caller must use $effect for live sync */ };
+  return () => { /* noop - caller must use $effect for live sync */ };
 }

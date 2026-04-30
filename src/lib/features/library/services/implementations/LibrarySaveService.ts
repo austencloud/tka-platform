@@ -9,7 +9,7 @@
  * 5. Refresh library state
  *
  * The Dexie write in step 2 makes saving work offline. Firestore syncs
- * in the background and fails gracefully if the user is offline — the
+ * in the background and fails gracefully if the user is offline - the
  * sequence is already safe in local storage.
  */
 
@@ -247,7 +247,7 @@ export class LibrarySaveService implements ILibrarySaveService {
 
       return uploadResult.url;
     } catch (error) {
-      // Don't fail the entire save if thumbnail generation fails — show a warning instead
+      // Don't fail the entire save if thumbnail generation fails - show a warning instead
       console.error(
         "[LibrarySaveService] Failed to generate/upload thumbnail:",
         error

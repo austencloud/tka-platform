@@ -595,7 +595,7 @@
     padding: 0;
   }
 
-  /* Duration-aware layout — start column barrier + step rows to the right */
+  /* Duration-aware layout - start column barrier + step rows to the right */
   .duration-layout {
     display: flex;
     width: 100%;
@@ -704,7 +704,7 @@
     background: #000;
   }
 
-  /* Wrapper for FLIP animation — a real grid item so Svelte can measure bounding rects.
+  /* Wrapper for FLIP animation - a real grid item so Svelte can measure bounding rects.
      The pictograph-cell inside fills it completely. */
   .cell-flip-wrapper {
     overflow: hidden;
@@ -761,7 +761,7 @@
     z-index: 10;
   }
 
-  /* Golden selection overlay — rendered via ::after so it paints ON TOP of
+  /* Golden selection overlay - rendered via ::after so it paints ON TOP of
      the cell image. Stays within cell bounds so nothing overflows. */
   .pictograph-cell.current::after {
     content: "";
@@ -790,7 +790,7 @@
     transition: opacity 0.15s ease-out;
   }
 
-  /* QR code cell — occupies the last row of column 1, under the start position.
+  /* QR code cell - occupies the last row of column 1, under the start position.
      In duration layouts (flex column), margin-top: auto pushes it to the bottom. */
   .qr-cell {
     display: flex;
@@ -813,7 +813,7 @@
     user-select: none;
   }
 
-  /* Mandala fill cell — sits in empty col-0 cells and shows blue/red/full path viz. */
+  /* Mandala fill cell - sits in empty col-0 cells and shows blue/red/full path viz. */
   .mandala-cell {
     display: flex;
     align-items: center;

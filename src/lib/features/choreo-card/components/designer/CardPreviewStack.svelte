@@ -28,7 +28,7 @@
     showInfoCard: boolean;
     /** Use print layout (matching the grid view) instead of 5:7 card layout */
     printMode?: boolean;
-    /** Pre-rendered front image URL — displays this instead of re-rendering */
+    /** Pre-rendered front image URL - displays this instead of re-rendering */
     frontImageUrl?: string | null;
     onCardContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -174,7 +174,7 @@
     class="card-slot front-slot"
     style="flex: {frontFlex};"
     onclick={handleFrontClick}
-    aria-label="Front card preview — click to {focusedCard === 'front' ? 'equalize' : 'focus'}"
+    aria-label="Front card preview - click to {focusedCard === 'front' ? 'equalize' : 'focus'}"
   >
     <div
       class="card-frame"
@@ -208,7 +208,7 @@
     class="card-slot back-slot"
     style="flex: {backFlex};"
     onclick={handleBackClick}
-    aria-label="Back card preview — click to {focusedCard === 'back' ? 'equalize' : 'focus'}"
+    aria-label="Back card preview - click to {focusedCard === 'back' ? 'equalize' : 'focus'}"
   >
     <div
       class="card-frame back-frame"
@@ -272,7 +272,7 @@
     background: var(--print-bg, #ffffff);
   }
 
-  /* Back card has dark content — transparent bg so corners don't show white */
+  /* Back card has dark content - transparent bg so corners don't show white */
   .preview-stack.print-mode .back-frame {
     background: transparent;
   }

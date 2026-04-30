@@ -13,7 +13,7 @@ type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
 const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
 /**
- * A single live bubble. Lightweight state — position is integrated each
+ * A single live bubble. Lightweight state - position is integrated each
  * frame instead of closed-form like water droplets because bubbles pick
  * up a bit of horizontal drift and grow over lifetime.
  */
@@ -31,7 +31,7 @@ interface Bubble {
   maxAge: number;
   /** Base radius at spawn (px). */
   baseR: number;
-  /** Growth rate — radius grows from baseR toward maxR over lifetime.
+  /** Growth rate - radius grows from baseR toward maxR over lifetime.
    *  0 = no growth (champagne-style), 1 = full growth (soap-style). */
   growthRate: number;
   /** Cap radius (px) for growth + max-size pop trigger. */
@@ -58,12 +58,12 @@ interface PopBurst {
   maxAge: number;
   /** Size (px). */
   r: number;
-  /** Color cached at spawn — avoids per-frame palette lookup when iridescent. */
+  /** Color cached at spawn - avoids per-frame palette lookup when iridescent. */
   color: string;
 }
 
 const MAX_BUBBLES = 1024;
-const POP_DURATION = 0.12; // seconds — rim expands 1.5× + fades
+const POP_DURATION = 0.12; // seconds - rim expands 1.5× + fades
 const POP_MAX_SCALE = 1.5;
 const BURST_COUNT_MIN = 4;
 const BURST_COUNT_MAX = 8;
@@ -72,7 +72,7 @@ const BURST_LIFE_VAR = 0.22;
 const TAU = Math.PI * 2;
 
 /**
- * Canvas2D bubbles renderer — per-tip buoyant emitter.
+ * Canvas2D bubbles renderer - per-tip buoyant emitter.
  *
  * Each bubble renders as a hollow ringed circle: rim stroke + transparent
  * interior fill + upper-left specular highlight. Motion is simple Euler
@@ -159,7 +159,7 @@ export class Bubbles2DRenderer {
     if (n > slots) n = slots;
     if (n <= 0) return;
 
-    // Lifetime scales with intensity — bigger bubbles last longer, but
+    // Lifetime scales with intensity - bigger bubbles last longer, but
     // size-pop caps it if they hit maxR first.
     const lifeBase = 1.0 + params.intensity * 2.0;
     // growthRate ∝ (1 - sizeJitter). Low-jitter (champagne) = ~0 growth;
@@ -288,7 +288,7 @@ export class Bubbles2DRenderer {
   /** Current radius for an alive bubble, accounting for growth. */
   private currentRadius(b: Bubble): number {
     const lifeT = Math.min(1, b.age / b.maxAge);
-    // Ease-out — early growth is faster than late. Feels more organic
+    // Ease-out - early growth is faster than late. Feels more organic
     // than linear.
     const grow = 1 - Math.pow(1 - lifeT, 1.6);
     const growSpan = b.maxR - b.baseR;
@@ -310,7 +310,7 @@ export class Bubbles2DRenderer {
       ctx.lineJoin = "round";
       const iridescent = palette.iridescent === true;
       // Unit-radius specular gradient reused for every bubble. CTM at
-      // paint time scales it per bubble — zero per-particle allocation.
+      // paint time scales it per bubble - zero per-particle allocation.
       const specGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
       specGrad.addColorStop(0, palette.highlight);
       specGrad.addColorStop(1, withAlpha(palette.highlight, 0));

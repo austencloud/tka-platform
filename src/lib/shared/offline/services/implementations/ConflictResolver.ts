@@ -61,20 +61,20 @@ export class ConflictResolver implements IConflictResolver {
 
     const localWriteVersion = this.localWriteVersions.get(sequenceId);
 
-    // No pending local write for this sequence — no conflict possible
+    // No pending local write for this sequence - no conflict possible
     if (localWriteVersion === undefined) {
       return null;
     }
 
     const serverVersion = (serverSequence._version ?? 0);
 
-    // Server version is what we wrote — our write was accepted, no conflict
+    // Server version is what we wrote - our write was accepted, no conflict
     if (serverVersion === localWriteVersion) {
       this.confirmServerSync(sequenceId);
       return null;
     }
 
-    // Server version is HIGHER than what we wrote — another device saved
+    // Server version is HIGHER than what we wrote - another device saved
     if (serverVersion > localWriteVersion) {
       return {
         sequenceId,
@@ -83,7 +83,7 @@ export class ConflictResolver implements IConflictResolver {
       };
     }
 
-    // Server version is lower — shouldn't happen, but not a conflict
+    // Server version is lower - shouldn't happen, but not a conflict
     return null;
   }
 
@@ -107,7 +107,7 @@ export class ConflictResolver implements IConflictResolver {
       return;
     }
 
-    // "use-server" — no action needed, the server version is already
+    // "use-server" - no action needed, the server version is already
     // in the snapshot listener and will update the UI
   }
 
@@ -119,7 +119,7 @@ export class ConflictResolver implements IConflictResolver {
     if (this.promptCallback) {
       return this.promptCallback(conflict);
     }
-    // Default: accept server version (safe default — preserves the most recent save)
+    // Default: accept server version (safe default - preserves the most recent save)
     return "use-server";
   }
 }

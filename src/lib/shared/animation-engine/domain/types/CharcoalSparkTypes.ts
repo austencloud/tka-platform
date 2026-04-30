@@ -175,7 +175,7 @@ export const CHARCOAL_SLIDER_GROUPS: CharcoalSliderGroup[] = [
 	},
 ];
 
-/** Default charcoal spark parameters — moderate steel-wool look (40/40/50). */
+/** Default charcoal spark parameters - moderate steel-wool look (40/40/50). */
 export const DEFAULT_CHARCOAL_PARAMS: CharcoalSparkParams = {
 	burstThreshold: 114,
 	burstMultiplier: 57,
@@ -248,7 +248,7 @@ export function semanticToCharcoalParams(semantic: CharcoalSemanticValues): Char
 		maxParticles: Math.round(lerp(200, 5000, intensity)),
 		idleRate: Math.round(lerp(0, 25, intensity)),
 
-		// Spread controls how far sparks travel (floor raised — below old 20% was useless)
+		// Spread controls how far sparks travel (floor raised - below old 20% was useless)
 		gravity: Math.round(lerp(480, 15, spread)),
 		drag: lerp(0.88, 0.99, spread),
 		velocityInheritance: lerp(0.78, 0.3, spread),

@@ -114,7 +114,7 @@ export class LedThresholdDetector implements IEndpointDetector {
         }
       }
 
-      // Discard specks smaller than minArea — they're likely noise.
+      // Discard specks smaller than minArea - they're likely noise.
       if (component.length >= minArea) {
         let sumX = 0, sumY = 0, sumL = 0;
         for (const p of component) {
@@ -142,7 +142,7 @@ export class LedThresholdDetector implements IEndpointDetector {
       return clusters.map((c, i) => ({ ...c, propIndex: 0 as const, tipIndex: i }));
     }
 
-    // Find the two clusters that are farthest apart to seed k-means — this
+    // Find the two clusters that are farthest apart to seed k-means - this
     // avoids the degenerate case where both centroids start at the same location.
     let maxDist = 0;
     let c1Idx = 0, c2Idx = 1;

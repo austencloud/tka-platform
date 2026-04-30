@@ -52,7 +52,7 @@ Controls moved below the grid for better UX
     hapticService = getHapticFeedback();
     loadPersistedPreferences();
 
-    // Always ensure positions are loaded — loadPersistedPreferences may
+    // Always ensure positions are loaded - loadPersistedPreferences may
     // skip loadPositions if there are no stored prefs or no gridMode pref.
     if (pickerState.positions.length === 0 && !showAdvancedPicker) {
       void pickerState.loadPositions();

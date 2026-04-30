@@ -43,7 +43,7 @@ export function createSequenceTag(
     source,
     addedAt: new Date(),
   };
-  // Only include confidence if defined — Firestore rejects undefined values
+  // Only include confidence if defined - Firestore rejects undefined values
   if (confidence !== undefined) {
     return { ...tag, confidence };
   }

@@ -1,24 +1,24 @@
 /**
- * VolumetricFireMesh — Object-space raymarched fire volume.
+ * VolumetricFireMesh - Object-space raymarched fire volume.
  *
  * A THREE.Mesh with a BoxGeometry bounding volume and a custom ShaderMaterial
  * whose fragment shader raymarches through 3D simplex noise to produce
  * volumetric fire.
  *
  * Momentum response uses two shader-level techniques:
- *   1. uWindOffset (vec3) — accumulated velocity integrated over time.
+ *   1. uWindOffset (vec3) - accumulated velocity integrated over time.
  *      Displaces the noise sampling position so the flame texture itself
  *      drifts opposite to motion. This is the primary visual cue and is
  *      what mattatz, Fuller, and every successful real-time fire uses.
- *   2. uLeanOffset (vec2) — shifts the teardrop density profile center
+ *   2. uLeanOffset (vec2) - shifts the teardrop density profile center
  *      in XZ so the flame body physically leans, not just the texture.
  *
  * The renderer also tilts the mesh as a tertiary reinforcement.
  *
  * References:
- *   - mattatz/unity-procedural-volumetric-fire — noise displacement
- *   - Fuller & Krishnan (I3D 2007) — real-time procedural volumetric fire
- *   - andrewkchan.dev/posts/fire — fluid sim velocity injection
+ *   - mattatz/unity-procedural-volumetric-fire - noise displacement
+ *   - Fuller & Krishnan (I3D 2007) - real-time procedural volumetric fire
+ *   - andrewkchan.dev/posts/fire - fluid sim velocity injection
  */
 
 import {
@@ -103,7 +103,7 @@ vec2 boxIntersect(vec3 ro, vec3 rd) {
 float fireDensity(vec3 p) {
   // Shift the density profile center by lean offset.
   // This makes the flame body physically lean in the direction
-  // opposite to motion — the teardrop shape itself is displaced,
+  // opposite to motion - the teardrop shape itself is displaced,
   // not just the noise texture. The lean increases with height
   // so the base stays anchored to the tip.
   float vertNorm = (p.y + 0.5) / uFlameHeight;
@@ -134,7 +134,7 @@ float fireDensity(vec3 p) {
   float vertDensity = 1.0 - smoothstep(0.1, 0.9, vertNorm);
 
   // Noise sampling: scroll upward + accumulated wind displacement.
-  // uWindOffset is velocity integrated over time — the noise field
+  // uWindOffset is velocity integrated over time - the noise field
   // physically drifts with motion, creating the organic trailing effect.
   vec3 noisePos = p;
   noisePos.y -= uTime * uScrollSpeed;
@@ -266,7 +266,7 @@ export class VolumetricFireMesh extends Mesh {
     (this.fireUniforms.uWindOffset!.value as Vector3).set(x, y, z);
   }
 
-  /** Set lean offset — shifts teardrop center in XZ for physical leaning */
+  /** Set lean offset - shifts teardrop center in XZ for physical leaning */
   setLeanOffset(x: number, z: number): void {
     (this.fireUniforms.uLeanOffset!.value as number[])[0] = x;
     (this.fireUniforms.uLeanOffset!.value as number[])[1] = z;

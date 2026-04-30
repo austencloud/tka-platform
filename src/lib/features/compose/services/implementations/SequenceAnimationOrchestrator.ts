@@ -255,13 +255,13 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
           );
         }
       } else {
-        // Gap between phrases — use linear (no easing)
+        // Gap between phrases - use linear (no easing)
         interpolationResult = this.propInterpolationService.interpolatePropAngles(
           stepState.currentStepData, stepState.stepProgress,
         );
       }
     } else {
-      // No effort timeline — existing behavior (global preset)
+      // No effort timeline - existing behavior (global preset)
       const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = this.propInterpolationService.interpolatePropAngles(
@@ -527,13 +527,13 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
           );
         }
       } else {
-        // Gap between phrases — use linear (no easing)
+        // Gap between phrases - use linear (no easing)
         interpolationResult = this.propInterpolationService.interpolatePropAngles(
           stepState.currentStepData, stepState.stepProgress,
         );
       }
     } else {
-      // No effort timeline — existing behavior (global preset)
+      // No effort timeline - existing behavior (global preset)
       const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = this.propInterpolationService.interpolatePropAngles(

@@ -146,7 +146,7 @@ const TARGET_TOTAL_SUBDIVISIONS = 150;
 /** Catmull-Rom alpha for centripetal parameterization */
 const CATMULL_ROM_ALPHA = 0.5;
 
-/** Minimum scaled line width in px — prevents trails from vanishing on tiny canvases */
+/** Minimum scaled line width in px - prevents trails from vanishing on tiny canvases */
 const MIN_SCALED_LINE_WIDTH = 0.75;
 
 /** Minimum scaled glow blur in px */
@@ -545,7 +545,7 @@ export class Canvas2DTrailRenderer {
         const age = currentTime - point.timestamp;
         const rawProgress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
 
-        // Exponential fade to zero — holds brightness longer, then drops sharply.
+        // Exponential fade to zero - holds brightness longer, then drops sharply.
         // Fades all the way to 0 so stationary trails disappear completely.
         const fadeProgress = Math.pow(rawProgress, FADE_EXPONENT);
 
@@ -593,7 +593,7 @@ export class Canvas2DTrailRenderer {
         const age = currentTime - originalPoint.timestamp;
         const progress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
 
-        // Exponential fade to zero — holds brightness longer, then drops sharply.
+        // Exponential fade to zero - holds brightness longer, then drops sharply.
         // Fades all the way to 0 so stationary trails disappear completely.
         const fadeProgress = Math.pow(progress, FADE_EXPONENT);
 

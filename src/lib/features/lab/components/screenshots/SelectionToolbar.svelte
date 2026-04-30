@@ -1,5 +1,5 @@
 <!--
-  SelectionToolbar — Sticky bar shown during batch selection mode.
+  SelectionToolbar - Sticky bar shown during batch selection mode.
   Shows selected count with "Tag", "Clear", and "Exit" actions.
 -->
 <script lang="ts">

@@ -64,7 +64,7 @@
   <div class="museum-camera-inner" style={innerStyle}>
     {@render children()}
   </div>
-  <!-- Subtle vignette only — museum is well-lit, no darkness overlay -->
+  <!-- Subtle vignette only - museum is well-lit, no darkness overlay -->
   <div class="vignette-overlay"></div>
 </div>
 
@@ -82,7 +82,7 @@
     will-change: transform;
   }
 
-  /* Subtle vignette — just gentle edge darkening, no dungeon feel */
+  /* Subtle vignette - just gentle edge darkening, no dungeon feel */
   .vignette-overlay {
     position: absolute;
     inset: 0;

@@ -8,7 +8,7 @@
 
   1. Wake word mode (default):
      Small, dim mic icon. Barely noticeable. User knows voice is available
-     but the mic isn't "hot" for arbitrary speech — only the wake phrase triggers it.
+     but the mic isn't "hot" for arbitrary speech - only the wake phrase triggers it.
 
   2. Command mode (mic is hot):
      Expanded pill with bright animated border, "Listening..." label, and
@@ -138,7 +138,7 @@
     transition: opacity 0.3s ease;
   }
 
-  /* Hide on desktop — the sidebar mic button handles it there */
+  /* Hide on desktop - the sidebar mic button handles it there */
   @media (min-width: 769px) {
     .voice-indicator {
       display: none;

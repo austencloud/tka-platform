@@ -43,7 +43,7 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   "poi-lab": "levels",
   // Museum renamed from museum-2d to museum (Mar 2026)
   "museum-2d": "museum",
-  // Realm module dissolved (Apr 2026) — deep links redirect to museum (the most
+  // Realm module dissolved (Apr 2026) - deep links redirect to museum (the most
   // polished former destination). Campground + 3D Controls moved to Lab;
   // Archive promoted to its own main module.
   realm: "museum",
@@ -236,7 +236,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Museum",
     icon: '<i class="fas fa-landmark" style="color: #f59e0b;" aria-hidden="true"></i>',
     color: "#f59e0b",
-    description: "Explore The Kinetic Archive — walk the museum, flip into 3D",
+    description: "Explore The Kinetic Archive - walk the museum, flip into 3D",
     isMain: true,
     sections: ARCHIVE_TABS,
   },

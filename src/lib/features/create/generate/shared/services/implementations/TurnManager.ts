@@ -165,7 +165,7 @@ export class TurnManager implements ITurnManager {
     let newRotationDirection: RotationDirection;
 
     if (!hasTurns) {
-      // No turns means no rotation — the prop is held still
+      // No turns means no rotation - the prop is held still
       newRotationDirection = ROTATION_DIRS.noRotation;
     } else if (propContinuity === PropContinuity.CONTINUOUS) {
       // Continuous: inherit the previous beat's direction. If the caller

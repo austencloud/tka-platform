@@ -9,7 +9,7 @@
   rAF loop and advances poi.playheadBeat; this component just reads that
   fractional beat reactively, maps it to a step + interpolation fraction,
   and feeds the resulting prop angles into AnimatorCanvas. That keeps
-  every preview tied to exactly one clock — the same pattern used by
+  every preview tied to exactly one clock - the same pattern used by
   PovSpinPreview and LedStaffPreview.
 
   When no sequence is loaded, the preview hides itself (the lab is still

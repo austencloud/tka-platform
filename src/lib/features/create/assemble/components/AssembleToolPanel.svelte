@@ -84,7 +84,7 @@
         props.tabState.assembleBuilderState.setShowCenter(saved.preferredShowCenter);
       }
     } catch {
-      // Settings unavailable — use defaults
+      // Settings unavailable - use defaults
     }
   });
 
@@ -121,7 +121,7 @@
     <BuilderTurnBar {builderState} />
   </div>
 
-  <!-- Beat cap nudge — shown when user tries to exceed their tier's beat limit -->
+  <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit -->
   {#if showBeatCapNudge}
     <div class="beat-cap-nudge-overlay">
       <AuthNudge

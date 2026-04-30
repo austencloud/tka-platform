@@ -188,7 +188,7 @@ export class FirebaseSettingsPersister implements ISettingsPersister {
             }
           },
           (error) => {
-            // Expected on sign-out — user settings are no longer readable.
+            // Expected on sign-out - user settings are no longer readable.
             if (isPermissionDeniedError(error)) return;
             console.error(
               "❌ [FirebaseSettingsPersister] Subscription error:",

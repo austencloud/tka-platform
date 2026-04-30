@@ -1,5 +1,5 @@
 /**
- * Library Adapter — maps LibraryRepository data to DOS-style file listings
+ * Library Adapter - maps LibraryRepository data to DOS-style file listings
  *
  * Bridges the real library (Firestore-backed sequences) into the
  * RetroFileManager's FAT16 world. Each saved sequence becomes a .SEQ

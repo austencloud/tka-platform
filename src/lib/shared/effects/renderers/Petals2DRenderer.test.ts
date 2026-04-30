@@ -82,7 +82,7 @@ describe("Petals2DRenderer", () => {
     for (let i = 0; i < 60; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    // Each petal draws a silhouette (fill) — we should have many fills.
+    // Each petal draws a silhouette (fill) - we should have many fills.
     expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
     // setTransform called per petal per frame (replaces save/translate/rotate).
     expect((ctx.setTransform as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
@@ -167,7 +167,7 @@ describe("Petals2DRenderer", () => {
     expect((ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
   });
 
-  it("petals fall (positive vy — screen-space downward)", () => {
+  it("petals fall (positive vy - screen-space downward)", () => {
     const r = new Petals2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({

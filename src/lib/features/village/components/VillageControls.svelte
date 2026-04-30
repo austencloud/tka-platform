@@ -1,5 +1,5 @@
 <!--
-  VillageControls — Sidebar control panel for the village simulation.
+  VillageControls - Sidebar control panel for the village simulation.
   Time controls, population stats, and avatar inspector.
 -->
 <script lang="ts">

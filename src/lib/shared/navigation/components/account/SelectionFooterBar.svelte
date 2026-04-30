@@ -1,5 +1,5 @@
 <!--
-  SelectionFooterBar.svelte — Sticky footer in My Props drawer.
+  SelectionFooterBar.svelte - Sticky footer in My Props drawer.
   Shows miniature prop chips for each selection, count label, and CTA button.
   Hidden when 0 props selected.
 -->

@@ -38,7 +38,7 @@ interface PlacementGridProps {
   }: PlacementGridProps = $props();
 
   // =========================================================================
-  // Grid point coordinates — from the actual pictograph system
+  // Grid point coordinates - from the actual pictograph system
   // (gridCoordinates.ts hand_points.normal)
   // =========================================================================
 
@@ -156,7 +156,7 @@ interface PlacementGridProps {
   }
 
   const pictographData: PictographData | null = $derived.by(() => {
-    // No hands placed — show grid only (no motions)
+    // No hands placed - show grid only (no motions)
     if (placementState === 'empty' || !bluePosition) {
       return {
         id: 'placement-grid-empty',
@@ -307,7 +307,7 @@ interface PlacementGridProps {
   {/if}
 
   <div class="grid-wrapper">
-    <!-- Real pictograph renderer — handles grid, hand rendering at correct scale -->
+    <!-- Real pictograph renderer - handles grid, hand rendering at correct scale -->
     <div class="pictograph-layer">
       {#if pictographData}
         <PictographContainer
@@ -326,7 +326,7 @@ interface PlacementGridProps {
       {/if}
     </div>
 
-    <!-- Interactive overlay — pulse indicators + click targets aligned to same 950×950 space -->
+    <!-- Interactive overlay - pulse indicators + click targets aligned to same 950×950 space -->
     <svg viewBox="0 0 950 950" class="interaction-overlay">
       <!-- Pulsing touch point indicators -->
       <g class="touch-indicators">
@@ -472,7 +472,7 @@ interface PlacementGridProps {
     transition: opacity 0.15s ease;
   }
 
-  /* Click targets — invisible, generous size for mobile */
+  /* Click targets - invisible, generous size for mobile */
   .click-target {
     cursor: default;
     pointer-events: auto;

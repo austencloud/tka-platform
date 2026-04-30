@@ -1,5 +1,5 @@
 <!--
-  MotionTypePills.svelte — Renders a family label as color-coded abbreviated pills.
+  MotionTypePills.svelte - Renders a family label as color-coded abbreviated pills.
   e.g. "Dual-Shift+Static+Dash" → [DS] › [St] › [D]
 
   Used in: DeckFamilySection headers, DeckBrowser section headers,

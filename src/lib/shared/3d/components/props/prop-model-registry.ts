@@ -22,7 +22,7 @@ export interface PropModelEntry {
   gripOffsetY: number;
 }
 
-/** R2 CDN base URL — same CDN used by forest/camping models */
+/** R2 CDN base URL - same CDN used by forest/camping models */
 const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
 /** Local fallback for development */
@@ -43,7 +43,7 @@ function modelUrl(filename: string): string {
  * Registry of available GLTF prop models.
  *
  * Props NOT in this registry will use procedural fallback geometry.
- * Add entries as models become available — the system degrades gracefully.
+ * Add entries as models become available - the system degrades gracefully.
  */
 export const PROP_MODEL_REGISTRY: Partial<Record<PropType, PropModelEntry>> = {
   // Models will be added here as they're generated.

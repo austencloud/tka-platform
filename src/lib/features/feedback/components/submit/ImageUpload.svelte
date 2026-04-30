@@ -205,7 +205,7 @@
       {/if}
     </div>
   {:else if !hideAttachButton && images.length < maxImages}
-    <!-- No images yet — compact attach button -->
+    <!-- No images yet - compact attach button -->
     <button
       type="button"
       class="attach-button"

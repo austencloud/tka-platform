@@ -89,7 +89,7 @@ export class Viewer3DUndoManager implements IViewer3DUndoManager {
         return;
       }
     }
-    // No match — silently ignore. This happens if the entry was trimmed by
+    // No match - silently ignore. This happens if the entry was trimmed by
     // the cap between push and complete, which is fine for undo semantics.
   }
 

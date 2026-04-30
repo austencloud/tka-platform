@@ -3,14 +3,14 @@
  *
  * When your hands reach across your body, your torso and head naturally
  * turn toward the reaching direction. This reframes the coordinate
- * system — a cross-body reach becomes more like a front-body reach
+ * system - a cross-body reach becomes more like a front-body reach
  * from the spine's perspective. Without this, the avatar looks like
  * a mannequin bolted to a pole.
  *
  * Two degrees of freedom:
  * 1. YAW (Y-axis): torso turns left/right toward the crossing direction
  * 2. LATERAL TILT (Z-axis): torso leans sideways when hands are high
- *    and crossing — prevents arms from clipping through the head
+ *    and crossing - prevents arms from clipping through the head
  *
  * The twist distributes anatomically up the spine chain. If the model
  * is missing bones (common: Spine2/upper_chest), the missing bone's
@@ -24,7 +24,7 @@
  * - Thoracic spine: ~47° total axial rotation capacity
  * - Cervical spine: ~85° total axial rotation capacity
  * - Lateral flexion: ~25° thoracic, ~45° cervical
- * - We use ~60° max yaw, ~25° max tilt — within safe range
+ * - We use ~60° max yaw, ~25° max tilt - within safe range
  */
 
 import { Vector3, Quaternion, Euler } from "three";
@@ -34,7 +34,7 @@ import type { ISpineTwister, SpineTwistResult } from "../contracts/ISpineTwister
 const MAX_YAW = (60 * Math.PI) / 180;
 
 /** Maximum yaw in single-hand gaze mode (~40 degrees). Softer than
- *  the cross-body reach case — you turn to LOOK at a held prop, you
+ *  the cross-body reach case - you turn to LOOK at a held prop, you
  *  don't lean your whole torso toward it. */
 const SINGLE_HAND_MAX_YAW = (40 * Math.PI) / 180;
 
@@ -176,7 +176,7 @@ export class SpineTwister implements ISpineTwister {
    * absent. Head and upper spine orient toward the present hand; no
    * tilt (no cross-body lean), no hip counter-rotation (gazing at a
    * held prop doesn't need a counter-balanced stance). Softer max
-   * yaw than the two-hand case — this is look-at, not reach-across.
+   * yaw than the two-hand case - this is look-at, not reach-across.
    */
   private computeSingleHandGaze(
     handTarget: Vector3,

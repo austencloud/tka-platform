@@ -7,13 +7,13 @@
  *
  * The generator has two modes:
  *
- *   "diverse" — used when starting fresh on a pose or when the reviewer
+ *   "diverse" - used when starting fresh on a pose or when the reviewer
  *               rejects all current candidates. Six seeds sampled from a
  *               diverse strategy set (face the work, 90° rotations,
  *               behind-the-back, etc.), each optimized from its seed.
  *               Lower-loss solutions in each basin are surfaced.
  *
- *   "refine"  — used after the reviewer has picked a candidate but wants
+ *   "refine"  - used after the reviewer has picked a candidate but wants
  *               small variations. Six perturbations of the picked stance
  *               (±5° yaw, ±5 cm foot offsets), each optimized from its
  *               perturbed start with a short budget since we're already
@@ -24,7 +24,7 @@
  * slots are backfilled with small perturbations so the reviewer always
  * sees six distinct options.
  *
- * Domain: Collision Lab — AI-assisted multiple-choice labeling
+ * Domain: Collision Lab - AI-assisted multiple-choice labeling
  */
 
 import type { CandidateSet, PoseDefinition, StancePose } from "../../domain/types";
@@ -37,7 +37,7 @@ export interface ICandidateGenerator {
    * "Different options" to reject the current set.
    *
    * If `priorLabel` is supplied, the reviewer's previously-saved stance
-   * becomes candidate 0 (with zero optimizer work — just the sim
+   * becomes candidate 0 (with zero optimizer work - just the sim
    * evaluated for its verdict), and five diverse seeds fill slots 1–5.
    * This lets the reviewer see what they picked before alongside fresh
    * alternatives when returning to an already-labeled pose.
@@ -56,7 +56,7 @@ export interface ICandidateGenerator {
    * tiny variations they might not have thought to try manually.
    *
    * `previousHistory` is the running list of every stance the reviewer
-   * has seen for this pose across all regenerations — the new set is
+   * has seen for this pose across all regenerations - the new set is
    * appended to it so we can record the full preference trail when the
    * reviewer eventually commits or gives up.
    */

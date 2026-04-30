@@ -68,7 +68,7 @@
       return;
     }
 
-    // No intended prop — cycle through prop types as a quick switcher.
+    // No intended prop - cycle through prop types as a quick switcher.
     // Find current prop in the list, advance to next.
     const current = bluePropType ?? PropType.STAFF;
     const currentIndex = quickSwitchTypes.indexOf(current);

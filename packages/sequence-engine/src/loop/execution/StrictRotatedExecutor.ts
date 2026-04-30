@@ -2,12 +2,12 @@
  * Strict Rotated LOOP Executor
  *
  * Rotates hand locations based on the handpath direction of each motion.
- * Supports both halved (180 degree) and quartered (90 degree) slice sizes.
+ * Supports both halved (period 2, 180 degree) and quartered (period 4, 90 degree).
  */
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
 import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
-import { SliceSize } from "../loop-types.js";
+import { Period } from "../loop-types.js";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
@@ -18,8 +18,8 @@ import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class StrictRotatedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
-    this.validateSequence(sequence, sliceSize);
+  executeLOOP(sequence: SequenceStep[], period: Period): SequenceStep[] {
+    this.validateSequence(sequence, period);
 
     const startPosition = sequence.shift();
     if (!startPosition) {
@@ -28,7 +28,7 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
 
     const sequenceLength = sequence.length;
     const entriesToAdd =
-      sliceSize === SliceSize.HALVED ? sequenceLength : sequenceLength * 3;
+      period === Period.HALVED ? sequenceLength : sequenceLength * 3;
 
     let lastStep = sequence[sequence.length - 1]!;
     let nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
@@ -39,7 +39,7 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
         sequence,
         nextStepNumber,
         finalIntendedLength,
-        sliceSize
+        period
       );
 
       const newStep = this.createRotatedStep(matchingStep, lastStep, nextStepNumber);
@@ -54,7 +54,7 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     return sequence;
   }
 
-  private validateSequence(sequence: SequenceStep[], sliceSize: SliceSize): void {
+  private validateSequence(sequence: SequenceStep[], period: Period): void {
     if (sequence.length < 2) {
       throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
     }
@@ -68,12 +68,12 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
 
     const key = `${startPos},${endPos}`;
     const validationSet =
-      sliceSize === SliceSize.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
+      period === Period.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
 
     if (!validationSet.has(key)) {
       throw new Error(
-        `Invalid position pair for ${sliceSize} LOOP: ${startPos} -> ${endPos}. ` +
-          `This pair cannot complete a ${sliceSize} rotation.`
+        `Invalid position pair for ${period} LOOP: ${startPos} -> ${endPos}. ` +
+          `This pair cannot complete a ${period} rotation.`
       );
     }
   }
@@ -82,10 +82,10 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     sequence: SequenceStep[],
     stepNumber: number,
     finalLength: number,
-    sliceSize: SliceSize
+    period: Period
   ): SequenceStep {
     const sliceLength =
-      sliceSize === SliceSize.QUARTERED
+      period === Period.QUARTERED
         ? Math.floor(finalLength / 4)
         : Math.floor(finalLength / 2);
 

@@ -1,5 +1,5 @@
 <!--
-  ScrubValue.svelte — Figma-style drag-to-scrub number control.
+  ScrubValue.svelte - Figma-style drag-to-scrub number control.
 
   Hover: cursor becomes ew-resize.
   Drag left/right: value changes by step per pixel.

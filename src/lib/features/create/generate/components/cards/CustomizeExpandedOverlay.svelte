@@ -102,7 +102,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     hapticService = getHapticFeedback();
   });
 
-  // Accordion state — restore last-open section across drawer open/close cycles
+  // Accordion state - restore last-open section across drawer open/close cycles
   let activeSection = $state<AccordionSection | null>(persistedSection);
 
   function toggleSection(section: AccordionSection) {
@@ -226,7 +226,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       const blocked = getBlockedPositionsForPreset(StartPositionPreset.CLASSIC, gridMode);
       applyBlockedPositions(blocked);
     } else if (mode === "specific") {
-      // Block all — nothing highlighted until user picks one
+      // Block all - nothing highlighted until user picks one
       const allPositions = getAllPositions(gridMode);
       applyBlockedPositions(allPositions);
     }

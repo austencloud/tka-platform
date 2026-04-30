@@ -13,7 +13,7 @@
 
     if (!isStandalone) return;
 
-    // Only show on the old domain — users on tkaflowarts.com installed correctly
+    // Only show on the old domain - users on tkaflowarts.com installed correctly
     const isOldDomain = window.location.hostname.includes("tkascribe");
     if (!isOldDomain) return;
 

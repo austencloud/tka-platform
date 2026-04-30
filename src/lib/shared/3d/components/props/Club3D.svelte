@@ -2,7 +2,7 @@
   /**
    * Club3D Component
    *
-   * Renders a realistic 3D juggling club using LatheGeometry — a single smooth
+   * Renders a realistic 3D juggling club using LatheGeometry - a single smooth
    * mesh created by revolving a spline profile around the Y-axis. The grip
    * point sits at origin (0,0,0).
    *
@@ -60,7 +60,7 @@
    *
    * We define control points as (radius, height) pairs normalized to the
    * club's effective length, then sample the spline densely for LatheGeometry.
-   * The profile is rotationally symmetric — LatheGeometry handles the rest.
+   * The profile is rotationally symmetric - LatheGeometry handles the rest.
    *
    * Real club proportions (from Henrys Delphin, ~52cm total):
    *   Knob: 2cm ball at base
@@ -70,7 +70,7 @@
    *   Tip: 6cm taper to rounded cap (~12%)
    */
   function buildClubProfile(len: number, rad: number): Vector2[] {
-    // Control points: [radius, height] — height 0 = bottom of knob
+    // Control points: [radius, height] - height 0 = bottom of knob
     // Knob sits below origin; origin is at knobHeight
     const knobHeight = len * 0.04;
 

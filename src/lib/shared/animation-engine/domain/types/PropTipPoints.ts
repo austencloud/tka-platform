@@ -14,7 +14,7 @@
  */
 
 /**
- * A single tip attachment point on a prop. Position only — no effect-specific
+ * A single tip attachment point on a prop. Position only - no effect-specific
  * properties. All effects (fire, LED, trail, charcoal) emit from these same
  * positions.
  */

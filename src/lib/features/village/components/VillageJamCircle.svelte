@@ -1,5 +1,5 @@
 <!--
-  VillageJamCircle — Pulsing white ground ring for active jam sessions.
+  VillageJamCircle - Pulsing white ground ring for active jam sessions.
   The avatars performing inside are the spectacle, not the ring.
 -->
 <script lang="ts">

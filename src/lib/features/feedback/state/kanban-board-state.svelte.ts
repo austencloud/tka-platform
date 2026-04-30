@@ -208,7 +208,7 @@ export function createKanbanBoardState(
       }
     }
 
-    // Strategy 2: Bounding rect scan — catches gaps, overlays, or ghost interference
+    // Strategy 2: Bounding rect scan - catches gaps, overlays, or ghost interference
     // Check special drop zones first
     for (const cls of ["defer-drop-zone", "archive-drop-zone", "trash-drop-zone"] as const) {
       const zone = document.querySelector(`.${cls}`);

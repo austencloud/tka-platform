@@ -1,5 +1,5 @@
 <!--
-  CardDesignerContextMenuHost — Orchestrates the Card Designer right-click context menu.
+  CardDesignerContextMenuHost - Orchestrates the Card Designer right-click context menu.
   Single entry: "Card Settings..." plus optional Re-render action.
 -->
 <script lang="ts">

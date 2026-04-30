@@ -1,5 +1,5 @@
 <!--
-  TagContextPanel — Right-click / long-press popup for tagging individual screenshots.
+  TagContextPanel - Right-click / long-press popup for tagging individual screenshots.
 
   Shows a list of all tags with toggle-on/off per screenshot, plus a "New tag" action.
 -->

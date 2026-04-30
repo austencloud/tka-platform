@@ -5,7 +5,7 @@
 
 <GuideSection id="staff-motions" title="Staff Motions">
   <p>
-    During a shift, a prop can rotate in one of two directions — Prospin or Antispin.
+    During a shift, a prop can rotate in one of two directions - Prospin or Antispin.
   </p>
 
   <h3>Prospin</h3>

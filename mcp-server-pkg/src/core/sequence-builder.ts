@@ -733,7 +733,7 @@ function attemptSequenceBuildWithEndConstraint(
  */
 export interface LoopConstraint {
   loopType: "rewound" | "rotated";
-  sliceSize: "halved" | "quartered";
+  period: "halved" | "quartered";
   /** If true, don't add bridge letters - just fail if not naturally compatible */
   noBridges?: boolean;
 }
@@ -793,7 +793,7 @@ export function buildSequenceForLoop(
     const endPosition = baseResult.endPosition;
     const validEndPositions = computeValidEndPositionsForRotatedLoop(
       startPosition,
-      loopConstraint.sliceSize
+      loopConstraint.period
     );
 
     // Store for error message
@@ -1050,7 +1050,7 @@ function extractPositionGroup(position: string): string {
  */
 function computeValidEndPositionsForRotatedLoop(
   startPosition: string,
-  sliceSize: "halved" | "quartered"
+  period: "halved" | "quartered"
 ): string[] {
   // Extract position group and number (e.g., "alpha1" -> "alpha", 1)
   const match = startPosition.match(/^([a-z]+)(\d+)$/);
@@ -1074,7 +1074,7 @@ function computeValidEndPositionsForRotatedLoop(
   const normalizedNum = num - baseOffset;
   const validEndPositions: string[] = [];
 
-  if (sliceSize === "halved") {
+  if (period === "halved") {
     // 180° rotation: +4 positions (mod 8)
     const halfRotated = ((normalizedNum - 1 + 4) % groupSize) + 1 + baseOffset;
     validEndPositions.push(`${group}${halfRotated}`);

@@ -1,5 +1,5 @@
 /**
- * CylinderGraspSolver — Computes anatomically correct finger curl angles
+ * CylinderGraspSolver - Computes anatomically correct finger curl angles
  * for grasping a cylinder of a given radius.
  *
  * The algorithm is geometric: each finger segment (proximal, middle, distal)
@@ -23,11 +23,11 @@ import type { FingerBoneName } from "../../domain/models/GripPose";
 
 /** Anatomical joint limits in radians */
 const JOINT_LIMITS = {
-  // MCP (metacarpophalangeal) — base knuckle
+  // MCP (metacarpophalangeal) - base knuckle
   MCP_MAX: Math.PI * 0.5, // 90°
-  // PIP (proximal interphalangeal) — middle knuckle
+  // PIP (proximal interphalangeal) - middle knuckle
   PIP_MAX: Math.PI * 0.55, // ~100°
-  // DIP (distal interphalangeal) — tip knuckle
+  // DIP (distal interphalangeal) - tip knuckle
   DIP_MAX: Math.PI * 0.44, // ~80°
   // Thumb CMC abduction range
   THUMB_ABD_MAX: Math.PI * 0.33, // ~60°
@@ -82,7 +82,7 @@ function measureBoneLength(bone: Bone, defaultLength: number): number {
 function computeSegmentAngle(segmentLength: number, cylinderRadius: number, maxAngle: number): number {
   if (segmentLength <= 0.001) return 0;
   const ratio = cylinderRadius / segmentLength;
-  if (ratio >= 1) return maxAngle; // segment too short to wrap — max curl
+  if (ratio >= 1) return maxAngle; // segment too short to wrap - max curl
   const angle = 2 * Math.asin(ratio);
   return Math.min(angle, maxAngle);
 }

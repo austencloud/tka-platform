@@ -2,12 +2,12 @@
  * Rotated Swapped LOOP Executor
  *
  * Combines SWAPPED (blue<->red) with ROTATED (rotate locations by handpath).
- * Supports both halved and quartered slice sizes.
+ * Supports both halved (period 2) and quartered (period 4).
  */
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
 import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
-import { SliceSize } from "../loop-types.js";
+import { Period } from "../loop-types.js";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
@@ -18,22 +18,22 @@ import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class RotatedSwappedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
-    this.validateSequence(sequence, sliceSize);
+  executeLOOP(sequence: SequenceStep[], period: Period): SequenceStep[] {
+    this.validateSequence(sequence, period);
 
     const startPosition = sequence.shift();
     if (!startPosition) throw new Error("Sequence must have a start position");
 
     const sequenceLength = sequence.length;
     const entriesToAdd =
-      sliceSize === SliceSize.QUARTERED ? sequenceLength * 3 : sequenceLength;
+      period === Period.QUARTERED ? sequenceLength * 3 : sequenceLength;
 
     let lastStep = sequence[sequence.length - 1]!;
     let nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
     const finalIntendedLength = sequenceLength + entriesToAdd;
 
     for (let i = 0; i < entriesToAdd; i++) {
-      const matchingStep = this.getMatchingStep(sequence, nextStepNumber, finalIntendedLength, sliceSize);
+      const matchingStep = this.getMatchingStep(sequence, nextStepNumber, finalIntendedLength, period);
       const newStep = this.createStep(matchingStep, lastStep, nextStepNumber);
       const finalStep = updateStepOrientations(newStep, lastStep);
       sequence.push(finalStep);
@@ -45,20 +45,20 @@ export class RotatedSwappedExecutor implements ILOOPExecutor {
     return sequence;
   }
 
-  private validateSequence(sequence: SequenceStep[], sliceSize: SliceSize): void {
+  private validateSequence(sequence: SequenceStep[], period: Period): void {
     if (sequence.length < 2) throw new Error("Sequence must have at least 2 steps");
     const startPos = sequence[0]!.startPosition;
     const endPos = sequence[sequence.length - 1]!.endPosition;
     if (!startPos || !endPos) throw new Error("Sequence steps must have valid positions");
     const key = `${startPos},${endPos}`;
-    const validationSet = sliceSize === SliceSize.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
+    const validationSet = period === Period.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
     if (!validationSet.has(key)) {
-      throw new Error(`Invalid position pair for rotated-swapped ${sliceSize} LOOP: ${startPos} -> ${endPos}`);
+      throw new Error(`Invalid position pair for rotated-swapped ${period} LOOP: ${startPos} -> ${endPos}`);
     }
   }
 
-  private getMatchingStep(sequence: SequenceStep[], stepNumber: number, finalLength: number, sliceSize: SliceSize): SequenceStep {
-    const sliceLength = sliceSize === SliceSize.QUARTERED
+  private getMatchingStep(sequence: SequenceStep[], stepNumber: number, finalLength: number, period: Period): SequenceStep {
+    const sliceLength = period === Period.QUARTERED
       ? Math.floor(finalLength / 4)
       : Math.floor(finalLength / 2);
     const matchingStepNumber = stepNumber > sliceLength ? stepNumber - sliceLength : stepNumber;

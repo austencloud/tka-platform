@@ -476,7 +476,7 @@
           );
         }
       } catch {
-        // ErrorHandler not available — console.error above is the fallback
+        // ErrorHandler not available - console.error above is the fallback
       }
     }
   }

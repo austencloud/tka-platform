@@ -56,15 +56,11 @@ export enum LOOPType {
 }
 
 /**
- * Slice Size
+ * Period
  * Determines how the circle is divided for rotation.
- *
- * @deprecated Use integer `period` instead. HALVED → 2, QUARTERED → 4.
- * SliceSize is kept functional during the period-migration window for
- * backward compatibility with legacy LoopOptions callers. Remove in the
- * next cleanup pass once all consumers migrate.
+ * HALVED = 2 passes to return to identity, QUARTERED = 4 passes.
  */
-export enum SliceSize {
+export enum Period {
   /** Half rotation - 180° */
   HALVED = "halved",
 
@@ -83,17 +79,8 @@ export interface LOOPGenerationOptions {
   /** LOOP type to apply */
   loopType: LOOPType;
 
-  /** Slice size for rotational LOOPs */
-  sliceSize: SliceSize;
-
-  /**
-   * LOOP period (integer count of passes to return to identity).
-   *
-   * Replaces `sliceSize` over the migration window. Valid values: 2, 4, 8.
-   * When both `period` and `sliceSize` are provided, `period` wins.
-   * Migration helper `periodFromSliceSize` computes this from legacy input.
-   */
-  period?: number;
+  /** Period for rotational LOOPs */
+  period: Period;
 
   /** Turn intensity (1-3) */
   turnIntensity: number;
@@ -109,13 +96,13 @@ export interface LOOPGenerationOptions {
 }
 
 /**
- * Convert legacy `SliceSize` enum values to integer `period`.
+ * Convert `Period` enum to integer.
  *
  * HALVED → 2, QUARTERED → 4. Returns 2 as the safe default when input is
  * undefined or unrecognized, matching historical behavior of LOOP generation.
  */
-export function periodFromSliceSize(sliceSize: SliceSize | undefined): number {
-  if (sliceSize === SliceSize.QUARTERED) return 4;
+export function periodToNumber(period: Period | undefined): number {
+  if (period === Period.QUARTERED) return 4;
   return 2;
 }
 
@@ -172,6 +159,7 @@ export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
   [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: "All Four",
   [LOOPType.STRICT_REWOUND]: "Rewound",
 };
+
 
 export const ROTATED_LOOP_TYPES = new Set<LOOPType>([
   LOOPType.ROTATED,

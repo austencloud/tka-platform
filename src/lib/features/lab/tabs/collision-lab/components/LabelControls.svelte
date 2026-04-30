@@ -31,7 +31,7 @@
   /**
    * Clear and Needs-adjustment both claim the stance works. If the hand
    * can't physically reach the prop from the current stance, those two
-   * labels would be dishonest — disable them. Skip and Unreachable stay
+   * labels would be dishonest - disable them. Skip and Unreachable stay
    * available since they classify the pose itself, not the stance.
    */
   function isDisabled(status: LabelStatus): boolean {
@@ -57,7 +57,7 @@
         style="--btn-color: {btn.color};"
         onclick={() => state.labelCurrent(btn.status)}
         title={isDisabled(btn.status)
-          ? "Stance is out of reach — hand can't physically touch the prop. Adjust stance or use Skip/Unreachable."
+          ? "Stance is out of reach - hand can't physically touch the prop. Adjust stance or use Skip/Unreachable."
           : ""}
       >
         <span class="hotkey">{btn.hotkey}</span>

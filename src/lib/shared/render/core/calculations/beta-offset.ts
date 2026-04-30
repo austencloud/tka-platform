@@ -75,7 +75,7 @@ function isNonRadialOrientation(ori: string | undefined): boolean {
 /**
  * Replicate the app's OrientationChecker.isRadial() for direction map selection.
  *
- * TODO: Known parity requirement — this logic is ASYMMETRIC in the app.
+ * TODO: Known parity requirement - this logic is ASYMMETRIC in the app.
  * The app checks: (red is IN|OUT AND blue is IN) OR (blue is OUT regardless of red).
  * The symmetric version would be: both are IN|OUT. We replicate the asymmetric
  * version here for exact parity with the app's rendering.
@@ -379,7 +379,7 @@ export function calculateBetaOffset(
   // ========================================================================
   // Resolve actual prop types (settings override stored motionData.propType)
   // A user may have "staff" stored in data but render as "buugeng" via settings.
-  // Hand prop type is never overridden — if stored as hand, it stays hand.
+  // Hand prop type is never overridden - if stored as hand, it stays hand.
   // ========================================================================
   const blueIsHand = blueMotion.propType === "hand";
   const redIsHand = redMotion.propType === "hand";

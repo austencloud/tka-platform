@@ -18,18 +18,18 @@ export type LoreContext =
 const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 	dos: {
 		about: [
-			"TKAUTIL.COM v1.0 — Bellweather Technical Institute",
+			"TKAUTIL.COM v1.0 - Bellweather Technical Institute",
 			"Property of the Bellweather Technical Institute. All rights reserved.",
 			"Authorized under Order Directive 7, Section 12.",
 		],
 		readme: [
-			"CLASSIFIED — CLEARANCE LEVEL 3 REQUIRED",
+			"CLASSIFIED - CLEARANCE LEVEL 3 REQUIRED",
 			"This software is distributed under Order Directive 7.",
 			"Unauthorized duplication is a violation of Institute Policy.",
 		],
 		error: [
 			"ERROR: Operation not permitted. Contact your Bellweather administrator.",
-			"ACCESS DENIED — CLEARANCE LEVEL INSUFFICIENT",
+			"ACCESS DENIED - CLEARANCE LEVEL INSUFFICIENT",
 			"FATAL: Order compliance module not found. Contact Bellweather support.",
 		],
 		register: [
@@ -39,14 +39,14 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 		],
 		startup: [
 			"BELLWEATHER TECHNICAL INSTITUTE",
-			"TKAUTIL.COM — Notation Utility v1.0",
+			"TKAUTIL.COM - Notation Utility v1.0",
 			"ORDER DIRECTIVE 7 COMPLIANCE CHECK... PASSED",
 		],
 	},
 
 	win95: {
 		about: [
-			"TKA-OS v1.0 — Bellweather Technical Institute",
+			"TKA-OS v1.0 - Bellweather Technical Institute",
 			"Licensed to: [ORDER MEMBER]",
 			"Product ID: 7734-OEM-0019950-00001",
 		],
@@ -57,7 +57,7 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 		],
 		error: [
 			"A fatal exception KE has occurred at 0028:C0011995",
-			"KINETIC_OVERFLOW — Too much spin detected.",
+			"KINETIC_OVERFLOW - Too much spin detected.",
 			"The prop physics engine has exceeded maximum angular velocity.",
 		],
 		register: [
@@ -69,7 +69,7 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 
 	win98: {
 		about: [
-			"TKA Composer 98 — Free Scribe Collective Edition",
+			"TKA Composer 98 - Free Scribe Collective Edition",
 			"Maintained by the Free Scribe Collective.",
 			"The Order doesn't want you to have this.",
 		],
@@ -90,14 +90,14 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 		],
 		easteregg: [
 			"The floppy is still out there. So are we.",
-			"Bellweather Employee #4271 — we remember what you did.",
+			"Bellweather Employee #4271 - we remember what you did.",
 			"You can't classify an alphabet. Letters belong to everyone.",
 		],
 	},
 
 	winxp: {
 		about: [
-			"TKA Composer XP — Open Source Community Edition v3.2.1",
+			"TKA Composer XP - Open Source Community Edition v3.2.1",
 			"Contributors: 47 | Downloads: 12,841 | Forks: 23",
 			"Licensed under the Free Notation Public License (FNPL)",
 		],
@@ -108,7 +108,7 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 		],
 		error: [
 			"WARNING: Network anomaly detected in sector 7-G",
-			"File integrity check failed — possible external tampering",
+			"File integrity check failed - possible external tampering",
 			"Connection to SourceForge mirror lost. Retrying...",
 		],
 		shutdown: [

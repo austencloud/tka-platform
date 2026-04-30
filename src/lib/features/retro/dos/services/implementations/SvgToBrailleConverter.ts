@@ -1,5 +1,5 @@
 /**
- * SvgToBrailleConverter — Downsamples real SVG pictographs into Braille Unicode art.
+ * SvgToBrailleConverter - Downsamples real SVG pictographs into Braille Unicode art.
  *
  * Renders a pictograph via the existing Canvas2DDirectRenderer at braille
  * resolution (132×104 pixels for a 66×26 character grid), reads pixel colors,
@@ -7,8 +7,8 @@
  * with per-cell color tracking.
  *
  * The result is a pixel-accurate braille representation of whatever the real
- * SVG renderer produces — including all arrow positioning adjustments, prop
- * geometry, and special placements — without reimplementing any of that logic.
+ * SVG renderer produces - including all arrow positioning adjustments, prop
+ * geometry, and special placements - without reimplementing any of that logic.
  *
  * Domain: Retro DOS Terminal
  */
@@ -144,7 +144,7 @@ export class SvgToBrailleConverter {
 		// Ensure the renderer has loaded grid SVGs and other assets.
 		await this.renderer.initialize();
 
-		// Prepare the pictograph — this calculates arrow positions, loads
+		// Prepare the pictograph - this calculates arrow positions, loads
 		// SVG assets, and produces the _prepared data the renderer needs.
 		const prepared = await this.preparer.prepareSingle(pictograph, {
 			themeMode: "dark",
@@ -165,7 +165,7 @@ export class SvgToBrailleConverter {
 		});
 
 		// The canvas may not be exactly PX_WIDTH × PX_HEIGHT because
-		// the SVG is square (950×950) — it will be PX_WIDTH × PX_WIDTH.
+		// the SVG is square (950×950) - it will be PX_WIDTH × PX_WIDTH.
 		// We need to read the actual dimensions and scale if needed.
 		const ctx = canvas.getContext("2d");
 		if (!ctx) throw new Error("Failed to get canvas 2d context");

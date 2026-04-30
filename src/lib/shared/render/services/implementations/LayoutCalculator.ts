@@ -184,7 +184,7 @@ export class LayoutCalculator implements ILayoutCalculator {
 
   /**
    * Portrait-optimized layout table for start position as a LEFT COLUMN.
-   * Designed for playing card aspect ratio (5:7) — fewer columns, more rows
+   * Designed for playing card aspect ratio (5:7) - fewer columns, more rows
    * than the desktop-oriented LAYOUT_WITH_START_POSITION table.
    *
    * Format: stepCount -> [columns, rows]

@@ -39,7 +39,7 @@ export interface IBackgroundVideoEncoder {
 
   /**
    * Legacy: post a single ImageData frame to the worker. The underlying
-   * buffer is transferred zero-copy. Preserved during migration — new
+   * buffer is transferred zero-copy. Preserved during migration - new
    * call sites MUST use `addFrameCaptured`.
    *
    * @deprecated Use addFrameCaptured. Will be removed after the 2D and

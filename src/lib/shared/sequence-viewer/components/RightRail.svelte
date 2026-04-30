@@ -51,7 +51,7 @@
       if (!target) return;
       // Clicks inside the rail are ignored.
       if (rootEl && rootEl.contains(target)) return;
-      // Popovers may render in portals — treat any role="dialog" as inside.
+      // Popovers may render in portals - treat any role="dialog" as inside.
       const popovers = document.querySelectorAll('[role="dialog"]');
       for (const p of popovers) if (p.contains(target)) return;
       viewer.closePopover();

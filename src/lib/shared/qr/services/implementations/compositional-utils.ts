@@ -9,14 +9,14 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 /** The executor interface both encoder and decoder need */
 export interface LOOPExecutorLike {
-  executeLOOP(steps: StepData[], slice: SliceSize): StepData[];
+  executeLOOP(steps: StepData[], period: Period): StepData[];
 }
 
 /**
@@ -70,11 +70,11 @@ export async function getLoopExecutor(
 }
 
 /**
- * Get the slice size for a given LOOP type tag.
+ * Get the period for a given LOOP type tag.
  * Only rotated uses QUARTERED; all others use HALVED.
  */
-export function getSliceSizeForTag(tag: string): SliceSize {
-  return tag === "sr" ? SliceSize.QUARTERED : SliceSize.HALVED;
+export function getPeriodForTag(tag: string): Period {
+  return tag === "sr" ? Period.QUARTERED : Period.HALVED;
 }
 
 /**
@@ -103,7 +103,7 @@ export function enrichStepsWithGridPositions(steps: StepData[]): void {
             red.startLocation as GridLocation
           );
       } catch {
-        // Unknown location combo — leave null
+        // Unknown location combo - leave null
       }
     }
 
@@ -115,7 +115,7 @@ export function enrichStepsWithGridPositions(steps: StepData[]): void {
             red.endLocation as GridLocation
           );
       } catch {
-        // Unknown location combo — leave null
+        // Unknown location combo - leave null
       }
     }
   }

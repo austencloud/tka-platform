@@ -63,11 +63,11 @@
     type MocapDebugHandle,
   } from "../debug/mocap-debug";
 
-  // Safe access to viewer3DState — Avatar3D is used in contexts (museum, realm)
+  // Safe access to viewer3DState - Avatar3D is used in contexts (museum, realm)
   // where the viewer3D context may not exist. We only need autoRenderEnabled.
   const viewer3DState = tryGetViewer3DContext();
 
-  // Safe access to viewer visibility state — Avatar3D is used outside the
+  // Safe access to viewer visibility state - Avatar3D is used outside the
   // sequence viewer (museum, realm) where this context won't exist.
   // Defaults to true (both sides visible) when context is absent.
   const viewerVisibility = tryGetViewerVisibilityContext();
@@ -139,7 +139,7 @@
      *  for the museum FPS player, which prefers code-driven responsive
      *  movement and doesn't benefit from contact-phase locking. */
     enableFootPlanting?: boolean;
-    /** Active turn request — when set, the turn clip overlay applies bone
+    /** Active turn request - when set, the turn clip overlay applies bone
      *  rotations from the sampled turn clip between locomotion and root
      *  motion in the animation pipeline. Null means no turn is active. */
     turnRequest?: TurnRequest | null;
@@ -178,7 +178,7 @@
     turnRequest: turnRequestProp = null,
   }: Props = $props();
 
-  // Current locomotion state — tracked so FootPlanter can decide when to
+  // Current locomotion state - tracked so FootPlanter can decide when to
   // fade IK out (airborne states skip foot planting). Updated each frame
   // inside the state machine branch when locomotion is enabled. Defaults
   // to IDLE for avatars without a state machine (exhibit performers).
@@ -199,7 +199,7 @@
   let debugHandle: AvatarDebugHandle | null = null;
   let mocapHandle: MocapDebugHandle | null = null;
 
-  // Collision detection — logs when props/arms clip through the avatar body
+  // Collision detection - logs when props/arms clip through the avatar body
   const collisionDetector = new CollisionDetector();
   const _boneVecs = {
     head: new Vector3(), face: new Vector3(), neck: new Vector3(),
@@ -298,7 +298,7 @@
       : defaultGroundY - feetOffset  // Use stage groundY (stage mode)
   );
 
-  // No mesh offset needed — the crouch animation's Hips position track (scaled
+  // No mesh offset needed - the crouch animation's Hips position track (scaled
   // from cm to m in LocomotionAnimator) handles the body drop directly.
   const groupY = $derived(baseGroupY);
 
@@ -342,7 +342,7 @@
       modelLoaded = true;
       useProceduralFallback = false;
 
-      // Widen the default stance — rotate upper legs outward so feet
+      // Widen the default stance - rotate upper legs outward so feet
       // are shoulder-width apart instead of the narrow T-pose default.
       // This gives the avatar a more natural standing base and helps
       // cross-body reaches look less strained.
@@ -372,7 +372,7 @@
       }
 
       // Initialize locomotion animator with the loaded skeleton
-      // Only for avatars that walk around (player) — exhibit performers
+      // Only for avatars that walk around (player) - exhibit performers
       // use IK only and don't need idle/walk animations.
       if (enableLocomotion && locomotionAnimator && cachedRoot) {
         // Configure before initialize so clips are prepared correctly
@@ -419,14 +419,14 @@
           });
       }
 
-      // Load and bake turn clips (async — isReady() gates usage in frame loop)
+      // Load and bake turn clips (async - isReady() gates usage in frame loop)
       //
       // The GLB + contact.json files are built offline from the Python scripts
       // in static/animations/turns/. If a developer hasn't run the conversion
       // yet the directory only contains the scripts, and fetching a missing
       // file under SvelteKit returns the SPA index.html (200 OK) which then
       // fails JSON parsing deep inside the animator. Probe one asset first
-      // and skip the entire load silently when it isn't present — turns will
+      // and skip the entire load silently when it isn't present - turns will
       // simply fall back to the procedural path until assets are baked.
       if (turnAnimator && cachedRoot) {
         const turnsBase = "/animations/turns/";
@@ -462,7 +462,7 @@
       // Initialize foot planter with leg chains from the loaded skeleton.
       // FootPlanter uses the hinge-constrained leg IK solver (not the generic
       // ikSolver, which is still used by arm IK elsewhere in this file).
-      // Gated on enableFootPlanting — off by default so the museum FPS player
+      // Gated on enableFootPlanting - off by default so the museum FPS player
       // (which wants responsive code-driven movement) isn't affected.
       if (enableFootPlanting && footPlanter && skeletonService && legIKSolver && contactCurveCache) {
         footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
@@ -573,7 +573,7 @@
 
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
-    // Disable spine twist in dual-wheel mode — wide lateral IK targets
+    // Disable spine twist in dual-wheel mode - wide lateral IK targets
     // twist the torso and shift the feet on the ground.
     if ('setSpineTwistEnabled' in animationService) {
       (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
@@ -616,7 +616,7 @@
       }
       locomotionAnimator.update(delta);
 
-      // Turn clip overlay — when a turn is active, overwrite lower-body
+      // Turn clip overlay - when a turn is active, overwrite lower-body
       // and spine bones with the turn clip's authored pose at the current
       // phase. The idle animation's hip sway is suspended on these bones;
       // the turn clip's own authored motion takes over. When turnRequest
@@ -628,7 +628,7 @@
         const sample = turnAnimator.sample(turnRequestProp);
         const bones = skeletonService.getState().bones;
 
-        // Apply bone rotations — overwrite animation pose for lower body
+        // Apply bone rotations - overwrite animation pose for lower body
         for (const [boneName, quat] of sample.boneRotations) {
           const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
           if (bone) {
@@ -678,7 +678,7 @@
           const df = localDelta.forward * cmToScene;
 
           // Rotate local-space translation delta to world space using facing angle.
-          // yawDelta is left in its local radian form — the consumer (PerformerRig)
+          // yawDelta is left in its local radian form - the consumer (PerformerRig)
           // integrates it into rotation.y directly.
           const cos = Math.cos(facingAngle);
           const sin = Math.sin(facingAngle);
@@ -690,7 +690,7 @@
         }
       }
 
-      // Foot planting IK — pins feet to the ground during contact phases
+      // Foot planting IK - pins feet to the ground during contact phases
       // using hinge-constrained leg IK and contact curves for clips that
       // have them. Velocity-threshold detection is used as a fallback for
       // clips without authored curves. Gated on enableFootPlanting so the
@@ -743,7 +743,7 @@
     animationService.setExternalSpinePitch(spinePitchOffset);
     animationService.update(delta);
 
-    // 2b. Collision detection — run after IK so bones are at final positions
+    // 2b. Collision detection - run after IK so bones are at final positions
     if (collisionDetector.enabled && skeletonService) {
       const state = skeletonService.getState();
       const bones = state.bones;
@@ -771,10 +771,10 @@
       if (_faceRight.lengthSq() > 1e-6) {
         _faceRight.normalize();
         // forward = cross(right, worldUp). With right=(1,0,0) and up=(0,1,0)
-        // this gives (0,0,1) — matches the character facing +Z.
+        // this gives (0,0,1) - matches the character facing +Z.
         _faceForward.crossVectors(_faceRight, _unitY).normalize();
       } else {
-        // Degenerate (shoulders at same point) — fall back to +Z forward.
+        // Degenerate (shoulders at same point) - fall back to +Z forward.
         _faceForward.set(0, 0, 1);
       }
       _boneVecs.face
@@ -783,7 +783,7 @@
       _boneVecs.face.y += FACE_UP_OFFSET;
 
       // Build staff segments (tip-to-tip) for shaft-through-body checks.
-      // A staff is a line, not a point — point-based collision would miss
+      // A staff is a line, not a point - point-based collision would miss
       // the common case where the grip is above the head but the shaft
       // passes through it.
       const halfStaffLength = userProportionsState.staffLength / 2;

@@ -6,9 +6,9 @@
  * prioritize which danger zones to fix first with safe poses.
  *
  * Severity thresholds (in cm of penetration):
- *   graze:     0–2cm  — barely touching, low priority
- *   clip:      2–5cm  — visibly wrong, medium priority
- *   penetrate: 5cm+   — arm through skull, fix immediately
+ *   graze:     0–2cm  - barely touching, low priority
+ *   clip:      2–5cm  - visibly wrong, medium priority
+ *   penetrate: 5cm+   - arm through skull, fix immediately
  *
  * Console output is color-coded:
  *   graze     → gray (console.debug, hidden by default)
@@ -72,11 +72,11 @@ interface ZoneStats {
 }
 
 export class CollisionDetector implements ICollisionDetector {
-  /** Detection itself — when false, detect() returns [] and no stats are collected. */
+  /** Detection itself - when false, detect() returns [] and no stats are collected. */
   enabled = true;
 
   /**
-   * Console output toggle — separate from `enabled` so detection can still run
+   * Console output toggle - separate from `enabled` so detection can still run
    * (events are returned, UIs like the Collision Lab still get data) while the
    * per-frame warn/error spam stays out of the console. Off by default because
    * Avatar3D runs this every frame in every 3D session, not just the lab.
@@ -115,9 +115,9 @@ export class CollisionDetector implements ICollisionDetector {
     if (blueProp) propPairs.push({ label: "Blue", seg: blueProp });
     if (redProp) propPairs.push({ label: "Red", seg: redProp });
 
-    // 1. Props through head — segment (staff shaft) vs sphere (face).
+    // 1. Props through head - segment (staff shaft) vs sphere (face).
     //    Uses body.face, not body.head, because the Mixamo Head bone sits
-    //    at the base of the skull — the actual face is ~8 cm forward of it.
+    //    at the base of the skull - the actual face is ~8 cm forward of it.
     //    Without this offset the staff can visibly pierce the face while
     //    the bone-based distance check stays ~14 cm away.
     for (const { label, seg } of propPairs) {
@@ -130,7 +130,7 @@ export class CollisionDetector implements ICollisionDetector {
       }
     }
 
-    // 2. Props through torso — segment (staff) vs each spine sphere.
+    // 2. Props through torso - segment (staff) vs each spine sphere.
     //    Torso is approximated as a chain of spheres along the spine so
     //    the check works regardless of body yaw/tilt.
     const spineCenters = [body.hips, body.spine1, body.spine2, body.neck];
@@ -150,7 +150,7 @@ export class CollisionDetector implements ICollisionDetector {
       }
     }
 
-    // 2b. Props through arms — segment (staff) vs segment (upper arm and forearm).
+    // 2b. Props through arms - segment (staff) vs segment (upper arm and forearm).
     //     Catches the case where the staff passes through the OTHER arm.
     const armSegments: Array<{ name: string; a: Vector3; b: Vector3 }> = [
       { name: "L upper arm", a: body.leftShoulder, b: body.leftElbow },
@@ -171,7 +171,7 @@ export class CollisionDetector implements ICollisionDetector {
       }
     }
 
-    // 2c. Prop through prop — two staves crossing each other mid-shaft.
+    // 2c. Prop through prop - two staves crossing each other mid-shaft.
     //     Common collision when both hands reach across the body.
     if (blueProp && redProp) {
       const closest = this.segmentToSegmentDistance(
@@ -186,7 +186,7 @@ export class CollisionDetector implements ICollisionDetector {
       }
     }
 
-    // 3. Arms through face — forearm segment (elbow→hand) vs face sphere.
+    // 3. Arms through face - forearm segment (elbow→hand) vs face sphere.
     //    Uses body.face so the collision zone matches where the visual
     //    face actually is, not where the Mixamo head joint sits.
     const leftArmDist = this.pointToSegmentDistance(body.face, body.leftElbow, body.leftHand);
@@ -204,7 +204,7 @@ export class CollisionDetector implements ICollisionDetector {
         `R forearm → face (${(rightArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
     }
 
-    // 4. Arms through each other — forearm segments
+    // 4. Arms through each other - forearm segments
     const armArmDist = this.segmentToSegmentDistance(
       body.leftElbow, body.leftHand,
       body.rightElbow, body.rightHand
@@ -311,7 +311,7 @@ export class CollisionDetector implements ICollisionDetector {
   }
 
   private logThrottled(event: CollisionEvent): void {
-    // Console output is opt-in — detection still runs and populates stats,
+    // Console output is opt-in - detection still runs and populates stats,
     // but we don't spam warn/error on every frame unless someone asked to see them.
     if (!this.logEnabled) return;
 

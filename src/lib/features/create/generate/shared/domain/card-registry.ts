@@ -27,7 +27,7 @@ export interface CardRegistryEntry {
 /**
  * Ordered list of all generator cards. The tour renders them in this order.
  * The CardConfigurator may conditionally hide some (e.g. turn-intensity at L1,
- * slice-size when not in LOOP), but this is the canonical superset.
+ * period when not in LOOP), but this is the canonical superset.
  */
 /**
  * Use `as const satisfies` so TypeScript infers the literal ID strings
@@ -104,8 +104,8 @@ export const CARD_REGISTRY = [
     tourHeader: "PERIOD",
     tourDefaultValue: "Halved",
     tourSpan: 2,
-    helpId: "slice-size",
-    colorKey: "sliceSize",
+    helpId: "period",
+    colorKey: "period",
   },
   {
     id: "generate-button",

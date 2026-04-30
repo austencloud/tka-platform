@@ -40,7 +40,7 @@
     try {
       // Resolve the Auth instance lazily. The static `auth` export is bound
       // to the Firebase app created at module-eval time, but the HMR manager
-      // rotates the app on each dev cycle — leaving the static reference
+      // rotates the app on each dev cycle - leaving the static reference
       // bound to a terminated app. Firebase rejects such references with
       // auth/argument-error deep inside signInWithPopup. getAuthInstance()
       // always returns an Auth wired to the current app.

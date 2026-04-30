@@ -1,5 +1,5 @@
 /**
- * CharcoalRenderer3D — GPU point sprite particle system for charcoal sparks.
+ * CharcoalRenderer3D - GPU point sprite particle system for charcoal sparks.
  *
  * Pre-allocated particle pool with zero GC pressure. Sparks burst from prop
  * tips on high jerk (direction changes) and fall under gravity with drag.
@@ -28,7 +28,7 @@ const POOL_SIZE: Record<QualityTier, number> = {
   [QualityTier.LOW]: 500,
 };
 
-/** Gravity in world units/s^2 — heavy pull, sparks drop fast */
+/** Gravity in world units/s^2 - heavy pull, sparks drop fast */
 const GRAVITY = 12.0;
 
 /** Air drag coefficient (velocity multiplied by this each second) */
@@ -43,19 +43,19 @@ const RESTITUTION = 0.2;
 /** Jerk threshold (world units/s^3) above which a burst fires */
 const BURST_JERK_THRESHOLD = 2.5;
 
-/** Base sparks per burst — scaled up by jerk magnitude */
+/** Base sparks per burst - scaled up by jerk magnitude */
 const BURST_BASE = 30;
 
 /** Max sparks in a single burst */
 const BURST_MAX = 80;
 
-/** Ambient sparks per second during movement — light trickle */
+/** Ambient sparks per second during movement - light trickle */
 const AMBIENT_RATE = 3;
 
 /** Speed threshold below which ambient emission stops */
 const AMBIENT_SPEED_THRESHOLD = 0.3;
 
-/** Idle ember rate — coals glowing near the tip, barely moving */
+/** Idle ember rate - coals glowing near the tip, barely moving */
 const IDLE_RATE = 5;
 
 // -- Burst sparks (plume on direction change) --
@@ -63,7 +63,7 @@ const BURST_LIFETIME_MIN = 0.4;
 const BURST_LIFETIME_MAX = 1.5;
 const BURST_SIZE_MIN = 0.04;
 const BURST_SIZE_MAX = 0.12;
-const BURST_VELOCITY_INHERITANCE = 0.3; // low — sparks don't follow the prop, they just fall
+const BURST_VELOCITY_INHERITANCE = 0.3; // low - sparks don't follow the prop, they just fall
 const BURST_PERTURB_MIN = 1.5;
 const BURST_PERTURB_MAX = 4.0;
 const BURST_SPREAD = Math.PI * 0.5; // wide plume
@@ -74,7 +74,7 @@ const IDLE_LIFETIME_MAX = 2.5;
 const IDLE_SIZE_MIN = 0.02;
 const IDLE_SIZE_MAX = 0.05;
 const IDLE_PERTURB_MIN = 0.05;
-const IDLE_PERTURB_MAX = 0.2; // barely move — stay near the tip
+const IDLE_PERTURB_MAX = 0.2; // barely move - stay near the tip
 const IDLE_SPREAD = Math.PI * 0.15; // tight cluster
 
 interface Particle {
@@ -172,7 +172,7 @@ export class CharcoalRenderer3D {
 
     // Emit new sparks from tips
     for (const tip of tips) {
-      // Burst emission on high jerk (direction reversals) — dramatic plume
+      // Burst emission on high jerk (direction reversals) - dramatic plume
       if (tip.jerk > BURST_JERK_THRESHOLD) {
         const intensity = Math.min(tip.jerk / BURST_JERK_THRESHOLD, 5);
         const count = Math.min(Math.floor(BURST_BASE * intensity), BURST_MAX);
@@ -270,7 +270,7 @@ export class CharcoalRenderer3D {
       p.y = tip.position.y;
       p.z = tip.position.z;
 
-      // Low velocity inheritance — sparks don't follow the prop, they eject and fall
+      // Low velocity inheritance - sparks don't follow the prop, they eject and fall
       const perturbSpeed = BURST_PERTURB_MIN + Math.random() * (BURST_PERTURB_MAX - BURST_PERTURB_MIN);
       const angle = (Math.random() - 0.5) * 2 * BURST_SPREAD;
       const elevation = (Math.random() - 0.5) * 2 * BURST_SPREAD;
@@ -297,7 +297,7 @@ export class CharcoalRenderer3D {
       p.y = tip.position.y + (Math.random() - 0.5) * 0.05;
       p.z = tip.position.z + (Math.random() - 0.5) * 0.05;
 
-      // Tiny velocity — embers drift and fall gently
+      // Tiny velocity - embers drift and fall gently
       const perturbSpeed = IDLE_PERTURB_MIN + Math.random() * (IDLE_PERTURB_MAX - IDLE_PERTURB_MIN);
       const angle = Math.random() * Math.PI * 2;
       p.vx = Math.cos(angle) * perturbSpeed;

@@ -1,10 +1,10 @@
 /**
- * LedMaterial3D — Custom shader for LED billboard sprites.
+ * LedMaterial3D - Custom shader for LED billboard sprites.
  *
  * Each LED is a camera-facing quad rendered via InstancedMesh. The fragment
  * shader computes two concentric layers from the UV center:
- *   1. Inner core — bright, near-white, sharp circle (the "bulb")
- *   2. Outer halo — soft colored glow, larger radius, additive blend
+ *   1. Inner core - bright, near-white, sharp circle (the "bulb")
+ *   2. Outer halo - soft colored glow, larger radius, additive blend
  *
  * Per-instance attributes:
  *   - instanceColor: RGB from the pattern engine
@@ -76,7 +76,7 @@ const fragmentShader = /* glsl */ `
     // Discard pixels outside the glow radius for clean edges
     if (dist > 1.0) discard;
 
-    // Inner core: sharp bright circle — the "bulb"
+    // Inner core: sharp bright circle - the "bulb"
     float coreRadius = 0.15;
     float core = smoothstep(coreRadius, 0.0, dist);
 

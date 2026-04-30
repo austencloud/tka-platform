@@ -1,8 +1,8 @@
 /**
  * FestivalTrackerRepository
  *
- * Persists each user's per-festival tracking state — application status,
- * workshops submitted, notes, and key dates — in a user-owned subcollection.
+ * Persists each user's per-festival tracking state - application status,
+ * workshops submitted, notes, and key dates - in a user-owned subcollection.
  *
  * Path: userFestivalTracking/{userId}/tracked/{festivalId}
  */

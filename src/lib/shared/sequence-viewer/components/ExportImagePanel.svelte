@@ -57,7 +57,7 @@
     return imageComposition.getStartPositionLayoutForStepCount(stepCount);
   });
 
-  // Pictograph visibility — sourced from VisibilityManager so this panel
+  // Pictograph visibility - sourced from VisibilityManager so this panel
   // stays in sync with the Visibility tab, context menus, and voice control.
   const vm = getVisibilityStateManager();
   let vmVersion = $state(0);
@@ -285,7 +285,7 @@
 
     <div class="rt-zone" role="group" aria-label="Card export settings">
       <div class="rt-row-3">
-        <!-- Content tile — opens sub-sheet -->
+        <!-- Content tile - opens sub-sheet -->
         <button
           type="button"
           class="rt-tile"
@@ -297,7 +297,7 @@
           <span class="rt-count">{contentOnCount}/{CONTENT_TOTAL}</span>
         </button>
 
-        <!-- Columns tile — inline stepper -->
+        <!-- Columns tile - inline stepper -->
         <div class="rt-tile" role="group" aria-label="Card columns">
           <div class="rt-stepper">
             <button type="button" class="rt-step-btn"
@@ -313,7 +313,7 @@
           <span class="rt-lbl">Columns</span>
         </div>
 
-        <!-- Theme tile — inline split-pill -->
+        <!-- Theme tile - inline split-pill -->
         <div class="rt-tile" role="group" aria-label="Card theme" style="padding: 8px;">
           <div class="rt-split">
             <button type="button" class="rt-split-opt"
@@ -447,7 +447,7 @@
         </div>
       </div>
 
-      <!-- QR code (standalone — it's a grid cell, not a banner) -->
+      <!-- QR code (standalone - it's a grid cell, not a banner) -->
       <div class="setting-row">
         <span class="setting-label">QR</span>
         <div class="chip-group">

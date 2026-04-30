@@ -19,7 +19,7 @@ Compact 3x2 grid (icon + label) so all 6 items fit on mobile without scrolling
     onToggleComponent: (component: LOOPComponent) => void;
   }>();
 
-  // Compact grid in both modes — descriptions removed to fit all 6 items
+  // Compact grid in both modes - descriptions removed to fit all 6 items
   // on small mobile screens (e.g. Z Fold 6 portrait in browser)
   const showDescriptions = false;
 </script>
@@ -43,7 +43,7 @@ Compact 3x2 grid (icon + label) so all 6 items fit on mobile without scrolling
     margin: 0 auto;
     gap: 8px;
     flex-shrink: 0;
-    /* 3 columns x 2 rows — fits all 6 items on small mobile screens */
+    /* 3 columns x 2 rows - fits all 6 items on small mobile screens */
     grid-template-columns: repeat(3, 1fr);
     grid-auto-rows: minmax(64px, auto);
   }

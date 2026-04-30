@@ -1,11 +1,11 @@
 /**
- * IRoomLifecycleManager — contract for the progressive room loading state machine.
+ * IRoomLifecycleManager - contract for the progressive room loading state machine.
  *
  * The lifecycle manager tracks which rooms are active (geometry built), cached
  * (descriptor saved but geometry torn down), or unvisited (never loaded).
  * When the player enters a room, the manager computes exactly what needs to
- * change — what to build, what to tear down, and what can be rebuilt fast
- * from a cached descriptor — without the caller having to understand the
+ * change - what to build, what to tear down, and what can be rebuilt fast
+ * from a cached descriptor - without the caller having to understand the
  * adjacency graph or state transitions.
  */
 
@@ -30,7 +30,7 @@ export interface LifecycleUpdate {
   toCache: string[];
   /**
    * Subset of toActivate that have cached descriptors.
-   * These can skip the tile-bucketing phase — just replay the descriptor.
+   * These can skip the tile-bucketing phase - just replay the descriptor.
    */
   fromCache: string[];
   /**
@@ -41,7 +41,7 @@ export interface LifecycleUpdate {
 }
 
 export interface IRoomLifecycleManager {
-  /** Current lifecycle state of a room — unvisited, active, or cached. */
+  /** Current lifecycle state of a room - unvisited, active, or cached. */
   getRoomState(roomId: string): RoomState;
 
   /**

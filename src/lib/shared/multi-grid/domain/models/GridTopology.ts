@@ -5,10 +5,10 @@
  * in arbitrary spatial arrangements with auto-detected junctions.
  *
  * Design decisions:
- * - Abstract units (radius=1.0), not pixels — resolution-independent, JSON-serializable
+ * - Abstract units (radius=1.0), not pixels - resolution-independent, JSON-serializable
  * - Junctions are derived (auto-detected), never manually declared
- * - Immutable data — topologies are built once, then read
- * - Plane field on GridPlacement is for L8+ (3D) — defaults to "wall", ignored until then
+ * - Immutable data - topologies are built once, then read
+ * - Plane field on GridPlacement is for L8+ (3D) - defaults to "wall", ignored until then
  */
 
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
@@ -37,7 +37,7 @@ export interface Vec2 {
 export interface GridPlacement {
   /** Unique identifier within the topology (e.g., "g0", "g1", "a", "b") */
   readonly id: string;
-  /** Grid rendering mode — determines which locations are hand points */
+  /** Grid rendering mode - determines which locations are hand points */
   readonly mode: GridMode;
   /** Center position in abstract world coordinates */
   readonly center: Vec2;
@@ -65,7 +65,7 @@ export interface PointRef {
  * A point in world space, with back-references to which grid:location pairs map here.
  *
  * When refs.length === 1, this point belongs to exactly one grid.
- * When refs.length > 1, this is a junction — multiple grids share this physical location.
+ * When refs.length > 1, this is a junction - multiple grids share this physical location.
  */
 export interface WorldPoint {
   /** Position in abstract world coordinates (within-plane for 3D) */
@@ -77,7 +77,7 @@ export interface WorldPoint {
 /**
  * A junction is a WorldPoint where two or more grid:location pairs overlap.
  *
- * Junctions are never manually declared — they are auto-detected by the
+ * Junctions are never manually declared - they are auto-detected by the
  * TopologyBuilder when it finds world points within a clustering tolerance.
  */
 export type Junction = WorldPoint & {
@@ -92,7 +92,7 @@ export type Junction = WorldPoint & {
  * Complete topology: all grids, all world points, all junctions.
  *
  * This is the immutable output of TopologyBuilder.build().
- * It's plain data — no class instances, no functions.
+ * It's plain data - no class instances, no functions.
  * JSON-serializable for storage (Firestore, export, sharing).
  */
 export interface GridTopology {

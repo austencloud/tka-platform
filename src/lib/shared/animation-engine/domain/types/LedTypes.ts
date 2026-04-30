@@ -128,7 +128,7 @@ export interface LedOverlayConfig {
 export const PROP_BLUE = "#2196f3";
 export const PROP_RED = "#f44336";
 
-/** Default LED overlay config — disabled with neutral green glow and solid pattern */
+/** Default LED overlay config - disabled with neutral green glow and solid pattern */
 export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
   enabled: false,
   glowRadius: 1.0,

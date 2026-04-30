@@ -55,7 +55,7 @@ export class VideoTipAdapter implements IVideoTipAdapter {
         tipIndex: ep.tipIndex,
         flameScale: ep.brightness,
         // Jerk (rate of change of acceleration) is not available from a single
-        // endpoint snapshot — the fire renderer will derive it internally.
+        // endpoint snapshot - the fire renderer will derive it internally.
         jerk: 0,
       };
     });
@@ -97,7 +97,7 @@ export class VideoTipAdapter implements IVideoTipAdapter {
   reset(): void {
     // Called when the video is seeked or restarted. Clearing the position map
     // means the next frame will have no previous position to diff against,
-    // producing zero velocity — exactly what we want after a discontinuity.
+    // producing zero velocity - exactly what we want after a discontinuity.
     this.previousPositions.clear();
   }
 }

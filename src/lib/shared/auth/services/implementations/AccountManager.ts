@@ -13,7 +13,7 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
 
 /**
  * Manages user account operations using Firebase client SDK directly.
- * No server routes needed — all operations go through Firebase Auth
+ * No server routes needed - all operations go through Firebase Auth
  * and Firestore client libraries, which work with adapter-static.
  */
 export class AccountManager implements IAccountManager {
@@ -105,14 +105,14 @@ export class AccountManager implements IAccountManager {
       const userDocRef = doc(firestore, "users", user.uid);
       await deleteDoc(userDocRef);
     } catch {
-      // Non-fatal — the auth account is the important deletion
+      // Non-fatal - the auth account is the important deletion
       console.warn("Could not delete user Firestore document");
     }
 
     // Delete the Firebase Auth account
     await deleteUser(user);
 
-    // Sign out locally (belt-and-suspenders — deleteUser should invalidate session)
+    // Sign out locally (belt-and-suspenders - deleteUser should invalidate session)
     await signOut(auth).catch(() => {});
 
     this.haptics.trigger("success");

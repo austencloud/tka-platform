@@ -10,7 +10,7 @@
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type {
   LOOPType,
-  SliceSize,
+  Period,
 } from "../../../circular/domain/models/circular-models";
 
 // Re-export LOOPType for convenience
@@ -40,7 +40,7 @@ export interface GenerationOptions {
   difficulty: DifficultyLevel;
   propContinuity?: PropContinuity | undefined;
   turnIntensity?: number | undefined;
-  sliceSize?: SliceSize | undefined; // For circular generation
+  period?: Period | undefined; // For circular generation
   loopType?: LOOPType | undefined; // LOOP type for circular generation
 
   // 3-axis constraint system
@@ -70,7 +70,7 @@ export interface PictographOperation {
   targetIndex?: number;
   data?: Record<string, unknown>;
 }
-// NOTE: SliceSize and LOOPType are now in circular/domain/models/circular-models.ts
+// NOTE: Period and LOOPType are now in circular/domain/models/circular-models.ts
 // Import from there if needed
 
 // Fundamental LOOP components that can be combined
@@ -83,7 +83,7 @@ export enum LOOPComponent {
   INVERTED = "inverted",  // PRO ↔ ANTI motion direction flip
   REWOUND = "rewound",    // Time reversal (plays backward)
 
-  // Reserved orientation primitives — detected but never surfaced in UI.
+  // Reserved orientation primitives - detected but never surfaced in UI.
   // Filter via RESERVED_ORIENTATION_PRIMITIVES in consumer resolvers.
   ZONE_HOLD_INVERT = "zone_hold_invert", // all beats stay in the same radial zone; orientations invert in-zone
   ZONE_HOLD_FLIP = "zone_hold_flip",     // all beats stay in the same nonradial zone; orientations flip in-zone
@@ -96,7 +96,7 @@ export enum LOOPComponent {
  * primitives we have not yet fully explored (zone-hold-invert etc.).
  *
  * Resolvers and icon strips consume `resolveLoopDisplay`, which filters these
- * out before returning. If you are a new UI consumer, use the resolver — do
+ * out before returning. If you are a new UI consumer, use the resolver - do
  * not read `SequenceData.components` directly, or you will see these.
  */
 export const RESERVED_ORIENTATION_PRIMITIVES = new Set<LOOPComponent>([

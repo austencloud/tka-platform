@@ -14,6 +14,8 @@ import { describe, expect, it } from "vitest";
 import {
   simplifyRepeatedWord,
   simplifyAndTruncate,
+  compressWord,
+  compressedToDisplayString,
 } from "../../../src/lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 describe("Word Simplifier", () => {
@@ -150,12 +152,75 @@ describe("Word Simplifier", () => {
       expect(simplifyRepeatedWord("ά")).toBe("ά");
     });
   });
-});
 
-/**
- * WHY VALUABLE:
- * - Pattern detection affects what users see in UI
- * - Wrong simplification could cause duplicate detection to fail
- * - Letter+dash counting is TKA-specific and non-obvious
- * - Greek letter handling is essential for the domain
- */
+  describe("compressWord", () => {
+    it("should detect two different repeated halves", () => {
+      // (AB)×2 (CD)×2 = ABABCDCD
+      const segments = compressWord("ABABCDCD");
+      expect(compressedToDisplayString(segments)).toBe("(AB)×2(CD)×2");
+    });
+
+    it("should handle full-word repetition as single segment", () => {
+      const segments = compressWord("ABCABC");
+      expect(segments).toEqual([{ tokens: ["A", "B", "C"], repeat: 2 }]);
+    });
+
+    it("should not compress single-char repeats below threshold", () => {
+      // LL is only 2 repeats of a single char — not worth bracket overhead
+      const segments = compressWord("HELLO");
+      expect(segments).toEqual([{ tokens: ["H", "E", "L", "L", "O"], repeat: 1 }]);
+    });
+
+    it("should return single segment for truly non-repeating word", () => {
+      const segments = compressWord("ABCDE");
+      expect(segments).toEqual([{ tokens: ["A", "B", "C", "D", "E"], repeat: 1 }]);
+    });
+
+    it("should handle dash letters as single tokens", () => {
+      // (AΦ-)×2
+      const segments = compressWord("AΦ-AΦ-");
+      expect(segments).toEqual([{ tokens: ["A", "Φ-"], repeat: 2 }]);
+    });
+
+    it("should handle mixed repeated and non-repeated regions", () => {
+      // X (AB)×2 Y → X as unrepeated, (AB)×2, Y unrepeated
+      const segments = compressWord("XABABY");
+      expect(compressedToDisplayString(segments)).toBe("X(AB)×2Y");
+    });
+
+    it("should handle triple repetition", () => {
+      const segments = compressWord("ABCABCABC");
+      expect(compressedToDisplayString(segments)).toBe("(ABC)×3");
+    });
+
+    it("should handle the real-world 32-token case", () => {
+      // User's actual example: (AKEAAαΦ-A)×2 (AAAABαΦ-B)×2
+      const word = "AKEAAαΦ-AAKEAAαΦ-AAAAABαΦ-BAAAABαΦ-B";
+      const segments = compressWord(word);
+      expect(compressedToDisplayString(segments)).toBe(
+        "(AKEAAαΦ-A)×2(AAAABαΦ-B)×2"
+      );
+    });
+
+    it("should handle empty and null input", () => {
+      expect(compressWord("")).toEqual([]);
+      expect(compressWord(null as any)).toEqual([]);
+    });
+
+    it("should handle single character", () => {
+      expect(compressWord("A")).toEqual([{ tokens: ["A"], repeat: 1 }]);
+    });
+
+    it("should compress single-char only at 4+ repeats", () => {
+      expect(compressedToDisplayString(compressWord("AAA"))).toBe("AAA");
+      expect(compressedToDisplayString(compressWord("AAAA"))).toBe("(A)×4");
+      expect(compressedToDisplayString(compressWord("AAAAAA"))).toBe("(A)×6");
+    });
+
+    it("should prefer longer patterns when they cover more tokens", () => {
+      // ABABABAB could be (AB)×4 or (ABAB)×2 — should pick (AB)×4 since 2*4=8 > 4*2=8 but shorter pattern wins at tie
+      const segments = compressWord("ABABABAB");
+      expect(compressedToDisplayString(segments)).toBe("(AB)×4");
+    });
+  });
+});

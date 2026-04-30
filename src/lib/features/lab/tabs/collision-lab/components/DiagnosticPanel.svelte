@@ -6,14 +6,14 @@
    *
    *   1. Pose identifier (big, copyable) so the reviewer can reference
    *      specific poses in conversation.
-   *   2. "Copy diagnostic" — dumps a full JSON report for the current
+   *   2. "Copy diagnostic" - dumps a full JSON report for the current
    *      pose to the clipboard. Paste into the Claude Code conversation
    *      to get a focused analysis of why a pose is misbehaving.
-   *   3. "Scan infeasible" — runs the optimizer across every unlabeled
+   *   3. "Scan infeasible" - runs the optimizer across every unlabeled
    *      pose and caches results. Progress bar shows completion.
-   *   4. "Next infeasible" — jumps the cursor to the next pose whose
+   *   4. "Next infeasible" - jumps the cursor to the next pose whose
    *      optimizer verdict is infeasible (from the cache).
-   *   5. "Infeasible only" toggle — filters the catalog to problem poses.
+   *   5. "Infeasible only" toggle - filters the catalog to problem poses.
    */
 
   import { getCollisionLabContext } from "../context/collision-lab-context";
@@ -58,7 +58,7 @@
   <div class="pose-id-row">
     <div class="pose-id">
       <span class="label">Pose</span>
-      <code class="id-code">{labCtx.state.currentPose?.id ?? "—"}</code>
+      <code class="id-code">{labCtx.state.currentPose?.id ?? "-"}</code>
       <span class="index">
         {labCtx.state.currentPoseGlobalIndex + 1} / {labCtx.state.allPoses.length}
       </span>
@@ -73,9 +73,9 @@
     title="Copy a full JSON report of the current pose to the clipboard so you can paste it into chat"
   >
     {#if copyStatus === "copied"}
-      Copied — paste to Claude
+      Copied - paste to Claude
     {:else if copyStatus === "failed"}
-      Copy failed — see console
+      Copy failed - see console
     {:else}
       Copy diagnostic
     {/if}

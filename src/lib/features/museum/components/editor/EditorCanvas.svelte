@@ -127,7 +127,7 @@
 			return;
 		}
 
-		// Left click — select the tile for inspector
+		// Left click - select the tile for inspector
 		editor.selectTile(x, y);
 
 		if (editor.drawMode === "rectangle") {
@@ -145,7 +145,7 @@
 		if (editor.drawMode === "rectangle" && editor.rectanglePreview) {
 			editor.updateRectangle(x, y);
 		} else if (editor.isDrawing && editor.drawMode === "paint") {
-			// Paint mode drag — place without pushing undo for each cell
+			// Paint mode drag - place without pushing undo for each cell
 			// (the initial click already pushed undo)
 			if (editor.selectedTool === "eraser") {
 				editor.grid.tiles.delete(tileKey(x, y));

@@ -14,6 +14,7 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
+  PulseIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
@@ -31,6 +32,7 @@ import type {
   Ink2DParams,
   Frost2DParams,
   Silk2DParams,
+  Pulse2DParams,
 } from "./canvas2d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
 import { resolveBubblePalette } from "../domain/BubblePalettes";
@@ -39,6 +41,7 @@ import { resolveSmokePalette } from "../domain/SmokePalettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 import { resolveFrostPalette } from "../domain/FrostPalettes";
 import { resolveSilkPalette } from "../domain/SilkPalettes";
+import { resolvePulsePalette } from "../domain/PulsePalettes";
 
 export function resolveTrails2D(
   intent: TrailsIntent,
@@ -180,26 +183,26 @@ export function resolvePetals2D(
  * Resolve ink for the 2D backend.
  *
  * Composes user intent with palette behavior flags:
- *   - effectiveAmbient = min(intent.ambientEmission, 0.3) — motion-dominant
+ *   - effectiveAmbient = min(intent.ambientEmission, 0.3) - motion-dominant
  *     hard cap. Ink is a stroke medium. If the user dials ambient to full,
  *     it still emits at ≤ 30% of the motion-driven rate.
- *   - opacityMax = watercolor ? 0.4 : 1.0 — palette-carried opacity cap.
+ *   - opacityMax = watercolor ? 0.4 : 1.0 - palette-carried opacity cap.
  *     Watercolor is translucent by identity (not a user knob).
- *   - strokeWidthMax = 12 px base * (watercolor ? 2 : 1) — watercolor
+ *   - strokeWidthMax = 12 px base * (watercolor ? 2 : 1) - watercolor
  *     bleeds wider.
- *   - blendMode = palette.emissive ? "lighter" : "source-over" — neon is
+ *   - blendMode = palette.emissive ? "lighter" : "source-over" - neon is
  *     the only emissive ink palette. The other five are opaque pigment.
  *
  * Tuning constants from spec docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md:
  *   AMBIENT_BASE_RATE       = 2   (barely any drip at rest)
- *   MOTION_BASE_RATE        = 15  (moderate — ink is a stroke medium, not a particle emitter)
+ *   MOTION_BASE_RATE        = 15  (moderate - ink is a stroke medium, not a particle emitter)
  *   MOTION_REFERENCE_SPEED  = 3.0 (world units/sec that maps to full motion scalar)
  *   STROKE_WIDTH_MIN        = 1   px (fast tip = thin lifted brush)
  *   STROKE_WIDTH_MAX_BASE   = 12  px (slow tip = thick loaded brush)
  *   LIFETIME_SECONDS_BASE   = 4.5 (center of spec 3-6 range)
  *   MAX_POINTS_PER_TIP      = 40  (center of spec 30-50 range)
  *
- * Sprint 1 ignores viscosity + splatterIntensity — they live on the
+ * Sprint 1 ignores viscosity + splatterIntensity - they live on the
  * intent but the renderer's droplet breakup (1j.ii) and splatter bursts
  * (1j.iii) don't exist yet.
  */
@@ -233,7 +236,7 @@ export function resolveInk2D(
     ? STROKE_WIDTH_MAX_BASE * 2
     : STROKE_WIDTH_MAX_BASE;
 
-  // Neon is the only emissive ink palette. All others composite opaque —
+  // Neon is the only emissive ink palette. All others composite opaque -
   // this is the #1 differentiator from trails (which are always emissive).
   const blendMode: GlobalCompositeOperation = palette.emissive
     ? "lighter"
@@ -269,7 +272,7 @@ export function resolveInk2D(
  *   - resolvedCurlStrength  = intent.curlStrength * palette.curlBias
  *   - resolvedRiseSpeed     = intent.riseSpeed * palette.riseBias * RISE_BASE
  *
- * The renderer reads only the resolved fields — palette colors flow
+ * The renderer reads only the resolved fields - palette colors flow
  * through `resolvedPalette.core/edge`. This matches the spec's
  * "palette owns lifetime/curl/rise" contract.
  */
@@ -283,7 +286,7 @@ export function resolveSmoke2D(
   // replaces 3D's world-unit value.
   // Boussinesq buoyancy target velocity at riseSpeed=1, palette.riseBias=1
   // and temperature=1. The renderer advects vy toward this target with
-  // linear drag (DRAG=0.6/s) — time constant ≈1.7s — so the target is an
+  // linear drag (DRAG=0.6/s) - time constant ≈1.7s - so the target is an
   // upper bound that long-lived puffs approach asymptotically. Short-lived
   // genie puffs only reach ~60% of target before cooling. Value tuned
   // against Bridson 2007 + Boussinesq approximation for visual plausibility.
@@ -342,6 +345,21 @@ export function resolveSilk2D(
     lifetimeSeconds: 0.5 + intent.duration * 3.5, // 0.5-4.0s
     motionReferenceSpeed: 3.0,
     blendMode: palette.emissive ? "lighter" : "source-over",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolvePulse2D(
+  intent: PulseIntent,
+  override: Partial<Pulse2DParams> = {},
+): Pulse2DParams {
+  const palette = resolvePulsePalette(intent);
+  const defaults: Omit<Pulse2DParams, keyof PulseIntent> = {
+    resolvedPalette: palette,
+    maxRadius: 20 + intent.reach * 180,
+    ringWidth: intent.style === "stroke" ? 1 + intent.thickness * 4 : 3 + intent.thickness * 12,
+    refSpeed: 3.0,
+    blendMode: "lighter",
   };
   return { ...intent, ...defaults, ...override };
 }

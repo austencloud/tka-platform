@@ -1,5 +1,5 @@
 <!--
-  RetroStartMenu — Win95-style start menu popup
+  RetroStartMenu - Win95-style start menu popup
 
   Anchored above the taskbar Start button. Features:
   - Dark blue vertical sidebar with "TKA-OS v1.0" rotated 90 degrees
@@ -112,7 +112,7 @@
     if (!menuElement) return;
     const target = event.target as HTMLElement;
 
-    /* Don't close if the click was on the Start button itself —
+    /* Don't close if the click was on the Start button itself -
        the taskbar handles that toggle. */
     if (target.closest("[data-start-button]")) return;
 

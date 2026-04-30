@@ -24,7 +24,7 @@ const HORIZONTAL_QUAT = new Quaternion().setFromEuler(
  * - horizontalQuat: lays cylinder horizontal (Y -> -X)
  * - worldRotation: planeQuat x staffSpin (from calculatePropQuaternion)
  *
- * Facing rotation is NOT applied here — the parent PerformerRig group handles it.
+ * Facing rotation is NOT applied here - the parent PerformerRig group handles it.
  * Works for both cylindrical (staff, club) and flat (fan, hoop) props.
  */
 export function computePropRotation(

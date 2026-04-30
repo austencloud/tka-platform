@@ -53,7 +53,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // v4 → v5: extend motion with color/colorMode/length/count. Existing
   // persisted v4 configs only have blur/speedLines/threshold; inject
   // defaults so the upgraded shape matches the old MotionIntent.
-  // NOTE: v6 discards this motion block entirely — echo replaces it.
+  // NOTE: v6 discards this motion block entirely - echo replaces it.
   if (version < 5 && input.motion) {
     const m = input.motion as any;
     m.color ??= "#ffffff";
@@ -118,40 +118,40 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     }
   }
 
-  // v7 → v8: add water intent. No field migration — absent water resolves to
+  // v7 → v8: add water intent. No field migration - absent water resolves to
   // DEFAULT_EFFECTS_CONFIG.water via the merge below.
 
   // v8 → v9: add bubbles intent + activePresets.bubbles. Net-new 10th effect
-  // (11th chip including "none"). No field migration — absent bubbles resolves
+  // (11th chip including "none"). No field migration - absent bubbles resolves
   // to DEFAULT_EFFECTS_CONFIG.bubbles via the merge below. tipEffectMap entries
   // are unchanged (only the domain expands).
 
   // v9 → v10: add petals intent + activePresets.petals. Net-new 11th effect
-  // (12th chip including "none"). No field migration — absent petals resolves
+  // (12th chip including "none"). No field migration - absent petals resolves
   // to DEFAULT_EFFECTS_CONFIG.petals via the merge below. tipEffectMap entries
   // are unchanged (only the domain expands).
 
   // v10 → v11: add smoke intent + activePresets.smoke. Net-new 12th effect
-  // (13th chip including "none"). No field migration — absent smoke resolves
+  // (13th chip including "none"). No field migration - absent smoke resolves
   // to DEFAULT_EFFECTS_CONFIG.smoke via the merge below. tipEffectMap entries
   // are unchanged (only the domain expands). First effect where palette
   // carries behavioral multipliers (lifetime, curl bias, rise bias) in
   // addition to color.
 
   // v11 → v12: add ink intent + activePresets.ink. Net-new 13th effect
-  // (14th chip including "none"). No field migration — absent ink resolves
+  // (14th chip including "none"). No field migration - absent ink resolves
   // to DEFAULT_EFFECTS_CONFIG.ink via the merge below. tipEffectMap entries
-  // are unchanged (only the domain expands). First stroke-based effect —
+  // are unchanged (only the domain expands). First stroke-based effect -
   // opaque flat-shaded pigment, variable width from velocity (slow =
   // thick loaded brush, fast = thin lifted brush). Sprint 1 = stroke MVP;
   // sprint 2 adds sag, strand breakup, splatter bursts, ground pooling.
 
   // v12 → v13: add frost intent + activePresets.frost. Net-new 14th effect
-  // (15th chip including "none"). No field migration — absent frost resolves
+  // (15th chip including "none"). No field migration - absent frost resolves
   // to DEFAULT_EFFECTS_CONFIG.frost via the merge below.
 
   // v13 → v14: add silk intent + activePresets.silk. Net-new 15th effect
-  // (16th chip including "none"). No field migration — absent silk resolves
+  // (16th chip including "none"). No field migration - absent silk resolves
   // to DEFAULT_EFFECTS_CONFIG.silk via the merge below.
 
   let out: EffectsConfig = {

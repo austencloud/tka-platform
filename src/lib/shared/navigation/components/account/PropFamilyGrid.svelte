@@ -1,4 +1,4 @@
-<!-- PropFamilyGrid.svelte — Curated grid of base prop families with multi-select -->
+<!-- PropFamilyGrid.svelte - Curated grid of base prop families with multi-select -->
 <script lang="ts" module>
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 

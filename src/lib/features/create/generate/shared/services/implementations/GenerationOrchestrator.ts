@@ -24,7 +24,7 @@ import type { IBuildResultTransformer } from "../contracts/IBuildResultTransform
 import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataManager";
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";
-import { LOOPType, SliceSize } from "@tka/sequence-engine/loop";
+import { LOOPType, Period as EnginePeriod } from "@tka/sequence-engine/loop";
 import {
   TransitionGraph as EngineTransitionGraph,
   setLetterTransitionGraph,
@@ -64,7 +64,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
   ) {}
 
   /**
-   * Generate complete sequence — routes to appropriate mode
+   * Generate complete sequence - routes to appropriate mode
    */
   async generateSequence(options: GenerationOptions): Promise<SequenceData> {
     if (options.mode === GenerationMode.CIRCULAR) {
@@ -107,7 +107,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
   /**
    * Generate a circular (LOOP) sequence via the shared engine.
    *
-   * The engine's SequenceBuilder handles LOOP extension internally —
+   * The engine's SequenceBuilder handles LOOP extension internally -
    * it generates the seed sequence, then applies the LOOP executor to
    * produce the full circular sequence.
    */
@@ -125,15 +125,15 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     // values for most types, but the app has "strict_rewound" while the
     // engine uses "rewound".
     const engineLoopType = this.mapLoopTypeToEngine(options.loopType);
-    const sliceSize = this.mapSliceSize(options.sliceSize);
+    const period = this.mapPeriod(options.period);
 
     // The UI's length is the TOTAL output length. The seed is a fraction:
     // halved = length / 2, quartered = length / 4. The LOOP executor
     // extends the seed back to the full length.
-    // For word-based spell-LOOP, the word itself is the seed — no length
+    // For word-based spell-LOOP, the word itself is the seed - no length
     // division is applied because the user's word IS the pattern.
-    const sliceMultiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
-    const seedLength = Math.max(1, Math.floor(options.length / sliceMultiplier));
+    const periodMultiplier = period === EnginePeriod.QUARTERED ? 4 : 2;
+    const seedLength = Math.max(1, Math.floor(options.length / periodMultiplier));
     const result = builder.build({
       ...(options.word ? { word: options.word } : { length: seedLength }),
       gridMode: String(options.gridMode),
@@ -146,7 +146,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       maxTurnIntensity: options.turnIntensity,
       loop: {
         type: engineLoopType,
-        sliceSize,
+        period,
         useTargetedGeneration: true,
       },
     });
@@ -229,12 +229,12 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
   }
 
   /**
-   * Map the app's SliceSize to the engine's SliceSize.
+   * Map the app's Period to the engine's Period.
    * Both use identical string values.
    */
-  private mapSliceSize(appSliceSize?: string): SliceSize {
-    if (appSliceSize === "quartered") return SliceSize.QUARTERED;
-    return SliceSize.HALVED;
+  private mapPeriod(appPeriod?: string): EnginePeriod {
+    if (appPeriod === "quartered") return EnginePeriod.QUARTERED;
+    return EnginePeriod.HALVED;
   }
 }
 

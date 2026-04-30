@@ -276,7 +276,7 @@ export function createViewer3DState(deps: {
     _activePopover = null;
   }
 
-  // Performer manager — single source of truth for multi-performer state.
+  // Performer manager - single source of truth for multi-performer state.
   // The viewer passes its viewer-specific cap (8) while realm/museum/duet
   // keep their shared cap (4) by not passing maxPerformers at all.
   const performerManager: PerformerManager = createPerformerManager({
@@ -309,7 +309,7 @@ export function createViewer3DState(deps: {
 
   /**
    * Set the current selection scope. Pass null for "All".
-   * Out-of-bounds indices are allowed — scopedPerformers() will return []
+   * Out-of-bounds indices are allowed - scopedPerformers() will return []
    * so individual write helpers no-op cleanly.
    */
   function selectPerformerScope(index: number | null): void {
@@ -352,7 +352,7 @@ export function createViewer3DState(deps: {
       customBluePlane: p.customBluePlane,
       customRedPlane: p.customRedPlane,
       // AvatarInstanceState does not currently expose a sequenceRef on its
-      // public surface. For v1 we snapshot null — undo of a sequence change
+      // public surface. For v1 we snapshot null - undo of a sequence change
       // is out of scope. The field remains on the snapshot shape for future
       // expansion.
       sequenceRef: null,
@@ -370,7 +370,7 @@ export function createViewer3DState(deps: {
    * Restore a snapshot onto the live state. Called by undo/redo.
    * Handles: performer count (spawn/remove to match), per-performer
    * position/facing/plane assignments, active formation, selection.
-   * Does NOT restore sequenceRef — out of scope for v1.
+   * Does NOT restore sequenceRef - out of scope for v1.
    */
   function restoreViewerSnapshot(snap: ViewerSnapshot): void {
     // 1. Match performer count by spawning or removing.
@@ -456,7 +456,7 @@ export function createViewer3DState(deps: {
    * include the current performer count. Records an undo entry of type
    * "formation". Uses PerformerManager's existing smooth transition.
    *
-   * `transitionToFormation` kicks off an animated transition — the live
+   * `transitionToFormation` kicks off an animated transition - the live
    * performer positions only reach their targets after ~500ms of frame
    * updates. To make redo work correctly, we synthesize the afterState
    * from the target formation slots rather than re-reading live positions.
@@ -561,7 +561,7 @@ export function createViewer3DState(deps: {
   let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
   let webglCanvas = $state<HTMLCanvasElement | null>(null);
 
-  // Threlte scene internals — registered by Viewer3DScene so the offline
+  // Threlte scene internals - registered by Viewer3DScene so the offline
   // exporter can drive rendering without coupling to Threlte's reactive layer.
   let threlteRenderer = $state<any>(null);
   let threlteScene = $state<any>(null);
@@ -586,10 +586,10 @@ export function createViewer3DState(deps: {
   // Svelte's $derived chain resolves correctly.
   let exportCurrentStep = $state<number | null>(null);
 
-  // Legacy — kept for any remaining references but no longer used for gating.
+  // Legacy - kept for any remaining references but no longer used for gating.
   let autoRenderEnabled = $state(true);
 
-  // Camera choreography sub-state — tracks the preset selected in the
+  // Camera choreography sub-state - tracks the preset selected in the
   // Export popover. The recording driver that consumes this lands in
   // Phase 1 of the camera-choreography plan.
   const cameraChoreography = createCameraChoreographyState();
@@ -599,12 +599,12 @@ export function createViewer3DState(deps: {
   // exporter with a deterministic dt each frame.
   let updateEffectsCallback = $state<((dt: number) => void) | null>(null);
 
-  // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
+  // Camera snap callback - registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
 
   // When a hand is assigned to a non-wall plane, automatically add that
   // plane's grid circle to visiblePlanes so the plane actually renders.
-  // Driven by performer 0 for now — full per-performer plane tracking
+  // Driven by performer 0 for now - full per-performer plane tracking
   // lands in Task 14's scope work. WALL is deliberately excluded so that
   // the grid stays hidden by default on first 3D entry; users must
   // explicitly toggle the grid on to see the wall plane.
@@ -627,7 +627,7 @@ export function createViewer3DState(deps: {
   });
 
   // ---------------------------------------------------------------
-  // Persistence effects — serialize state to localStorage reactively.
+  // Persistence effects - serialize state to localStorage reactively.
   // ---------------------------------------------------------------
 
   // Serialize the performer array whenever performer count, position,
@@ -656,13 +656,13 @@ export function createViewer3DState(deps: {
   /**
    * Switch to 3D render mode and load a sequence for the viewer avatar.
    * No-ops silently when WebGL2 is unavailable so callers don't need to
-   * guard every call site — they should just check webgl2Available before
+   * guard every call site - they should just check webgl2Available before
    * showing the "Enter 3D" button.
    */
   function enter3D(sequenceData: SequenceData) {
     if (!_webgl2Available) return;
 
-    // One-time migration of the deprecated visiblePlanes key. Idempotent —
+    // One-time migration of the deprecated visiblePlanes key. Idempotent -
     // returns immediately once the new key exists.
     migrateLegacyPlanesIfNeeded();
 
@@ -875,10 +875,10 @@ export function createViewer3DState(deps: {
      */
     toggleGrid(sequenceData?: SequenceData | null) {
       if (visiblePlanes.size > 0) {
-        // Already showing something — turn off everything
+        // Already showing something - turn off everything
         visiblePlanes = new Set();
       } else {
-        // Turn on — show only the planes the sequence actually uses.
+        // Turn on - show only the planes the sequence actually uses.
         // Currently every sequence uses the wall plane, so we default to that.
         // When multi-plane sequences exist, read sequenceData.gridMode here.
         const defaultPlane = Plane.WALL;

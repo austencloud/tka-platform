@@ -20,7 +20,7 @@ import {
   VERTICAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
 } from "../position-maps/strict-loop-position-maps.js";
-import { LOOPType, SliceSize } from "../loop-types.js";
+import { LOOPType, Period } from "../loop-types.js";
 import { RotatedEndPositionSelector, rotatedEndPositionSelector } from "./RotatedEndPositionSelector.js";
 
 export class LOOPEndPositionSelector {
@@ -31,18 +31,18 @@ export class LOOPEndPositionSelector {
    *
    * @param loopType - The LOOP type being generated
    * @param startPosition - The sequence's starting position
-   * @param sliceSize - Halved or quartered
+   * @param period - Halved or quartered
    * @returns The required end position, or null if no constraint (e.g., Rewound)
    */
   determineEndPosition(
     loopType: LOOPType,
     startPosition: string,
-    sliceSize: SliceSize
+    period: Period
   ): string | null {
     switch (loopType) {
       // Strict LOOP types
       case LOOPType.ROTATED:
-        return this.rotatedSelector.determineRotatedEndPosition(sliceSize, startPosition);
+        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
 
       case LOOPType.MIRRORED:
         return VERTICAL_MIRROR_POSITION_MAP[startPosition] ?? null;
@@ -63,7 +63,7 @@ export class LOOPEndPositionSelector {
       case LOOPType.MIRRORED_ROTATED:
       case LOOPType.MIRRORED_INVERTED_ROTATED:
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
-        return this.rotatedSelector.determineRotatedEndPosition(sliceSize, startPosition);
+        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
 
       // Combined LOOP types with MIRRORED
       case LOOPType.MIRRORED_INVERTED:

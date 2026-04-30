@@ -47,7 +47,7 @@
     };
   });
 
-  // Direct DOM click listener — bypasses Svelte 5 event delegation
+  // Direct DOM click listener - bypasses Svelte 5 event delegation
   // which doesn't reliably fire inside <dialog> elements opened with .show()
   $effect(() => {
     if (!wrapperEl) return;
@@ -93,7 +93,7 @@
 
   // Click to toggle reactions on desktop (supplements hover)
   function handleClick(event: MouseEvent) {
-    console.log("[MessageActions] handleClick fired — isMobile:", isMobile, "showReactions:", showReactions, "target:", (event.target as HTMLElement).tagName, (event.target as HTMLElement).className);
+    console.log("[MessageActions] handleClick fired - isMobile:", isMobile, "showReactions:", showReactions, "target:", (event.target as HTMLElement).tagName, (event.target as HTMLElement).className);
     if (isMobile) return;
     // Don't toggle if clicking inside the reaction bar itself
     const target = event.target as HTMLElement;

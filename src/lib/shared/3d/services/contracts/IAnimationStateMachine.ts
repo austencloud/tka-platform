@@ -26,7 +26,7 @@ export interface LocomotionStateInput {
 	hasMovementInput: boolean;
 	/** Horizontal movement speed in scene units/sec */
 	horizontalSpeed: number;
-	/** Vertical velocity — positive = ascending, negative = falling */
+	/** Vertical velocity - positive = ascending, negative = falling */
 	verticalVelocity: number;
 	/** On the ground? (from PhysicsProvider.isGrounded()) */
 	isGrounded: boolean;

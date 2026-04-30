@@ -1,5 +1,5 @@
 <!--
-  TurnPatternGlyph — Tiny bar chart showing per-step turn values.
+  TurnPatternGlyph - Tiny bar chart showing per-step turn values.
   Period-compressed: shows only the minimum repeating unit.
   Used on card backs to identify which turn pattern deck a card belongs to.
 -->

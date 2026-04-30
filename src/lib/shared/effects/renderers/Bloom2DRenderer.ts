@@ -7,7 +7,7 @@ import type { Bloom2DParams } from "../translators/canvas2d-types";
  * naturally off `tipIndex` (global 0-3 index).
  *
  * `propIndex`: 0 = blue prop, 1 = red prop.
- * `tipIndex`: global tip index 0..3 — used for palette cycling.
+ * `tipIndex`: global tip index 0..3 - used for palette cycling.
  * `blueColor` / `redColor` are consumed when `params.colorMode === "prop-matched"`.
  */
 export interface BloomTipInput {
@@ -23,13 +23,13 @@ export interface BloomTipInput {
  * Per-tip radial halation renderer for the Canvas2D backend.
  *
  * Each active tip gets a soft additive radial gradient centered on its
- * screen position — a continuous field of light that reads as the prop
+ * screen position - a continuous field of light that reads as the prop
  * being present in the space. Falloff mode changes the gradient shape
  * (smooth / sharp hot core / hollow ring). Pulse modulates intensity
  * over time via a sine wave keyed to `performance.now()`.
  *
  * Rendering uses `globalCompositeOperation = "lighter"` so overlapping
- * halos brighten where tips cluster — the viewer sees the prop's
+ * halos brighten where tips cluster - the viewer sees the prop's
  * "presence" as a continuous light field rather than discrete points.
  */
 export class Bloom2DRenderer {
@@ -41,7 +41,7 @@ export class Bloom2DRenderer {
   ): void {
     if (tips.length === 0) return;
 
-    // Time in seconds. Independent of playback — halos breathe even when paused.
+    // Time in seconds. Independent of playback - halos breathe even when paused.
     const t = performance.now() / 1000;
     const pulseFactor =
       1 -
@@ -139,7 +139,7 @@ export class Bloom2DRenderer {
 
   /**
    * Blend an incoming color with a target alpha. Handles `#rgb`, `#rrggbb`,
-   * and `hsl(...)` forms — everything the colorMode resolver produces.
+   * and `hsl(...)` forms - everything the colorMode resolver produces.
    */
   private withAlpha(color: string, alpha: number): string {
     const a = Math.max(0, Math.min(1, alpha));
@@ -151,12 +151,12 @@ export class Bloom2DRenderer {
       // "hsl(H, S%, L%)" → "hsla(H, S%, L%, a)"
       return `hsla${color.slice(3, -1)}, ${a})`;
     }
-    // Fallback — best-effort; upstream never produces other forms.
+    // Fallback - best-effort; upstream never produces other forms.
     return color;
   }
 
   dispose(): void {
-    // Stateless — no ring buffers or accumulators to reset.
+    // Stateless - no ring buffers or accumulators to reset.
   }
 }
 

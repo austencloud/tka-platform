@@ -354,7 +354,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
     </div>
   {/if}
 
-  <!-- Word Input — collapses when Loop chip takes over (CSS transition-delay) -->
+  <!-- Word Input - collapses when Loop chip takes over (CSS transition-delay) -->
   <section
     class="word-section"
     class:loop-collapsed={isLoopExpanded}
@@ -367,7 +367,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
     />
   </section>
 
-  <!-- Settings — hidden only when collapsed (small screen + keyboard) -->
+  <!-- Settings - hidden only when collapsed (small screen + keyboard) -->
   {#if !shouldCollapseLayout}
     <section class="settings-section" class:loop-expanded={isLoopExpanded}>
       <SpellSettingsBar
@@ -379,7 +379,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
       />
     </section>
 
-    <!-- Generate Button — collapses when Loop chip takes over (CSS transition-delay) -->
+    <!-- Generate Button - collapses when Loop chip takes over (CSS transition-delay) -->
     <button
       class="generate-button"
       class:generating={spellState.isGenerating}
@@ -482,7 +482,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   }
 
   /* Loop takeover animation via CSS transition-delay.
-     Collapsing: everything goes at once (350ms) — matches chip expansion timing.
+     Collapsing: everything goes at once (350ms) - matches chip expansion timing.
      Restoring: height expands first (0ms), then opacity fades in (250ms delay).
      CSS applies the transition rules of the TARGET state, giving us
      directional sequencing with zero JS state machines. */
@@ -497,7 +497,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
       margin 300ms ease;
   }
 
-  /* Collapsed state: all at once, no stagger — keeps chip expansion in sync */
+  /* Collapsed state: all at once, no stagger - keeps chip expansion in sync */
   .word-section.loop-collapsed,
   button.generate-button.loop-collapsed {
     opacity: 0;
@@ -536,7 +536,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
     font-size: calc(var(--font-size-min, 14px) * var(--spell-scale));
     font-weight: 700;
     cursor: pointer;
-    /* Only transition hover/active properties — NOT max-height/opacity/padding/margin.
+    /* Only transition hover/active properties - NOT max-height/opacity/padding/margin.
        Those are handled by the loop-collapse rules above (lines 501-528).
        Using 'all' here would clobber the sequenced transition-delay timings. */
     transition:

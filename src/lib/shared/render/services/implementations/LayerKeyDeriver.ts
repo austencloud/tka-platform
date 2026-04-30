@@ -36,7 +36,7 @@ export interface BaseLayerKeyComponents {
   darkMode: boolean;
   // Size
   size: number;
-  // Per-color motion visibility — renderer skips hidden motions
+  // Per-color motion visibility - renderer skips hidden motions
   showBlueMotion: boolean;
   showRedMotion: boolean;
   // VTG/elemental/positions glyphs are baked into the base layer, so they
@@ -58,7 +58,7 @@ export interface GridPointsLayerKeyComponents {
   handPointVisibility: "all" | "active";
   // Grid mode affects which points exist
   gridMode: string;
-  // Visual mode — grid point colors differ between dark and light
+  // Visual mode - grid point colors differ between dark and light
   darkMode: boolean;
   // Size
   size: number;
@@ -69,7 +69,7 @@ export interface TKALayerKeyComponents {
   letter: string;
   // Turns tuple (e.g., "(s, 0, 1.5)")
   turnsTuple: string;
-  // Motion types per hand — determines turn number colors
+  // Motion types per hand - determines turn number colors
   // (e.g., blue=pro/red=anti vs blue=anti/red=pro produce different color assignments)
   blueMotionType: string;
   redMotionType: string;

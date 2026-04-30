@@ -12,7 +12,7 @@
   }
 
   function openStageStub() {
-    // Spec §8.4 — stub action until Stage ships.
+    // Spec §8.4 - stub action until Stage ships.
     console.log("[stub] Stage destination not yet built");
   }
 </script>

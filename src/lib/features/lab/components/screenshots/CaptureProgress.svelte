@@ -1,5 +1,5 @@
 <!--
-  CaptureProgress — Animated progress bar and count during active captures.
+  CaptureProgress - Animated progress bar and count during active captures.
   Auto-polls the capture job status endpoint every 2 seconds.
   Shimmer overlay while running, popIn on completion, shake on error.
 -->
@@ -22,7 +22,7 @@
   let status = $state<CaptureJobStatus | null>(null);
   let prevCompleted = $state(0);
   let countBump = $state(false);
-  // Not reactive — infrastructure-only, no rendering depends on this ref
+  // Not reactive - infrastructure-only, no rendering depends on this ref
   let pollTimer: ReturnType<typeof setInterval> | null = null;
 
   const progressPercent = $derived(

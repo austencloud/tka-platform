@@ -385,7 +385,7 @@ export class DirectionalTupleProcessor implements IDirectionalTupleProcessor {
 // ============================================================================
 // DIRECT SINGLETON EXPORTS
 // ============================================================================
-// Direct singleton exports — no DI container needed.
+// Direct singleton exports - no DI container needed.
 // ============================================================================
 
 import { arrowQuadrantCalculator } from "../../../../orchestration/services/implementations/ArrowQuadrantCalculator";

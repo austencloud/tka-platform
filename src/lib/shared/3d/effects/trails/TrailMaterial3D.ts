@@ -31,7 +31,7 @@ const fragmentShader = /* glsl */ `
     // Use instance color if provided (rainbow mode), otherwise base color
     vec3 color = length(vColor) > 0.01 ? vColor : uBaseColor;
 
-    // Add emissive glow — brighter at high alpha (near tip)
+    // Add emissive glow - brighter at high alpha (near tip)
     vec3 emissive = color * uEmissiveStrength * vAlpha;
     vec3 finalColor = color + emissive;
 

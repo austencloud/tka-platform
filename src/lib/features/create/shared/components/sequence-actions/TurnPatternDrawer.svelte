@@ -927,7 +927,7 @@
     }
   }
 
-  /* Fullscreen on mobile — browsing interface needs space */
+  /* Fullscreen on mobile - browsing interface needs space */
   @media (max-width: 768px) {
     :global(.drawer-content:has(.turn-pattern-drawer)) {
       height: 100vh !important;

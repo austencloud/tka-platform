@@ -1,5 +1,5 @@
 <!--
-  RetroTreeView — Expandable hierarchical list
+  RetroTreeView - Expandable hierarchical list
 
   Renders a tree with [+]/[-] toggle icons, indentation, and selection
   highlight. Used for the File Manager left pane and any hierarchical

@@ -1,5 +1,5 @@
 <!--
-  GalleryGrid — Renders module-grouped screenshot cards in a responsive grid.
+  GalleryGrid - Renders module-grouped screenshot cards in a responsive grid.
   Supports selection mode with checkbox overlays and tag chip display.
 -->
 <script lang="ts">

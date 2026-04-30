@@ -42,7 +42,7 @@
 
   const statusLabel = $derived.by(() => {
     if (!candidate.feasible) {
-      // Report the largest shortfall — either reach or a hard-gate collision.
+      // Report the largest shortfall - either reach or a hard-gate collision.
       const shortfall = Math.max(
         candidate.simResult.reachShortfall.blue,
         candidate.simResult.reachShortfall.red

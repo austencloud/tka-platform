@@ -1,10 +1,10 @@
 /**
- * PovStripRenderer3D — Full-strip LED renderer with POV trail accumulation.
+ * PovStripRenderer3D - Full-strip LED renderer with POV trail accumulation.
  *
  * Distributes N LED billboards along a staff axis. Each LED's color comes
  * from a StripPattern frame, where frame index is derived from the staff's
  * rotation angle. Trail ghosts are accumulated in a PovTrailRing to create
- * the persistence-of-vision effect — images forming in the air as the
+ * the persistence-of-vision effect - images forming in the air as the
  * avatar spins, exactly like watching a pixel poi performer in a dark room.
  *
  * Reuses the existing LedMaterial3D shader (additive blending, core + halo).
@@ -38,7 +38,7 @@ const PERSISTENCE_FRAMES: Record<QualityTier, number> = {
   [QualityTier.LOW]: 4,
 };
 
-/** Billboard size for each LED — smaller than 2-point LEDs since we have 200 */
+/** Billboard size for each LED - smaller than 2-point LEDs since we have 200 */
 const POV_LED_SIZE = 0.012;
 
 export class PovStripRenderer3D {
@@ -190,7 +190,7 @@ export class PovStripRenderer3D {
     const snapshots = this.trail.getSnapshotsNewerThan(cutoff);
 
     for (let s = 0; s < snapshots.length - 1 && instanceIndex < this.maxInstances; s++) {
-      // Skip the most recent snapshot — it's the current frame
+      // Skip the most recent snapshot - it's the current frame
       const snap = snapshots[s]!;
       const age = currentTime - snap.timestamp;
       const alpha = (1.0 - age / this.persistenceDuration) * 0.7 * brightness;

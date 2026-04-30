@@ -19,7 +19,7 @@
 
   // ── Loading gate ──
   // A brief fade-from-black covers the scene until the lobby is ready
-  // (~200ms via worker). No progress bar needed — the load is fast.
+  // (~200ms via worker). No progress bar needed - the load is fast.
   let showOverlay = $state(true);
   let overlayFading = $state(false);
 
@@ -29,12 +29,12 @@
   }
 
   // Defer heavy 3D component mount until AFTER the loading overlay has painted.
-  // Two rAFs aren't enough — they can fire back-to-back before the browser paints
+  // Two rAFs aren't enough - they can fire back-to-back before the browser paints
   // when the main thread is busy with module evaluation. setTimeout(0) properly
   // yields to the browser's task queue, ensuring the overlay is visible first.
   let deferredReady = $state(false);
   onMount(() => {
-    // Museum is a full-screen immersive experience — suppress sidebar
+    // Museum is a full-screen immersive experience - suppress sidebar
     // even across viewport recalculations and HMR
     setDesktopSidebarForcedHidden(true);
 
@@ -48,7 +48,7 @@
     return () => {
       // Restore sidebar when leaving museum
       setDesktopSidebarForcedHidden(false);
-      // Tear down the village sim — a module-scope singleton that would
+      // Tear down the village sim - a module-scope singleton that would
       // otherwise keep its Three.js meshes alive across navigations.
       destroyMuseumVillage();
     };
@@ -112,7 +112,7 @@
     try {
       sessionStorage.setItem(GRID_HASH_KEY, computeConfigHash(rooms, edges));
       sessionStorage.setItem(GRID_CACHE_KEY, JSON.stringify(serializeGrid(grid)));
-    } catch { /* sessionStorage full — non-critical */ }
+    } catch { /* sessionStorage full - non-critical */ }
   }
 
   // Build grid for the given room filter. When a single room is selected,
@@ -198,7 +198,7 @@
   // Previously this was gated on mode === "museum" which meant the first switch
   // to museum mode triggered the full geometry build + shader compilation.
 
-  // The "live" grid — starts from generated, can be modified by editor.
+  // The "live" grid - starts from generated, can be modified by editor.
   // Must use $state.raw: $state would deeply proxy 20k+ tiles, causing a
   // multi-second freeze on init. The grid is replaced wholesale (not mutated
   // in place), so shallow reactivity is correct.
@@ -212,12 +212,12 @@
     liveGrid = generatedGrid;
   });
 
-  // Editor state — initialized from the initial grid (plain const, not reactive)
+  // Editor state - initialized from the initial grid (plain const, not reactive)
   const editorState = createEditorState(initialGrid.width, initialGrid.height);
   editorState.importGrid(serializeGrid(initialGrid));
   setEditorContext({ state: editorState });
 
-  // Soundscape player — owns audio elements, crossfades on wing change.
+  // Soundscape player - owns audio elements, crossfades on wing change.
   // Wing updates flow in via DimensionFlipProof's onWingChange callback.
   const soundscapePlayer = createSoundscapePlayer();
   setSoundscapeContext(soundscapePlayer);
@@ -264,7 +264,7 @@
 </script>
 
 <div class="museum-module">
-  <!-- Loading gate — brief fade-from-black until lobby is ready -->
+  <!-- Loading gate - brief fade-from-black until lobby is ready -->
   {#if showOverlay}
     <div class="museum-loading-overlay" class:fading={overlayFading} role="status">
       <div class="overlay-icon">
@@ -273,7 +273,7 @@
     </div>
   {/if}
 
-  <!-- Room picker — floating pill bar for room isolation -->
+  <!-- Room picker - floating pill bar for room isolation -->
   {#if mode === "museum" && deferredReady}
     <RoomPicker {selectedRoom} onSelect={handleRoomSelect} />
   {/if}
@@ -281,7 +281,7 @@
   <!-- Content renders behind the opaque overlay; deferred to allow first paint -->
   {#if deferredReady}
     <!-- 3D scene mounts eagerly and stays alive across ALL mode switches.
-         Hidden via CSS when inactive — geometry, textures, and shaders stay warm
+         Hidden via CSS when inactive - geometry, textures, and shaders stay warm
          so switching to museum mode is instant (no rebuild). -->
     <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
       {#key selectedRoom}
@@ -296,7 +296,7 @@
       {/key}
     </div>
 
-    <!-- Floating music-player bubble — audition ambient tracks per wing -->
+    <!-- Floating music-player bubble - audition ambient tracks per wing -->
     {#if mode === "museum"}
       <SoundscapeBubble />
     {/if}
@@ -346,7 +346,7 @@
     inset: 0;
   }
 
-  /* Unified loading overlay — covers full module, fades out when ready */
+  /* Unified loading overlay - covers full module, fades out when ready */
   .museum-loading-overlay {
     position: absolute;
     inset: 0;

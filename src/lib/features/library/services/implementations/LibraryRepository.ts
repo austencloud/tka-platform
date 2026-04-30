@@ -145,7 +145,7 @@ export class LibraryRepository implements ILibraryRepository {
         },
       });
     } catch {
-      // ErrorHandler itself failed — fall back to toast
+      // ErrorHandler itself failed - fall back to toast
       toast.error(message);
     }
   }
@@ -289,12 +289,12 @@ export class LibraryRepository implements ILibraryRepository {
 
     if (existingDoc.exists()) {
       // FORK DETECTION: If motion content changed, this is a new variation.
-      // Create a new document — the original stays untouched in the user's library.
+      // Create a new document - the original stays untouched in the user's library.
       const existingData = existingDoc.data();
       const existingHash = existingData?.contentHash as string | undefined;
 
       if (incomingHash && existingHash && existingHash !== incomingHash) {
-        // Content changed — fork into a new variation
+        // Content changed - fork into a new variation
         const parentId = actualSequenceId;
         actualSequenceId = crypto.randomUUID();
         sequenceDocRef = doc(
@@ -307,7 +307,7 @@ export class LibraryRepository implements ILibraryRepository {
           { ...sequence, id: actualSequenceId },
           userId,
           {
-            // Forks default to public — TKA notation is meant to be shared
+            // Forks default to public - TKA notation is meant to be shared
             visibility: overrides?.visibility ?? "public",
             notes: overrides?.notes,
             source: "forked",
@@ -320,7 +320,7 @@ export class LibraryRepository implements ILibraryRepository {
           }
         );
       } else {
-        // Same hash or no stored hash — normal metadata update
+        // Same hash or no stored hash - normal metadata update
         const existing = this.mapDocToLibrarySequence(
           existingData!,
           actualSequenceId
@@ -350,7 +350,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     // Duplicate detection: prevent saving a sequence with identical motion content.
-    // This catches the case where a user saves the same sequence twice — the word
+    // This catches the case where a user saves the same sequence twice - the word
     // matches AND the motion data is byte-for-byte identical. Without this check,
     // you'd end up with two entries in the Variations pane that look identical.
     if (isNewSequence && incomingHash) {
@@ -401,23 +401,23 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Recompute compositional fields (blueSoloProp, redSoloProp, stepPairings,
     // content hashes) from the current steps so Firestore always has fresh
-    // compositional data — even if the sequence was modified via the old
+    // compositional data - even if the sequence was modified via the old
     // steps-based mutation API.
     try {
       const hydrator = getSequenceHydrator();
       libSeq = hydrator.ensureComposition(libSeq) as LibrarySequence;
     } catch {
       // Composition services not available (e.g. during SSR or early boot).
-      // Save without compositional fields — the migration script can backfill.
+      // Save without compositional fields - the migration script can backfill.
     }
 
-    // Write sequence document using setDoc — works offline, queues in Firestore cache
+    // Write sequence document using setDoc - works offline, queues in Firestore cache
     // IMPORTANT: birthday is set once on creation and NEVER changes
     const rawWriteData = {
       ...libSeq,
-      // Steps are derived from compositional fields on read — don't persist.
+      // Steps are derived from compositional fields on read - don't persist.
       // startPosition IS persisted because it's NOT derivable from compositional
-      // fields — without it the 3D viewer has no start pose to show.
+      // fields - without it the 3D viewer has no start pose to show.
       steps: undefined,
       startPosition: libSeq.startPosition ?? undefined,
       startingPosition: undefined,
@@ -433,7 +433,7 @@ export class LibraryRepository implements ILibraryRepository {
         : ((existingDoc.data()?._version as number) || 0) + 1,
     };
 
-    // Recursively strip undefined values — Firestore rejects them in setDoc
+    // Recursively strip undefined values - Firestore rejects them in setDoc
     const writeData = stripUndefined(rawWriteData as Record<string, unknown>);
 
     // Fire-and-forget: setDoc queues locally, syncs when online
@@ -451,7 +451,7 @@ export class LibraryRepository implements ILibraryRepository {
     const newVersion = writeData._version as number;
     this.conflictResolver?.trackLocalWrite(actualSequenceId, newVersion);
 
-    // Update user stats — separate non-blocking write
+    // Update user stats - separate non-blocking write
     // Uses setDoc with merge instead of updateDoc so it works even if the
     // user document hasn't been created yet (race with auth state init).
     if (isNewSequence) {
@@ -527,7 +527,7 @@ export class LibraryRepository implements ILibraryRepository {
           );
         });
     } else if (finalSequence.visibility === "public" && !this.publicIndexSyncer) {
-      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT appear in the public gallery.", { sequenceId: finalSequence.id });
+      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT appear in the public gallery.", { sequenceId: finalSequence.id });
     }
 
     return finalSequence;
@@ -617,7 +617,7 @@ export class LibraryRepository implements ILibraryRepository {
     const userId = this.getUserId();
     const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
 
-    // Read existing from local cache (fast — Firestore serves from cache first)
+    // Read existing from local cache (fast - Firestore serves from cache first)
     const existing = await this.getSequence(sequenceId);
     if (!existing) {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
@@ -655,7 +655,7 @@ export class LibraryRepository implements ILibraryRepository {
     // Handle visibility changes (async, non-blocking)
     if (updates.visibility && updates.visibility !== existing.visibility) {
       if (!this.publicIndexSyncer) {
-        console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null — public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
+        console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null - public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
       } else if (updates.visibility === "public") {
         // Ensure compositional fields are fresh before publishing
         const hydrator = getSequenceHydrator();
@@ -698,7 +698,7 @@ export class LibraryRepository implements ILibraryRepository {
       return; // Already deleted
     }
 
-    // Fire-and-forget — deletes the public index doc so the card disappears
+    // Fire-and-forget - deletes the public index doc so the card disappears
     // from the community gallery on next load. Not awaited because the gallery
     // only refreshes on an explicit reload anyway; awaiting it just slows down
     // the delete. Errors are logged but not rethrown.
@@ -713,12 +713,12 @@ export class LibraryRepository implements ILibraryRepository {
         );
       });
     } else if (existing.visibility === "public" && !this.publicIndexSyncer) {
-      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT be removed from the public gallery.", { sequenceId });
+      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT be removed from the public gallery.", { sequenceId });
     }
 
     // Await the local write so callers can safely reload data immediately after.
     // trackWrite queues to Firestore's local cache first (offline-persistence), so
-    // this resolves quickly — it does NOT block on server acknowledgment.
+    // this resolves quickly - it does NOT block on server acknowledgment.
     await trackWrite(
       () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
       "library"
@@ -818,7 +818,7 @@ export class LibraryRepository implements ILibraryRepository {
     try {
       hydrator = getSequenceHydrator();
     } catch {
-      // Hydrator not available — steps will remain as loaded from Firestore
+      // Hydrator not available - steps will remain as loaded from Firestore
     }
 
     snapshot.forEach((docSnap) => {
@@ -827,7 +827,7 @@ export class LibraryRepository implements ILibraryRepository {
         try {
           seq = hydrator.hydrate(seq) as LibrarySequence;
         } catch {
-          // Hydration failed for this sequence — use raw data
+          // Hydration failed for this sequence - use raw data
         }
       }
       sequences.push(seq);
@@ -964,7 +964,7 @@ export class LibraryRepository implements ILibraryRepository {
                 try {
                   serverSeq = snapshotHydrator.hydrate(serverSeq) as LibrarySequence;
                 } catch {
-                  // Hydration failed — use raw data
+                  // Hydration failed - use raw data
                 }
               }
               sequences.push(serverSeq);
@@ -1429,7 +1429,7 @@ export class LibraryRepository implements ILibraryRepository {
     // getSequence filters out soft-deleted sequences, so we need to fetch
     // the raw document to check the isDeleted flag.
     if (existing) {
-      // Document exists but is NOT soft-deleted — refuse to purge.
+      // Document exists but is NOT soft-deleted - refuse to purge.
       // Use softDeleteSequence first, or deleteSequence for an immediate hard delete.
       throw new LibraryError(
         "Cannot purge a sequence that is not in the recycle bin. Soft-delete it first.",
@@ -1513,7 +1513,7 @@ export class LibraryRepository implements ILibraryRepository {
         batch.delete(doc(firestore, getUserSequencePath(userId, seq.id)));
 
         // Also remove from public index if it was public before soft-deletion.
-        // This is a safety net — softDeleteSequence already removes it, but
+        // This is a safety net - softDeleteSequence already removes it, but
         // the removal may have failed silently.
         if (seq.visibility === "public") {
           batch.delete(doc(firestore, getPublicSequencePath(seq.id)));

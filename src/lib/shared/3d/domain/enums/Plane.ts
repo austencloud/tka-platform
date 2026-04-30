@@ -26,7 +26,7 @@ export const Plane = {
   /** XZ plane - horizontal (top-down view) */
   FLOOR: "floor",
 
-  // ── Fusion planes (L9 — data model only, no UI at L8) ──
+  // ── Fusion planes (L9 - data model only, no UI at L8) ──
 
   /** 45° between Wall and Wheel, tilted right */
   RIGHT_SHIELD: "right-shield",

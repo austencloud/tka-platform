@@ -206,12 +206,11 @@
 
 	.preset-card {
 		display: flex;
-		flex-direction: column;
+		flex-direction: row;
 		align-items: center;
-		justify-content: center;
 		gap: 8px;
-		min-height: 80px;
-		padding: 10px 8px;
+		min-height: var(--min-touch-target, 44px);
+		padding: 8px 12px;
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 10px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -242,13 +241,14 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 44px;
-		height: 44px;
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
 	}
 
 	.dot {
-		width: 14px;
-		height: 14px;
+		width: 10px;
+		height: 10px;
 		border-radius: 50%;
 		flex-shrink: 0;
 	}
@@ -256,17 +256,17 @@
 	.dual-dots {
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: 4px;
 	}
 
 	.dual-dots .dot {
-		width: 12px;
-		height: 12px;
+		width: 8px;
+		height: 8px;
 	}
 
 	.rainbow-dot {
-		width: 40px;
-		height: 40px;
+		width: 18px;
+		height: 18px;
 		border-radius: 50%;
 		background: conic-gradient(red, orange, yellow, green, blue, violet, red);
 		opacity: 0.4;
@@ -276,7 +276,7 @@
 	.preset-name {
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		text-align: center;
+		text-align: left;
 		line-height: 1.2;
 	}
 

@@ -368,7 +368,7 @@ import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSa
     {/if}
   </div>
 
-  <!-- Bottom bar: hand toggle (left) + Complete/New (right) — mobile only -->
+  <!-- Bottom bar: hand toggle (left) + Complete/New (right) - mobile only -->
   <div class="bottom-bar">
     <!-- Hand toggle: single pill with both hands -->
     <button
@@ -487,7 +487,7 @@ import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSa
     display: none;
     justify-content: center;
     align-items: flex-start;
-    /* Position at ~30% from top — midpoint between top dot and grid edge */
+    /* Position at ~30% from top - midpoint between top dot and grid edge */
     padding-top: 2%;
     pointer-events: none;
   }
@@ -668,7 +668,7 @@ import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSa
     outline-offset: 2px;
   }
 
-  /* 4-column grid for turn values — fits any screen width */
+  /* 4-column grid for turn values - fits any screen width */
   .turns-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

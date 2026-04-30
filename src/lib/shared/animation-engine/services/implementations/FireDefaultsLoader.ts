@@ -83,7 +83,7 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 			this.readLocalStorage();
 			this.loaded = true;
 		} catch (error) {
-			// Permission errors are expected before auth completes — fall back silently
+			// Permission errors are expected before auth completes - fall back silently
 			if (!isPermissionError(error)) {
 				console.warn(`${LOG_PREFIX} Firestore load failed, falling back to localStorage:`, error);
 			}
@@ -233,7 +233,7 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 		const validPoints: TipPoint[] = [];
 		for (const point of obj.points) {
 			if (this.isValidTipPoint(point)) {
-				// Only extract dx and dy — strip legacy flameScale if present in stored data
+				// Only extract dx and dy - strip legacy flameScale if present in stored data
 				validPoints.push({
 					dx: point.dx,
 					dy: point.dy,

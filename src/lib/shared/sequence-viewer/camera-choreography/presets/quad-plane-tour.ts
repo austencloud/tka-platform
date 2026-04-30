@@ -1,7 +1,7 @@
 /**
  * Quad-plane tour preset
  *
- * Four loops of the sequence — one per shot:
+ * Four loops of the sequence - one per shot:
  *   loop 0: Wall
  *   loop 1: Wheel
  *   loop 2: Floor
@@ -31,7 +31,7 @@ export const quadPlaneTourPreset: CameraPreset = {
     let orbitUnsubTick: (() => void) | null = null;
 
     function snapToLoop(index: number, withTransition: boolean) {
-      // Tear down previous orbit tick if any — only the final loop
+      // Tear down previous orbit tick if any - only the final loop
       // animates per-frame; the plane shots are static until the next
       // boundary.
       if (orbitUnsubTick) {

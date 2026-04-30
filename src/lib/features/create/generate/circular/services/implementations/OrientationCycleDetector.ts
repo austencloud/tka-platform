@@ -65,7 +65,7 @@ export class OrientationCycleDetector {
     for (let rep = 1; rep <= 4; rep++) {
       // Step through each beat, recalculating orientations from the accumulated
       // current orientation. We can't just re-read stored endOrientation because
-      // those values are fixed from the original pass — on subsequent passes the
+      // those values are fixed from the original pass - on subsequent passes the
       // start orientations differ, producing different end orientations.
       for (const step of steps) {
         const blueMotion = step.motions.blue;

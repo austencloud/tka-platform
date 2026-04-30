@@ -52,7 +52,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
 
   let expanded = $state((() => initiallyExpanded)());
 
-  // Resolve DI services once — these are cheap singletons.
+  // Resolve DI services once - these are cheap singletons.
   const handPathBuilder = getHandPathDataBuilder() as IHandPathDataBuilder;
   const collisionResolver = getArrowCollisionResolver() as IArrowCollisionResolver;
 
@@ -60,7 +60,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
    * Converts PictographData[] (from HandPathDataBuilder) into StepData[].
    *
    * StepData extends PictographData with beat-context fields. The hand path
-   * builder only knows about spatial data — it doesn't set stepNumber, duration,
+   * builder only knows about spatial data - it doesn't set stepNumber, duration,
    * or reversal flags. We add those here so the render pipeline accepts the beats
    * as a valid sequence.
    */
@@ -80,7 +80,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
    *
    * The resulting sequence has purpose-built PictographData beats (HAND props,
    * float arrows, no TKA glyphs) derived from the raw hand path trace. It does
-   * NOT look up sequence data from Firestore — the beats ARE the data.
+   * NOT look up sequence data from Firestore - the beats ARE the data.
    *
    * The name is set to the handPathId so the thumbnail cache key is unique per
    * hand path pattern. These thumbnails are not cloud-cached (handPathMode is a
@@ -114,7 +114,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
         try {
           seen.set(hpId, buildHandPathSequence(hpId, seq));
         } catch {
-          // If the hand path ID is malformed, skip it — don't break the whole section.
+          // If the hand path ID is malformed, skip it - don't break the whole section.
         }
       }
     }
@@ -150,7 +150,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
 
   // ── Lazy card rendering via IntersectionObserver ──
   // Cards render as empty placeholders until they scroll into view (within 400px).
-  // Once visible, they stay mounted — no unloading on scroll-out.
+  // Once visible, they stay mounted - no unloading on scroll-out.
 
   let lazyVisible = $state<Set<string>>(new Set());
 
@@ -176,7 +176,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
   /**
    * Svelte action: detect the rendered image's natural aspect ratio and
    * toggle the card between portrait (5:7) and landscape (7:5).
-   * Sequences wider than 1.3:1 get landscape orientation — same logic
+   * Sequences wider than 1.3:1 get landscape orientation - same logic
    * as the Card Designer.
    */
   function detectOrientation(node: HTMLElement) {
@@ -232,7 +232,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
   {/if}
 
   {#if expanded}
-    <!-- Hand path cards — each backed by purpose-built PictographData (HAND props, float arrows) -->
+    <!-- Hand path cards - each backed by purpose-built PictographData (HAND props, float arrows) -->
     {#if handPathSequences.length > 0}
       <span class="section-label">
         {handPathSequences.length} hand {handPathSequences.length === 1 ? "path" : "paths"}
@@ -362,7 +362,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
     padding: 0 var(--spacing-xs, 4px);
   }
 
-  /* Playing card grid — cards at 5:7 portrait ratio */
+  /* Playing card grid - cards at 5:7 portrait ratio */
   .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

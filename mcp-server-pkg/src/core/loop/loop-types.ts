@@ -51,10 +51,10 @@ export enum LOOPType {
 }
 
 /**
- * Slice Size
+ * Period
  * Determines how the circle is divided for rotation
  */
-export enum SliceSize {
+export enum Period {
   /** Half rotation - 180° */
   HALVED = "halved",
 

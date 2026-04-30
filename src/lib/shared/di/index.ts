@@ -7,7 +7,7 @@
  *   1. +layout.svelte dynamically imports this module, triggering
  *      side-effect registrations (e.g. ShortCodeManager configuration).
  *   2. The `container` export is retained for the "di-container" context
- *      provider in +layout.svelte (legacy compatibility — will be removed
+ *      provider in +layout.svelte (legacy compatibility - will be removed
  *      once all getContext("di-container") call sites are confirmed gone).
  *
  * To access a service, import its getter directly:
@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
 }
 
 // ============================================================================
-// LEGACY CONTAINER SHIM (empty — no services registered)
+// LEGACY CONTAINER SHIM (empty - no services registered)
 // ============================================================================
 export const container = (typeof window !== 'undefined' ? { items: {} } : null) as unknown as
   { items: Record<string, unknown> };
@@ -48,7 +48,7 @@ export const container = (typeof window !== 'undefined' ? { items: {} } : null) 
 if (typeof window !== 'undefined' && isBootProfileVerbose()) {
   const totalDI = performance.now() - _diStart;
   console.log(
-    `%c DI bootstrap — ${Math.round(totalDI)}ms`,
+    `%c DI bootstrap - ${Math.round(totalDI)}ms`,
     "font-size: 13px; font-weight: bold; color: #81c784;"
   );
 }
@@ -63,7 +63,7 @@ if (typeof window !== 'undefined') {
       );
     }
   } catch {
-    // ImageComposer not yet initialized — QR injection will happen on first use
+    // ImageComposer not yet initialized - QR injection will happen on first use
   }
 }
 

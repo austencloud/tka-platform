@@ -48,7 +48,7 @@
     staffLength?: number;
     /** Current animation step index (fractional). Used by Echo (GhostStaff3D)
      *  to detect beat onsets and age phantoms. Default 0 when a parent
-     *  hasn't plumbed it yet — Echo stays silent rather than capturing a
+     *  hasn't plumbed it yet - Echo stays silent rather than capturing a
      *  lone phantom at beat 0 every frame. */
     currentStep?: number;
   }
@@ -142,7 +142,7 @@
    * Pick the phantom color for the Echo effect. `whichProp` is "blue" or "red".
    * - solid: params.color
    * - rainbow: rotates hue by beat index (currentStep / interval)
-   * - gradient: not implemented in 3D (deferred — per-phantom age is known
+   * - gradient: not implemented in 3D (deferred - per-phantom age is known
    *   inside GhostStaff3D but the current mount passes a single color down).
    *   Falls back to solid color.
    * - prop-matched: uses the unified trail color of the matching prop.
@@ -171,7 +171,7 @@
     if (sparkles3D.colorMode === "palette" && sparkles3D.palette.length > 0) {
       return sparkles3D.palette[i % sparkles3D.palette.length]!;
     }
-    // rainbow mode — rotate hue by emitter index
+    // rainbow mode - rotate hue by emitter index
     const hue = (Date.now() * 0.05 + i * 90) % 360;
     return `hsl(${hue}, 80%, 60%)`;
   }
@@ -473,7 +473,7 @@
 {/if}
 
 <!-- =============================================================================
-     Unified Echo intent (Phase 1d revised) — beat-onset phantoms of each
+     Unified Echo intent (Phase 1d revised) - beat-onset phantoms of each
      prop, sourced from the unified intent layer via resolveEcho3D.
      Lives alongside the legacy PropMotionEffects mount above; Phase 3
      retires the legacy path.
@@ -505,7 +505,7 @@
 
 <!-- =============================================================================
      Bloom: per-tip radial halation sprites. Unlike echo/trails, bloom runs
-     even when paused — pulse modulation is time-based, not step-based.
+     even when paused - pulse modulation is time-based, not step-based.
      4 sprites total: blueA, blueB, redA, redB.
      ============================================================================= -->
 {#if bloomEnabled && bloomIntent}

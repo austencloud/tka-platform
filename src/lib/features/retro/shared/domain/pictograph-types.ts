@@ -1,7 +1,7 @@
 /**
  * Shared pictograph data model for all retro eras.
  *
- * Uses the real TKA domain types — every era has full notation capability.
+ * Uses the real TKA domain types - every era has full notation capability.
  * Each era implements its own RENDERER for this data (ASCII, pixel art, vector, etc.).
  */
 
@@ -14,7 +14,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
-// Re-export for convenience — consumers can import from here
+// Re-export for convenience - consumers can import from here
 export { GridLocation, GridMode, MotionType, Orientation, MotionColor, RotationDirection };
 export type { Letter };
 

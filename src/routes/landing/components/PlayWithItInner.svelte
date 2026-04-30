@@ -128,10 +128,10 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   // Ephemeral: no localStorage persistence, no global dark-class sync.
   const visibilityManager = new AnimationVisibilityStateManager({ ephemeral: true });
 
-  // BPM state — local to this landing section
+  // BPM state - local to this landing section
   let bpm = $state(60);
 
-  // Effort state — cycles through available effort presets
+  // Effort state - cycles through available effort presets
   let activeEffort = $state<EffortPresetId>("linear");
   const EFFORT_CYCLE: EffortPresetId[] = EFFORTS.map((e) => e.id);
   const EFFORT_COLORS: Record<EffortPresetId, string> = Object.fromEntries(
@@ -224,7 +224,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       }
     }
 
-    // No usable motion data — fall back to stored field
+    // No usable motion data - fall back to stored field
     return seq.gridMode ?? GridMode.DIAMOND;
   });
   let currentStepNumber = $derived(Math.floor(animationState.currentStep));

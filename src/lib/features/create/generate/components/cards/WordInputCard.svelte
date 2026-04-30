@@ -49,7 +49,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
 
   function handleFocus(event: FocusEvent) {
     if (isMobile && onOpenOverlay) {
-      // Prevent the inline input from actually focusing on mobile — open the overlay instead
+      // Prevent the inline input from actually focusing on mobile - open the overlay instead
       (event.target as HTMLInputElement).blur();
       onOpenOverlay();
     }

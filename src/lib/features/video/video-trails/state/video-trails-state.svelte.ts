@@ -18,7 +18,7 @@ export function createVideoTrailsState(
   corrector: IDetectionCorrector,
   tipAdapter: IVideoTipAdapter,
 ) {
-  // Sub-navigation — persisted to sessionStorage so HMR doesn't bounce you back
+  // Sub-navigation - persisted to sessionStorage so HMR doesn't bounce you back
   const ACTIVE_VIEW_KEY = "video-trails-active-view";
   const storedView = (typeof sessionStorage !== "undefined"
     ? sessionStorage.getItem(ACTIVE_VIEW_KEY) as VideoTrailsView | null
@@ -26,7 +26,7 @@ export function createVideoTrailsState(
   let activeView = $state<VideoTrailsView>(storedView);
 
   // ---------------------------------------------------------------------------
-  // Session persistence helpers — survive HMR and soft reloads
+  // Session persistence helpers - survive HMR and soft reloads
   // ---------------------------------------------------------------------------
   const SESSION_PREFIX = "video-trails-";
 
@@ -45,7 +45,7 @@ export function createVideoTrailsState(
   let source = $state<VideoSource | null>(null);
   let sourceMode = $state<"file" | "camera" | "sequence">("file");
 
-  // Playback — restore currentFrame from session so HMR doesn't jump to 0
+  // Playback - restore currentFrame from session so HMR doesn't jump to 0
   let isPlaying = $state(false);
   let currentFrame = $state(sessionLoad<number>("currentFrame") ?? 0);
   let playbackSpeed = $state(1);
@@ -59,7 +59,7 @@ export function createVideoTrailsState(
   );
   let isDetecting = $state(false);
 
-  // Corrections — restored from session so placed points survive HMR
+  // Corrections - restored from session so placed points survive HMR
   let corrections = $state<Record<number, EndpointCorrection[]>>(
     sessionLoad<Record<number, EndpointCorrection[]>>("corrections") ?? {},
   );

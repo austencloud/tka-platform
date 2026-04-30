@@ -1,39 +1,61 @@
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { auth } from "$lib/shared/auth/firebase";
-
-// Desktop OAuth client ID (installed/native app type) from Google Cloud Console:
-// https://console.cloud.google.com/apis/credentials?project=the-kinetic-alphabet
-// Distinct from the web client ID used for browser-based One Tap sign-in.
-const CLIENT_ID =
-	"664225703033-i9had4ijqua22fge706s7ugtn1isjhs5.apps.googleusercontent.com";
+import { GOOGLE_CLIENT_ID } from "$lib/shared/auth/config/google-oauth";
 
 export async function signInWithDesktopOAuth(): Promise<void> {
+	const { invoke } = await import("@tauri-apps/api/core");
 	const { open } = await import("@tauri-apps/plugin-shell");
+	const { listen } = await import("@tauri-apps/api/event");
 
-	const redirectUri = "http://localhost:9876/callback";
-	const scope = "email profile";
+	console.log("[DesktopOAuth] Starting OAuth server...");
+	const port: number = await invoke("start_oauth_server");
+	console.log("[DesktopOAuth] Server started on port", port);
+
+	const redirectUri = `http://127.0.0.1:${port}`;
+	const nonce = crypto.randomUUID();
+
 	const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-	authUrl.searchParams.set("client_id", CLIENT_ID);
+	authUrl.searchParams.set("client_id", GOOGLE_CLIENT_ID);
 	authUrl.searchParams.set("redirect_uri", redirectUri);
-	authUrl.searchParams.set("response_type", "token");
-	authUrl.searchParams.set("scope", scope);
+	authUrl.searchParams.set("response_type", "id_token");
+	authUrl.searchParams.set("scope", "openid email profile");
+	authUrl.searchParams.set("nonce", nonce);
 	authUrl.searchParams.set("prompt", "select_account");
+
+	let resolveToken: (token: string) => void;
+	let rejectToken: (err: Error) => void;
+	const tokenPromise = new Promise<string>((resolve, reject) => {
+		resolveToken = resolve;
+		rejectToken = reject;
+	});
+
+	const timeout = setTimeout(() => {
+		rejectToken!(new Error("OAuth timed out after 2 minutes"));
+	}, 120_000);
+
+	console.log("[DesktopOAuth] Registering event listener...");
+	const unlisten = await listen<{ id_token: string }>(
+		"oauth-callback",
+		(event) => {
+			clearTimeout(timeout);
+			console.log("[DesktopOAuth] Received oauth-callback event");
+			resolveToken!(event.payload.id_token);
+		}
+	);
+	console.log("[DesktopOAuth] Event listener registered, opening browser...");
 
 	await open(authUrl.toString());
 
-	const { listen } = await import("@tauri-apps/api/event");
-	return new Promise((resolve, reject) => {
-		const timeout = setTimeout(() => reject(new Error("OAuth timed out")), 120_000);
-
-		listen<{ id_token: string }>("oauth-callback", async (event) => {
-			clearTimeout(timeout);
-			try {
-				const credential = GoogleAuthProvider.credential(event.payload.id_token);
-				await signInWithCredential(auth, credential);
-				resolve();
-			} catch (err) {
-				reject(err);
-			}
-		});
-	});
+	try {
+		const idToken = await tokenPromise;
+		console.log("[DesktopOAuth] Got token, signing in with Firebase...");
+		const credential = GoogleAuthProvider.credential(idToken);
+		await signInWithCredential(auth, credential);
+		console.log("[DesktopOAuth] Firebase sign-in successful!");
+	} catch (err) {
+		console.error("[DesktopOAuth] Sign-in failed:", err);
+		throw err;
+	} finally {
+		unlisten();
+	}
 }

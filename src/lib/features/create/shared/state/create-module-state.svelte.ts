@@ -106,7 +106,7 @@ export function createCreateModuleState(
       // ARCHIVED: "assemble" case removed (Feb 2026)
       case "generate":
       case "spell": {
-        // Spell mode now unified into Generate tab — route to generator state
+        // Spell mode now unified into Generate tab - route to generator state
         return _generatorTabState?.sequenceState || generatorFallbackState;
       }
       case "assemble": {
@@ -304,7 +304,7 @@ export function createCreateModuleState(
     },
     undo: () => {
       // Assemble tab uses per-step undo (builderState.undoStep), not snapshot-based undo.
-      // undoStep() is async (plays reverse animation) but callers don't need to await it —
+      // undoStep() is async (plays reverse animation) but callers don't need to await it -
       // the animation phase blocks further input until it completes.
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
@@ -410,7 +410,7 @@ export function createCreateModuleState(
     set generatorTabState(value: GeneratorTabState | null) {
       _generatorTabState = value;
     },
-    // REMOVED: spellTabState — Spell mode now unified into Generate tab (Feb 2026)
+    // REMOVED: spellTabState - Spell mode now unified into Generate tab (Feb 2026)
     // Spell functionality accessible via Generate tab's Freeform/Spell mode toggle
     // Kept as null getter for backwards compat with any remaining references
     get spellTabState(): null {

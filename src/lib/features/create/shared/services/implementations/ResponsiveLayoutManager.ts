@@ -56,7 +56,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
     const viewportWidth = this.getViewportWidth();
 
     // Hard gate: narrow viewports are NEVER side-by-side, regardless of what
-    // the device detector reports. This is the 10-year rule — viewport width
+    // the device detector reports. This is the 10-year rule - viewport width
     // is the only reliable signal. Device detection APIs lie (emulators,
     // hybrid devices, future form factors).
     if (viewportWidth < BREAKPOINTS.MOBILE) {

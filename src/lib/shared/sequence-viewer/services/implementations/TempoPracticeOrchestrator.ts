@@ -77,7 +77,7 @@ export class TempoPracticeOrchestrator implements ITempoPracticeOrchestrator {
   adjustBpm(newBpm: number): void {
     if (!this.active) return;
     this.currentBpm = Math.min(Math.max(newBpm, 1), this.config.maxBpm);
-    // Reset round counter — user changed the tempo, start fresh at this speed
+    // Reset round counter - user changed the tempo, start fresh at this speed
     this.currentRound = 0;
   }
 

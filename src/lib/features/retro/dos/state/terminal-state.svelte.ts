@@ -3,7 +3,7 @@
  *
  * Svelte 5 runes-based reactive state for the DOS terminal emulator.
  * Manages the output buffer, input line, cursor, and current mode.
- * This is a plain reactive container — mutation logic for commands,
+ * This is a plain reactive container - mutation logic for commands,
  * boot sequence, and SCRIBE modes lives in dedicated services.
  *
  * Domain: Retro DOS Terminal
@@ -14,7 +14,7 @@ import type { TerminalLine, TerminalMode, ScribeMode, DosColor } from "../domain
 const MAX_BUFFER_LINES = 500;
 
 class TerminalState {
-	/** Output buffer — array of rendered HTML lines */
+	/** Output buffer - array of rendered HTML lines */
 	lines = $state<TerminalLine[]>([]);
 
 	/** Current input text (what the user is typing) */
@@ -42,14 +42,14 @@ class TerminalState {
 	crtEffects = $state(true);
 
 	/**
-	 * Input handler callback — set by app components to intercept user input.
+	 * Input handler callback - set by app components to intercept user input.
 	 * When set, DosTerminal routes submitted input here instead of the default
 	 * command parser. The handler should set this back to null when done.
 	 */
 	inputHandler = $state<((input: string) => void) | null>(null);
 
 	/**
-	 * Escape handler callback — set by app components that need custom ESC behavior.
+	 * Escape handler callback - set by app components that need custom ESC behavior.
 	 * When set, DosTerminal calls this on ESC instead of the default "return to menu".
 	 * Used by ScribeTutorial for multi-level ESC (lesson -> index -> menu).
 	 */

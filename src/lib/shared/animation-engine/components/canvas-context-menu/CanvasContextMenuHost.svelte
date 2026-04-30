@@ -1,5 +1,5 @@
 <!--
-  CanvasContextMenuHost — Orchestrator for the canvas right-click context menu.
+  CanvasContextMenuHost - Orchestrator for the canvas right-click context menu.
   Quick-access submenus for Effects, Efforts, Path Shape.
 -->
 <script lang="ts">
@@ -36,7 +36,7 @@
   try {
     viewer3DState = getViewer3DContext();
   } catch {
-    // Context not available — not in a sequence viewer
+    // Context not available - not in a sequence viewer
   }
 
   let menuState: ContextMenuState = $state({ open: false });

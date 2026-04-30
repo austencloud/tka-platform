@@ -6,7 +6,7 @@
  * module + action), it increments the count on the existing document rather than
  * creating duplicates. The developer reviews patterns later; the user never sees this.
  *
- * The entire report() method is wrapped in try/catch — telemetry failures must
+ * The entire report() method is wrapped in try/catch - telemetry failures must
  * never propagate and break the app.
  */
 

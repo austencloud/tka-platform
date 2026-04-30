@@ -270,7 +270,7 @@
 		pointer-events: none;
 	}
 
-	/* Content container — padding sized so total content height (5+18+4+21+5=53px)
+	/* Content container - padding sized so total content height (5+18+4+21+5=53px)
 	   fits within the chip's border-box content area (56px - ~3px border = ~53px).
 	   This keeps the chip at exactly 56px, matching the placeholder. */
 	.chip-content {

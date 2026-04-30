@@ -61,7 +61,7 @@
 
     requestAnimationFrame(() => {
       if (createTutorialState.currentStep === "ready") {
-        // Last step — complete the tutorial
+        // Last step - complete the tutorial
         onComplete();
         return;
       }
