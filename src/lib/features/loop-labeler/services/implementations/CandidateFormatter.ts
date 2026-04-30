@@ -4,10 +4,7 @@ import type {
 } from "../contracts/ICandidateFormatter";
 import type { StepPairRelationship } from "../contracts/IStepPairAnalyzer";
 import type { ComponentId } from "../../domain/constants/loop-components";
-import type {
-  CandidateDesignation,
-  TransformationIntervals,
-} from "../../domain/models/label-models";
+import type { CandidateDesignation } from "../../domain/models/label-models";
 import type {
   CandidateInfo,
   InternalStepPair,
@@ -131,6 +128,7 @@ export class CandidateFormatter implements ICandidateFormatter {
     return { primary: [primary], all: allUnique };
   }
 
+  /** @deprecated Pipeline Stage 6 (build-candidates) supersedes this for uniform detection. Retained for modular fallback path. */
   deriveComponentsFromPattern(pattern: string): ComponentId[] {
     const components: ComponentId[] = [];
     const upper = pattern.toUpperCase();
@@ -159,172 +157,6 @@ export class CandidateFormatter implements ICandidateFormatter {
     }
 
     return components;
-  }
-
-  extractRotationDirection(pattern: string): "cw" | "ccw" | null {
-    const upper = pattern.toUpperCase();
-    if (upper.includes("CCW")) return "ccw";
-    if (upper.includes("CW")) return "cw";
-    return null;
-  }
-
-  formatCandidateDescription(
-    transformation: string,
-    _direction: "cw" | "ccw" | null
-  ): string {
-    const upper = transformation.toUpperCase();
-
-    // Triple compound
-    if (
-      upper.includes("ROTATED_90") &&
-      upper.includes("SWAPPED") &&
-      upper.includes("INVERTED")
-    ) {
-      const dir = upper.includes("CCW")
-        ? "CCW"
-        : upper.includes("CW")
-          ? "CW"
-          : "";
-      return `Rotated 90° ${dir} + Swapped + Inverted`;
-    }
-    if (
-      upper.includes("ROTATED_180") &&
-      upper.includes("SWAPPED") &&
-      upper.includes("INVERTED")
-    ) {
-      return "Rotated 180° + Swapped + Inverted";
-    }
-
-    // Double compound: rotation + invert
-    if (
-      upper.includes("ROTATED_90") &&
-      upper.includes("INVERTED") &&
-      !upper.includes("SWAPPED")
-    ) {
-      const dir = upper.includes("CCW")
-        ? "CCW"
-        : upper.includes("CW")
-          ? "CW"
-          : "";
-      return `Rotated 90° ${dir} + Inverted`;
-    }
-    if (
-      upper.includes("ROTATED_180") &&
-      upper.includes("INVERTED") &&
-      !upper.includes("SWAPPED")
-    ) {
-      return "Rotated 180° + Inverted";
-    }
-
-    // Double compound: rotation + swap
-    if (upper.includes("ROTATED_90") && upper.includes("SWAPPED")) {
-      const dir = upper.includes("CCW")
-        ? "CCW"
-        : upper.includes("CW")
-          ? "CW"
-          : "";
-      return `Rotated 90° ${dir} + Swapped`;
-    }
-    if (upper.includes("ROTATED_180") && upper.includes("SWAPPED")) {
-      return "Rotated 180° + Swapped";
-    }
-
-    // Pure rotations
-    if (upper.includes("ROTATED_90")) {
-      const dir = upper.includes("CCW")
-        ? "CCW"
-        : upper.includes("CW")
-          ? "CW"
-          : "";
-      return `Rotated 90° ${dir}`;
-    }
-    if (upper.includes("ROTATED_180")) {
-      return "Rotated 180°";
-    }
-
-    // Other patterns
-    if (
-      upper.includes("MIRRORED") &&
-      upper.includes("SWAPPED") &&
-      upper.includes("INVERTED")
-    )
-      return "Mirrored + Swapped + Inverted";
-    if (upper.includes("MIRRORED") && upper.includes("SWAPPED"))
-      return "Mirrored + Swapped";
-    if (upper.includes("MIRRORED") && upper.includes("INVERTED"))
-      return "Mirrored + Inverted";
-    if (upper.includes("MIRRORED")) return "Mirrored";
-    if (upper.includes("FLIPPED") && upper.includes("INVERTED"))
-      return "Flipped + Inverted";
-    if (upper.includes("FLIPPED")) return "Flipped";
-    if (upper.includes("SWAPPED") && upper.includes("INVERTED"))
-      return "Swapped + Inverted";
-    if (upper.includes("SWAPPED")) return "Swapped";
-    if (upper.includes("INVERTED")) return "Inverted";
-    if (upper.includes("REPEATED") || upper === "SAME") return "Repeated";
-
-    return transformation.replace(/_/g, " ");
-  }
-
-  buildCandidateDesignations(
-    allCommon: string[],
-    interval: 2 | 4,
-    rotationDirection: "cw" | "ccw" | null
-  ): CandidateInfo[] {
-    const candidates: CandidateInfo[] = [];
-    const seen = new Set<string>();
-
-    for (const transformation of allCommon) {
-      const components = this.deriveComponentsFromPattern(transformation);
-      if (components.length === 0) continue;
-
-      const direction =
-        this.extractRotationDirection(transformation) || rotationDirection;
-      const key = components.sort().join("+") + "|" + (direction || "none");
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      const intervals: TransformationIntervals = {};
-      if (components.includes("rotated")) intervals.rotation = interval;
-      if (components.includes("swapped")) intervals.swap = interval;
-      if (components.includes("mirrored")) intervals.mirror = interval;
-      if (components.includes("inverted")) intervals.invert = interval;
-
-      // For "repeated", use a special label
-      if (components.includes("repeated") && components.length === 1) {
-        candidates.push({
-          transformation,
-          components: components as ComponentId[],
-          intervals: {},
-          rotationDirection: null,
-          label: `repeated @${interval === 2 ? "1/2" : "1/4"}`,
-          description: "Repeated (same motion)",
-        });
-        continue;
-      }
-
-      let label = components.join("+");
-      // Only show rotation direction for 90° rotations
-      if (direction && interval === 4) label += ` (${direction.toUpperCase()})`;
-      if (interval === 4) label += " @1/4";
-      else if (interval === 2) label += " @1/2";
-
-      const effectiveDirection = interval === 4 ? direction : null;
-
-      candidates.push({
-        transformation,
-        components,
-        intervals,
-        rotationDirection: effectiveDirection,
-        label,
-        description: this.formatCandidateDescription(
-          transformation,
-          effectiveDirection
-        ),
-      });
-    }
-
-    return candidates;
   }
 
   toCandidateDesignation(info: CandidateInfo): CandidateDesignation {
