@@ -6,6 +6,7 @@
 import type { Achievement } from "$lib/shared/gamification/domain/models/achievement-models";
 import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { PinnedItem } from "./pinned-item";
 
 /**
  * Base User Profile
@@ -42,6 +43,9 @@ export interface UserProfile {
 
   // Profile accent color (hex, e.g. "#8b5cf6") for avatar ring and cards
   profileColor?: string;
+
+  /** Pinned showcase items (1-6, any content type) */
+  pinnedItems?: PinnedItem[];
 
   // Admin-related fields
   role?: UserRole;
