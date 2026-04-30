@@ -274,36 +274,70 @@ export class LOOPDetector implements ILOOPDetector {
     const allQuarteredCommon =
       this.analysisService.findAllCommonTransformations(quarteredStepPairs);
 
-    // Filter to only 90° rotation patterns
-    let rotation90Patterns = allQuarteredCommon.filter(
+    // Extract all components found at quartered level (rotation, mirror,
+    // swap, flip, invert, etc.) instead of filtering to rotation-only.
+    const quarteredComponents: ComponentId[] = [];
+    let hasRotation90 = false;
+
+    for (const t of allQuarteredCommon) {
+      if (
+        t.includes("rotated_90") ||
+        t.includes("90_ccw") ||
+        t.includes("90_cw")
+      ) {
+        hasRotation90 = true;
+      }
+      const derived = this.formattingService.deriveComponentsFromPattern(t);
+      for (const c of derived) {
+        if (!quarteredComponents.includes(c)) quarteredComponents.push(c);
+      }
+    }
+
+    // Guard: rotation-specific motion consistency check.
+    // If 90° rotation detected but motions differ between quartered pairs,
+    // drop rotation from quartered components (false positive). Example:
+    // EΨDΨDΨEΨ has 90° position rotation between beats (1,3) but beat 1
+    // is anti and beat 3 is pro — the motions change, so the rotation
+    // component is spurious. Other components found at quartered level survive.
+    if (hasRotation90) {
+      const quarterLength = Math.floor(steps.length / 4);
+      if (
+        quarterLength > 0 &&
+        !this.quarteredMotionsConsistent(steps, quarterLength)
+      ) {
+        const rotIdx = quarteredComponents.indexOf("rotated");
+        if (rotIdx >= 0) quarteredComponents.splice(rotIdx, 1);
+        hasRotation90 = false;
+      }
+    }
+
+    // Check for compound patterns if no quartered components found
+    let compoundPattern: CompoundPattern | undefined;
+    const halvedOnlyTransformations: string[] = [];
+    // Keep the raw rotation patterns for compound detection / candidate building
+    const rotation90Patterns = allQuarteredCommon.filter(
       (t) =>
         t.includes("rotated_90") || t.includes("90_ccw") || t.includes("90_cw")
     );
 
-    // Guard: if 90° position rotation exists but the motion types differ
-    // between quartered pairs, this isn't a true quartered loop. Example:
-    // EΨDΨDΨEΨ has 90° position rotation between beats (1,3) but beat 1
-    // is anti and beat 3 is pro — the motions change, so the fundamental
-    // period is 2 (halved), not 4. Fall through to halved detection.
-    if (rotation90Patterns.length > 0) {
-      const quarterLength = Math.floor(steps.length / 4);
-      if (quarterLength > 0 && !this.quarteredMotionsConsistent(steps, quarterLength)) {
-        rotation90Patterns = [];
-      }
-    }
-
-    // Check for compound patterns if no common 90° pattern found
-    let compoundPattern: CompoundPattern | undefined;
-    const halvedOnlyTransformations: string[] = [];
-
-    if (rotation90Patterns.length === 0) {
+    if (quarteredComponents.length === 0) {
       const compoundResult = this.detectCompoundPattern(
         quarteredStepPairs,
         halvedStepPairs,
         rotationDirection
       );
       if (compoundResult) {
-        rotation90Patterns = compoundResult.rotation90Patterns;
+        // Compound detection found rotation patterns — fold them in
+        for (const t of compoundResult.rotation90Patterns) {
+          const derived =
+            this.formattingService.deriveComponentsFromPattern(t);
+          for (const c of derived) {
+            if (!quarteredComponents.includes(c)) quarteredComponents.push(c);
+          }
+        }
+        if (compoundResult.rotation90Patterns.length > 0) {
+          hasRotation90 = true;
+        }
         compoundPattern = compoundResult.compoundPattern;
         halvedOnlyTransformations.push(
           ...compoundResult.halvedOnlyTransformations
@@ -314,7 +348,7 @@ export class LOOPDetector implements ILOOPDetector {
     // Try modular detection if no uniform pattern found — but only if
     // motions are consistent across quarters (the same guard that rejects
     // false-positive uniform quartered also applies to modular quartered).
-    if (rotation90Patterns.length === 0) {
+    if (quarteredComponents.length === 0) {
       const qLen = Math.floor(steps.length / 4);
       if (qLen > 0 && this.quarteredMotionsConsistent(steps, qLen)) {
         const modularResult = this.detectModularQuarteredPattern(
@@ -339,14 +373,14 @@ export class LOOPDetector implements ILOOPDetector {
           rotationDirection
         )
       : this.formattingService.buildCandidateDesignations(
-          rotation90Patterns,
+          allQuarteredCommon,
           4,
           rotationDirection
         );
 
-    const primaryPattern = rotation90Patterns[0] ?? "";
-    const derivedComponents =
-      this.formattingService.deriveComponentsFromPattern(primaryPattern);
+    // Use quarteredComponents directly — already extracted from all
+    // quartered-common patterns above (not just the primary pattern).
+    const derivedComponents = [...quarteredComponents];
 
     // Add halved-only components for compound patterns
     if (compoundPattern) {
@@ -361,21 +395,30 @@ export class LOOPDetector implements ILOOPDetector {
       return null;
     }
 
+    // Derive rotation direction from the first rotation pattern (if any),
+    // falling back to the caller-supplied direction.
+    const firstRotationPattern = allQuarteredCommon.find(
+      (t) =>
+        t.includes("rotated_90") || t.includes("90_ccw") || t.includes("90_cw")
+    );
     const derivedDirection =
-      this.formattingService.extractRotationDirection(primaryPattern) ||
-      rotationDirection;
+      (firstRotationPattern
+        ? this.formattingService.extractRotationDirection(firstRotationPattern)
+        : null) || rotationDirection;
     const derivedIntervals = this.buildQuarteredIntervals(
       derivedComponents,
       compoundPattern?.halvedTransformations
     );
 
-    // Build loopType
+    // Build loopType — append _90 suffix only when rotation is present
+    // (the _90 indicates period-4 rotation; non-rotation quartered
+    // components like swap/mirror don't need it).
     const loopType = compoundPattern
       ? this.buildCompoundLoopType(
           derivedDirection,
           compoundPattern.halvedTransformations
         )
-      : derivedComponents.sort().join("_") + "_90";
+      : derivedComponents.sort().join("_") + (hasRotation90 ? "_90" : "");
 
     // Combine beat pairs for compound patterns
     const combinedBeatPairs = compoundPattern
