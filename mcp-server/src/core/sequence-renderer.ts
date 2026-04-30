@@ -54,6 +54,8 @@ export interface SequenceRenderOptions {
   turnAllocation?: TurnAllocation;
   // LOOP components for the pie chart glyph (top-right corner)
   loopComponents?: LOOPComponent[];
+  // LOOP period as integer (2 = halved, 4 = quartered) — rendered as badge on each icon
+  period?: number;
   // Show reversal indicators (direction change dots on left edge)
   showReversals?: boolean;
   // LOOP sequence info - which beats are derived (transformed) vs seed (original)
@@ -257,7 +259,8 @@ export async function renderSequenceToImage(
       opts.showDifficulty ?? true,
       opts.darkMode,
       letterStyles.length > 0 ? letterStyles : undefined,
-      opts.loopComponents // Pass LOOP components for glyph
+      opts.loopComponents,
+      opts.period
     );
   }
 

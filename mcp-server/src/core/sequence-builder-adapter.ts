@@ -33,7 +33,7 @@ interface MotionData {
   startOrientation?: string;
   endOrientation?: string;
   turns?: number | "fl";
-  plane?: "wall" | "wheel" | "overhead";
+  plane?: string;
 }
 
 export interface SequenceStep {
@@ -43,7 +43,6 @@ export interface SequenceStep {
   endPosition: string;
   blueMotion: MotionData;
   redMotion: MotionData;
-  stepNumber?: number;
   /** Beat index in the sequence (matches stepNumber for MCP adapter) */
   stepNumber: number;
   isBridge?: boolean;
@@ -157,9 +156,8 @@ function pickRandom<T>(items: T[]): T | null {
   return items[Math.floor(Math.random() * items.length)] ?? null;
 }
 
-/** Create a SequenceStep with stepNumber = stepNumber */
-function makeStep(fields: Omit<SequenceStep, "stepNumber">): SequenceStep {
-  return { ...fields, stepNumber: fields.stepNumber ?? 0 };
+function makeStep(fields: SequenceStep): SequenceStep {
+  return fields;
 }
 
 function attemptSequenceBuild(
@@ -765,4 +763,41 @@ function normalizeRotationDirection(rotDir: string): string {
   if (lower === "cw" || lower === "clockwise") return "cw";
   if (lower === "ccw" || lower === "counterclockwise" || lower === "counter-clockwise") return "ccw";
   return lower;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Type bridge: MCP SequenceStep ↔ engine Step
+//
+// The engine's Step type uses `motions: { blue, red }` while MCP's SequenceStep
+// uses flat `blueMotion`/`redMotion`. These converters bridge the two at
+// function-call boundaries.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mcpStepsToEngineSteps(steps: SequenceStep[]): any[] {
+  return steps.map((s, i) => ({
+    id: `mcp-${i}`,
+    letter: s.letter || null,
+    startPosition: s.startPosition || null,
+    endPosition: s.endPosition || null,
+    motions: { blue: s.blueMotion, red: s.redMotion },
+    stepNumber: s.stepNumber ?? i,
+    duration: 1,
+    isBridge: s.isBridge,
+    variation: s.variation,
+  }));
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function engineStepsToMcpSteps(steps: any[]): SequenceStep[] {
+  return steps.map((s: any, i: number) => ({
+    letter: String(s.letter ?? ""),
+    startPosition: String(s.startPosition ?? ""),
+    endPosition: String(s.endPosition ?? ""),
+    blueMotion: (s.motions?.blue ?? s.blueMotion) as SequenceStep["blueMotion"],
+    redMotion: (s.motions?.red ?? s.redMotion) as SequenceStep["redMotion"],
+    stepNumber: s.stepNumber ?? i,
+    isBridge: s.isBridge,
+    variation: s.variation,
+  }));
 }

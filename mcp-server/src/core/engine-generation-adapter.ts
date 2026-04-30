@@ -148,7 +148,7 @@ export function generateViaEngine(
     loopComponents,
     seedWord: buildResult.loop?.seedWord,
     derivedWord: buildResult.loop?.derivedWord,
-    derivedBeatIndices: buildResult.loop?.derivedBeatIndices,
+    derivedBeatIndices: buildResult.loop?.derivedStepIndices,
   };
 }
 
@@ -273,13 +273,12 @@ function convertToSequenceResult(
   params: EngineGenerationParams,
 ): SequenceResult {
   const steps: SequenceStep[] = buildResult.sequence.map((step, i) => ({
-    letter: step.letter,
+    letter: (step.letter ?? "") as string,
     variation: 0,
-    startPosition: step.startPosition,
-    endPosition: step.endPosition,
-    blueMotion: step.blueMotion,
-    redMotion: step.redMotion,
-    stepNumber: i,
+    startPosition: (step.startPosition ?? "") as string,
+    endPosition: (step.endPosition ?? "") as string,
+    blueMotion: step.motions.blue as SequenceStep["blueMotion"],
+    redMotion: step.motions.red as SequenceStep["redMotion"],
     stepNumber: step.stepNumber ?? i,
     isBridge: step.isBridge ?? false,
   }));
