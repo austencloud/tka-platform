@@ -416,6 +416,15 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
 
       // Determine if this column is consistently swapped
       const isSwapped = this.isColumnSwapped(columnPairs);
+      const isInverted = columnPairs.every((p) =>
+        p.rawTransformations.some((t) => t.includes("inverted"))
+      );
+      const isMirrored = columnPairs.every((p) =>
+        p.rawTransformations.some((t) => t.includes("mirrored"))
+      );
+      const isFlipped = columnPairs.every((p) =>
+        p.rawTransformations.some((t) => t.includes("flipped"))
+      );
 
       // Get base transformation (without swap modifier)
       const baseTransformation = this.getColumnBaseTransformation(columnPairs);
@@ -424,6 +433,9 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
         position: pos,
         baseTransformation,
         isSwapped,
+        isInverted,
+        isMirrored,
+        isFlipped,
         steps: columnPairs.map((p) => p.keyStep),
         transformations: uniqueTransformations.map((t) =>
           this.formattingService.formatSingleTransformation(t)

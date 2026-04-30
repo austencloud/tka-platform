@@ -869,6 +869,24 @@ export class LOOPDetector implements ILOOPDetector {
     ) {
       components.push("swapped");
     }
+    if (
+      modularAnalysis.columnBehaviors.some((c) => c.isInverted) &&
+      !components.includes("inverted")
+    ) {
+      components.push("inverted");
+    }
+    if (
+      modularAnalysis.columnBehaviors.some((c) => c.isMirrored) &&
+      !components.includes("mirrored")
+    ) {
+      components.push("mirrored");
+    }
+    if (
+      modularAnalysis.columnBehaviors.some((c) => c.isFlipped) &&
+      !components.includes("flipped")
+    ) {
+      components.push("flipped");
+    }
 
     // Build intervals - base is quartered, swap is also quartered for modular patterns
     const intervals: TransformationIntervals = {};
@@ -876,6 +894,9 @@ export class LOOPDetector implements ILOOPDetector {
     if (components.includes("swapped")) {
       intervals.swap = 4;
     }
+    if (components.includes("inverted")) intervals.invert = 4;
+    if (components.includes("mirrored")) intervals.mirror = 4;
+    if (components.includes("flipped")) intervals.flip = 4;
 
     // Build loopType
     const rotDir =

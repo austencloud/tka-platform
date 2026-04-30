@@ -38,6 +38,12 @@ export interface ColumnBehavior {
   baseTransformation: string;
   /** Is this column swapped relative to base? */
   isSwapped: boolean;
+  /** Is this column inverted relative to base? */
+  isInverted: boolean;
+  /** Is this column mirrored relative to base? */
+  isMirrored: boolean;
+  /** Is this column flipped relative to base? */
+  isFlipped: boolean;
   /** Beat numbers in this column */
   steps: number[];
   /** All transformations detected for this column */
