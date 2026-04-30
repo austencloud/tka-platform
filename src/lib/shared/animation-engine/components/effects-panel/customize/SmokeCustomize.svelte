@@ -11,7 +11,7 @@
 
   // Palette swatches mirror the palette registry's core color so the
   // chip reads identity at a glance. No lifetime slider: lifetime is
-  // palette-owned (genie is short, fog is long — that's what makes them
+  // palette-owned (genie is short, fog is long - that's what makes them
   // those things). Spec §"Intent shape".
   const PALETTES: { id: SmokeIntent["palette"]; label: string; swatch: string }[] = [
     { id: "incense", label: "Incense", swatch: "#d8d8d8" },

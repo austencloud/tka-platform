@@ -326,7 +326,7 @@ export class LOOPLabelerController {
     // Already has data
     if (seq.fullMetadata?.sequence && seq.fullMetadata.sequence.length > 0) return;
 
-    // No source ref — can't fetch
+    // No source ref - can't fetch
     if (!seq.sourceRef) {
       console.warn(`[LOOPLabelerController] No sourceRef for sequence "${seq.word}" (${seq.id})`);
       return;

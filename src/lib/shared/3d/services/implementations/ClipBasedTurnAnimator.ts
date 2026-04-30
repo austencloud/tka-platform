@@ -2,13 +2,13 @@
  * ClipBasedTurnAnimator
  *
  * Pre-bakes Mixamo turn clips into per-frame bone rotation arrays and samples
- * them by phase (0→1). The phase clock belongs to the caller — this class is
+ * them by phase (0→1). The phase clock belongs to the caller - this class is
  * purely stateless between samples.
  *
  * Two init paths:
- *   initializeFromData()  — sync, for tests and any caller that already has
+ *   initializeFromData()  - sync, for tests and any caller that already has
  *                           parsed BakedTurnClip objects.
- *   initialize()          — async production path: loads GLBs from URLs,
+ *   initialize()          - async production path: loads GLBs from URLs,
  *                           bakes tracks into BakedTurnClip, then calls
  *                           initializeFromData internally.
  *
@@ -54,7 +54,7 @@ const BAKE_FPS = 30;
 const KNOWN_PREFIXES = ["mixamorig1", "mixamorig:", "mixamorig", ""];
 
 // ---------------------------------------------------------------------------
-// Module-level temporaries — zero per-frame allocation during sampling
+// Module-level temporaries - zero per-frame allocation during sampling
 // ---------------------------------------------------------------------------
 
 const _tmpQuat = new Quaternion();
@@ -296,7 +296,7 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
   private ready = false;
 
   // -------------------------------------------------------------------------
-  // Init — sync (tests)
+  // Init - sync (tests)
   // -------------------------------------------------------------------------
 
   initializeFromData(clips: BakedTurnClip[]): void {
@@ -305,7 +305,7 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
   }
 
   // -------------------------------------------------------------------------
-  // Init — async production path (GLTFLoader)
+  // Init - async production path (GLTFLoader)
   // -------------------------------------------------------------------------
 
   async initialize(
@@ -362,7 +362,7 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
     const clip = this.findClip(totalAngle);
 
     if (!clip) {
-      // Linear fallback — no bone data available
+      // Linear fallback - no bone data available
       return {
         yawDelta: totalAngle * clampedPhase,
         boneRotations: new Map(),

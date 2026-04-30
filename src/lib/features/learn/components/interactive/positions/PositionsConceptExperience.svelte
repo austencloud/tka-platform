@@ -1,9 +1,9 @@
 <!--
 PositionsConceptExperience - Three-phase hand positions learning flow.
-Phase 1: Discovery — place hands on grid to discover alpha/beta/gamma.
-Phase 2: Construction Quiz — build requested positions from prompts.
-Phase 3: Speed Rounds — rapid classification drill.
-Phase 4: Complete — summary and continue.
+Phase 1: Discovery - place hands on grid to discover alpha/beta/gamma.
+Phase 2: Construction Quiz - build requested positions from prompts.
+Phase 3: Speed Rounds - rapid classification drill.
+Phase 4: Complete - summary and continue.
 
 Supports keyboard navigation (arrow keys between phases) and accessibility features.
 -->

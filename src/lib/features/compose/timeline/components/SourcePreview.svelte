@@ -18,6 +18,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ISequenceAnimationOrchestrator } from "../../services/contracts/ISequenceAnimationOrchestrator";
   import type { PropState } from "../../shared/domain/types/PropState";
@@ -277,7 +278,11 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
     <span class="preview-label">Source</span>
     {#if sequence}
       <span class="sequence-info" title={displayName}>
-        {displayName}
+        {#if sequence?.word}
+          <TKAWordGlyph word={sequence.word} height={13} darkMode />
+        {:else}
+          {displayName}
+        {/if}
       </span>
     {/if}
   </div>

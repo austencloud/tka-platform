@@ -27,7 +27,7 @@ import {
 } from "@tka/sequence-engine/generation";
 import {
   LOOPType,
-  SliceSize,
+  Period,
   executeLOOP,
 } from "@tka/sequence-engine/loop";
 import {
@@ -85,7 +85,7 @@ export function registerPresetTools(server: McpServer): void {
       description: z.string().optional().describe("Description of the preset"),
       icon: z.string().optional().describe("Emoji icon for the preset"),
       loopType: z.enum(["rewound", "rotated"]).optional().describe("LOOP type"),
-      sliceSize: z.enum(["halved", "quartered"]).optional().describe("Slice size for LOOP"),
+      period: z.enum(["halved", "quartered"]).optional().describe("Slice size for LOOP"),
       loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP transformation components"),
       wordLength: z.number().min(1).max(20).optional().describe("Default word length"),
       level: z.number().min(1).max(3).optional().describe("Difficulty level (1-3)"),
@@ -297,7 +297,7 @@ export function registerPresetTools(server: McpServer): void {
           // If user specified a word, allow bridges - beat count will vary
           const loopConstraint: LoopConstraint = {
             loopType: config.loopType as "rewound" | "rotated",
-            sliceSize: (config.sliceSize || "halved") as "halved" | "quartered",
+            period: (config.period || "halved") as "halved" | "quartered",
             noBridges: !userSpecifiedWord,
           };
 
@@ -396,13 +396,13 @@ export function registerPresetTools(server: McpServer): void {
         // If LOOP type is specified, apply transformation
         if (config.loopType) {
           const loopTypeEnum = config.loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-          const sliceSize = config.sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+          const period = config.period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
           // Debug: check positions before calling executeLOOP
           const debugStartPos = steps[0]?.startPosition || "???";
           const debugEndPos = steps[steps.length - 1]?.endPosition || "???";
 
-          const loopResult = executeLOOP(steps, sequenceWord, loopTypeEnum, sliceSize, allPictographs);
+          const loopResult = executeLOOP(steps, sequenceWord, loopTypeEnum, period, allPictographs);
 
           if (!loopResult.success) {
             return {
@@ -441,7 +441,7 @@ export function registerPresetTools(server: McpServer): void {
 
           const textContent = {
             type: "text" as const,
-            text: `Generated LOOP sequence from preset "${p.name}":\n- Word: ${loopResult.loopWord}\n- Beats: ${loopResult.steps.length}\n- Type: ${config.loopType} (${config.sliceSize || "halved"})\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
+            text: `Generated LOOP sequence from preset "${p.name}":\n- Word: ${loopResult.loopWord}\n- Beats: ${loopResult.steps.length}\n- Type: ${config.loopType} (${config.period || "halved"})\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
           };
 
           // Only include base64 image if explicitly requested (saves 30-100k tokens)

@@ -19,7 +19,7 @@ export class SequenceComposer implements ISequenceComposer {
 
     if (blue.steps.length !== red.steps.length) {
       throw new Error(
-        `SequenceComposer: step count mismatch — ` +
+        `SequenceComposer: step count mismatch - ` +
           `blue=${blue.steps.length}, red=${red.steps.length}. ` +
           `Both solo props must have the same number of steps to be combined.`
       );

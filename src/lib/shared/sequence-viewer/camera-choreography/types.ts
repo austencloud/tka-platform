@@ -1,5 +1,5 @@
 /**
- * Camera Choreography — types
+ * Camera Choreography - types
  *
  * A preset is a driver that owns the CameraControls instance while a
  * recording is in progress. On apply(), it captures controls, sets the

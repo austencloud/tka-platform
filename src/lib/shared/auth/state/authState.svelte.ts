@@ -306,9 +306,11 @@ export async function initializeAuthListener() {
   cleanupAuthListener = onAuthStateChanged(
     auth,
     async (user) => {
-      // Never set loading = true here. The initial state already has
-      // loading: true, and subsequent callbacks (token refresh, re-auth)
-      // must not re-block the UI. We only set loading = false when done.
+      // Immediately reflect user in state so UI updates even if
+      // downstream Firestore/network operations hang (common in Tauri desktop)
+      if (user !== _state.user) {
+        _state = { ..._state, user, initialized: true };
+      }
 
       // Safety timeout: if auth processing hangs (bad network, Firestore
       // unreachable), force loading = false after 8 seconds so the app

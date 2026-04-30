@@ -2,7 +2,7 @@
   FireControlsPanel.svelte
 
   Fire effect physics controls: intensity/smoke/color sliders and quick presets.
-  Effect is always active when in the fire lab — no enable toggle needed.
+  Effect is always active when in the fire lab - no enable toggle needed.
 -->
 <script lang="ts">
   interface Props {

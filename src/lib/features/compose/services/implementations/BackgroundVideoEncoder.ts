@@ -6,10 +6,10 @@
  * messages (see video-export.worker.ts for the protocol).
  *
  * Lifecycle:
- *   1. initialize() — spawns worker, posts config, waits for "ready"
- *   2. addFrame()   — posts ImageData (transferred, zero-copy) per frame
- *   3. finish()     — signals end, waits for completed MP4 ArrayBuffer
- *   4. cancel()     — aborts immediately and terminates the worker
+ *   1. initialize() - spawns worker, posts config, waits for "ready"
+ *   2. addFrame()   - posts ImageData (transferred, zero-copy) per frame
+ *   3. finish()     - signals end, waits for completed MP4 ArrayBuffer
+ *   4. cancel()     - aborts immediately and terminates the worker
  */
 
 import type {
@@ -121,7 +121,7 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
   ): void {
     // Bail fast if the worker is gone OR if the encoder has already
     // reported an error. After the first error, every subsequent frame
-    // is a waste of GPU memory and postMessage bandwidth — the worker's
+    // is a waste of GPU memory and postMessage bandwidth - the worker's
     // encoder is closed and will reject them anyway. Close the VideoFrame
     // handle ourselves so it doesn't leak through to GC.
     if (!this.worker || this.firstError !== null) {
@@ -225,7 +225,7 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
         this.finishResolve = null;
         this.finishReject = null;
 
-        // Export complete — clean up the worker
+        // Export complete - clean up the worker
         this.terminateWorker();
         break;
       }

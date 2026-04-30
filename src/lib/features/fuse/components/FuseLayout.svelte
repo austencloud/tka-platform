@@ -72,7 +72,7 @@
 		}
 	}
 
-	// When state enters "fusing", complete immediately — the crossfade
+	// When state enters "fusing", complete immediately - the crossfade
 	// transition on FuseTab handles the visual transition between views
 	$effect(() => {
 		if (fuseState.phase !== "fusing") return;
@@ -112,13 +112,13 @@
 	<!-- TOUR MODE: fixed overlay covers entire viewport including bottom nav -->
 	<div class="tour-overlay">
 		{#if fuseTourState.currentStop === "welcome"}
-			<!-- Stop 1: Welcome — fullscreen centered FuseTour -->
+			<!-- Stop 1: Welcome - fullscreen centered FuseTour -->
 			<div class="tour-stop welcome-stop">
 				<FuseTour variant="fullscreen" />
 			</div>
 
 		{:else if fuseTourState.currentStop === "panels"}
-			<!-- Stop 2: Both Panels — banner at top, both panels below -->
+			<!-- Stop 2: Both Panels - banner at top, both panels below -->
 			<div class="tour-stop panels-stop">
 				<div class="tour-banner-area">
 					<FuseTour variant="banner" />
@@ -148,7 +148,7 @@
 			</div>
 
 		{:else if fuseTourState.currentStop === "shuffle"}
-			<!-- Stop 3: Shuffle — banner below panels, near the shuffle buttons -->
+			<!-- Stop 3: Shuffle - banner below panels, near the shuffle buttons -->
 			<div class="tour-stop shuffle-stop">
 				<div class="tour-panels">
 					<div class="panel-wrap" bind:this={leftPanelEl}>
@@ -180,7 +180,7 @@
 			</div>
 
 		{:else if fuseTourState.currentStop === "fuse"}
-			<!-- Stop 4: Fuse — panels dimmed with fuse button, or result after fusing -->
+			<!-- Stop 4: Fuse - panels dimmed with fuse button, or result after fusing -->
 			<div class="tour-stop fuse-stop">
 				{#if !tourFuseCompleted}
 					<!-- Pre-fuse: panels dimmed, fuse button pulsing -->
@@ -585,7 +585,7 @@
 		cursor: not-allowed;
 	}
 
-	/* Tour overlay — fills the sub-tab-content container (which has container-type: size,
+	/* Tour overlay - fills the sub-tab-content container (which has container-type: size,
 	   trapping position: fixed). Bottom nav is hidden separately via MainInterface. */
 	.tour-overlay {
 		position: absolute;

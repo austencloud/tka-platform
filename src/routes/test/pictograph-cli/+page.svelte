@@ -270,7 +270,7 @@
       <div class="mission-icon">🎯</div>
       <div class="mission-text">
         <strong>Purpose:</strong> This lab validates the MCP (Model Context Protocol) pictograph rendering pipeline.
-        It's the first step toward enabling AI agents to work with TKA images and sequences intelligently—
+        It's the first step toward enabling AI agents to work with TKA images and sequences intelligently-
         not just as data, but as actual rendered visuals that can be reasoned about, compared, and manipulated
         programmatically through a CLI tool.
       </div>

@@ -1,5 +1,5 @@
 /**
- * IFileNameConverter — Contract for DOS 8.3 filename conversion
+ * IFileNameConverter - Contract for DOS 8.3 filename conversion
  *
  * Converts human-readable sequence names into the 8.3 filename
  * format used by TKA-OS's FAT16 filesystem. Strips illegal

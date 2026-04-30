@@ -3,7 +3,7 @@
  *
  * Decomposes a hydrated SequenceData into its constituent hand paths and solo props,
  * then persists each artifact to the user's personal repositories. This runs as a
- * fire-and-forget side effect after saving a sequence — if extraction fails, the
+ * fire-and-forget side effect after saving a sequence - if extraction fails, the
  * sequence itself is already safe.
  *
  * Each sequence contributes up to 4 artifacts:
@@ -59,7 +59,7 @@ export class ArtifactExtractor implements IArtifactExtractor {
       ),
     ]);
 
-    // Log any individual failures without throwing — the sequence is already saved
+    // Log any individual failures without throwing - the sequence is already saved
     for (const result of results) {
       if (result.status === "rejected") {
         console.warn("[ArtifactExtractor] Artifact save failed:", result.reason);

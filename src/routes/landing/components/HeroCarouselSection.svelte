@@ -32,7 +32,7 @@
   let currentIndex = $state(0);
   let isTransitioning = $state(false);
 
-  // Two video elements for crossfading — A is front, B is back
+  // Two video elements for crossfading - A is front, B is back
   let videoA = $state<HTMLVideoElement | null>(null);
   let videoB = $state<HTMLVideoElement | null>(null);
   let opacityA = $state(1);
@@ -88,7 +88,7 @@
           videoUrl: d.videoUrl as string | undefined,
           performers: (d.performers ?? []) as ShowcaseVideo["performers"],
           excluded: (d.excluded ?? false) as boolean,
-          // tags may encode the prop type — fall back to "staves" if absent
+          // tags may encode the prop type - fall back to "staves" if absent
           tags: (d.tags ?? []) as string[],
         };
       })
@@ -402,7 +402,7 @@
     {/if}
   </div>
 
-  <!-- Dots + credit — directly under the video -->
+  <!-- Dots + credit - directly under the video -->
   {#if !loading && entries.length > 0}
     <div class="carousel-footer">
       {#if entries.length > 1}
@@ -499,7 +499,7 @@
     display: inline-block;
   }
 
-  /* Individual glint — a 4-pointed star that fades in/out at different times */
+  /* Individual glint - a 4-pointed star that fades in/out at different times */
   .glint {
     position: absolute;
     width: 6px;
@@ -916,7 +916,7 @@
       border-radius: 12px;
     }
 
-    /* Always show nav buttons on touch devices — no hover */
+    /* Always show nav buttons on touch devices - no hover */
     .nav-btn {
       opacity: 1;
       width: 38px;

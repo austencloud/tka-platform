@@ -1,5 +1,5 @@
 /**
- * IScreenshotOrchestrator — Coordinates on-demand screenshot captures
+ * IScreenshotOrchestrator - Coordinates on-demand screenshot captures
  * from the Lab UI via the Vite dev server endpoints.
  */
 

@@ -16,7 +16,7 @@ export class ContactCurveCache implements IContactCurveCache {
   register(data: ContactCurveData): void {
     if (data.leftFoot.length !== data.frameCount || data.rightFoot.length !== data.frameCount) {
       console.warn(
-        `[ContactCurveCache] Curve "${data.clipName}" has mismatched frame counts — skipping`
+        `[ContactCurveCache] Curve "${data.clipName}" has mismatched frame counts - skipping`
       );
       return;
     }

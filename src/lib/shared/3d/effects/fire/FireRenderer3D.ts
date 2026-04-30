@@ -1,10 +1,10 @@
 /**
- * FireRenderer3D — Volumetric raymarched fire at prop tips.
+ * FireRenderer3D - Volumetric raymarched fire at prop tips.
  *
  * Momentum response uses three layers:
- *   1. Wind offset — accumulated velocity displaces noise coordinates
- *   2. Lean offset — shifts the teardrop density center so body leans
- *   3. Mesh tilt — quaternion rotation for gross directional cue
+ *   1. Wind offset - accumulated velocity displaces noise coordinates
+ *   2. Lean offset - shifts the teardrop density center so body leans
+ *   3. Mesh tilt - quaternion rotation for gross directional cue
  *
  * Key insight from debugging: the animation runs in the XY plane
  * (staff rotates in a vertical plane facing the camera), so Z velocity
@@ -18,13 +18,13 @@ import { QualityTier } from "../types";
 
 const MAX_FIRE_TIPS = 4;
 
-/** EMA smoothing — higher = faster response (was 0.08, too sluggish) */
+/** EMA smoothing - higher = faster response (was 0.08, too sluggish) */
 const VELOCITY_SMOOTHING = 0.25;
 
 /** How strongly velocity accumulates into wind noise displacement */
 const WIND_STRENGTH = 3.0;
 
-/** Wind offset exponential decay per frame — higher = more accumulation */
+/** Wind offset exponential decay per frame - higher = more accumulation */
 const WIND_DECAY = 0.96;
 
 /** How strongly smoothed velocity shifts the density profile center */
@@ -169,7 +169,7 @@ export class FireRenderer3D {
         // Shift the teardrop density center opposite to velocity.
         // In object space, X = world X (left/right), Z = world Z (depth).
         // Since motion is in XY, the X lean does the heavy lifting.
-        // Y velocity (up/down) doesn't lean — it's the rise direction.
+        // Y velocity (up/down) doesn't lean - it's the rise direction.
         // Same sign logic: positive lean offset in the shader shifts the
         // density profile center, making the visual flame lean AWAY from motion
         mesh.setLeanOffset(svx * LEAN_STRENGTH, svz * LEAN_STRENGTH);
@@ -197,7 +197,7 @@ export class FireRenderer3D {
 
           // Tilt direction: opposite to velocity, normalized
           const invSpeed = tiltMag / motionSpeed;
-          // Tilt around Z axis (from X velocity) — negative because
+          // Tilt around Z axis (from X velocity) - negative because
           // positive X velocity should tilt flame in -X direction
           const tiltZ = svx * invSpeed;
           // Tilt around X axis (from Y velocity, excluding upward bias)

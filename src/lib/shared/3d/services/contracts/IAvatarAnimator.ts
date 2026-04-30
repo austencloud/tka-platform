@@ -17,9 +17,9 @@ export interface HandPose {
   targetPosition: Vector3;
   /** Target rotation for wrist (optional) */
   wristRotation?: Quaternion;
-  /** Staff rotation angle in radians — used to twist the hand to match the prop angle */
+  /** Staff rotation angle in radians - used to twist the hand to match the prop angle */
   staffAngle?: number;
-  /** Grip type for fingers — see GripType enum in GripPose.ts */
+  /** Grip type for fingers - see GripType enum in GripPose.ts */
   gripType?: import("../../domain/models/GripPose").GripType;
   /** Which plane this hand's prop is operating on */
   plane?: Plane;
@@ -163,7 +163,7 @@ export interface IAvatarAnimator {
    * the arms solve against a leaned-forward torso. Pass 0 to disable.
    *
    * Used by features that need to override the torso tilt without
-   * touching the twist logic — e.g., collision-lab stance variants.
+   * touching the twist logic - e.g., collision-lab stance variants.
    */
   setExternalSpinePitch(radians: number): void;
 }

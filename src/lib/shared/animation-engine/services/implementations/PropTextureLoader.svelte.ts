@@ -77,7 +77,7 @@ export class PropTextureLoader implements IPropTextureLoader {
         darkMode
       );
 
-      // Re-check after await — dispose() may have been called while loading
+      // Re-check after await - dispose() may have been called while loading
       // (e.g., user moved mouse away, unmounting the component)
       if (!this.svgGenerator) return;
 

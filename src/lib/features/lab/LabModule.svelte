@@ -86,7 +86,7 @@
         TabComponent = null;
       }
     } else {
-      // Only error when lab is actually the active module — cross-module tab changes
+      // Only error when lab is actually the active module - cross-module tab changes
       // fire here transiently during view transitions before uiState.activeModule updates.
       if (navigationState.currentModule === "lab") {
         loadError = `Unknown tab: ${activeTab}`;

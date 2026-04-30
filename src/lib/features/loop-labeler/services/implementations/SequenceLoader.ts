@@ -109,7 +109,7 @@ export class SequenceLoader implements ISequenceLoader {
 
       if (isRawFormat) {
         console.log(`[SequenceLoader] Using raw beats format (${beats.length} elements)`);
-        // Already in the right format — validated by field checks above
+        // Already in the right format - validated by field checks above
         return beats as RawStepData[];
       }
 

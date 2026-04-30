@@ -15,7 +15,7 @@ import { allocateTurns } from "@tka/sequence-engine/generation";
 import { recalculateOrientationsWithOverrides } from "../core/orientation-propagation.js";
 import {
   LOOPType,
-  SliceSize,
+  Period,
   LOOP_TYPE_LABELS,
   SUPPORTED_LOOP_TYPES,
   getLOOPOptionsForPositionPair,
@@ -40,12 +40,12 @@ function autoBridgeForLoop(
   startPosition: string,
   endPosition: string,
   loopType: LOOPType,
-  sliceSize: SliceSize,
+  period: Period,
   allPictographs: Array<{ letter: string; startPosition: string; endPosition: string }>
 ): { word: string; letters: string[]; bridgeAdded: string | null } {
   // Check if already compatible
   const positionPair = `${startPosition},${endPosition}`;
-  if (isLOOPValidForPositionPair(loopType, positionPair, sliceSize)) {
+  if (isLOOPValidForPositionPair(loopType, positionPair, period)) {
     return { word: originalWord, letters, bridgeAdded: null };
   }
 
@@ -54,7 +54,7 @@ function autoBridgeForLoop(
     startPosition,
     endPosition,
     loopType,
-    sliceSize,
+    period,
     allPictographs
   );
 
@@ -79,16 +79,16 @@ export function registerLoopTools(server: McpServer): void {
     {
       startPosition: z.string().describe("Start position of the sequence (e.g., alpha1, beta3, gamma5)"),
       endPosition: z.string().describe("End position of the sequence (e.g., alpha5, beta7, gamma13)"),
-      sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
+      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
     },
-    async ({ startPosition, endPosition, sliceSize = "halved" }) => {
-      const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+    async ({ startPosition, endPosition, period = "halved" }) => {
+      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
       const result = getLOOPOptionsForPositionPair(startPosition, endPosition, slice);
 
       const output = {
         startPosition,
         endPosition,
-        sliceSize,
+        period,
         available: result.available.map((opt) => ({
           loopType: opt.loopType,
           name: opt.name,
@@ -184,13 +184,13 @@ export function registerLoopTools(server: McpServer): void {
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
       loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
-      sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
+      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
       redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", maxAttempts = 500, blueStartOrientation, redStartOrientation }) => {
+    async ({ word, loopType, period = "halved", gridMode = "diamond", maxAttempts = 500, blueStartOrientation, redStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -219,7 +219,7 @@ export function registerLoopTools(server: McpServer): void {
 
       // Determine LOOP type enum
       const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-      const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
       // The bridge letter is determined by the end position, but rebuilding may land on a different position
@@ -302,7 +302,7 @@ export function registerLoopTools(server: McpServer): void {
         seedWord: loopResult.seedWord,
         derivedWord: loopResult.derivedWord,
         loopType: loopResult.loopType,
-        sliceSize: loopResult.sliceSize,
+        period: loopResult.period,
         isCircular: loopResult.isCircular,
         stepCount: loopResult.steps.length - 1,
         startPosition: baseResult.startPosition,
@@ -347,7 +347,7 @@ export function registerLoopTools(server: McpServer): void {
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
       loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply'),
-      sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size'),
+      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
@@ -364,7 +364,7 @@ export function registerLoopTools(server: McpServer): void {
       blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
       redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
+    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -393,7 +393,7 @@ export function registerLoopTools(server: McpServer): void {
 
       // Execute the LOOP transformation (pass pictograph data for letter derivation)
       const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-      const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
       // The bridge letter is determined by the end position, but rebuilding may land on a different position
@@ -532,7 +532,7 @@ export function registerLoopTools(server: McpServer): void {
           content: [
             {
               type: "text" as const,
-              text: `## LOOP Sequence: ${loopResult.loopWord}\n\n**Original word:** ${word}\n**LOOP type:** ${loopType}\n**Slice size:** ${sliceSize}\n**Beats:** ${stepCount}`,
+              text: `## LOOP Sequence: ${loopResult.loopWord}\n\n**Original word:** ${word}\n**LOOP type:** ${loopType}\n**Slice size:** ${period}\n**Beats:** ${stepCount}`,
             },
             {
               type: "image" as const,
@@ -561,7 +561,7 @@ export function registerLoopTools(server: McpServer): void {
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
       loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
-      sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe("Slice size"),
+      period: z.enum(["halved", "quartered"]).optional().default("halved").describe("Slice size"),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
@@ -578,7 +578,7 @@ export function registerLoopTools(server: McpServer): void {
       blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
       redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
+    async ({ word, loopType, period = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -607,7 +607,7 @@ export function registerLoopTools(server: McpServer): void {
 
       // Execute the LOOP transformation
       const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-      const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
       // The bridge letter is determined by the end position, but rebuilding may land on a different position

@@ -40,7 +40,7 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 		const center = new Vector3(rigLocalCenter.x, rigLocalCenter.y, rigLocalCenter.z);
 
 		// Staff axis in rig-local space: worldRotation × horizontalQuat.
-		// No facing rotation needed — the rig's T.Group rotation.y handles that.
+		// No facing rotation needed - the rig's T.Group rotation.y handles that.
 		const rotation = new Quaternion(
 			propState.worldRotation.x,
 			propState.worldRotation.y,

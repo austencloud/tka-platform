@@ -1,5 +1,5 @@
 <!--
-  RetroScribe — TKA Notation System main component
+  RetroScribe - TKA Notation System main component
 
   The flagship TKA-OS application. Retro version of the Create module
   rendered inside a RetroWindow. Contains a full Win95-style app shell:
@@ -190,12 +190,12 @@
   }
 
   /**
-   * File > Save — saves immediately if a name was already set this session,
+   * File > Save - saves immediately if a name was already set this session,
    * otherwise falls through to Save As so the user can pick a name first.
    */
   async function handleSave() {
     if (!currentSequenceData) {
-      statusText = "Nothing to save — generate a sequence first.";
+      statusText = "Nothing to save - generate a sequence first.";
       return;
     }
     if (!hasSavedOnce) {
@@ -206,7 +206,7 @@
   }
 
   /**
-   * Callback from RetroSaveDialog — user confirmed a filename.
+   * Callback from RetroSaveDialog - user confirmed a filename.
    */
   async function handleSaveAs(name: string) {
     showSaveDialog = false;
@@ -330,7 +330,7 @@
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Shell layout — fills parent window body                             */
+  /* Shell layout - fills parent window body                             */
   /* ------------------------------------------------------------------ */
   .scribe-shell {
     position: relative;

@@ -1,5 +1,5 @@
 <!--
-  Keyboard Properties sub-panel — TKA key layout reference.
+  Keyboard Properties sub-panel - TKA key layout reference.
 -->
 <script lang="ts">
   import RetroButton from "../../../primitives/RetroButton.svelte";

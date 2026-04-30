@@ -1,5 +1,5 @@
 <!--
-  RetroHelp — HELP.HLP fake help viewer
+  RetroHelp - HELP.HLP fake help viewer
 
   Split-pane layout with topic list on the left (RetroListBox)
   and topic content on the right in a sunken monospace panel.

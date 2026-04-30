@@ -1,5 +1,5 @@
 <!--
-  Floating music-player bubble — bottom-left of the museum.
+  Floating music-player bubble - bottom-left of the museum.
   Collapsed: round button with a music note. Click to open.
   Expanded: panel listing candidate tracks for the current wing.
 -->

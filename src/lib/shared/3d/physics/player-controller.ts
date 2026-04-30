@@ -246,7 +246,7 @@ export function setNoclip(playerState: PlayerControllerState, enabled: boolean):
 /**
  * Resize the player capsule between standing and crouching heights.
  *
- * Uses Rapier's setHalfHeight() to mutate the existing collider in place —
+ * Uses Rapier's setHalfHeight() to mutate the existing collider in place -
  * no destroy/recreate overhead. The rigid body is repositioned so the capsule
  * bottom (feet) stays at the same world Y. When un-crouching, the body is
  * pushed up by the height difference so it doesn't clip into the floor.

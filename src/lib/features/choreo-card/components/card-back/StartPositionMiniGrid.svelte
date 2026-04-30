@@ -70,7 +70,7 @@
   {/each}
 
   {#if info.blueLocation && info.redLocation && info.blueLocation === info.redLocation}
-    <!-- Beta: both hands at same position — render purple dot -->
+    <!-- Beta: both hands at same position - render purple dot -->
     {@const bp = pos(info.blueLocation)}
     <circle cx={bp.x} cy={bp.y} r={dotR} fill="#9B59B6" />
   {:else}

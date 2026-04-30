@@ -3,7 +3,7 @@
  *
  * Each preset sets trail appearance (width, opacity, glow) and optionally
  * custom colors via animationSettings.setTrailAppearance(). The trail
- * renderer reads blueColor/redColor from TrailSettings — overriding them
+ * renderer reads blueColor/redColor from TrailSettings - overriding them
  * here changes what the trails actually look like.
  *
  * The 4th preset ("Custom") lets users pick their own colors. Those

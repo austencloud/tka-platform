@@ -203,7 +203,7 @@
       </svg>
     </div>
 
-    <!-- Orientation pills — hidden when center is selected -->
+    <!-- Orientation pills - hidden when center is selected -->
     {#if !isCenter}
       <div class="orientation-pills" role="radiogroup" aria-label="Prop orientation">
         {#each ORIENTATIONS as ori}

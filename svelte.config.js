@@ -50,6 +50,12 @@ const config = {
         if (status === 500) return;
         throw new Error(message);
       },
+      handleMissingId: ({ path, id }) => {
+        // Guide nav renders section anchor links for the active chapter,
+        // but placeholder pages don't have those section elements yet
+        if (path.startsWith("/guide/level-1/")) return;
+        throw new Error(`Missing id "#${id}" on ${path}`);
+      },
     },
   },
 

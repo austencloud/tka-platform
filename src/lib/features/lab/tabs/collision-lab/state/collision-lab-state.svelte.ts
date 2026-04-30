@@ -7,11 +7,11 @@
  * losing reactivity.
  *
  * The reviewer adjusts the performer's floor position (footOffsetX,
- * footOffsetZ), body yaw, and spine pitch as live sliders — no preset
+ * footOffsetZ), body yaw, and spine pitch as live sliders - no preset
  * variant indices. When they commit a label with labelCurrent(), the
  * current stance values are captured inline in the PoseLabel.
  *
- * Services are passed in as arguments — never resolved from the container
+ * Services are passed in as arguments - never resolved from the container
  * inside the factory. This matches the state-management rule.
  */
 
@@ -92,13 +92,13 @@ const POSITION_TO_GRID: Record<DiamondPosition, GridLocation> = {
 const reachMapper = new PlaneCoordinateMapper();
 const reachOrientationMapper = new OrientationMapper();
 
-// Half a standard staff length in scene units — used to place the tip
+// Half a standard staff length in scene units - used to place the tip
 // points of the prop when building optimizer targets. 43 cm each side
 // of the grip for an 86 cm staff, which matches Austen's default props.
 const STAFF_HALF_LENGTH = 0.43;
 const STAFF_RADIUS = 0.012;
 
-// Base horizontal quaternion — same one prop3d-transforms uses to lay a
+// Base horizontal quaternion - same one prop3d-transforms uses to lay a
 // +Y cylinder along the horizontal axis before worldRotation is applied.
 // We need this so the simulator's prop tip positions match where the live
 // rig actually renders the staff.
@@ -162,7 +162,7 @@ function poseToOptimizerInput(pose: PoseDefinition): OptimizerInput {
   };
 }
 
-/** Bounds passed to the optimizer — mirrors the slider ranges exactly so
+/** Bounds passed to the optimizer - mirrors the slider ranges exactly so
  *  the optimizer can't propose a stance the reviewer couldn't set manually. */
 const OPTIMIZER_BOUNDS: OptimizerBounds = {
   footOffsetX: {
@@ -218,13 +218,13 @@ const UNKNOWN_REACHABILITY: ReachabilityInfo = {
  * Map a pure-JS simulator result into the UI-facing ReachabilityInfo shape.
  *
  * Budget = max arm reach (upper + forearm), pulled from the simulator's
- * anthropometric geometry. Excess = shortfall reported by the IK — already
+ * anthropometric geometry. Excess = shortfall reported by the IK - already
  * tolerance-adjusted (anything within REACH_FEASIBILITY_TOLERANCE is 0).
  * Distance = budget + excess when the hand can't quite reach, or
  * stretch*budget when it can (stretch is the used fraction of the reach
  * envelope, between 0 and 1).
  *
- * The legacy neutral-distance "budget" is gone — it produced false
+ * The legacy neutral-distance "budget" is gone - it produced false
  * negatives the moment a rotated stance moved a shoulder AWAY from its
  * target, which happens all the time for cross-plane poses where the
  * performer has to step toward one prop and away from the other.
@@ -235,7 +235,7 @@ function reachabilityFromSimResult(
 ): ReachabilityInfo {
   // Raw shortfall (what the UI displays as "X cm short"). Anything
   // within the simulator's REACH_FEASIBILITY_TOLERANCE (3 cm) is still
-  // considered reachable — see the tolerance rationale in StanceSimulator.
+  // considered reachable - see the tolerance rationale in StanceSimulator.
   const blueExcess = simResult.reachShortfall.blue;
   const redExcess = simResult.reachShortfall.red;
   const blueDistance =
@@ -270,14 +270,14 @@ export async function createCollisionLabState(
 
   let labels = $state<Record<string, PoseLabel>>(initialLabels);
 
-  // Last optimizer run for the current pose — exposed so the UI can show
+  // Last optimizer run for the current pose - exposed so the UI can show
   // reach shortfall, collision depths, and convergence metrics without
   // re-running the solver.
   let lastOptimizerResult = $state<OptimizerResult | null>(null);
 
   // Whether to auto-seed stance from the optimizer when stepping onto a
   // new pose that doesn't already have a saved label. Default true when
-  // an optimizer is provided — reviewers can turn it off to label from
+  // an optimizer is provided - reviewers can turn it off to label from
   // scratch.
   let autoSeedEnabled = $state(optimizer !== null);
 
@@ -304,7 +304,7 @@ export async function createCollisionLabState(
    */
   let infeasibleOnly = $state(false);
 
-  // Filters — each hand has its own plane filter since planes are per-hand
+  // Filters - each hand has its own plane filter since planes are per-hand
   let bluePlaneFilter = $state<PlaneFilter>("all");
   let redPlaneFilter = $state<PlaneFilter>("all");
   let blueOrientationFilter = $state<OrientationFilter>("all");
@@ -320,7 +320,7 @@ export async function createCollisionLabState(
   // Cursor
   let cursorIndex = $state(0);
 
-  // Live stance values — the reviewer moves these via sliders.
+  // Live stance values - the reviewer moves these via sliders.
   let footOffsetX = $state(0);
   let footOffsetZ = $state(0);
   let rootYawRad = $state(0);
@@ -397,7 +397,7 @@ export async function createCollisionLabState(
 
   /**
    * Run the optimizer on the given pose starting from the center stance.
-   * Returns the result without mutating anything — callers decide whether
+   * Returns the result without mutating anything - callers decide whether
    * to apply it.
    */
   function runOptimizer(pose: PoseDefinition): OptimizerResult | null {
@@ -437,7 +437,7 @@ export async function createCollisionLabState(
    *   1. If a prior label exists and we don't have candidates yet,
    *      build a candidate set with the prior as candidate 0 and five
    *      fresh alternatives. Apply the prior stance to the live sliders
-   *      as the starting preview — but leave pickedIndex null so the
+   *      as the starting preview - but leave pickedIndex null so the
    *      reviewer can still choose something different.
    *   2. If the candidate generator isn't available (tests), fall back
    *      to the old behavior: apply the prior's stance if it exists,
@@ -457,7 +457,7 @@ export async function createCollisionLabState(
       if (set.pickedIndex !== null && set.candidates[set.pickedIndex]) {
         applyStance(set.candidates[set.pickedIndex]!.stance);
       } else if (set.candidates[0]) {
-        // No explicit pick yet — preview the first candidate so the
+        // No explicit pick yet - preview the first candidate so the
         // viewer shows a meaningful pose while the reviewer decides.
         applyStance(set.candidates[0].stance);
       } else {
@@ -534,7 +534,7 @@ export async function createCollisionLabState(
     /**
      * The candidate set for the current pose, or null if no candidate
      * generator is wired up. Lazily generated on first read via the
-     * cache — stepping away and back returns the same set.
+     * cache - stepping away and back returns the same set.
      */
     get currentCandidateSet(): CandidateSet | null {
       if (!currentPose) return null;
@@ -601,7 +601,7 @@ export async function createCollisionLabState(
       spinePitchRad = 0;
     },
 
-    // Filters — all reset cursor to 0
+    // Filters - all reset cursor to 0
     setBluePlaneFilter(p: PlaneFilter) {
       bluePlaneFilter = p;
       cursorIndex = 0;
@@ -636,12 +636,12 @@ export async function createCollisionLabState(
     labelCurrent(status: LabelStatus) {
       const pose = currentPose;
       if (!pose) return;
-      // "clear" makes a positive claim about the stance ("this works — no
+      // "clear" makes a positive claim about the stance ("this works - no
       // collisions, fully reaches both grips"). We refuse to record that
       // claim if the hand literally can't reach, because it'd corrupt the
       // dataset with a physically impossible label.
       //
-      // "needs-adjustment" means exactly the opposite — it's a reviewer
+      // "needs-adjustment" means exactly the opposite - it's a reviewer
       // bookmark for "come back to this one, I'm not settled yet". It's the
       // CORRECT label for a reach that's close but not quite working, so we
       // DON'T gate it on reachability.
@@ -684,7 +684,7 @@ export async function createCollisionLabState(
       labels = next;
       labelRepo.save(next);
       // Auto-advance on every label. The reviewer has just made a
-      // decision — clear / needs-adjustment / unreachable / skip —
+      // decision - clear / needs-adjustment / unreachable / skip -
       // and wants to move on to the next pose. "Needs adjustment"
       // is a bookmark status, not a "stay here" status; the reviewer
       // can scrub back to it later via the pose stepper. Auto-advance
@@ -727,7 +727,7 @@ export async function createCollisionLabState(
     /**
      * Pick a candidate from the current candidate set. Applies its
      * stance to the live sliders and records the choice so the UI can
-     * highlight which card is active. Clears `manuallyAdjusted` — the
+     * highlight which card is active. Clears `manuallyAdjusted` - the
      * reviewer has explicitly agreed with this stance.
      */
     pickCandidate(index: number) {
@@ -856,7 +856,7 @@ export async function createCollisionLabState(
      * to drive a UI spinner while this runs.
      *
      * The scan yields to the event loop every 8 evaluations so the UI
-     * stays responsive — you can cancel by navigating away or by calling
+     * stays responsive - you can cancel by navigating away or by calling
      * scanCache = {} in devtools.
      */
     async scanAllForFeasibility(): Promise<void> {
@@ -870,7 +870,7 @@ export async function createCollisionLabState(
         if (result) fresh[pose.id] = result;
         scanProgress = { done: i + 1, total: toScan.length, running: true };
         // Yield every 8 evals so the browser can repaint. Each optimize
-        // call is ~35 ms, so 8 of them is ~280 ms — well under the limit
+        // call is ~35 ms, so 8 of them is ~280 ms - well under the limit
         // where users feel a freeze.
         if (i % 8 === 7) await new Promise((r) => setTimeout(r, 0));
       }

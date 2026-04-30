@@ -1,9 +1,9 @@
 /**
- * LedRibbonMaterial3D — shader for the continuous LED trail ribbon.
+ * LedRibbonMaterial3D - shader for the continuous LED trail ribbon.
  *
  * The ribbon is a camera-facing extruded quad strip built from the LED's
  * position history. Unlike discrete billboard sampling, the ribbon is
- * mathematically continuous — there are no overlap artifacts, no sampling
+ * mathematically continuous - there are no overlap artifacts, no sampling
  * ripple, no chain-of-dots look. This is the same technique used by AAA
  * trail/ribbon renderers (Unity Trail Renderer, Unreal Ribbon Emitter).
  *

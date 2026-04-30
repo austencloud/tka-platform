@@ -1,5 +1,5 @@
 /**
- * TKA-OS v1.0 — Pixel Art Icon Library
+ * TKA-OS v1.0 - Pixel Art Icon Library
  *
  * 32x32 SVG pixel art icons using the Windows 95 16-color palette.
  * Every icon uses the authentic Win95 3D bevel convention:
@@ -66,11 +66,11 @@ function inset(x: number, y: number, w: number, h: number, fill: string): string
 
 export const RETRO_ICONS = {
   /* ------------------------------------------------------------------ */
-  /* Desktop icons — 32×32, TKA-themed                                  */
+  /* Desktop icons - 32×32, TKA-themed                                  */
   /* ------------------------------------------------------------------ */
 
   /**
-   * My Computer — CRT monitor with TKA diamond grid on screen.
+   * My Computer - CRT monitor with TKA diamond grid on screen.
    * The screen shows the 4-cardinal-point diamond that defines TKA positions.
    */
   mycomputer: svg(
@@ -96,8 +96,8 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Scribe — Notepad with a visible staff sketch.
-   * The page shows crossed staves with blue and red tips — the primary TKA prop.
+   * Scribe - Notepad with a visible staff sketch.
+   * The page shows crossed staves with blue and red tips - the primary TKA prop.
    */
   scribe: svg(
     // Document body
@@ -129,7 +129,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * File Manager — Classic Win95 yellow folder with rich 3D depth.
+   * File Manager - Classic Win95 yellow folder with rich 3D depth.
    */
   filemgr: svg(
     // Folder tab
@@ -152,7 +152,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Tutor — Graduation cap with a staff prop beneath it, TKA-themed.
+   * Tutor - Graduation cap with a staff prop beneath it, TKA-themed.
    */
   tutor: svg(
     // Graduation cap board (raised)
@@ -183,7 +183,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Cards — Playing card with a TKA pictograph diamond grid on its face.
+   * Cards - Playing card with a TKA pictograph diamond grid on its face.
    */
   cards: svg(
     // Card body (white with black border)
@@ -226,7 +226,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Control Panel — Gear/wrench with Win95 3D look.
+   * Control Panel - Gear/wrench with Win95 3D look.
    */
   control: svg(
     // Gear teeth (8 teeth around perimeter)
@@ -253,7 +253,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Upgrade — Golden crown with jewels, shareware nag screen.
+   * Upgrade - Golden crown with jewels, shareware nag screen.
    */
   upgrade: svg(
     // Crown base
@@ -283,7 +283,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * README — Document with "i" info marker and TKA-flavored header.
+   * README - Document with "i" info marker and TKA-flavored header.
    */
   readme: svg(
     // Document body
@@ -309,7 +309,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Help — Yellow circle with classic Win95 "?" mark.
+   * Help - Yellow circle with classic Win95 "?" mark.
    */
   help: svg(
     // Yellow circle body
@@ -322,7 +322,7 @@ export const RETRO_ICONS = {
     '<rect x="27" y="5" width="1" height="20" fill="#808000"/>' +
     // Black outline
     '<rect x="4" y="2" width="24" height="28" fill="none" stroke="#000000" stroke-width="1" rx="12"/>' +
-    // Question mark — thick pixel art
+    // Question mark - thick pixel art
     '<rect x="11" y="6" width="10" height="2" fill="#000000"/>' +  // top bar
     '<rect x="19" y="8" width="2" height="4" fill="#000000"/>' +   // right stem
     '<rect x="13" y="12" width="6" height="2" fill="#000000"/>' +  // curve base
@@ -333,7 +333,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Defrag — Floppy disk with colored block map showing fragmentation.
+   * Defrag - Floppy disk with colored block map showing fragmentation.
    */
   defrag: svg(
     // Floppy body
@@ -348,7 +348,7 @@ export const RETRO_ICONS = {
     '<rect x="10" y="3" width="1" height="5" fill="#808080"/>' +
     // Label area (white, inset)
     inset(5, 10, 22, 20, '#FFFFFF') +
-    // Block map — colored squares showing fragmentation
+    // Block map - colored squares showing fragmentation
     '<rect x="7" y="12" width="3" height="3" fill="#000080"/>' +
     '<rect x="11" y="12" width="3" height="3" fill="#000080"/>' +
     '<rect x="15" y="12" width="3" height="3" fill="#FF0000"/>' +
@@ -368,7 +368,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Recycle Bin — Classic Win95 wire mesh trash can.
+   * Recycle Bin - Classic Win95 wire mesh trash can.
    * Widely considered one of the most iconic Win95 icons.
    */
   recyclebin: svg(
@@ -428,7 +428,7 @@ export const RETRO_ICONS = {
     '<rect x="3" y="15" width="25" height="1" fill="#808080"/>'
   ),
 
-  /** Document with staff motif — sequence file */
+  /** Document with staff motif - sequence file */
   fileSeq: svg(
     bevel(4, 1, 22, 30, '#FFFFFF') +
     '<rect x="5" y="2" width="18" height="28" fill="#FFFFFF"/>' +
@@ -451,7 +451,7 @@ export const RETRO_ICONS = {
     '<rect x="7" y="23" width="8" height="1" fill="#808080"/>'
   ),
 
-  /** System file — gear on document */
+  /** System file - gear on document */
   fileSys: svg(
     bevel(4, 1, 22, 30, '#FFFFFF') +
     '<rect x="5" y="2" width="18" height="28" fill="#FFFFFF"/>' +
@@ -529,7 +529,7 @@ export const RETRO_ICONS = {
   ),
 
   /* ------------------------------------------------------------------ */
-  /* Toolbar / UI icons — clear and readable at small sizes              */
+  /* Toolbar / UI icons - clear and readable at small sizes              */
   /* ------------------------------------------------------------------ */
 
   /** Left arrow */
@@ -589,7 +589,7 @@ export const RETRO_ICONS = {
     '<rect x="9" y="24" width="20" height="2" fill="#000000"/>'
   ),
 
-  /** Detail view — spreadsheet grid */
+  /** Detail view - spreadsheet grid */
   viewDetails: svg(
     inset(1, 1, 30, 30, '#FFFFFF') +
     // Header row
@@ -620,7 +620,7 @@ export const RETRO_ICONS = {
     '<rect x="13" y="9" width="3" height="11" fill="#000080"/>'
   ),
 
-  /** Save — floppy disk shortcut */
+  /** Save - floppy disk shortcut */
   save: svg(
     bevel(3, 1, 26, 30, '#0000FF') +
     '<rect x="5" y="2" width="21" height="8" fill="#808080"/>' +
@@ -670,7 +670,7 @@ export const RETRO_ICONS = {
     '<polygon points="16,1 7,12 10,12" fill="#C0C0C0"/>'
   ),
 
-  /** X mark — clear / close */
+  /** X mark - clear / close */
   clear: svg(
     bevel(4, 4, 24, 24, '#C0C0C0') +
     '<line x1="9" y1="9" x2="23" y2="23" stroke="#800000" stroke-width="3"/>' +
@@ -683,7 +683,7 @@ export const RETRO_ICONS = {
   /* Start menu icons                                                    */
   /* ------------------------------------------------------------------ */
 
-  /** Folder with arrow — Programs submenu */
+  /** Folder with arrow - Programs submenu */
   programs: svg(
     // Folder tab
     '<rect x="2" y="8" width="10" height="4" fill="#FFFF00"/>' +
@@ -714,7 +714,7 @@ export const RETRO_ICONS = {
     '<rect x="4" y="26" width="8" height="1" fill="#808080"/>'
   ),
 
-  /** Magnifying glass — Find */
+  /** Magnifying glass - Find */
   find: svg(
     // Glass rim (inset circle)
     '<rect x="3" y="3" width="18" height="18" fill="#FFFFFF" rx="9"/>' +
@@ -728,7 +728,7 @@ export const RETRO_ICONS = {
     '<rect x="18" y="19" width="2" height="5" fill="#FFFF00" transform="rotate(-45 22 22)"/>'
   ),
 
-  /** Power button — Shutdown */
+  /** Power button - Shutdown */
   shutdown: svg(
     // Power symbol circle
     '<rect x="4" y="4" width="24" height="24" fill="#C0C0C0" rx="12"/>' +
@@ -756,7 +756,7 @@ export const RETRO_ICONS = {
   /* Control Panel icons                                                 */
   /* ------------------------------------------------------------------ */
 
-  /** CRT monitor — Display settings */
+  /** CRT monitor - Display settings */
   display: svg(
     bevel(3, 1, 26, 20, '#C0C0C0') +
     inset(6, 3, 20, 14, '#008080') +
@@ -798,7 +798,7 @@ export const RETRO_ICONS = {
     '<rect x="26" y="13" width="1" height="5" fill="#000000"/>'
   ),
 
-  /** Theater masks — Props settings */
+  /** Theater masks - Props settings */
   props: svg(
     // Happy mask (right/yellow)
     '<rect x="16" y="4" width="13" height="16" fill="#FFFF00" rx="4"/>' +
@@ -825,7 +825,7 @@ export const RETRO_ICONS = {
   /** Keyboard */
   keyboard: svg(
     bevel(1, 8, 30, 18, '#C0C0C0') +
-    // Key rows — top row
+    // Key rows - top row
     '<rect x="3" y="10" width="3" height="4" fill="#FFFFFF" stroke="#808080" stroke-width="1"/>' +
     '<rect x="3" y="10" width="3" height="1" fill="#FFFFFF"/>' +
     '<rect x="7" y="10" width="3" height="4" fill="#FFFFFF" stroke="#808080" stroke-width="1"/>' +
@@ -859,7 +859,7 @@ export const RETRO_ICONS = {
     '<rect x="21" y="26" width="2" height="5" fill="#808080"/>'
   ),
 
-  /** Globe with grid — Network */
+  /** Globe with grid - Network */
   network: svg(
     // Globe body
     '<rect x="2" y="2" width="24" height="24" fill="#000080" rx="12"/>' +
@@ -880,7 +880,7 @@ export const RETRO_ICONS = {
     '<rect x="8" y="29" width="16" height="1" fill="#FFFFFF"/>'
   ),
 
-  /** Calendar — Date/Time */
+  /** Calendar - Date/Time */
   datetime: svg(
     bevel(2, 2, 28, 28, '#FFFFFF') +
     // Header (red, like a real desk calendar)
@@ -918,7 +918,7 @@ export const RETRO_ICONS = {
     '<rect x="12" y="22" width="3" height="3" fill="#000000"/>'
   ),
 
-  /** Blue circle with "i" — About / Info */
+  /** Blue circle with "i" - About / Info */
   info: svg(
     '<rect x="4" y="2" width="24" height="28" fill="#0000FF" rx="12"/>' +
     '<rect x="4" y="2" width="24" height="28" fill="none" stroke="#000000" stroke-width="1" rx="12"/>' +
@@ -967,7 +967,7 @@ export const RETRO_ICONS = {
     '<rect x="14" y="24" width="4" height="4" fill="#000000"/>'
   ),
 
-  /** Hourglass — loading */
+  /** Hourglass - loading */
   hourglass: svg(
     // Top cap
     bevel(5, 1, 22, 3, '#808080') +
@@ -1040,7 +1040,7 @@ export const RETRO_ICONS = {
     '<rect x="23" y="25" width="6" height="1" fill="#FFFFFF"/>'
   ),
 
-  /** Pin / map marker — Grid positions */
+  /** Pin / map marker - Grid positions */
   mappin: svg(
     // Pin head (circle)
     '<rect x="10" y="2" width="12" height="12" fill="#FF0000" rx="6"/>' +
@@ -1057,7 +1057,7 @@ export const RETRO_ICONS = {
     '<polygon points="16,28 13,24 15,24" fill="#800000"/>'
   ),
 
-  /** Circular arrows — Turns and rotation */
+  /** Circular arrows - Turns and rotation */
   rotate: svg(
     // Circle track
     '<rect x="6" y="2" width="20" height="20" fill="none" stroke="#000000" stroke-width="3" rx="10"/>' +
@@ -1074,7 +1074,7 @@ export const RETRO_ICONS = {
     '<rect x="24" y="10" width="2" height="8" fill="#808080"/>'
   ),
 
-  /** Musical notes — Building sequences */
+  /** Musical notes - Building sequences */
   musicnotes: svg(
     // Note 1 stem
     '<rect x="7" y="2" width="2" height="18" fill="#000000"/>' +
@@ -1094,7 +1094,7 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Staff — Two crossed staves with blue and red tips.
+   * Staff - Two crossed staves with blue and red tips.
    * The primary TKA prop and the hallmark of the entire notation system.
    */
   staff: svg(
@@ -1142,8 +1142,8 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * Fire — Stylized flame with inner glow layers.
-   * Flow arts is fire performance — this earns more detail than a generic flame.
+   * Fire - Stylized flame with inner glow layers.
+   * Flow arts is fire performance - this earns more detail than a generic flame.
    */
   fire: svg(
     // Outer flame (deep red)
@@ -1191,7 +1191,7 @@ export const RETRO_ICONS = {
     '<rect x="27" y="24" width="1" height="4" fill="#808000"/>'
   ),
 
-  /** Swirl / spiral — screensaver */
+  /** Swirl / spiral - screensaver */
   swirl: svg(
     // Spiral path built from rectangles
     '<rect x="13" y="2" width="6" height="2" fill="#800080"/>' +
@@ -1223,14 +1223,14 @@ export const RETRO_ICONS = {
   ),
 
   /**
-   * TKA Logo — Four-pane flag shape.
+   * TKA Logo - Four-pane flag shape.
    * TKA's spin on the classic Windows logo: cardinal motion lines replace the
    * wavy divider, and the pane colors reference the TKA color system.
    * Upper-left = TKA blue (left hand), upper-right = TKA red (right hand),
    * lower-left = prop gold, lower-right = motion green.
    */
   tkaLogo: svg(
-    // Upper-left pane (TKA blue — left hand)
+    // Upper-left pane (TKA blue - left hand)
     bevel(1, 1, 13, 13, '#000080') +
     '<rect x="2" y="2" width="11" height="11" fill="#000080"/>' +
     // Diamond grid mini icon in upper-left pane
@@ -1240,7 +1240,7 @@ export const RETRO_ICONS = {
     '<rect x="7" y="11" width="1" height="1" fill="#FFFFFF"/>' +
     '<rect x="3" y="7" width="1" height="1" fill="#FFFFFF"/>' +
     '<rect x="11" y="7" width="1" height="1" fill="#FFFFFF"/>' +
-    // Upper-right pane (TKA red — right hand)
+    // Upper-right pane (TKA red - right hand)
     bevel(18, 1, 13, 13, '#800000') +
     '<rect x="19" y="2" width="11" height="11" fill="#800000"/>' +
     // Letter "T" in upper-right pane
@@ -1277,7 +1277,7 @@ export const RETRO_ICONS = {
     '<rect x="18" y="14" width="13" height="1" fill="#C0C0C0"/>'
   ),
 
-  /** Computer — desktop (for save dialog tree) */
+  /** Computer - desktop (for save dialog tree) */
   computer: svg(
     bevel(3, 1, 26, 20, '#C0C0C0') +
     inset(6, 3, 20, 14, '#008080') +

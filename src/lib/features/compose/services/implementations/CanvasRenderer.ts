@@ -5,9 +5,10 @@
 
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
-import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
-import { renderHeader } from "@tka/render-composition";
-import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { simplifyRepeatedWord, compressWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { renderHeader, type CompressedSegment } from "@tka/render-composition";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { textRenderer } from "$lib/shared/render/services/implementations/TextRenderer";
 
 // Constants from standalone_animator.html
 // Using "strict" hand point offset (actual hand position, further from center)
@@ -119,7 +120,9 @@ export class CanvasRenderer implements ICanvasRenderer {
     activeStepNumber: number | null = null,
     difficultyLevel: number | null = null,
     loopComponents: Set<string> | null = null,
-    rotationSliceSize?: SliceSize
+    rotationPeriod?: Period,
+    inversionPeriod?: Period,
+    period?: number
   ): void {
     this.drawWordHeader(
       ctx,
@@ -129,7 +132,9 @@ export class CanvasRenderer implements ICanvasRenderer {
       activeStepNumber,
       difficultyLevel,
       loopComponents,
-      rotationSliceSize
+      rotationPeriod,
+      inversionPeriod,
+      period
     );
   }
 
@@ -331,12 +336,13 @@ export class CanvasRenderer implements ICanvasRenderer {
     activeStepNumber: number | null,
     difficultyLevel: number | null,
     loopComponents: Set<string> | null,
-    rotationSliceSize: SliceSize | undefined
+    rotationPeriod: Period | undefined,
+    inversionPeriod: Period | undefined,
+    period: number | undefined
   ): void {
     if (!word || word.trim() === "") return;
 
-    // Match WordHeader.svelte: simplify + truncate to 12 letter units
-    const displayText = simplifyAndTruncate(word, 12).toUpperCase();
+    const displayText = simplifyRepeatedWord(word).toUpperCase();
 
     const headerHeight = canvasSize * 0.07;
 
@@ -362,15 +368,26 @@ export class CanvasRenderer implements ICanvasRenderer {
       }
     }
 
-    // Map the app's SliceSize enum values to the package's string literal.
+    // Map the app's Period enum values to the package's string literal.
     // The enum values line up ("halved" / "quartered"), but typing the
     // handoff explicitly keeps the package independent of the app enum.
-    const sliceSizeForRender =
-      rotationSliceSize === SliceSize.QUARTERED
+    const periodForRender =
+      rotationPeriod === Period.QUARTERED
         ? "quartered"
-        : rotationSliceSize === SliceSize.HALVED
+        : rotationPeriod === Period.HALVED
           ? "halved"
           : undefined;
+
+    const inversionForRender =
+      inversionPeriod === Period.QUARTERED
+        ? "quartered"
+        : inversionPeriod === Period.HALVED
+          ? "halved"
+          : undefined;
+
+    const glyphImages = textRenderer.buildGlyphMap(displayText);
+    const segments = compressWord(displayText);
+    const hasCompression = segments.some((s: { repeat: number }) => s.repeat > 1);
 
     renderHeader(ctx, {
       canvasWidth: canvasSize,
@@ -381,9 +398,13 @@ export class CanvasRenderer implements ICanvasRenderer {
       loopComponents: (loopComponents ?? undefined) as
         | Set<import("@tka/render-composition").LOOPComponentId>
         | undefined,
-      rotationSliceSize: sliceSizeForRender,
+      rotationPeriod: periodForRender,
+      inversionPeriod: inversionForRender,
+      period,
       darkMode,
       letterStyles,
+      glyphImages: glyphImages.size > 0 ? glyphImages : undefined,
+      compressedSegments: hasCompression ? segments : undefined,
     });
   }
 

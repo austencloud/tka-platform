@@ -55,7 +55,7 @@
   // Offset each lobe center outward by 60% of lobeRadius at 120° intervals in XY plane
   const lobeOffset = $derived(lobeRadius * 0.6);
 
-  // Three lobes at 120° intervals — positions and rotations computed for XY-plane trefoil
+  // Three lobes at 120° intervals - positions and rotations computed for XY-plane trefoil
   const LOBE_CONFIGS = [
     { angle: 0 },
     { angle: (2 * Math.PI) / 3 },

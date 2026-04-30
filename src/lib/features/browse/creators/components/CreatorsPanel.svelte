@@ -128,7 +128,7 @@
       const freshCount = (snap.data().sequenceCount as number) ?? 0;
       creatorsDataState.patchUser(uid, { sequenceCount: freshCount });
     } catch {
-      // Non-critical — the list still works with the cached value
+      // Non-critical - the list still works with the cached value
     }
   }
 

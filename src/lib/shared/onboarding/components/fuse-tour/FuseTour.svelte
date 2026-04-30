@@ -2,7 +2,7 @@
   FuseTour - Content-only tour card for the Fuse tab walkthrough.
 
   Renders the icon, title, description, dots, and buttons for the current stop.
-  Does NOT render overlays or position itself — the parent (FuseLayout) handles that.
+  Does NOT render overlays or position itself - the parent (FuseLayout) handles that.
 
   variant="fullscreen": large centered layout for when the tour takes over the screen.
   variant="banner":     compact horizontal-ish layout for when the tour sits above content.

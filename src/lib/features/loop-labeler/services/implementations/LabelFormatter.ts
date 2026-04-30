@@ -1,4 +1,4 @@
-import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { SectionDesignation } from "../../domain/models/section-models";
 import type { TransformationIntervals } from "../../domain/models/label-models";
 import { BASE_COMPONENTS, type ComponentId } from "../../domain/constants/loop-components";
@@ -29,8 +29,8 @@ export class LabelFormatter implements ILabelFormatter {
             componentLabel += `(${intervalStr})`;
           }
         }
-      } else if (c === "rotated" && d.sliceSize) {
-        const sliceLabel = d.sliceSize === SliceSize.HALVED ? "½" : "¼";
+      } else if (c === "rotated" && d.period) {
+        const sliceLabel = d.period === Period.HALVED ? "½" : "¼";
         componentLabel += `(${sliceLabel})`;
       }
 

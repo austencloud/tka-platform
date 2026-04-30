@@ -68,8 +68,8 @@ export interface ExtensionAnalysis {
 export interface ExtensionOptions {
   /** The LOOP type to use for extension */
   loopType: LOOPType;
-  /** Slice size override (halved=2×, quartered=4×). If omitted, derived from position pair. */
-  sliceSize?: import("$lib/features/create/generate/circular/domain/models/circular-models").SliceSize;
+  /** Period override (halved=2×, quartered=4×). If omitted, derived from position pair. */
+  period?: import("$lib/features/create/generate/circular/domain/models/circular-models").Period;
   /** Difficulty level (1-3) */
   difficulty?: number;
   /** Turn intensity (0-1) */
@@ -202,7 +202,7 @@ export interface ISequenceExtender {
     bridgeLetter: Letter,
     loopType: LOOPType,
     pictographData?: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData,
-    sliceSize?: import("$lib/features/create/generate/circular/domain/models/circular-models").SliceSize
+    period?: import("$lib/features/create/generate/circular/domain/models/circular-models").Period
   ): Promise<SequenceData>;
 
   /**

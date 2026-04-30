@@ -166,7 +166,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Card view — render full ASCII card                                  */
+  /* Card view - render full ASCII card                                  */
   /* ------------------------------------------------------------------ */
 
   function drawCard(index: number): void {
@@ -207,7 +207,7 @@
         const h2 = `Beat ${row + 2}: ${letter2}`;
         headerText = `  ${h1}${" ".repeat(Math.max(1, 14 - h1.length))}${h2}`;
 
-        // Compact pictographs are HTML — write them as raw HTML lines
+        // Compact pictographs are HTML - write them as raw HTML lines
         compactText = `  ${compact1}  ${compact2}`;
       } else {
         // Odd beat at the end (solo)

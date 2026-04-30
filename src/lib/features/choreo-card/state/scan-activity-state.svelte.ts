@@ -230,7 +230,7 @@ class ScanActivityState {
 
   /**
    * Merge metadata from the shortcode doc + user profile onto the decoded
-   * sequence. The encoded blob itself carries steps only — word, author, and
+   * sequence. The encoded blob itself carries steps only - word, author, and
    * owner id live on the shortcode doc / user profile.
    */
   private async enrichDecoded(

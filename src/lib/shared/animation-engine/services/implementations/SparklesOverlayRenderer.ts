@@ -6,7 +6,7 @@
  * the zap overlay pattern: position:absolute, pointer-events:none, z-index
  * sits above the trails canvas (1) but below LED.
  *
- * The overlay canvas is fully cleared each frame before drawing — Sparkles2DRenderer
+ * The overlay canvas is fully cleared each frame before drawing - Sparkles2DRenderer
  * uses additive blending, so we don't want stale particles from the previous frame
  * to fade in/out unpredictably. The renderer holds particle pool state across frames.
  */

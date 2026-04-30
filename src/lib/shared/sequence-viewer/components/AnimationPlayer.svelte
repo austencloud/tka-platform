@@ -126,7 +126,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	});
 
 	// Trail settings with fine-grained reactivity and unilateral prop enforcement.
-	// Unilateral props (fan, club, etc.) always use RIGHT_END — they only have
+	// Unilateral props (fan, club, etc.) always use RIGHT_END - they only have
 	// one meaningful endpoint, so BOTH_ENDS would show an imaginary second trail.
 	const trailSettings = $derived.by(() => {
 		const t = animationSettings.trail;
@@ -251,7 +251,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		if (useContext) {
 			ctx?.actions?.onStepFullBeatBackward();
 		} else {
-			// seekToStep preserves playback state — if playing, continues from start
+			// seekToStep preserves playback state - if playing, continues from start
 			controller?.seekToStep(0);
 		}
 	};

@@ -1,11 +1,11 @@
 <!--
-  PoiImageLibrary.svelte — grid of every image the user has uploaded
+  PoiImageLibrary.svelte - grid of every image the user has uploaded
   in the POV Pattern Lab, scoped to their account. Click a tile to
   load it as the active pattern; drag a tile onto the pattern
   timeline to drop it as a clip at the target beat range.
 
   When no user is signed in the grid is replaced with a single hint
-  explaining how to get a library — uploads still work in-memory,
+  explaining how to get a library - uploads still work in-memory,
   they just don't persist to the cloud.
 -->
 <script lang="ts">
@@ -78,7 +78,7 @@
       {#each poi.libraryEntries as entry (entry.id)}
         <!--
           Tile has to be a div, not a button, because we nest a real
-          delete <button> inside it — nesting buttons is invalid HTML
+          delete <button> inside it - nesting buttons is invalid HTML
           and the browser silently hoists the inner one. role="button"
           + keyboard handling preserves accessibility.
         -->

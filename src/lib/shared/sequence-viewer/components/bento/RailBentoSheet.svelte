@@ -33,7 +33,7 @@
     'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable]:not([contenteditable="false"])';
 
   // Honor prefers-reduced-motion for the entrance / exit transitions.
-  // IMPORTANT: initialize synchronously in the $state initializer — the sheet's
+  // IMPORTANT: initialize synchronously in the $state initializer - the sheet's
   // entrance transition:fly/fade is evaluated at mount time, BEFORE onMount
   // runs. If we set reduceMotion inside onMount, the first animation would
   // always use the full 240ms even for users who have the reduced-motion
@@ -67,7 +67,7 @@
     return () => {
       mq?.removeEventListener("change", handler);
       // Restore focus to the activating element on unmount. Only if it is
-      // still connected to the DOM — otherwise focus falls silently to
+      // still connected to the DOM - otherwise focus falls silently to
       // document.body and keyboard users lose their place.
       if (focusTarget && typeof focusTarget.focus === "function" && focusTarget.isConnected) {
         focusTarget.focus();
@@ -85,7 +85,7 @@
       // descendants, but the sheet's content never uses fixed positioning.
       // A defensive try/catch around checkVisibility prevents an exotic
       // browser bug (Edge legacy has thrown here) from collapsing the whole
-      // focus trap — a single bad element should fall back, not poison the
+      // focus trap - a single bad element should fall back, not poison the
       // whole filter pass.
       const maybeCheckVisibility = (el as HTMLElement & { checkVisibility?: () => boolean }).checkVisibility;
       if (typeof maybeCheckVisibility === "function") {
@@ -106,14 +106,14 @@
   function onSheetKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       // Don't swallow Escape when a native dropdown / combobox / listbox is
-      // open inside the sheet — the user is trying to close THAT, not the
+      // open inside the sheet - the user is trying to close THAT, not the
       // sheet itself. Firefox in particular bubbles Escape from open
       // <select> elements; without this guard the sheet vanishes when the
       // user just meant to close the dropdown.
       //
       // The `instanceof Element` narrow matters: composed-path events from a
       // shadow-DOM nested component or a TextNode target would throw on
-      // `.closest`, which — without a handler — bubbles to Svelte's error
+      // `.closest`, which - without a handler - bubbles to Svelte's error
       // boundary and freezes the sheet until remount.
       const target = e.target;
       if (target instanceof Element &&

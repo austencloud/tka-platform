@@ -10,7 +10,7 @@
     [Header + Sequence Picker + Save]
     [AnimatorCanvas preview]
     [EffortPalette brush selector]
-    [PhraseTimeline — paint phrases]
+    [PhraseTimeline - paint phrases]
     [Transition toggle: Hard | Blend]
 -->
 <script lang="ts">
@@ -288,7 +288,7 @@
         }
       }
     } else {
-      // No phrase covering this beat — use linear playback
+      // No phrase covering this beat - use linear playback
       const mapped = stepCalculator.mapTimePositionToBeat(playbackBeat, steps);
       stepIndex = mapped.stepIndex;
       localProgress = mapped.stepProgress;
@@ -449,7 +449,7 @@
         firestore,
         `users/${user.uid}/sequences/${sequence.id}`,
       );
-      // JSON round-trip strips Svelte $state proxies — Firestore rejects them
+      // JSON round-trip strips Svelte $state proxies - Firestore rejects them
       // and structuredClone can't handle proxy Symbols either.
       const plainTimeline = JSON.parse(JSON.stringify(timeline));
       const propConfig = sequence.creatorIntent?.propConfig

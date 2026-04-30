@@ -73,7 +73,7 @@ function createCreateTutorialState() {
 
     setStartPosition(pos: PictographData, gridMode?: GridMode) {
       data.startPosition = pos;
-      // Clear beats — they were computed from the old start position
+      // Clear beats - they were computed from the old start position
       data.beats = [];
       if (gridMode) {
         data.gridMode = gridMode;

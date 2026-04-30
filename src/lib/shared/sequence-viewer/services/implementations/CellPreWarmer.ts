@@ -8,9 +8,9 @@
  * - "background" priority: Cells are rendered one at a time, yielding between
  *   each via scheduler.yield(). Never competes with gallery rendering or scroll.
  * - "user-visible" priority: All uncached cells rendered in parallel at normal priority.
- *   Used on hover — gives ~200ms head start before the user clicks.
+ *   Used on hover - gives ~200ms head start before the user clicks.
  * - "user-blocking" priority: Same as user-visible but at highest priority.
- *   Used on click — starts before the drawer animation, races the mount.
+ *   Used on click - starts before the drawer animation, races the mount.
  *
  * Fallback: Browsers without scheduler support get requestIdleCallback (background)
  * or microtask (user-visible/user-blocking).
@@ -67,14 +67,14 @@ export class CellPreWarmer implements ICellPreWarmer {
 
     const seqId = sequence.id;
 
-    // Already fully pre-warmed — skip
+    // Already fully pre-warmed - skip
     if (this.completedSequences.has(seqId)) return;
 
     // If there's already a warm in progress at equal or higher priority, skip.
     // Higher priority upgrades: cancel the old one and re-start.
     const existing = this.activeWarms.get(seqId);
     if (existing) {
-      // Already warming — only upgrade if new priority is strictly higher
+      // Already warming - only upgrade if new priority is strictly higher
       const priorityRank: Record<PreWarmPriority, number> = {
         "background": 0,
         "user-visible": 1,
@@ -145,7 +145,7 @@ export class CellPreWarmer implements ICellPreWarmer {
   }
 
   // =========================================================================
-  // Render options — mirrors what ChoreoCard uses
+  // Render options - mirrors what ChoreoCard uses
   // =========================================================================
 
   private buildRenderOptions(): PreviewCellRenderOptions {
@@ -216,7 +216,7 @@ export class CellPreWarmer implements ICellPreWarmer {
   }
 
   // =========================================================================
-  // Sequential warming (background priority) — one cell at a time, yielding
+  // Sequential warming (background priority) - one cell at a time, yielding
   // =========================================================================
 
   private async warmSequential(
@@ -248,7 +248,7 @@ export class CellPreWarmer implements ICellPreWarmer {
   }
 
   // =========================================================================
-  // Parallel warming (user-visible / user-blocking) — all cells at once
+  // Parallel warming (user-visible / user-blocking) - all cells at once
   // =========================================================================
 
   private async warmParallel(
@@ -290,7 +290,7 @@ export class CellPreWarmer implements ICellPreWarmer {
       redPropType: options.catDogModeEnabled
         ? options.redPropType
         : options.bluePropType,
-      // Partner-visibility controls beta offset — matches PreviewCellRenderer so
+      // Partner-visibility controls beta offset - matches PreviewCellRenderer so
       // the prewarm cache and on-demand render agree on positions.
       showBlueMotion: options.showBlueMotion,
       showRedMotion: options.showRedMotion,
@@ -328,7 +328,7 @@ export class CellPreWarmer implements ICellPreWarmer {
         await pictographBlobCache.set(task.cacheKey, blob);
       }
     } catch {
-      // Swallow render/cache errors — pre-warming is best-effort
+      // Swallow render/cache errors - pre-warming is best-effort
     }
   }
 }

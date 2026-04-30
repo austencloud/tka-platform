@@ -1,5 +1,5 @@
 <!--
-  VillageMonument — Hexagonal pillar with emissive glow and tooltip.
+  VillageMonument - Hexagonal pillar with emissive glow and tooltip.
   Grows taller with each generation survived. Dims on extinction.
 -->
 <script lang="ts">

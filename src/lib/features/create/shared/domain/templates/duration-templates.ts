@@ -202,7 +202,7 @@ const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
   {
     id: "waltz-3-4",
     name: "3/4 Waltz",
-    description: "ONE-two-three feel — downbeat held longer",
+    description: "ONE-two-three feel - downbeat held longer",
     category: "feel",
     minSteps: 3,
     divisibleBy: 3,

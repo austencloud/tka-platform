@@ -194,7 +194,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
 
   // URL bootstrap: when the page loaded with ?v=<code>, resolve it and open
   // the drawer populated with that sequence. Runs as an effect so we can wait
-  // for Firebase auth to settle — the short code may resolve to a sequence in
+  // for Firebase auth to settle - the short code may resolve to a sequence in
   // the user's own private Firestore namespace, which requires authentication.
   // Attempting the read before auth is ready returns "insufficient permissions".
   let bootstrapAttempted = false;
@@ -216,14 +216,14 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
       const manager = getShortCodeManager();
       const resolved = await manager.resolveShortCode(code);
       if (!resolved) {
-        // Unresolvable code — strip it so the browser's base history entry
+        // Unresolvable code - strip it so the browser's base history entry
         // doesn't keep pulling the user back to a broken URL on every back
         // navigation or drawer close.
         stripInvalidV(code);
         return;
       }
 
-      // Fire-and-forget scan telemetry — only for genuine scans. Skips
+      // Fire-and-forget scan telemetry - only for genuine scans. Skips
       // reloads, back/forward nav, and repeat session visits to avoid
       // inflating scanCount on refresh.
       const encoder = getSequenceEncoder();
@@ -252,7 +252,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
       if (!stillMatches) return;
 
       // Hydrate BEFORE opening the overlay. Without this, the drawer
-      // renders a sequence with empty `word` and null `loopType` —
+      // renders a sequence with empty `word` and null `loopType` -
       // viewer footer, reversal indicators, and loop-type badge all
       // showed blank on refresh (bug report 2026-04-19).
       const hydrated = await hydrateSequence(resolved, {
@@ -304,7 +304,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     } else if (wasOpen && !wasFromUrl) {
       // In-app open: go back in history to remove the entry we pushed.
       // For URL-bootstrapped opens the ?v= strip already handled the URL and
-      // there's no pushed entry to pop — history.back() here would leave the
+      // there's no pushed entry to pop - history.back() here would leave the
       // app, which is not what the user wants when dismissing a restored viewer.
       window.history.back();
     }
@@ -346,7 +346,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
-          <!-- Header — adapts between normal viewer and export mode -->
+          <!-- Header - adapts between normal viewer and export mode -->
           <header class="drawer-header">
               {#if isAnyExportActive}
                 <!-- Export mode: back arrow returns to viewer -->
@@ -865,7 +865,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     overflow: hidden;
   }
 
-  /* Landscape: compact header — icon-only back button, no title, minimal height */
+  /* Landscape: compact header - icon-only back button, no title, minimal height */
   .landscape .drawer-header {
     padding-top: 2px;
     padding-bottom: 2px;
@@ -906,7 +906,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
 
   /* Desktop: always a grid with a sidebar column that starts collapsed.
      IMPORTANT: use 0px (not 0fr) so CSS can interpolate between 0px → 320px.
-     fr and px are different unit types — the browser can't transition between them. */
+     fr and px are different unit types - the browser can't transition between them. */
   .viewer-and-export.desktop {
     display: grid;
     grid-template-columns: 1fr 0px;
@@ -930,7 +930,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     grid-template-columns: 1fr 0px;
   }
 
-  /* Export panel — grid child on desktop, flex child on mobile */
+  /* Export panel - grid child on desktop, flex child on mobile */
   .export-panel-container {
     overflow: hidden;
     overflow-y: auto;
@@ -965,7 +965,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     }
   }
 
-  /* Export footer overlay — absolutely positioned at bottom of drawer-main,
+  /* Export footer overlay - absolutely positioned at bottom of drawer-main,
      overlays the footer area so the export bar rises up from below */
   .export-footer-overlay {
     position: absolute;
@@ -975,7 +975,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     z-index: 3;
   }
 
-  /* Footer — uses CSS grid row collapse for smooth height animation.
+  /* Footer - uses CSS grid row collapse for smooth height animation.
      grid-template-rows: 1fr → 0fr smoothly collapses the footer to zero height
      while the flex body above grows to fill the freed space. */
   .footer-collapse {

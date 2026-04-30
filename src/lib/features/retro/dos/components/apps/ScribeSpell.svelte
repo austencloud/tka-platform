@@ -1,5 +1,5 @@
 <!--
-  ScribeSpell — Spell a word letter-by-letter with TKA notation names.
+  ScribeSpell - Spell a word letter-by-letter with TKA notation names.
 
   Prompts for a word, fakes a processing pipeline with timed status
   messages, outputs each letter mapped to its TKA name (B -> Beta,
@@ -72,7 +72,7 @@
   let phase = $state<Phase>("prompt");
 
   /* ------------------------------------------------------------------ */
-  /* Input handler — registered on terminalState.inputHandler            */
+  /* Input handler - registered on terminalState.inputHandler            */
   /* ------------------------------------------------------------------ */
 
   function handleInput(input: string): void {

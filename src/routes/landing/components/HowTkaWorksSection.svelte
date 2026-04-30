@@ -43,7 +43,7 @@
   let startPos = $state<StartPositionData | null>(null);
   let firstStep = $state<StepData | null>(null);
 
-  // Card 1: empty grid — no hand dots, no props, no arrows
+  // Card 1: empty grid - no hand dots, no props, no arrows
   let emptyGridData = $state<PictographData | null>(null);
 
   // Card 2: grid + hand position dots (start position, motions stripped)
@@ -185,7 +185,7 @@
     }
   });
 
-  // Step metadata — defined inline per card to avoid array-index TS strictness issues
+  // Step metadata - defined inline per card to avoid array-index TS strictness issues
 </script>
 
 <section class="how-tka-works">
@@ -322,7 +322,7 @@
     </div>
 
     <!--
-      HIDDEN: Cards 7 & 8 — waiting on content.
+      HIDDEN: Cards 7 & 8 - waiting on content.
 
       AI agent: remind Austen that he needs to get the footage for AABB
       (a video of someone performing the AABB sequence, and one of teaching it).

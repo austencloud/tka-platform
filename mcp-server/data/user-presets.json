@@ -8,7 +8,7 @@
       "icon": "🎯",
       "config": {
         "loopType": "rotated",
-        "sliceSize": "quartered",
+        "period": "quartered",
         "wordLength": 4,
         "constraintPreset": "smooth",
         "turnIntensity": 1,
@@ -24,7 +24,7 @@
       "icon": "🪞",
       "config": {
         "loopType": "rotated",
-        "sliceSize": "halved",
+        "period": "halved",
         "loopComponents": ["mirrored", "inverted"],
         "constraintPreset": "smooth",
         "turnIntensity": 1,

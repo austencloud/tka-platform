@@ -60,7 +60,7 @@
       <div class="footer-note">
         <p>
           Understanding this pattern makes TKA <strong>much easier to learn</strong>.
-          You don't memorize — you recognize. Once you see the triad structure,
+          You don't memorize - you recognize. Once you see the triad structure,
           you can predict the third element from knowing the first two.
         </p>
       </div>

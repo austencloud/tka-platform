@@ -1,5 +1,5 @@
 /* ==========================================================================
-   pill-nav.css — extends rail-tile.css with the pill row layout
+   pill-nav.css - extends rail-tile.css with the pill row layout
    Used by DownloadPillNav.svelte for both mobile and desktop variants.
    Typography: respects the project 12px floor (--font-size-compact).
    Contrast: meets WCAG AAA (7:1 body, 3:1 non-text) for the default
@@ -40,9 +40,6 @@
 
 .pill {
   min-width: 0;
-  /* Prevent overflow into adjacent pills. Without this, long labels and
-     summaries push past the pill border and visually bleed into the
-     neighbor — the bug Austen called out at narrow sidebar widths. */
   overflow: hidden;
   min-height: var(--min-touch-target, 48px);
   display: flex;
@@ -74,8 +71,6 @@
   color: white;
 }
 
-/* Opaque focus outline. Default falls back to the brand blue at full alpha
-   so the indicator never composites below 3:1 against any pill background. */
 .pill:focus-visible {
   outline: 2px solid var(--pill-focus, #4a9eff);
   outline-offset: 2px;
@@ -94,12 +89,6 @@
   justify-content: center;
   gap: 6px;
   font-size: 13px;
-  /* Truncation chain: this row may need to shrink below its content
-     width when the pill is narrow. min-width:0 unlocks shrink-below-
-     content; max-width:100% caps it; overflow:hidden + the per-child
-     ellipsis on .pill-label handles the cut. Without this row's
-     min-width:0, .pill-label's `text-overflow: ellipsis` would not
-     fire — it would push past the pill border instead. */
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -125,10 +114,6 @@
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.7);
   line-height: 1;
-  /* Bound the label to its share of the icon row so it cannot overflow
-     out of the pill. The ellipsis is a defense for medium widths; below
-     ~460px container width the @container rule below hides the label
-     entirely (icon + summary carry the identity). */
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -157,18 +142,10 @@
   color: white;
 }
 
-/* "—" placeholder when a pill has no current value. Use a single explicit
-   color rather than stacking opacity on the parent (which would land at
-   3.6:1 — below AA). At 0.65 alpha on the pill background this composites
-   to approximately 7.9:1 — clearing the AAA 7:1 threshold for normal text. */
 .pill-summary.empty {
   color: rgba(255, 255, 255, 0.65);
 }
 
-/* At narrow widths, hide labels and show icon + summary only.
-   With 3+2 grid layout, each pill gets ~33% of row width on top row.
-   At 280px container / 3 = ~93px per pill — labels barely fit.
-   Below 300px, drop to icon-only. */
 @container pill-nav (max-width: 300px) {
   .pill-label {
     display: none;
@@ -188,11 +165,6 @@
   }
 }
 
-/* Respect OS-level increased-contrast settings (Windows High Contrast,
-   macOS Increase Contrast, iOS Accessibility). The pill chrome uses
-   semi-transparent rgba + backdrop-filter; under forced-contrast those
-   can render below the 3:1 non-text contrast floor. Strip transparency
-   for these users and push all label/summary foregrounds to solid white. */
 @media (prefers-contrast: more) {
   .pill-nav {
     background: #0d1018;

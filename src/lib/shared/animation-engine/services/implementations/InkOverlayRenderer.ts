@@ -7,7 +7,7 @@
  * z-index above trails.
  *
  * Ink has persistent per-tip point history (for the stroke path), so
- * unlike bloom we don't clear accumulated state on each frame — only
+ * unlike bloom we don't clear accumulated state on each frame - only
  * the canvas pixels. The per-tip history is cleared on dispose() or
  * explicit clear() (e.g. sequence boundary).
  */

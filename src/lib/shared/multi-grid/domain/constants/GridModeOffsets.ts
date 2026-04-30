@@ -9,7 +9,7 @@
  *
  * Normalization: divide pixel offset by 150 (the hand point radius) to get radius=1.0 units.
  *
- * For the topology system, "hand points" and "outer points" are the same concept —
+ * For the topology system, "hand points" and "outer points" are the same concept -
  * we just use the strict hand point locations as the canonical grid points.
  * The outer points (at 2x radius) are used only for conjoined junction rendering.
  */
@@ -27,7 +27,7 @@ import type { Vec2 } from "../models/GridTopology";
  * Diamond mode: hand points at cardinal positions (n/e/s/w)
  * Box mode: hand points at intercardinal positions (ne/se/sw/nw)
  *
- * Both modes share all 9 locations — the distinction is which locations
+ * Both modes share all 9 locations - the distinction is which locations
  * are "hand points" (primary) vs "layer 2 points" (secondary).
  * For topology purposes, all locations are valid placement targets.
  *
@@ -61,7 +61,7 @@ export const LOCATION_OFFSETS: Readonly<Record<GridLocation, Vec2>> = {
  *
  * Diamond: cardinal points (n, e, s, w)
  * Box: intercardinal points (ne, se, sw, nw)
- * Skewed: one of each — determined at runtime, but all 8 perimeter points are valid
+ * Skewed: one of each - determined at runtime, but all 8 perimeter points are valid
  *
  * For topology purposes, all perimeter locations are valid regardless of mode.
  * The mode determines which ones are visually highlighted as hand points.

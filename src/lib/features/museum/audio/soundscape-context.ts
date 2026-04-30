@@ -11,7 +11,7 @@ export function getSoundscapeContext(): SoundscapePlayer {
 	const player = getContext<SoundscapePlayer | undefined>(KEY);
 	if (!player) {
 		throw new Error(
-			"getSoundscapeContext called outside MuseumModule — no soundscape player available.",
+			"getSoundscapeContext called outside MuseumModule - no soundscape player available.",
 		);
 	}
 	return player;

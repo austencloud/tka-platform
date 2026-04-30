@@ -45,7 +45,7 @@ interface Petal {
   tint: string;
   /** Current rotation angle (radians). */
   rot: number;
-  /** Angular velocity coefficient — per-petal scalar so flutter feels individual. */
+  /** Angular velocity coefficient - per-petal scalar so flutter feels individual. */
   rotK: number;
   /** Per-petal phase offset for sway so petals don't sync. */
   phase: number;
@@ -56,11 +56,11 @@ interface Petal {
 const MAX_PETALS = 2048;
 const FADE_OUT_FRACTION = 0.2; // last 20% of life fades alpha out
 const FADE_IN_DURATION = 0.12; // seconds
-const EMBER_MAX_AGE = 0.4; // seconds — ember glow dies well before petal
+const EMBER_MAX_AGE = 0.4; // seconds - ember glow dies well before petal
 const TAU = Math.PI * 2;
 
 /**
- * Canvas2D petals renderer — per-tip falling sprite emitter with
+ * Canvas2D petals renderer - per-tip falling sprite emitter with
  * sinusoidal sway. Silhouettes are drawn procedurally from the palette's
  * shape list; no PNG atlases required.
  *
@@ -144,7 +144,7 @@ export class Petals2DRenderer {
     if (n <= 0) return;
 
     const fall = params.fallBaseSpeed * (0.3 + 0.7 * params.fallSpeed) * scale;
-    // Lifetime scales with intensity — bigger petals last longer because
+    // Lifetime scales with intensity - bigger petals last longer because
     // they fall slower relative to their size.
     const lifeBase = 2.0 + params.intensity * 3.0;
 

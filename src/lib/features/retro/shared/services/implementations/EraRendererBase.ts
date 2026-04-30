@@ -1,5 +1,5 @@
 /**
- * EraRendererBase — Shared utilities for era-native pictograph renderers.
+ * EraRendererBase - Shared utilities for era-native pictograph renderers.
  *
  * Extracts the SVG wrapping, image loading, color tinting, coordinate scaling,
  * and element transforms that every era renderer needs. The 1995 (pixel) and
@@ -75,7 +75,7 @@ export abstract class EraRendererBase {
 			endLocation: hand.endLocation,
 			turns: hand.turns,
 			startOrientation: hand.orientation,
-			// End orientation is not stored in RetroHandData — default to the same as start
+			// End orientation is not stored in RetroHandData - default to the same as start
 			endOrientation: hand.orientation,
 			isVisible: true,
 			propType: PropType.STAFF,
@@ -117,7 +117,7 @@ export abstract class EraRendererBase {
 	 * Returns both the SVG string AND the expansion offsets so callers can
 	 * adjust the element's draw position to compensate for the extra padding.
 	 *
-	 * This mirrors Canvas2DDirectRenderer.wrapSvgContent exactly — arrow
+	 * This mirrors Canvas2DDirectRenderer.wrapSvgContent exactly - arrow
 	 * positioning depends on this being bit-for-bit compatible.
 	 *
 	 * @param innerContent  Raw SVG paths/groups (NOT a full <svg> element)

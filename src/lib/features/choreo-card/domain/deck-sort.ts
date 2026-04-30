@@ -1,4 +1,4 @@
-// deck-sort.ts — Sort methods and comparators for deck list.
+// deck-sort.ts - Sort methods and comparators for deck list.
 
 import type { Deck } from "./models/Deck";
 

@@ -130,7 +130,7 @@
       aria-describedby={error ? "fb-description-error" : undefined}
     ></textarea>
 
-    <!-- Clear text — inside the textarea, top-right corner -->
+    <!-- Clear text - inside the textarea, top-right corner -->
     {#if value.trim().length > 0}
       <button
         type="button"
@@ -201,7 +201,7 @@
         {/if}
       </div>
     </div>
-    <!-- Single stable ImageUpload instance — never destroyed/recreated.
+    <!-- Single stable ImageUpload instance - never destroyed/recreated.
          The attach button is handled by the proxy inside the textarea,
          so we hide the component's own button when no images exist. -->
     <ImageUpload

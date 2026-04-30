@@ -69,7 +69,7 @@ This gives users a live preview of exactly how their settings affect the exporte
     authState.user?.displayName || "Your Name"
   );
 
-  // Level badge visual styles — matches the actual choreo card print styles
+  // Level badge visual styles - matches the actual choreo card print styles
   const levelStyles: Record<
     number,
     { bg: string; border: string; text: string }
@@ -162,7 +162,7 @@ This gives users a live preview of exactly how their settings affect the exporte
       {/each}
     </div>
 
-    <!-- QR code indicator — shows in the corner when enabled -->
+    <!-- QR code indicator - shows in the corner when enabled -->
     {#if showQRCode}
       <div class="qr-indicator" transition:fade={{ duration: 200 }}>
         <i class="fas fa-qrcode" aria-hidden="true"></i>
@@ -346,7 +346,7 @@ This gives users a live preview of exactly how their settings affect the exporte
     max-height: 100%;
   }
 
-  /* QR code icon — absolute-positioned in bottom-right corner */
+  /* QR code icon - absolute-positioned in bottom-right corner */
   .qr-indicator {
     position: absolute;
     bottom: 4px;

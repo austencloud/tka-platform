@@ -14,7 +14,7 @@ function clamp(v: number, min: number, max: number): number {
  * Distance is in canvas pixels. Tips further than 400px are dim,
  * tips within ~50px are near full brightness.
  *
- * Useful for choreography that involves close passes — the tips light up
+ * Useful for choreography that involves close passes - the tips light up
  * just as the props approach each other.
  */
 export function evaluateProximity(ctx: TipEvaluationContext): LedColor {
@@ -42,7 +42,7 @@ export function evaluateProximity(ctx: TipEvaluationContext): LedColor {
 /**
  * Velocity pattern: brighter when the prop is moving fast, dimmer when slow.
  * Speed is in canvas pixels per second. Fully bright at 3000 px/s, dim (not off)
- * at rest — so there's always a faint glow even during still moments.
+ * at rest - so there's always a faint glow even during still moments.
  *
  * Good for emphasizing fast throws and directional changes.
  */

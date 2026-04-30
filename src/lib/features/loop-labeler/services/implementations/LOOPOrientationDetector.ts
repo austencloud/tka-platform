@@ -15,9 +15,9 @@
  * 1. Read the sequence's starting blue/red orientations from the first beat
  * 2. Read the ending blue/red orientations from the last beat
  * 3. Compute per-pass orientation delta on the 4-cycle wheel (in=0, clock=1,
- *    out=2, counter=3 — quarter-turn indices)
+ *    out=2, counter=3 - quarter-turn indices)
  * 4. Period from delta:
- *    - 0 → period 1 (already closed — no orientation cycle)
+ *    - 0 → period 1 (already closed - no orientation cycle)
  *    - 2 → period 2 (180° shift per pass, closes after 2 passes)
  *    - 1 or 3 → period 4 (90° shift per pass, closes after 4 passes)
  * 5. Emit ROTATED with domain="orientation" when period > 1
@@ -99,7 +99,7 @@ export class LOOPOrientationDetector {
       blueEndIdx === null ||
       redEndIdx === null
     ) {
-      // Missing or non-standard orientation values — fall back to closed.
+      // Missing or non-standard orientation values - fall back to closed.
       return { period: 1, components: [] };
     }
 

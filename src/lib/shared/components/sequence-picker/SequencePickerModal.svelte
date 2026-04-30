@@ -45,6 +45,8 @@
     if (open && !initialized) {
       engine.initialize();
       initialized = true;
+    } else if (open && initialized) {
+      engine.refresh();
     }
   });
 

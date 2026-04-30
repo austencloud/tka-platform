@@ -2,6 +2,11 @@
   import { simplifyAndTruncate, simplifyRepeatedWord } from "../../shared/utils/word-simplifier";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
+  import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+  import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
+  import { browser } from "$app/environment";
+
+  const cache = browser ? getGlyphCache() : null;
 
   // Props
   let {
@@ -156,6 +161,12 @@
     return (activeStepNumber! - 1) % parsedLetters.length;
   });
 
+  function getGlyphUrl(letter: string): string | null {
+    if (!cache) return null;
+    const base = isDashLetter(letter) ? getBaseLetter(letter) : letter;
+    return cache.getGlyphDataUrl(base);
+  }
+
   // Only show word label if there's an actual word (not empty, not default sequence names)
   const shouldShowWordLabel = $derived.by(() => {
     if (!word) return false;
@@ -210,19 +221,23 @@
         : "Current word: {word}. Click to copy."}
     >
       {#if hasLetterSources && !isContextualMessage}
-        <!-- Render each letter with styling based on original vs bridge -->
         {#each letterSources as source, index (index)}
+          {@const url = getGlyphUrl(source.letter)}
           <span
             class="letter"
             class:original={source.isOriginal}
             class:bridge={!source.isOriginal}
-            class:active={hasActiveHighlighting && activeLetterIndex === index}>{source.letter}</span
+            class:active={hasActiveHighlighting && activeLetterIndex === index}
           >
+            {#if url}
+              <img src={url} alt={source.letter} class="glyph-img" draggable="false" />
+              {#if isDashLetter(source.letter)}<span class="dash-bar"></span>{/if}
+            {:else}{source.letter}{/if}
+          </span>
         {/each}
       {:else if !isContextualMessage && parsedLetters.length > 0}
-        <!-- Always render as individual letters for smooth transitions -->
-        <!-- playback class adds dim styling when animating, fades out when stopped -->
         {#each parsedLetters as letter, index (index)}
+          {@const url = getGlyphUrl(letter)}
           <span
             class="letter"
             class:playback={hasActiveHighlighting}
@@ -231,8 +246,23 @@
             class:active-subtle={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'subtle'}
             class:active-glow-only={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'glow-only'}
             class:active-minimal={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'minimal'}
-            class:active-wave={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'wave'}>{letter}</span
+            class:active-wave={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'wave'}
           >
+            {#if url}
+              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
+            {:else}{letter}{/if}
+          </span>
+        {/each}
+      {:else if !isContextualMessage}
+        {#each parsedLetters as letter, index (index)}
+          {@const url = getGlyphUrl(letter)}
+          <span class="letter">
+            {#if url}
+              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
+            {:else}{letter}{/if}
+          </span>
         {/each}
       {:else}
         {displayWord}
@@ -301,8 +331,11 @@
   }
 
   .word-label.has-word {
-    /* Scale based on container width - shrinks only for very long words */
     font-size: clamp(1.25rem, 6cqi, 2rem);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.12em;
   }
 
   /* Apply dynamic scale factor when overflow is detected */
@@ -399,30 +432,38 @@
     }
   }
 
-  /* Letter source styling - original vs bridge letters */
   .letter {
-    display: inline;
-    /* Smooth transitions for all letter state changes (playback start/stop, highlighting) */
+    display: inline-flex;
+    align-items: center;
+    gap: 0.08em;
     transition:
-      color 0.3s ease,
-      text-shadow 0.3s ease,
-      opacity 0.3s ease,
-      font-weight 0.15s ease;
+      filter 0.3s ease,
+      opacity 0.3s ease;
+  }
+
+  .glyph-img {
+    height: 1em;
+    width: auto;
+    display: block;
+    filter: invert(0.9);
+  }
+
+  .dash-bar {
+    display: inline-block;
+    height: 0.20em;
+    width: 0.70em;
+    background: currentColor;
+    border-radius: 9999px;
+    flex-shrink: 0;
   }
 
   .letter.original {
-    /* Original letters (user-typed) - bold and bright */
-    font-weight: 700;
-    color: var(--theme-text, #ffffff);
     opacity: 1;
   }
 
   .letter.bridge {
-    /* Bridge letters (interpolated) - dimmed and smaller */
-    font-weight: 400;
+    opacity: 0.4;
     font-size: 0.7em;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    opacity: 0.6;
   }
 
   /* When has letter sources, no extra spacing between letter spans */
@@ -431,80 +472,47 @@
     letter-spacing: 0;
   }
 
-  /* Playback mode - non-active letters are dimmed during animation */
   .letter.playback {
-    color: rgba(255, 255, 255, 0.25);
+    opacity: 0.25;
   }
 
-  /* =========================================================================
-     LETTER ANIMATION STYLES (TEMPORARY - for A/B testing)
-     ========================================================================= */
-
-  /* Base active state - shared by all variants */
   .letter.active {
-    color: #fff;
     opacity: 1;
-    font-weight: 700;
   }
 
-  /* STYLE 1: INTENSE - pop with glow bloom (toned down to 80%) */
   .letter.active-intense {
-    text-shadow: 0 0 14px rgba(255, 255, 255, 0.5), 0 0 28px rgba(255, 255, 255, 0.22);
+    filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 28px rgba(255, 255, 255, 0.22));
     animation: letterPopIntense var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes letterPopIntense {
-    0% {
-      transform: scale(1);
-      text-shadow: 0 0 0 rgba(255, 255, 255, 0);
-    }
-    50% {
-      transform: scale(1.10);
-      text-shadow: 0 0 22px rgba(255, 255, 255, 0.8), 0 0 44px rgba(255, 255, 255, 0.35);
-    }
-    100% {
-      transform: scale(1);
-      text-shadow: 0 0 14px rgba(255, 255, 255, 0.5), 0 0 28px rgba(255, 255, 255, 0.22);
-    }
+    0% { transform: scale(1); filter: none; }
+    50% { transform: scale(1.10); filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.8)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.5)); }
   }
 
-  /* STYLE 2: SUBTLE - gentle fade with slight scale */
   .letter.active-subtle {
-    text-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
     animation: letterFadeSubtle var(--duration-normal) ease-out;
   }
 
   @keyframes letterFadeSubtle {
-    0% {
-      transform: scale(1);
-      text-shadow: 0 0 0 rgba(255, 255, 255, 0);
-      opacity: 0.5;
-    }
-    100% {
-      transform: scale(1.02);
-      text-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
-      opacity: 1;
-    }
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.02); opacity: 1; filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5)); }
   }
 
-  /* STYLE 3: GLOW-ONLY - no scale, just glow appears */
   .letter.active-glow-only {
-    text-shadow: 0 0 16px rgba(255, 255, 255, 0.6);
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.6));
     animation: letterGlowOnly var(--duration-fast) ease-out;
   }
 
   @keyframes letterGlowOnly {
-    0% {
-      text-shadow: 0 0 0 rgba(255, 255, 255, 0);
-    }
-    100% {
-      text-shadow: 0 0 16px rgba(255, 255, 255, 0.6);
-    }
+    0% { filter: none; }
+    100% { filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.6)); }
   }
 
-  /* STYLE 4: MINIMAL - quick fade, almost instant */
   .letter.active-minimal {
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
     animation: letterMinimal 0.08s ease-out;
   }
 
@@ -513,46 +521,23 @@
     100% { opacity: 1; }
   }
 
-  /* STYLE 5: WAVE - pulse outward effect */
   .letter.active-wave {
-    text-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
+    filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.5));
     animation: letterWave var(--duration-dramatic) ease-out;
   }
 
   @keyframes letterWave {
-    0% {
-      transform: scale(0.95);
-      text-shadow: 0 0 0 rgba(255, 255, 255, 0);
-    }
-    30% {
-      transform: scale(1.08);
-      text-shadow: 0 0 24px rgba(255, 255, 255, 0.8);
-    }
-    100% {
-      transform: scale(1);
-      text-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
-    }
+    0% { transform: scale(0.95); filter: none; }
+    30% { transform: scale(1.08); filter: drop-shadow(0 0 24px rgba(255, 255, 255, 0.8)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.5)); }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .copied-message {
-      animation: none;
-    }
-    .active-intense {
-      animation: none;
-    }
-    .active-subtle {
-      animation: none;
-    }
-    .active-glow-only {
-      animation: none;
-    }
-    .active-minimal {
-      animation: none;
-    }
-    .active-wave {
-      animation: none;
-    }
+    .copied-message { animation: none; }
+    .active-intense,
+    .active-subtle,
+    .active-glow-only,
+    .active-minimal,
+    .active-wave { animation: none; }
   }
 </style>

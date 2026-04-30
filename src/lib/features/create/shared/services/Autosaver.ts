@@ -1,7 +1,7 @@
 /**
  * Autosave Service
  *
- * Saves sequence drafts to Dexie (IndexedDB) first — no auth required,
+ * Saves sequence drafts to Dexie (IndexedDB) first - no auth required,
  * works offline, survives a page reload. If the user is authenticated,
  * we also fire a non-blocking Firestore sync so the draft is backed up
  * to the cloud when connectivity is available.
@@ -37,7 +37,7 @@ export class Autosaver {
   /**
    * Save a draft.
    *
-   * Always writes to Dexie first — instant, no auth needed, works offline.
+   * Always writes to Dexie first - instant, no auth needed, works offline.
    * If the user is signed in we also kick off a Firestore sync in the
    * background so the draft reaches the cloud, but we never await it here.
    */
@@ -75,7 +75,7 @@ export class Autosaver {
     const user = getAuthSync().currentUser;
     if (user) {
       const draftData = createDraftSequence(sessionId, user.uid, sequenceData);
-      // Deep-clone the sequence data via JSON to strip undefined values —
+      // Deep-clone the sequence data via JSON to strip undefined values -
       // Firestore rejects them (e.g. startPosition.startPosition can be
       // undefined on fresh pictographs). Timestamps are added after the
       // clone since serverTimestamp() is a Firestore sentinel, not JSON.
@@ -102,7 +102,7 @@ export class Autosaver {
   /**
    * Load a draft for session recovery.
    *
-   * Checks Dexie first — if we have a local copy we use it immediately
+   * Checks Dexie first - if we have a local copy we use it immediately
    * without touching the network. Falls back to Firestore only when
    * Dexie has nothing and the user is authenticated.
    */

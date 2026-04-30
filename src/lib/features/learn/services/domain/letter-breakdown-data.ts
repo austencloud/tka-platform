@@ -2,7 +2,7 @@
  * Static Letter Breakdown Data
  *
  * Complete lookup table for all TKA letters. Every field is deterministic
- * and derived from the domain specification — no LLM inference needed.
+ * and derived from the domain specification - no LLM inference needed.
  *
  * Data sources:
  * - Type mapping: Letter.ts getLetterType()
@@ -36,7 +36,7 @@ export interface LetterBreakdownEntry {
 export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
   new Map([
     // ═══════════════════════════════════════════════════════════════
-    // Type 1: Dual-Shift (A-V) — both hands shift
+    // Type 1: Dual-Shift (A-V) - both hands shift
     // ═══════════════════════════════════════════════════════════════
 
     // Alpha-Beta Group: Prospin (A, D, G, J)
@@ -316,7 +316,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
     ],
 
     // ═══════════════════════════════════════════════════════════════
-    // Type 2: Shift — one hand shifts, other stays static
+    // Type 2: Shift - one hand shifts, other stays static
     // ═══════════════════════════════════════════════════════════════
     [
       "W",
@@ -420,7 +420,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
     ],
 
     // ═══════════════════════════════════════════════════════════════
-    // Type 3: Cross-Shift — one hand shifts, other dashes
+    // Type 3: Cross-Shift - one hand shifts, other dashes
     // Upgrade of Type 2: the formerly-static hand now dashes
     // ═══════════════════════════════════════════════════════════════
     [
@@ -513,7 +513,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
     ],
 
     // ═══════════════════════════════════════════════════════════════
-    // Type 4: Dash — one hand dashes, other stays static
+    // Type 4: Dash - one hand dashes, other stays static
     // ═══════════════════════════════════════════════════════════════
     [
       "Φ",
@@ -557,7 +557,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
     ],
 
     // ═══════════════════════════════════════════════════════════════
-    // Type 5: Dual-Dash — both hands dash
+    // Type 5: Dual-Dash - both hands dash
     // Upgrade of Type 4: the formerly-static hand now dashes
     // ═══════════════════════════════════════════════════════════════
     [
@@ -595,7 +595,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
     ],
 
     // ═══════════════════════════════════════════════════════════════
-    // Type 6: Static — both hands stay at their position
+    // Type 6: Static - both hands stay at their position
     // ═══════════════════════════════════════════════════════════════
     [
       "α",

@@ -11,7 +11,7 @@
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
-  // Scene feature readiness — synchronous scene, report on mount so the
+  // Scene feature readiness - synchronous scene, report on mount so the
   // loading curtain can lift. Without this, the "environment" feature stays
   // enabled-but-not-ready forever and allEnabledReady never flips true.
   const sceneFeatures = getSceneFeatureContext();

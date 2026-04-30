@@ -5,7 +5,7 @@ Shows the four compositional elements of a sequence (blue hand path, red hand pa
 blue solo prop, red solo prop) as tappable buttons. Each button navigates to the
 matching browse view mode when tapped.
 
-Only renders buttons for elements that exist on the sequence — if blueSoloProp or
+Only renders buttons for elements that exist on the sequence - if blueSoloProp or
 redSoloProp is missing, those buttons are hidden.
 -->
 <script lang="ts">

@@ -28,7 +28,7 @@
     festivalState.savePortfolio(uid, { ...portfolio, performanceCredits: credits });
   }
 
-  // ─── Social links & About — debounced auto-save ─────────────────────────────
+  // ─── Social links & About - debounced auto-save ─────────────────────────────
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   function debounceSave(updater: () => TeachingPortfolio) {

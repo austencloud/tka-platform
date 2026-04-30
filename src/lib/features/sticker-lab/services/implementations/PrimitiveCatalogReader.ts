@@ -41,7 +41,7 @@ export async function loadPrimitiveCatalog(): Promise<LoadedPrimitiveCatalog> {
   return _loading;
 }
 
-/** Synchronous peek — null until loadPrimitiveCatalog() resolves. */
+/** Synchronous peek - null until loadPrimitiveCatalog() resolves. */
 export function getCatalogEntry(shapeHash: string): PrimitiveCatalogEntry | null {
   return _loaded?.byShapeHash.get(shapeHash) ?? null;
 }

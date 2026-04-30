@@ -14,7 +14,7 @@ const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
 
 /**
  * Builds a direct Firebase Storage URL for a sequence thumbnail.
- * Bypasses the CloudThumbnailCache manifest check — if the thumbnail exists
+ * Bypasses the CloudThumbnailCache manifest check - if the thumbnail exists
  * in storage, this URL works. If not, the <img> onerror handler hides it.
  */
 export function buildThumbnailUrl(

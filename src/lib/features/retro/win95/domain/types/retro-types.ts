@@ -1,5 +1,5 @@
 /**
- * TKA-OS v1.0 — Domain Types
+ * TKA-OS v1.0 - Domain Types
  *
  * Core type definitions for the retro desktop shell: windows, icons,
  * dialogs, and start menu items. These model the fictional 1995

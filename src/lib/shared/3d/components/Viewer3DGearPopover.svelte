@@ -3,7 +3,7 @@
    * Viewer3DGearPopover
    *
    * Gear tab of the sequence-viewer RightRail. Gated on
-   * viewer3DState.activePopover === "gear" — the rail owns the chip button
+   * viewer3DState.activePopover === "gear" - the rail owns the chip button
    * and outside-click behavior. This component only renders the panel
    * contents when the gear popover is active.
    *
@@ -12,7 +12,7 @@
    * - Planes: which plane each hand is on, plus force-show visibility
    * - Scene: scene-feature toggles
    *
-   * Sequence-wide only — per-beat plane overrides are not editable here.
+   * Sequence-wide only - per-beat plane overrides are not editable here.
    * PlaneMode is derived from the hand assignments in setHandPlane.
    */
 
@@ -63,7 +63,7 @@
   const bluePlane = $derived(avatarState?.customBluePlane ?? Plane.WALL);
   const redPlane = $derived(avatarState?.customRedPlane ?? Plane.WALL);
 
-  // A plane is "implicit" when a hand is on it — visibility is locked on
+  // A plane is "implicit" when a hand is on it - visibility is locked on
   function isImplicit(plane: Plane): boolean {
     return bluePlane === plane || redPlane === plane;
   }
@@ -193,7 +193,7 @@
                     onclick={(e) => handlePlaneToggleClick(e, plane)}
                     aria-pressed={visible}
                     aria-disabled={implicit}
-                    aria-label={`${label} plane — ${implicit ? 'locked visible, hand assigned' : (visible ? 'force-shown, click to hide' : 'hidden, click to show')}`}
+                    aria-label={`${label} plane - ${implicit ? 'locked visible, hand assigned' : (visible ? 'force-shown, click to hide' : 'hidden, click to show')}`}
                   >
                     <i
                       class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
@@ -282,7 +282,7 @@
     padding: 8px;
   }
 
-  /* Tab bar — segmented pill at the top of the popover */
+  /* Tab bar - segmented pill at the top of the popover */
   .tab-bar {
     display: flex;
     gap: 2px;
@@ -327,7 +327,7 @@
     cursor: not-allowed;
   }
 
-  /* Tab panels — the content area below the tab bar */
+  /* Tab panels - the content area below the tab bar */
   .tab-panel {
     padding: 4px 0 0 0;
   }
@@ -374,7 +374,7 @@
     flex-shrink: 0;
   }
 
-  /* Plane toggle — round 32px color dot that doubles as visibility control */
+  /* Plane toggle - round 32px color dot that doubles as visibility control */
   .plane-toggle {
     width: 32px;
     height: 32px;
@@ -428,7 +428,7 @@
     color: rgba(255, 255, 255, 0.55);
   }
 
-  /* Hand slots — 32px round dashed/filled circles */
+  /* Hand slots - 32px round dashed/filled circles */
   .hand-slot {
     width: 32px;
     height: 32px;
@@ -460,14 +460,14 @@
     border-color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Tab footer — right-aligned action area below the panel content */
+  /* Tab footer - right-aligned action area below the panel content */
   .tab-footer {
     display: flex;
     justify-content: flex-end;
     margin-top: 8px;
   }
 
-  /* Reset button — labeled icon-text button in the panel footer.
+  /* Reset button - labeled icon-text button in the panel footer.
      Only rendered when state is non-default. */
   .reset-btn {
     display: flex;
@@ -503,7 +503,7 @@
     border: 1.5px solid rgba(14, 14, 24, 1);
   }
 
-  /* Stage bridge footer — gradient CTA that links to Stage destination */
+  /* Stage bridge footer - gradient CTA that links to Stage destination */
   .bridge-btn {
     margin-top: 14px;
     min-height: var(--min-touch-target);

@@ -30,7 +30,7 @@ import {
 
 const DEFAULT_CONFIG: Required<AnimationStateMachineConfig> = {
 	accelerationTime: 0.08,
-	decelerationTime: 0,  // Instant stop — prevents foot sliding when movement ends
+	decelerationTime: 0,  // Instant stop - prevents foot sliding when movement ends
 	landingDuration: 0.15,
 	coyoteGrace: 0.1,
 	verticalThreshold: 0.5,
@@ -40,13 +40,13 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 	private state = LocomotionState.IDLE;
 	private config: Required<AnimationStateMachineConfig>;
 
-	// Speed smoothing — purely visual, doesn't affect movement
+	// Speed smoothing - purely visual, doesn't affect movement
 	private smoothedSpeed = 0;
 
-	// Landing timer — auto-transition after duration
+	// Landing timer - auto-transition after duration
 	private landingTimer = 0;
 
-	// Coyote grace — brief delay before WALKING→FALLING to absorb bumps
+	// Coyote grace - brief delay before WALKING→FALLING to absorb bumps
 	private airborneTimer = 0;
 
 	constructor(config?: AnimationStateMachineConfig) {
@@ -60,7 +60,7 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 		return {
 			state: this.state,
 			animationSpeed: this.smoothedSpeed,
-			// Crouch-walking needs directional weights too — report isMoving
+			// Crouch-walking needs directional weights too - report isMoving
 			// whenever there's movement input in any grounded locomotion state.
 			isMoving: this.state === LocomotionState.WALKING
 				|| (this.state === LocomotionState.CROUCHING && input.hasMovementInput),
@@ -81,7 +81,7 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 	}
 
 	dispose(): void {
-		// No resources to clean up — pure state machine
+		// No resources to clean up - pure state machine
 	}
 
 	// ── State transitions ──

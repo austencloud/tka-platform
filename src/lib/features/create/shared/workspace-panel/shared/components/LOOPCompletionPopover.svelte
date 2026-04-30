@@ -120,10 +120,10 @@
             disabled={state !== "available"}
             onclick={() => handleClick(component)}
             title={state === "active"
-              ? `${info.label} — active`
+              ? `${info.label} - active`
               : state === "available"
                 ? `Apply ${info.label} LOOP`
-                : `${info.label} — not available`}
+                : `${info.label} - not available`}
             style:--component-color={info.color}
           >
             <i class="fas fa-{info.icon}" aria-hidden="true"></i>

@@ -1,5 +1,5 @@
 <!--
-  RetroLab — Development preview for TKA-OS components
+  RetroLab - Development preview for TKA-OS components
 
   Provides a testing ground within the Lab module for previewing
   retro components during development.
@@ -24,7 +24,7 @@
   </div>
 {:else}
   <div class="lab-content">
-    <h2>TKA-OS v1.0 — Development Lab</h2>
+    <h2>TKA-OS v1.0 - Development Lab</h2>
 
     <div class="lab-section">
       <h3>Quick Actions</h3>

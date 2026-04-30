@@ -78,7 +78,7 @@ export class VideoSourceProvider implements IVideoSourceProvider {
 
 		const time = frameIndex / fps;
 
-		// Already at the target time — no seek needed.
+		// Already at the target time - no seek needed.
 		if (Math.abs(this.videoEl.currentTime - time) < 0.001) return;
 
 		return new Promise<void>((resolve) => {

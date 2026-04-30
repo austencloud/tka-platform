@@ -197,7 +197,7 @@ export function getAuthSync(): Auth {
  * @deprecated Use getAuthInstance() for HMR safety
  */
 function initAuthWithPersistence(): Auth {
-  // initializeAuth can only run once per Firebase app — fall back to getAuth
+  // initializeAuth can only run once per Firebase app - fall back to getAuth
   // if it's already been initialized (e.g., via HMR or another call site).
   // popupRedirectResolver is required here because signInWithPopup relies on it;
   // getAuth() installs it by default, but initializeAuth() does not.
@@ -342,7 +342,7 @@ async function initializeFirestore(): Promise<Firestore> {
     hmrManager.setFirestore(firestoreInstance);
     return firestoreInstance;
   } catch {
-    // Not yet initialized — proceed to initFs
+    // Not yet initialized - proceed to initFs
   }
 
   // persistentMultipleTabManager can hang if BroadcastChannel/IndexedDB is stuck.
@@ -501,7 +501,7 @@ if (typeof window !== "undefined") {
 // AUTH PERSISTENCE
 //
 // Persistence is now configured atomically by initializeAuth() above.
-// This function exists for backward compatibility — it resolves immediately
+// This function exists for backward compatibility - it resolves immediately
 // because there's nothing to wait for. Previously this Promise.raced
 // setPersistence with a 5-second timeout, which fired on every refresh
 // because setPersistence races with IndexedDB setup (firebase-js-sdk #8626).

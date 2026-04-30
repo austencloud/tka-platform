@@ -14,13 +14,13 @@
    *      main viewer shows the exact same pose at full size) and marks
    *      the card as picked.
    *   3. Reviewer decides:
-   *      - "Clear" / "Needs adjustment" — commits a label with the
+   *      - "Clear" / "Needs adjustment" - commits a label with the
    *        current stance + the full candidate history.
-   *      - "Different options" — throws out the six cards and generates
+   *      - "Different options" - throws out the six cards and generates
    *        six fresh diverse ones (with existing history preserved).
-   *      - "Refine" — (only after a pick) generates six small
+   *      - "Refine" - (only after a pick) generates six small
    *        perturbations around the picked stance.
-   *      - "Give up on this pose" — labels as unreachable with the
+   *      - "Give up on this pose" - labels as unreachable with the
    *        full history, auto-advances to the next pose.
    *
    * The main viewer (PoseViewport) reads the same stance state, so

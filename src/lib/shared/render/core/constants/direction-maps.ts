@@ -66,7 +66,7 @@ export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
 /**
  * Box grid (NE/SE/SW/NW) - non-radial orientation (CLOCK/COUNTER)
  * Also used for interradial orientations (clockIn/clockOut/counterIn/counterOut)
- * as a close approximation — both are perpendicular-ish to the radial axis.
+ * as a close approximation - both are perpendicular-ish to the radial axis.
  */
 export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   ne: { red: "upleft", blue: "downright" },

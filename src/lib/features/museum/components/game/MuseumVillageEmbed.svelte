@@ -1,5 +1,5 @@
 <!--
-  MuseumVillageEmbed — Pure visual renderer for the persistent Village sim.
+  MuseumVillageEmbed - Pure visual renderer for the persistent Village sim.
 
   Does NOT own the orchestrator. Reads from MuseumVillageManager which
   persists across room transitions. Walking away and back: village has
@@ -122,7 +122,7 @@
 	}
 
 	onDestroy(() => {
-		// Pause the sim when leaving — don't destroy
+		// Pause the sim when leaving - don't destroy
 		setMuseumVillageVisible(false);
 	});
 </script>

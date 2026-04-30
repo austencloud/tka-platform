@@ -126,11 +126,11 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   arena: false, // Arena pairwise ranking (unreleased)
   festivals: true, // Festival Hub (admin-only via feature flags)
   retro: false, // Retro module (graduated from Lab)
-  archive: false, // The Kinetic Archive — 3D indoor scene (admin-only)
+  archive: false, // The Kinetic Archive - 3D indoor scene (admin-only)
   levels: false, // Level progression labs (L4-L7 + Poi, graduated from Lab)
   "hand-paths": false, // Hand path explorer + builder (graduated from Lab)
   video: false, // Video analysis, trails, effects (graduated from Lab)
   social: false, // Social module: community map + nearby spinner sync (graduated from Lab)
-  museum: false, // The Archive — walkable museum with 2D/3D flip
+  museum: false, // The Archive - walkable museum with 2D/3D flip
   lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, ml-training
 };

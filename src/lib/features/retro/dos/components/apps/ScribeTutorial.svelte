@@ -1,5 +1,5 @@
 <!--
-  ScribeTutorial — Text-based educational content for SCRIBE.
+  ScribeTutorial - Text-based educational content for SCRIBE.
 
   Five paginated lessons covering TKA fundamentals: what TKA is, letter
   types, grid positions, turns and rotation, and building sequences.

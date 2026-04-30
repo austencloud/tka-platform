@@ -3,7 +3,7 @@
  *
  * Pre-warms the PictographBlobCache (IndexedDB) with rendered pictograph cells
  * for sequences the user is about to open. When the preview mounts,
- * PreviewCellRenderer.renderCell() finds everything already cached — instant display.
+ * PreviewCellRenderer.renderCell() finds everything already cached - instant display.
  *
  * Three priority tiers mapped to the Prioritized Task Scheduling API:
  * - "background" → scheduler.postTask({ priority: "background" })

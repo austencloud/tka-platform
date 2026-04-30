@@ -1,5 +1,5 @@
 <!--
-  InfoCardBack — "Your Deck" reference card
+  InfoCardBack - "Your Deck" reference card
 
   Back side of the rules card. Explains corner badges, levels,
   LOOPs, and chaining. Better spacing, real badge visuals,

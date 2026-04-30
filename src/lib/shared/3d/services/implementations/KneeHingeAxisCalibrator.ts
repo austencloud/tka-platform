@@ -4,7 +4,7 @@ import { Vector3 } from "three";
  * Derives the knee's sagittal hinge axis from the rest-pose directions
  * of the UpLeg and Leg bones. The axis is the cross product of the
  * two rest directions, normalized. This is the axis perpendicular to
- * the natural bend plane — rotating around it bends the knee forward
+ * the natural bend plane - rotating around it bends the knee forward
  * or backward but never sideways.
  *
  * Called once at skeleton-build time, not per-frame, so allocation

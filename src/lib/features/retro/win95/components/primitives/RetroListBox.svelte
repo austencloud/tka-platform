@@ -1,5 +1,5 @@
 <!--
-  RetroListBox — Scrollable list with single selection
+  RetroListBox - Scrollable list with single selection
 
   Uses 98.css's sunken field styling. Renders a list of items
   where clicking selects and double-clicking fires the action callback.

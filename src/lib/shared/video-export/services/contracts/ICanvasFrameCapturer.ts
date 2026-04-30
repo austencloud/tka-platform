@@ -6,7 +6,7 @@ import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFram
  *
  * Pulls a single frame from a canvas as the fastest transport form the
  * current browser supports. The returned CapturedFrame is the encoder's
- * input — the caller posts it through BackgroundVideoEncoder.addFrame()
+ * input - the caller posts it through BackgroundVideoEncoder.addFrame()
  * which in turn transfers it to the encoding worker.
  *
  * Implementations must ensure the source canvas has flushed its current
@@ -32,7 +32,7 @@ export interface ICanvasFrameCapturer {
    * (`new VideoFrame(canvas)` and `CanvasRenderingContext2D.getImageData`)
    * both return immediately. Returning synchronously is load-bearing for
    * callers that need to preserve message ordering with the encoder worker
-   * — a Promise-wrapped API would defer `addFrame` calls to microtasks and
+   * - a Promise-wrapped API would defer `addFrame` calls to microtasks and
    * could let a following `finish` message overtake them.
    *
    * @param canvas  The source canvas. Its width/height determine the

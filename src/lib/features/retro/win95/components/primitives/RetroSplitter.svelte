@@ -1,5 +1,5 @@
 <!--
-  RetroSplitter — Horizontal or vertical split pane with draggable divider
+  RetroSplitter - Horizontal or vertical split pane with draggable divider
 
   Renders two panes separated by a 4px draggable gray bar. In horizontal
   mode (default), left/right panes are side by side. In vertical mode,

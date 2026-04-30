@@ -61,7 +61,7 @@
       : []
   );
 
-  // Build the contextual command list — only groups relevant RIGHT NOW
+  // Build the contextual command list - only groups relevant RIGHT NOW
   const commandGroups = $derived<CommandGroup[]>(buildCommandGroups());
 
   function buildCommandGroups(): CommandGroup[] {
@@ -140,7 +140,7 @@
       });
     }
 
-    // Settings toggles — only in modules where pictograph/grid visibility matters
+    // Settings toggles - only in modules where pictograph/grid visibility matters
     if (isSettingsModule) {
       groups.push({
         title: "Settings",
@@ -156,7 +156,7 @@
       });
     }
 
-    // Prop selection — only in modules that render pictographs
+    // Prop selection - only in modules that render pictographs
     if (isPropModule) {
       groups.push({
         title: "Props",
@@ -169,7 +169,7 @@
       });
     }
 
-    // Search — only in browse
+    // Search - only in browse
     if (currentModule === "browse") {
       groups.push({
         title: "Search",

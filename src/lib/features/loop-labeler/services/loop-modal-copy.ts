@@ -8,7 +8,7 @@
  * ## Design
  *
  * The modal copy is a function of three things:
- *   1. `period` (2, 4, 8) — how many passes to close
+ *   1. `period` (2, 4, 8) - how many passes to close
  *   2. `components` (ROTATED, MIRRORED, etc., in any combination)
  *   3. `domain` (per component: "location" / "orientation" / "both")
  *
@@ -49,7 +49,7 @@ export function resolveLoopCopy(args: LoopCopyArgs): LoopCopy {
       title: "Freeform LOOP",
       body:
         "This sequence cycles back to its start without matching a recognized " +
-        "transformation pattern. It loops — just through a pattern we haven't " +
+        "transformation pattern. It loops - just through a pattern we haven't " +
         "classified.",
     };
   }
@@ -81,7 +81,7 @@ function singleComponentCopy(
         ? {
             title: "Mirrored LOOP",
             body:
-              "Two halves. The second is the left-right mirror of the first — " +
+              "Two halves. The second is the left-right mirror of the first - " +
               "every position reflects across the vertical axis.",
           }
         : {
@@ -95,7 +95,7 @@ function singleComponentCopy(
       return {
         title: "Flipped LOOP",
         body:
-          "Two halves. The second is the top-bottom flip of the first — every " +
+          "Two halves. The second is the top-bottom flip of the first - every " +
           "position reflects across the horizontal axis.",
       };
 
@@ -104,7 +104,7 @@ function singleComponentCopy(
         ? {
             title: "Swapped LOOP",
             body:
-              "Two halves. The second swaps blue and red — each hand performs " +
+              "Two halves. The second swaps blue and red - each hand performs " +
               "what the other one did in the first half.",
           }
         : {
@@ -118,7 +118,7 @@ function singleComponentCopy(
       return {
         title: "Inverted LOOP",
         body:
-          "Two halves. The second uses inverted motion types — pro becomes " +
+          "Two halves. The second uses inverted motion types - pro becomes " +
           "anti, static becomes dash. Same positions, opposite energy.",
       };
 
@@ -126,7 +126,7 @@ function singleComponentCopy(
       return {
         title: "Rewound LOOP",
         body:
-          "The second half plays the first in reverse — a perfect loop back " +
+          "The second half plays the first in reverse - a perfect loop back " +
           "to start through time reversal.",
       };
 
@@ -145,7 +145,7 @@ function rotatedCopy(domain: LOOPDomain, period: number): LoopCopy {
     return {
       title: "Rotated LOOP",
       body:
-        "Two halves. The second is a 180° rotation of the first — every " +
+        "Two halves. The second is a 180° rotation of the first - every " +
         "position mirrors through the grid center.",
     };
   }
@@ -169,7 +169,7 @@ function rotatedCopy(domain: LOOPDomain, period: number): LoopCopy {
     return {
       title: "Rotated LOOP (quartered)",
       body:
-        "Four quarters. Each quarter is a 90° rotation of the previous — " +
+        "Four quarters. Each quarter is a 90° rotation of the previous - " +
         "the sequence traces a full circle around the grid.",
     };
   }

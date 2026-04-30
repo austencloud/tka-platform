@@ -89,7 +89,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
     }
 
     const unsubWakeWord = detector.onWakeWord(() => {
-      addLog("info", "Wake word detected — entering command mode");
+      addLog("info", "Wake word detected - entering command mode");
     });
 
     const unsubCommand = detector.onCommand(async (event) => {

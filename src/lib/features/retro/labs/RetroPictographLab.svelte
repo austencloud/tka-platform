@@ -1,5 +1,5 @@
 <!--
-  RetroPictographLab.svelte — Lab tab for iterating on Win95 pixel pictograph rendering.
+  RetroPictographLab.svelte - Lab tab for iterating on Win95 pixel pictograph rendering.
 
   Same prev/next navigation as the ASCII lab, but renders to canvas via PixelRenderer.
   Shows the pictograph at multiple display sizes from the same 64×64 source.

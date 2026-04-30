@@ -179,7 +179,7 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
   }
 
   /* ==========================================================================
-     AVATAR (guest fallback only — authenticated users use RobustAvatar)
+     AVATAR (guest fallback only - authenticated users use RobustAvatar)
      ========================================================================== */
   .avatar-guest {
     width: 28px;

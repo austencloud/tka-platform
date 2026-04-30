@@ -29,7 +29,7 @@
   } from "$lib/shared/3d/physics/player-controller";
   import { createRapierPhysicsProvider } from "$lib/shared/3d/physics/RapierPhysicsProvider";
 
-  // Camera — use the SAME controller as Museum/Realm
+  // Camera - use the SAME controller as Museum/Realm
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
   import { CameraMode } from "$lib/shared/3d/camera/types";
   import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
@@ -92,7 +92,7 @@
   // Raw WASD input for directional animation blending
   let moveDir = $state({ x: 0, z: 0 });
 
-  // AvatarState adapter — same pattern as WorldScene.svelte
+  // AvatarState adapter - same pattern as WorldScene.svelte
   const avatarState: AvatarState = {
     get position() {
       return playerPosition;
@@ -179,7 +179,7 @@
   });
 
   // ============================================================================
-  // FRAME LOOP (physics only — UCC handles its own camera/input loop)
+  // FRAME LOOP (physics only - UCC handles its own camera/input loop)
   // ============================================================================
 
   useTask((delta) => {
@@ -223,7 +223,7 @@
   const oz = $derived(props.room.worldOffset.z);
 </script>
 
-<!-- UnifiedCameraController — handles ALL input, camera, movement, jumping, pointer lock -->
+<!-- UnifiedCameraController - handles ALL input, camera, movement, jumping, pointer lock -->
 {#if isInitialized && physicsProvider}
   <UnifiedCameraController
     destinationId="archive"

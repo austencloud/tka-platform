@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Pictograph Stylize — recolor the canonical pictograph render into each era's
+// Pictograph Stylize - recolor the canonical pictograph render into each era's
 // palette and apply an era-specific edge treatment.
 //
 // Pipeline (per navigation, per era):
@@ -10,7 +10,7 @@
 // The canonical render is produced once per pictograph by Canvas2DDirectRenderer
 // at ~500px. Each era transforms it into its own look without reinventing
 // arrow positioning, turns indicators, or motion-type distinctions (pro vs
-// anti, dash, float, hash) — those all come for free from the canonical.
+// anti, dash, float, hash) - those all come for free from the canonical.
 //
 // Pixel classification matches SvgToBrailleConverter:
 //   blue dominance  > 1.4× red & green  → blue class
@@ -317,7 +317,7 @@
 
   function treatBlueprint(canvas) {
     // Two-tone cyanotype: any drawn pixel becomes bright cyan, transparent
-    // otherwise. Used as the sole color pass for the blueprint era — the
+    // otherwise. Used as the sole color pass for the blueprint era - the
     // canvas below supplies the dark cyan background.
     const w = canvas.width, h = canvas.height;
     const ctx = canvas.getContext("2d");
@@ -390,7 +390,7 @@
       case "none":
         return;
       default:
-        // Unknown preset — no-op
+        // Unknown preset - no-op
         return;
     }
   }

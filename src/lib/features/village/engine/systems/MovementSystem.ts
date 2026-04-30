@@ -36,7 +36,7 @@ export class MovementSystem {
 			const nx = dx / dist;
 			const nz = dz / dist;
 
-			// Collision avoidance — steer away from nearby avatars
+			// Collision avoidance - steer away from nearby avatars
 			let steerX = 0;
 			let steerZ = 0;
 			for (const other of world.entities) {

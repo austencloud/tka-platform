@@ -296,7 +296,7 @@ export class SwipeToDismiss {
     }
     this.delegatingToTopDrawer = false;
 
-    // Bail out entirely for range sliders — dragging a slider thumb must never
+    // Bail out entirely for range sliders - dragging a slider thumb must never
     // be interpreted as a swipe-to-dismiss gesture
     const target = event.target as HTMLElement;
     const rangeInput = target.closest('input[type="range"]') as HTMLInputElement | null;

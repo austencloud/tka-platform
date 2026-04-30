@@ -342,7 +342,7 @@
     outline-offset: 2px;
   }
 
-  /* Hidden on mobile — BuilderControls popover handles it */
+  /* Hidden on mobile - BuilderControls popover handles it */
   @media (max-width: 768px) {
     .control-bar {
       display: none;

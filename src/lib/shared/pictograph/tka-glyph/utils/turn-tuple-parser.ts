@@ -4,11 +4,11 @@
  * Parses turns tuple strings emitted by TurnsTupleGenerator into structured data.
  *
  * Supported forms (top/bottom positions match the PADS slot order):
- * - "(top, bottom)"                          — standard 2-part
- * - "(direction, top, bottom)"               — direction-prefixed 3-part
- * - "(rotDir, top, bottom)"                  — single-rotation 3-part (TYPE2/3/4/5/6)
- * - "(top, bottom, oc)"                      — Λ/Λ-/γ single-rotating-hand; oc binds to non-zero slot
- * - "(direction, top, bottom, topOC, bottomOC)" — Λ/Λ-/γ both-rotating-hands
+ * - "(top, bottom)"                          - standard 2-part
+ * - "(direction, top, bottom)"               - direction-prefixed 3-part
+ * - "(rotDir, top, bottom)"                  - single-rotation 3-part (TYPE2/3/4/5/6)
+ * - "(top, bottom, oc)"                      - Λ/Λ-/γ single-rotating-hand; oc binds to non-zero slot
+ * - "(direction, top, bottom, topOC, bottomOC)" - Λ/Λ-/γ both-rotating-hands
  *
  * Examples:
  * - "(s, 1, 2)"            => { direction: "s", top: 1, bottom: 2 }
@@ -72,7 +72,7 @@ export function parseTurnsTuple(turnsTuple: string): ParsedTurnsTuple {
       parts[0] as (typeof VALID_DIRECTIONS)[number]
     );
 
-    // 5-part: (direction, top, bottom, topOC, bottomOC) — Λ/Λ-/γ both hands rotating
+    // 5-part: (direction, top, bottom, topOC, bottomOC) - Λ/Λ-/γ both hands rotating
     if (firstIsDirection && parts.length >= 5) {
       const top = parseTurnValue(parts[1] || "");
       const bottom = parseTurnValue(parts[2] || "");
@@ -96,7 +96,7 @@ export function parseTurnsTuple(turnsTuple: string): ParsedTurnsTuple {
       };
     }
 
-    // 3-part no-direction: (top, bottom, oc) — Λ/Λ-/γ single hand rotating.
+    // 3-part no-direction: (top, bottom, oc) - Λ/Λ-/γ single hand rotating.
     // The op/cl binds to whichever slot is non-zero; the zero slot has no rotational state.
     if (!firstIsDirection && parts.length >= 3) {
       const top = parseTurnValue(parts[0] || "");

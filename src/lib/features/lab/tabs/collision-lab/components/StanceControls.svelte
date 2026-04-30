@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * StanceControls — Tweak panel
+   * StanceControls - Tweak panel
    *
    * A row of four sliders (foot X, foot Z, body yaw, spine pitch) for
    * fine-tuning the stance after the reviewer has picked a candidate
@@ -32,7 +32,7 @@
   const alreadyAdjusted = $derived(candidateSet?.manuallyAdjusted ?? false);
 
   /**
-   * First-touch adjustment marker — the reviewer has just dragged a
+   * First-touch adjustment marker - the reviewer has just dragged a
    * slider for the first time since picking a candidate. After this the
    * label will save with `pickedIndex: null`.
    */

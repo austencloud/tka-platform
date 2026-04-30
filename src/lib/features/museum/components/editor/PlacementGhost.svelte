@@ -279,12 +279,12 @@
       const absZ = Math.abs(hitNormal.z);
 
       if (absX > absZ) {
-        // Wall faces along X axis — snap Y and Z
+        // Wall faces along X axis - snap Y and Z
         ghostX = hitPoint.x + hitNormal.x * def.wallOffset;
         ghostY = def.mountHeight;
         ghostZ = snapToTileGrid(hitPoint.z);
       } else {
-        // Wall faces along Z axis — snap X and Y
+        // Wall faces along Z axis - snap X and Y
         ghostX = snapToTileGrid(hitPoint.x);
         ghostY = def.mountHeight;
         ghostZ = hitPoint.z + hitNormal.z * def.wallOffset;
@@ -296,9 +296,9 @@
       ghostX = snapToTileCenter(hitPoint.x);
       ghostY = 0;
       ghostZ = snapToTileCenter(hitPoint.z);
-      ghostQuat = [0, 0, 0, 1]; // Identity — face default direction
+      ghostQuat = [0, 0, 0, 1]; // Identity - face default direction
     } else {
-      // Unknown surface — place at hit point, no snapping
+      // Unknown surface - place at hit point, no snapping
       ghostX = hitPoint.x;
       ghostY = hitPoint.y;
       ghostZ = hitPoint.z;
@@ -419,7 +419,7 @@
     domEl = ren?.domElement ?? null;
     if (!domEl) return;
     // Use capture phase so placement clicks fire BEFORE the camera controller.
-    // Must intercept BOTH pointerdown AND click — the camera controller listens
+    // Must intercept BOTH pointerdown AND click - the camera controller listens
     // on "click" (not pointerdown), and stopping pointerdown doesn't prevent click.
     domEl.addEventListener("pointermove", onPointerMove);
     domEl.addEventListener("pointerdown", onPointerDown, true);

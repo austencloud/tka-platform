@@ -144,7 +144,7 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
    *
    * Unlike getBaseAdjustment (which returns on first match), this method checks
    * every tier independently and records the result at each one. This lets the
-   * WASD adjustment panel show the full pipeline state — which tier is active,
+   * WASD adjustment panel show the full pipeline state - which tier is active,
    * what value each tier holds, and what the final rotated adjustment comes out to.
    *
    * Tier priority (mirrors getBaseAdjustment):
@@ -200,7 +200,7 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
           // writing global overrides. We recover that string by asking the SpecialPlacer
           // for the JSON-only result (which exposes its own turnsTupleKey). If that
           // returns null (no JSON data for this letter), we fall back to the raw
-          // number-array joined form from turnsTupleService — it still lets the repo
+          // number-array joined form from turnsTupleService - it still lets the repo
           // attempt the lookup with a consistent key.
           let turnsTupleString: string;
           try {
@@ -340,7 +340,7 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
         diagnostics.default.value.y
       );
     } else {
-      // Nothing found anywhere — use zero point so the panel can still render
+      // Nothing found anywhere - use zero point so the panel can still render
       basePoint = new Point(0, 0);
     }
 

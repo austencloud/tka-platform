@@ -290,6 +290,8 @@ export class PublicSequencesLoader implements IBrowseLoader {
       difficultyLevel: data.difficultyLevel,
       loopType: data.loopType as SequenceData["loopType"],
       period: (data as unknown as { period?: number }).period,
+      components: (data as unknown as { components?: string[] }).components as SequenceData["components"],
+      componentDomains: (data as unknown as { componentDomains?: SequenceData["componentDomains"] }).componentDomains,
       isFavorite: false,
       isCircular: (data as unknown as { isCircular?: boolean }).isCircular ?? false,
       tags: [...data.tags],

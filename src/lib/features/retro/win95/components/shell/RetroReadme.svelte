@@ -1,5 +1,5 @@
 <!--
-  RetroReadme — README.TXT text viewer
+  RetroReadme - README.TXT text viewer
 
   Displays Bellweather Technical Institute lore in a scrollable
   sunken panel with monospace font. Meant to be rendered inside a

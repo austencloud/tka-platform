@@ -1,5 +1,5 @@
 <!--
-  /1995 route — TKA-OS v1.0
+  /1995 route - TKA-OS v1.0
 
   Renders the full retro desktop experience.
   Client-side only (no SSR).

@@ -312,7 +312,7 @@
     opacity: 0.8;
   }
 
-  /* Fullscreen on mobile — browsing interface needs space */
+  /* Fullscreen on mobile - browsing interface needs space */
   @media (max-width: 768px) {
     :global(.drawer-content:has(.rhythm-sheet)) {
       height: 100vh !important;

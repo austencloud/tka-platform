@@ -71,4 +71,8 @@ export interface IFireOverlayRenderer {
    * Returns null if not yet initialized.
    */
   getGl(): WebGL2RenderingContext | null;
+
+  // --- EXPORT DIAGNOSTIC (remove after debugging) ---
+  enableDiagnostics(): void;
+  disableDiagnostics(): void;
 }

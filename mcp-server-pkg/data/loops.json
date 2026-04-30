@@ -6,12 +6,12 @@
       "keyInsight": "Rotated means COMPLETING the full rotation, not just reaching a rotated midpoint. The second half must CONTINUE rotating in the same direction to return home.",
       "variants": {
         "halved": {
-          "sliceSize": "180 degrees",
+          "period": "180 degrees",
           "pattern": "Two halves, each rotates 180 degrees, completing 360 degrees total",
           "mentalModel": "Like a clock hand moving continuously: starts at 12 o'clock, first half reaches 6 o'clock (180 degrees), second half CONTINUES to 12 o'clock (360 degrees). NOT going 0 to 180 then reversing back (that's Rewound)."
         },
         "quartered": {
-          "sliceSize": "90 degrees",
+          "period": "90 degrees",
           "pattern": "Four quarters, each rotates 90 degrees, completing 360 degrees total",
           "mentalModel": "Clock hand: 12 to 3 to 6 to 9 to 12 (continuing same direction)"
         }

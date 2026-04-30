@@ -80,7 +80,7 @@ export class RoomStreamingManager implements IRoomStreamingManager {
           this.disposeTimers.delete(id);
         }
       } else {
-        // Room is back in active set — cancel any pending dispose
+        // Room is back in active set - cancel any pending dispose
         this.disposeTimers.delete(id);
       }
     }

@@ -9,7 +9,7 @@
   import { scale } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
 
-  // Per spec §6.3 — unified per-performer surface. Chip strip on top,
+  // Per spec §6.3 - unified per-performer surface. Chip strip on top,
   // Prop/Effects/Effort tabs below, each scoped to the selected performer.
 
   const viewer = getViewer3DContext();

@@ -89,7 +89,7 @@
             class="tile"
             class:on-sheet={copies > 0}
             onclick={() => handleAdd(entry)}
-            aria-label="{entry.displayName} — {copies > 0 ? `${copies} on sheet` : 'Add to sheet'}"
+            aria-label="{entry.displayName} - {copies > 0 ? `${copies} on sheet` : 'Add to sheet'}"
           >
             {#if paths}
               {@html renderer.renderSVG(paths, {

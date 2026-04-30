@@ -5,11 +5,13 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 
 export function computeOverallProgress(
   currentStep: number,
-  totalSteps: number,
+  durations: number[],
 ): number {
-  if (totalSteps <= 0) return 0;
+  if (durations.length === 0) return 0;
   if (currentStep < 1) return 0;
-  return Math.min(1, (currentStep - 1) / totalSteps);
+  const totalDuration = durations.reduce((sum, d) => sum + d, 0);
+  if (totalDuration <= 0) return 0;
+  return Math.min(1, computeElapsed(currentStep, durations) / totalDuration);
 }
 
 export function computeCurrentBeat(currentStep: number): number {
@@ -34,9 +36,41 @@ export function computeElapsed(
   return elapsed;
 }
 
-export function computeSeekTarget(progress: number, totalSteps: number): number {
+export function computeSeekTarget(
+  progress: number,
+  durations: number[],
+): number {
+  if (durations.length === 0) return 1;
   const clamped = Math.max(0, Math.min(1, progress));
-  return 1 + clamped * totalSteps;
+  const totalDuration = durations.reduce((sum, d) => sum + d, 0);
+  if (totalDuration <= 0) return 1;
+  const targetElapsed = clamped * totalDuration;
+
+  let accumulated = 0;
+  for (let i = 0; i < durations.length; i++) {
+    const beatDuration = durations[i]!;
+    if (accumulated + beatDuration >= targetElapsed) {
+      const frac =
+        beatDuration > 0 ? (targetElapsed - accumulated) / beatDuration : 0;
+      return 1 + i + frac;
+    }
+    accumulated += beatDuration;
+  }
+  return 1 + durations.length;
+}
+
+export function computeBeatMarkerPositions(durations: number[]): number[] {
+  if (durations.length <= 1) return [];
+  const totalDuration = durations.reduce((sum, d) => sum + d, 0);
+  if (totalDuration <= 0) return [];
+
+  const positions: number[] = [];
+  let cumulative = 0;
+  for (let i = 0; i < durations.length - 1; i++) {
+    cumulative += durations[i]!;
+    positions.push(cumulative / totalDuration);
+  }
+  return positions;
 }
 
 // ── Adapter factory ────────────────────────────────────────────────────
@@ -49,6 +83,10 @@ export interface AnimatorPlaybackParams {
   onTogglePlay: () => void;
 }
 
+function getDurations(steps: readonly StepData[]): number[] {
+  return steps.map((s) => s.duration ?? 1);
+}
+
 export function createAnimatorPlaybackAdapter(
   params: AnimatorPlaybackParams,
 ): UnifiedPlaybackContext {
@@ -56,7 +94,7 @@ export function createAnimatorPlaybackAdapter(
     get overallProgress() {
       return computeOverallProgress(
         params.getCurrentStep(),
-        params.getSteps().length,
+        getDurations(params.getSteps()),
       );
     },
     get currentStep() {
@@ -72,23 +110,27 @@ export function createAnimatorPlaybackAdapter(
       return undefined;
     },
     get duration() {
-      const steps = params.getSteps();
-      return steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
+      return getDurations(params.getSteps()).reduce((sum, d) => sum + d, 0);
     },
     get elapsed() {
-      const steps = params.getSteps();
-      const durations = steps.map((s) => s.duration ?? 1);
-      return computeElapsed(params.getCurrentStep(), durations);
+      return computeElapsed(
+        params.getCurrentStep(),
+        getDurations(params.getSteps()),
+      );
+    },
+    get beatMarkerPositions() {
+      return computeBeatMarkerPositions(getDurations(params.getSteps()));
     },
     seek(progress: number) {
-      const target = computeSeekTarget(progress, params.getSteps().length);
+      const target = computeSeekTarget(
+        progress,
+        getDurations(params.getSteps()),
+      );
       params.onSeek(target);
     },
     togglePlay() {
       params.onTogglePlay();
     },
-    toggleLoop() {
-      // 2D engine doesn't expose loop toggle yet — no-op
-    },
+    toggleLoop() {},
   };
 }

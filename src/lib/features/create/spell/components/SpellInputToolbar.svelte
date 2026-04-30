@@ -14,6 +14,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   let {
     visible = false,
@@ -229,7 +230,7 @@
     <div class="toolbar-content">
       <div class="toolbar-left">
         {#if word}
-          <span class="word-preview">{word}</span>
+          <span class="word-preview"><TKAWordGlyph {word} height={16} darkMode /></span>
         {:else}
           <span class="word-hint">Type your word...</span>
         {/if}

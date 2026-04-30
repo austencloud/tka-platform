@@ -1,5 +1,5 @@
 <!--
-  AsciiRawPreview.svelte — Clean monospace render without CRT effects.
+  AsciiRawPreview.svelte - Clean monospace render without CRT effects.
 
   Dark background, no scanlines, no glow, no vignette. Every character
   is rendered at full clarity for iterating on the ASCII renderer.

@@ -1,7 +1,7 @@
 /**
  * VTG Lab Domain Types
  *
- * Interfaces for the VTG Explorer — maps VTG modes to TKA letters,
+ * Interfaces for the VTG Explorer - maps VTG modes to TKA letters,
  * rotation patterns, compounds, and terminology comparisons.
  */
 

@@ -8,7 +8,7 @@
  *
  * Bubbles have persistent particle state (alive bubbles + in-flight pop
  * bursts), so unlike bloom we do NOT clear accumulated state on each
- * frame — only the canvas pixels. The pool is cleared on dispose() or
+ * frame - only the canvas pixels. The pool is cleared on dispose() or
  * explicit clear().
  */
 
@@ -42,7 +42,7 @@ export class BubblesOverlayRenderer implements IBubblesOverlayRenderer {
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
-    // Same z-index band as water/bloom/echo — composited above trails.
+    // Same z-index band as water/bloom/echo - composited above trails.
     canvas.style.zIndex = "2";
     canvas.style.background = "transparent";
 

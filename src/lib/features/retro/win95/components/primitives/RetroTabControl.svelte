@@ -1,5 +1,5 @@
 <!--
-  RetroTabControl — Folder-style tab control with content area
+  RetroTabControl - Folder-style tab control with content area
 
   Renders Win95-style folder tabs at the top. The active tab is visually
   connected to the content area below (no bottom border on the active tab).

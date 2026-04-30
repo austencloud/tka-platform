@@ -9,7 +9,7 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  // Lazy-loaded heavy component — typed as Component<any> because the inner
+  // Lazy-loaded heavy component - typed as Component<any> because the inner
   // component manages its own state and is rendered without props.
   let sectionEl: HTMLElement | undefined = $state();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,7 +59,7 @@
       </div>
     </div>
   {:else}
-    <!-- Structural skeleton — same showcase proportions as PlayWithItInner -->
+    <!-- Structural skeleton - same showcase proportions as PlayWithItInner -->
     <div class="showcase skeleton-showcase" aria-hidden="true">
       <div class="sk-toolbar"></div>
       <div class="sk-canvas"></div>
@@ -115,7 +115,7 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
-  /* Toolbar band — same height as the real toolbar (~62px with padding) */
+  /* Toolbar band - same height as the real toolbar (~62px with padding) */
   .sk-toolbar {
     height: 62px;
     background: rgba(255, 255, 255, 0.03);
@@ -123,7 +123,7 @@
     flex-shrink: 0;
   }
 
-  /* Canvas — square aspect-ratio matching .canvas-area */
+  /* Canvas - square aspect-ratio matching .canvas-area */
   .sk-canvas {
     width: 100%;
     aspect-ratio: 1;
@@ -132,7 +132,7 @@
     flex-shrink: 0;
   }
 
-  /* Beat strip — same padding/height as the real strip */
+  /* Beat strip - same padding/height as the real strip */
   .sk-beat-strip {
     display: flex;
     gap: 6px;

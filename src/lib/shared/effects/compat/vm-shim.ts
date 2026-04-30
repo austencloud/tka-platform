@@ -33,7 +33,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     tipEffectMap: vm.getTipEffectMap() ?? DEFAULT_EFFECTS_CONFIG.tipEffectMap,
 
     // Trails live in animationSettings, not vm. This snapshot returns
-    // the schema defaults for trails — the animation-settings shim
+    // the schema defaults for trails - the animation-settings shim
     // (Task 15) provides the real values at the state factory level.
     trails: { ...DEFAULT_EFFECTS_CONFIG.trails },
 
@@ -61,7 +61,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     // the 3D renderer has valid values.
     charcoal: { ...DEFAULT_EFFECTS_CONFIG.charcoal },
 
-    // New effects not yet wired to vm — seed from schema defaults.
+    // New effects not yet wired to vm - seed from schema defaults.
     zap: { ...DEFAULT_EFFECTS_CONFIG.zap },
     sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles },
     echo: { ...DEFAULT_EFFECTS_CONFIG.echo },
@@ -73,6 +73,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost },
     silk: { ...DEFAULT_EFFECTS_CONFIG.silk },
+    pulse: { ...DEFAULT_EFFECTS_CONFIG.pulse },
 
     activePresets: {
       trails: null,
@@ -90,6 +91,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
       ink: null,
       frost: null,
       silk: null,
+      pulse: null,
     },
   };
 }

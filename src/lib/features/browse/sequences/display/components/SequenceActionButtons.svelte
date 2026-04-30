@@ -167,7 +167,7 @@ Shows different actions based on auth state and ownership:
       {/if}
     </button>
 
-    <!-- Overflow menu (owner only, when saved) — contains Publish/Unpublish + Delete -->
+    <!-- Overflow menu (owner only, when saved) - contains Publish/Unpublish + Delete -->
     {#if isOwned && isSaved}
       <OverflowMenu items={overflowItems} />
     {/if}

@@ -54,13 +54,13 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     facingAngle: 0,
     bluePlane: Plane.WALL,
     redPlane: Plane.WALL,
-    // No rotationPlane — each hand uses its own plane for rotation
+    // No rotationPlane - each hand uses its own plane for rotation
     blueLateralOffset: 0,
     redLateralOffset: 0,
   },
   [PlaneMode.DUAL_WHEEL]: {
     // Avatar stays facing forward. Each hand is at its lateral offset.
-    // No rotationPlane — each hand uses its own plane (WHEEL) for rotation.
+    // No rotationPlane - each hand uses its own plane (WHEEL) for rotation.
     facingAngle: 0,
     bluePlane: Plane.WHEEL,
     redPlane: Plane.WHEEL,
@@ -68,7 +68,7 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     redLateralOffset: -LATERAL_OFFSET,
   },
   [PlaneMode.CONJOINED_WHEEL]: {
-    // Dual-wheel hand paths with wall-plane rotation — creates a
+    // Dual-wheel hand paths with wall-plane rotation - creates a
     // "conjoined grid" visual. Discovered accidentally 2026-04-07.
     facingAngle: 0,
     bluePlane: Plane.WHEEL,

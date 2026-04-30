@@ -10,7 +10,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { LOOPOption } from "./ISequenceExtender";
 import type {
   LOOPType,
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 /**
@@ -30,13 +30,13 @@ export interface ILOOPValidator {
    *
    * @param startPosition - The starting position
    * @param endPosition - The ending position
-   * @param sliceSize - Whether this is a halved (180°) or quartered (90°) rotation
+   * @param period - Whether this is a halved (180°) or quartered (90°) rotation
    * @returns Object with available and unavailable LOOP options
    */
   getLOOPOptionsForPositionPair(
     startPosition: GridPosition,
     endPosition: GridPosition,
-    sliceSize: SliceSize
+    period: Period
   ): LOOPValidationResult;
 
   /**
@@ -44,13 +44,13 @@ export interface ILOOPValidator {
    *
    * @param loopType - The LOOP type to check
    * @param positionPair - Position pair string in format "start,end"
-   * @param sliceSize - Whether this is a halved or quartered rotation
+   * @param period - Whether this is a halved or quartered rotation
    * @returns true if the LOOP type is valid for this position pair
    */
   isLOOPValidForPositionPair(
     loopType: LOOPType,
     positionPair: string,
-    sliceSize: SliceSize
+    period: Period
   ): boolean;
 
   /**

@@ -163,6 +163,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
   // Timing
   private lastTime = 0;
+  private lastRenderTime = -1;
   private reducedMotion = false;
 
   // Turbulence clock for idle-fire flickering (cheap deterministic noise)
@@ -205,6 +206,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.canvas.style.zIndex = "2";
     this.canvas.style.background = "transparent";
     this.canvas.setAttribute("aria-hidden", "true");
+    this.canvas.dataset.overlayType = "emissive";
 
     this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     this.canvas.width = Math.round(width * this.dpr);
@@ -277,9 +279,63 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.frameCache?.invalidate();
   }
 
+  // --- EXPORT DIAGNOSTIC (remove after debugging) ---
+  private _diagFrameCount = 0;
+  private _diagEnabled = false;
+  enableDiagnostics(): void { this._diagEnabled = true; this._diagFrameCount = 0; }
+  disableDiagnostics(): void { this._diagEnabled = false; }
+  resetDiagnosticCounter(): void { this._diagFrameCount = 0; }
+
+  sampleFireCanvas(): string {
+    const gl = this.gl;
+    const c = this.canvas;
+    if (!gl || !c) return '[fire-sample] no gl/canvas';
+    const px = new Uint8Array(4);
+    const w = c.width, h = c.height;
+    const points: [string, number, number][] = [
+      ['center', Math.floor(w/2), Math.floor(h/2)],
+      ['quarter', Math.floor(w/2), Math.floor(h*0.25)],
+      ['edge', Math.floor(w*0.1), Math.floor(h/2)],
+      ['corner', 5, 5],
+    ];
+    const lines: string[] = [`[fire-sample] canvas=${w}x${h} dpr=${this.dpr}`];
+    for (const [name, x, y] of points) {
+      gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      lines.push(`  ${name}(${x},${y}): rgba(${px[0]},${px[1]},${px[2]},${px[3]})`);
+    }
+    const result = lines.join('\n');
+    console.log(result);
+    return result;
+  }
+
   renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
     const gl = this.gl;
     if (!gl || !this.initialized) return;
+
+    // Deduplicate: during export, two RAF callbacks fire with the same
+    // virtualTime. Running the Navier-Stokes simulation twice doubles
+    // fuel/velocity/temperature injection, producing concentric pressure
+    // ring artifacts. preserveDrawingBuffer keeps display pixels from
+    // the first call, so skipping the second is safe.
+    if (input.currentTime === this.lastRenderTime) {
+      if (this._diagEnabled) console.log('[fire-diag] DEDUP SKIP, currentTime=', input.currentTime);
+      return;
+    }
+    this.lastRenderTime = input.currentTime;
+
+    if (this._diagEnabled && this._diagFrameCount < 5) {
+      this._diagFrameCount++;
+      const tip0 = input.tips[0];
+      const tipStr = tip0
+        ? `tip0=(${Math.round(tip0.x)},${Math.round(tip0.y)}) spd=${Math.round(tip0.speed)} fs=${tip0.flameScale?.toFixed(2)}`
+        : 'no-tips';
+      console.log(
+        `[fire-diag] frame ${this._diagFrameCount} | t=${input.currentTime.toFixed(1)} dt=${((input.currentTime - this.lastTime) / 1000).toFixed(4)} | ` +
+        `canvas=${this.canvas?.width}x${this.canvas?.height} sim=${this.simWidth}x${this.simHeight} | ` +
+        `tips=${input.tips.length} ${tipStr} | ` +
+        `intensity=${config.intensity} bloom=${config.bloomStrength ?? 0.08} cacheDisabled=${config.disableFrameCache} loopDet=${input.loopDetected}`
+      );
+    }
 
     // Apply physics preset if provided
     if (config.physicsPreset) {
@@ -332,6 +388,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       // If cache is warm, skip simulation entirely and blit from cache
       if (cache.isWarm()) {
         if (cache.blitCachedFrame(input.relativeTime)) {
+          if (this._diagEnabled && this._diagFrameCount <= 5) console.log(`[fire-path] CACHE-BLIT (warm, frame ${this._diagFrameCount})`);
           return; // Done - no simulation needed
         }
         // Cache exhausted (shouldn't happen), fall through to live simulation
@@ -339,6 +396,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
       // If recording, render display to cache FBO after simulation
       if (cache.isRecording()) {
+        if (this._diagEnabled && this._diagFrameCount <= 5) console.log(`[fire-path] CACHE-RECORD (no bloom, frame ${this._diagFrameCount})`);
         this.stepSimulation(input.tips, input, config);
         this.renderDisplayToCache(config, input, cache);
         return;
@@ -355,6 +413,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // velocity to prevent drift while letting visible fire fade naturally.
     if (input.loopDetected && !input.isSeamlesslyLoopable) {
       this.clearVelocityFields();
+    }
+    const bloomStr = (config.bloomStrength ?? 0.08);
+    const useBloom = bloomStr > 0 && this.displayFBO && this.bloomMips.length > 0;
+    if (this._diagEnabled && this._diagFrameCount <= 5) {
+      console.log(`[fire-path] DEFAULT (bloom=${useBloom}, bloomStr=${bloomStr}, displayFBO=${!!this.displayFBO}, mips=${this.bloomMips.length}, frame ${this._diagFrameCount})`);
     }
     this.stepSimulation(input.tips, input, config);
     this.renderDisplay(config, input);
@@ -482,7 +545,14 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
+    // Clear the display canvas so stale pixels from the last render don't
+    // persist (the FBOs above are off-screen; this clears what's visible).
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Reset dedup guard so the first post-clear frame runs
+    this.lastRenderTime = -1;
 
     // Invalidate frame cache so stale fire frames from old effort/position
     // aren't served after the simulation is cleared
@@ -978,6 +1048,20 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       this.renderDisplayPass(config, input);
+    }
+
+    // Post-render pixel sampling for diagnostics
+    if (this._diagEnabled && this._diagFrameCount <= 5) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      const px = new Uint8Array(4);
+      const w = this.canvas!.width, h = this.canvas!.height;
+      gl.readPixels(Math.floor(w/2), Math.floor(h/2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const center = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+      gl.readPixels(Math.floor(w/2), Math.floor(h*0.25), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const quarter = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+      gl.readPixels(5, 5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const corner = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+      console.log(`[fire-pixels] post-render: center=${center} quarter=${quarter} corner=${corner} | bloom=${useBloom}`);
     }
   }
 

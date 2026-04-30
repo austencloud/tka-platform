@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * ModeExplorer — displays all VTG patterns for a selected mode
+	 * ModeExplorer - displays all VTG patterns for a selected mode
 	 * as 4-step sequence strips, grouped by rotation style.
 	 */
 

@@ -1,5 +1,5 @@
 <!--
-  TaxonomyGallery.svelte — Browse all 35 Yale GRASP taxonomy poses.
+  TaxonomyGallery.svelte - Browse all 35 Yale GRASP taxonomy poses.
   Grouped by opposition type. Click a card to load it into the editor.
 -->
 <script lang="ts">

@@ -202,7 +202,7 @@
   }
 
   /* CENTER ZONE: Absolutely centered relative to full button panel width,
-     not the wrapper — so asymmetric left/right zones don't push it off-center */
+     not the wrapper - so asymmetric left/right zones don't push it off-center */
   .center-zone {
     display: flex;
     align-items: center;

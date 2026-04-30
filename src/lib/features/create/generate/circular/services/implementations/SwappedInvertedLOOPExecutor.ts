@@ -30,7 +30,7 @@ import {
   SWAPPED_POSITION_MAP,
   getInvertedLetter,
 } from "../../domain/constants/strict-loop-position-maps";
-import type { SliceSize } from "../../domain/models/circular-models";
+import type { Period } from "../../domain/models/circular-models";
 
 export class SwappedInvertedLOOPExecutor {
   constructor(private OrientationCalculator: IOrientationCalculator) {}
@@ -39,10 +39,10 @@ export class SwappedInvertedLOOPExecutor {
    * Execute the swapped-inverted LOOP
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param sliceSize - Ignored (swapped-inverted LOOP always uses halved)
+   * @param period - Ignored (swapped-inverted LOOP always uses halved)
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], _sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], _period: Period): StepData[] {
     // Validate the sequence
     this._validateSequence(sequence);
 

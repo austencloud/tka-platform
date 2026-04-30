@@ -23,7 +23,7 @@
  */
 
 import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
-import type { SliceSize } from "../loop-types.js";
+import type { Period } from "../loop-types.js";
 
 /**
  * Options for partial sequence generation.
@@ -55,7 +55,7 @@ export interface IPartialSequenceGenerator {
   generatePartialSequence(
     startPos: string,
     endPos: string | null,
-    sliceSize: SliceSize,
+    period: Period,
     options: PartialSequenceOptions
   ): Promise<SequenceStep[]>;
 }
@@ -69,7 +69,7 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
   async generatePartialSequence(
     _startPos: string,
     _endPos: string | null,
-    _sliceSize: SliceSize,
+    _period: Period,
     _options: PartialSequenceOptions
   ): Promise<SequenceStep[]> {
     throw new Error(

@@ -209,7 +209,7 @@ export class AttributionPromptTrigger implements IAttributionPromptTrigger {
   /**
    * Increment session count (called on app init).
    *
-   * On the very first app boot, nothing is persisted yet — so the default
+   * On the very first app boot, nothing is persisted yet - so the default
    * state from getPromptState() returns a fresh "eligibleAfter = now + minDays"
    * every session without ever saving it, which would make the deferred
    * eligibility drift forward forever. Here we detect that first boot (no

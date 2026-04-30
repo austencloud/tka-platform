@@ -2,8 +2,8 @@
 </script>
 
 <svelte:head>
-  <title>Level 1 — The Kinetic Alphabet</title>
-  <meta name="description" content="The Kinetic Alphabet Level 1 guide — positions, motions, letters, words, and CAPs for double staves." />
+  <title>Level 1 - The Kinetic Alphabet</title>
+  <meta name="description" content="The Kinetic Alphabet Level 1 guide - positions, motions, letters, words, and CAPs for double staves." />
 </svelte:head>
 
 <div class="landing">
@@ -14,7 +14,7 @@
   />
 
   <h1>The Kinetic Alphabet</h1>
-  <p class="subtitle">Level 1 — Positions, Motions, Letters & Words</p>
+  <p class="subtitle">Level 1 - Positions, Motions, Letters & Words</p>
   <p class="byline">Created by Austen Cloud &middot; v 0.5</p>
 
   <section class="read-me-first">
@@ -57,19 +57,19 @@
     <ol>
       <li>
         <a href="/guide/level-1/positions-motions">
-          <strong>1.0 — Positions & Motions</strong>
+          <strong>1.0 - Positions & Motions</strong>
           <span>The grid, hand positions, hand motions, Types 1–6, staff positions, negative space</span>
         </a>
       </li>
       <li>
         <a href="/guide/level-1/letters">
-          <strong>1.1 — Letters</strong>
+          <strong>1.1 - Letters</strong>
           <span>Codex, Type 1 letters, compound letters, gamma letters, Types 2–6</span>
         </a>
       </li>
       <li>
         <a href="/guide/level-1/words">
-          <strong>1.2 — Words & CAPs</strong>
+          <strong>1.2 - Words & CAPs</strong>
           <span>Words, CAPs, reversals, 16-count sequences, 8-letter words</span>
         </a>
       </li>

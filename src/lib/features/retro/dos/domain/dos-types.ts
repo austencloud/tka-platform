@@ -1,5 +1,5 @@
 /**
- * TKA-OS DOS Era — Domain Types
+ * TKA-OS DOS Era - Domain Types
  *
  * Core type definitions for the DOS terminal emulator: terminal output,
  * color schemes, modes, and the fake filesystem. These model the fictional

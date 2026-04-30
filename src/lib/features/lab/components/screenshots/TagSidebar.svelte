@@ -1,5 +1,5 @@
 <!--
-  TagSidebar — Collapsible right-side panel for tag-based filtering.
+  TagSidebar - Collapsible right-side panel for tag-based filtering.
   Wraps the shared TagTreeView with gallery-specific state management.
   Desktop: inline sidebar (280px). Mobile: fixed overlay with backdrop.
 -->

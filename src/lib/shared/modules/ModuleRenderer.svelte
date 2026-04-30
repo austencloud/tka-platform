@@ -70,7 +70,7 @@
       idle(() => {
         if (activeModule !== "museum" && !moduleCache.has("museum")) {
           loadModule("museum").catch(() => {
-            // Preload failure is non-critical — user gets normal loading on click
+            // Preload failure is non-critical - user gets normal loading on click
           });
         }
       });
@@ -153,9 +153,9 @@
     skewlab: () => import("../../features/levels/LevelsModule.svelte"),
     "poi-lab": () => import("../../features/levels/LevelsModule.svelte"),
     retro: () => import("../../features/retro/RetroModule.svelte"),
-    // The Archive — tile-based museum explorer
+    // The Archive - tile-based museum explorer
     museum: () => import("../../features/museum/MuseumModule.svelte"),
-    // The Kinetic Archive — 3D indoor scene (promoted from realm destination, Apr 2026)
+    // The Kinetic Archive - 3D indoor scene (promoted from realm destination, Apr 2026)
     archive: () => import("../../features/archive/ArchiveDestination.svelte"),
     mandala: () => import("../../features/lab/LabModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),
@@ -184,7 +184,7 @@
     const { default: ModuleComponent } = await moduleLoaders[moduleName]();
     moduleCache.set(moduleName, ModuleComponent);
 
-    // Signal the boot profiler that the initial module chunk has arrived —
+    // Signal the boot profiler that the initial module chunk has arrived -
     // this is the "user sees real app content" moment. The profiler is
     // idempotent: only the first signal prints the summary, later module
     // switches are no-ops (they're navigation, not boot).

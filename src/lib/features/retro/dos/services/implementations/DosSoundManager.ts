@@ -1,5 +1,5 @@
 /**
- * DosSoundManager — PC speaker square-wave beeps via Web Audio API
+ * DosSoundManager - PC speaker square-wave beeps via Web Audio API
  *
  * Emulates the single-channel piezoelectric speaker found in IBM PCs.
  * All sounds use square-wave oscillators with hard on/off transitions
@@ -116,7 +116,7 @@ export class DosSoundManager {
 	/**
 	 * Schedule a single square-wave tone with hard on/off.
 	 *
-	 * A real PC speaker has no volume control — it's either on or off.
+	 * A real PC speaker has no volume control - it's either on or off.
 	 * We approximate this with a constant gain that snaps to zero at
 	 * the stop time, with no attack/release shaping.
 	 */

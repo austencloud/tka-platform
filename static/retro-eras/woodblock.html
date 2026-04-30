@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TKA Letter A — Ukiyo-e Woodblock Print</title>
+  <title>TKA Letter A - Ukiyo-e Woodblock Print</title>
   <style>
     body {
       margin: 0;
@@ -51,13 +51,13 @@ const WOODBLOCK_PALETTE = {
   blue:       '#1E3A6A',  // indigo
   red:        '#B82410',  // sumi red
   structural: '#1A0F08',  // sumi black
-  bg:         null,       // transparent — washi paper shows through
+  bg:         null,       // transparent - washi paper shows through
 };
 
 // ─── Utilities ─────────────────────────────────────────────────────────────
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-// ── Seeded PRNG (Mulberry32) — reseeded per render for determinism ────────
+// ── Seeded PRNG (Mulberry32) - reseeded per render for determinism ────────
 let rng = mulberry32(0xF00DBABE);
 function mulberry32(seed) {
   return function() {
@@ -81,7 +81,7 @@ function seedFor(data) {
   return h;
 }
 
-// Draw a stroke that varies width along its length — simulates wood-cut pressure
+// Draw a stroke that varies width along its length - simulates wood-cut pressure
 function woodStroke(pts, widths, color, grain = true) {
   ctx.save();
   for (let i = 0; i < pts.length - 1; i++) {
@@ -132,7 +132,7 @@ function drawWashi() {
   ctx.fillStyle = WASHI;
   ctx.fillRect(0, 0, 500, 500);
 
-  // Fiber texture — fine horizontal and diagonal lines of varying opacity
+  // Fiber texture - fine horizontal and diagonal lines of varying opacity
   ctx.save();
   for (let y = 0; y < 500; y += 2.5) {
     const alpha = 0.03 + Math.random() * 0.04;
@@ -313,17 +313,17 @@ function drawStaffForHand(hand, mainColor) {
     pts.push([bx, by]);
   }
 
-  // Main shaft — thick ink
+  // Main shaft - thick ink
   woodStroke(pts, [12, 7], mainColor, true);
 
-  // Bokashi wash — linear gradient along the shaft
+  // Bokashi wash - linear gradient along the shaft
   const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
   grad.addColorStop(0,   mainColor + 'FF');
   grad.addColorStop(0.5, mainColor + 'CC');
   grad.addColorStop(1,   mainColor + '88');
   woodStroke(pts, [8, 4], grad, false);
 
-  // Tapered end caps — small ellipses oriented along the axis
+  // Tapered end caps - small ellipses oriented along the axis
   const capAngle = Math.atan2(dy, dx);
   ctx.save();
   ctx.fillStyle = mainColor;
@@ -345,7 +345,7 @@ function drawArrowhead(x, y, angle, size, color) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
-  // Bold decisive arrowhead — woodblock style
+  // Bold decisive arrowhead - woodblock style
   ctx.beginPath();
   ctx.moveTo(0, 0);                   // tip
   ctx.lineTo(-size * 0.9, -size * 0.5);
@@ -400,7 +400,7 @@ function paintWoodblockPath(pts, mainColor, lightColor) {
   ctx.stroke();
   ctx.restore();
 
-  // Main stroke — thick at start, thin at end
+  // Main stroke - thick at start, thin at end
   for (let i = 0; i < pts.length - 1; i++) {
     const t  = i / (pts.length - 2);
     const w  = lerp(14, 3, t);
@@ -413,7 +413,7 @@ function paintWoodblockPath(pts, mainColor, lightColor) {
     ctx.stroke();
   }
 
-  // Bokashi — lighter wash layer in the hand's "light" shade
+  // Bokashi - lighter wash layer in the hand's "light" shade
   for (let i = 0; i < pts.length - 1; i++) {
     const t  = i / (pts.length - 2);
     const w  = lerp(8, 1.5, t);
@@ -434,7 +434,7 @@ function drawArrowForHand(hand, mainColor, lightColor) {
   if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
   const G = window.PictographGeometry;
 
-  // Dash — straight line across the grid
+  // Dash - straight line across the grid
   if (hand.motionType === 'dash') {
     const s = G.locationPoint(handLoc(hand),    CX, CY, OUTER_R);
     const e = G.locationPoint(handEndLoc(hand), CX, CY, OUTER_R);
@@ -465,7 +465,7 @@ function drawArrowForHand(hand, mainColor, lightColor) {
     return;
   }
 
-  // Arc — pro / anti / float
+  // Arc - pro / anti / float
   const dir = G.handDirection(hand) || 'cw';
   const angles = G.arcAngles(handLoc(hand), handEndLoc(hand), dir);
   if (!angles) return;
@@ -525,7 +525,7 @@ function drawLetter(letter) {
     brushLine(ox+20, oy+52,   ox+28, oy+52, 5*scale, 1*scale, SUMI);
     brushLine(ox+20, oy+52,   ox+12, oy+52, 5*scale, 1*scale, SUMI);
   } else {
-    // Fallback for other letters — bold serif rendered in sumi ink, centered
+    // Fallback for other letters - bold serif rendered in sumi ink, centered
     // roughly in the same footprint as the brush-stroke A (~60px tall).
     ctx.font = 'bold 54px "Times New Roman", serif';
     ctx.fillStyle = SUMI;
@@ -534,7 +534,7 @@ function drawLetter(letter) {
     ctx.fillText(String(letter || '?'), bx, by + 50);
   }
 
-  // Subtle red accent mark (like a Japanese character reading mark) — kept
+  // Subtle red accent mark (like a Japanese character reading mark) - kept
   // for both branches as part of the decorative print framing.
   ctx.fillStyle = VERMIL + 'CC';
   ctx.beginPath();
@@ -607,7 +607,7 @@ function drawHanko() {
   ctx.lineTo(sx + 26, sy + 36);
   ctx.stroke();
 
-  // "Ink bleed" effect — extra blob at intersections
+  // "Ink bleed" effect - extra blob at intersections
   ctx.fillStyle = SEAL_RED;
   [[sx+14, sy+4],[sx+14, sy+28]].forEach(([px, py]) => {
     ctx.beginPath();
@@ -700,16 +700,16 @@ function drawVignette() {
 // ─── Compose everything ──────────────────────────────────────────────────────
 //
 // Two paths:
-//   1. Canonical bitmap available — pixelate + recolor into the woodblock
+//   1. Canonical bitmap available - pixelate + recolor into the woodblock
 //      palette, apply a grain edge treatment, then composite. The canonical
 //      renderer carries all motion semantics (pro/anti, turns, dashes,
 //      floats) so they're inherited for free.
 //
-//   2. No canonical — fall back to the hand-crafted woodblock pipeline so
+//   2. No canonical - fall back to the hand-crafted woodblock pipeline so
 //      the page still renders when opened standalone.
 //
 // Era chrome (washi, bokashi, border, decoration, letter, hanko, vignette)
-// is drawn identically either way — that's where this era's voice lives.
+// is drawn identically either way - that's where this era's voice lives.
 function render(data, canonical, meta) {
   drawWashi();
   drawBokashi();
@@ -740,7 +740,7 @@ function render(data, canonical, meta) {
   drawVignette();
 }
 
-// Default pictograph — Letter A (what the page rendered before the data-driven
+// Default pictograph - Letter A (what the page rendered before the data-driven
 // refactor). Also used when this HTML is opened directly without a parent.
 const DEFAULT_PICTOGRAPH = {
   letter: 'A',

@@ -4,7 +4,7 @@
  * The LLM replaces 5 probability rolls in SocialSystem with genuine
  * character decisions. Everything mechanical stays deterministic.
  * When LLM is unavailable, the DeterministicProvider wraps the
- * existing probability rolls — no LLM required.
+ * existing probability rolls - no LLM required.
  */
 
 export type DecisionType = "idle" | "partner" | "negotiate" | "gift" | "performance";

@@ -17,7 +17,7 @@ export class CardBackDomRenderer implements ICardBackDomRenderer {
     container.style.width = `${contentW}px`;
     container.style.height = `${contentH}px`;
     container.style.overflow = "hidden";
-    // CardBack uses container queries — container-type is required
+    // CardBack uses container queries - container-type is required
     container.style.containerType = "inline-size";
     document.body.appendChild(container);
 
@@ -33,7 +33,7 @@ export class CardBackDomRenderer implements ICardBackDomRenderer {
         requestAnimationFrame(() => setTimeout(resolve, 200))
       ));
 
-      // html2canvas is lazy-loaded — it's ~200KB and violates CSP if eagerly
+      // html2canvas is lazy-loaded - it's ~200KB and violates CSP if eagerly
       // imported into the main chunk (uses new Function for CSS parsing).
       const { default: html2canvas } = await import("html2canvas");
 

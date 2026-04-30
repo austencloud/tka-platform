@@ -596,7 +596,7 @@
     width: 100%;
   }
 
-  /* Inline popover — expands in place below the BPM row. No backdrop. */
+  /* Inline popover - expands in place below the BPM row. No backdrop. */
   .bpm-popover {
     display: flex;
     flex-direction: column;

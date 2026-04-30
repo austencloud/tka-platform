@@ -11,7 +11,7 @@ import type { ShowErrorOptions } from "$lib/shared/error/domain/error-models";
 export interface IErrorTelemetryReporter {
   /**
    * Report an error to the telemetry collection.
-   * Deduplicates by message + module + action — if the same error happened
+   * Deduplicates by message + module + action - if the same error happened
    * recently, it increments the count instead of creating a new document.
    */
   report(options: ShowErrorOptions): Promise<void>;

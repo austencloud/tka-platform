@@ -34,7 +34,7 @@ export interface ThumbnailVisibilitySettings {
 export interface ThumbnailRenderInput {
   // Identity
   sequenceName: string;
-  /** Unique sequence ID — distinguishes variations with the same word */
+  /** Unique sequence ID - distinguishes variations with the same word */
   sequenceId?: string;
 
   // Prop configuration

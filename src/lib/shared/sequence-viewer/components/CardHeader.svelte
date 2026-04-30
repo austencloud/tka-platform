@@ -9,11 +9,12 @@
   import { cubicOut } from "svelte/easing";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import {
     LOOP_ICON_SIZE_SCALE,
   } from "@tka/render-composition";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequence: { word?: string };
@@ -27,7 +28,9 @@
     wordVisible: boolean;
     showLoopGlyph: boolean;
     loopComponents: Set<LOOPComponent> | null;
-    loopRotationSliceSize: SliceSize | undefined;
+    loopRotationPeriod: Period | undefined;
+    loopInversionPeriod: Period | undefined;
+    loopPeriod: number;
     scaledHeaderHeight: number;
     badgeSize: number;
     badgePadding: number;
@@ -48,7 +51,9 @@
     wordVisible,
     showLoopGlyph,
     loopComponents,
-    loopRotationSliceSize,
+    loopRotationPeriod,
+    loopInversionPeriod,
+    loopPeriod,
     scaledHeaderHeight,
     badgeSize,
     badgePadding,
@@ -92,13 +97,16 @@
       {/if}
 
       {#if wordVisible}
-        <span
+        <div
           class="word-title"
-          style="font-size: {wordTitleFontSize}px;"
           transition:fade|local={{ duration: 200 }}
         >
-          {simplifyAndTruncate(sequence.word!, 16)}
-        </span>
+          <TKAWordGlyph
+            word={simplifyRepeatedWord(sequence.word!)}
+            height={Math.floor(wordTitleFontSize * 0.85)}
+            darkMode={activeDarkMode}
+          />
+        </div>
       {/if}
 
       {#if showLoopGlyph && loopComponents}
@@ -109,7 +117,9 @@
         >
           <LOOPIconStrip
             activeComponents={loopComponents}
-            rotationSliceSize={loopRotationSliceSize}
+            rotationPeriod={loopRotationPeriod}
+            inversionPeriod={loopInversionPeriod}
+            period={loopPeriod}
             size={Math.floor(badgeSize * LOOP_ICON_SIZE_SCALE)}
             darkMode={activeDarkMode}
             showFreeformWhenEmpty={false}
@@ -156,19 +166,11 @@
   }
 
   .word-title {
-    font-family: Georgia, serif;
-    font-weight: bold;
-    color: #000;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     max-width: 75%;
-    transition: color 350ms ease, font-size 200ms ease;
-  }
-
-  .dark-mode .word-title {
-    color: #fff;
+    overflow: hidden;
   }
 
   .loop-icon-badge {

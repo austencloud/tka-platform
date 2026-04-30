@@ -3,7 +3,7 @@
  *
  * While a prop is moving, every captured point extends the ring and records
  * an instantaneous speed (distance between the last two points, divided by
- * the time between them). That speed is carried in `speedPxPerMs` — an
+ * the time between them). That speed is carried in `speedPxPerMs` - an
  * exponentially smoothed memory of how fast the prop was traveling.
  *
  * When the prop stops, no new points arrive but the tail keeps "finishing"
@@ -48,7 +48,7 @@ export function createTailState(leadingEdge: number): TailState {
  *
  * Stationary frames: advance the visible endpoint along the ring path by
  * `speedPxPerMs × dtMs` pixels, shrinking `visibleCount` for each full
- * segment crossed. Speed is NOT decayed during stationary time — the tail
+ * segment crossed. Speed is NOT decayed during stationary time - the tail
  * keeps finishing the pre-stop motion at the pre-stop velocity.
  */
 export function advanceTail(
@@ -146,7 +146,7 @@ export function computeVisiblePath(
 
   const windowStart = ring.length - visibleCount;
 
-  // Trim at any large spatial gap — teleports shouldn't connect by a line.
+  // Trim at any large spatial gap - teleports shouldn't connect by a line.
   let gapStart = windowStart;
   const maxGap = Math.max(width, height) * maxGapFraction;
   const maxGapSq = maxGap * maxGap;

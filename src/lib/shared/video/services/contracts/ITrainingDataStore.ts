@@ -48,7 +48,7 @@ export interface TrainingDataEntry {
 	videoUrl?: string;
 	videoFileName?: string;
 
-	/** Base64 data URL of the frame image (optional — expensive to store). */
+	/** Base64 data URL of the frame image (optional - expensive to store). */
 	frameDataUrl?: string;
 	frameWidth: number;
 	frameHeight: number;

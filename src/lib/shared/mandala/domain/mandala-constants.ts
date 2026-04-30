@@ -1,4 +1,4 @@
-/** Default inward offset from exact tip — creates visible lobes on 0-turn motions */
+/** Default inward offset from exact tip - creates visible lobes on 0-turn motions */
 export const DEFAULT_TIP_INSET_PX = 15;
 
 /** Points sampled per beat per tip. Adaptive: multiplied by ceil(turns) for high-turn motions */
@@ -11,7 +11,7 @@ export const MANDALA_GRID_RADIUS = 80;
 export const MANDALA_DEFAULT_SIZE = 500;
 
 /**
- * TKA mandala colors — uses --prop-*-text values from background-theme-calculator.
+ * TKA mandala colors - uses --prop-*-text values from background-theme-calculator.
  * These are the readable-on-dark-backgrounds versions of the canonical prop colors.
  * --prop-blue-text: #818cf8, --prop-red-text: #f87171
  */
@@ -20,7 +20,7 @@ export const RED_STROKE = "#f87171";
 export const BLUE_FILL = "rgba(129, 140, 248, 0.2)";
 export const RED_FILL = "rgba(248, 113, 113, 0.2)";
 
-/** Purple overlap — Tailwind violet-400, perceptually between blue and red */
+/** Purple overlap - Tailwind violet-400, perceptually between blue and red */
 export const PURPLE_STROKE = "#a78bfa";
 export const PURPLE_FILL = "rgba(167, 139, 250, 0.2)";
 
@@ -52,7 +52,7 @@ export const LIGHT_MOTION_PURPLE_FILL = "rgba(109, 40, 217, 0.2)";
 /** Distance threshold in mandala coordinate units for overlap detection.
  * This is the spatial hash cell size; the 3×3 neighborhood check makes
  * the effective radius ~3× this value. Keep small so only truly
- * coincident paths (same trajectory) trigger purple — not parallel
+ * coincident paths (same trajectory) trigger purple - not parallel
  * paths that happen to be nearby (e.g. Sigma-Z dashes). */
 export const OVERLAP_THRESHOLD = 1.5;
 

@@ -5,7 +5,7 @@
    * Drop-in replacement for AnimatorCanvas in 3D render mode.
    * Wraps a Threlte <Canvas> with Viewer3DScene (scene geometry + puppet loop)
    * and Viewer3DCamera (orbit controls). Reads avatarState from the shared
-   * viewer-3d context — the parent must have called setViewer3DContext() before
+   * viewer-3d context - the parent must have called setViewer3DContext() before
    * mounting this component.
    *
    * Rendering is gated on avatarState being non-null AND sequenceData being
@@ -65,7 +65,7 @@
   );
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
-  // Primary performer — gates the Canvas on performer[0] existing. Multi-
+  // Primary performer - gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas
   // still waits on this to avoid mounting WebGL before any performer exists.
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
@@ -106,7 +106,7 @@
     }
   });
 
-  // Start safety timeout only after canvasMountReady — scene components
+  // Start safety timeout only after canvasMountReady - scene components
   // (Environment3D, SeatedAudience3D) can't reportReady until they mount.
   $effect(() => {
     if (!canvasMountReady) return;
@@ -123,7 +123,7 @@
         (f) => !sceneFeatureState.isReady(f.key)
       );
       console.warn(
-        `[Viewer3DCanvas] 15s timeout — force-readying stuck features: [${pending.map((f) => f.key)}]`
+        `[Viewer3DCanvas] 15s timeout - force-readying stuck features: [${pending.map((f) => f.key)}]`
       );
       for (const f of pending) {
         sceneFeatureState.reportReady(f.key);

@@ -1,5 +1,5 @@
 /**
- * The Bellweather Timeline — narrative events keyed by year.
+ * The Bellweather Timeline - narrative events keyed by year.
  * Used by boot sequences, README files, About dialogs, and Easter eggs.
  */
 

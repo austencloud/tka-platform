@@ -22,12 +22,12 @@ import {
   INVERTED_LOOP_VALIDATION_SET,
   getInvertedLetter,
 } from "../../domain/constants/strict-loop-position-maps";
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 
 export class StrictInvertedLOOPExecutor {
   constructor(private OrientationCalculator: IOrientationCalculator) {}
 
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -36,8 +36,8 @@ export class StrictInvertedLOOPExecutor {
     }
 
     const partialLength = sequence.length;
-    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
-    const totalLength = partialLength * period;
+    const periodCount = period === Period.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * periodCount;
     const beatsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;

@@ -23,7 +23,7 @@
  *
  * The 6 diverse seeds are designed to land in visually different basins
  * of the loss surface. The key insight is that the body's YAW axis is
- * the single biggest determinant of "what the pose looks like" — whether
+ * the single biggest determinant of "what the pose looks like" - whether
  * the performer faces the work, stands perpendicular to it, or turns
  * their back to it completely. So the seeds are spread across yaw first
  * (with foot offset and spine pitch as secondary knobs).
@@ -32,7 +32,7 @@
  * each stance axis, letting the reviewer explore the neighborhood
  * without re-running the full diverse search.
  *
- * Domain: Collision Lab — AI-assisted multiple-choice labeling
+ * Domain: Collision Lab - AI-assisted multiple-choice labeling
  */
 
 import type { ICandidateGenerator } from "../contracts/ICandidateGenerator";
@@ -58,13 +58,13 @@ const DIVERSE_SEED_BUDGET = 150;
 
 /**
  * Per-seed descent budget when generating refinements. Smaller because
- * we're already in a good basin — a few dozen steps is enough to polish
+ * we're already in a good basin - a few dozen steps is enough to polish
  * the perturbation.
  */
 const REFINE_SEED_BUDGET = 80;
 
 /**
- * Dedup tolerances — two candidates that land within these distances
+ * Dedup tolerances - two candidates that land within these distances
  * of each other in stance space are considered duplicates and merged.
  */
 const DEDUP_YAW_RAD = (15 * Math.PI) / 180; // 15°
@@ -72,7 +72,7 @@ const DEDUP_FOOT_M = 0.05;                  // 5 cm (Euclidean on XZ)
 const DEDUP_PITCH_RAD = (5 * Math.PI) / 180; // 5°
 
 /**
- * One seed recipe — a starting stance plus a human-readable label so
+ * One seed recipe - a starting stance plus a human-readable label so
  * the thumbnail can title the resulting candidate.
  */
 interface SeedRecipe {
@@ -97,7 +97,7 @@ export class CandidateGenerator implements ICandidateGenerator {
     const results = this.runSeeds(seeds, input, bounds, DIVERSE_SEED_BUDGET);
 
     // If the caller passed a priorStance, candidate 0 is the prior's
-    // saved stance evaluated with zero descent — we want the reviewer
+    // saved stance evaluated with zero descent - we want the reviewer
     // to see exactly what they previously committed, not a re-optimized
     // version of it. Run ONE sim evaluation to populate the verdict.
     let priorCandidate: StanceCandidate | null = null;
@@ -179,7 +179,7 @@ export class CandidateGenerator implements ICandidateGenerator {
    * Seed 2: face-the-work + 90° right, feet under centroid.
    * Seed 3: face-the-work + 90° left, feet under centroid.
    * Seed 4: face the back (180° from the work), feet 25 cm behind the
-   *         work in world space — explicitly includes behind-the-back
+   *         work in world space - explicitly includes behind-the-back
    *         style moves for showy sequences.
    * Seed 5: face-the-work + 45° right, feet stepped back 25 cm.
    */
@@ -266,7 +266,7 @@ export class CandidateGenerator implements ICandidateGenerator {
     };
 
     // When a prior label exists, the prior stance takes slot 0 (added
-    // by the caller), so we only need 5 fresh seeds here — drop the
+    // by the caller), so we only need 5 fresh seeds here - drop the
     // weakest one (the diagonal). When no prior exists, return all 6.
     if (priorStance) {
       return [
@@ -385,7 +385,7 @@ export class CandidateGenerator implements ICandidateGenerator {
    * If dedupe leaves fewer than `targetCount`, backfill by perturbing
    * the best existing candidate along axes orthogonal to the ones
    * already used, so the reviewer always sees `targetCount` distinct
-   * options — never four cards and two blanks.
+   * options - never four cards and two blanks.
    */
   private dedupeAndFill(
     candidates: StanceCandidate[],
@@ -420,7 +420,7 @@ export class CandidateGenerator implements ICandidateGenerator {
         result
       );
       // If the perturbation also collides with an existing candidate,
-      // nudge slightly and accept anyway — we'd rather have 6 cards
+      // nudge slightly and accept anyway - we'd rather have 6 cards
       // than infinite-loop searching for non-colliding perturbations.
       kept.push(candidate);
     }
@@ -448,7 +448,7 @@ export class CandidateGenerator implements ICandidateGenerator {
 }
 
 // ----------------------------------------------------------------------
-// Pure helpers (no state) — kept file-local rather than in a utility
+// Pure helpers (no state) - kept file-local rather than in a utility
 // module because they exist to support one algorithm.
 // ----------------------------------------------------------------------
 
@@ -461,7 +461,7 @@ function wrapAngle(angle: number): number {
 
 /**
  * Midpoint of the two grip targets in world space. This is "the work"
- * — the point the performer should be oriented toward.
+ * - the point the performer should be oriented toward.
  */
 function centroidOf(input: OptimizerInput): { x: number; y: number; z: number } {
   return {
@@ -483,7 +483,7 @@ function centroidOf(input: OptimizerInput): { x: number; y: number; z: number } 
  * `yaw = atan2(-dx, dz)`.
  *
  * If the body is already at the target (dx = dz = 0), the function
- * returns 0 — a safe default rather than NaN.
+ * returns 0 - a safe default rather than NaN.
  */
 function yawFacingPoint(
   targetX: number,
@@ -499,7 +499,7 @@ function yawFacingPoint(
 
 /**
  * Are two stances close enough that the reviewer would see them as the
- * same option? Uses loose tolerances on each axis — stances within 15°
+ * same option? Uses loose tolerances on each axis - stances within 15°
  * yaw, 5 cm foot offset, and 5° spine pitch of each other collapse.
  */
 function stancesCollide(a: StancePose, b: StancePose): boolean {

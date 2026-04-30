@@ -3,7 +3,7 @@ import type { GripType, FingerChains } from "../../domain/models/GripPose";
 
 /**
  * Animates finger bones by slerping between grip pose presets.
- * Peer to ILegAnimator — operates on disjoint bone sets.
+ * Peer to ILegAnimator - operates on disjoint bone sets.
  * Instantiated per-avatar (not a DI singleton).
  */
 export interface IFingerAnimator {

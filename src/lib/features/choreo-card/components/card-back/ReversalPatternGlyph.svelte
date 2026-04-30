@@ -1,5 +1,5 @@
 <!--
-  ReversalPatternGlyph — Tiny dot-pair columns showing the reversal pattern.
+  ReversalPatternGlyph - Tiny dot-pair columns showing the reversal pattern.
   Period-compressed: shows only one period of the pattern.
   Used on card backs to identify which reversal pattern deck a card belongs to.
 -->

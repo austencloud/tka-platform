@@ -2,7 +2,7 @@
  * Scene Lab Player State
  *
  * Minimal AvatarState stub for driving UnifiedCameraController in fly mode.
- * No physics — the controller's kinematic branch writes directly to
+ * No physics - the controller's kinematic branch writes directly to
  * position.x/y/z each frame, clamped to its built-in SCENE_BOUNDS (±50m).
  */
 
@@ -17,7 +17,7 @@ export function createSceneLabPlayerState(): {
   // position.y is the avatar's FEET. The camera controller adds its own eye
   // offset (1.6m in first-person) on top, and renders the avatar body from
   // the feet up. Spawning at y=0 puts feet on the snow, eye at 1.6m.
-  // Plain mutable object — UnifiedCameraController writes .x/.y/.z directly
+  // Plain mutable object - UnifiedCameraController writes .x/.y/.z directly
   // via `avatarState.position.x = newX`. The flycam physics provider shares
   // this same reference so its movePlayer() also mutates it.
   const position = { x: 0, y: 0, z: 10 };
@@ -45,7 +45,7 @@ export function createSceneLabPlayerState(): {
       isMoving = input.x !== 0 || input.z !== 0;
     },
     updateMovement(_delta: number, _cameraAngle: number) {
-      // No-op — the controller's kinematic branch writes position directly
+      // No-op - the controller's kinematic branch writes position directly
       // when physicsProvider is null.
     },
     setFacingAngle(angle: number) {

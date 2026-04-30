@@ -296,13 +296,13 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // a frame, queue overflow), the browser transitions it to the "closed"
   // state and fires the error callback. We track that in encoderErrored so
   // subsequent frame messages bail out cleanly instead of trying
-  // encoder.encode() on a dead codec — which would throw "Cannot call
+  // encoder.encode() on a dead codec - which would throw "Cannot call
   // 'encode' on a closed codec" for every remaining frame, drowning the
   // original error in noise.
   //
   // The error message we post includes the encoder state and the last
   // known queue size at the time of failure. Hardware encoders typically
-  // error when the internal queue overflows — seeing "queueSize=N" in the
+  // error when the internal queue overflows - seeing "queueSize=N" in the
   // error tells us exactly which failure mode we hit.
   encoder = new VideoEncoder({
     output: (chunk, meta) => {
@@ -321,7 +321,7 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
 
   const codec = selectCodec(encoderWidth, encoderHeight);
 
-  // Omit `hardwareAcceleration` entirely — this is the spec default
+  // Omit `hardwareAcceleration` entirely - this is the spec default
   // (`"no-preference"`) and it's what production encoders should use.
   //
   // Why NOT "prefer-hardware":
@@ -330,7 +330,7 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // its downside: hardware H.264 encoders have tight internal queues and
   // enter the closed state the moment a complex scene (collision lab,
   // full audience, multi-performer effects) overwhelms them. Once closed,
-  // there's no recovery — the entire export fails near 100%.
+  // there's no recovery - the entire export fails near 100%.
   //
   // With "no-preference" the browser picks hardware when it's safe and
   // transparently uses software when it isn't, which is exactly the
@@ -404,11 +404,11 @@ function handleFrameCapturedWebCodecs(msg: FrameMessageCaptured): void {
   let videoFrame: VideoFrame | null = null;
   try {
     if (msg.frame.kind === "video-frame") {
-      // Fast path — the main thread handed us a ready-to-encode VideoFrame
+      // Fast path - the main thread handed us a ready-to-encode VideoFrame
       // constructed from the source canvas.
       videoFrame = msg.frame.frame;
     } else {
-      // Fallback path — wrap the ImageData in a VideoFrame. This is only
+      // Fallback path - wrap the ImageData in a VideoFrame. This is only
       // reached when the main thread has no VideoFrame constructor at all,
       // which also means this worker should have taken the WASM branch;
       // we handle it here for safety but it should never fire in practice.
@@ -425,7 +425,7 @@ function handleFrameCapturedWebCodecs(msg: FrameMessageCaptured): void {
   } catch (err) {
     // Defensive: if encode() throws synchronously (e.g. the codec entered
     // the closed state between our state check above and this call), flip
-    // encoderErrored so subsequent frames bail cleanly. Don't rethrow —
+    // encoderErrored so subsequent frames bail cleanly. Don't rethrow -
     // the error callback will surface the real cause.
     encoderErrored = true;
     post({
@@ -434,7 +434,7 @@ function handleFrameCapturedWebCodecs(msg: FrameMessageCaptured): void {
     });
   } finally {
     // Invariant: every VideoFrame the worker owns must be closed exactly
-    // once. encoder.encode() does NOT take ownership — the caller closes.
+    // once. encoder.encode() does NOT take ownership - the caller closes.
     videoFrame?.close();
   }
 }
@@ -444,7 +444,7 @@ function handleFrameCapturedWasm(msg: FrameMessageCaptured): void {
 
   // WASM path needs raw RGBA bytes. A video-frame kind here means the
   // main thread incorrectly sent a GPU handle to a worker that can't
-  // consume one — treat it as an error so the mismatch surfaces in tests.
+  // consume one - treat it as an error so the mismatch surfaces in tests.
   if (msg.frame.kind !== "image-data") {
     post({
       type: "error",
@@ -472,7 +472,7 @@ async function handleFinishWebCodecs(): Promise<void> {
 
   // If the encoder died mid-export, don't try to flush a dead codec.
   // Post an error so the main thread's finish() promise rejects and the
-  // UI can surface the failure — without this, the promise hangs forever
+  // UI can surface the failure - without this, the promise hangs forever
   // and the export UI freezes at 100% showing the Cancel button.
   //
   // The encoder's own error callback may have already fired and posted
@@ -487,7 +487,7 @@ async function handleFinishWebCodecs(): Promise<void> {
       error:
         "Encoder stopped accepting frames before export could finish " +
         "(the hardware encoder may have rejected the frame rate or " +
-        "resolution — try a lower fps/resolution combination).",
+        "resolution - try a lower fps/resolution combination).",
     });
     return;
   }
@@ -617,7 +617,7 @@ function handleFrame(msg: FrameMessage): void {
     return;
   }
 
-  // Legacy imageData path — kept alive until both pipelines migrate.
+  // Legacy imageData path - kept alive until both pipelines migrate.
   if (hasWebCodecs) {
     handleFrameWebCodecs(msg);
   } else {

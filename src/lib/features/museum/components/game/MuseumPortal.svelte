@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * MuseumPortal — Render-to-texture portal that shows the destination room.
+   * MuseumPortal - Render-to-texture portal that shows the destination room.
    *
    * Works like the Three.js portal example: a WebGLRenderTarget captures the scene
    * from a virtual camera at the destination, then that texture is mapped onto a
@@ -37,19 +37,19 @@
     destPosition: [number, number, number];
     /** Destination portal's rotation (Euler angles) */
     destRotation: [number, number, number];
-    /** Glow color — "#0088ff" for blue, "#ff8800" for orange */
+    /** Glow color - "#0088ff" for blue, "#ff8800" for orange */
     color?: string;
     /** Optional label shown above the portal */
     label?: string;
     /** Render target resolution */
     textureSize?: number;
-    /** Player world position — portal only renders when player is nearby */
+    /** Player world position - portal only renders when player is nearby */
     playerPosition?: { x: number; y: number; z: number };
   }
 
   const props: Props = $props();
 
-  // Resolve defaults (plain consts — initial values for Three.js objects, not reactive)
+  // Resolve defaults (plain consts - initial values for Three.js objects, not reactive)
   const position = props.position;
   const rotation = props.rotation;
   const width = props.width ?? 1.2;
@@ -63,7 +63,7 @@
   // Portal render-to-texture is expensive (full scene render per portal per frame).
   // Two optimizations: skip frames when player is far away, and reduce render
   // frequency even when nearby. At 256x256 the visual difference is imperceptible.
-  const PROXIMITY_RADIUS = 8; // world units — ~16 tiles
+  const PROXIMITY_RADIUS = 8; // world units - ~16 tiles
   const PROXIMITY_RADIUS_SQ = PROXIMITY_RADIUS * PROXIMITY_RADIUS;
   const RENDER_EVERY_N_FRAMES = 3;
   let frameCounter = 0;
@@ -83,7 +83,7 @@
   // Virtual camera placed at the destination to capture the "through the portal" view
   const virtualCamera = new PerspectiveCamera(60, width / height, 0.1, 100);
 
-  // Material for the portal surface — shows the render target texture
+  // Material for the portal surface - shows the render target texture
   const portalMaterial = new MeshBasicMaterial({
     map: renderTarget.texture,
   });
@@ -136,11 +136,11 @@
   useTask(() => {
     frameCounter++;
 
-    // Skip frames — at 60fps, rendering every 3rd frame = 20fps portal texture.
+    // Skip frames - at 60fps, rendering every 3rd frame = 20fps portal texture.
     // At 256x256, the reduced update rate is visually imperceptible.
     if (frameCounter % RENDER_EVERY_N_FRAMES !== 0) return;
 
-    // Proximity gate — don't render portal texture if player is far away.
+    // Proximity gate - don't render portal texture if player is far away.
     // The portal surface still shows the last captured frame (frozen).
     const pp = props.playerPosition;
     if (pp) {
@@ -227,7 +227,7 @@
     />
   </T.Mesh>
 
-  <!-- Point light at the portal — casts colored glow on nearby surfaces -->
+  <!-- Point light at the portal - casts colored glow on nearby surfaces -->
   <T.PointLight
     color={color}
     intensity={3}

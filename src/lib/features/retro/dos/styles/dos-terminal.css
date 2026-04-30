@@ -4,7 +4,7 @@
  * Authentic CRT effects: scanlines, glow, flicker.
  */
 
-/* Outer wrapper — dark "desk" fills the viewport */
+/* Outer wrapper - dark "desk" fills the viewport */
 .dos-desk {
 	background: #0a0a0a;
 	width: 100vw;
@@ -17,7 +17,7 @@
 	margin: 0;
 }
 
-/* CRT monitor bezel — the physical frame around the screen */
+/* CRT monitor bezel - the physical frame around the screen */
 .dos-monitor {
 	position: relative;
 	width: min(960px, 90vw);
@@ -147,7 +147,7 @@
 	}
 }
 
-/* CRT scanline overlay — scoped to the monitor screen */
+/* CRT scanline overlay - scoped to the monitor screen */
 .dos-crt-overlay {
 	position: absolute;
 	inset: 0;

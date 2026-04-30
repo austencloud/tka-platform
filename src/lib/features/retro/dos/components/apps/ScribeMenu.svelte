@@ -1,5 +1,5 @@
 <!--
-  ScribeMenu — Main menu for the SCRIBE notation utility.
+  ScribeMenu - Main menu for the SCRIBE notation utility.
 
   Renders a box-drawn menu to the terminal buffer with options 1-7
   (Generate, Construct, Spell, Browse, Cards, Tutorial, Configuration)
@@ -107,14 +107,14 @@
     const targetMode = MENU_SELECTIONS[trimmed];
     if (targetMode) {
       soundManager.menuSelect();
-      // Clear handler before transitioning — the sub-mode component
+      // Clear handler before transitioning - the sub-mode component
       // will register its own handler when it mounts.
       terminalState.inputHandler = null;
       terminalState.scribeMode = targetMode;
       return;
     }
 
-    // Invalid input — play error sound if sound is enabled
+    // Invalid input - play error sound if sound is enabled
     soundManager.setMuted(!terminalState.soundEnabled);
     soundManager.error();
     terminalState.writeLine("Invalid selection. Enter 0-7.");

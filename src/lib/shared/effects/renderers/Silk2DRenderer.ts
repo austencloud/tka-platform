@@ -194,7 +194,7 @@ export class Silk2DRenderer {
         }
       }
 
-      // Layer 1: Glow underpaint — thick soft stroke along spine
+      // Layer 1: Glow underpaint - thick soft stroke along spine
       ctx.globalAlpha = segAlpha * 0.15 * params.intensity;
       ctx.strokeStyle = bodyColor;
       ctx.lineWidth = params.baseHalfWidth * scale * 2.5;
@@ -202,7 +202,7 @@ export class Silk2DRenderer {
       this.traceSpine(ctx, leftX, leftY, rightX, rightY, iStart, iEnd, n);
       ctx.stroke();
 
-      // Layer 2: Body fill — closed polygon with Catmull-Rom edges
+      // Layer 2: Body fill - closed polygon with Catmull-Rom edges
       ctx.globalAlpha = segAlpha * 0.7 * params.intensity;
       ctx.fillStyle = bodyColor;
       ctx.beginPath();
@@ -211,7 +211,7 @@ export class Silk2DRenderer {
       ctx.closePath();
       ctx.fill();
 
-      // Layer 3: Sheen highlight — thin Catmull-Rom stroke, left edge only
+      // Layer 3: Sheen highlight - thin Catmull-Rom stroke, left edge only
       ctx.globalAlpha = segAlpha * 0.3 * params.intensity;
       ctx.strokeStyle = edgeColor;
       ctx.lineWidth = 1.5 * scale;

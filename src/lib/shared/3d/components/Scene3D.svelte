@@ -178,7 +178,7 @@
     }
   }
 
-  // Grid positions match avatar positions — rotation pivot is at the avatar.
+  // Grid positions match avatar positions - rotation pivot is at the avatar.
   // Grid offset is applied via parent T.Group, not Grid3D props.
   const gridPositions = $derived(
     avatarPositions.length > 0 ? avatarPositions : [{ x: 0, y: 0, z: 0 }]

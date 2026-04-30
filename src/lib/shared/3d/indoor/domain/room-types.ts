@@ -2,7 +2,7 @@
  * Room Description Format
  *
  * Semantic room definitions for indoor scenes. Rooms are described
- * in terms of walls, entrances, objects, and lighting — not coordinates.
+ * in terms of walls, entrances, objects, and lighting - not coordinates.
  * The RoomGeometryBuilder converts these to grid-snapped geometry.
  */
 

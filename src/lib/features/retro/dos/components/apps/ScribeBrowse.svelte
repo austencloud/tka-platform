@@ -1,5 +1,5 @@
 <!--
-  ScribeBrowse — Sequence library browser for SCRIBE.
+  ScribeBrowse - Sequence library browser for SCRIBE.
 
   Lists .SEQ files from the SEQUENCES directory in authentic DOS DIR
   format, prompts for a filename, renders ASCII pictographs for that
@@ -46,8 +46,8 @@
   /**
    * Internal phase of the browse UI.
    *
-   * "listing" — showing the DIR output and waiting for a filename.
-   * "viewing" — rendering pictographs for a chosen sequence.
+   * "listing" - showing the DIR output and waiting for a filename.
+   * "viewing" - rendering pictographs for a chosen sequence.
    */
   type BrowsePhase = "listing" | "viewing";
 
@@ -147,7 +147,7 @@
   function handleInput(input: string): void {
     const trimmed = input.trim().toUpperCase();
 
-    // Empty input — return to SCRIBE menu
+    // Empty input - return to SCRIBE menu
     if (trimmed === "") {
       cleanup();
       onreturn();

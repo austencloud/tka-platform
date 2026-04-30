@@ -73,7 +73,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
         const detection = this.loopDetector.detectLOOPType(loadedSequence);
         resolvedLoopType = detection.loopType;
       } catch {
-        // Detection failure is non-fatal — thumbnail renders without badge
+        // Detection failure is non-fatal - thumbnail renders without badge
       }
     }
 
@@ -191,7 +191,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     const defaults =
       input.variant === "wordcard" ? WORDCARD_DEFAULTS : GALLERY_DEFAULTS;
 
-    // Hand path sequences have HAND props baked into their data — don't override
+    // Hand path sequences have HAND props baked into their data - don't override
     const isHandPath = input.visibility?.handPathMode ?? false;
 
     // Determine prop mode
@@ -227,7 +227,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       // Background based on light mode
       backgroundColor: input.lightMode ? "#ffffff" : "#1a1a2e",
 
-      // Prop overrides — hand path mode uses HAND props baked into the data,
+      // Prop overrides - hand path mode uses HAND props baked into the data,
       // so skip user prop overrides that would clobber PropType.HAND.
       // CRITICAL: Always fall back to PropType.STAFF when input prop types are
       // undefined/null. Without this, hasPropOverride is false in ImageComposer

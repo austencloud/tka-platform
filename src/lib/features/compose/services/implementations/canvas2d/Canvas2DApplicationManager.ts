@@ -102,7 +102,7 @@ export class Canvas2DApplicationManager {
     }
 
     // Get 2D context with alpha support based on backgroundAlpha
-    // NOTE: desynchronized intentionally omitted — it causes visible tearing
+    // NOTE: desynchronized intentionally omitted - it causes visible tearing
     // (colored strip artifacts) on Android Chrome PWA due to front-buffer rendering
     // When paintBackground=false the canvas must have an alpha channel so
     // non-prop pixels stay transparent (so overlays behind props show through).
@@ -170,7 +170,7 @@ export class Canvas2DApplicationManager {
     this.updateBackgroundTransition();
 
     // Fill with current (possibly transitioning) background color.
-    // Skipped when paintBackground=false — the wrapper provides the background
+    // Skipped when paintBackground=false - the wrapper provides the background
     // color via CSS so overlay canvases placed underneath (z<3) show through
     // non-prop areas of this canvas.
     if (this.paintBackground && this.backgroundAlpha > 0) {

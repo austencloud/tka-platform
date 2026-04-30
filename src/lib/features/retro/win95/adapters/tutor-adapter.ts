@@ -138,14 +138,14 @@ export async function loadCodexLetters(): Promise<RetroCodexLetter[]> {
           letterType = getLetterType(letter);
           typeNumber = parseInt(letterType.replace("Type", ""), 10);
         } catch {
-          // Unknown letter — skip clean type derivation
+          // Unknown letter - skip clean type derivation
           letterType = "Type?" as LetterType;
         }
         return {
           letter: letterKey,
           type: letterType,
           typeNumber,
-          description: `Letter ${letterKey} — ${letterType}`,
+          description: `Letter ${letterKey} - ${letterType}`,
         };
       })
       .sort((a, b) => a.letter.localeCompare(b.letter));

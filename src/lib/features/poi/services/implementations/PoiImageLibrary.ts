@@ -30,7 +30,7 @@ export class PoiImageLibrary implements IPoiImageLibrary {
     const { doc, getDoc, setDoc } = await import("firebase/firestore");
     const docRef = doc(firestore, `users/${userId}/poi-images/${id}`);
 
-    // Dedup check — identical uploads collide on the content hash, so
+    // Dedup check - identical uploads collide on the content hash, so
     // we can skip the Storage round-trip entirely for a repeat upload.
     const existing = await getDoc(docRef);
     if (existing.exists()) {
@@ -46,7 +46,7 @@ export class PoiImageLibrary implements IPoiImageLibrary {
       height = bitmap.height;
       bitmap.close();
     } catch {
-      // Bitmap decode failure shouldn't block the upload — we still want
+      // Bitmap decode failure shouldn't block the upload - we still want
       // the binary saved. Width/height will just be 0 in the doc.
     }
 
@@ -83,7 +83,7 @@ export class PoiImageLibrary implements IPoiImageLibrary {
   ): () => void {
     const userId = getEffectiveUserId();
     if (!userId) {
-      // Guest fallback — emit an empty list and hand back a noop teardown.
+      // Guest fallback - emit an empty list and hand back a noop teardown.
       onChange([]);
       return () => {
         /* noop */
@@ -148,7 +148,7 @@ export class PoiImageLibrary implements IPoiImageLibrary {
     const userId = getEffectiveUserId();
     if (!userId) return;
 
-    // Firestore doc first — it's the source of truth. If the Storage
+    // Firestore doc first - it's the source of truth. If the Storage
     // cleanup later fails we're left with an orphaned binary, which is
     // acceptable (the Firestore doc is gone so the UI won't show it).
     const firestore = await getFirestoreInstance();
@@ -168,7 +168,7 @@ export class PoiImageLibrary implements IPoiImageLibrary {
         ref(storage, `users/${userId}/poi-images/${id}.${ext}`),
       );
     } catch {
-      // Orphan acceptable — Firestore is the source of truth
+      // Orphan acceptable - Firestore is the source of truth
     }
   }
 

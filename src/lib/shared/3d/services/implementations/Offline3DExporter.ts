@@ -1,11 +1,11 @@
 /**
- * Offline 3D Exporter — synchronous scheduler-driven pipeline.
+ * Offline 3D Exporter - synchronous scheduler-driven pipeline.
  *
  * Every frame is rendered deterministically by:
  *   1. Setting the performer step + camera transform.
  *   2. Flushing Svelte reactive state (await tick) so $derived/props
  *      propagate into Threlte components.
- *   3. Calling runFrame(time) — a single synchronous call that drives
+ *   3. Calling runFrame(time) - a single synchronous call that drives
  *      the entire Threlte scheduler: puppet loop → IK → effects → render.
  *   4. Capturing the canvas.
  *
@@ -155,7 +155,7 @@ export class Offline3DExporter implements IOffline3DExporter {
       compositorCtx = ctx;
 
       // Resize WebGL backing store to 2× target. Force pixelRatio=1 so
-      // setSize treats the numbers as literal backing-store dimensions —
+      // setSize treats the numbers as literal backing-store dimensions -
       // otherwise a retina display would double-multiply.
       deps.renderer.setPixelRatio(1);
       deps.renderer.setSize(width * ssaa, height * ssaa, false);
@@ -211,7 +211,7 @@ export class Offline3DExporter implements IOffline3DExporter {
           //    useTask callbacks read it.
           await tick();
 
-          // 4. Run Threlte's full pipeline synchronously — puppet loop,
+          // 4. Run Threlte's full pipeline synchronously - puppet loop,
           //    IK, effects, render.
           deps.runFrame(monotonicTime + sub * subFrameDurationMs);
 
@@ -249,7 +249,7 @@ export class Offline3DExporter implements IOffline3DExporter {
         monotonicTime += frameDurationMs;
 
         // 7. Yield to the event loop periodically so the UI stays
-        //    responsive — progress bar updates, cancel button works.
+        //    responsive - progress bar updates, cancel button works.
         //    MessageChannel is unthrottled even when the tab is
         //    backgrounded (unlike setTimeout or rAF).
         if (frameIndex % YIELD_EVERY_N_FRAMES === 0) {
@@ -276,8 +276,8 @@ export class Offline3DExporter implements IOffline3DExporter {
       deps.setExportCurrentStep(null);
       deps.setExporting(false);
 
-      // Restore renderer size/pixel ratio — even if export threw or was
-      // cancelled — so the live scene keeps rendering at the right size.
+      // Restore renderer size/pixel ratio - even if export threw or was
+      // cancelled - so the live scene keeps rendering at the right size.
       if (cinema) {
         deps.renderer.setPixelRatio(origPixelRatio);
         deps.renderer.setSize(origSize.x, origSize.y, false);

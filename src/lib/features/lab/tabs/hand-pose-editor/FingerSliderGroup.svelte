@@ -1,5 +1,5 @@
 <!--
-  FingerSliderGroup.svelte — Sliders for one finger's 3 bone rotations.
+  FingerSliderGroup.svelte - Sliders for one finger's 3 bone rotations.
   Thumb shows Y/Z sliders by default (abduction). Other fingers show X (flexion).
 -->
 <script lang="ts">

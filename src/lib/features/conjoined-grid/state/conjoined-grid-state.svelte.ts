@@ -22,7 +22,7 @@ import { PictographTopologyMapper } from "../services/implementations/Pictograph
 import { TopologyPositionEnumerator } from "$lib/shared/multi-grid/services/implementations/TopologyPositionEnumerator";
 
 // ---------------------------------------------------------------------------
-// Dependency contract — only the methods we actually call
+// Dependency contract - only the methods we actually call
 // ---------------------------------------------------------------------------
 
 export interface ConjoinedGridDeps {
@@ -39,7 +39,7 @@ export interface ConjoinedGridDeps {
 // ---------------------------------------------------------------------------
 
 export function createConjoinedGridState(deps: ConjoinedGridDeps) {
-  // Pure domain services — no DI needed, deterministic and stateless
+  // Pure domain services - no DI needed, deterministic and stateless
   const detector = new JunctionOverlapDetector();
   const mapper = new PictographTopologyMapper();
   const enumerator = new TopologyPositionEnumerator();
@@ -206,7 +206,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps) {
     manualRedRef = ref;
   }
 
-  // Playback timer — advances currentPairIndex while isPlaying is true
+  // Playback timer - advances currentPairIndex while isPlaying is true
   $effect(() => {
     if (!isPlaying) return;
     if (allPairs.length === 0) {

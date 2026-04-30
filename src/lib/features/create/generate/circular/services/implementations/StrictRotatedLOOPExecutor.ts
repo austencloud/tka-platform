@@ -25,7 +25,7 @@ import {
   getHandRotationDirection,
   getLocationMapForHandRotation,
 } from "../../domain/constants/circular-position-maps";
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class StrictRotatedLOOPExecutor {
@@ -38,12 +38,12 @@ export class StrictRotatedLOOPExecutor {
    * Execute the strict rotated LOOP
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param sliceSize - Whether to use halved (180°) or quartered (90°) rotation
+   * @param period - Whether to use halved (180°) or quartered (90°) rotation
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     // Validate the sequence
-    this._validateSequence(sequence, sliceSize);
+    this._validateSequence(sequence, period);
 
     // Remove start position (index 0) for processing
     const startPosition = sequence.shift();
@@ -53,7 +53,7 @@ export class StrictRotatedLOOPExecutor {
 
     // Calculate how many steps to generate
     const sequenceLength = sequence.length;
-    const entriesToAdd = this._calculateEntriesToAdd(sequenceLength, sliceSize);
+    const entriesToAdd = this._calculateEntriesToAdd(sequenceLength, period);
 
     // Generate the new steps
     const generatedSteps: StepData[] = [];
@@ -67,7 +67,7 @@ export class StrictRotatedLOOPExecutor {
         lastStep,
         nextStepNumber,
         finalIntendedLength,
-        sliceSize
+        period
       );
 
       generatedSteps.push(nextStep);
@@ -85,7 +85,7 @@ export class StrictRotatedLOOPExecutor {
   /**
    * Validate that the sequence can perform the requested LOOP
    */
-  private _validateSequence(sequence: StepData[], sliceSize: SliceSize): void {
+  private _validateSequence(sequence: StepData[], period: Period): void {
     if (sequence.length < 2) {
       throw new Error(
         "Sequence must have at least 2 steps (start position + 1 beat)"
@@ -102,12 +102,12 @@ export class StrictRotatedLOOPExecutor {
     // Check if the (start, end) pair is valid for the slice size
     const key = `${startPos},${endPos}`;
     const validationSet =
-      sliceSize === SliceSize.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
+      period === Period.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
 
     if (!validationSet.has(key)) {
       throw new Error(
-        `Invalid position pair for ${sliceSize} LOOP: ${startPos} → ${endPos}. ` +
-          `This pair cannot complete a ${sliceSize} rotation.`
+        `Invalid position pair for ${period} LOOP: ${startPos} → ${endPos}. ` +
+          `This pair cannot complete a ${period} rotation.`
       );
     }
   }
@@ -117,12 +117,12 @@ export class StrictRotatedLOOPExecutor {
    */
   private _calculateEntriesToAdd(
     sequenceLength: number,
-    sliceSize: SliceSize
+    period: Period
   ): number {
-    if (sliceSize === SliceSize.HALVED) {
+    if (period === Period.HALVED) {
       return sequenceLength; // Double the sequence
     }
-    // SliceSize.QUARTERED
+    // Period.QUARTERED
     return sequenceLength * 3; // Quadruple the sequence
   }
 
@@ -134,14 +134,14 @@ export class StrictRotatedLOOPExecutor {
     previousStep: StepData,
     stepNumber: number,
     finalIntendedLength: number,
-    sliceSize: SliceSize
+    period: Period
   ): StepData {
     // Get the corresponding beat from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
       finalIntendedLength,
-      sliceSize
+      period
     );
 
     // Calculate new end position
@@ -189,9 +189,9 @@ export class StrictRotatedLOOPExecutor {
     sequence: StepData[],
     stepNumber: number,
     finalLength: number,
-    sliceSize: SliceSize
+    period: Period
   ): StepData {
-    const indexMap = this._getIndexMap(sliceSize, finalLength);
+    const indexMap = this._getIndexMap(period, finalLength);
     const matchingStepNumber = indexMap[stepNumber];
 
     if (matchingStepNumber === undefined) {
@@ -214,11 +214,11 @@ export class StrictRotatedLOOPExecutor {
    * Generate index mapping for retrieving corresponding steps
    */
   private _getIndexMap(
-    sliceSize: SliceSize,
+    period: Period,
     length: number
   ): Record<number, number> {
     // Handle edge cases for very short sequences
-    if (length < 4 && sliceSize === SliceSize.QUARTERED) {
+    if (length < 4 && period === Period.QUARTERED) {
       const map: Record<number, number> = {};
       for (let i = 1; i <= length; i++) {
         map[i] = Math.max(i - 1, 1);
@@ -226,7 +226,7 @@ export class StrictRotatedLOOPExecutor {
       return map;
     }
 
-    if (length < 2 && sliceSize === SliceSize.HALVED) {
+    if (length < 2 && period === Period.HALVED) {
       const map: Record<number, number> = {};
       for (let i = 1; i <= length; i++) {
         map[i] = Math.max(i - 1, 1);
@@ -237,13 +237,13 @@ export class StrictRotatedLOOPExecutor {
     // Normal index mapping
     const map: Record<number, number> = {};
 
-    if (sliceSize === SliceSize.QUARTERED) {
+    if (period === Period.QUARTERED) {
       const quarterLength = Math.floor(length / 4);
       for (let i = quarterLength + 1; i <= length; i++) {
         map[i] = i - quarterLength;
       }
     } else {
-      // SliceSize.HALVED
+      // Period.HALVED
       const halfLength = Math.floor(length / 2);
       for (let i = halfLength + 1; i <= length; i++) {
         map[i] = i - halfLength;

@@ -94,7 +94,7 @@ export interface Video3DExportDependencies {
   totalDurationSeconds: number;
   /** Camera keyframe buffer from pass 1 (or static capture) */
   cameraKeyframes: import("$lib/shared/video-export/domain/CameraKeyframe").CameraKeyframeBuffer;
-  /** Three.js WebGLRenderer — needed for cinema-mode supersampling resize */
+  /** Three.js WebGLRenderer - needed for cinema-mode supersampling resize */
   renderer: {
     getSize(target: { x: number; y: number; set(w: number, h: number): unknown }): unknown;
     setSize(w: number, h: number, updateStyle?: boolean): void;

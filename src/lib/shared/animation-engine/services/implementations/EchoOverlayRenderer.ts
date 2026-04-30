@@ -6,7 +6,7 @@
  * the sparkles overlay pattern: position:absolute, pointer-events:none,
  * z-index sits above the trails canvas (1) but below LED.
  *
- * The overlay canvas is fully cleared each frame before drawing — the
+ * The overlay canvas is fully cleared each frame before drawing - the
  * Echo2DRenderer uses additive blending and its own phantom ring buffer
  * to manage persistence across frames. Drawing a fresh frame each tick
  * keeps fade behavior predictable when the step index doesn't advance

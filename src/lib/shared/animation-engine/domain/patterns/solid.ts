@@ -3,7 +3,7 @@ import type { TipEvaluationContext } from "./context";
 
 /**
  * Solid pattern: all tips emit the primary color at full intensity.
- * The simplest possible pattern — no animation, no spatial variation.
+ * The simplest possible pattern - no animation, no spatial variation.
  */
 export function evaluateSolid(ctx: TipEvaluationContext): LedColor {
   return { r: ctx.primaryColor.r, g: ctx.primaryColor.g, b: ctx.primaryColor.b };
@@ -42,13 +42,13 @@ export function evaluateQuad(ctx: TipEvaluationContext): LedColor {
       return { r: p.r, g: p.g, b: p.b };
     case 1: // (propIndex=0, tipIndex=1)
       return { r: s.r, g: s.g, b: s.b };
-    case 2: // (propIndex=1, tipIndex=0) — primary shifted toward blue
+    case 2: // (propIndex=1, tipIndex=0) - primary shifted toward blue
       return {
         r: p.r * 0.3,
         g: p.g * 0.5,
         b: Math.min(1, p.b + 0.5),
       };
-    case 3: // (propIndex=1, tipIndex=1) — primary shifted toward red
+    case 3: // (propIndex=1, tipIndex=1) - primary shifted toward red
     default:
       return {
         r: Math.min(1, p.r + 0.5),

@@ -28,13 +28,13 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/getHandPathSa
     if (builder.phase === "blue") {
       if (builder.blueLocations.length === 0) return "Tap grid points to draw the blue hand path.";
       if (builder.blueLocations.length === 1) return "Tap at least one more point, then switch to red.";
-      return `${builder.blueLocations.length} points — tap "Next Hand" when ready.`;
+      return `${builder.blueLocations.length} points - tap "Next Hand" when ready.`;
     }
     if (builder.phase === "red") {
       const remaining = builder.blueLocations.length - builder.redLocations.length;
       if (builder.redLocations.length === 0) return "Now draw the red hand path.";
       if (remaining > 0) return `${remaining} more point${remaining > 1 ? "s" : ""} to match blue.`;
-      return `Paths match — tap "Complete" to finish.`;
+      return `Paths match - tap "Complete" to finish.`;
     }
     return "Both paths built.";
   });

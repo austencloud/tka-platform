@@ -93,7 +93,7 @@ export interface ForestSceneConfig {
   fireflies: FallingParticlesConfig | null;
   /** Concentric tree rings for depth. */
   treeRings: TreeRingConfig[];
-  /** Inner clearing radius — rocks / bushes hug this edge. */
+  /** Inner clearing radius - rocks / bushes hug this edge. */
   clearingRadius: number;
   /** Rock count around clearing edge. */
   rockCount: number;
@@ -151,7 +151,7 @@ export interface WinterSceneConfig {
 }
 
 // ============================================================================
-// Default configs — preserve current baked values
+// Default configs - preserve current baked values
 // ============================================================================
 
 const DEFAULT_CAMPFIRE_FIREFLY: CampfireConfig = {
@@ -325,7 +325,7 @@ const DEFAULT_CAMPFIRE_WINTER: CampfireConfig = {
     decay: 1.5,
     heightOffset: 0.25,
   },
-  // Steam plume (heat meeting cold air) — bright white-blue, wispy, not grey smoke
+  // Steam plume (heat meeting cold air) - bright white-blue, wispy, not grey smoke
   smokeColors: ["#ffffff", "#eaf4ff", "#c8dceb"],
   smokeCount: 30,
 };

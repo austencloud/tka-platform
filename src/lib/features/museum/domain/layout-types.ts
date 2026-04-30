@@ -44,7 +44,7 @@ export interface RoomNode {
   description?: string;
   /** Designer notes rendered as in-game dev whiteboards */
   devNotes?: string;
-  /** Wall segment definitions — ordered arrays of typed segments per wall */
+  /** Wall segment definitions - ordered arrays of typed segments per wall */
   walls: {
     north: WallDefinition;
     south: WallDefinition;

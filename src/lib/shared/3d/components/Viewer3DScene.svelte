@@ -3,7 +3,7 @@
    * Viewer3DScene
    *
    * Inner 3D scene content for the sequence viewer. Renders inside a Threlte
-   * <Canvas>. Drives avatar pose purely through the useTask sync loop — the
+   * <Canvas>. Drives avatar pose purely through the useTask sync loop - the
    * orchestrator controls currentStep and this component puppets the avatar
    * to match. avatarState.play() is never called here.
    *
@@ -107,7 +107,7 @@
     }
   });
 
-  // All performers from the manager — the scene renders one rig per entry.
+  // All performers from the manager - the scene renders one rig per entry.
   const performerManager = $derived(viewer3DState.performerManager);
 
   // Read the global tip effect map so the 3D orchestrator knows which effect
@@ -139,8 +139,8 @@
     // During offline export, the exporter sets exportCurrentStep on
     // viewer3DState each frame. We read it here instead of the component
     // prop `currentStep` (which is frozen because playback is paused).
-    // This keeps state distribution inside useTask — the same code path
-    // as live playback — so the $derived chain (currentStepIndex →
+    // This keeps state distribution inside useTask - the same code path
+    // as live playback - so the $derived chain (currentStepIndex →
     // bluePropState → Avatar3D props) resolves within the same frame.
     const step = viewer3DState.isExporting
       ? viewer3DState.exportCurrentStep ?? currentStep
@@ -159,7 +159,7 @@
 
     // Drive formation transitions. transitionToFormation (called from the
     // Performers tab) kicks off an animation but doesn't run its own frame
-    // loop — this tick is what actually walks positions toward the target
+    // loop - this tick is what actually walks positions toward the target
     // slots over the 500ms window. Without it, applyFormationFromUI flips
     // activeFormation but nothing visibly moves.
     if (!viewer3DState.isExporting) {
@@ -263,7 +263,7 @@
 
   // Convert string-keyed Set from state into the typed Plane Set that Grid3D expects.
   // The state layer uses Plane enum values as strings so it doesn't need to import
-  // the enum — we do the conversion here at the scene boundary.
+  // the enum - we do the conversion here at the scene boundary.
   const gridVisiblePlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
 
   // Read background type from settings for themed 3D environment
@@ -287,7 +287,7 @@
   );
 
   // When the background type doesn't produce a 3D environment (solid color,
-  // gradient), Environment3D never mounts — so nothing will ever call
+  // gradient), Environment3D never mounts - so nothing will ever call
   // reportReady("environment"). Report it immediately so the curtain lifts.
   $effect(() => {
     if (!hasEnvironment && sceneFeatures.isEnabled("environment")) {
@@ -311,7 +311,7 @@
   <SeatedAudience3D />
 {/if}
 
-<!-- Lighting — reduced when the environment provides its own -->
+<!-- Lighting - reduced when the environment provides its own -->
 <T.AmbientLight intensity={isNightEnvironment ? 0.2 : hasEnvironment ? 0.3 : 0.4} />
 <T.DirectionalLight position={[5, 10, 5]} intensity={isNightEnvironment ? 0.4 : hasEnvironment ? 0.6 : 0.8} />
 

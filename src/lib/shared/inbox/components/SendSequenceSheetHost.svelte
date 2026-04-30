@@ -1,5 +1,5 @@
 <!--
-  SendSequenceSheetHost — Global host for the "Send to..." sequence sharing sheet.
+  SendSequenceSheetHost - Global host for the "Send to..." sequence sharing sheet.
 
   Reads the singleton send-sequence-state and renders a bottom Drawer with
   SendSequenceSheet when a payload is present. Mount this once in

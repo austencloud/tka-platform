@@ -62,7 +62,7 @@ export class BuildResultTransformer implements IBuildResultTransformer {
     // The engine's sequence[0] is the start position, sequence[1..n] are beats
     const startPositionStep = result.sequence[0];
     if (!startPositionStep) {
-      throw new Error("BuildResult has empty sequence — no start position");
+      throw new Error("BuildResult has empty sequence - no start position");
     }
 
     const startPosition = this.mapStartPosition(startPositionStep);
@@ -86,7 +86,7 @@ export class BuildResultTransformer implements IBuildResultTransformer {
       level,
     });
 
-    // Determine LOOP type for the sequence data — map engine enum to app enum
+    // Determine LOOP type for the sequence data - map engine enum to app enum
     const appLoopType: AppLOOPType | undefined = isCircular
       ? this.mapLoopTypeToApp(options)
       : undefined;

@@ -41,7 +41,7 @@ function getRating(
 }
 
 /**
- * Handler for web vitals metrics — feeds into bootProfiler so metrics appear
+ * Handler for web vitals metrics - feeds into bootProfiler so metrics appear
  * alongside init phases in one consolidated view.
  */
 function handleMetric(metric: Metric): void {

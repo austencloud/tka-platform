@@ -196,7 +196,7 @@ export class CsvLoader implements ICSVLoader {
       this.saveToIndexedDB(data);
       return data;
     } catch (fetchError) {
-      // Fetch failed — try IndexedDB offline cache
+      // Fetch failed - try IndexedDB offline cache
       try {
         const cached = await this.loadFromIndexedDB();
         if (cached) {
@@ -208,7 +208,7 @@ export class CsvLoader implements ICSVLoader {
           return cached;
         }
       } catch (idbError) {
-        // IndexedDB also failed — nothing we can do
+        // IndexedDB also failed - nothing we can do
         console.error("IndexedDB fallback failed:", idbError);
       }
 
@@ -330,7 +330,7 @@ export class CsvLoader implements ICSVLoader {
 
       db.close();
     } catch {
-      // Non-critical — silent fail. Offline cache is a convenience, not a requirement.
+      // Non-critical - silent fail. Offline cache is a convenience, not a requirement.
     }
   }
 

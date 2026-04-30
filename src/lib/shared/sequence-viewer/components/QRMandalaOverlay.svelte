@@ -2,7 +2,7 @@
   QRMandalaOverlay.svelte
 
   Manages QR code generation/caching and mandala placement computation
-  for ChoreoCard. Renderless state component — exposes computed state
+  for ChoreoCard. Renderless state component - exposes computed state
   via callback props. The actual rendering happens inside CardGridLayout.
   Extracted from ChoreoCard.svelte.
 -->
@@ -65,7 +65,7 @@
     onMandalaResultChange,
   }: Props = $props();
 
-  // QR code state — generated async, cached by sequence ID + dark mode.
+  // QR code state - generated async, cached by sequence ID + dark mode.
   let qrDataUrl = $state<string | null>(null);
   const qrCacheMap = new Map<string, string>();
   let lastQrKey = "";
@@ -98,7 +98,7 @@
       return;
     }
 
-    // Generate async — read prop values outside the async callback
+    // Generate async - read prop values outside the async callback
     // to avoid tracking additional reactive dependencies
     const seq = sequence;
     const isDark = darkMode;
@@ -126,7 +126,7 @@
         }
       })
       .catch(() => {
-        // QR is optional — don't block the card
+        // QR is optional - don't block the card
       });
   });
 

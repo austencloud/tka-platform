@@ -18,7 +18,7 @@
   const hasUnread = $derived(unreadCount > 0);
   const displayCount = $derived(unreadCount > 99 ? "99+" : String(unreadCount));
 
-  // conversationManager not yet implemented — badge stays at 0 until wired
+  // conversationManager not yet implemented - badge stays at 0 until wired
 
   function handleClick() {
     onClick?.();

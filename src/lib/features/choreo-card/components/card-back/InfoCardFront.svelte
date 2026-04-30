@@ -1,5 +1,5 @@
 <!--
-  InfoCardFront — "How to Read a Choreo Card"
+  InfoCardFront - "How to Read a Choreo Card"
 
   Front side of the rules card. Vertically centered, consistent
   visual language, personality over help-doc sterility.
@@ -77,7 +77,7 @@
         <span class="pron-item"><strong>Ψ</strong> Psi</span>
         <span class="pron-item"><strong>Λ</strong> Lambda</span>
         <span class="pron-item"><strong>τ</strong> Tau</span>
-        <span class="pron-item"><strong>—</strong> Dash</span>
+        <span class="pron-item"><strong>-</strong> Dash</span>
       </div>
 
       <div class="spacer-lg"></div>

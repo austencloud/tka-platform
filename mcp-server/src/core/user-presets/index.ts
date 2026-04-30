@@ -12,7 +12,7 @@ export type {
 
 export {
 	isValidLoopType,
-	isValidSliceSize,
+	isValidPeriod,
 	isValidGridMode,
 	isValidLevel,
 	isValidLoopComponent,

@@ -5,7 +5,7 @@
  * Suppresses trails during texture transitions.
  *
  * Extracted from AnimationEngine to reduce its line count.
- * This is a plain TypeScript class — no Svelte reactivity needed.
+ * This is a plain TypeScript class - no Svelte reactivity needed.
  */
 
 import { animationSettings as animationSettingsState } from "../../state/animation-settings-state.svelte";
@@ -114,16 +114,16 @@ export class PropTypeManager {
       // Update global settings so UI (e.g. trail tracking labels) reflects current prop
       animationSettingsState.setCurrentPropType(newBlue);
 
-      // Invalidate path cache FIRST — it holds pre-computed endpoint positions
+      // Invalidate path cache FIRST - it holds pre-computed endpoint positions
       // for the old prop geometry. If the render loop reads stale cache data
       // before the new textures load, it draws a jump line to the wrong position.
       this.precomputationService?.clearCaches();
       this.renderLoopService?.updateConfig({ pathCache: null });
 
-      // Clear trail buffers — old points are at wrong endpoint positions
+      // Clear trail buffers - old points are at wrong endpoint positions
       this.trailCapturer?.clearTrails();
 
-      // Suppress trail rendering until new textures load — prevents stale
+      // Suppress trail rendering until new textures load - prevents stale
       // endpoint data from flashing as a jump line during the async gap
       this.trailsSuppressedUntilTextureLoad = true;
 
@@ -182,13 +182,13 @@ export class PropTypeManager {
         );
       }
 
-      // Invalidate path cache FIRST — it holds pre-computed endpoint positions
+      // Invalidate path cache FIRST - it holds pre-computed endpoint positions
       // for the old prop geometry. If the render loop reads stale cache data
       // before the new textures load, it draws a jump line to the wrong position.
       this.precomputationService?.clearCaches();
       this.renderLoopService?.updateConfig({ pathCache: null });
 
-      // Clear trail buffers — old points are at wrong endpoint positions
+      // Clear trail buffers - old points are at wrong endpoint positions
       this.trailCapturer?.clearTrails();
 
       // Suppress trail rendering until new textures load

@@ -10,7 +10,8 @@
   "files": [
     "dist/",
     "data/",
-    "assets/"
+    "assets/",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
@@ -35,5 +36,5 @@
     "pictograph"
   ],
   "author": "austencloud",
-  "license": "MIT"
+  "license": "Elastic-2.0"
 }

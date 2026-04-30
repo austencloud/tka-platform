@@ -145,7 +145,7 @@
   }
 
   onMount(() => {
-    // Get the canvas from the renderer — guard against renderer not yet initialized
+    // Get the canvas from the renderer - guard against renderer not yet initialized
     canvasElement = renderer?.current?.domElement ?? null;
     if (!canvasElement) {
       console.warn("[ManualRaycaster] Renderer not ready at mount, skipping event setup");

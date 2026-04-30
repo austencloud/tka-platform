@@ -1,5 +1,5 @@
 <!--
-  VillageAvatar — Renders one village entity via PerformerRig with props, effects + name label.
+  VillageAvatar - Renders one village entity via PerformerRig with props, effects + name label.
 
   Hides avatar for a brief loading period, then fades in.
   PerformerRig manages Avatar3D + Prop3D + EffectOrchestrator3D as a
@@ -133,7 +133,7 @@
 	const propIndicator = $derived(
 		renderState.entity.prop.heldProp
 			? ` [${renderState.entity.prop.heldProp.propType.charAt(0).toUpperCase()}]`
-			: " [—]"
+			: " [-]"
 	);
 
 	// Effect rendering: only show during active performance states

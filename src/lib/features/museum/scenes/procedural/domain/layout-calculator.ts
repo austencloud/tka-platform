@@ -1,7 +1,7 @@
 /**
  * Museum grounds layout calculator.
  *
- * Pure function — no Svelte, no Three.js, no side effects.
+ * Pure function - no Svelte, no Three.js, no side effects.
  * Given an exhibit count, returns the full spatial layout: pavilion positions,
  * wall geometry (from templates), and exhibit + performer slot positions.
  *
@@ -199,7 +199,7 @@ function generateSlots(
     const dz = wall.end.z - wall.start.z;
     const wallDir = normalize2D(dx, dz);
 
-    // Wall normal (local space) — rotate wall direction 90° inward.
+    // Wall normal (local space) - rotate wall direction 90° inward.
     // Convention: normal points toward the pavilion interior (+90° from wall dir).
     const localNormal = { x: -wallDir.z, z: wallDir.x };
 

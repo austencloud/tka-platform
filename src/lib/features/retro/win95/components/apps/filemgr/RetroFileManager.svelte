@@ -1,5 +1,5 @@
 <!--
-  RetroFileManager — FILEMGR.EXE main component
+  RetroFileManager - FILEMGR.EXE main component
 
   Explorer-style file browser for TKA-OS. Left pane shows a directory
   tree (drives C:\, A:\, D:\). Right pane shows the user's real saved
@@ -201,7 +201,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Unified file list — real data for SEQUENCES, static elsewhere       */
+  /* Unified file list - real data for SEQUENCES, static elsewhere       */
   /* ------------------------------------------------------------------ */
 
   /** Whether the current directory shows real library data */
@@ -250,8 +250,8 @@
       text: libraryLoading && isLibraryDir
         ? "Loading files..."
         : selectedFileIndex >= 0
-          ? `1 object(s) — ${currentFiles[selectedFileIndex]?.size.toLocaleString()} bytes`
-          : `${currentFiles.length} object(s) — ${totalSize.toLocaleString()} bytes`,
+          ? `1 object(s) - ${currentFiles[selectedFileIndex]?.size.toLocaleString()} bytes`
+          : `${currentFiles.length} object(s) - ${totalSize.toLocaleString()} bytes`,
       width: "220px",
     },
     { text: statusText || currentDirPath },
@@ -310,7 +310,7 @@
         {
           label: "About FILEMGR.EXE",
           action: () => {
-            statusText = "FILEMGR.EXE v1.0 — TKA-OS File Manager";
+            statusText = "FILEMGR.EXE v1.0 - TKA-OS File Manager";
           },
         },
       ],
@@ -536,7 +536,7 @@
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Shell layout — fills parent window body                             */
+  /* Shell layout - fills parent window body                             */
   /* ------------------------------------------------------------------ */
   .filemgr-shell {
     display: flex;

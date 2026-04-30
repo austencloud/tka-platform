@@ -187,7 +187,7 @@ function savePersistedState(state: PersistedState): void {
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 	} catch {
-		// localStorage full or unavailable — silently ignore
+		// localStorage full or unavailable - silently ignore
 	}
 }
 

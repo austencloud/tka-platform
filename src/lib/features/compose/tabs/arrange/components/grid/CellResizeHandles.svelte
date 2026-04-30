@@ -37,7 +37,7 @@
   }
 </script>
 
-<!-- Edge handles (pointer-only — keyboard users resize via presets) -->
+<!-- Edge handles (pointer-only - keyboard users resize via presets) -->
 {#if canResizeLeft}
   <div
     class="handle left"

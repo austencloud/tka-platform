@@ -38,7 +38,7 @@ export interface StepPosition {
   confidence: number;
 }
 
-/** A detected beat — a time segment where hand positions are stable */
+/** A detected beat - a time segment where hand positions are stable */
 export interface DetectedBeat {
   /** Beat index (0-based) */
   index: number;

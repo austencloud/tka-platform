@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * ModeSelector — horizontal row of VTG mode cards.
+	 * ModeSelector - horizontal row of VTG mode cards.
 	 * Each card shows the mode abbreviation, full name, and letter count.
 	 */
 

@@ -13,14 +13,7 @@
   const currentTimeLabel = $derived(formatTime(playback.elapsed));
   const totalTimeLabel = $derived(formatTime(playback.duration));
 
-  const beatMarkers = $derived(
-    playback.totalSteps > 1
-      ? Array.from(
-          { length: playback.totalSteps - 1 },
-          (_, i) => (i + 1) / playback.totalSteps,
-        )
-      : ([] as number[]),
-  );
+  const beatMarkers = $derived(playback.beatMarkerPositions);
 
   let scrubberEl: HTMLDivElement | undefined = $state();
   let isDragging = $state(false);
@@ -65,12 +58,16 @@
       playback.togglePlay();
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
-      const step = 1 / Math.max(1, playback.totalSteps);
-      playback.seek(Math.min(1, playback.overallProgress + step));
+      const beatStarts = [0, ...playback.beatMarkerPositions, 1];
+      const next = beatStarts.find((p) => p > playback.overallProgress + 0.001);
+      if (next !== undefined) playback.seek(next);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
-      const step = 1 / Math.max(1, playback.totalSteps);
-      playback.seek(Math.max(0, playback.overallProgress - step));
+      const beatStarts = [0, ...playback.beatMarkerPositions];
+      const prev = [...beatStarts]
+        .reverse()
+        .find((p) => p < playback.overallProgress - 0.001);
+      if (prev !== undefined) playback.seek(prev);
     }
   }
 </script>

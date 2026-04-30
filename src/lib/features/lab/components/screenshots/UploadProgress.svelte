@@ -1,5 +1,5 @@
 <!--
-  UploadProgress — Animated progress bar during screenshot upload to Firebase.
+  UploadProgress - Animated progress bar during screenshot upload to Firebase.
   Matches CaptureProgress styling. Shows phases: deduplicating, uploading, completed, failed.
 -->
 <script lang="ts">

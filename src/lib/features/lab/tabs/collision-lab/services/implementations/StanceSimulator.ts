@@ -14,28 +14,28 @@
  * How it works:
  *
  *   1. Start from the rest-pose joint offsets in the avatar's LOCAL frame.
- *   2. Apply the spine pitch — rotate every joint above Spine1 forward
+ *   2. Apply the spine pitch - rotate every joint above Spine1 forward
  *      around the local X axis passing through Spine1.
- *   3. Apply the root yaw — rotate the entire upper body around the local
+ *   3. Apply the root yaw - rotate the entire upper body around the local
  *      Y axis passing through the hips.
- *   4. Translate by the foot offset — every joint shifts by (footX, 0, footZ).
+ *   4. Translate by the foot offset - every joint shifts by (footX, 0, footZ).
  *   5. Solve analytic two-bone IK for each arm. Given the shoulder's current
  *      world position and the prop's world grip target, find where the elbow
  *      must go so that |shoulder→elbow| = upperArmLength and |elbow→hand| =
  *      forearmLength. If the target is further than upperArm+forearm, the
- *      hand falls short — that's a reach failure.
+ *      hand falls short - that's a reach failure.
  *   6. Run the same sphere + segment collision primitives the live
  *      CollisionDetector uses, producing a list of violations.
- *   7. Compute the balance margin — project the center of mass onto the
+ *   7. Compute the balance margin - project the center of mass onto the
  *      ground and check it lies inside the feet's base of support.
- *   8. Compute joint violations — elbow hyperextension, shoulder flexion
+ *   8. Compute joint violations - elbow hyperextension, shoulder flexion
  *      past healthy range.
  *
  * The simulator never touches Three.js. It's pure math over Vector3s, so
  * it runs in microseconds per evaluation. The optimizer can call it
  * hundreds of times per pose without dropping frames.
  *
- * Domain: Collision Lab — automated stance search
+ * Domain: Collision Lab - automated stance search
  */
 
 import { Vector3 } from "three";
@@ -48,30 +48,30 @@ import type {
 } from "../contracts/IStanceSimulator";
 import type { StancePose } from "../../domain/types";
 
-// --- Collision radii — mirror the live CollisionDetector exactly so the
+// --- Collision radii - mirror the live CollisionDetector exactly so the
 // simulator and the live readout agree on whether a stance is clear.
 const PROP_BODY_THRESHOLD = 0.02;
 const ARM_ARM_THRESHOLD = 0.06;
 
 // --- Joint comfort ranges (radians). Beyond these, we flag the pose as
-// "uncomfortable" — not physically impossible but visibly strained.
+// "uncomfortable" - not physically impossible but visibly strained.
 const ELBOW_HYPEREXTENSION_LIMIT = 0.17; // ~10° past straight
 const SHOULDER_FLEXION_LIMIT = (170 * Math.PI) / 180; // 170° = raised arm
 const SHOULDER_ABDUCTION_LIMIT = (170 * Math.PI) / 180;
 
-// --- Balance check — we treat each foot as a 15 × 30 cm rectangle centered
+// --- Balance check - we treat each foot as a 15 × 30 cm rectangle centered
 // on the hips' XZ projection (shifted by footHalfWidth). The base of support
 // is the convex hull of both rectangles, which is itself a larger rectangle.
 const FOOT_LENGTH_FORWARD = 0.30; // toes forward of ankle
 const FOOT_LENGTH_BACKWARD = 0.10; // heel behind ankle
 
-// --- Forearm wrist exclusion — when checking the forearm against a prop,
+// --- Forearm wrist exclusion - when checking the forearm against a prop,
 // we ignore the final WRIST_EXCLUSION_FRACTION of the segment (the wrist end)
 // because the hand is, by definition, on the prop. Without this, every
 // legitimate grip fires a "prop-through-arm" false positive of ~1 cm.
 const WRIST_EXCLUSION_FRACTION = 0.22; // exclude last 22% of forearm
 
-// --- Reach feasibility tolerance — how close the hand has to get to the
+// --- Reach feasibility tolerance - how close the hand has to get to the
 // grip before we consider the pose "reachable". The simulator is a rigid
 // 4-DoF model (foot XZ, yaw, pitch) so it can't capture everything the
 // live rig can do: clavicle elevation (shoulder shrug, ~5 cm of Y lift),
@@ -122,7 +122,7 @@ export class StanceSimulator implements IStanceSimulator {
 
   private skeleton = makeSkeleton();
 
-  // Scratch vectors — reused every evaluation so we don't allocate inside
+  // Scratch vectors - reused every evaluation so we don't allocate inside
   // the hot path. The optimizer calls evaluate() hundreds of times per pose.
   private readonly _tmp1 = new Vector3();
   private readonly _tmp2 = new Vector3();
@@ -159,7 +159,7 @@ export class StanceSimulator implements IStanceSimulator {
       /* isLeft */ false
     );
 
-    // 3. Derive the face collision sphere center — same 8 cm forward +
+    // 3. Derive the face collision sphere center - same 8 cm forward +
     //    5 cm up offset the live detector uses, so the simulator and live
     //    detector agree on face collisions.
     this.computeFaceCenter();
@@ -217,7 +217,7 @@ export class StanceSimulator implements IStanceSimulator {
   }
 
   // -----------------------------------------------------------------------
-  // Stance application — turns (footX, footZ, yaw, pitch) into world joint
+  // Stance application - turns (footX, footZ, yaw, pitch) into world joint
   // positions by transforming the rest pose.
   // -----------------------------------------------------------------------
 
@@ -229,7 +229,7 @@ export class StanceSimulator implements IStanceSimulator {
     const cy = Math.cos(stance.rootYawRad);
     const sy = Math.sin(stance.rootYawRad);
 
-    // Pitch rotation matrix components — applied around a local X axis
+    // Pitch rotation matrix components - applied around a local X axis
     // that passes through Spine1, so the spine can hinge forward without
     // translating the hips. This matches how the AvatarAnimator's external
     // spine pitch works in the live rig.
@@ -237,7 +237,7 @@ export class StanceSimulator implements IStanceSimulator {
     const sp = Math.sin(stance.spinePitchRad);
     const pivotY = rest.spine1.y;
 
-    // Hips don't pitch and aren't relative to spine1 — they just translate
+    // Hips don't pitch and aren't relative to spine1 - they just translate
     // with the foot offset and rotate with yaw around their own Y axis.
     this.placeLocalJoint(sk.hips, 0, rest.hipsY, 0, cy, sy, stance);
 
@@ -370,7 +370,7 @@ export class StanceSimulator implements IStanceSimulator {
     const py = shoulder.y + dirY * t;
     const pz = shoulder.z + dirZ * t;
 
-    // Pole direction — where we want the elbow to bend toward. For the
+    // Pole direction - where we want the elbow to bend toward. For the
     // left arm we want it to bend outward (character's left = −X) and
     // for the right arm outward to +X. Adding a small downward component
     // (−Y) keeps the elbow below the shoulder for overhead reaches,
@@ -418,7 +418,7 @@ export class StanceSimulator implements IStanceSimulator {
   }
 
   // -----------------------------------------------------------------------
-  // Face center derivation — matches the live rig's computation so the
+  // Face center derivation - matches the live rig's computation so the
   // simulator agrees with CollisionDetector on face-level collisions.
   // -----------------------------------------------------------------------
 
@@ -439,7 +439,7 @@ export class StanceSimulator implements IStanceSimulator {
   }
 
   // -----------------------------------------------------------------------
-  // Collision detection — sphere + line-segment primitives, same radii as
+  // Collision detection - sphere + line-segment primitives, same radii as
   // the live CollisionDetector. Writes into a fresh array each call; the
   // optimizer only keeps the best result so there's no hot-path array churn.
   // -----------------------------------------------------------------------
@@ -470,7 +470,7 @@ export class StanceSimulator implements IStanceSimulator {
       }
     }
 
-    // 2. Prop shaft through torso — check each spine sphere.
+    // 2. Prop shaft through torso - check each spine sphere.
     const spinePoints = [sk.hips, sk.spine1, sk.spine2, sk.neck];
     for (const { label, prop } of propPairs) {
       let worstDepth = 0;
@@ -592,7 +592,7 @@ export class StanceSimulator implements IStanceSimulator {
   //   Head + neck:      8.1% of body mass
   //   Trunk:           49.7%
   //   Arms (both):     10.0%
-  //   Legs (not modeled — assumed centered on hips for simplicity)
+  //   Legs (not modeled - assumed centered on hips for simplicity)
   // -----------------------------------------------------------------------
 
   private computeBalanceMargin(stance: StancePose): number {
@@ -600,7 +600,7 @@ export class StanceSimulator implements IStanceSimulator {
     const wHead = 0.081;
     const wTrunk = 0.497;
     const wArms = 0.10;
-    const wLegs = 0.322; // remainder — centered on hips since we don't model legs
+    const wLegs = 0.322; // remainder - centered on hips since we don't model legs
 
     const headPos = sk.head;
     const trunkMid = this._tmp1
@@ -612,7 +612,7 @@ export class StanceSimulator implements IStanceSimulator {
       .add(sk.rightHand)
       .multiplyScalar(0.5);
     const legsPos = this._tmp3.copy(sk.hips);
-    // Feet are on the ground at the foot offset — approximate legs CoM
+    // Feet are on the ground at the foot offset - approximate legs CoM
     // as midway between hips and ground directly below hips.
     legsPos.y *= 0.5;
 
@@ -674,7 +674,7 @@ export class StanceSimulator implements IStanceSimulator {
     const rightStrain = Math.max(0, rightElbow - (Math.PI - ELBOW_HYPEREXTENSION_LIMIT));
     violation += leftStrain + rightStrain;
 
-    // Shoulder flexion (arm raised forward from side) — angle between
+    // Shoulder flexion (arm raised forward from side) - angle between
     // (hips→spine2) and (shoulder→elbow). Above ~170° the joint hits its
     // passive limit. We model it as the angle from "down at side" to the
     // current upper-arm direction.
@@ -717,7 +717,7 @@ export class StanceSimulator implements IStanceSimulator {
   }
 
   // -----------------------------------------------------------------------
-  // Geometric helpers — same formulas as CollisionDetector but operating
+  // Geometric helpers - same formulas as CollisionDetector but operating
   // on our local Vector3 scratches.
   // -----------------------------------------------------------------------
 
@@ -784,7 +784,7 @@ export class StanceSimulator implements IStanceSimulator {
  * anthropometric ratios (Winter 2009 / Dempster) so the optimizer can
  * work immediately without needing a loaded Three.js skeleton.
  *
- * Frame convention — this must match the state factory's prop world
+ * Frame convention - this must match the state factory's prop world
  * positions so targets can be passed in without Y shifting:
  *
  *   Y = 0 at the shoulder line (NOT the feet)

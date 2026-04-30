@@ -17,7 +17,7 @@ export interface IIntentResolver {
    * @param context - Current module/tab for context-aware resolution
    * @param previousCommand - Most recent resolved command for conversational context
    * @returns Resolved command(s), or escalateToChat=true for questions
-   * @throws Never — gracefully degrades to system/unknown on error
+   * @throws Never - gracefully degrades to system/unknown on error
    */
   resolve(
     rawText: string,

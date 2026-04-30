@@ -3,7 +3,7 @@
 
   Renders individual pictograph cells with progressive loading, cross-fade
   dark mode transitions, step number overlays, and solo-mode annotations.
-  Extracted from ChoreoCard.svelte — owns the cellContent snippet and
+  Extracted from ChoreoCard.svelte - owns the cellContent snippet and
   per-cell visual presentation.
 -->
 <script lang="ts">
@@ -147,7 +147,7 @@
     transition: opacity 350ms ease;
   }
 
-  /* Step number overlay — rendered as HTML instead of baked into blobs
+  /* Step number overlay - rendered as HTML instead of baked into blobs
      so identical pictographs at different beats share one cached image */
   .step-number-overlay {
     position: absolute;
@@ -167,7 +167,7 @@
     color: #ffffff;
   }
 
-  /* Solo mode location labels — subtle, bottom-center instead of top-left */
+  /* Solo mode location labels - subtle, bottom-center instead of top-left */
   .step-number-overlay.solo-location {
     top: auto;
     left: 50%;
@@ -177,7 +177,7 @@
     font-weight: 500;
   }
 
-  /* Duration badge — bottom-center, matches DurationGlyph.svelte positioning
+  /* Duration badge - bottom-center, matches DurationGlyph.svelte positioning
      (y=890 in 950-unit viewBox = ~93.7% from top, centered horizontally) */
   .duration-badge {
     position: absolute;
@@ -197,7 +197,7 @@
     color: #ffffff;
   }
 
-  /* Motion-solo top-center locations — matches PositionGlyph composition.
+  /* Motion-solo top-center locations - matches PositionGlyph composition.
      Canonical arrow dimensions from PositionGlyph: 88.9 × 34.8 * 0.75
      ≈ 66.675 × 26.1 units in a 950-unit pictograph viewBox, i.e.
      7.02cqw wide by 2.75cqw tall when 100cqw == cell width. We keep the
@@ -229,7 +229,7 @@
     letter-spacing: 0;
   }
 
-  /* Shared arrow sizing — both header rows use the exact dimensions of
+  /* Shared arrow sizing - both header rows use the exact dimensions of
      the PositionGlyph's rendered arrow so the two look like siblings. */
   .solo-loc-arrow,
   .solo-ori-arrow {
@@ -245,7 +245,7 @@
     filter: invert(0.92);
   }
 
-  /* Motion-solo turn number — single colored digit where the TKA glyph's
+  /* Motion-solo turn number - single colored digit where the TKA glyph's
      turns column sat. Kept small so it reads as a secondary annotation. */
   .solo-turn-number {
     position: absolute;
@@ -259,7 +259,7 @@
     user-select: none;
   }
 
-  /* Motion-solo orientation annotation — bottom-center, below the
+  /* Motion-solo orientation annotation - bottom-center, below the
      southernmost outer grid dot. Not bold; shares the arrow size with
      the top locations row so both headers feel matched. */
   .solo-orientation {

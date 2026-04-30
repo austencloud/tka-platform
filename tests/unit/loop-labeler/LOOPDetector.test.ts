@@ -392,4 +392,76 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     // No rotation fired, so rotation interval should be absent.
     expect(result.transformationIntervals.rotation).toBeUndefined();
   });
+
+  // ==========================================================================
+  // COMPOUND PRIMITIVE EXTRACTION (rotated + swapped + inverted)
+  // ==========================================================================
+  //
+  // EΨDΨDΨEΨ-style sequences: 8 beats where the halved comparison produces
+  // rotated_180_swapped_inverted. Quartered detection is rejected because
+  // the ABBA motion-type pattern fails the quarteredMotionsConsistent guard.
+  // All 3 primitives (rotated, swapped, inverted) must surface and period = 2.
+
+  it("detects all 3 primitives (rotated, swapped, inverted) for an ABBA rotated+swapped+inverted sequence with period 2", () => {
+    // 8-beat fixture where:
+    //   - Half 1 beats 1–4 use asymmetric positions
+    //   - Half 2 beats 5–8 = rotated_180_swapped_inverted of half 1
+    //   - Motion types follow ABBA across quarters (anti,pro,pro,anti,pro,anti,anti,pro)
+    //     so quarteredMotionsConsistent returns false and quartered detection is skipped
+    //   - Halved pairs (beat i vs beat i+4) all emit rotated_180_swapped_inverted
+    const m = (
+      s: string,
+      e: string,
+      motionType: string,
+      propRotDir: string
+    ): MotionAttrs => ({ startLoc: s, endLoc: e, motionType, propRotDir });
+
+    const entry = makeEntry([
+      { beat: 0, sequenceStartPosition: "alpha1", endPos: "alpha1" },
+      // ---- Half 1 ----
+      // Beat 1: anti/ccw
+      makeBeat(1, m("n", "e", "anti", "ccw"), m("e", "s", "anti", "ccw"), "alpha1", "gamma3"),
+      // Beat 2: pro/cw (different motionType from beat 1 → breaks quartered consistency)
+      makeBeat(2, m("s", "w", "pro", "cw"), m("w", "n", "pro", "cw"), "gamma3", "alpha2"),
+      // Beat 3: pro/cw (same as beat 2)
+      makeBeat(3, m("n", "w", "anti", "ccw"), m("w", "n", "anti", "ccw"), "alpha2", "gamma4"),
+      // Beat 4: anti/ccw (same as beat 1)
+      makeBeat(4, m("s", "e", "pro", "cw"), m("e", "s", "pro", "cw"), "gamma4", "alpha3"),
+      // ---- Half 2: rotated_180_swapped_inverted of half 1 ----
+      // Beat 5 = rot180_swap_inv(beat 1):
+      //   blue = rot180(beat1.red) = rot180(e→s) = (w→n), propRotDir inverted: ccw→cw
+      //   red  = rot180(beat1.blue) = rot180(n→e) = (s→w), propRotDir inverted: ccw→cw
+      //   motionType inverted: anti→pro
+      makeBeat(5, m("w", "n", "pro", "cw"), m("s", "w", "pro", "cw"), "alpha3", "gamma1"),
+      // Beat 6 = rot180_swap_inv(beat 2):
+      //   blue = rot180(beat2.red) = rot180(w→n) = (e→s), propRotDir inverted: cw→ccw
+      //   red  = rot180(beat2.blue) = rot180(s→w) = (n→e), propRotDir inverted: cw→ccw
+      //   motionType inverted: pro→anti
+      makeBeat(6, m("e", "s", "anti", "ccw"), m("n", "e", "anti", "ccw"), "gamma1", "alpha4"),
+      // Beat 7 = rot180_swap_inv(beat 3):
+      //   blue = rot180(beat3.red) = rot180(w→n) = (e→s), propRotDir inverted: ccw→cw
+      //   red  = rot180(beat3.blue) = rot180(n→w) = (s→e), propRotDir inverted: ccw→cw
+      //   motionType inverted: anti→pro
+      makeBeat(7, m("e", "s", "pro", "cw"), m("s", "e", "pro", "cw"), "alpha4", "gamma2"),
+      // Beat 8 = rot180_swap_inv(beat 4):
+      //   blue = rot180(beat4.red) = rot180(e→s) = (w→n), propRotDir inverted: cw→ccw
+      //   red  = rot180(beat4.blue) = rot180(s→e) = (n→w), propRotDir inverted: cw→ccw
+      //   motionType inverted: pro→anti
+      makeBeat(8, m("w", "n", "anti", "ccw"), m("n", "w", "anti", "ccw"), "gamma2", "alpha1"),
+    ]);
+
+    const result = loopDetector.detectLOOP(entry);
+
+    expect(result.isCircular).toBe(true);
+    // All 3 primitives must be detected
+    expect(result.components).toContain("rotated");
+    expect(result.components).toContain("swapped");
+    expect(result.components).toContain("inverted");
+    // Period must be 2 (halved), not 4 (quartered)
+    expect(result.period).toBe(2);
+    // Transformation intervals should all be halved
+    expect(result.transformationIntervals.rotation).toBe("halved");
+    expect(result.transformationIntervals.swap).toBe("halved");
+    expect(result.transformationIntervals.invert).toBe("halved");
+  });
 });

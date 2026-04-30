@@ -1,4 +1,4 @@
-import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type {
   ILOOPDesignator,
   LOOPDesignation,
@@ -29,8 +29,8 @@ export class LOOPDesignator implements ILOOPDesignator {
       .join(" + ");
 
     // Add slice size if rotated and has a slice size
-    if (d.components.includes("rotated") && d.sliceSize) {
-      const sliceLabel = d.sliceSize === SliceSize.HALVED ? "180°" : "90°";
+    if (d.components.includes("rotated") && d.period) {
+      const sliceLabel = d.period === Period.HALVED ? "180°" : "90°";
       label += ` (${sliceLabel})`;
     }
 

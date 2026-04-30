@@ -9,7 +9,7 @@
    * - Reactions are a sibling to .bubble inside a flex-column wrapper
    * - translateY(-50%) pulls the reaction pill up to overlap the bubble's bottom edge
    * - align-items on the wrapper controls left/right anchoring
-   * - No absolute positioning — reactions stay in document flow
+   * - No absolute positioning - reactions stay in document flow
    */
 
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";

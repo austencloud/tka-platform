@@ -73,7 +73,7 @@ Renders a section with:
   // Pictographs are already filtered when passed to this component
   const sectionPictographs = $derived(() => pictographs);
 
-  // Get pictographs with reversal information — updates instantly when options change
+  // Get pictographs with reversal information - updates instantly when options change
   const displayedItems = $derived(() => {
     if (!reversalDetector) {
       return sectionPictographs().map((p: PictographData) => ({

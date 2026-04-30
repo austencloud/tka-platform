@@ -11,7 +11,7 @@ export interface RGBColor {
 }
 
 /**
- * A single frame of the strip pattern — one color per LED.
+ * A single frame of the strip pattern - one color per LED.
  * In POV terms, this is one column of the image.
  */
 export interface StripFrame {

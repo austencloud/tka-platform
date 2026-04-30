@@ -8,7 +8,7 @@
   <HelpSection icon="fa-redo" title="Turns">
     <p>Controls how many rotations...</p>
     <ul>
-      <li><strong>fl</strong> — Float</li>
+      <li><strong>fl</strong> - Float</li>
     </ul>
   </HelpSection>
 

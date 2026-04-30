@@ -1,5 +1,5 @@
 <!--
-  RetroAssembleTab — Grid-based visual builder for SCRIBE.EXE
+  RetroAssembleTab - Grid-based visual builder for SCRIBE.EXE
 
   A non-functional grid mockup. Click cells to toggle them on/off.
   Bottom row has fixed L (blue) and R (red) hand position indicators.

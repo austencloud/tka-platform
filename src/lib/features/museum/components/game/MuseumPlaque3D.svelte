@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { BoxGeometry, CanvasTexture, MeshStandardMaterial } from "three";
 
-  // ── Module-level caches — shared across all plaque instances ──
+  // ── Module-level caches - shared across all plaque instances ──
   // Keyed by size string; only 3 possible sizes so at most 3 entries.
   const geoCache = new Map<string, { plaqueGeo: BoxGeometry; frameGeo: BoxGeometry }>();
 
@@ -64,7 +64,7 @@
 
   const props: Props = $props();
 
-  // Resolve from props (plain consts — initial values for Three.js objects, not reactive)
+  // Resolve from props (plain consts - initial values for Three.js objects, not reactive)
   const worldX = props.worldX;
   const worldZ = props.worldZ;
   const yaw = props.yaw;
@@ -89,12 +89,12 @@
   const isWhiteboard = size === "dev-whiteboard";
   const frameMat = getOrCreateFrameMat(isWhiteboard);
 
-  // ── Generate texture from content (per-instance — unique canvas per plaque) ──
+  // ── Generate texture from content (per-instance - unique canvas per plaque) ──
   const canvas = generator.generateCanvas(content, size, refId);
   const texture = new CanvasTexture(canvas as unknown as HTMLCanvasElement);
   texture.needsUpdate = true;
 
-  // ── Per-instance material — cannot be shared because it owns a unique texture ──
+  // ── Per-instance material - cannot be shared because it owns a unique texture ──
   const plaqueMat = new MeshStandardMaterial({
     map: texture,
     roughness: 0.85,
@@ -118,13 +118,13 @@
 
   onDestroy(() => {
     // Only dispose per-instance resources.
-    // plaqueGeo, frameGeo, and frameMat are shared via module cache — do NOT dispose them here.
+    // plaqueGeo, frameGeo, and frameMat are shared via module cache - do NOT dispose them here.
     plaqueMat.dispose();
     texture.dispose();
   });
 </script>
 
-<!-- Root group positioned at the plaque's world location — gizmo attaches here -->
+<!-- Root group positioned at the plaque's world location - gizmo attaches here -->
 <T.Group
   name={`plaque-${refId}`}
   position.x={worldX + wallOffsetX + nudgeX}
@@ -132,13 +132,13 @@
   position.z={worldZ + wallOffsetZ + nudgeZ}
   rotation.y={yaw}
 >
-  <!-- Plaque face — local (0,0,0) within the group -->
+  <!-- Plaque face - local (0,0,0) within the group -->
   <T.Mesh
     geometry={plaqueGeo}
     material={plaqueMat}
   />
 
-  <!-- Frame behind the plaque — local -Z offset -->
+  <!-- Frame behind the plaque - local -Z offset -->
   <T.Mesh
     geometry={frameGeo}
     material={frameMat}

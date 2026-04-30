@@ -3,7 +3,7 @@
  *
  * Each effect exposes one dominant scalar that the mobile panel surfaces
  * as a primary slider (beneath the preset strip). The adapter is a pure
- * data structure — no Svelte, no VM. Phase 2 will extend it with a 3D
+ * data structure - no Svelte, no VM. Phase 2 will extend it with a 3D
  * branch once the 3D renderer shares this state.
  *
  * All params map to existing properties on EffectsConfigState

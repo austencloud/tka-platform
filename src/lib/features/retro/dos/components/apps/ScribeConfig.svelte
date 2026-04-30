@@ -1,5 +1,5 @@
 <!--
-  ScribeConfig — DOS-style configuration editor for terminal settings.
+  ScribeConfig - DOS-style configuration editor for terminal settings.
 
   Displays three toggleable settings (display mode, sound, CRT effects)
   and lets the user press 1-3 to change them. Changes apply immediately

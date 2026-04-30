@@ -39,7 +39,7 @@ export interface Trails3DParams extends TrailsIntent {
   emissive: number;
   /** 0-1. Weight into the bloom post-process. */
   bloomWeight: number;
-  /** "exponential" | "linear" — fade shape along the ring. */
+  /** "exponential" | "linear" - fade shape along the ring. */
   taperCurve: "exponential" | "linear";
 }
 
@@ -93,7 +93,7 @@ export interface Sparkles3DParams extends SparklesIntent {
   /** Point sprite base radius (world units). */
   baseRadius: number;
   /** Per-second gravity applied to particles, world units (negative = rise).
-   *  Distinct from intent.gravity (0-1 normalized) — this is the resolved
+   *  Distinct from intent.gravity (0-1 normalized) - this is the resolved
    *  3D world-space value derived from intent.gravity. */
   worldGravity: number;
 }
@@ -115,7 +115,7 @@ export interface Water3DParams extends WaterIntent {
   resolvedPalette: WaterPalette;
   /** Max instanced droplets. Tier-dependent: 512 / 1024 / 2048. */
   poolSize: number;
-  /** World-units — base billboard radius (applied before `intensity`). */
+  /** World-units - base billboard radius (applied before `intensity`). */
   baseRadius: number;
   /** Droplets/sec at `ambientEmission=1`. */
   ambientSpawnRate: number;
@@ -132,7 +132,7 @@ export interface Bubbles3DParams extends BubblesIntent {
   resolvedPalette: BubblePalette;
   /** Max instanced bubbles. Tier-dependent: 512 / 1024 / 2048. */
   poolSize: number;
-  /** World-units — base billboard radius (applied before `intensity`). */
+  /** World-units - base billboard radius (applied before `intensity`). */
   baseRadius: number;
   /** Bubbles/sec at `ambientEmission=1`. */
   ambientSpawnRate: number;
@@ -151,7 +151,7 @@ export interface Petals3DParams extends PetalsIntent {
   resolvedPalette: PetalPalette;
   /** Max instanced petals. Tier-dependent: 512 / 1024 / 2048. */
   poolSize: number;
-  /** World-units — base petal size (applied before `intensity`). */
+  /** World-units - base petal size (applied before `intensity`). */
   baseSize: number;
   /** Petals/sec at `ambientEmission=1` spawned from the above-scene ceiling zone. */
   ambientAboveRate: number;
@@ -163,7 +163,7 @@ export interface Petals3DParams extends PetalsIntent {
   fallBaseSpeed: number;
   /** World-space sinusoidal sway amplitude at `swayAmplitude=1`. */
   swayBaseSpeed: number;
-  /** Hz — sinusoidal sway frequency. */
+  /** Hz - sinusoidal sway frequency. */
   swayFrequency: number;
   /** Petal lifetime in seconds. */
   lifetime: number;
@@ -174,7 +174,7 @@ export interface Smoke3DParams extends SmokeIntent {
   resolvedPalette: SmokePalette;
   /** Max instanced puffs. Tier-dependent: 512 / 1024 / 2048. */
   poolSize: number;
-  /** World-units — base billboard radius before `intensity`. */
+  /** World-units - base billboard radius before `intensity`. */
   baseRadius: number;
   /** Puffs/sec at `ambientEmission=1`. */
   ambientSpawnRate: number;
@@ -207,12 +207,12 @@ export interface Ink3DParams extends InkIntent {
    */
   effectiveAmbient: number;
   /**
-   * World-units — base stroke radius (tube radius for 3D ribbon mesh).
+   * World-units - base stroke radius (tube radius for 3D ribbon mesh).
    * Watercolor palette doubles this (wider bleed). Slow tip presses to
    * this maximum; fast tip lifts to strokeWidthMinWorld.
    */
   strokeWidthMaxWorld: number;
-  /** World-units — min stroke radius at high tip speed (brush lifting). */
+  /** World-units - min stroke radius at high tip speed (brush lifting). */
   strokeWidthMinWorld: number;
   /** Max alpha at peak (0-1). Watercolor palette caps this at 0.4. */
   opacityMax: number;
@@ -222,7 +222,7 @@ export interface Ink3DParams extends InkIntent {
    * from trails, which are all emissive).
    */
   emissiveMaterial: boolean;
-  /** Seconds — stroke-point lifetime. */
+  /** Seconds - stroke-point lifetime. */
   lifetimeSeconds: number;
   /** Max stroke points per tip (bounded history). */
   maxPointsPerTip: number;
@@ -235,7 +235,7 @@ export interface Frost3DParams extends FrostIntent {
   resolvedPalette: FrostPalette;
   /** Max instanced aura particles. Tier-dependent: 512 / 1024 / 2048. */
   auraPoolSize: number;
-  /** World-units — base aura billboard radius. */
+  /** World-units - base aura billboard radius. */
   baseRadius: number;
   /** Particles/sec at `ambientEmission=1`. */
   ambientSpawnRate: number;

@@ -3,10 +3,10 @@
  *
  * Each pose maps to a specific grasp type from the 33-type taxonomy:
  *   IDLE    = Relaxed hand (no taxonomy equivalent)
- *   SQUARE  = Small Diameter (#15) — tight cylindrical wrap
- *   PENCIL  = Prismatic 3 Finger (#2) — thumb + index + middle pinch
- *   CRADLE  = Light Tool (#18) — relaxed cylindrical hold
- *   OPEN_PALM = Platform (#27) — flat open palm
+ *   SQUARE  = Small Diameter (#15) - tight cylindrical wrap
+ *   PENCIL  = Prismatic 3 Finger (#2) - thumb + index + middle pinch
+ *   CRADLE  = Light Tool (#18) - relaxed cylindrical hold
+ *   OPEN_PALM = Platform (#27) - flat open palm
  *   RELEASE = Extended fingers (no taxonomy equivalent)
  *
  * Joint angles from published kinematic ranges (Santello et al. 1998,
@@ -18,7 +18,7 @@
 
 import { GripType, type GripPose } from "../../domain/models/GripPose";
 
-/** Relaxed Idle — slight natural curl, no object */
+/** Relaxed Idle - slight natural curl, no object */
 const IDLE_POSE: GripPose = {
   name: "Relaxed Idle",
   type: GripType.IDLE,
@@ -41,7 +41,7 @@ const IDLE_POSE: GripPose = {
   ],
 };
 
-/** Small Diameter (#15) — tight wrap around thin cylinder (staff shaft) */
+/** Small Diameter (#15) - tight wrap around thin cylinder (staff shaft) */
 const SQUARE_POSE: GripPose = {
   name: "Square Staff Grip",
   type: GripType.SQUARE,
@@ -64,7 +64,7 @@ const SQUARE_POSE: GripPose = {
   ],
 };
 
-/** Prismatic 3 Finger (#2) — thumb + index + middle pinch, ring/pinky relaxed */
+/** Prismatic 3 Finger (#2) - thumb + index + middle pinch, ring/pinky relaxed */
 const PENCIL_POSE: GripPose = {
   name: "Pencil Grip",
   type: GripType.PENCIL,
@@ -72,22 +72,22 @@ const PENCIL_POSE: GripPose = {
     [0.1403, 0.2335, 0.0882, 0.9581],  // Thumb1: abducted to oppose index
     [0.2588, 0.0, 0.0, 0.9659],        // Thumb2: 30° flex
     [0.1736, 0.0, 0.0, 0.9848],        // Thumb3: 20° tip
-    [0.342, 0.0, 0.0, 0.9397],         // Index1: 40° — primary pinch
+    [0.342, 0.0, 0.0, 0.9397],         // Index1: 40° - primary pinch
     [0.4226, 0.0, 0.0, 0.9063],        // Index2: 50°
     [0.2588, 0.0, 0.0, 0.9659],        // Index3: 30°
-    [0.3007, 0.0, 0.0, 0.9537],        // Middle1: 35° — support
+    [0.3007, 0.0, 0.0, 0.9537],        // Middle1: 35° - support
     [0.3827, 0.0, 0.0, 0.9239],        // Middle2: 45°
     [0.2164, 0.0, 0.0, 0.9763],        // Middle3: 25°
-    [0.1305, 0.0, 0.0, 0.9914],        // Ring1: 15° — relaxed
+    [0.1305, 0.0, 0.0, 0.9914],        // Ring1: 15° - relaxed
     [0.1736, 0.0, 0.0, 0.9848],        // Ring2: 20°
     [0.0872, 0.0, 0.0, 0.9962],        // Ring3: 10°
-    [0.1564, 0.0, 0.0, 0.9877],        // Pinky1: 18° — relaxed
+    [0.1564, 0.0, 0.0, 0.9877],        // Pinky1: 18° - relaxed
     [0.1908, 0.0, 0.0, 0.9816],        // Pinky2: 22°
     [0.1045, 0.0, 0.0, 0.9945],        // Pinky3: 12°
   ],
 };
 
-/** Light Tool (#18) — relaxed cylindrical hold, passive cradle */
+/** Light Tool (#18) - relaxed cylindrical hold, passive cradle */
 const CRADLE_POSE: GripPose = {
   name: "Cradle",
   type: GripType.CRADLE,
@@ -110,7 +110,7 @@ const CRADLE_POSE: GripPose = {
   ],
 };
 
-/** Platform (#27) — flat open palm, staff resting on top */
+/** Platform (#27) - flat open palm, staff resting on top */
 const OPEN_PALM_POSE: GripPose = {
   name: "Open Palm",
   type: GripType.OPEN_PALM,
@@ -133,7 +133,7 @@ const OPEN_PALM_POSE: GripPose = {
   ],
 };
 
-/** Release — all fingers extended, staff airborne */
+/** Release - all fingers extended, staff airborne */
 const RELEASE_POSE: GripPose = {
   name: "Release",
   type: GripType.RELEASE,

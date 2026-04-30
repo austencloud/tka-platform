@@ -9,8 +9,8 @@ import {
   Pictograph,
   StepBeatData,
   LOOPTypeValue,
-  SliceSizeValue,
-  SliceSize,
+  PeriodValue,
+  Period,
   LOOPType,
   BroadcastSequence,
   PictographData,
@@ -105,7 +105,7 @@ function getAlphaPositions(): string[] {
  */
 function getValidStartPositions(
   loopType: LOOPTypeValue,
-  sliceSize: SliceSizeValue
+  period: PeriodValue
 ): string[] {
   const isRotatedLoop = [
     LOOPType.ROTATED,
@@ -121,7 +121,7 @@ function getValidStartPositions(
   }
 
   // For rotated LOOPs, only return positions that have valid rotation pairs
-  const validationSet = sliceSize === SliceSize.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
+  const validationSet = period === Period.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
   const validStarts = new Set<string>();
 
   for (const pair of validationSet) {
@@ -333,7 +333,7 @@ const LOOP_TYPE_ROTATION: LOOPTypeValue[] = [
  */
 function calculateWordLength(
   loopType: LOOPTypeValue,
-  sliceSize: SliceSizeValue,
+  period: PeriodValue,
   targetLength: number = 16
 ): number {
   // Special case for compound types that apply multiple transformations
@@ -344,13 +344,13 @@ function calculateWordLength(
 
   if (isDoubleCompound) {
     // These apply rotation AND mirroring, so multiply both
-    return sliceSize === SliceSize.HALVED
+    return period === Period.HALVED
       ? Math.floor(targetLength / 4) // rotation ×2, mirror ×2
       : Math.floor(targetLength / 8); // rotation ×4, mirror ×2
   }
 
   // Standard LOOP types
-  return sliceSize === SliceSize.HALVED
+  return period === Period.HALVED
     ? Math.floor(targetLength / 2)
     : Math.floor(targetLength / 4);
 }
@@ -371,22 +371,22 @@ export function generateLOOPSequence(
       const loopType = LOOP_TYPE_ROTATION[loopTypeIndex % LOOP_TYPE_ROTATION.length];
       const nextIndex = (loopTypeIndex + 1) % LOOP_TYPE_ROTATION.length;
 
-      // Randomly choose slice size (70% quartered, 30% halved)
-      const sliceSize: SliceSizeValue =
-        Math.random() < 0.7 ? SliceSize.QUARTERED : SliceSize.HALVED;
+      // Randomly choose period (70% quartered, 30% halved)
+      const period: PeriodValue =
+        Math.random() < 0.7 ? Period.QUARTERED : Period.HALVED;
 
       // Get valid start positions for this LOOP type
-      const validStarts = getValidStartPositions(loopType, sliceSize);
+      const validStarts = getValidStartPositions(loopType, period);
       if (validStarts.length === 0) {
-        throw new Error(`No valid start positions for ${loopType} ${sliceSize}`);
+        throw new Error(`No valid start positions for ${loopType} ${period}`);
       }
       const startPosition = randomChoice(validStarts);
 
       // Determine required end position for the partial sequence
-      const endPosition = determineEndPosition(loopType, startPosition, sliceSize);
+      const endPosition = determineEndPosition(loopType, startPosition, period);
 
       // Calculate word length
-      const wordLength = calculateWordLength(loopType, sliceSize, 16);
+      const wordLength = calculateWordLength(loopType, period, 16);
 
       // Generate partial sequence
       const partialBeats = generatePartialSequence(
@@ -397,7 +397,7 @@ export function generateLOOPSequence(
       );
 
       // Execute LOOP to get complete sequence
-      const completeBeats = executeLOOP(partialBeats, loopType, sliceSize);
+      const completeBeats = executeLOOP(partialBeats, loopType, period);
 
       // Calculate word
       const word = calculateWord(completeBeats);
@@ -410,7 +410,7 @@ export function generateLOOPSequence(
         gridMode,
         isCircular: true,
         loopType,
-        sliceSize,
+        period,
         totalSteps: completeBeats.length - 1, // Exclude start position from count
       };
 

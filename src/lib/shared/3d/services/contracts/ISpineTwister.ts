@@ -29,12 +29,12 @@ export interface ISpineTwister {
    *
    * Three modes by nullability of the hand targets:
    *
-   * - **Both present** — cross-body reach. Torso leans toward the reaching
+   * - **Both present** - cross-body reach. Torso leans toward the reaching
    *   direction with hip counter-rotation; head rotates most, lower back least.
-   * - **One present, one null** — single-hand gaze. Torso and head orient
+   * - **One present, one null** - single-hand gaze. Torso and head orient
    *   gently toward the present hand. No hip counter-rotation (gazing at a
    *   held prop doesn't need a counter-balanced stance).
-   * - **Both null** — no prop in either hand. Identity (no twist).
+   * - **Both null** - no prop in either hand. Identity (no twist).
    *
    * @param leftHandTarget - Left hand position (world space), or null if absent
    * @param rightHandTarget - Right hand position (world space), or null if absent

@@ -843,7 +843,7 @@ export class ConversationManager implements IConversationManager {
             callback(conversations);
           },
           (error) => {
-            // Expected on sign-out — Firestore rules reject the query once the
+            // Expected on sign-out - Firestore rules reject the query once the
             // user's auth token goes away. The onAuthStateChanged handler will
             // tear this listener down shortly.
             if (isPermissionDeniedError(error)) return;

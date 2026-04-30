@@ -447,7 +447,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
     <button
       class="undo-btn"
       onclick={handleUndo}
-      title="Undo last adjustment (Ctrl+Z) — {arrowAdjustmentUndoStack.size} in stack"
+      title="Undo last adjustment (Ctrl+Z) - {arrowAdjustmentUndoStack.size} in stack"
       aria-label="Undo last arrow adjustment"
     >
       <i class="fas fa-undo-alt" aria-hidden="true"></i>
@@ -462,7 +462,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
       class:active={rotationOverrideActive}
       onclick={handleToggleRotationOverride}
       title={rotationOverrideActive
-        ? "Rotation override ON — press X to remove"
+        ? "Rotation override ON - press X to remove"
         : "Toggle rotation override (X)"}
       aria-label="Toggle rotation override"
       aria-pressed={rotationOverrideActive}

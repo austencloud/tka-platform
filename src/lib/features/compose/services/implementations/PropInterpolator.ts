@@ -19,7 +19,7 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
  * Returns true if this motion type should use Cartesian (straight-line) interpolation.
  * DASH always uses linear. PRO, ANTI, and FLOAT (arc/shift motions) use linear only when
  * the user has enabled "linear" pathShape in animation visibility settings.
- * STATIC is unaffected — it doesn't move at all.
+ * STATIC is unaffected - it doesn't move at all.
  */
 function shouldUseLinear(motionType: MotionType): boolean {
   if (motionType === MotionType.DASH) return true;

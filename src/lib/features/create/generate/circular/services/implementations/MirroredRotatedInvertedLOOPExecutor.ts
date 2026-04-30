@@ -27,7 +27,7 @@
  * IMPORTANT: After rotation, sequence returns to home, which is valid for complementary mirror
  */
 
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -43,10 +43,10 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
    * Execute the mirrored-rotated-complementary LOOP by composing rotation + complementary mirroring
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param sliceSize - The slice size for rotation (halved or quartered)
+   * @param period - The slice size for rotation (halved or quartered)
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     // Validate: composed mirrored+rotated only works when start is on the vertical axis.
     // After rotation returns to home, the mirrored-inverted executor requires
     // end == vertical_mirror(start), which only holds when the position is self-mirroring.
@@ -67,7 +67,7 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
     // Returns to home position in both cases
     const rotatedSequence = this.strictRotatedExecutor.executeLOOP(
       sequence,
-      sliceSize
+      period
     );
 
     // Step 2: Apply MIRRORED_INVERTED to the rotated sequence
@@ -79,7 +79,7 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
     // For example: 8 steps → 16 steps final
     const finalSequence = this.mirroredInvertedExecutor.executeLOOP(
       rotatedSequence,
-      SliceSize.HALVED // Not actually used by complementary executor, but passed for consistency
+      Period.HALVED // Not actually used by complementary executor, but passed for consistency
     );
 
     return finalSequence;

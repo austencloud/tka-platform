@@ -557,7 +557,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     const output = {
       metadata: {
         loopType,
-        sliceSize: slice,
+        period: slice,
         seedLength,
         level,
         gridMode,

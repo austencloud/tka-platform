@@ -39,7 +39,7 @@ import {
   VERTICAL_MIRROR_LOCATION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,
 } from "../../domain/constants/strict-loop-position-maps";
-import type { SliceSize } from "../../domain/models/circular-models";
+import type { Period } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 
 export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
@@ -52,10 +52,10 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
    * Execute the mirrored-swapped-inverted LOOP
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param _sliceSize - Ignored (mirrored-swapped-inverted LOOP always uses halved)
+   * @param _period - Ignored (mirrored-swapped-inverted LOOP always uses halved)
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], _sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], _period: Period): StepData[] {
     // Validate the sequence
     this._validateSequence(sequence);
 

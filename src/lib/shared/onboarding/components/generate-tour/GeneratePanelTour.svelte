@@ -2,7 +2,7 @@
   GeneratePanelTour - Modal wizard that walks through generator settings.
 
   Purpose-built mini card grid that visually matches the real cards
-  (same gradients, same layout) but is pure CSS — no container queries,
+  (same gradients, same layout) but is pure CSS - no container queries,
   no services, no responsive complexity. Works at any size.
 -->
 <script lang="ts">
@@ -23,7 +23,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
-  // Mini card definition — derived from the card registry
+  // Mini card definition - derived from the card registry
   interface MiniCard {
     id: GeneratorCardId;
     header: string;
@@ -174,7 +174,7 @@
     </button>
 
     <!-- Mini card grid -->
-    <div class="card-grid" role="img" aria-label="Generator cards — {currentContent.name} highlighted">
+    <div class="card-grid" role="img" aria-label="Generator cards - {currentContent.name} highlighted">
       {#each MINI_CARDS as card}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
@@ -199,7 +199,7 @@
       {/each}
     </div>
 
-    <!-- Info section — outer container holds layout, inner content transitions -->
+    <!-- Info section - outer container holds layout, inner content transitions -->
     <div class="tour-info">
       {#key generateTourState.currentStop}
         <div
@@ -276,11 +276,11 @@
    *
    * Layout stack (all flex):
    *   dialog  →  modal-content-wrapper  →  modal-body
-   *     ├─ card-grid      (flex-shrink: 0 — always fully visible)
-   *     ├─ tour-info       (flex: 1 — fills remaining space)
+   *     ├─ card-grid      (flex-shrink: 0 - always fully visible)
+   *     ├─ tour-info       (flex: 1 - fills remaining space)
    *     │   ├─ info-header (flex-shrink: 0)
-   *     │   └─ info-body   (flex: 1, overflow-y: auto — scrolls if needed)
-   *     └─ footer          (flex-shrink: 0 — always visible, handled by BaseModal)
+   *     │   └─ info-body   (flex: 1, overflow-y: auto - scrolls if needed)
+   *     └─ footer          (flex-shrink: 0 - always visible, handled by BaseModal)
    */
   :global(dialog.tour-modal) {
     width: min(92vw, 560px) !important;
@@ -441,7 +441,7 @@
     color: var(--theme-text, white);
   }
 
-  /* Scrollable content area — only this part scrolls */
+  /* Scrollable content area - only this part scrolls */
   .info-body {
     display: flex;
     flex-direction: column;

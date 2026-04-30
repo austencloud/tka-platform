@@ -50,7 +50,7 @@ export const museum3dEditorState = {
   select(obj: Object3D) {
     selectedObject = obj;
     // Smoothly glide orbit target to selected object. camera-controls'
-    // internal smoothTime handles the easing — no hand-rolled rAF lerp.
+    // internal smoothTime handles the easing - no hand-rolled rAF lerp.
     if (orbitControls && obj) {
       obj.getWorldPosition(_tempVec);
       orbitControls.setTarget(_tempVec.x, _tempVec.y, _tempVec.z, true);
@@ -109,7 +109,7 @@ export const museum3dEditorState = {
     orbitControls?.setTarget(x, y, z, true);
   },
 
-  /** Move orbit target by a delta (for WASD panning — no animation). */
+  /** Move orbit target by a delta (for WASD panning - no animation). */
   panTarget(dx: number, dy: number, dz: number) {
     if (!orbitControls) return;
     orbitControls.getTarget(_panVec);

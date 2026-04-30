@@ -59,13 +59,13 @@ export function difficultyToLevel(difficulty: DifficultyLevel): number {
  */
 export interface UIGenerationConfig {
   mode: string; // "freeform" | "spell"
-  loopEnabled: boolean; // Orthogonal toggle — works in both freeform and spell modes
+  loopEnabled: boolean; // Orthogonal toggle - works in both freeform and spell modes
   length: number;
   level: number; // 1-4
   turnIntensity: number;
   gridMode: GridMode;
-  propContinuity: string; // "continuous" | "random" — legacy, derived from constraintPreset for backwards compat
-  sliceSize: string; // "halved" | "quartered"
+  propContinuity: string; // "continuous" | "random" - legacy, derived from constraintPreset for backwards compat
+  period: string; // "halved" | "quartered"
   loopType: string; // LOOP type when loopEnabled=true
 
   // 3-axis constraint system (replaces binary propContinuity)
@@ -109,9 +109,9 @@ export function uiConfigToGenerationOptions(
       uiConfig.loopType.includes("flipped") ||
       uiConfig.loopType.includes("rewound"));
 
-  const sliceSize = requiresHalved ? "halved" : uiConfig.sliceSize;
+  const period = requiresHalved ? "halved" : uiConfig.period;
 
-  if (requiresHalved && uiConfig.sliceSize !== "halved") {
+  if (requiresHalved && uiConfig.period !== "halved") {
     // Override to halved for this LOOP type
   }
 
@@ -133,8 +133,8 @@ export function uiConfigToGenerationOptions(
     propContinuity: derivedPropContinuity,
     turnIntensity:
       uiConfig.turnIntensity !== undefined ? uiConfig.turnIntensity : undefined,
-    sliceSize: sliceSize
-      ? (sliceSize as GenerationOptions["sliceSize"])
+    period: period
+      ? (period as GenerationOptions["period"])
       : undefined,
     loopType: uiConfig.loopType
       ? (uiConfig.loopType as GenerationOptions["loopType"])
@@ -161,7 +161,7 @@ export function uiConfigToGenerationOptions(
  */
 export function generationOptionsToUIConfig(
   options: GenerationOptions,
-  sliceSize: string = "halved",
+  period: string = "halved",
   loopType: string = "rotated"
 ): UIGenerationConfig {
   // Derive constraintPreset from propContinuity for backwards compat
@@ -178,7 +178,7 @@ export function generationOptionsToUIConfig(
     turnIntensity: options.turnIntensity || 1.0,
     gridMode: options.gridMode,
     propContinuity: options.propContinuity || "continuous",
-    sliceSize,
+    period,
     loopType,
     constraintPreset,
     handPathMode: options.handPathMode ?? "mixed",

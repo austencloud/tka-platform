@@ -34,6 +34,12 @@ export interface LetterStyle {
   dimmed: boolean;
 }
 
+/** Compressed word segment for bracket notation display */
+export interface CompressedSegment {
+  tokens: string[];
+  repeat: number;
+}
+
 /** Per-letter image data for glyph word rendering in renderHeader */
 export interface GlyphImageData {
   /** Canvas-drawable image (HTMLImageElement in browser, node-canvas Image in Node) */

@@ -3,7 +3,7 @@
 import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
 import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   /**
-   * PerformerPlatform — Museum exhibit slot with animated performer.
+   * PerformerPlatform - Museum exhibit slot with animated performer.
    *
    * Uses PerformerRig for unified avatar + prop + grid hierarchy.
    * Platform disc is a sibling outside the rig (independent of groundOffset).
@@ -72,9 +72,9 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
 </script>
 
 {#if slot.type === "performer"}
-  <!-- Station group — positioned at world coords -->
+  <!-- Station group - positioned at world coords -->
   <T.Group position.x={slot.position.x} position.z={slot.position.z}>
-    <!-- Circular platform at floor level (outside rig — independent of groundOffset) -->
+    <!-- Circular platform at floor level (outside rig - independent of groundOffset) -->
     <T.Mesh
       position.y={slot.position.y + 0.15}
       receiveShadow

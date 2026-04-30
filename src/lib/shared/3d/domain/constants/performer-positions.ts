@@ -38,7 +38,7 @@ export const WALL_OFFSET = -STAGE.AVATAR_GRID_OFFSET;
  *
  * Row n lives at z = -n * GRID_SPACING + WALL_OFFSET. Paired performers
  * sit at ±GRID_SPACING/2; a lone last-row performer sits at x=0 (centered).
- * Counts beyond 8 are clamped — the viewer's MAX_VIEWER_PERFORMERS cap
+ * Counts beyond 8 are clamped - the viewer's MAX_VIEWER_PERFORMERS cap
  * already enforces this at the manager level, but the function stays safe
  * for any caller.
  */

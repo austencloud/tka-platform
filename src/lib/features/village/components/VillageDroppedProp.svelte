@@ -1,5 +1,5 @@
 <!--
-  VillageDroppedProp — Pulsing prop on the ground at a death location.
+  VillageDroppedProp - Pulsing prop on the ground at a death location.
   Emissive intensity oscillates 0.3-0.7 on a 3-second sine cycle.
 -->
 <script lang="ts">

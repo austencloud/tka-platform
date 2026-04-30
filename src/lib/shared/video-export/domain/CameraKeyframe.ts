@@ -19,7 +19,7 @@ interface CameraLike {
   fov: number;
 }
 
-/** Sampling rate in Hz — independent of render frame rate */
+/** Sampling rate in Hz - independent of render frame rate */
 const SAMPLE_RATE_HZ = 60;
 const SAMPLE_INTERVAL_MS = 1000 / SAMPLE_RATE_HZ;
 
@@ -73,7 +73,7 @@ export class CameraKeyframeBuffer {
 
   /**
    * Capture a single keyframe from the current camera state.
-   * Used for "quick export" — the user wants the current angle, no recording.
+   * Used for "quick export" - the user wants the current angle, no recording.
    */
   captureStatic(camera: CameraLike): void {
     this._keyframes = [

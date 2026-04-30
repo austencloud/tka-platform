@@ -14,7 +14,7 @@ import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseVi
  * All visibility and prop settings that affect the rendered output.
  */
 export interface PreviewCellRenderOptions {
-  /** Render size in pixels (e.g., 480 for high-res) — this is the height; width = size * widthMultiplier */
+  /** Render size in pixels (e.g., 480 for high-res) - this is the height; width = size * widthMultiplier */
   size: number;
 
   /** Width multiplier for duration-expanded cells (1 = square, 2 = double-wide). Default: 1 */

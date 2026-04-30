@@ -152,8 +152,6 @@
             </div>
 
             <div class="sequence-info">
-              <h3 class="sequence-name">{getDisplayName(sequence)}</h3>
-
               <div class="sequence-meta">
                 {#if sequence.createdAt}
                   <span class="meta-item">
@@ -324,16 +322,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .sequence-name {
-    margin: 0;
-    font-size: var(--font-size-base);
-    font-weight: 600;
-    color: var(--theme-text, white);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .sequence-meta {

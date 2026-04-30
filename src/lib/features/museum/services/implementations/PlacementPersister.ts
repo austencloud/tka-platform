@@ -80,7 +80,7 @@ export class PlacementPersister implements IPlacementPersister {
     const roomIds = Object.keys(MANUAL_PLACEMENTS);
 
     if (roomIds.length === 0) {
-      lines.push('  // Populated by editor — do not edit manually');
+      lines.push('  // Populated by editor - do not edit manually');
     } else {
       for (const roomId of roomIds) {
         const placements = MANUAL_PLACEMENTS[roomId] ?? [];

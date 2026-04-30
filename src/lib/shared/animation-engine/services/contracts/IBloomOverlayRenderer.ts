@@ -2,12 +2,12 @@
  * IBloomOverlayRenderer
  *
  * Interface for the Canvas2D bloom overlay that draws per-tip radial
- * halation — a continuous additive light field fixed to each active
+ * halation - a continuous additive light field fixed to each active
  * prop tip. Wraps `Bloom2DRenderer` from `$lib/shared/effects/renderers`
  * and owns its own absolutely-positioned canvas element, following the
  * sparkles/echo overlay pattern.
  *
- * Unlike echo, bloom is not beat-driven — it uses `performance.now()`
+ * Unlike echo, bloom is not beat-driven - it uses `performance.now()`
  * internally for pulse modulation. Callers pass per-tip positions only.
  */
 
@@ -23,7 +23,7 @@ export interface IBloomOverlayRenderer {
 
   /**
    * Render one frame of bloom overlay. Time advances via
-   * `performance.now()` inside the renderer — pulse modulation is
+   * `performance.now()` inside the renderer - pulse modulation is
    * continuous regardless of playback state.
    */
   renderFrame(params: Bloom2DParams, tips: BloomTipInput[]): void;

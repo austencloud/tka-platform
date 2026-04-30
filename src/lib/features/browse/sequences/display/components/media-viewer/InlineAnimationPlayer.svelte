@@ -92,14 +92,14 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
     externalBpm?: number | null;
   } = $props();
 
-  // Services — per-instance to allow multiple simultaneous players (e.g., Arena)
+  // Services - per-instance to allow multiple simultaneous players (e.g., Arena)
   let sequenceService: ISequenceRepository | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
   let servicesReady = $state(false);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
-  // Animation state — each player gets its own
+  // Animation state - each player gets its own
   const animationState = createAnimationPanelState();
 
   // Track last loaded sequence to prevent re-loading same sequence
@@ -172,7 +172,7 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
     sequence?.gridMode ?? animationState.sequenceData?.gridMode
   );
 
-  // Load services on mount — create per-instance playback stack so multiple
+  // Load services on mount - create per-instance playback stack so multiple
   // InlineAnimationPlayers can run simultaneously (e.g., Arena side-by-side)
   onMount(async () => {
     try {
@@ -182,7 +182,7 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
       const propInterpolator = getPropInterpolator();
       const loopabilityChecker = getSequenceLoopabilityChecker();
 
-      // Stateful services — fresh instance per player
+      // Stateful services - fresh instance per player
       const stateManager = new AnimationStateManager();
       const stepCalculator = new StepCalculator();
       const loop = new AnimationLoop();

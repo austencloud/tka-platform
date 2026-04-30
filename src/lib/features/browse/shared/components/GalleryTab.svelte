@@ -128,10 +128,12 @@
     });
   }
 
-  // Floating Search State
+  // Floating Search State (mobile only — desktop uses BrowseToolbar search bar)
   let showSearchTerminal = $state(false);
   let searchMode = $state<"standard" | "spelled">("standard");
   const hapticService = getHapticFeedback();
+  const hasFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+  const showMobileSearch = $derived(isMobile && !hasFinePointer);
 
   const currentSearchQuery = $derived(engine.searchQuery);
 
@@ -260,8 +262,8 @@
   onClose={closeVariationPicker}
 />
 
-<!-- Notation Terminal Keyboard -->
-{#if showSearchTerminal}
+<!-- Notation Terminal Keyboard (mobile only — fine pointer = desktop keyboard available) -->
+{#if showMobileSearch && showSearchTerminal}
   <VirtualKeyboard
     bind:isOpen={showSearchTerminal}
     value={currentSearchQuery}
@@ -275,16 +277,18 @@
   />
 {/if}
 
-<!-- Floating Search Trigger (FAB) -->
-<button
-  class="floating-search-trigger"
-  class:kb-active={showSearchTerminal}
-  onclick={handleToggleSearch}
-  type="button"
-  aria-label="Search Sequences"
->
-  <i class="fas fa-search"></i>
-</button>
+<!-- Floating Search Trigger (FAB, mobile only) -->
+{#if showMobileSearch}
+  <button
+    class="floating-search-trigger"
+    class:kb-active={showSearchTerminal}
+    onclick={handleToggleSearch}
+    type="button"
+    aria-label="Search Sequences"
+  >
+    <i class="fas fa-search"></i>
+  </button>
+{/if}
 
 <style>
   .sequences-main {

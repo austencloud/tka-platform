@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Pictograph Geometry — shared helpers used by every era renderer.
+// Pictograph Geometry - shared helpers used by every era renderer.
 //
 // Takes the era-agnostic RetroPictographData shape (letter, blueHand, redHand,
 // gridMode) and provides: location → canvas coords, arc direction resolution,
@@ -61,7 +61,7 @@
   /**
    * Resolve start/end angles for an arc from startLocation → endLocation, going
    * around in the specified visual direction. Returns { startA, endA } suitable
-   * for lerp(startA, endA, t) — the arc will naturally curve in the right way.
+   * for lerp(startA, endA, t) - the arc will naturally curve in the right way.
    *
    * Handles the same-point case by producing a full 360° loop.
    */
@@ -124,7 +124,7 @@
   /**
    * Which end of a staff is the "thumb" (reference) end vs the "pinky" end.
    * For radial props: thumb end = closer to center (inner end). For tangent
-   * props: consumer picks — we just return both endpoints.
+   * props: consumer picks - we just return both endpoints.
    *
    * length = total staff length in pixels.
    */
@@ -141,10 +141,10 @@
    * Classify a motion's visual archetype for era renderers. Simpler eras can
    * switch on this to pick a draw routine.
    *
-   *   "arc"   — pro / anti / float: curved path from start → end
-   *   "dash"  — straight line through/across the grid
-   *   "static" — no motion, prop sits at endLocation
-   *   "none"   — unknown / invisible
+   *   "arc"   - pro / anti / float: curved path from start → end
+   *   "dash"  - straight line through/across the grid
+   *   "static" - no motion, prop sits at endLocation
+   *   "none"   - unknown / invisible
    */
   function motionArchetype(motion) {
     if (!motion) return "none";

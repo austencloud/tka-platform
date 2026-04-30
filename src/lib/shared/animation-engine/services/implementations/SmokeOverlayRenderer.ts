@@ -8,7 +8,7 @@
  *
  * Smoke has persistent particle state (curl-noise-driven puffs + per-
  * puff phase), so unlike bloom we do NOT clear accumulated state on each
- * frame — only the canvas pixels. The pool is cleared on dispose() or
+ * frame - only the canvas pixels. The pool is cleared on dispose() or
  * explicit clear().
  */
 

@@ -2,7 +2,7 @@
  * ITopologyBuilder - Fluent API for declaring grid arrangements
  *
  * Builds a GridTopology from a series of grid placements and conjoin constraints.
- * Junctions are auto-detected — never manually declared.
+ * Junctions are auto-detected - never manually declared.
  */
 
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
@@ -12,7 +12,7 @@ import type { Vec2, GridTopology } from "../../domain/models/GridTopology";
 export interface GridOptions {
   /** Grid rendering mode (default: "diamond") */
   mode?: GridMode;
-  /** Explicit center position — overrides conjoin placement */
+  /** Explicit center position - overrides conjoin placement */
   center?: Vec2;
   /** Hand point radius in abstract units (default: 1.0) */
   radius?: number;

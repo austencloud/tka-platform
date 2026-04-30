@@ -71,7 +71,7 @@ export const VTG_RATIO_TURNS_MAP: Readonly<Record<string, number>> = {
   "7:1": 3,
 };
 
-/** Inverse of VTG_RATIO_TURNS_MAP — maps turn values to ratio strings */
+/** Inverse of VTG_RATIO_TURNS_MAP - maps turn values to ratio strings */
 export const VTG_TURNS_RATIO_MAP: Readonly<Record<number, string>> = {
   0: "1:1",
   0.5: "2:1",

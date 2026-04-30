@@ -45,7 +45,7 @@ export function findPhraseAtBeat(
   beat: number,
 ): EffortPhrase | null {
   for (const phrase of timeline.phrases) {
-    // A phrase covering beats 3-6 owns the range [3.0, 7.0) —
+    // A phrase covering beats 3-6 owns the range [3.0, 7.0) -
     // it includes all fractional time within beat 6 up to (but not including) beat 7.
     if (beat >= phrase.startStep && beat < phrase.endStep + 1) {
       return phrase;
@@ -66,11 +66,11 @@ export function insertPhrase(
   const updated: EffortPhrase[] = [];
 
   for (const existing of timeline.phrases) {
-    // Completely covered by new phrase — remove
+    // Completely covered by new phrase - remove
     if (existing.startStep >= newPhrase.startStep && existing.endStep <= newPhrase.endStep) {
       continue;
     }
-    // Split — existing phrase completely wraps new phrase (must check before partial overlaps)
+    // Split - existing phrase completely wraps new phrase (must check before partial overlaps)
     if (existing.startStep < newPhrase.startStep && existing.endStep > newPhrase.endStep) {
       updated.push({ ...existing, endStep: newPhrase.startStep - 1 });
       updated.push({
@@ -80,12 +80,12 @@ export function insertPhrase(
       });
       continue;
     }
-    // Overlaps left side — trim right
+    // Overlaps left side - trim right
     if (existing.startStep < newPhrase.startStep && existing.endStep >= newPhrase.startStep) {
       updated.push({ ...existing, endStep: newPhrase.startStep - 1 });
       continue;
     }
-    // Overlaps right side — trim left
+    // Overlaps right side - trim left
     if (existing.startStep <= newPhrase.endStep && existing.endStep > newPhrase.endStep) {
       updated.push({ ...existing, startStep: newPhrase.endStep + 1 });
       continue;

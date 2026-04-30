@@ -3,7 +3,7 @@
 
   Interactive SVG viewer: renders the prop shape, displays tip point
   markers, supports click-to-add and drag-to-reposition.
-  Shared across all effects — edits the unified tip point registry.
+  Shared across all effects - edits the unified tip point registry.
 -->
 <script lang="ts">
   import { onMount } from "svelte";

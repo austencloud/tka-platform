@@ -1,8 +1,8 @@
 <!--
   ColorsSection.svelte
 
-  Prop color combo selector. 4 fixed pairings from TUNNEL_LAYER_COLORS.
-  Each pairing shows both colors side by side as a selectable chip.
+  Prop color combo selector. 4 fixed pairings from TUNNEL_LAYER_COLORS,
+  displayed in a 2×2 chip grid matching the v4 mockup.
 -->
 <script lang="ts">
   import { TUNNEL_LAYER_COLORS, type PropColors } from '$lib/features/compose/compose/domain/types';
@@ -16,10 +16,10 @@
   } = $props();
 
   const combos: { label: string; colors: PropColors }[] = [
-    { label: 'Blue / Red', colors: TUNNEL_LAYER_COLORS[0]! },
-    { label: 'Purple / Orange', colors: TUNNEL_LAYER_COLORS[1]! },
-    { label: 'Emerald / Pink', colors: TUNNEL_LAYER_COLORS[2]! },
-    { label: 'Cyan / Yellow', colors: TUNNEL_LAYER_COLORS[3]! },
+    { label: 'Default', colors: TUNNEL_LAYER_COLORS[0]! },
+    { label: 'Alt 1',   colors: TUNNEL_LAYER_COLORS[1]! },
+    { label: 'Alt 2',   colors: TUNNEL_LAYER_COLORS[2]! },
+    { label: 'Alt 3',   colors: TUNNEL_LAYER_COLORS[3]! },
   ];
 
   function isSelected(combo: PropColors): boolean {
@@ -28,13 +28,17 @@
 </script>
 
 <div class="colors-section">
+  <span class="section-header">COLORS</span>
+
   <div class="combo-grid" role="radiogroup" aria-label="Prop color combo">
     {#each combos as combo}
+      {@const active = isSelected(combo.colors)}
       <button
         class="combo-chip"
-        class:active={isSelected(combo.colors)}
+        class:active
         role="radio"
-        aria-checked={isSelected(combo.colors)}
+        aria-checked={active}
+        style:--chip-color={combo.colors.left}
         onclick={() => onSetColors(combo.colors)}
       >
         <span class="color-pair">
@@ -51,63 +55,80 @@
   .colors-section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     animation: slideDown 180ms ease-out;
   }
 
   @keyframes slideDown {
     from { opacity: 0; transform: translateY(-6px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
+  .section-header {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* 2×2 wrap grid */
   .combo-grid {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 6px;
   }
 
   .combo-chip {
+    flex: 1;
+    min-width: calc(50% - 3px);
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    min-height: 48px;
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 13px;
+    gap: 6px;
+    padding: 8px;
+    min-height: 44px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease;
   }
 
-  .combo-chip:hover {
+  .combo-chip:hover:not(.active) {
     background: rgba(255, 255, 255, 0.07);
     border-color: rgba(255, 255, 255, 0.15);
-    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    color: rgba(255, 255, 255, 0.9);
   }
 
   .combo-chip.active {
-    background: rgba(139, 92, 246, 0.1);
-    border-color: rgba(139, 92, 246, 0.35);
-    color: var(--theme-text, white);
+    background: color-mix(in srgb, var(--chip-color) 8%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--chip-color) 35%, transparent);
+    color: white;
   }
 
   .color-pair {
     display: flex;
+    align-items: center;
     gap: 4px;
+    flex-shrink: 0;
   }
 
   .color-swatch {
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     border: 1.5px solid rgba(255, 255, 255, 0.15);
   }
 
   .combo-label {
     line-height: 1;
+    white-space: nowrap;
   }
 
   @media (prefers-reduced-motion: reduce) {

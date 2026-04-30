@@ -80,7 +80,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		animState.dispose();
 	});
 
-	// Initialize playback when controller and sequence are ready — autoplay immediately
+	// Initialize playback when controller and sequence are ready - autoplay immediately
 	$effect(() => {
 		void controller;
 		void motionLoader;

@@ -32,13 +32,13 @@ State-of-the-art skeleton that matches the real browse gallery:
   // These represent actual sequence layouts: cols / (rows + 10/21).
   // Distribution weighted toward common beat counts (4-8 beats).
   const ASPECT_RATIO_POOL: number[] = [
-    3.39, // 4 beats: 5 / (1 + 10/21) — short wide card
-    2.07, // 8 beats: 5 / (2 + 10/21) — medium card
-    1.36, // 20 beats: 6 / (4 + 10/21) — tall card
+    3.39, // 4 beats: 5 / (1 + 10/21) - short wide card
+    2.07, // 8 beats: 5 / (2 + 10/21) - medium card
+    1.36, // 20 beats: 6 / (4 + 10/21) - tall card
     2.07, // 8 beats again (most common)
-    1.62, // 12 beats: 4 / (4 + 10/21) — medium-tall
-    2.49, // 10 beats: 6 / (2 + 10/21) — medium-wide
-    1.13, // 16 beats: 5 / (4 + 10/21) — near-square
+    1.62, // 12 beats: 4 / (4 + 10/21) - medium-tall
+    2.49, // 10 beats: 6 / (2 + 10/21) - medium-wide
+    1.13, // 16 beats: 5 / (4 + 10/21) - near-square
     2.07, // 8 beats (very common)
     1.36, // 20 beats
     3.39, // 4 beats

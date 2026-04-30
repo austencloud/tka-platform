@@ -6,11 +6,11 @@
   passing a children snippet that receives the full context object.
 
   Delegates to focused modules:
-  - PlaybackController.svelte.ts — playback state, stepping, practice training
-  - ExportCoordinator.svelte.ts — 2D/3D export routing, recording, progress
-  - PropContextResolver.svelte.ts — prop context toggle, presentation resolution
-  - ImageCompositionSync.svelte.ts — image composition settings sync
-  - AuthActionQueue.svelte.ts — pending-action queue, sign-in routing
+  - PlaybackController.svelte.ts - playback state, stepping, practice training
+  - ExportCoordinator.svelte.ts - 2D/3D export routing, recording, progress
+  - PropContextResolver.svelte.ts - prop context toggle, presentation resolution
+  - ImageCompositionSync.svelte.ts - image composition settings sync
+  - AuthActionQueue.svelte.ts - pending-action queue, sign-in routing
 
   The orchestrator retains:
   - Service initialization bootstrap
@@ -340,7 +340,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = initialBpm; });
 
   // ── Export ──
-  // 3D viewer state — created once, distributed via Svelte context
+  // 3D viewer state - created once, distributed via Svelte context
   const viewer3DState = createViewer3DState({
     propInterpolator: getPropStateInterpolator(),
     sequenceConverter: getSequenceConverter(),
@@ -353,7 +353,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   const exportCoord = createExportCoordinator({ viewer3DState, accessibilityHelper });
 
   // ── Prop context ──
-  // viewingContext is NOT passed here — the factory doesn't read it from deps.
+  // viewingContext is NOT passed here - the factory doesn't read it from deps.
   // Instead, activeContext is resolved reactively via getActiveContext(viewingContext)
   // in the $derived block below.
   const propContext = createPropContextResolver({});
@@ -1566,7 +1566,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
 <!-- Loads the Google Identity Services script and registers the FedCM
      credential callback. The sheet's primary button invokes `prompt()` on
-     this to show Google's native One Tap card — the only sign-in flow that
+     this to show Google's native One Tap card - the only sign-in flow that
      works reliably on mobile web. autoPrompt is false so it doesn't appear
      unprompted; we trigger it on user click. -->
 <GoogleOneTap autoPrompt={false} />

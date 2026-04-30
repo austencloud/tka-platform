@@ -46,7 +46,7 @@ function linear(t: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Laban efforts — delegate to applyLabanEasing
+// Laban efforts - delegate to applyLabanEasing
 // ---------------------------------------------------------------------------
 
 function glide(t: number, params?: EffortParams): number {
@@ -67,7 +67,7 @@ function dab(t: number, params?: EffortParams): number {
 
 /**
  * Press and punch are "heavy" efforts (high weight) whose raw Laban curves
- * are back-loaded — the motion crammed into the last 20-30% of the beat.
+ * are back-loaded - the motion crammed into the last 20-30% of the beat.
  * When practicing, you say "eight" at the start of the beat and expect to
  * see position 8. But with back-loaded curves, the props are still at
  * position 7 until the beat is almost over.
@@ -113,7 +113,7 @@ function punch(t: number, params?: EffortParams): number {
  *
  * Uses a physically-based damped spring instead of the standard elastic-out
  * formula (easings.net). The standard formula is `1 + oscillation * decay`
- * which starts at ~1.0 on frame 1 and just wobbles — the approach to the
+ * which starts at ~1.0 on frame 1 and just wobbles - the approach to the
  * target is invisible. A damped spring starts at 0, ramps up toward 1 with
  * visible acceleration, overshoots past 1 around t=0.4-0.5, then settles.
  * The eye can track the entire motion.
@@ -150,7 +150,7 @@ function elastic(t: number, params?: EffortParams): number {
 /**
  * Bounce ease-out: the classic CSS bounce algorithm.
  * Four parabolic arcs of decreasing height, like a ball settling.
- * No parameters — the standard curve already feels right.
+ * No parameters - the standard curve already feels right.
  */
 function bounce(t: number, _params?: EffortParams): number {
 	if (t <= 0) return 0;

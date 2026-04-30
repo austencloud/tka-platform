@@ -44,7 +44,7 @@ function writePersistedState(data: PersistedFuseState): void {
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 	} catch {
-		// localStorage may be full or unavailable — silently ignore
+		// localStorage may be full or unavailable - silently ignore
 	}
 }
 
@@ -71,7 +71,7 @@ export function createFuseState(deps: FuseStateDeps) {
 	let leftController: IAnimationPlaybackController | null = null;
 	let rightController: IAnimationPlaybackController | null = null;
 
-	// Shared beat clock — single rAF loop drives all panels
+	// Shared beat clock - single rAF loop drives all panels
 	let currentStep = $state(0);
 	let clockRunning = $state(false);
 	let clockAnimFrameId: number | null = null;
@@ -126,7 +126,7 @@ export function createFuseState(deps: FuseStateDeps) {
 		if (leftSequence) {
 			phase = "both-selected";
 		}
-		// If no left yet, stay in current phase (user picked right first — still need left)
+		// If no left yet, stay in current phase (user picked right first - still need left)
 	}
 
 	function deselectLeft() {

@@ -1,5 +1,5 @@
 <!--
-  DosTerminal — Root component for the DOS-era terminal emulator.
+  DosTerminal - Root component for the DOS-era terminal emulator.
 
   Renders the terminal output buffer, handles keyboard input, shows
   a blinking cursor on the input line, and composes the CRT overlay.
@@ -209,7 +209,7 @@
           <div class="dos-line">{@html line.html}</div>
         {/each}
 
-        <!-- Boot sequence (renders nothing visible — writes to terminal state) -->
+        <!-- Boot sequence (renders nothing visible - writes to terminal state) -->
         {#if terminalState.mode === "boot"}
           <DosBootSequence oncomplete={onBootComplete} />
         {/if}

@@ -183,21 +183,21 @@
     }
   }
 
-  /* Phone — full bleed */
+  /* Phone - full bleed */
   @container submit-tab (max-width: 500px) {
     .submit-container {
       width: 100%;
     }
   }
 
-  /* Desktop — generous center column */
+  /* Desktop - generous center column */
   @container submit-tab (min-width: 900px) {
     .submit-container {
       width: min(90%, 740px);
     }
   }
 
-  /* Ultrawide / 4K — slightly wider */
+  /* Ultrawide / 4K - slightly wider */
   @container submit-tab (min-width: 1400px) {
     .submit-container {
       width: min(85%, 800px);

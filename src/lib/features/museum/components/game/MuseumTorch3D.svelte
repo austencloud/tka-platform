@@ -14,7 +14,7 @@
 
   const TARGET_HEIGHT = 0.3;
 
-  /** Load and cache a single model. Returns the template (do NOT mutate — clone it). */
+  /** Load and cache a single model. Returns the template (do NOT mutate - clone it). */
   function loadModel(modelPath: string, scale: number): Promise<Object3D> {
     const cached = modelTemplateCache.get(modelPath);
     if (cached) return Promise.resolve(cached);
@@ -65,7 +65,7 @@
   }
 
   /**
-   * Instantly add a torch to the scene imperatively — no Svelte component overhead.
+   * Instantly add a torch to the scene imperatively - no Svelte component overhead.
    * Returns the Group so it can be removed later (for undo/delete).
    */
   export function addTorchToScene(
@@ -143,17 +143,17 @@
     distance?: number;
     /** Wing theme determines which fixture model and light color to use */
     wingTheme?: WingTheme;
-    /** Pre-compiled materials from TorchMaterialCache — avoids shader compilation per torch */
+    /** Pre-compiled materials from TorchMaterialCache - avoids shader compilation per torch */
     materials: TorchMaterials;
-    /** Enable shadow casting on the point light (expensive — use sparingly) */
+    /** Enable shadow casting on the point light (expensive - use sparingly) */
     castShadow?: boolean;
-    /** Player world position — ember particles skip animation when far away */
+    /** Player world position - ember particles skip animation when far away */
     playerPosition?: { x: number; y: number; z: number };
   }
 
   const props: Props = $props();
 
-  // Resolve defaults (plain consts — initial values for Three.js objects, not reactive)
+  // Resolve defaults (plain consts - initial values for Three.js objects, not reactive)
   const x = props.x;
   const z = props.z;
   const y = props.y ?? 1.25;
@@ -257,7 +257,7 @@
   let elapsed = Math.random() * 100;
   const isFireBased = config.hasFlame;
 
-  // Ember particles are pure cosmetic detail — invisible beyond ~5 world units.
+  // Ember particles are pure cosmetic detail - invisible beyond ~5 world units.
   // Skipping their per-frame position updates for distant torches saves ~700
   // particle calculations per frame across ~30 torches.
   const EMBER_PROXIMITY_SQ = 5 * 5; // 5 world units squared
@@ -289,7 +289,7 @@
       }
     }
 
-    // Animate embers only when player is nearby — distant embers are
+    // Animate embers only when player is nearby - distant embers are
     // sub-pixel and invisible, so updating their positions is pure waste.
     if (EMBER_COUNT > 0) {
       const pp = props.playerPosition;

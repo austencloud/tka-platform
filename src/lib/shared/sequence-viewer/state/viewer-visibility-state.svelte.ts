@@ -6,7 +6,7 @@
  * provided to children via Svelte context.
  *
  * Reset semantics: caller invokes reset() when the sequence changes.
- * Constraint: at least one motion must remain visible — toggling off
+ * Constraint: at least one motion must remain visible - toggling off
  * the last visible motion automatically flips the other on.
  */
 export class SequenceViewerVisibilityState {

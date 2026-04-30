@@ -285,17 +285,16 @@
     // Populate the deferred container reference (context was set synchronously above)
     containerRef = container;
 
+    // Preload TKA letter glyph images before children render (required for canvas headers)
+    try {
+      const { textRenderer } = await import("$lib/shared/render/services/implementations/TextRenderer");
+      await textRenderer.preloadGlyphImages();
+    } catch {
+      // Non-critical — canvas headers fall back to text on failure
+    }
+
     // Mark container ready so children can render
     containerReady = true;
-
-    // Eager-load TKA letter glyph images for Choreo Card headers (non-blocking)
-    import("$lib/shared/render/services/implementations/TextRenderer").then(
-      ({ textRenderer }) => {
-        textRenderer.preloadGlyphImages().catch(() => {
-          // Non-critical - card headers fall back to text on failure
-        });
-      }
-    );
 
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
     // No-op on web - the isNative check inside returns immediately.

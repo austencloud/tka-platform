@@ -22,7 +22,7 @@
   let currentOpacity = $state(untrack(() => (active ? 0.6 : 0)));
 
   $effect(() => {
-    // Snap to target for now — lerping can be added later via useTask
+    // Snap to target for now - lerping can be added later via useTask
     currentOpacity = active ? 0.6 : 0;
   });
 

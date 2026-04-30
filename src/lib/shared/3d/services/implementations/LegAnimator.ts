@@ -429,7 +429,7 @@ export class LegAnimator implements ILegAnimator {
 
   /**
    * Update single animation mode (legacy).
-   * Sets TARGET weight — actual blending happens in update() via lerpWeights().
+   * Sets TARGET weight - actual blending happens in update() via lerpWeights().
    */
   private updateSingleAnimation(
     input: LocomotionInput,
@@ -447,7 +447,7 @@ export class LegAnimator implements ILegAnimator {
 
   /**
    * Update directional blend based on movement direction.
-   * Sets TARGET weights — actual blending happens in update() via lerpWeights().
+   * Sets TARGET weights - actual blending happens in update() via lerpWeights().
    */
   private updateDirectionalBlend(
     input: LocomotionInput,

@@ -4,7 +4,7 @@ import type { EffectsPreset } from "../EffectsPreset";
  * Built-in smoke presets.
  *
  * Six identities, each anchored by a personality-laden palette. Palette
- * choice also sets lifetime / curl bias / rise bias — user-facing sliders
+ * choice also sets lifetime / curl bias / rise bias - user-facing sliders
  * are multipliers on top. See SmokePalettes for the palette registry.
  *
  * Spec: docs/superpowers/specs/2026-04-15-effects-phase-1i-smoke-design.md
@@ -13,7 +13,7 @@ export const BUILT_IN_SMOKE_PRESETS: EffectsPreset[] = [
   {
     id: "smoke-classic",
     name: "Classic",
-    description: "Thin incense thread — gentle rise, soft curls.",
+    description: "Thin incense thread - gentle rise, soft curls.",
     effectType: "smoke",
     builtIn: true,
     previewColors: ["#d8d8d8", "#f0f0f0"],
@@ -32,7 +32,7 @@ export const BUILT_IN_SMOKE_PRESETS: EffectsPreset[] = [
   {
     id: "smoke-fog-wall",
     name: "Fog Wall",
-    description: "Dense constant haze — slow lingering medium.",
+    description: "Dense constant haze - slow lingering medium.",
     effectType: "smoke",
     builtIn: true,
     previewColors: ["#c0c0c8", "#e0e0e8"],
@@ -51,7 +51,7 @@ export const BUILT_IN_SMOKE_PRESETS: EffectsPreset[] = [
   {
     id: "smoke-genie-burst",
     name: "Genie Burst",
-    description: "Motion-only magical swirl — fast colored puffs.",
+    description: "Motion-only magical swirl - fast colored puffs.",
     effectType: "smoke",
     builtIn: true,
     previewColors: ["#a060ff", "#ffe0ff"],
@@ -70,7 +70,7 @@ export const BUILT_IN_SMOKE_PRESETS: EffectsPreset[] = [
   {
     id: "smoke-cursed",
     name: "Cursed",
-    description: "Heavy chaotic black — sinister curls.",
+    description: "Heavy chaotic black - sinister curls.",
     effectType: "smoke",
     builtIn: true,
     previewColors: ["#202020", "#606060"],
@@ -89,7 +89,7 @@ export const BUILT_IN_SMOKE_PRESETS: EffectsPreset[] = [
   {
     id: "smoke-spirit-veil",
     name: "Spirit Veil",
-    description: "Ethereal translucent blue — ghostly drift.",
+    description: "Ethereal translucent blue - ghostly drift.",
     effectType: "smoke",
     builtIn: true,
     previewColors: ["#80c8ff", "#ffffff"],
@@ -108,7 +108,7 @@ export const BUILT_IN_SMOKE_PRESETS: EffectsPreset[] = [
   {
     id: "smoke-campfire",
     name: "Campfire",
-    description: "Warm ash plume — pairs with fire.",
+    description: "Warm ash plume - pairs with fire.",
     effectType: "smoke",
     builtIn: true,
     previewColors: ["#706560", "#a09590"],

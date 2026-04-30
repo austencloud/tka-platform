@@ -485,7 +485,7 @@ export function registerSequenceTools(server: McpServer): void {
 
       // LOOP params
       loopType: z.enum(ALL_LOOP_TYPES).optional().describe("LOOP type for circular generation. Triggers engine builder with beam search and targeted end positions."),
-      sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size for LOOP rotation: "halved" (180°, default) or "quartered" (90°). Only meaningful with loopType.'),
+      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size for LOOP rotation: "halved" (180°, default) or "quartered" (90°). Only meaningful with loopType.'),
 
       // Constraint params
       constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "no-dash", "no-static", "maximize-dash", "maximum-chaos"]).optional().describe("Predefined constraint preset"),
@@ -529,7 +529,7 @@ export function registerSequenceTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
     },
-    async ({ word, length, loopType, sliceSize = "halved", constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, turnIntensity, maxAttempts = 500, bridgeSelections, blueStartOrientation, redStartOrientation, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
+    async ({ word, length, loopType, period = "halved", constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, turnIntensity, maxAttempts = 500, bridgeSelections, blueStartOrientation, redStartOrientation, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
       // Validation: must have word or length
       if (!word && !length) {
         return {
@@ -593,7 +593,7 @@ export function registerSequenceTools(server: McpServer): void {
           mustNotContainLetters,
           mustContainLetters,
           loopType,
-          sliceSize,
+          period,
           blueStartOrientation,
           redStartOrientation,
         }, allPictographs);

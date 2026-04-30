@@ -25,7 +25,7 @@ export class MatchupSelector implements IMatchupSelector {
     if (candidates.length < 2) return null;
     const pool = candidates;
 
-    // Group by beat count — only pit same-length sequences against each other
+    // Group by beat count - only pit same-length sequences against each other
     const groups = this.groupByBeatCount(pool);
 
     // Try each group from largest to smallest (more variety = better matchmaking)
@@ -78,7 +78,7 @@ export class MatchupSelector implements IMatchupSelector {
   private groupByBeatCount(pool: MatchupCandidate[]): MatchupCandidate[][] {
     const map = new Map<number, MatchupCandidate[]>();
     for (const c of pool) {
-      // Use sequenceLength from index metadata — steps are empty at pool-load time
+      // Use sequenceLength from index metadata - steps are empty at pool-load time
       const stepCount = c.data.sequenceLength ?? c.data.steps?.length ?? 0;
       if (stepCount === 0) continue;
       const group = map.get(stepCount);

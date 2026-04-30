@@ -92,7 +92,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       return false;
     }
 
-    // Generate the effective oriKey — SpecialPlacer reads using this, so we
+    // Generate the effective oriKey - SpecialPlacer reads using this, so we
     // must save under it or the reader never sees the override. For staff+staff
     // this collapses to the legacy bucket (e.g. "from_layer1"); for other props
     // it preserves the specific orientation (e.g. "clock_counter").
@@ -176,7 +176,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       );
     const letter = pictographData.letter;
 
-    // Load overrides and check — try effective oriKey first, then legacy
+    // Load overrides and check - try effective oriKey first, then legacy
     // bucket from the RAW key. Computing legacy from rawOriKey (not from
     // an already-collapsed oriKey) matches SpecialPlacer's pattern so stale
     // non-staff entries can still be discovered.

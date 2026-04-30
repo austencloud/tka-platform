@@ -9,6 +9,28 @@
 # Debug artifacts
 debug-screenshots/
 
+# Unprocessed 3D asset packs (too large to track, not served)
+assets-staging/
+
+# Unity projects (on hiatus, local-only)
+tka-worlds/
+Assets/
+
+# FlowTrails research (pre-integration, local-only)
+flowtrails/
+
+# Audit/tracker session artifacts
+.audit-evidence*.json
+.audit-tracker.json
+.deadcode-claims.json
+.deadcode-tracker.json
+.monolith-audited.json
+.monolith-claims.json
+.release-changelog.json
+
+# Extracted binary recon (keep scripts, not binaries)
+poi-recon/ignis-extracted/
+
 # iOS IPA artifacts downloaded from CI
 .ios-builds/
 

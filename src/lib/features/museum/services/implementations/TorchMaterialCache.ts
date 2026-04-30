@@ -3,7 +3,7 @@
  *
  * Pre-compiles flame and volumetric cone shader materials ONCE, then
  * provides clones for each MuseumTorch3D instance. Without this cache,
- * every torch triggers GPU shader compilation on mount — each taking
+ * every torch triggers GPU shader compilation on mount - each taking
  * 200-800ms and causing visible stutter while walking.
  *
  * ShaderMaterial.clone() reuses the compiled GPU program, so cloning
@@ -35,7 +35,7 @@ export interface TorchMaterials {
   emberMat: PointsMaterial;
 }
 
-// Flame shader source — shared across all torch instances
+// Flame shader source - shared across all torch instances
 const FLAME_VERTEX = /* glsl */ `
   varying vec2 vUv;
   void main() {
@@ -131,7 +131,7 @@ export class TorchMaterialCache {
   private readonly sharedEmberMat: PointsMaterial;
 
   constructor() {
-    // Create template materials — GPU compiles shaders here, ONCE
+    // Create template materials - GPU compiles shaders here, ONCE
     this.templateFlame = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -157,12 +157,12 @@ export class TorchMaterialCache {
       fragmentShader: CONE_FRAGMENT,
     });
 
-    // Shared geometries — same shape for every torch
+    // Shared geometries - same shape for every torch
     this.sharedFlameGeo = new PlaneGeometry(0.2, 0.35);
     this.sharedConeGeo = new ConeGeometry(0.4, 0.8, 12, 1, true);
     this.sharedFallbackGeo = new SphereGeometry(0.06, 8, 8);
 
-    // Shared ember material — same visual for all fire torches
+    // Shared ember material - same visual for all fire torches
     this.sharedEmberMat = new PointsMaterial({
       color: "#ffaa40",
       size: 0.015,

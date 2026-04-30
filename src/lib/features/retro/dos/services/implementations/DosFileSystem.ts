@@ -1,7 +1,7 @@
 /**
  * Simulated DOS filesystem for TKAUTIL.COM.
  *
- * Models three top-level directories under C:\ — BELLWTHR (the working
+ * Models three top-level directories under C:\ - BELLWTHR (the working
  * directory), SYSTEM (driver files referenced by the boot sequence), and
  * TEMP (empty). File sizes are deterministic, seeded from each filename.
  * Dates fall within a narrow 1989 window.
@@ -14,7 +14,7 @@ import type { DosFile, DosDirectory } from "../../domain/dos-types";
 import type { IDosFileSystem } from "../contracts/IDosFileSystem";
 import { getAllLore } from "../../../shared/lore/order-references";
 
-/** Deterministic size from filename — simple hash to keep values stable across sessions */
+/** Deterministic size from filename - simple hash to keep values stable across sessions */
 function seedSize(name: string, base: number): number {
 	let hash = 0;
 	for (let i = 0; i < name.length; i++) {
@@ -47,7 +47,7 @@ function buildReadmeContent(): string {
 	const loreLines = getAllLore("dos", "readme");
 	return [
 		"===============================================",
-		"  TKAUTIL.COM  —  Installation Briefing",
+		"  TKAUTIL.COM  -  Installation Briefing",
 		"  Bellweather Technical Institute, 1989",
 		"===============================================",
 		"",
@@ -76,7 +76,7 @@ function buildReadmeContent(): string {
 }
 
 const HELP_CONTENT = [
-	"TKAUTIL.COM — Command Reference",
+	"TKAUTIL.COM - Command Reference",
 	"",
 	"  DIR            List files in the current directory",
 	"  DIR /SEQ       List sequence files only",
@@ -125,7 +125,7 @@ function buildSequencesDir(): DosDirectory {
 		ext: "SEQ",
 		size: seedSize(word + ".SEQ", 3072),
 		date: DATE_SEQ,
-		content: `[Binary sequence data — use SCRIBE to view ${word}]`,
+		content: `[Binary sequence data - use SCRIBE to view ${word}]`,
 	}));
 	return { name: "SEQUENCES", files, subdirs: [] };
 }
@@ -253,14 +253,14 @@ export class DosFileSystem implements IDosFileSystem {
 	changeDir(path: string): boolean {
 		const normalized = path.trim().toUpperCase().replace(/\//g, "\\");
 
-		// CD \ — return to root
+		// CD \ - return to root
 		if (normalized === "\\") {
 			this.currentDir = this.root;
 			this.pathSegments = [];
 			return true;
 		}
 
-		// CD .. — go up one level
+		// CD .. - go up one level
 		if (normalized === "..") {
 			if (this.pathSegments.length === 0) return true; // already at root
 			this.pathSegments.pop();
@@ -284,7 +284,7 @@ export class DosFileSystem implements IDosFileSystem {
 			return true;
 		}
 
-		// Relative path — single directory name or nested
+		// Relative path - single directory name or nested
 		const segments = normalized.split("\\").filter(Boolean);
 		let dir: DosDirectory = this.currentDir;
 		const newSegments = [...this.pathSegments];

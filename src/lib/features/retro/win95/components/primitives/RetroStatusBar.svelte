@@ -1,5 +1,5 @@
 <!--
-  RetroStatusBar — Bottom bar with sunken inset panels
+  RetroStatusBar - Bottom bar with sunken inset panels
 
   Renders a row of sunken (inset border) panels at the bottom of a window.
   The last panel takes remaining width if no explicit width is specified.

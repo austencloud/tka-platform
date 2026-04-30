@@ -354,7 +354,7 @@ export const noAffirmativeOpeners: TikaValidator = {
 						0
 					)
 				);
-				break; // Only report the first match — one opener per response
+				break; // Only report the first match - one opener per response
 			}
 		}
 
@@ -371,7 +371,7 @@ export const noAffirmativeOpeners: TikaValidator = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Catches Unicode em dashes (U+2014) — a telltale AI writing pattern.
+ * Catches Unicode em dashes (U+2014) - a telltale AI writing pattern.
  * Regular hyphens and en dashes are fine.
  */
 export const noEmDashes: TikaValidator = {

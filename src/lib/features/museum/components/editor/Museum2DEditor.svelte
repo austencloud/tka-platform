@@ -1,14 +1,14 @@
 <script lang="ts">
 	/**
-	 * Floor Plan Editor — Top-level assembly.
+	 * Floor Plan Editor - Top-level assembly.
 	 *
 	 * Wires up the editor state, distributes it via context, and
 	 * composes the tool palette, canvas, property inspector, and
 	 * template picker into a three-column layout.
 	 *
 	 * Keyboard shortcuts:
-	 *   Ctrl+Z  — Undo
-	 *   Ctrl+Shift+Z — Redo
+	 *   Ctrl+Z  - Undo
+	 *   Ctrl+Shift+Z - Redo
 	 */
 
 	import { getEditorContext } from "../../state/editor-context";

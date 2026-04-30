@@ -25,7 +25,7 @@ function normPos(angle: number): number {
   return n < 0 ? n + TWO_PI : n;
 }
 
-/** Normalize angle to (-PI, PI] — shortest signed delta */
+/** Normalize angle to (-PI, PI] - shortest signed delta */
 function normSigned(angle: number): number {
   const n = normPos(angle);
   return n > PI ? n - TWO_PI : n;
@@ -158,7 +158,7 @@ export class SvgPropAnimator implements ISvgPropAnimator {
         let cartY = 0;
 
         if (useCartesian) {
-          // Cartesian lerp (straight line — for dashes and hash motions)
+          // Cartesian lerp (straight line - for dashes and hash motions)
           cartX = startX + (endX - startX) * t;
           cartY = startY + (endY - startY) * t;
           displayAngle = Math.atan2(cartY, cartX);

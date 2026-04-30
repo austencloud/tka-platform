@@ -52,7 +52,7 @@
     {/each}
   </div>
 
-  <!-- Image Upload — active state when an image is currently loaded,
+  <!-- Image Upload - active state when an image is currently loaded,
        so it's visually obvious that the image (not a preset) is what
        will be painted onto the timeline. -->
   <div

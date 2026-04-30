@@ -3,7 +3,7 @@
  *
  * Extracts frames from a video element at specified intervals using an
  * async generator pattern. This keeps memory usage low because only one
- * frame's ImageData is alive at a time — the consumer processes and
+ * frame's ImageData is alive at a time - the consumer processes and
  * discards each frame before the next one is extracted.
  *
  * Used by Skel2TKA's VideoFrameExtractor and ML Training's DataCapturer.

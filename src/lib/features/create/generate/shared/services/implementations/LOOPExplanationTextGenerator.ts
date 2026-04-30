@@ -15,7 +15,7 @@ export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerat
   /**
    * Detailed descriptions for individual LOOP components.
    * Reserved orientation primitives (ZONE_HOLD_INVERT / FLIP / CROSS) are
-   * intentionally absent — they are never user-surfaced.
+   * intentionally absent - they are never user-surfaced.
    */
   private readonly singleDescriptions: Partial<Record<LOOPComponent, string>> = {
     [LOOPComponent.ROTATED]:

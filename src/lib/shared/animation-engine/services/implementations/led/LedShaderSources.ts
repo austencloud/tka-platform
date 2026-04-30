@@ -22,7 +22,7 @@ void main() {
 `;
 
 // ─── LED Sprite Shader ────────────────────────────────────────────────────────
-// Renders each LED as a motion-streak capsule — a sprite oriented and
+// Renders each LED as a motion-streak capsule - a sprite oriented and
 // stretched from the LED's previous-frame position to its current-frame
 // position. When the trail pass composites this sprite with max() blend,
 // the capsule fills the exact region the LED physically passed through
@@ -79,7 +79,7 @@ void main() {
   float halfLen = segLen * 0.5 + pad;
   float halfWid = pad;
 
-  // a_position ∈ [-1,1] — use x for along-axis, y for across-axis
+  // a_position ∈ [-1,1] - use x for along-axis, y for across-axis
   vec2 worldOffset = axis * (a_position.x * halfLen) + perp * (a_position.y * halfWid);
   vec2 worldPos = center + worldOffset;
 
@@ -122,15 +122,15 @@ void main() {
   // nominal glow edge.
   float nd = dist / v_glowRadius;
 
-  // Soft edge falloff — discard outside the full-glow envelope.
+  // Soft edge falloff - discard outside the full-glow envelope.
   float edgeFade = 1.0 - smoothstep(0.6, 1.0, nd);
   if (edgeFade < 0.001) discard;
 
-  // Inverse-square glow body — identical visual profile to the original
+  // Inverse-square glow body - identical visual profile to the original
   // point-sprite shader, just with distance measured to the segment.
   float glow = 1.0 / (1.0 + 7.5 * nd * nd);
 
-  // Bright hot centerline — the filament of the glowing wire.
+  // Bright hot centerline - the filament of the glowing wire.
   float core = exp(-nd * nd * 20.0);
 
   float combined = (glow + core * 0.5) * edgeFade;

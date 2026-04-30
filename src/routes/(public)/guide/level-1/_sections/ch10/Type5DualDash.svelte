@@ -22,7 +22,7 @@
   ];
 </script>
 
-<GuideSection id="type-5-dual-dash" title="Type 5 — Dual-Dash">
+<GuideSection id="type-5-dual-dash" title="Type 5 - Dual-Dash">
   <p>
     In a Dual-Dash, both hands dash simultaneously to their opposite points.
   </p>

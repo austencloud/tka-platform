@@ -8,6 +8,7 @@
   import { onDestroy } from "svelte";
   import type { SequenceEntry } from "../../domain/models/sequence-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   type FilterMode = "all" | "needsVerification" | "verified";
   type SyncStatus = "idle" | "syncing" | "synced" | "error";
@@ -153,7 +154,7 @@
               class="suggestion-item"
               onmousedown={() => handleSelectSuggestion(seq)}
             >
-              <span class="suggestion-word">{seq.word}</span>
+              <span class="suggestion-word"><TKAWordGlyph word={seq.word} height={13} darkMode /></span>
               <span class="suggestion-length">{seq.sequenceLength} steps</span>
             </button>
           {/each}

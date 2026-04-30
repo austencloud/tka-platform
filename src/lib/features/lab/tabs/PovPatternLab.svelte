@@ -1,5 +1,5 @@
 <!--
-  PovPatternLab.svelte — Toybox for the LED strip pattern engine.
+  PovPatternLab.svelte - Toybox for the LED strip pattern engine.
 
   Generate algorithmic patterns or upload POV images, preview them flat,
   adjust persistence duration, and upload to physical poi hardware via BLE.
@@ -138,7 +138,7 @@ import { getStripPatternEngine } from "$lib/features/poi/getStripPatternEngine";
       </div>
     </div>
 
-    <!-- Column 2: spin disc (hero) — always the biggest element -->
+    <!-- Column 2: spin disc (hero) - always the biggest element -->
     <div class="spin-column">
       <PovSpinPreview />
     </div>
@@ -239,7 +239,7 @@ import { getStripPatternEngine } from "$lib/features/poi/getStripPatternEngine";
 
   /*
     Three-column lab grid, responsive:
-    - Default (wide screens, ≥1400px): three columns — controls / spin disc / side stack.
+    - Default (wide screens, ≥1400px): three columns - controls / spin disc / side stack.
       Spin column is the hero; controls and side stack are narrower.
     - Medium (900-1400px): controls on the left, spin+side stacked on the right.
     - Narrow (<900px): everything single column.

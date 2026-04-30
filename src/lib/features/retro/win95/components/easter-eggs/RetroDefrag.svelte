@@ -1,5 +1,5 @@
 <!--
-  RetroDefrag — DEFRAG.EXE disk defragmentation viewer for TKA-OS v1.0
+  RetroDefrag - DEFRAG.EXE disk defragmentation viewer for TKA-OS v1.0
 
   Renders a grid of colored blocks representing disk clusters.
   Start begins an animation that "defragments" by swapping fragmented
@@ -153,7 +153,7 @@
     );
 
     if (freeIndex === -1 || usedIndex === -1) {
-      /* No more moves possible — shuffle some blocks to keep it going */
+      /* No more moves possible - shuffle some blocks to keep it going */
       reshuffleBlocks();
       return;
     }

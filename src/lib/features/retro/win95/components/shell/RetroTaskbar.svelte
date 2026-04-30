@@ -1,5 +1,5 @@
 <!--
-  RetroTaskbar — Win95-style taskbar fixed to the bottom of the screen
+  RetroTaskbar - Win95-style taskbar fixed to the bottom of the screen
 
   Three sections:
   - Left: Start button that toggles the Start menu
@@ -260,7 +260,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Clock tooltip — appears above the tray on click                    */
+  /* Clock tooltip - appears above the tray on click                    */
   /* ------------------------------------------------------------------ */
   .clock-tooltip {
     position: absolute;

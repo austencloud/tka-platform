@@ -1,5 +1,5 @@
 <!--
-  PatternTimeline.svelte — paint pattern clips onto a beat grid.
+  PatternTimeline.svelte - paint pattern clips onto a beat grid.
 
   Click-drag anywhere on the timeline lane to create a clip covering
   those beats. The clip snapshots the currently-selected pattern
@@ -7,7 +7,7 @@
   LedStaffPreview shows whatever pattern is under the playhead as it
   marches through the beats.
 
-  This is the standalone "lab toy" version — no real TKA sequence
+  This is the standalone "lab toy" version - no real TKA sequence
   loaded yet, just an abstract beat ruler. Sequence integration comes
   in a follow-up phase.
 -->
@@ -37,14 +37,14 @@
   const isPlaying = $derived(poi.isTimelinePlaying);
   const timeline = $derived(poi.patternTimeline);
   // When a real sequence is loaded, its word appears in the header and
-  // the Beats scrub is frozen — the sequence's step count is canonical.
+  // the Beats scrub is frozen - the sequence's step count is canonical.
   const loadedSequence = $derived(poi.loadedSequence);
   const loadedSteps = $derived(poi.loadedSteps);
   const sequenceWord = $derived(
     loadedSequence ? (loadedSequence.word || loadedSequence.name || null) : null,
   );
   const headerTitle = $derived(
-    sequenceWord ? `${sequenceWord} — Pattern Timeline` : "Pattern Timeline",
+    sequenceWord ? `${sequenceWord} - Pattern Timeline` : "Pattern Timeline",
   );
 
   // Playhead position as a percentage of the lane width. Playhead lives
@@ -59,7 +59,7 @@
     ((previewEnd - previewStart + 1) / totalSteps) * 100
   );
 
-  // rAF playback loop — when isPlaying, advance the playhead each frame
+  // rAF playback loop - when isPlaying, advance the playhead each frame
   $effect(() => {
     if (!isPlaying) return;
 
@@ -141,7 +141,7 @@
     e.preventDefault();
     fileDragOver = false;
 
-    // Library drag takes precedence over file drag — if both
+    // Library drag takes precedence over file drag - if both
     // MIME types are present, prefer the precomputed library entry
     // since it skips a file-decode round trip.
     const libraryId = e.dataTransfer?.getData(
@@ -200,7 +200,7 @@
     Array.from({ length: totalSteps }, (_, i) => i + 1)
   );
 
-  // Blend-zone overlays — one band per clip whose predecessor abuts it,
+  // Blend-zone overlays - one band per clip whose predecessor abuts it,
   // spanning the first `blendSteps` of the clip. Shown only in blend
   // mode so the user can see where crossfades will fire during playback.
   const blendZones = $derived.by(() => {
@@ -263,7 +263,7 @@
     {#if loadedSequence}
       <!--
         When a sequence drives the beat count we show the value but
-        disable interaction — editing it would silently fight the
+        disable interaction - editing it would silently fight the
         sequence. Restyle so it reads as a frozen label, not a control.
       -->
       <div
@@ -349,7 +349,7 @@
     ondragleave={handleDragLeave}
     ondrop={handleFileDrop}
     role="application"
-    aria-label="Pattern timeline — drag to paint pattern clips"
+    aria-label="Pattern timeline - drag to paint pattern clips"
   >
     {#each beats as beat (beat)}
       {#if beat > 1}
@@ -570,7 +570,7 @@
   }
 
   /*
-    Blend-zone band — shows the user where crossfades will fire between
+    Blend-zone band - shows the user where crossfades will fire between
     abutting clips. Rendered behind the clips themselves via z-index: 1,
     so clip borders still visually win. Diagonal stripes keep it legible
     against the dark lane without screaming for attention.

@@ -5,7 +5,7 @@ import type { EffectsPreset } from "../EffectsPreset";
  *
  * Six identities anchored by their palette. Unlike smoke, behavioral
  * differences live in palette flags (watercolor, emissive) rather than
- * palette-baked multipliers — the user-facing sliders (ambient, motion,
+ * palette-baked multipliers - the user-facing sliders (ambient, motion,
  * intensity, viscosity, splatter) stay unchanged across palettes.
  *
  * Sprint 1 (1j.i) consumes: palette, ambientEmission, motionEmission,
@@ -18,7 +18,7 @@ export const BUILT_IN_INK_PRESETS: EffectsPreset[] = [
   {
     id: "ink-classic",
     name: "Classic",
-    description: "Clean calligraphy — opaque india ink, firm line quality.",
+    description: "Clean calligraphy - opaque india ink, firm line quality.",
     effectType: "ink",
     builtIn: true,
     previewColors: ["#0a0a0a", "#1a1a1a"],
@@ -37,7 +37,7 @@ export const BUILT_IN_INK_PRESETS: EffectsPreset[] = [
   {
     id: "ink-drip",
     name: "Drip",
-    description: "Loaded brush — sags + drips (sprint 2 feature).",
+    description: "Loaded brush - sags + drips (sprint 2 feature).",
     effectType: "ink",
     builtIn: true,
     previewColors: ["#0a0a0a", "#1a1a1a"],
@@ -56,7 +56,7 @@ export const BUILT_IN_INK_PRESETS: EffectsPreset[] = [
   {
     id: "ink-watercolor-wash",
     name: "Watercolor Wash",
-    description: "Translucent blue wash — wide bleed, low opacity.",
+    description: "Translucent blue wash - wide bleed, low opacity.",
     effectType: "ink",
     builtIn: true,
     previewColors: ["#4080c0", "#80b0e0"],
@@ -75,7 +75,7 @@ export const BUILT_IN_INK_PRESETS: EffectsPreset[] = [
   {
     id: "ink-neon-tag",
     name: "Neon Tag",
-    description: "Graffiti — fast saturated glow, only emissive ink palette.",
+    description: "Graffiti - fast saturated glow, only emissive ink palette.",
     effectType: "ink",
     builtIn: true,
     previewColors: ["#ff2080", "#ff60a0"],
@@ -94,7 +94,7 @@ export const BUILT_IN_INK_PRESETS: EffectsPreset[] = [
   {
     id: "ink-splatter",
     name: "Splatter",
-    description: "Jackson Pollock mode — blood palette, high splatter.",
+    description: "Jackson Pollock mode - blood palette, high splatter.",
     effectType: "ink",
     builtIn: true,
     previewColors: ["#8a1818", "#d93838"],
@@ -113,7 +113,7 @@ export const BUILT_IN_INK_PRESETS: EffectsPreset[] = [
   {
     id: "ink-toxic",
     name: "Toxic",
-    description: "Acid green — pairs with acid water/bubbles.",
+    description: "Acid green - pairs with acid water/bubbles.",
     effectType: "ink",
     builtIn: true,
     previewColors: ["#7fd94a", "#b8ff6f"],

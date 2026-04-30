@@ -3,6 +3,7 @@
 -->
 <script lang="ts">
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
@@ -56,7 +57,13 @@
       </div>
     {/if}
   </div>
-  <span class="item-name">{displayName}</span>
+  <span class="item-name">
+    {#if sequence.word}
+      <TKAWordGlyph word={sequence.word} height={12} darkMode />
+    {:else}
+      {displayName}
+    {/if}
+  </span>
   {#if stepCount}
     <span class="item-meta">{stepCount} steps</span>
   {/if}

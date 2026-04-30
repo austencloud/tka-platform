@@ -25,7 +25,7 @@ export const SOLID_TYPES = new Set([
 	"sign",
 ]);
 
-// Collision radius in world units — prevents clipping through wall corners.
+// Collision radius in world units - prevents clipping through wall corners.
 // TILE_SIZE is 0.5, so 0.15 keeps the player ~30% of a tile away from walls.
 const COLLISION_RADIUS = 0.15;
 
@@ -38,7 +38,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	private position: Vector3;
 	private velocity: Vector3 = { x: 0, y: 0, z: 0 };
 
-	/** When true, movePlayer ignores XZ — animation drives XZ via applyRootMotion instead. */
+	/** When true, movePlayer ignores XZ - animation drives XZ via applyRootMotion instead. */
 	rootMotionEnabled = false;
 
 	constructor(
@@ -79,7 +79,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 		const dt = deltaTime > 0 ? deltaTime : 1 / 60;
 
 		if (this.rootMotionEnabled) {
-			// Root motion mode: ignore XZ from code — animation drives XZ
+			// Root motion mode: ignore XZ from code - animation drives XZ
 			// via applyRootMotion(). Zero XZ velocity here; applyRootMotion
 			// will set accurate XZ velocity when it runs.
 			this.velocity = { x: 0, y: desiredMovement.y / dt, z: 0 };
@@ -113,7 +113,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 
 	/**
 	 * Apply animation-driven XZ movement (root motion). Same collision
-	 * logic as movePlayer, but only handles XZ — Y stays physics-driven.
+	 * logic as movePlayer, but only handles XZ - Y stays physics-driven.
 	 * The delta is already in world space (caller rotates by facing angle).
 	 */
 	applyRootMotion(worldDelta: { x: number; z: number }): void {

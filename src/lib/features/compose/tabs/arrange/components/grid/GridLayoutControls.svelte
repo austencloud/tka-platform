@@ -1,37 +1,23 @@
 <!--
-  GridLayoutControls.svelte
-
-  Modern grid dimension picker with smart preset cards and compact hover grid.
-  Preset cards are the primary interaction — most users pick a known layout.
-  The compact 8×8 hover grid serves power users who want exact dimensions.
+  GridLayoutControls.svelte — Grid pill content.
+  Centered dimension readout + visual preset cards.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 
   type PresetType =
-    | "single"
-    | "vertical"
-    | "horizontal"
-    | "line"
-    | "square"
-    | "filmstrip"
-    | "tower"
-    | "hero-thumbs"
-    | "main-banner"
-    | "pip"
-    | "split-half"
-    | "quad"
-    | "gallery";
+    | "single" | "vertical" | "horizontal" | "line" | "square"
+    | "filmstrip" | "tower"
+    | "hero-thumbs" | "main-banner" | "pip"
+    | "split-half" | "quad" | "gallery";
 
   interface PresetCard {
     id: PresetType;
     label: string;
-    /** CSS grid-template-columns for the thumbnail */
-    thumbCols: string;
-    /** CSS grid-template-rows for the thumbnail */
-    thumbRows: string;
-    /** Spans for each visual block: [colSpan, rowSpan][] */
-    blocks: [number, number][];
+    dims: string;
+    cols: number;
+    rows: number;
+    spans?: [number, number, number, number][];
   }
 
   let {
@@ -55,203 +41,55 @@
   const haptic = getHapticFeedback();
   const MAX_GRID = 8;
 
-  // --- Preset cards ---
   const presets: PresetCard[] = [
-    {
-      id: "single",
-      label: "Solo",
-      thumbCols: "1fr",
-      thumbRows: "1fr",
-      blocks: [[1, 1]],
-    },
-    {
-      id: "horizontal",
-      label: "Duo",
-      thumbCols: "1fr 1fr",
-      thumbRows: "1fr",
-      blocks: [[1, 1], [1, 1]],
-    },
-    {
-      id: "vertical",
-      label: "Stack",
-      thumbCols: "1fr",
-      thumbRows: "1fr 1fr",
-      blocks: [[1, 1], [1, 1]],
-    },
-    {
-      id: "square",
-      label: "Quad",
-      thumbCols: "1fr 1fr",
-      thumbRows: "1fr 1fr",
-      blocks: [[1, 1], [1, 1], [1, 1], [1, 1]],
-    },
-    {
-      id: "gallery",
-      label: "Gallery",
-      thumbCols: "1fr 1fr 1fr",
-      thumbRows: "1fr 1fr 1fr",
-      blocks: [[1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1]],
-    },
-    {
-      id: "filmstrip",
-      label: "Filmstrip",
-      thumbCols: "1fr 1fr 1fr 1fr",
-      thumbRows: "1fr",
-      blocks: [[1, 1], [1, 1], [1, 1], [1, 1]],
-    },
-    {
-      id: "tower",
-      label: "Tower",
-      thumbCols: "1fr",
-      thumbRows: "1fr 1fr 1fr 1fr",
-      blocks: [[1, 1], [1, 1], [1, 1], [1, 1]],
-    },
-    {
-      id: "hero-thumbs",
-      label: "Hero + Thumbs",
-      thumbCols: "repeat(5, 1fr)",
-      thumbRows: "repeat(5, 1fr) 1fr",
-      blocks: [[5, 5], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1]],
-    },
-    {
-      id: "main-banner",
-      label: "Banner + Main",
-      thumbCols: "1fr",
-      thumbRows: "5fr 1fr",
-      blocks: [[1, 1], [1, 1]],
-    },
-    {
-      id: "pip",
-      label: "Picture-in-Picture",
-      thumbCols: "repeat(6, 1fr)",
-      thumbRows: "repeat(6, 1fr)",
-      blocks: [[5, 6], [1, 1]],
-    },
-    {
-      id: "split-half",
-      label: "Split View",
-      thumbCols: "1fr 1fr",
-      thumbRows: "1fr",
-      blocks: [[1, 1], [1, 1]],
-    },
+    { id: "single",      label: "Solo",     dims: "1×1", cols: 1, rows: 1 },
+    { id: "horizontal",  label: "Duo",      dims: "1×2", cols: 2, rows: 1 },
+    { id: "vertical",    label: "Stacked",  dims: "2×1", cols: 1, rows: 2 },
+    { id: "square",      label: "Quad",     dims: "2×2", cols: 2, rows: 2 },
+    { id: "gallery",     label: "Gallery",  dims: "3×3", cols: 3, rows: 3 },
+    { id: "filmstrip",   label: "Strip",    dims: "1×4", cols: 4, rows: 1 },
+    { id: "hero-thumbs", label: "Hero",     dims: "6×5", cols: 5, rows: 6, spans: [[0, 0, 5, 5]] },
+    { id: "pip",         label: "PiP",      dims: "5×5", cols: 5, rows: 5, spans: [[0, 0, 4, 5]] },
+    { id: "main-banner", label: "Banner",   dims: "6×1", cols: 1, rows: 6, spans: [[0, 0, 1, 5]] },
   ];
 
-  /** Map preset IDs to their effective grid dimensions for active-state matching */
-  const presetDimensions: Record<string, { rows: number; cols: number } | null> = {
-    single: { rows: 1, cols: 1 },
-    horizontal: { rows: 1, cols: 2 },
-    vertical: { rows: 2, cols: 1 },
-    square: { rows: 2, cols: 2 },
-    gallery: { rows: 3, cols: 3 },
-    filmstrip: { rows: 1, cols: 4 },
-    tower: { rows: 4, cols: 1 },
-    // Spanning presets use fixed grids but with spanning cells
-    "hero-thumbs": { rows: 6, cols: 5 },
-    "main-banner": { rows: 6, cols: 6 },
-    pip: { rows: 6, cols: 6 },
-    "split-half": { rows: 4, cols: 2 },
-    quad: { rows: 6, cols: 6 },
+  const presetDimensions: Record<string, { rows: number; cols: number }> = {
+    single: { rows: 1, cols: 1 }, horizontal: { rows: 1, cols: 2 },
+    vertical: { rows: 2, cols: 1 }, square: { rows: 2, cols: 2 },
+    gallery: { rows: 3, cols: 3 }, filmstrip: { rows: 1, cols: 4 },
+    tower: { rows: 4, cols: 1 }, "hero-thumbs": { rows: 6, cols: 5 },
+    "main-banner": { rows: 6, cols: 6 }, pip: { rows: 6, cols: 6 },
+    "split-half": { rows: 4, cols: 2 }, quad: { rows: 6, cols: 6 },
   };
 
   function isPresetActive(preset: PresetCard): boolean {
     const dims = presetDimensions[preset.id];
-    if (!dims) return false;
-    return gridRows === dims.rows && gridCols === dims.cols;
+    return dims ? gridRows === dims.rows && gridCols === dims.cols : false;
   }
 
-  // --- Compact hover grid state ---
-  let hoverRows = $state<number | null>(null);
-  let hoverCols = $state<number | null>(null);
+  function buildThumbCells(preset: PresetCard): { col: number; row: number; w: number; h: number; hero: boolean }[] {
+    const cells: { col: number; row: number; w: number; h: number; hero: boolean }[] = [];
+    const occupied = new Set<string>();
+    if (preset.spans) {
+      for (const [sc, sr, sw, sh] of preset.spans) {
+        cells.push({ col: sc, row: sr, w: sw, h: sh, hero: true });
+        for (let r = sr; r < sr + sh; r++)
+          for (let c = sc; c < sc + sw; c++)
+            occupied.add(`${c},${r}`);
+      }
+    }
+    for (let r = 0; r < preset.rows; r++)
+      for (let c = 0; c < preset.cols; c++)
+        if (!occupied.has(`${c},${r}`))
+          cells.push({ col: c, row: r, w: 1, h: 1, hero: false });
+    return cells;
+  }
 
-  const displayRows = $derived(hoverRows ?? gridRows);
-  const displayCols = $derived(hoverCols ?? gridCols);
-  const isPreviewing = $derived(hoverRows !== null || hoverCols !== null);
-
-  // --- Confirmation state ---
+  // Confirmation
   let pendingPreset = $state<PresetType | null>(null);
   let pendingDimensions = $state<{ rows: number; cols: number } | null>(null);
-
   const hasPending = $derived(pendingPreset !== null || pendingDimensions !== null);
 
-  // --- Compact grid cells ---
-  const gridPositions = Array.from({ length: MAX_GRID * MAX_GRID }, (_, i) => ({
-    row: Math.floor(i / MAX_GRID),
-    col: i % MAX_GRID,
-  }));
-
-  function getCellState(
-    row: number,
-    col: number,
-  ): "active" | "preview" | "inactive" {
-    if (row < gridRows && col < gridCols) return "active";
-    if (row < displayRows && col < displayCols) return "preview";
-    return "inactive";
-  }
-
-  function handleCellPointerEnter(row: number, col: number) {
-    hoverRows = row + 1;
-    hoverCols = col + 1;
-  }
-
-  function handleGridPointerLeave() {
-    hoverRows = null;
-    hoverCols = null;
-  }
-
-  function handleCellClick(row: number, col: number) {
-    const newRows = row + 1;
-    const newCols = col + 1;
-    if (newRows === gridRows && newCols === gridCols) return;
-
-    haptic.trigger("selection");
-
-    if (hasContent) {
-      pendingDimensions = { rows: newRows, cols: newCols };
-      pendingPreset = null;
-    } else {
-      onSetDimensions(newRows, newCols);
-    }
-  }
-
-  // --- Keyboard ---
-  function handleKeydown(e: KeyboardEvent) {
-    let newRows = gridRows;
-    let newCols = gridCols;
-
-    switch (e.key) {
-      case "ArrowUp":
-        e.preventDefault();
-        newRows = Math.max(1, gridRows - 1);
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        newRows = Math.min(MAX_GRID, gridRows + 1);
-        break;
-      case "ArrowLeft":
-        e.preventDefault();
-        newCols = Math.max(1, gridCols - 1);
-        break;
-      case "ArrowRight":
-        e.preventDefault();
-        newCols = Math.min(MAX_GRID, gridCols + 1);
-        break;
-      default:
-        return;
-    }
-
-    if (newRows === gridRows && newCols === gridCols) return;
-
-    haptic.trigger("selection");
-
-    if (hasContent) {
-      pendingDimensions = { rows: newRows, cols: newCols };
-      pendingPreset = null;
-    } else {
-      onSetDimensions(newRows, newCols);
-    }
-  }
-
-  // --- Preset handler ---
   function handlePresetClick(preset: PresetCard) {
     haptic.trigger("selection");
     if (hasContent) {
@@ -262,128 +100,229 @@
     }
   }
 
-  // --- Confirmation ---
-  function confirmChange() {
-    haptic.trigger("warning");
-    if (pendingPreset) {
-      onPresetLayout(pendingPreset);
+  function applyDimChange(rows: number, cols: number) {
+    if (rows === gridRows && cols === gridCols) return;
+    haptic.trigger("selection");
+    if (hasContent) {
+      pendingDimensions = { rows, cols };
       pendingPreset = null;
-    } else if (pendingDimensions) {
-      onSetDimensions(pendingDimensions.rows, pendingDimensions.cols);
-      pendingDimensions = null;
+    } else {
+      onSetDimensions(rows, cols);
     }
   }
 
-  function cancelChange() {
-    pendingPreset = null;
-    pendingDimensions = null;
+  function stepCols(d: number) { applyDimChange(gridRows, Math.max(1, Math.min(MAX_GRID, gridCols + d))); }
+  function stepRows(d: number) { applyDimChange(Math.max(1, Math.min(MAX_GRID, gridRows + d)), gridCols); }
+
+  function confirmChange() {
+    haptic.trigger("warning");
+    if (pendingPreset) { onPresetLayout(pendingPreset); pendingPreset = null; }
+    else if (pendingDimensions) { onSetDimensions(pendingDimensions.rows, pendingDimensions.cols); pendingDimensions = null; }
   }
+
+  function cancelChange() { pendingPreset = null; pendingDimensions = null; }
 </script>
 
 <div class="grid-layout-controls">
-  <!-- ====== PRESET CARDS ====== -->
-  <section class="presets-section">
-    <span class="section-header">Layouts</span>
-    <div class="preset-grid">
-      {#each presets as preset (preset.id)}
-        {@const active = isPresetActive(preset)}
-        <button
-          class="preset-card"
-          class:active
-          onclick={() => handlePresetClick(preset)}
-          aria-label="{preset.label} layout"
-          aria-pressed={active}
-        >
-          <div
-            class="preset-thumb"
-            style:grid-template-columns={preset.thumbCols}
-            style:grid-template-rows={preset.thumbRows}
-          >
-            {#each preset.blocks as [colSpan, rowSpan]}
-              <span
-                class="thumb-block"
-                class:active
-                style:grid-column={colSpan > 1 ? `span ${colSpan}` : undefined}
-                style:grid-row={rowSpan > 1 ? `span ${rowSpan}` : undefined}
-              ></span>
-            {/each}
-          </div>
-          <span class="preset-label">{preset.label}</span>
-        </button>
-      {/each}
+  <!-- ── Dimension readout ── -->
+  <div class="dim-readout">
+    <div class="dim-pair">
+      <button class="dim-step" onclick={() => stepCols(-1)} disabled={gridCols <= 1} aria-label="Fewer columns">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      </button>
+      <span class="dim-num">{gridCols}</span>
+      <button class="dim-step" onclick={() => stepCols(1)} disabled={gridCols >= MAX_GRID} aria-label="More columns">
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </button>
     </div>
-  </section>
+    <span class="dim-x">×</span>
+    <div class="dim-pair">
+      <button class="dim-step" onclick={() => stepRows(-1)} disabled={gridRows <= 1} aria-label="Fewer rows">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      </button>
+      <span class="dim-num">{gridRows}</span>
+      <button class="dim-step" onclick={() => stepRows(1)} disabled={gridRows >= MAX_GRID} aria-label="More rows">
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+  <div class="dim-labels">
+    <span>columns</span>
+    <span>rows</span>
+  </div>
 
-  <!-- ====== CONFIRMATION BAR ====== -->
+  <!-- ── Confirmation ── -->
   {#if hasPending}
-    <div
-      class="confirm-bar"
-      role="alertdialog"
-      aria-label="Confirm layout change"
-    >
-      <span class="confirm-icon">
-        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-      </span>
-      <span class="confirm-text">Will clear affected cells</span>
+    <div class="confirm-bar" role="alertdialog" aria-label="Confirm layout change">
+      <i class="fas fa-exclamation-triangle confirm-warn" aria-hidden="true"></i>
+      <span class="confirm-text">Clears cells</span>
       <button class="confirm-btn cancel" onclick={cancelChange}>Cancel</button>
       <button class="confirm-btn apply" onclick={confirmChange}>Apply</button>
     </div>
   {/if}
 
-  <!-- ====== COMPACT HOVER GRID ====== -->
-  <section class="custom-section">
-    <span class="section-header">Custom Size</span>
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-    <div
-      class="compact-grid"
-      role="toolbar"
-      aria-label="Grid dimensions: {gridRows} rows by {gridCols} columns"
-      tabindex="0"
-      onkeydown={handleKeydown}
-      onpointerleave={handleGridPointerLeave}
-    >
-      {#each gridPositions as pos (pos.row * MAX_GRID + pos.col)}
-        {@const state = getCellState(pos.row, pos.col)}
-        <button
-          class="mini-cell"
-          class:active={state === "active"}
-          class:preview={state === "preview"}
-          tabindex="-1"
-          aria-label="Set grid to {pos.col + 1} columns by {pos.row + 1} rows"
-          onpointerenter={() => handleCellPointerEnter(pos.row, pos.col)}
-          onclick={() => handleCellClick(pos.row, pos.col)}
-        ></button>
-      {/each}
-    </div>
-    <div class="dimension-label" aria-live="polite">
-      <span class="dim-value" class:previewing={isPreviewing}>
-        {displayCols} &times; {displayRows}
-      </span>
-    </div>
-  </section>
+  <!-- ── Preset cards ── -->
+  <div class="preset-grid">
+    {#each presets as preset (preset.id)}
+      {@const active = isPresetActive(preset)}
+      {@const thumbCells = buildThumbCells(preset)}
+      <button
+        class="preset-card"
+        class:active
+        onclick={() => handlePresetClick(preset)}
+        aria-label="{preset.label} layout ({preset.dims})"
+        aria-pressed={active}
+      >
+        <div
+          class="preset-thumb"
+          class:tall={preset.rows > 3}
+          style:grid-template-columns="repeat({preset.cols}, 1fr)"
+          style:grid-template-rows="repeat({preset.rows}, 1fr)"
+        >
+          {#each thumbCells as c}
+            <span
+              class="thumb-cell"
+              class:hero={c.hero}
+              style:grid-column="{c.col + 1} / span {c.w}"
+              style:grid-row="{c.row + 1} / span {c.h}"
+            ></span>
+          {/each}
+        </div>
+        <span class="preset-name">{preset.label}</span>
+        <span class="preset-dims">{preset.dims}</span>
+      </button>
+    {/each}
+  </div>
 </div>
 
 <style>
   .grid-layout-controls {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 12px;
+    gap: 14px;
+    padding: 12px 10px;
   }
 
-  /* ====== SECTION HEADERS ====== */
-  .section-header {
-    display: block;
+  /* ── Dimension readout ── */
+  .dim-readout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 0 2px;
+  }
+
+  .dim-pair {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 2px;
+  }
+
+  .dim-step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    font-size: 9px;
+    transition: background 100ms ease, color 100ms ease;
+  }
+
+  .dim-step:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .dim-step:active:not(:disabled) {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+  }
+
+  .dim-step:disabled { opacity: 0.2; cursor: default; }
+
+  .dim-step:focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: -2px;
+  }
+
+  .dim-num {
+    min-width: 26px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .dim-x {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.2);
+  }
+
+  .dim-labels {
+    display: flex;
+    justify-content: center;
+    gap: 62px;
+    font-size: 9px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.22);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: -6px;
+  }
+
+  /* ── Confirmation ── */
+  .confirm-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    border-radius: 8px;
+  }
+
+  .confirm-warn { color: rgba(239, 68, 68, 0.7); font-size: 11px; flex-shrink: 0; }
+  .confirm-text { font-size: 11px; color: rgba(255, 255, 255, 0.55); flex: 1; }
+
+  .confirm-btn {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.45);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 100ms ease;
   }
 
-  /* ====== PRESET CARDS ====== */
+  .confirm-btn.cancel {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .confirm-btn.apply { background: rgba(239, 68, 68, 0.55); color: white; }
+
+  @media (hover: hover) {
+    .confirm-btn.cancel:hover { background: rgba(255, 255, 255, 0.1); }
+    .confirm-btn.apply:hover { background: rgba(239, 68, 68, 0.75); }
+  }
+
+  .confirm-btn:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+
+  /* ── Preset cards ── */
   .preset-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -394,223 +333,92 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 8px 4px 6px;
-    min-height: 44px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 4px;
+    padding: 10px 6px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background 120ms ease, border-color 120ms ease,
+                box-shadow 120ms ease, transform 80ms ease;
     -webkit-tap-highlight-color: transparent;
   }
 
   .preset-card.active {
-    background: color-mix(in srgb, #8b5cf6 14%, transparent);
-    border-color: color-mix(in srgb, #8b5cf6 50%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, #8b5cf6 20%, transparent);
+    background: color-mix(in srgb, #8b5cf6 12%, transparent);
+    border-color: color-mix(in srgb, #8b5cf6 40%, transparent);
+    box-shadow: 0 0 12px -2px rgba(139, 92, 246, 0.25),
+                inset 0 1px 0 rgba(139, 92, 246, 0.1);
   }
 
   @media (hover: hover) {
     .preset-card:not(.active):hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.12);
     }
   }
 
-  .preset-card:active {
-    transform: scale(0.96);
-  }
+  .preset-card:active { transform: scale(0.95); }
 
-  .preset-card:focus-visible {
-    outline: 2px solid #8b5cf6;
-    outline-offset: 2px;
-  }
+  .preset-card:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; }
 
-  /* ====== PRESET THUMBNAILS ====== */
+  /* Thumbnails */
   .preset-thumb {
     display: grid;
-    gap: 2px;
-    width: 36px;
-    height: 36px;
+    gap: 3px;
+    width: 100%;
+    aspect-ratio: 1.4;
   }
 
-  .thumb-block {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 2px;
+  .preset-thumb.tall {
+    aspect-ratio: 0.9;
+  }
+
+  .thumb-cell {
+    background: rgba(139, 92, 246, 0.18);
+    border-radius: 3px;
     min-width: 0;
     min-height: 0;
   }
 
-  .thumb-block.active {
-    background: #8b5cf6;
-    opacity: 0.85;
+  .preset-card.active .thumb-cell {
+    background: rgba(139, 92, 246, 0.5);
   }
 
-  .preset-label {
-    font-size: 10px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.55);
-    line-height: 1.1;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+  .preset-card.active .thumb-cell.hero {
+    background: rgba(139, 92, 246, 0.65);
   }
 
-  .preset-card.active .preset-label {
-    color: rgba(255, 255, 255, 0.9);
+  @media (hover: hover) {
+    .preset-card:not(.active):hover .thumb-cell {
+      background: rgba(139, 92, 246, 0.28);
+    }
   }
 
-  /* ====== CONFIRMATION BAR ====== */
-  .confirm-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.25);
-    border-radius: 8px;
-  }
-
-  .confirm-icon {
-    color: rgba(239, 68, 68, 0.8);
-    font-size: 12px;
-    flex-shrink: 0;
-  }
-
-  .confirm-text {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
-    flex: 1;
-    min-width: 0;
-  }
-
-  .confirm-btn {
-    flex-shrink: 0;
-    padding: 4px 10px;
-    border: none;
-    border-radius: 6px;
+  .preset-name {
     font-size: 11px;
     font-weight: 600;
-    cursor: pointer;
-    transition: background 120ms ease;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1;
   }
 
-  .confirm-btn.cancel {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  .preset-card.active .preset-name {
+    color: rgba(255, 255, 255, 0.95);
   }
 
-  .confirm-btn.apply {
-    background: rgba(239, 68, 68, 0.65);
-    color: white;
-  }
-
-  @media (hover: hover) {
-    .confirm-btn.cancel:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    .confirm-btn.apply:hover {
-      background: rgba(239, 68, 68, 0.85);
-    }
-  }
-
-  .confirm-btn:focus-visible {
-    outline: 2px solid #8b5cf6;
-    outline-offset: 2px;
-  }
-
-  /* ====== COMPACT HOVER GRID ====== */
-  .custom-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .custom-section .section-header {
-    align-self: flex-start;
-  }
-
-  .compact-grid {
-    display: grid;
-    grid-template-rows: repeat(8, 1fr);
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    padding: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    outline: none;
-    width: fit-content;
-  }
-
-  .compact-grid:focus-visible {
-    outline: 2px solid #8b5cf6;
-    outline-offset: 2px;
-  }
-
-  .mini-cell {
-    width: 14px;
-    height: 14px;
-    padding: 0;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 100ms ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mini-cell.active {
-    background: #8b5cf6;
-    border-color: #8b5cf6;
-  }
-
-  .mini-cell.preview {
-    background: color-mix(in srgb, #8b5cf6 25%, transparent);
-    border-color: color-mix(in srgb, #8b5cf6 40%, transparent);
-  }
-
-  @media (hover: hover) {
-    .mini-cell:not(.active):not(.preview):hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-  }
-
-  .mini-cell:focus-visible {
-    outline: 2px solid #8b5cf6;
-    outline-offset: 1px;
-  }
-
-  /* ====== DIMENSION LABEL ====== */
-  .dimension-label {
-    margin-top: 6px;
-    text-align: center;
-  }
-
-  .dim-value {
-    font-size: 14px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.8);
+  .preset-dims {
+    font-size: 9px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.22);
+    line-height: 1;
     font-variant-numeric: tabular-nums;
-    transition: color 150ms ease;
   }
 
-  .dim-value.previewing {
-    color: #8b5cf6;
+  .preset-card.active .preset-dims {
+    color: rgba(139, 92, 246, 0.7);
   }
 
-  /* ====== REDUCED MOTION ====== */
   @media (prefers-reduced-motion: reduce) {
-    .preset-card,
-    .mini-cell,
-    .confirm-btn,
-    .dim-value {
-      transition: none;
-    }
+    .preset-card, .dim-step, .confirm-btn { transition: none; }
   }
 </style>

@@ -1,5 +1,5 @@
 <!--
-  AsciiPictographLab.svelte — SVG vs Braille comparison lab.
+  AsciiPictographLab.svelte - SVG vs Braille comparison lab.
 
   Side-by-side: real SVG pictograph on the left, braille-downsampled
   version on the right. Loads real pictographs from the CSV dataframe
@@ -37,7 +37,7 @@
 
   const label = $derived(
     allPictographs.length > 0
-      ? `${pictograph?.letter ?? "?"} — ${currentIndex + 1} / ${allPictographs.length}`
+      ? `${pictograph?.letter ?? "?"} - ${currentIndex + 1} / ${allPictographs.length}`
       : "Loading pictographs...",
   );
 

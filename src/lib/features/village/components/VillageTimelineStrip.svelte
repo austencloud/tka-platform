@@ -1,5 +1,5 @@
 <!--
-  VillageTimelineStrip — Compact sparkline showing village health over the last 500 ticks.
+  VillageTimelineStrip - Compact sparkline showing village health over the last 500 ticks.
   Green line = total knowledge, red dots = extinctions, gold dots = inventions,
   white dots = reincarnations. No axes, no labels. Pure gestalt.
 -->

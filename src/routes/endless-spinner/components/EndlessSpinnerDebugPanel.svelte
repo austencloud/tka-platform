@@ -46,7 +46,7 @@
       </div>
       <div class="debug-stat">
         <span>Grid mode:</span>
-        <span>{gridMode ?? "—"}</span>
+        <span>{gridMode ?? "-"}</span>
       </div>
     </div>
   </div>

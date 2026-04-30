@@ -1,5 +1,5 @@
 <!--
-  RetroBootSequence — Animated startup screen for TKA-OS v1.0
+  RetroBootSequence - Animated startup screen for TKA-OS v1.0
 
   Three phases:
   1. Black screen with "Starting TKA-OS v1.0..." and blinking cursor (~2s)
@@ -24,7 +24,7 @@
   let messageIndex = $state(0);
 
   /* ------------------------------------------------------------------ */
-  /* Status messages — rotated during splash phase                       */
+  /* Status messages - rotated during splash phase                       */
   /* ------------------------------------------------------------------ */
 
   const statusMessages = [
@@ -38,7 +38,7 @@
   ];
 
   /* ------------------------------------------------------------------ */
-  /* Progress waypoints — the bar lies                                   */
+  /* Progress waypoints - the bar lies                                   */
   /* ------------------------------------------------------------------ */
 
   const progressWaypoints = [
@@ -102,7 +102,7 @@
   });
 
   /* ------------------------------------------------------------------ */
-  /* Unmount safety net — cancel any lingering timers / rAF              */
+  /* Unmount safety net - cancel any lingering timers / rAF              */
   /* ------------------------------------------------------------------ */
 
   $effect(() => {
@@ -125,7 +125,7 @@
 
   function beginNextWaypoint() {
     if (waypointIndex >= progressWaypoints.length) {
-      /* All waypoints complete — brief black flash then finish */
+      /* All waypoints complete - brief black flash then finish */
       stopProgressAnimation();
       stopMessageRotation();
       waypointTimerId = setTimeout(() => {
@@ -245,7 +245,7 @@
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Container — fills viewport, black, above everything                 */
+  /* Container - fills viewport, black, above everything                 */
   /* ------------------------------------------------------------------ */
   .boot-container {
     position: absolute;

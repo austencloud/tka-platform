@@ -72,10 +72,10 @@ const ROLE_DEFINITIONS: Record<MuseumModelRole, MuseumModelDefinition> = {
 export class MuseumModelLoader implements IMuseumModelLoader {
   private loader = new GLTFLoader();
 
-  /** Resolved model templates — load once, clone many times. */
+  /** Resolved model templates - load once, clone many times. */
   private cache = new Map<string, Group>();
 
-  /** In-flight loads — prevents duplicate fetches for the same path. */
+  /** In-flight loads - prevents duplicate fetches for the same path. */
   private pending = new Map<string, Promise<Group>>();
 
   // ── Public API ──

@@ -1,5 +1,5 @@
 <!--
-  RetroDialog — Modal dialog window (alert, confirm, question)
+  RetroDialog - Modal dialog window (alert, confirm, question)
 
   Renders a centered modal with an icon based on type (info, warning,
   error, question), a message, and a row of buttons. Built on top of

@@ -3,9 +3,9 @@
 
   Experimental workspace for beat mapping, BPM-synced playback, and
   video-to-notation alignment. Three views:
-    1. Upload & Select — pick a local video + library sequence
-    2. Beat Mapping — annotate beat timestamps using StepMapEditor
-    3. Synced Playback — side-by-side video + choreo card preview
+    1. Upload & Select - pick a local video + library sequence
+    2. Beat Mapping - annotate beat timestamps using StepMapEditor
+    3. Synced Playback - side-by-side video + choreo card preview
 -->
 <script lang="ts">
   import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";

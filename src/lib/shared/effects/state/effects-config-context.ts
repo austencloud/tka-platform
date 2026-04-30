@@ -10,7 +10,7 @@ export function setEffectsConfigContext(state: EffectsConfigState): EffectsConfi
 
 /**
  * Returns the effects config state from context.
- * Returns null if no ancestor has called setEffectsConfigContext —
+ * Returns null if no ancestor has called setEffectsConfigContext -
  * callers decide whether to fall through to a default or throw.
  */
 export function getEffectsConfigContext(): EffectsConfigState | null {

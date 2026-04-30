@@ -1,5 +1,5 @@
 <!--
-  RetroControlPanel — CONTROL.EXE Control Panel
+  RetroControlPanel - CONTROL.EXE Control Panel
 
   Icon-grid launcher that opens sub-panels inline. Clicking an icon
   replaces the grid with a sub-panel. [Back] button returns to grid.

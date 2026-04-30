@@ -249,7 +249,7 @@ export class SVGGenerator implements ISVGGenerator {
         return svgText;
       }
     } catch {
-      // Network failed — fall through to IndexedDB
+      // Network failed - fall through to IndexedDB
     }
 
     // Level 3: IndexedDB offline cache (survives reload, works offline)

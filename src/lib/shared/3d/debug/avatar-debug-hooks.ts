@@ -32,7 +32,7 @@ export function installAvatarDebugHooks(args: {
   w.__togglePoleVectors = () => {
     const enabled = animator.togglePoleVectors?.() ?? false;
     console.log(
-      `Pole vectors: ${enabled ? "ON (new)" : "OFF (old — elbows bend backward)"}`,
+      `Pole vectors: ${enabled ? "ON (new)" : "OFF (old - elbows bend backward)"}`,
     );
     return enabled;
   };

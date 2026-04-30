@@ -1,5 +1,5 @@
 <!--
-  DeckBrowser.svelte — Browse and explore curated sequence decks.
+  DeckBrowser.svelte - Browse and explore curated sequence decks.
 
   Two modes:
   - Browse: full-width filter bar + grouped grid of all decks
@@ -137,7 +137,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
     if (renderedPairs.length === 0) return;
     isExporting = true;
     try {
-      // Lazy-load PrintPDFExporter — it pulls pdf-lib (~400KB + CSP-violating
+      // Lazy-load PrintPDFExporter - it pulls pdf-lib (~400KB + CSP-violating
       // runtime codegen). Only loaded when the user actually exports.
       const { PrintPDFExporter } = await import(
         "$lib/features/choreo-card/services/implementations/PrintPDFExporter"
@@ -220,7 +220,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
   function formatTurnForTKA(turn: string): string {
     const m = turn.match(/^uniform[- ](\d+)t$/i);
     if (m) return `${m[1]}T`;
-    // Already clean (e.g. "0T", "1:1") — capitalize
+    // Already clean (e.g. "0T", "1:1") - capitalize
     return turn.replace(/^(\d+)t$/i, "$1T");
   }
 
@@ -230,7 +230,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
     if (!selectedDeck) return "";
     const parts: string[] = [];
     if (selectedDeck.sliceType) parts.push(capitalize(selectedDeck.sliceType));
-    // VTG decks are always rotated LOOPs — use that when loopType is missing
+    // VTG decks are always rotated LOOPs - use that when loopType is missing
     const loopType = selectedDeck.loopType || (selectedDeck.collection === "VTG" ? "rotated" : "");
     if (loopType) parts.push(capitalize(loopType));
     if (selectedDeck.stepCount) parts.push(`${selectedDeck.stepCount}-Step`);
@@ -263,7 +263,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
   }
 
   // VTG deck label for card footer (e.g. "QS 1:1")
-  // Icon replaces the "VTG" prefix — just abbreviation + ratio
+  // Icon replaces the "VTG" prefix - just abbreviation + ratio
   const deckLeftLabel = $derived.by(() => {
     if (!selectedDeck || !resolvedVtgFamilyId) return undefined;
     const abbr = VTG_ABBREVIATIONS[resolvedVtgFamilyId];
@@ -318,7 +318,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
     if (viewMode !== 'print' || !selectedDeck || filteredSequences.length <= PRINT_PREVIEW_MAX) return [];
 
     // If no family filter active, offer families as subgroups.
-    // Use the deck's family metadata for counts — sequences may not be fully loaded yet.
+    // Use the deck's family metadata for counts - sequences may not be fully loaded yet.
     if (interiorFilters.familyIds.length === 0) {
       return selectedDeck.families
         .map(f => ({
@@ -330,7 +330,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
         .sort((a, b) => b.count - a.count);
     }
 
-    // Family filter is active but still too many — offer position subgroups
+    // Family filter is active but still too many - offer position subgroups
     const posGroups: Record<string, number> = {};
     for (const seq of filteredSequences) {
       const gridPos = seq.startPosition?.gridPosition ?? seq.startPosition?.startPosition ?? "";
@@ -541,7 +541,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
         {#if isLargeDeck && interiorFilters.familyIds.length === 0 && viewMode === 'print'}
           <div class="print-subgroup-picker">
             <p class="picker-heading">
-              {formatCount(selectedDeck.totalSequences)} sequences — pick a family to preview
+              {formatCount(selectedDeck.totalSequences)} sequences - pick a family to preview
             </p>
             <div class="picker-grid">
               {#each selectedDeck.families as family (family.id)}
@@ -586,7 +586,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
         {#if viewMode === 'print' && filteredSequences.length > PRINT_PREVIEW_MAX}
           <div class="print-subgroup-picker">
             <p class="picker-heading">
-              {filteredSequences.length} sequences — pick a
+              {filteredSequences.length} sequences - pick a
               {printSubgroups[0]?.familyId ? 'family' : 'starting position'}
               to preview
             </p>

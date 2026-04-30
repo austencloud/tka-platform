@@ -66,7 +66,7 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
 
   isVisible(shouldAnimate: boolean, index: number, isBlank: boolean): boolean {
     // If it should animate but hasn't yet, hide it (will become visible via animation)
-    // Only hide when shouldAnimate is ACTIVELY true — once the parent clears
+    // Only hide when shouldAnimate is ACTIVELY true - once the parent clears
     // animation state (shouldAnimate becomes false), the cell must be visible
     // regardless of hasAnimated, to prevent cells getting stuck invisible
     // when cleanupAnimation() runs before the CSS animationend event fires.

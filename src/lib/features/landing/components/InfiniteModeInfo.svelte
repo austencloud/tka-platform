@@ -10,7 +10,7 @@
   import type { GeneratedSequenceInfo } from "../domain/models/spinner-models";
   import {
     LOOPType,
-    SliceSize,
+    Period,
     LOOP_TYPE_LABELS,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
@@ -41,9 +41,9 @@
     return LOOP_TYPE_LABELS[loopType] || loopType;
   }
 
-  // Get slice description
-  function getSliceLabel(sliceSize: SliceSize): string {
-    return sliceSize === SliceSize.QUARTERED ? "Quartered" : "Halved";
+  // Get period description
+  function getPeriodLabel(period: Period): string {
+    return period === Period.QUARTERED ? "Quartered" : "Halved";
   }
 
   // Get a color for the LOOP type badge
@@ -91,7 +91,7 @@
 
   // Derived values for display
   let loopLabel = $derived(sequenceInfo?.settings ? getLoopLabel(sequenceInfo.settings.loopType) : "");
-  let sliceLabel = $derived(sequenceInfo?.settings ? getSliceLabel(sequenceInfo.settings.sliceSize) : "");
+  let sliceLabel = $derived(sequenceInfo?.settings ? getPeriodLabel(sequenceInfo.settings.period) : "");
   let loopColor = $derived(sequenceInfo?.settings ? getLoopColor(sequenceInfo.settings.loopType) : "#6366f1");
   let totalSteps = $derived(sequenceInfo?.settings?.totalSteps ?? 0);
 </script>

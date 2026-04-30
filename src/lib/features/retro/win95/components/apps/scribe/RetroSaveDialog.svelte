@@ -1,9 +1,9 @@
 <!--
-  RetroSaveDialog — Win95 Save As dialog for SCRIBE.EXE
+  RetroSaveDialog - Win95 Save As dialog for SCRIBE.EXE
 
   Classic "Save in:" dropdown, directory tree, filename field with 8.3
   format enforcement, file type dropdown, and Save/Cancel buttons.
-  Entirely presentational — calls onsave/oncancel callbacks.
+  Entirely presentational - calls onsave/oncancel callbacks.
 
   Domain: Retro SCRIBE App
 -->

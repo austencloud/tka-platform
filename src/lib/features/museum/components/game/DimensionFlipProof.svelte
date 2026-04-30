@@ -20,7 +20,7 @@
     grid: MuseumGrid;
     /** Called with 0-1 progress as assets load */
     onLoadProgress?: (progress: number) => void;
-    /** Called when all assets AND geometry are ready — scene is fully interactive */
+    /** Called when all assets AND geometry are ready - scene is fully interactive */
     onAllLoaded?: () => void;
     /** Called during async geometry build with the current phase name */
     onBuildStage?: (stage: string) => void;
@@ -85,29 +85,29 @@
   const HMR_KEY = "museum-hmr-state";
 
   // ── HMR state restore ──
-  // sessionStorage survives Vite HMR remounts but clears on tab close — perfect for this.
+  // sessionStorage survives Vite HMR remounts but clears on tab close - perfect for this.
   type ViewMode = "top-down" | "first-person" | "third-person";
 
   interface HmrState {
     playerWorldX: number;
     playerWorldZ: number;
-    /** Legacy field — kept for backward compatibility with old sessionStorage */
+    /** Legacy field - kept for backward compatibility with old sessionStorage */
     isInFPS?: boolean;
-    /** New field — stores the exact view mode */
+    /** New field - stores the exact view mode */
     viewMode?: ViewMode;
     topDownHeight: number;
     playerYaw: number;
     isEditorMode?: boolean;
   }
 
-  // Compute saved HMR state once at init — plain const, no reactivity needed
+  // Compute saved HMR state once at init - plain const, no reactivity needed
   const savedHmrState: HmrState | null = (() => {
     let state: HmrState | null = null;
     try {
       const raw = sessionStorage.getItem(HMR_KEY);
       if (raw) state = JSON.parse(raw) as HmrState;
     } catch {
-      // sessionStorage unavailable or corrupt — start fresh
+      // sessionStorage unavailable or corrupt - start fresh
     }
 
     // Validate saved position is on a walkable tile. After layout changes (rooms move),
@@ -129,7 +129,7 @@
   let resetRequested = $state(0);
   // Counter for instant mode switches (first-person → third-person)
   let modeChangeRequested = $state(0);
-  // Plain object (not $state) for key tracking — Museum3DScene reads this every frame
+  // Plain object (not $state) for key tracking - Museum3DScene reads this every frame
   // in its useTask loop, bypassing Svelte reactivity. A raw Set avoids proxy overhead.
   const heldKeys = new Set<string>();
 
@@ -148,7 +148,7 @@
     return savedHmrState.isInFPS ? "first-person" : "top-down";
   }
   let viewMode = $state<ViewMode>(restoreViewMode());
-  // Derived for backward compat — template uses isInFPS extensively
+  // Derived for backward compat - template uses isInFPS extensively
   let isInFPS = $derived(viewMode !== "top-down");
 
   // ── Player state (updated every frame by Museum3DScene callback) ──
@@ -186,7 +186,7 @@
         };
         sessionStorage.setItem(HMR_KEY, JSON.stringify(state));
       } catch {
-        // sessionStorage full or unavailable — non-critical
+        // sessionStorage full or unavailable - non-critical
       }
     }, 500);
   }
@@ -369,7 +369,7 @@
       return;
     }
 
-    // Movement keys — only track in top-down mode (UCC handles its own keys in FPS)
+    // Movement keys - only track in top-down mode (UCC handles its own keys in FPS)
     if (!isInFPS) {
       heldKeys.add(e.code);
     }
@@ -405,10 +405,10 @@
     playerFacing = facing;
     lastKnownYaw = yaw;
 
-    // Detect mode change — flush immediately so HMR captures the transition
+    // Detect mode change - flush immediately so HMR captures the transition
     const wasInFPS = viewMode !== "top-down";
     if (inFPS && !wasInFPS) {
-      // Entered 3D — default to first-person (the flip animation always enters FP)
+      // Entered 3D - default to first-person (the flip animation always enters FP)
       viewMode = "first-person";
       flushHmrSave();
     } else if (!inFPS && wasInFPS) {
@@ -480,7 +480,7 @@
     </button>
   {/if}
 
-  <!-- Wing label (top-left, offset when back button visible) — hidden in editor mode -->
+  <!-- Wing label (top-left, offset when back button visible) - hidden in editor mode -->
   {#if currentWing && !showPanel && !museum3dEditorState.editorActive}
     <div class="wing-label" class:fps={isInFPS}>
       <i class="fas fa-location-dot" aria-hidden="true"></i>
@@ -583,7 +583,7 @@
     height: 100%;
   }
 
-  /* Back button — top-left circle, takes you out of the museum */
+  /* Back button - top-left circle, takes you out of the museum */
   .museum-back-btn {
     position: absolute;
     top: 16px;

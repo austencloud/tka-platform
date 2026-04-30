@@ -173,6 +173,8 @@ export function clearLoopDisplayCache(): void {
  */
 export function resolveLoopDisplay(input: LoopDisplayInput): LoopDisplay {
   const cacheKey = getSequenceId(input);
+  const inputHasSteps = hasEnoughSteps(input);
+
   if (cacheKey) {
     const cached = displayCache.get(cacheKey);
     if (cached) return cached;
@@ -180,7 +182,10 @@ export function resolveLoopDisplay(input: LoopDisplayInput): LoopDisplay {
 
   const result = computeLoopDisplay(input);
 
-  if (cacheKey) {
+  // Only cache results derived from actual steps — lightweight metadata
+  // (gallery cards with steps: []) produces lossy results that would poison
+  // the cache for later callers that have the full sequence.
+  if (cacheKey && inputHasSteps) {
     displayCache.set(cacheKey, result);
   }
   return result;
@@ -254,11 +259,37 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
     }
   }
 
-  // Path 2: stored loopType string.
-  // SequenceEntry types this as `string | null`, SequenceData as `LOOPType`.
-  // parseComponents handles any string value that matches the 6 primitive
-  // names, so cast to the stricter type - parseComponents does its own
-  // substring matching and is safe for unknown strings.
+  // Path 2: structured components on SequenceData (from public index or prior detection).
+  // This is the preferred fallback when steps aren't loaded — it carries the
+  // full component set (including swap) and period, unlike the lossy loopType string.
+  if (isSequenceData(input) && input.components && input.components.length > 0) {
+    const components = new Set<LOOPComponent>();
+    const componentDomains: Partial<Record<LOOPComponent, LOOPDomain>> = {};
+    for (const c of input.components) {
+      if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) {
+        components.add(c);
+        const domain = input.componentDomains?.[c];
+        if (domain) componentDomains[c] = domain;
+        else componentDomains[c] = "location";
+      }
+    }
+    if (components.size > 0) {
+      const period = input.period ?? 2;
+      return {
+        components,
+        componentDomains,
+        period,
+        rotationPeriod: components.has(LOOPComponent.ROTATED)
+          ? period === 4 ? Period.QUARTERED : period === 2 ? Period.HALVED : undefined
+          : undefined,
+        inversionPeriod: components.has(LOOPComponent.INVERTED)
+          ? period === 4 ? Period.QUARTERED : period === 2 ? Period.HALVED : undefined
+          : undefined,
+      };
+    }
+  }
+
+  // Path 3: stored loopType string (legacy fallback).
   const storedLoopType = input.loopType as LOOPType | null | undefined;
   if (storedLoopType) {
     const parsed = loopTypeResolver.parseComponents(storedLoopType);

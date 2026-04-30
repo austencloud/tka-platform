@@ -57,10 +57,10 @@ export class VillageDecisionEngine {
 		if (enabled) {
 			const ollamaUp = await this.ollamaProvider.isAvailable();
 			this.activeProvider = ollamaUp ? this.ollamaProvider : this.deterministicProvider;
-			this.log(`LLM ${ollamaUp ? "enabled (Ollama)" : "enabled (deterministic fallback — Ollama not running)"}`);
+			this.log(`LLM ${ollamaUp ? "enabled (Ollama)" : "enabled (deterministic fallback - Ollama not running)"}`);
 		} else {
 			this.activeProvider = this.deterministicProvider;
-			this.log("LLM disabled — using deterministic decisions");
+			this.log("LLM disabled - using deterministic decisions");
 		}
 	}
 

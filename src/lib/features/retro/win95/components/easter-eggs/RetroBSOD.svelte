@@ -1,5 +1,5 @@
 <!--
-  RetroBSOD — Full-screen Blue Screen of Death easter egg
+  RetroBSOD - Full-screen Blue Screen of Death easter egg
 
   Displays a classic Windows 95-style BSOD with TKA-themed error messages.
   Renders above everything (z-index 10000, above CRT overlay at 9999).
@@ -25,7 +25,7 @@
   });
 
   /**
-   * JS-driven cursor blink — bypasses retro-overrides.css which kills all
+   * JS-driven cursor blink - bypasses retro-overrides.css which kills all
    * CSS animations with !important. Uses direct style manipulation so the
    * global animation:none override has no effect.
    */
@@ -77,7 +77,7 @@
     </p>
 
     <p class="bsod-body bsod-spacer">
-      KINETIC_OVERFLOW — Too much spin detected.
+      KINETIC_OVERFLOW - Too much spin detected.
     </p>
     <p class="bsod-body">
       The prop physics engine has exceeded maximum angular velocity.

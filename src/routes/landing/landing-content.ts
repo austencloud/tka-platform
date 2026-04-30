@@ -128,7 +128,7 @@ export const EDUCATOR_CARDS: EducatorCard[] = [
   {
     icon: "👁️",
     title: "Visual Learning",
-    description: 'See exactly what "antispin flower" means — no guessing.',
+    description: 'See exactly what "antispin flower" means - no guessing.',
   },
   {
     icon: "📝",

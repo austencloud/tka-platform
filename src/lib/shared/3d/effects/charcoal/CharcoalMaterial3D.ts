@@ -1,5 +1,5 @@
 /**
- * CharcoalMaterial3D — Temperature-based point sprite shader for charcoal sparks.
+ * CharcoalMaterial3D - Temperature-based point sprite shader for charcoal sparks.
  *
  * Each spark has a per-particle temperature attribute that drives its color:
  *   Hot (1.0): bright yellow-white (core at birth)

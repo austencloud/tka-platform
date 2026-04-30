@@ -1,5 +1,5 @@
 <!--
-  ScribeGenerate — Generate mode for the DOS-era SCRIBE app.
+  ScribeGenerate - Generate mode for the DOS-era SCRIBE app.
 
   Flow:
     1. Display header and prompt for a word
@@ -13,7 +13,7 @@
   inputHandler callback. Internal state tracks the current sub-step:
   waiting-for-word, processing, displaying.
 
-  Domain: Retro DOS Terminal — SCRIBE App
+  Domain: Retro DOS Terminal - SCRIBE App
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
@@ -84,7 +84,7 @@
     const word = input.trim().toUpperCase();
 
     if (word.length === 0) {
-      // Empty input — return to menu
+      // Empty input - return to menu
       cleanup();
       onreturn();
       return;
@@ -160,7 +160,7 @@
     );
     terminalState.writeBlank();
 
-    // Done — return to menu
+    // Done - return to menu
     step = "done";
     cleanup();
     onreturn();

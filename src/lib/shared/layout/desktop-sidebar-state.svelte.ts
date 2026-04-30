@@ -13,7 +13,7 @@ export const desktopSidebarState = $state({
   // Sidebar visibility - controlled by viewport and layout conditions
   isVisible: false,
 
-  // Module-level suppression — when true, sidebar stays hidden regardless of viewport
+  // Module-level suppression - when true, sidebar stays hidden regardless of viewport
   forcedHidden: false,
 
   // Sidebar collapsed state - toggled by user

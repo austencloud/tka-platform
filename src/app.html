@@ -37,14 +37,14 @@
           try {
             Object.defineProperty(crypto, 'randomUUID', { value: polyfill, configurable: true, writable: true });
           } catch (e2) {
-            // Can't patch the Crypto object — callers will still fail.
+            // Can't patch the Crypto object - callers will still fail.
           }
         }
       })();
     </script>
 
     <!-- 🚀 Preconnect to external origins for faster requests (app mode only) -->
-    <!-- Landing visitors don't need Firebase/Google APIs — skip these to save ~500ms -->
+    <!-- Landing visitors don't need Firebase/Google APIs - skip these to save ~500ms -->
     <script>
       (function() {
         var p = window.location.pathname;
@@ -669,7 +669,7 @@
     <!-- crossorigin="anonymous" is REQUIRED for PostHog session replay to capture styles -->
     <link rel="stylesheet" href="/fonts/css/all.min.css" crossorigin="anonymous" />
 
-    <!-- Google Identity Services (app mode only — landing doesn't need auth) -->
+    <!-- Google Identity Services (app mode only - landing doesn't need auth) -->
     <script>
       if (!window.__tkaIsLanding) {
         var gsiScript = document.createElement('script');
@@ -792,14 +792,14 @@
         // Define a no-op so layout/page code doesn't error
         window.__tkaLoadProgress = function() {};
       }
-      // Retro routes: have their own boot sequences — skip modern loading screen
+      // Retro routes: have their own boot sequences - skip modern loading screen
       if (/^\/(1989|1995|1998|2003)(\/|$)/.test(window.location.pathname)) {
         document.getElementById('app-loading').style.display = 'none';
         window.__tkaLoadProgress = function() {};
       }
     </script>
     <script>
-      // Sims-style flavor text — shuffled each load for variety
+      // Sims-style flavor text - shuffled each load for variety
       var __tkaFlavorMessages = [
         "Calibrating spin direction...",
         "Consulting the ancient glyphs...",
@@ -863,7 +863,7 @@
         }, 200);
       }
 
-      // Show first flavor message immediately (no fade — nothing to fade from)
+      // Show first flavor message immediately (no fade - nothing to fade from)
       var _initText = document.getElementById('loading-text');
       if (_initText && __tkaFlavorMessages.length > 0) {
         _initText.textContent = __tkaFlavorMessages[__tkaFlavorIndex];
@@ -885,9 +885,9 @@
       var __tkaCap = 70;
 
       function __tkaUpdateBar(percent) {
-        // Phase B owns the bar — late Phase A callbacks must not regress it
+        // Phase B owns the bar - late Phase A callbacks must not regress it
         if (__tkaPhaseBStarted) return;
-        // Monotonic within Phase A — never go backwards
+        // Monotonic within Phase A - never go backwards
         if (percent <= __tkaPhaseAPercent) return;
         __tkaPhaseAPercent = Math.min(percent, __tkaCap);
 
@@ -924,7 +924,7 @@
         }
 
         if (__tkaResourceCount > 0) {
-          // Cancel trickle fallback — real resources are arriving
+          // Cancel trickle fallback - real resources are arriving
           if (__tkaTrickleFallback) {
             clearTimeout(__tkaTrickleFallback);
             __tkaTrickleFallback = null;
@@ -984,7 +984,7 @@
         if (percent <= __tkaCurrentPercent || __tkaFinished) return;
         __tkaCurrentPercent = percent;
 
-        // Phase B now owns the bar — prevent late Phase A callbacks from regressing it
+        // Phase B now owns the bar - prevent late Phase A callbacks from regressing it
         __tkaPhaseBStarted = true;
 
         // First checkpoint call: disconnect observer, save calibration
@@ -1010,7 +1010,7 @@
         var text = document.getElementById('loading-text');
         var screen = document.getElementById('app-loading');
 
-        // Bar ALWAYS updates — CSS transition makes it smooth
+        // Bar ALWAYS updates - CSS transition makes it smooth
         if (bar) bar.style.width = percent + '%';
         if (screen) screen.setAttribute('aria-valuenow', String(percent));
 

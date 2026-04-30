@@ -116,7 +116,7 @@ export class FingerAnimator implements IFingerAnimator {
 
     for (let i = 0; i < FINGER_BONES.length; i++) {
       this.writeTargetRotation(state.targetGrip, i, hand);
-      // Arrays are sized to FINGER_BONES.length in createHandState — index is always valid.
+      // Arrays are sized to FINGER_BONES.length in createHandState - index is always valid.
       state.currentRotations[i]!.slerp(this.scratchQuat, alpha);
       state.bones[i]!.quaternion.copy(state.currentRotations[i]!);
     }
@@ -130,7 +130,7 @@ export class FingerAnimator implements IFingerAnimator {
     state.targetGrip = gripType;
     for (let i = 0; i < FINGER_BONES.length; i++) {
       this.writeTargetRotation(gripType, i, hand);
-      // Arrays are sized to FINGER_BONES.length in createHandState — index is always valid.
+      // Arrays are sized to FINGER_BONES.length in createHandState - index is always valid.
       state.currentRotations[i]!.copy(this.scratchQuat);
       state.bones[i]!.quaternion.copy(this.scratchQuat);
     }

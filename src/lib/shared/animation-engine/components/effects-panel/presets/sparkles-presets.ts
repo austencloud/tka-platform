@@ -55,7 +55,7 @@ export const SPARKLES_PRESETS: EffectPreset[] = [
     name: "Custom",
     previewColor: "custom",
     apply: () => {
-      // "Custom" just opens the Customize panel — EffectsPanel routes Custom → customizeOpen.
+      // "Custom" just opens the Customize panel - EffectsPanel routes Custom → customizeOpen.
     },
   },
 ];

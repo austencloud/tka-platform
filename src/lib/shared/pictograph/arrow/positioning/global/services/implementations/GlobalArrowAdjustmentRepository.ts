@@ -210,7 +210,7 @@ export class GlobalArrowAdjustmentRepository
       if (layer2fb) return { adjustment: layer2fb, layer: 2 };
     }
 
-    // Layer 1: Base (no prop types) — legacy fallback for staff ONLY.
+    // Layer 1: Base (no prop types) - legacy fallback for staff ONLY.
     if (normalizedThisProp === "staff" && normalizedOtherProp === "staff") {
       const layer1 = this.getAdjustment(baseKey);
       if (layer1) return { adjustment: layer1, layer: 1 };

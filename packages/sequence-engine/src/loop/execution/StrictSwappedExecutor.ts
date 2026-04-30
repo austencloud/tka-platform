@@ -11,7 +11,7 @@ import type {
   SequenceStep,
   MotionData,
 } from "../../core/types/sequence-engine-types.js";
-import { SliceSize } from "../loop-types.js";
+import { Period } from "../loop-types.js";
 import {
   SWAPPED_POSITION_MAP,
   SWAPPED_LOOP_VALIDATION_SET,
@@ -24,7 +24,7 @@ import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class StrictSwappedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], period: Period): SequenceStep[] {
     this.validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -33,8 +33,8 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
     }
 
     const partialLength = sequence.length;
-    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
-    const totalLength = partialLength * period;
+    const periodCount = period === Period.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * periodCount;
     const stepsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;

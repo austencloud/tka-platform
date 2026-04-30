@@ -787,6 +787,7 @@ export class AnimationEngine {
    */
   invalidateFireCache(): void {
     this.effectRendererManager.fireRenderer?.clearSimulation();
+    this.effectRendererManager.charcoalRenderer?.clearSimulation();
   }
 
   /**
@@ -796,6 +797,20 @@ export class AnimationEngine {
    */
   invalidateFireFrameCacheOnly(): void {
     this.effectRendererManager.fireRenderer?.invalidateFrameCache();
+  }
+
+  // --- EXPORT DIAGNOSTIC (remove after debugging) ---
+  enableFireDiagnostics(): void {
+    this.effectRendererManager.fireRenderer?.enableDiagnostics();
+  }
+  disableFireDiagnostics(): void {
+    this.effectRendererManager.fireRenderer?.disableDiagnostics();
+  }
+  resetFireDiagnosticCounter(): void {
+    (this.effectRendererManager.fireRenderer as any)?.resetDiagnosticCounter?.();
+  }
+  sampleFireCanvas(): string {
+    return (this.effectRendererManager.fireRenderer as any)?.sampleFireCanvas?.() ?? 'no fire renderer';
   }
 
   /**

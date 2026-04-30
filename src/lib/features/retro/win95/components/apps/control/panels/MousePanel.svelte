@@ -1,5 +1,5 @@
 <!--
-  Mouse Properties sub-panel — double-click speed, test area, pointer trail.
+  Mouse Properties sub-panel - double-click speed, test area, pointer trail.
 -->
 <script lang="ts">
   import RetroButton from "../../../primitives/RetroButton.svelte";

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * MuseumMirror — Planar reflector with gilded frame.
+   * MuseumMirror - Planar reflector with gilded frame.
    * Adds the Reflector directly to the Threlte scene (not via T.Primitive)
    * to ensure onBeforeRender fires for real-time reflections.
    */
@@ -25,7 +25,7 @@
 
   const { scene } = useThrelte();
 
-  // Resolve defaults from props (plain consts — not reactive, used as initial values for Three.js objects)
+  // Resolve defaults from props (plain consts - not reactive, used as initial values for Three.js objects)
   const width = props.width ?? 1.5;
   const height = props.height ?? 2.5;
   const textureWidth = props.textureWidth ?? 512;

@@ -348,7 +348,7 @@ Design variants supported:
     background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* Segment dividers — tick marks that show duration boundaries */
+  /* Segment dividers - tick marks that show duration boundaries */
   .segments-background {
     position: absolute;
     top: 0;

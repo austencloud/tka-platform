@@ -6,7 +6,7 @@
  */
 
 import type { Timestamp } from "firebase/firestore";
-import type { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { LOOPType, Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 /**
  * A beat in a broadcast sequence.
@@ -48,7 +48,7 @@ export interface BroadcastSequence {
   gridMode: string;
   isCircular: boolean;
   loopType: LOOPType;
-  sliceSize: SliceSize;
+  period: Period;
   totalSteps: number;
 }
 

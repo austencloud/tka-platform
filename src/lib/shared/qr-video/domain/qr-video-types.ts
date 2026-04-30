@@ -88,7 +88,7 @@ export function timeToBeat(
 
 /**
  * Calculate frame timing for a given frame index within the export timeline.
- * Pure function — no DOM, no RAF, no state.
+ * Pure function - no DOM, no RAF, no state.
  * Extracted from VideoExportOrchestrator.executeExport frame loop.
  */
 export function calculateFrameTiming(
@@ -144,7 +144,7 @@ export function calculateFrameTiming(
 
 /**
  * Build the timeline parameters needed for frame-by-frame export.
- * Pure function — no DOM, no state.
+ * Pure function - no DOM, no state.
  */
 export function buildTimelineParams(
   stepDurations: number[],

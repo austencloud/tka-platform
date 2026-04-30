@@ -16,7 +16,7 @@ import type {
   TransformationInterval,
 } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
-import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 /**
  * Map component IDs to their corresponding interval keys
@@ -41,7 +41,7 @@ export interface WholeModeState {
   // Component selection
   selectedComponents: Set<ComponentId>;
   isFreeform: boolean;
-  selectedSliceSize: SliceSize | null;
+  selectedPeriod: Period | null;
 
   // Per-transformation intervals
   transformationIntervals: TransformationIntervals;
@@ -52,7 +52,7 @@ export interface WholeModeState {
   // Actions
   actions: {
     toggleComponent(component: ComponentId): void;
-    setSliceSize(size: SliceSize | null): void;
+    setPeriod(size: Period | null): void;
     setTransformationInterval(
       transformation: keyof TransformationIntervals,
       interval: TransformationInterval
@@ -77,7 +77,7 @@ export function createWholeModeState(): WholeModeState {
   // State
   let selectedComponents = $state(new Set<ComponentId>());
   let isFreeform = $state(false);
-  let selectedSliceSize = $state<SliceSize | null>(null);
+  let selectedPeriod = $state<Period | null>(null);
   let transformationIntervals = $state<TransformationIntervals>({});
   let pendingDesignations = $state<LOOPDesignation[]>([]);
 
@@ -110,8 +110,8 @@ export function createWholeModeState(): WholeModeState {
       selectedComponents = newSet;
     },
 
-    setSliceSize(size: SliceSize | null) {
-      selectedSliceSize = size;
+    setPeriod(size: Period | null) {
+      selectedPeriod = size;
       // Also update transformationIntervals.rotation for backwards compatibility
       if (size) {
         transformationIntervals = {
@@ -129,11 +129,11 @@ export function createWholeModeState(): WholeModeState {
         ...transformationIntervals,
         [transformation]: interval,
       };
-      // Keep selectedSliceSize in sync for backwards compatibility
+      // Keep selectedPeriod in sync for backwards compatibility
       if (transformation === "rotation") {
-        selectedSliceSize =
+        selectedPeriod =
           interval === "halved" || interval === "quartered"
-            ? (interval as SliceSize)
+            ? (interval as Period)
             : null;
       }
     },
@@ -184,7 +184,7 @@ export function createWholeModeState(): WholeModeState {
       const designation: LOOPDesignation = {
         components: Array.from(selectedComponents),
         loopType: derivedLoopType,
-        sliceSize: selectedComponents.has("rotated") ? selectedSliceSize : null,
+        period: selectedComponents.has("rotated") ? selectedPeriod : null,
         transformationIntervals:
           Object.keys(relevantIntervals).length > 0
             ? relevantIntervals
@@ -207,7 +207,7 @@ export function createWholeModeState(): WholeModeState {
 
       // Clear selection for next designation
       selectedComponents = new Set();
-      selectedSliceSize = null;
+      selectedPeriod = null;
       transformationIntervals = {};
     },
 
@@ -258,8 +258,8 @@ export function createWholeModeState(): WholeModeState {
         allDesignations.push({
           components: Array.from(selectedComponents),
           loopType: derivedLoopType,
-          sliceSize: selectedComponents.has("rotated")
-            ? selectedSliceSize
+          period: selectedComponents.has("rotated")
+            ? selectedPeriod
             : null,
           transformationIntervals:
             Object.keys(relevantIntervals).length > 0
@@ -314,7 +314,7 @@ export function createWholeModeState(): WholeModeState {
       selectedComponents = new Set();
       isFreeform = false;
       pendingDesignations = [];
-      selectedSliceSize = null;
+      selectedPeriod = null;
       transformationIntervals = {};
     },
   };
@@ -326,8 +326,8 @@ export function createWholeModeState(): WholeModeState {
     get isFreeform() {
       return isFreeform;
     },
-    get selectedSliceSize() {
-      return selectedSliceSize;
+    get selectedPeriod() {
+      return selectedPeriod;
     },
     get transformationIntervals() {
       return transformationIntervals;

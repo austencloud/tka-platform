@@ -334,9 +334,9 @@ export function createNavigationState() {
             }
           }
         } else {
-          // Unrecognized path — could be a typo ("sdashboard") or a standalone
+          // Unrecognized path - could be a typo ("sdashboard") or a standalone
           // SvelteKit route ("/1995") that isn't part of the module system.
-          // Set safe internal defaults but do NOT rewrite the URL — that would
+          // Set safe internal defaults but do NOT rewrite the URL - that would
           // break standalone routes whose pages render independently.
           currentModule = "create";
           activeTab = DEFAULT_CREATE_TAB;

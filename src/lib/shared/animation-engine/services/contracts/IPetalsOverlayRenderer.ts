@@ -1,7 +1,7 @@
 /**
  * IPetalsOverlayRenderer
  *
- * Interface for the Canvas2D petals overlay — per-tip falling silhouette
+ * Interface for the Canvas2D petals overlay - per-tip falling silhouette
  * emitter with palette-driven shape + tint. Wraps `Petals2DRenderer` and
  * owns its own absolutely-positioned canvas element, following the
  * bloom/echo/water/bubbles overlay pattern.

@@ -5,7 +5,7 @@
   Designed to be used inside PropControlPair which provides the card styling.
   Uses CSS custom properties from parent card for color theming.
 
-  Both modes: Two rows — turns controls above a single "Invert" toggle
+  Both modes: Two rows - turns controls above a single "Invert" toggle
   that shows the current rotation direction and flips on tap.
 -->
 <script lang="ts">
@@ -108,7 +108,7 @@
     width: 100%;
   }
 
-  /* Compact: single horizontal row — invert sits left of turns */
+  /* Compact: single horizontal row - invert sits left of turns */
   .turns-controls.compact {
     flex-direction: row;
     align-items: center;

@@ -3,7 +3,7 @@
 
 	Static grid preview for a composition card.
 	Shows the layout structure: filled cells get a subtle accent,
-	empty cells are nearly invisible. No pictograph rendering —
+	empty cells are nearly invisible. No pictograph rendering -
 	the hover animation provides the real preview.
 -->
 <script lang="ts">

@@ -15,7 +15,7 @@ import type { ILOOPExecutorSelector } from "$lib/features/create/generate/circul
 import {
   LOOPType,
   LOOP_TYPE_LABELS,
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
   HALVED_LOOPS,
@@ -124,7 +124,7 @@ export class LOOPValidator implements ILOOPValidator {
   getLOOPOptionsForPositionPair(
     startPosition: GridPosition,
     endPosition: GridPosition,
-    sliceSize: SliceSize
+    period: Period
   ): LOOPValidationResult {
     const available: LOOPOption[] = [];
     const unavailable: LOOPOption[] = [];
@@ -143,7 +143,7 @@ export class LOOPValidator implements ILOOPValidator {
         icon: config.icon,
       };
 
-      if (this.isLOOPValidForPositionPair(loopType, positionPair, sliceSize)) {
+      if (this.isLOOPValidForPositionPair(loopType, positionPair, period)) {
         available.push(option);
       } else {
         unavailable.push(option);
@@ -159,15 +159,15 @@ export class LOOPValidator implements ILOOPValidator {
   isLOOPValidForPositionPair(
     loopType: LOOPType,
     positionPair: string,
-    sliceSize: SliceSize
+    period: Period
   ): boolean {
     // Rotated LOOPs use rotation-based validation
     const rotationSet =
-      sliceSize === SliceSize.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
+      period === Period.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
 
     // Rotated+Swapped LOOPs need composed validation (rotation THEN swap)
     const rotatedSwappedSet =
-      sliceSize === SliceSize.QUARTERED
+      period === Period.QUARTERED
         ? ROTATED_SWAPPED_QUARTERED_VALIDATION_SET
         : ROTATED_SWAPPED_HALVED_VALIDATION_SET;
 

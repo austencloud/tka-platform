@@ -20,7 +20,7 @@
 		onStepHalfFwd: () => void;
 		/** Step backward by one full beat (compose context) */
 		onStepFullBack?: () => void;
-		/** Restart from the beginning (viewer context) — replaces step-back button when provided */
+		/** Restart from the beginning (viewer context) - replaces step-back button when provided */
 		onRestartToStart?: () => void;
 		onStepFullFwd: () => void;
 	} = $props();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TKA — Litera A — Studio di Moto Circolare</title>
+  <title>TKA - Litera A - Studio di Moto Circolare</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -33,8 +33,8 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
 // ─── Palette ────────────────────────────────────────────────────────────────
-const INK_DARK    = '#3B2A1A';   // primary ink — darkest sepia
-const INK_MED     = '#6B4E32';   // secondary ink — medium sepia
+const INK_DARK    = '#3B2A1A';   // primary ink - darkest sepia
+const INK_MED     = '#6B4E32';   // secondary ink - medium sepia
 const INK_LIGHT   = '#9B7A55';   // construction lines
 const INK_GHOST   = '#C4A882';   // faintest annotations
 const PAPER_BASE  = '#F0E0C0';   // warm cream
@@ -43,7 +43,7 @@ const FOX_SPOT    = '#C8A86840'; // foxing spots (semi-transparent)
 
 // ─── Canonical-compose Path 1 palette ─────────────────────────────────────────
 // Maps the canonical renderer's blue/red/structural classes onto the studio's
-// ink palette — iron gall ink for blue, sepia for red, pencil graphite for the
+// ink palette - iron gall ink for blue, sepia for red, pencil graphite for the
 // structural strokes (grid lines, crosshairs, axes from the canonical render).
 // bg is null so the aged paper shows through.
 const RENAISSANCE_PALETTE = {
@@ -63,7 +63,7 @@ function pt(angleDeg, r = GRID_R) {
   return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
 }
 
-// "Hand-drawn" jitter — very subtle to preserve precision aesthetic
+// "Hand-drawn" jitter - very subtle to preserve precision aesthetic
 function jitter(v, amt = 0.6) {
   return v + (Math.random() - 0.5) * amt;
 }
@@ -95,7 +95,7 @@ function circleVar(cx, cy, r, segments = 60, drift = 0.5) {
 }
 
 // ─── Renaissance hand colors ──────────────────────────────────────────────────
-// The era's ink palette is sepia, not RGB — so blue/red are mapped onto the
+// The era's ink palette is sepia, not RGB - so blue/red are mapped onto the
 // darkest and medium sepia inks the original Letter A study used.
 const BLUE_COLOR = INK_DARK;
 const RED_COLOR  = INK_MED;
@@ -103,7 +103,7 @@ const RED_COLOR  = INK_MED;
 // ─── Data-driven hand helpers ─────────────────────────────────────────────────
 // These read the pictograph's blue/red hand data and draw each prop's staff
 // and motion arrow. The era's hand-drawn aesthetic (jittered lineVar, pressure
-// circleVar) is preserved — only the positions come from data now.
+// circleVar) is preserved - only the positions come from data now.
 
 function handLoc(hand)    { return String(hand.location    || hand.startLocation || '').toLowerCase(); }
 function handEndLoc(hand) { return String(hand.endLocation || '').toLowerCase(); }
@@ -115,7 +115,7 @@ function drawArrowForHand(hand, color) {
   const e = G.locationPoint(handEndLoc(hand), CX, CY, GRID_R);
   if (!s || !e) return;
 
-  // Construction radii — faint dashed pen strokes to the arc's endpoints,
+  // Construction radii - faint dashed pen strokes to the arc's endpoints,
   // the kind a Renaissance draftsman would leave on the page.
   ctx.save();
   ctx.strokeStyle = INK_GHOST;
@@ -127,7 +127,7 @@ function drawArrowForHand(hand, color) {
   ctx.restore();
 
   if (hand.motionType === 'dash') {
-    // Straight dash — drawn with the era's jittered pen drag.
+    // Straight dash - drawn with the era's jittered pen drag.
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2.2;
@@ -164,7 +164,7 @@ function drawArrowForHand(hand, color) {
   }
   ctx.stroke();
 
-  // Small arc tick marks across the sweep — Renaissance surveying mark style.
+  // Small arc tick marks across the sweep - Renaissance surveying mark style.
   const tickStep = (angles.endA - angles.startA) / 6;
   for (let i = 1; i < 6; i++) {
     const ta = angles.startA + tickStep * i;
@@ -195,7 +195,7 @@ function drawStaffForHand(hand, color) {
   const length = 36; // match the original Letter-A stave length (±18 from center)
   const { a, b } = G.staffEndpoints(center, axis, length);
 
-  // Main shaft — thick precise technical line, preserved from the original
+  // Main shaft - thick precise technical line, preserved from the original
   // drawStaves() look.
   ctx.save();
   ctx.strokeStyle = color;
@@ -203,7 +203,7 @@ function drawStaffForHand(hand, color) {
   ctx.lineCap = 'round';
   lineVar(a.x, a.y, b.x, b.y, 18, 0.5);
 
-  // Parallel shadow line offset perpendicular to the axis — gives the
+  // Parallel shadow line offset perpendicular to the axis - gives the
   // cylinder illusion.
   const nx = -Math.sin(axis), ny = Math.cos(axis);
   const shadowOffset = 1.5;
@@ -212,7 +212,7 @@ function drawStaffForHand(hand, color) {
   lineVar(a.x + nx * shadowOffset, a.y + ny * shadowOffset,
           b.x + nx * shadowOffset, b.y + ny * shadowOffset, 10, 0.3);
 
-  // End caps — small perpendicular tick marks at each end of the shaft.
+  // End caps - small perpendicular tick marks at each end of the shaft.
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.6;
   const capHalf = 8;
@@ -229,7 +229,7 @@ function drawPaper() {
   ctx.fillStyle = PAPER_BASE;
   ctx.fillRect(0, 0, 500, 500);
 
-  // Aged patches — subtle radial gradient variations
+  // Aged patches - subtle radial gradient variations
   const patches = [
     { x: 60,  y: 60,  r: 80,  c: 'rgba(180,140,80,0.12)' },
     { x: 440, y: 80,  r: 70,  c: 'rgba(160,120,60,0.10)' },
@@ -245,14 +245,14 @@ function drawPaper() {
     ctx.fillRect(0, 0, 500, 500);
   });
 
-  // Edge yellowing — vignette burn
+  // Edge yellowing - vignette burn
   const edgeGrad = ctx.createRadialGradient(250, 250, 160, 250, 250, 360);
   edgeGrad.addColorStop(0, 'rgba(0,0,0,0)');
   edgeGrad.addColorStop(1, 'rgba(90,55,10,0.28)');
   ctx.fillStyle = edgeGrad;
   ctx.fillRect(0, 0, 500, 500);
 
-  // Foxing spots — small rust-brown specks scattered across the page
+  // Foxing spots - small rust-brown specks scattered across the page
   const foxPositions = [
     {x:42, y:38, r:3.5}, {x:88, y:55, r:2}, {x:132, y:22, r:2.8},
     {x:195, y:41, r:1.8}, {x:318, y:28, r:3}, {x:410, y:45, r:2.2},
@@ -277,7 +277,7 @@ function drawPaper() {
     ctx.fill();
   });
 
-  // Subtle paper grain — very faint noise texture via tiny dots
+  // Subtle paper grain - very faint noise texture via tiny dots
   ctx.save();
   ctx.globalAlpha = 0.025;
   for (let i = 0; i < 2400; i++) {
@@ -293,7 +293,7 @@ function drawPaper() {
 function drawBorder() {
   const margin = 18;
 
-  // Outer frame — heavier weight
+  // Outer frame - heavier weight
   ctx.strokeStyle = INK_MED;
   ctx.lineWidth = 1.8;
   ctx.lineJoin = 'round';
@@ -306,7 +306,7 @@ function drawBorder() {
   ctx.closePath();
   ctx.stroke();
 
-  // Inner rule — thinner, offset inward
+  // Inner rule - thinner, offset inward
   const m2 = margin + 5;
   ctx.strokeStyle = INK_LIGHT;
   ctx.lineWidth = 0.7;
@@ -347,7 +347,7 @@ function drawTitle(letter) {
   ctx.fillText(`Litera  ${glyph}  ·  Studio di Moto Circolare`, 250, 46);
   ctx.restore();
 
-  // Mirror-written subtitle (da Vinci style) — transform for horizontal flip
+  // Mirror-written subtitle (da Vinci style) - transform for horizontal flip
   ctx.save();
   ctx.translate(250, 65);
   ctx.scale(-1, 1); // Mirror
@@ -357,7 +357,7 @@ function drawTitle(letter) {
   ctx.fillText('de instrumentis motus progressivi artis kinestheticae', 0, 0);
   ctx.restore();
 
-  // Bottom caption — normal, small
+  // Bottom caption - normal, small
   ctx.save();
   ctx.font = 'italic 10px Georgia, serif';
   ctx.fillStyle = INK_LIGHT;
@@ -383,7 +383,7 @@ function drawGrid() {
   circleVar(CX, CY, GRID_R, 80, 0.4);
   ctx.setLineDash([]);
 
-  // Outer tick ring — subtle measurement ring at GRID_R + 18
+  // Outer tick ring - subtle measurement ring at GRID_R + 18
   ctx.strokeStyle = INK_GHOST;
   ctx.lineWidth = 0.5;
   for (let a = 0; a < 360; a += 22.5) {
@@ -392,7 +392,7 @@ function drawGrid() {
     lineVar(inner.x, inner.y, outer.x, outer.y, 3, 0.3);
   }
 
-  // Eight grid-point marks — small precise circles with crosshairs
+  // Eight grid-point marks - small precise circles with crosshairs
   const gridAngles = [0, 45, 90, 135, 180, 225, 270, 315];
   const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   gridAngles.forEach((a, i) => {
@@ -418,7 +418,7 @@ function drawGrid() {
     ctx.restore();
   });
 
-  // Centre mark — small double circle
+  // Centre mark - small double circle
   ctx.strokeStyle = INK_MED;
   ctx.lineWidth = 0.8;
   circleVar(CX, CY, 6, 20, 0.3);
@@ -429,7 +429,7 @@ function drawGrid() {
   ctx.fill();
 }
 
-// ─── Compass-pivot centre mark — "centrum" annotation at the grid origin ─────
+// ─── Compass-pivot centre mark - "centrum" annotation at the grid origin ─────
 // Rendered as a generic studio annotation (unchanged regardless of the
 // pictograph) since every arc in the Renaissance diagram swings from CX,CY.
 function drawCompassCentre() {
@@ -469,7 +469,7 @@ function drawArrowhead(tipX, tipY, dx, dy, size, color, lw) {
   ctx.restore();
 }
 
-// ─── 7. Large italic letter — elegant hand lettering in centre margin ─────────
+// ─── 7. Large italic letter - elegant hand lettering in centre margin ─────────
 function drawLetterGlyph(letter) {
   const glyph = String(letter || 'A');
   // Big ornamental letter in top-left corner (notebook heading style)
@@ -492,7 +492,7 @@ function drawLetterGlyph(letter) {
   ctx.font = 'italic 7.5px Georgia, serif';
   ctx.fillStyle = INK_GHOST;
   ctx.textAlign = 'left';
-  ctx.fillText('forma prima — litera progreditur', 0, 0);
+  ctx.fillText('forma prima - litera progreditur', 0, 0);
   ctx.restore();
 
   // Pro motion indicator note
@@ -505,7 +505,7 @@ function drawLetterGlyph(letter) {
   ctx.restore();
 }
 
-// ─── 8. Margin annotations — measurement notes, Latin labels ──────────────────
+// ─── 8. Margin annotations - measurement notes, Latin labels ──────────────────
 function drawAnnotations() {
   ctx.save();
   ctx.font = 'italic 7px Georgia, serif';
@@ -531,7 +531,7 @@ function drawAnnotations() {
     }
   });
 
-  // Right margin notes — normal
+  // Right margin notes - normal
   ctx.textAlign = 'right';
   const rightNotes = [
     { x: 472, y: 190, text: 'positio: alpha' },
@@ -642,7 +642,7 @@ function seededRandom(seed) {
   };
 }
 
-// Blue/red hands at opposite points with pro motion — what the page showed
+// Blue/red hands at opposite points with pro motion - what the page showed
 // before the data-driven refactor, and also the fallback when this HTML is
 // opened directly without a parent posting pictograph data.
 const DEFAULT_PICTOGRAPH = {
@@ -662,7 +662,7 @@ const DEFAULT_PICTOGRAPH = {
   },
 };
 
-// Mulberry32 — dedicated deterministic RNG passed to PictographStylize so the
+// Mulberry32 - dedicated deterministic RNG passed to PictographStylize so the
 // sepia edge treatment reproduces identically for the same pictograph.
 function mulberry32(seed) {
   return function () {
@@ -683,7 +683,7 @@ function seedFor(data) {
   return h;
 }
 
-// ─── Render — two paths, same era chrome ─────────────────────────────────────
+// ─── Render - two paths, same era chrome ─────────────────────────────────────
 // Path 1 (canonical bitmap available): pixelate + recolor + sepia edge
 // treatment + single-pass composite at 0.88 alpha. Inherits all correct
 // motion semantics (pro vs anti, turns, dashes, floats) from the canonical
@@ -694,13 +694,13 @@ function seedFor(data) {
 //
 // Era chrome (aged paper, foxing, border, title, construction lines, letter
 // glyph, annotations, compass rose, vignette) is drawn identically in either
-// path — that's where the Renaissance studio voice lives.
+// path - that's where the Renaissance studio voice lives.
 function render(data, canonical, meta) {
   const pictograph = data || DEFAULT_PICTOGRAPH;
   Math.random = seededRandom(42);
   const rng = mulberry32(seedFor(pictograph));
   try {
-    // Background + chrome — drawn first in both paths
+    // Background + chrome - drawn first in both paths
     drawPaper();
     drawBorder();
     drawTitle(pictograph.letter);
@@ -724,7 +724,7 @@ function render(data, canonical, meta) {
       drawCompassCentre();
     }
 
-    // Foreground chrome — always drawn on top
+    // Foreground chrome - always drawn on top
     drawLetterGlyph(pictograph.letter);
     drawAnnotations();
     drawCompassRose();

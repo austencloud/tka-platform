@@ -91,7 +91,7 @@ export function createAuthActionQueue() {
       return;
     }
 
-    // Prefer Google One Tap (FedCM) — it's the only flow that works reliably
+    // Prefer Google One Tap (FedCM) - it's the only flow that works reliably
     // on mobile web, where signInWithPopup is blocked by most browsers. The
     // app has a <GoogleOneTap /> mounted at root that already registered the
     // credential callback; we just need to invoke the prompt. The replay
@@ -104,7 +104,7 @@ export function createAuthActionQueue() {
         signInSheetOpen = false;
         return;
       } catch {
-        // FedCM cooldown or disabled — fall through to popup.
+        // FedCM cooldown or disabled - fall through to popup.
       }
     }
 
@@ -123,7 +123,7 @@ export function createAuthActionQueue() {
     } catch (err) {
       const code = (err as { code?: string })?.code;
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        return; // user dismissed — leave sheet open for retry
+        return; // user dismissed - leave sheet open for retry
       }
       console.error("[Viewer] Google sign-in failed:", err);
       showToast({ message: "Sign-in failed. Please try again.", type: "error", duration: 3000 });

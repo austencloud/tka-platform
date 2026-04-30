@@ -1,5 +1,5 @@
 <!--
-  CardInspectModal — Full-screen modal for inspecting a card's front and back.
+  CardInspectModal - Full-screen modal for inspecting a card's front and back.
   Uses CardPreviewStack from the card designer for the focus/toggle interaction.
 -->
 <script lang="ts">
@@ -8,6 +8,7 @@
   import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
+  import TKAWordGlyph from "./TKAWordGlyph.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -18,7 +19,7 @@
     includeStartPosition?: boolean;
     onClose: () => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
-    /** Pre-rendered front image URL from the grid card — shows this instead of re-rendering */
+    /** Pre-rendered front image URL from the grid card - shows this instead of re-rendering */
     frontImageUrl?: string | null;
   }
 
@@ -54,7 +55,7 @@
 
   const word = $derived(sequence.word ?? sequence.name ?? '');
 
-  // QR code visibility — follows the user's global visibility setting so turning it off
+  // QR code visibility - follows the user's global visibility setting so turning it off
   // in the settings panel removes it from the export modal too.
   const imageComposition = getImageCompositionManager();
   let compositionVersion = $state(0);
@@ -85,7 +86,7 @@
     if (copyImageState === "copying" || !stackEl) return;
     copyImageState = "copying";
     try {
-      // html2canvas is lazy-loaded — eagerly importing it violates CSP
+      // html2canvas is lazy-loaded - eagerly importing it violates CSP
       // (uses new Function for CSS parsing) and adds 200KB to the main chunk.
       const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(stackEl, {
@@ -135,11 +136,13 @@
   <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="inspect-modal-title">
     <!-- Header -->
     <div class="modal-header">
-      <h2 class="modal-title" id="inspect-modal-title">{word}</h2>
+      <h2 class="modal-title" id="inspect-modal-title">
+        <TKAWordGlyph {word} height={28} darkMode />
+      </h2>
       <p class="modal-hint">Click a card to focus it. Click again to reset.</p>
     </div>
 
-    <!-- Card stack — reuses the designer's CardPreviewStack -->
+    <!-- Card stack - reuses the designer's CardPreviewStack -->
     <div class="stack-wrapper" bind:this={stackEl}>
       <CardPreviewStack
         {sequence}

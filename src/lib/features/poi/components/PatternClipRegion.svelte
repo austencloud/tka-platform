@@ -1,5 +1,5 @@
 <!--
-  PatternClipRegion.svelte — one colored block on the pattern timeline.
+  PatternClipRegion.svelte - one colored block on the pattern timeline.
 
   Renders a tiny canvas preview of the clip's pattern (a horizontal
   color strip sampled from the middle frame) so you can visually
@@ -24,7 +24,7 @@
     ((clip.endStep - clip.startStep + 1) / totalSteps) * 100
   );
 
-  // Render a scaled 2D preview of the whole pattern — time runs left
+  // Render a scaled 2D preview of the whole pattern - time runs left
   // to right (frames), LED position runs top to bottom. Reveals each
   // pattern's character at a glance:
   //   - Rainbow sweep → diagonal color bands

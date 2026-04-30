@@ -103,7 +103,7 @@ Shows:
     return { completed, total: concepts.length };
   }
 
-  // Premium gating — Foundation is free, everything else shows preview nudge
+  // Premium gating - Foundation is free, everything else shows preview nudge
   const curriculumNudge = CAPABILITY_NUDGES["capability:learn:full-curriculum"]!;
   let premiumNudgeVisible = $state(false);
   let pendingPremiumConcept = $state<LearnConcept | null>(null);

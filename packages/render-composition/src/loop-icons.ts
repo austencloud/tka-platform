@@ -8,6 +8,12 @@ import { LOOP_ICON_GAP_SCALE } from "./dimensions.js";
  */
 export type LoopRotationPeriod = "halved" | "quartered";
 
+/**
+ * Inversion period for the inverted LOOP icon.
+ * "halved" (180°) renders circle-half-stroke; "quartered" (90°) renders checkerboard circle.
+ */
+export type LoopInversionPeriod = "halved" | "quartered";
+
 // The 6 active LOOP components in the order they appear in the icon strip
 const DISPLAY_ORDER: LOOPComponentId[] = [
   "rotated",
@@ -21,7 +27,7 @@ const DISPLAY_ORDER: LOOPComponentId[] = [
 // FA7 solid icon SVG path data for each LOOP component, embedded to avoid
 // runtime file reads. Each path comes from the corresponding icon in
 // @fortawesome/fontawesome-free/svgs/solid/
-const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform" | "rotated-quartered", { d: string; viewBox: [number, number]; bicolor?: { blue: string; red: string } }> = {
+const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform" | "rotated-quartered" | "inverted-quartered", { d: string; viewBox: [number, number]; bicolor?: { blue: string; red: string } }> = {
   // rotate.svg — viewBox 0 0 512 512 — used for halved (180°) rotations
   rotated: {
     d: "M480.1 192l7.9 0c13.3 0 24-10.7 24-24l0-144c0-9.7-5.8-18.5-14.8-22.2S477.9 .2 471 7L419.3 58.8C375 22.1 318 0 256 0 127 0 20.3 95.4 2.6 219.5 .1 237 12.2 253.2 29.7 255.7s33.7-9.7 36.2-27.1C79.2 135.5 159.3 64 256 64 300.4 64 341.2 79 373.7 104.3L327 151c-6.9 6.9-8.9 17.2-5.2 26.2S334.3 192 344 192l136.1 0zm29.4 100.5c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5-44.4 0-85.2-15-117.7-40.3L185 361c6.9-6.9 8.9-17.2 5.2-26.2S177.7 320 168 320L24 320c-13.3 0-24 10.7-24 24L0 488c0 9.7 5.8 18.5 14.8 22.2S34.1 511.8 41 505l51.8-51.8C137 489.9 194 512 256 512 385 512 491.7 416.6 509.4 292.5z",
@@ -60,9 +66,17 @@ const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform" | "rotated-quartered"
     },
   },
 
-  // circle-half-stroke.svg — viewBox 0 0 512 512
+  // circle-half-stroke.svg — viewBox 0 0 512 512 — used for halved (180°) inversions
   inverted: {
     d: "M448 256c0-106-86-192-192-192l0 384c106 0 192-86 192-192zM0 256a256 256 0 1 1 512 0 256 256 0 1 1 -512 0z",
+    viewBox: [512, 512],
+  },
+
+  // Checkerboard circle — viewBox 0 0 512 512 — used for quartered (90°) inversions
+  // Outer circle CW + inner circle CCW = donut ring (nonzero fill rule).
+  // Two diagonal quadrant pies (top-right + bottom-left) fill inside the ring.
+  "inverted-quartered": {
+    d: "M256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0ZM256 64C150 64 64 150 64 256C64 362 150 448 256 448C362 448 448 362 448 256C448 150 362 64 256 64ZM256 256L256 64C362 64 448 150 448 256ZM256 256L256 448C150 448 64 362 64 256Z",
     viewBox: [512, 512],
   },
 
@@ -112,6 +126,8 @@ export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
  * @param darkMode             - Whether to apply dark-mode shadow styling
  * @param showFreeformWhenEmpty - Draw the freeform icon when the set is empty
  * @param rotationPeriod    - "quartered" swaps rotated → fa-arrows-spin
+ * @param inversionPeriod   - "quartered" swaps inverted → checkerboard circle
+ * @param period            - Integer LOOP period (2/4/8), drawn as centered number badge
  * @returns                    The total rendered width in canvas pixels
  */
 export function renderLoopIconStrip(
@@ -122,7 +138,9 @@ export function renderLoopIconStrip(
   iconSize: number,
   darkMode: boolean,
   showFreeformWhenEmpty: boolean = false,
-  rotationPeriod?: LoopRotationPeriod
+  rotationPeriod?: LoopRotationPeriod,
+  inversionPeriod?: LoopInversionPeriod,
+  period?: number
 ): { totalWidth: number } {
   const active = DISPLAY_ORDER.filter((c) => components.has(c));
 
@@ -144,8 +162,13 @@ export function renderLoopIconStrip(
       const pathKey =
         component === "rotated" && rotationPeriod === "quartered"
           ? "rotated-quartered"
-          : component;
+          : component === "inverted" && inversionPeriod === "quartered"
+            ? "inverted-quartered"
+            : component;
       drawLoopIcon(ctx, pathKey, currentX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
+    }
+    if (period != null && period >= 2) {
+      drawPeriodBadge(ctx, currentX, centerY, iconSize, period);
     }
     currentX += iconSize + gap;
   }
@@ -188,7 +211,7 @@ function drawBicolorSwapIcon(
 
 function drawLoopIcon(
   ctx: CanvasRenderingContext2D,
-  component: LOOPComponentId | "freeform" | "rotated-quartered",
+  component: LOOPComponentId | "freeform" | "rotated-quartered" | "inverted-quartered",
   x: number,
   y: number,
   size: number,
@@ -210,6 +233,32 @@ function drawLoopIcon(
   const target = { x: x - size / 2, y: y - size / 2, width: size, height: size };
   drawSvgPath(ctx, iconData.d, { width: iconData.viewBox[0], height: iconData.viewBox[1] }, target);
   ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPeriodBadge(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  iconSize: number,
+  period: number
+): void {
+  const text = period.toString();
+  const fontSize = Math.max(8, Math.round(iconSize * 0.55));
+
+  ctx.save();
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
+  ctx.lineWidth = Math.max(2, fontSize * 0.2);
+  ctx.lineJoin = "round";
+  ctx.strokeText(text, x, y);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(text, x, y);
 
   ctx.restore();
 }

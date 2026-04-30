@@ -7,7 +7,7 @@
 // Types and enums
 export {
   LOOPType,
-  SliceSize,
+  Period,
   LOOP_TYPE_LABELS,
   LOOP_TYPE_DESCRIPTIONS,
   ALL_LOOP_TYPES,

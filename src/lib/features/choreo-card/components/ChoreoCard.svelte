@@ -32,7 +32,7 @@
     cardMode?: boolean;
     /** Override the notes text in the card footer (e.g. VTG description) */
     customNotesText?: string;
-    /** Pre-rendered image URL — displays this instead of rendering via PropAwareThumbnail */
+    /** Pre-rendered image URL - displays this instead of rendering via PropAwareThumbnail */
     preRenderedImageUrl?: string | null;
     onSelect?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;

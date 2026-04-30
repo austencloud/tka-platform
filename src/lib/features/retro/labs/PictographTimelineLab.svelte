@@ -1,5 +1,5 @@
 <!--
-  PictographTimelineLab.svelte — Unified pictograph comparison across eras.
+  PictographTimelineLab.svelte - Unified pictograph comparison across eras.
 
   Shows the same pictograph rendered three ways side by side:
   - 2026: Modern SVG (the real PictographContainer)
@@ -56,7 +56,7 @@
 
   const label = $derived(
     allPictographs.length > 0
-      ? `${pictograph?.letter ?? "?"} — ${currentIndex + 1} / ${allPictographs.length}`
+      ? `${pictograph?.letter ?? "?"} - ${currentIndex + 1} / ${allPictographs.length}`
       : "Loading pictographs...",
   );
 

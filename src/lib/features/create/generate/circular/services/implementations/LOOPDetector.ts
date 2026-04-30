@@ -14,7 +14,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 import type { LOOPType } from "../../domain/models/circular-models";
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import { LOOPComponent } from "../../../shared/domain/models/generate-models";
 import type {
   ILOOPDetector,
@@ -105,7 +105,7 @@ export class LOOPDetector implements ILOOPDetector {
       return {
         isCircular: false,
         loopType: null,
-        sliceSize: null,
+        period: null,
         confidence: "accidental",
       };
     }
@@ -117,7 +117,7 @@ export class LOOPDetector implements ILOOPDetector {
       return {
         isCircular: true,
         loopType: null,
-        sliceSize: null,
+        period: null,
         confidence: "accidental",
       };
     }
@@ -134,12 +134,12 @@ export class LOOPDetector implements ILOOPDetector {
     );
 
     // Step 4: Determine primary slice size and components for LOOP type
-    let sliceSize: SliceSize | null = null;
+    let period: Period | null = null;
     const detectedComponents = new Set<LOOPComponent>();
 
     if (compoundPattern) {
       // Compound pattern: use quartered as primary slice size
-      sliceSize = SliceSize.QUARTERED;
+      period = Period.QUARTERED;
       // Combine all components
       compoundPattern.quarteredTransformations.forEach((c) =>
         detectedComponents.add(c)
@@ -149,9 +149,9 @@ export class LOOPDetector implements ILOOPDetector {
       );
     } else {
       // Simple pattern: use traditional detection
-      sliceSize = this.determineSliceSize(steps);
+      period = this.determinePeriod(steps);
 
-      if (this.detectsRotation(steps, sliceSize)) {
+      if (this.detectsRotation(steps, period)) {
         detectedComponents.add(LOOPComponent.ROTATED);
       }
       if (this.detectsMirroring(steps)) {
@@ -182,8 +182,8 @@ export class LOOPDetector implements ILOOPDetector {
     return {
       isCircular: true,
       loopType,
-      sliceSize: detectedComponents.has(LOOPComponent.ROTATED)
-        ? sliceSize
+      period: detectedComponents.has(LOOPComponent.ROTATED)
+        ? period
         : null,
       confidence,
       compoundPattern: compoundPattern ?? undefined,
@@ -224,18 +224,18 @@ export class LOOPDetector implements ILOOPDetector {
    * Key insight: For quartered rotation, compare START positions of first beat
    * of each quarter. If q1->q2->q3->q4 follows 90 degree rotation, it's quartered.
    */
-  private determineSliceSize(steps: readonly StepData[]): SliceSize {
+  private determinePeriod(steps: readonly StepData[]): Period {
     const length = steps.length;
 
     // Check quartered FIRST (more specific)
     if (length >= 4 && length % 4 === 0) {
       if (this.detectsQuarteredRotation(steps)) {
-        return SliceSize.QUARTERED;
+        return Period.QUARTERED;
       }
     }
 
     // Default to halved
-    return SliceSize.HALVED;
+    return Period.HALVED;
   }
 
   /**
@@ -279,21 +279,21 @@ export class LOOPDetector implements ILOOPDetector {
    * Detect if sequence follows rotation transformation
    *
    * For halved: Compare START position of first beat vs START position of half beat
-   * For quartered: Already detected in determineSliceSize via detectsQuarteredRotation
+   * For quartered: Already detected in determinePeriod via detectsQuarteredRotation
    */
   private detectsRotation(
     steps: readonly StepData[],
-    sliceSize: SliceSize
+    period: Period
   ): boolean {
     const length = steps.length;
 
     // Quartered rotation is detected via slice size determination
-    if (sliceSize === SliceSize.QUARTERED) {
+    if (period === Period.QUARTERED) {
       return this.detectsQuarteredRotation(steps);
     }
 
     // Halved rotation: compare START positions of first beat of each half
-    if (sliceSize === SliceSize.HALVED && length >= 2 && length % 2 === 0) {
+    if (period === Period.HALVED && length >= 2 && length % 2 === 0) {
       const halfLength = length / 2;
       // Derive positions from motion locations
       const h1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
@@ -373,7 +373,7 @@ export class LOOPDetector implements ILOOPDetector {
       const secondRed = secondStep?.motions?.[MotionColor.RED];
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
-        // Skip pairs where both hands have the same motion type —
+        // Skip pairs where both hands have the same motion type -
         // swapping two identical types is trivially true and meaningless.
         // When both hands are pro, "secondBlue.type === firstRed.type" is
         // always true regardless of what the hands are actually doing.
@@ -571,7 +571,7 @@ export class LOOPDetector implements ILOOPDetector {
       const secondRed = secondStep?.motions?.[MotionColor.RED];
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
-        // Skip pairs where both hands have the same motion type —
+        // Skip pairs where both hands have the same motion type -
         // swapping two identical types is trivially true and meaningless.
         if (firstBlue.motionType === firstRed.motionType) continue;
 

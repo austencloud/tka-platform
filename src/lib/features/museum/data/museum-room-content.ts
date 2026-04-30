@@ -1,10 +1,10 @@
 /**
- * Museum Room Content — Phase 1
+ * Museum Room Content - Phase 1
  *
  * Exhibit plaque text, performer definitions, and trigger definitions
  * for each room. Keyed by room ID, then by refId within each category.
  *
- * This file contains the "meat" — the writing, the lore, the references.
+ * This file contains the "meat" - the writing, the lore, the references.
  * The room graph defines where things go. This file defines what they say.
  */
 
@@ -63,7 +63,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "ALL STAFF: Badge access updated effective 11/14/1998. " +
             "Please collect new credentials from Room 114. " +
             "Fire drill scheduled for Friday. Attendance mandatory.",
-          footer: "— Facilities Management",
+          footer: "- Facilities Management",
         },
       },
       "entrance-reception": {
@@ -84,7 +84,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     exhibits: {
       "cave-lascaux-1": {
         plaque: {
-          title: "Lascaux Tablets — Panel A",
+          title: "Lascaux Tablets - Panel A",
           subtitle: "c. 15,000 BCE (estimated)",
           body:
             "Recovered from a secondary chamber at Lascaux in 1942. " +
@@ -97,7 +97,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
       },
       "cave-lascaux-2": {
         plaque: {
-          title: "Lascaux Tablets — Panel B",
+          title: "Lascaux Tablets - Panel B",
           subtitle: "c. 15,000 BCE (estimated)",
           body:
             "The second panel extends the sequence from Panel A into " +
@@ -109,7 +109,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
       },
       "cave-paintings-1": {
         plaque: {
-          title: "Cave Wall Fragment — Kinetic Figures",
+          title: "Cave Wall Fragment - Kinetic Figures",
           subtitle: "Unknown date, pre-agricultural",
           body:
             "Silhouettes of two figures facing each other, each holding " +
@@ -121,7 +121,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
       },
       "cave-paintings-2": {
         plaque: {
-          title: "Cave Wall Fragment — Audience",
+          title: "Cave Wall Fragment - Audience",
           subtitle: "Same site as adjacent panel",
           body:
             "A semicircle of smaller figures surrounds the two performers. " +
@@ -198,7 +198,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "First evidence that access was deliberately restricted. " +
             "Temple records show notation scrolls stored separately from other documents, " +
             "with specialized access protocols.",
-          footer: "NILE BUREAU — Classification: RESTRICTED",
+          footer: "NILE BUREAU - Classification: RESTRICTED",
         },
       },
     },
@@ -337,7 +337,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
         plaque: {
           title: "Development Team",
           body:
-            "Grainy photograph. Faces obscured. One circled in red marker — added later, " +
+            "Grainy photograph. Faces obscured. One circled in red marker - added later, " +
             "not original to the print. The handwriting on the circle matches " +
             "no known Bureau personnel.",
         },
@@ -351,7 +351,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
         plaque: {
           title: "The Order of the Closed Palm",
           body:
-            "Founded before recorded history. A hand with fingers curled inward — " +
+            "Founded before recorded history. A hand with fingers curled inward - " +
             "not a fist, more like recoiling. The hand that refuses to grip. " +
             "The hand that will not hold a prop.",
         },
@@ -361,7 +361,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           title: "Bureau of Kinetic Containment",
           body:
             "The modern name. American, 1940s. The transition from ancient mystic guardians " +
-            "to government bureaucracy was gradual — decades of absorption, not a founding date. " +
+            "to government bureaucracy was gradual - decades of absorption, not a founding date. " +
             "Eventually: a budget line item and reporting requirements.",
           footer: "Department of Rotational Affairs, Facility 7",
         },
@@ -402,7 +402,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Date of the final Protocol Lethe execution. The protocol was designed for " +
             "villages and monasteries. It cannot scale to eight billion people with broadband. " +
             "Ancient containment procedure versus YouTube.",
-          footer: "Status: PARTIAL FAILURE — See Addendum 7741-F",
+          footer: "Status: PARTIAL FAILURE - See Addendum 7741-F",
         },
       },
     },
@@ -435,7 +435,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "You've seen it throughout the museum. On floor tiles, in frame corners, " +
             "woven into decoration. Every spin is a spiral through time. " +
             "The Scribes didn't choose it. It chose them.",
-          footer: "— K",
+          footer: "- K",
         },
         sequenceId: "gallery-spiral-seq",
       },
@@ -455,7 +455,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           body:
             "The gap between 'I can see this is beautiful' and 'I can do this myself' " +
             "is the whole story. Forty thousand years of it.",
-          footer: "— K",
+          footer: "- K",
         },
         sequenceId: "gallery-practice-seq",
       },
@@ -465,7 +465,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           body:
             "This is my favorite room. I built it from what the Order left behind. " +
             "They had everything right except the padlock.",
-          footer: "— K",
+          footer: "- K",
         },
       },
     },
@@ -482,7 +482,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           body:
             "This knowledge is a public health hazard. Seal the archive. Walk away. " +
             "Authorized handling personnel only.",
-          footer: "Bureau of Kinetic Containment — Form 7741-C",
+          footer: "Bureau of Kinetic Containment - Form 7741-C",
         },
       },
       "fear-containment-2": {
@@ -528,7 +528,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     exhibits: {
       "cz-staff-only": {
         plaque: {
-          title: "STAFF ONLY — EXHIBIT PREPARATION",
+          title: "STAFF ONLY - EXHIBIT PREPARATION",
           body:
             "Authorized personnel beyond this point. Hard hat required. " +
             "Estimated completion of Wing 9: [DATE NOT FOUND].",

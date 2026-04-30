@@ -21,7 +21,7 @@ import {
   type PictographData,
   type MotionData as McpMotionData,
 } from "../packages/sequence-engine/src/loop/execution/LOOPExecutor.js";
-import { LOOPType, SliceSize } from "../packages/sequence-engine/src/loop/loop-types.js";
+import { LOOPType, Period } from "../packages/sequence-engine/src/loop/loop-types.js";
 import {
   calculateOrientations,
   calculateEndOrientation,
@@ -58,32 +58,32 @@ interface VTGMotionDef {
   vtg: string;            // VTG category label
   familyId: string;       // Family grouping ID
   startPos: string;       // Starting position
-  sliceSize: SliceSize;   // Quartered (90°) or Halved (180°)
+  period: Period;   // Quartered (90°) or Halved (180°)
 }
 
 const VTG_MOTIONS: VTGMotionDef[] = [
   // Same-Direction (Quartered — 1-beat seeds)
-  { id: 1,  seed: ["A"],      word: "AAAA", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  sliceSize: SliceSize.QUARTERED },
-  { id: 2,  seed: ["B"],      word: "BBBB", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  sliceSize: SliceSize.QUARTERED },
-  { id: 3,  seed: ["C"],      word: "CCCC", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  sliceSize: SliceSize.QUARTERED },
-  { id: 4,  seed: ["G"],      word: "GGGG", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   sliceSize: SliceSize.QUARTERED },
-  { id: 5,  seed: ["H"],      word: "HHHH", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   sliceSize: SliceSize.QUARTERED },
-  { id: 6,  seed: ["I"],      word: "IIII", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   sliceSize: SliceSize.QUARTERED },
-  { id: 7,  seed: ["S"],      word: "SSSS", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", sliceSize: SliceSize.QUARTERED },
-  { id: 8,  seed: ["T"],      word: "TTTT", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", sliceSize: SliceSize.QUARTERED },
-  { id: 9,  seed: ["U"],      word: "UUUU", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", sliceSize: SliceSize.QUARTERED },
-  { id: 10, seed: ["V"],      word: "VVVV", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", sliceSize: SliceSize.QUARTERED },
+  { id: 1,  seed: ["A"],      word: "AAAA", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  period: Period.QUARTERED },
+  { id: 2,  seed: ["B"],      word: "BBBB", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  period: Period.QUARTERED },
+  { id: 3,  seed: ["C"],      word: "CCCC", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  period: Period.QUARTERED },
+  { id: 4,  seed: ["G"],      word: "GGGG", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   period: Period.QUARTERED },
+  { id: 5,  seed: ["H"],      word: "HHHH", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   period: Period.QUARTERED },
+  { id: 6,  seed: ["I"],      word: "IIII", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   period: Period.QUARTERED },
+  { id: 7,  seed: ["S"],      word: "SSSS", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
+  { id: 8,  seed: ["T"],      word: "TTTT", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
+  { id: 9,  seed: ["U"],      word: "UUUU", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
+  { id: 10, seed: ["V"],      word: "VVVV", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
 
   // Opposite-Direction (Halved — 2-beat seeds)
-  { id: 11, seed: ["J", "D"], word: "JDJD", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  sliceSize: SliceSize.HALVED },
-  { id: 12, seed: ["K", "E"], word: "KEKE", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  sliceSize: SliceSize.HALVED },
-  { id: 13, seed: ["L", "F"], word: "LFLF", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  sliceSize: SliceSize.HALVED },
-  { id: 14, seed: ["D", "J"], word: "DJDJ", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   sliceSize: SliceSize.HALVED },
-  { id: 15, seed: ["E", "K"], word: "EKEK", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   sliceSize: SliceSize.HALVED },
-  { id: 16, seed: ["F", "L"], word: "FLFL", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   sliceSize: SliceSize.HALVED },
-  { id: 17, seed: ["M", "P"], word: "MPMP", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", sliceSize: SliceSize.HALVED },
-  { id: 18, seed: ["N", "Q"], word: "NQNQ", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", sliceSize: SliceSize.HALVED },
-  { id: 19, seed: ["O", "R"], word: "OROR", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", sliceSize: SliceSize.HALVED },
+  { id: 11, seed: ["J", "D"], word: "JDJD", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
+  { id: 12, seed: ["K", "E"], word: "KEKE", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
+  { id: 13, seed: ["L", "F"], word: "LFLF", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
+  { id: 14, seed: ["D", "J"], word: "DJDJ", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED },
+  { id: 15, seed: ["E", "K"], word: "EKEK", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED },
+  { id: 16, seed: ["F", "L"], word: "FLFL", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED },
+  { id: 17, seed: ["M", "P"], word: "MPMP", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
+  { id: 18, seed: ["N", "Q"], word: "NQNQ", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
+  { id: 19, seed: ["O", "R"], word: "OROR", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
 ];
 
 // ============================================================================
@@ -379,7 +379,7 @@ interface VTGSequence {
   vtg: string;
   familyId: string;
   startPos: string;
-  sliceSize: SliceSize;
+  period: Period;
   handPathId: string;
   steps: SequenceStep[];
   startPositionStep: SequenceStep;
@@ -425,7 +425,7 @@ function buildVTGSequence(
     inputSteps,
     seedWord,
     LOOPType.ROTATED,
-    def.sliceSize,
+    def.period,
     allPictographs
   );
 
@@ -459,7 +459,7 @@ function buildVTGSequence(
     vtg: def.vtg,
     familyId: def.familyId,
     startPos: def.startPos,
-    sliceSize: def.sliceSize,
+    period: def.period,
     handPathId,
     steps: actualSteps,
     startPositionStep: result.steps[0],
@@ -590,7 +590,7 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
         familyLabel: seq.vtg,
         handPathId: seq.handPathId,
         startPosition: seq.startPos,
-        seed: seq.word.slice(0, seq.sliceSize === SliceSize.QUARTERED ? 1 : 2),
+        seed: seq.word.slice(0, seq.period === Period.QUARTERED ? 1 : 2),
         vtgCategory: seq.vtg,
       },
       author: "TKA System",
@@ -648,7 +648,7 @@ async function main(): Promise<void> {
     const seq = buildVTGSequence(def, adj, allPictographs);
     if (seq) {
       sequences.push(seq);
-      const sliceLabel = def.sliceSize === SliceSize.QUARTERED ? "quartered" : "halved";
+      const sliceLabel = def.period === Period.QUARTERED ? "quartered" : "halved";
       console.log(`  #${def.id} ${def.word} (${def.vtg}, ${sliceLabel}) ✓`);
     } else {
       console.error(`  #${def.id} ${def.word} FAILED`);

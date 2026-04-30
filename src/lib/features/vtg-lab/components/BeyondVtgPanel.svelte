@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * BeyondVtgPanel — card list of what TKA covers beyond VTG.
+	 * BeyondVtgPanel - card list of what TKA covers beyond VTG.
 	 */
 
 	import { BEYOND_VTG_ITEMS } from "../domain/vtg-pattern-data";

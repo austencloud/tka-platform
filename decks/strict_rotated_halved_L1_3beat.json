@@ -1,7 +1,7 @@
 {
   "metadata": {
     "loopType": "rotated",
-    "sliceSize": "halved",
+    "period": "halved",
     "seedLength": 3,
     "level": 1,
     "gridMode": "diamond",

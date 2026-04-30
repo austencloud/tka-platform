@@ -5,7 +5,7 @@
  * HTMLImageElements before the export frame loop. Each unique combination of
  * letter, turns tuple, and turn colors produces one cached image.
  *
- * This ensures the exported video matches the live canvas exactly — the live
+ * This ensures the exported video matches the live canvas exactly - the live
  * canvas renders TKAGlyph + Dash + TurnsColumn as SVG overlays; without
  * pre-rendering, the export would only show a bare letter SVG.
  */

@@ -3,7 +3,7 @@
    * Viewer3DEffectPills
    *
    * A row of toggle pills for visual effects (Fire, LED, Trails, Sparks).
-   * Currently all pills are disabled — the toggle UI is ready for when effect
+   * Currently all pills are disabled - the toggle UI is ready for when effect
    * plugins are registered. Users see a "Coming soon" tooltip on hover.
    *
    * The active class tracks effectToggles from context so the UI will

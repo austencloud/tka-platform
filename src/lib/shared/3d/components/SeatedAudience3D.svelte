@@ -98,7 +98,7 @@
       })
       .catch((err) => {
         console.error("[SeatedAudience3D] preload failed:", err);
-        // Still report ready so the curtain can lift — better a missing
+        // Still report ready so the curtain can lift - better a missing
         // audience than a permanent loading state.
         if (!cancelled) sceneFeatures?.reportReady("audience");
       });

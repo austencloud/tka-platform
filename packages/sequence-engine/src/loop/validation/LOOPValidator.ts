@@ -9,7 +9,7 @@
 
 import {
   LOOPType,
-  SliceSize,
+  Period,
   LOOP_TYPE_LABELS,
   LOOP_TYPE_DESCRIPTIONS,
   SUPPORTED_LOOP_TYPES,
@@ -346,14 +346,14 @@ export const ROTATED_SWAPPED_QUARTERED_VALIDATION_SET = new Set<string>([
 export function isLOOPValidForPositionPair(
   loopType: LOOPType,
   positionPair: string,
-  sliceSize: SliceSize
+  period: Period
 ): boolean {
   // Rotated LOOPs use rotation-based validation
-  const rotationSet = sliceSize === SliceSize.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
+  const rotationSet = period === Period.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
 
   // Rotated+Swapped LOOPs need composed validation
   const rotatedSwappedSet =
-    sliceSize === SliceSize.QUARTERED
+    period === Period.QUARTERED
       ? ROTATED_SWAPPED_QUARTERED_VALIDATION_SET
       : ROTATED_SWAPPED_HALVED_VALIDATION_SET;
 
@@ -417,7 +417,7 @@ export function isLOOPSupported(loopType: LOOPType): boolean {
 export function getLOOPOptionsForPositionPair(
   startPosition: string,
   endPosition: string,
-  sliceSize: SliceSize
+  period: Period
 ): LOOPValidationResult {
   const available: LOOPOption[] = [];
   const unavailable: Array<LOOPOption & { reason?: string }> = [];
@@ -440,7 +440,7 @@ export function getLOOPOptionsForPositionPair(
     }
 
     // Check if position pair is valid for this LOOP type
-    if (isLOOPValidForPositionPair(loopType, positionPair, sliceSize)) {
+    if (isLOOPValidForPositionPair(loopType, positionPair, period)) {
       available.push(option);
     } else {
       unavailable.push({
@@ -459,12 +459,12 @@ export function getLOOPOptionsForPositionPair(
 export function getExpectedEndPosition(
   startPosition: string,
   loopType: LOOPType,
-  sliceSize: SliceSize
+  period: Period
 ): string | null {
   switch (loopType) {
     case LOOPType.ROTATED:
     case LOOPType.ROTATED_INVERTED:
-      if (sliceSize === SliceSize.HALVED) {
+      if (period === Period.HALVED) {
         return HALF_POSITION_MAP[startPosition] || null;
       } else {
         // For quartered, could be either CW or CCW
@@ -500,7 +500,7 @@ export function getExpectedEndPosition(
  * @param startPosition - The sequence's start position (used to determine valid LOOP end positions)
  * @param currentEndPosition - Where the sequence currently ends
  * @param loopType - The LOOP type we want to achieve
- * @param sliceSize - Halved or quartered
+ * @param period - Halved or quartered
  * @param allPictographs - Pictograph data to find bridge letters from
  * @returns Array of bridge letter options that would make the LOOP valid, or empty if no bridge needed/possible
  */
@@ -508,11 +508,11 @@ export function findBridgeLettersForLoop(
   startPosition: string,
   currentEndPosition: string,
   loopType: LOOPType,
-  sliceSize: SliceSize,
+  period: Period,
   allPictographs: Array<{ letter: string; startPosition: string; endPosition: string }>
 ): string[] {
   // Get what end positions would be valid for this LOOP
-  const validEndPositions = getValidEndPositionsForLoop(startPosition, loopType, sliceSize);
+  const validEndPositions = getValidEndPositionsForLoop(startPosition, loopType, period);
 
   // If current position is already valid, no bridge needed
   if (validEndPositions.includes(currentEndPosition)) {
@@ -548,14 +548,14 @@ export function findBridgeLettersForLoop(
 export function getValidEndPositionsForLoop(
   startPosition: string,
   loopType: LOOPType,
-  sliceSize: SliceSize
+  period: Period
 ): string[] {
   const validPositions: string[] = [];
 
   switch (loopType) {
     case LOOPType.ROTATED:
     case LOOPType.ROTATED_INVERTED:
-      if (sliceSize === SliceSize.HALVED) {
+      if (period === Period.HALVED) {
         const halved = HALF_POSITION_MAP[startPosition];
         if (halved) validPositions.push(halved);
       } else {

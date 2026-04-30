@@ -1,8 +1,8 @@
 /**
- * LedRibbonGeometry3D — mutable BufferGeometry that extrudes a
+ * LedRibbonGeometry3D - mutable BufferGeometry that extrudes a
  * camera-facing quad strip along a polyline of sample points.
  *
- * Each sample point contributes two vertices — one offset +N, one -N —
+ * Each sample point contributes two vertices - one offset +N, one -N -
  * where N is perpendicular to both the local tangent and the direction
  * from the sample to the camera. The result is a continuous ribbon that
  * always faces the camera along its length.

@@ -170,7 +170,7 @@
     }> = [];
 
     // Seek to each corrected frame, capture the image, and build the training pair.
-    // Seeking is async — we wait for seeked event before drawing.
+    // Seeking is async - we wait for seeked event before drawing.
     for (let i = 0; i < correctedFrameNumbers.length; i++) {
       const frameIndex = correctedFrameNumbers[i]!;
       const targetTime = frameIndex / fps;
@@ -245,7 +245,7 @@
         {#if avgCorrectionDrift > 0}
           {avgCorrectionDrift.toFixed(1)} px
         {:else}
-          —
+          -
         {/if}
       </dd>
     </div>
@@ -255,7 +255,7 @@
         {#if occlusionStats.total > 0}
           {occlusionStats.occluded} / {occlusionStats.total}
         {:else}
-          —
+          -
         {/if}
       </dd>
     </div>
@@ -530,7 +530,7 @@
     background: transparent;
   }
 
-  /* Secondary export button — muted variant */
+  /* Secondary export button - muted variant */
   .export-btn-secondary {
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: rgba(255, 255, 255, 0.04);

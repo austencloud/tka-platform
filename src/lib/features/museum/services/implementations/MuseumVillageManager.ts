@@ -1,9 +1,9 @@
 /**
- * MuseumVillageManager — Persistent Village simulation for the museum.
+ * MuseumVillageManager - Persistent Village simulation for the museum.
  *
  * Created once when the museum loads. The orchestrator runs continuously
  * (or pauses when the player is in a different room). The visual embed
- * component reads from this manager — it never creates or destroys the sim.
+ * component reads from this manager - it never creates or destroys the sim.
  *
  * This means:
  * - Walking away and back: village has progressed, no GLTF reload
@@ -21,7 +21,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
 import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
 
-// Avatar model IDs used by the village — preload these in background
+// Avatar model IDs used by the village - preload these in background
 const VILLAGE_AVATAR_MODELS = [
 	"x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12",
 	"ch18", "ch21", "ch22", "ch24", "ch34", "ch41", "ch42", "ch44",
@@ -32,7 +32,7 @@ let modelsPreloaded = false;
 /**
  * Preload all avatar GLTF models in the background via fetch().
  * The browser caches the responses, so when Avatar3D later loads them
- * via GLTFLoader, they come from cache instantly — no network wait.
+ * via GLTFLoader, they come from cache instantly - no network wait.
  * Call this when the museum first loads, well before the player reaches
  * the collaboration room.
  */
@@ -42,9 +42,9 @@ export function preloadVillageAvatarModels(): void {
 
 	for (const modelId of VILLAGE_AVATAR_MODELS) {
 		const url = getAvatarModelPath(modelId);
-		// Fire-and-forget fetch — just warms the cache
+		// Fire-and-forget fetch - just warms the cache
 		fetch(url, { priority: "low" as any }).catch(() => {
-			// Ignore errors — models will load normally when needed
+			// Ignore errors - models will load normally when needed
 		});
 	}
 }
@@ -110,7 +110,7 @@ export function getMuseumVillageManager() {
 		visualState.triggerRelight(seqId);
 	});
 
-	// Start ticking immediately — sim runs in background
+	// Start ticking immediately - sim runs in background
 	villageState.start();
 
 	instance = { villageState, visualState, isVisible: false };

@@ -2,7 +2,7 @@
   ReadyStep - Final step of the create tutorial
 
   Desktop: workspace mockup with numbered buttons + legend panel (side by side).
-  Mobile: accordion list of tools (no mockup — user just built the sequence).
+  Mobile: accordion list of tools (no mockup - user just built the sequence).
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";

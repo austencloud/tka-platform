@@ -8,7 +8,7 @@
  * Hand paths are derived from the CSV (DiamondPictographDataframe.csv)
  * and verified against all 22 Type 1 letters. The core insight:
  * within a single chain, both hands rotate around the grid at 90°
- * per beat — only the motion type and rotation direction differ
+ * per beat - only the motion type and rotation direction differ
  * between letters.
  */
 
@@ -46,7 +46,7 @@ export interface ChainDef {
 	mnemonic?: string;
 	/** Rotation style for UI badges */
 	rotationStyle: RotationStyle;
-	/** Letters in the cycle — 1 for same-position, 2 for compounds (alternating) */
+	/** Letters in the cycle - 1 for same-position, 2 for compounds (alternating) */
 	letters: [Letter] | [Letter, Letter];
 	/** Blue hand motion properties (constant across all 4 beats) */
 	blue: { motion: MotionType; rotation: RotationDirection };
@@ -63,22 +63,22 @@ export interface ChainDef {
  * Derived from the Diamond mode grid geometry.
  */
 const LOCATION_TO_POSITION: Record<string, GridPosition> = {
-	// Alpha — hands at opposite points
+	// Alpha - hands at opposite points
 	[`${L.SOUTH},${L.NORTH}`]: P.ALPHA1,
 	[`${L.WEST},${L.EAST}`]: P.ALPHA3,
 	[`${L.NORTH},${L.SOUTH}`]: P.ALPHA5,
 	[`${L.EAST},${L.WEST}`]: P.ALPHA7,
-	// Beta — hands at the same point
+	// Beta - hands at the same point
 	[`${L.NORTH},${L.NORTH}`]: P.BETA1,
 	[`${L.EAST},${L.EAST}`]: P.BETA3,
 	[`${L.SOUTH},${L.SOUTH}`]: P.BETA5,
 	[`${L.WEST},${L.WEST}`]: P.BETA7,
-	// Gamma set 1 — blue one step CCW of red (90° apart)
+	// Gamma set 1 - blue one step CCW of red (90° apart)
 	[`${L.WEST},${L.NORTH}`]: P.GAMMA1,
 	[`${L.NORTH},${L.EAST}`]: P.GAMMA3,
 	[`${L.EAST},${L.SOUTH}`]: P.GAMMA5,
 	[`${L.SOUTH},${L.WEST}`]: P.GAMMA7,
-	// Gamma set 2 — blue one step CW of red (90° apart, other chirality)
+	// Gamma set 2 - blue one step CW of red (90° apart, other chirality)
 	[`${L.EAST},${L.NORTH}`]: P.GAMMA9,
 	[`${L.SOUTH},${L.EAST}`]: P.GAMMA11,
 	[`${L.WEST},${L.SOUTH}`]: P.GAMMA13,
@@ -93,7 +93,7 @@ function positionAt(blueLoc: GridLocation, redLoc: GridLocation): GridPosition {
 }
 
 // ─── Shared hand paths ────────────────────────────────────────────────
-// Hand paths are the same within a mode — only motion type/rotation differ.
+// Hand paths are the same within a mode - only motion type/rotation differ.
 
 // SS: Blue shifts CCW, Red shifts CW (alpha → alpha)
 const SS_BLUE: FivePoints = [L.WEST, L.NORTH, L.EAST, L.SOUTH, L.WEST];
@@ -103,7 +103,7 @@ const SS_RED: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 const TS_BLUE: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 const TS_RED: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 
-// TO: Blue CCW, Red CW — entering from β (β→α→β→α)
+// TO: Blue CCW, Red CW - entering from β (β→α→β→α)
 const TO_BLUE: FivePoints = [L.EAST, L.NORTH, L.WEST, L.SOUTH, L.EAST];
 const TO_RED: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 
@@ -119,7 +119,7 @@ const QS1_RED: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 const QS2_BLUE: FivePoints = [L.SOUTH, L.WEST, L.NORTH, L.EAST, L.SOUTH];
 const QS2_RED: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 
-// QO: Blue CCW, Red CW — cross-set compound (γ3→γ13→γ7→γ9)
+// QO: Blue CCW, Red CW - cross-set compound (γ3→γ13→γ7→γ9)
 const QO_BLUE: FivePoints = [L.NORTH, L.WEST, L.SOUTH, L.EAST, L.NORTH];
 const QO_RED: FivePoints = [L.EAST, L.SOUTH, L.WEST, L.NORTH, L.EAST];
 

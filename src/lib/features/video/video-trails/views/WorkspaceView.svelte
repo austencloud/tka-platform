@@ -34,7 +34,7 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   // Canvas stack reference
   let canvasStack: EffectCanvasStack | undefined = $state(undefined);
 
-  // Video element — lives in the DOM as a hidden element for reliable playback
+  // Video element - lives in the DOM as a hidden element for reliable playback
   let videoEl: HTMLVideoElement | undefined = $state(undefined);
   let offscreenCanvas: HTMLCanvasElement | null = null;
   let offscreenCtx: CanvasRenderingContext2D | null = null;
@@ -42,7 +42,7 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   let canvasWidth = $state(640);
   let canvasHeight = $state(360);
 
-  // Throttle detection to every Nth frame — detection is CPU-heavy (pixel scanning,
+  // Throttle detection to every Nth frame - detection is CPU-heavy (pixel scanning,
   // flood-fill, k-means) and running it at 60fps causes choppy video playback.
   // The video frame still draws every RAF tick for smooth visuals.
   let detectionFrameCounter = 0;
@@ -62,7 +62,7 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   const VIDEO_PERSIST_KEY = "video-trails-last-video";
 
   // ---------------------------------------------------------------------------
-  // Video persistence — store/restore video blob via IndexedDB
+  // Video persistence - store/restore video blob via IndexedDB
   // ---------------------------------------------------------------------------
 
   async function persistVideoBlob(file: File): Promise<void> {
@@ -124,7 +124,7 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   });
 
   // ---------------------------------------------------------------------------
-  // Video source loading — set src on the DOM <video> element
+  // Video source loading - set src on the DOM <video> element
   // ---------------------------------------------------------------------------
 
   $effect(() => {

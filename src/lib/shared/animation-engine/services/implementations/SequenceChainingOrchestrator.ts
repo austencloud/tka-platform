@@ -86,7 +86,7 @@ export class SequenceChainingOrchestrator implements ISequenceChainingOrchestrat
       if (generated) this.doHotSwap(generated.sequence);
     } catch (err) {
       console.error("SequenceChainingOrchestrator: shuffle failed:", err);
-      this.errorCallback?.("Shuffle failed — could not generate a new sequence");
+      this.errorCallback?.("Shuffle failed - could not generate a new sequence");
     } finally {
       this._isChainingNow = false;
     }

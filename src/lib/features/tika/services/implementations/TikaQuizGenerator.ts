@@ -36,7 +36,7 @@ interface PositionQuestion {
   showPictograph?: boolean;
 }
 
-// Type 6 (Static) letters — pure position, no motion arrows.
+// Type 6 (Static) letters - pure position, no motion arrows.
 // Each has multiple variations at different grid locations.
 const ALPHA_STIMULUS = "α"; // static at alpha positions (4 variations)
 const BETA_STIMULUS = "β"; // static at beta positions (4 variations)
@@ -54,7 +54,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "alpha",
-    correctFeedback: "Alpha (α) — hands at opposite grid points.",
+    correctFeedback: "Alpha (α) - hands at opposite grid points.",
     incorrectFeedback: "The hands are at opposite points on the grid. That's alpha (α).",
     difficulty: "easy",
     showPictograph: true,
@@ -62,7 +62,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "beta",
-    correctFeedback: "Beta (β) — both hands at the same grid point.",
+    correctFeedback: "Beta (β) - both hands at the same grid point.",
     incorrectFeedback: "Both hands are at the same grid point. That's beta (β).",
     difficulty: "easy",
     showPictograph: true,
@@ -70,7 +70,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "gamma",
-    correctFeedback: "Gamma (γ) — hands at adjacent points, forming a right angle.",
+    correctFeedback: "Gamma (γ) - hands at adjacent points, forming a right angle.",
     incorrectFeedback: "The hands form a right angle on the grid. That's gamma (γ).",
     difficulty: "easy",
     showPictograph: true,
@@ -79,7 +79,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "alpha",
-    correctFeedback: "Alpha — opposite points.",
+    correctFeedback: "Alpha - opposite points.",
     incorrectFeedback: "Hands at opposite grid points = alpha.",
     difficulty: "medium",
     showPictograph: true,
@@ -87,7 +87,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "beta",
-    correctFeedback: "Beta — same point.",
+    correctFeedback: "Beta - same point.",
     incorrectFeedback: "Hands at the same grid point = beta.",
     difficulty: "medium",
     showPictograph: true,
@@ -95,7 +95,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "gamma",
-    correctFeedback: "Gamma — right angle.",
+    correctFeedback: "Gamma - right angle.",
     incorrectFeedback: "Hands at a right angle = gamma.",
     difficulty: "medium",
     showPictograph: true,
@@ -103,7 +103,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "alpha",
-    correctFeedback: "Alpha — opposite points.",
+    correctFeedback: "Alpha - opposite points.",
     incorrectFeedback: "Hands at opposite points = alpha.",
     difficulty: "medium",
     showPictograph: true,
@@ -111,7 +111,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "beta",
-    correctFeedback: "Beta — same point.",
+    correctFeedback: "Beta - same point.",
     incorrectFeedback: "Hands at the same point = beta.",
     difficulty: "medium",
     showPictograph: true,
@@ -119,7 +119,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "gamma",
-    correctFeedback: "Gamma — right angle.",
+    correctFeedback: "Gamma - right angle.",
     incorrectFeedback: "Hands at a right angle = gamma.",
     difficulty: "medium",
     showPictograph: true,
@@ -144,7 +144,7 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
   {
     question: "What position is this?",
     correctPosition: "gamma",
-    correctFeedback: "Gamma. The asymmetric position — leader/follower matters here.",
+    correctFeedback: "Gamma. The asymmetric position - leader/follower matters here.",
     incorrectFeedback: "Hands at a right angle = gamma. It's the only asymmetric position.",
     difficulty: "hard",
     showPictograph: true,
@@ -154,21 +154,21 @@ const POSITION_QUESTION_POOL: PositionQuestion[] = [
     question: "VTG calls this 'together' or 'tog'. What TKA position is it?",
     correctPosition: "beta",
     correctFeedback: "VTG 'together' = TKA beta. Hands at the same point.",
-    incorrectFeedback: "VTG 'together' maps to beta — both hands at the same grid point.",
+    incorrectFeedback: "VTG 'together' maps to beta - both hands at the same grid point.",
     difficulty: "hard",
   },
   {
     question: "VTG calls this 'split'. What TKA position is it?",
     correctPosition: "alpha",
     correctFeedback: "VTG 'split' = TKA alpha. Hands at opposite points.",
-    incorrectFeedback: "VTG 'split' maps to alpha — hands at opposite grid points.",
+    incorrectFeedback: "VTG 'split' maps to alpha - hands at opposite grid points.",
     difficulty: "hard",
   },
   {
-    question: "Which position is asymmetric — swapping hands produces a different configuration?",
+    question: "Which position is asymmetric - swapping hands produces a different configuration?",
     correctPosition: "gamma",
     correctFeedback: "Gamma is asymmetric. One hand leads, the other follows.",
-    incorrectFeedback: "Gamma is the asymmetric position — the leader/follower distinction matters.",
+    incorrectFeedback: "Gamma is the asymmetric position - the leader/follower distinction matters.",
     difficulty: "hard",
   },
 ];
@@ -190,21 +190,21 @@ const MOTION_QUESTION_POOL: MotionQuestion[] = [
   {
     question: "Which motion keeps the hand at its current grid point?",
     correctMotion: "static",
-    correctFeedback: "Static — the hand stays in place.",
+    correctFeedback: "Static - the hand stays in place.",
     incorrectFeedback: "No hand movement = static.",
     difficulty: "easy",
   },
   {
     question: "Which motion moves the hand to an adjacent grid point?",
     correctMotion: "shift",
-    correctFeedback: "Shift — hand moves to a neighboring point.",
+    correctFeedback: "Shift - hand moves to a neighboring point.",
     incorrectFeedback: "Moving to an adjacent point is a shift.",
     difficulty: "easy",
   },
   {
     question: "Which motion moves the hand to the opposite grid point?",
     correctMotion: "dash",
-    correctFeedback: "Dash — hand crosses straight to the opposite point.",
+    correctFeedback: "Dash - hand crosses straight to the opposite point.",
     incorrectFeedback: "Moving to the opposite point is a dash.",
     difficulty: "easy",
   },
@@ -212,50 +212,50 @@ const MOTION_QUESTION_POOL: MotionQuestion[] = [
   {
     question: "A hand at North moves to East. What motion is this?",
     correctMotion: "shift",
-    correctFeedback: "North to East is an adjacent point — shift.",
-    incorrectFeedback: "North to East is one step around the grid — that's a shift.",
+    correctFeedback: "North to East is an adjacent point - shift.",
+    incorrectFeedback: "North to East is one step around the grid - that's a shift.",
     difficulty: "medium",
   },
   {
     question: "A hand at North moves to South. What motion is this?",
     correctMotion: "dash",
-    correctFeedback: "North to South is the opposite point — dash.",
-    incorrectFeedback: "North to South crosses the grid — that's a dash.",
+    correctFeedback: "North to South is the opposite point - dash.",
+    incorrectFeedback: "North to South crosses the grid - that's a dash.",
     difficulty: "medium",
   },
   {
     question: "A hand stays at East while the prop rotates. What motion is this?",
     correctMotion: "static",
-    correctFeedback: "Hand stays put — static. The prop can still rotate.",
+    correctFeedback: "Hand stays put - static. The prop can still rotate.",
     incorrectFeedback: "If the hand doesn't move, that's static (the prop can still rotate).",
     difficulty: "medium",
   },
   {
     question: "A hand at West moves to North. What motion is this?",
     correctMotion: "shift",
-    correctFeedback: "West to North is adjacent — shift.",
-    incorrectFeedback: "West to North is one step — that's a shift.",
+    correctFeedback: "West to North is adjacent - shift.",
+    incorrectFeedback: "West to North is one step - that's a shift.",
     difficulty: "medium",
   },
   {
     question: "A hand at East moves to West. What motion is this?",
     correctMotion: "dash",
-    correctFeedback: "East to West is the opposite point — dash.",
-    incorrectFeedback: "East to West crosses the grid — that's a dash.",
+    correctFeedback: "East to West is the opposite point - dash.",
+    incorrectFeedback: "East to West crosses the grid - that's a dash.",
     difficulty: "medium",
   },
   {
     question: "A hand at South moves to North. What motion is this?",
     correctMotion: "dash",
-    correctFeedback: "South to North is the opposite point — dash.",
-    incorrectFeedback: "South to North crosses the grid — that's a dash.",
+    correctFeedback: "South to North is the opposite point - dash.",
+    incorrectFeedback: "South to North crosses the grid - that's a dash.",
     difficulty: "medium",
   },
   {
     question: "A hand at NE moves to SE. What motion is this?",
     correctMotion: "shift",
-    correctFeedback: "NE to SE is adjacent — shift.",
-    incorrectFeedback: "NE to SE is one step — that's a shift.",
+    correctFeedback: "NE to SE is adjacent - shift.",
+    incorrectFeedback: "NE to SE is one step - that's a shift.",
     difficulty: "medium",
   },
   // Hard: conceptual
@@ -263,7 +263,7 @@ const MOTION_QUESTION_POOL: MotionQuestion[] = [
     question: "Which is the only motion where pro/anti rotation applies?",
     correctMotion: "shift",
     correctFeedback: "Only shift has a curved path, enabling pro/anti/float distinctions.",
-    incorrectFeedback: "Pro and anti only apply to shift — it's the only curved-path motion.",
+    incorrectFeedback: "Pro and anti only apply to shift - it's the only curved-path motion.",
     difficulty: "hard",
   },
   {
@@ -276,8 +276,8 @@ const MOTION_QUESTION_POOL: MotionQuestion[] = [
   {
     question: "Which motion has exactly one state at 0 turns (no direction)?",
     correctMotion: "dash",
-    correctFeedback: "At 0 turns, dash has no direction distinction — just 1 state.",
-    incorrectFeedback: "Dash at 0 turns is directionless — only 1 state, not 2.",
+    correctFeedback: "At 0 turns, dash has no direction distinction - just 1 state.",
+    incorrectFeedback: "Dash at 0 turns is directionless - only 1 state, not 2.",
     difficulty: "hard",
   },
 ];
@@ -698,7 +698,7 @@ export class TikaQuizGenerator implements ITikaQuizGenerator {
         stimulusPictograph = {
           letter: stimulus.letter,
           variation: Math.floor(Math.random() * stimulus.variationCount),
-          // Beginners see hands only — props come after they understand positions
+          // Beginners see hands only - props come after they understand positions
           ...(difficulty !== "hard" && { propType: "hand" }),
         };
       }

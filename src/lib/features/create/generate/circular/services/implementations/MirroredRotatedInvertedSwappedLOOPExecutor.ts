@@ -27,7 +27,7 @@
  * IMPORTANT: After rotation, sequence returns to home, which is valid for mirrored-swapped-inverted
  */
 
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 
@@ -41,17 +41,17 @@ export class MirroredRotatedInvertedSwappedLOOPExecutor implements ILOOPExecutor
    * Execute the mirrored-rotated-inverted-swapped LOOP by composing rotation + mirrored+swapped+inverted
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param sliceSize - The slice size for rotation (halved or quartered)
+   * @param period - The slice size for rotation (halved or quartered)
    * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     // Step 1: Apply ROTATED with user-selected slice size
     // HALVED: doubles the sequence (e.g., 4 steps → 8 steps)
     // QUARTERED: quadruples the sequence (e.g., 2 steps → 8 steps)
     // Returns to home position in both cases
     const rotatedSequence = this.strictRotatedExecutor.executeLOOP(
       sequence,
-      sliceSize
+      period
     );
 
     // Step 2: Apply MIRRORED + SWAPPED + INVERTED to the rotated sequence
@@ -64,7 +64,7 @@ export class MirroredRotatedInvertedSwappedLOOPExecutor implements ILOOPExecutor
     // For example: 8 steps → 16 steps final
     const finalSequence = this.mirroredSwappedInvertedExecutor.executeLOOP(
       rotatedSequence,
-      SliceSize.HALVED // Not actually used by this executor, but passed for consistency
+      Period.HALVED // Not actually used by this executor, but passed for consistency
     );
 
     return finalSequence;

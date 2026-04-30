@@ -25,6 +25,6 @@
   <GuideDiagram
     src="/guide/level-1/images/staff-positions/staff-positions.png"
     alt="Staff positions showing thumb in and thumb out orientations at Alpha, Beta, and Gamma"
-    caption="Staff positions — thumbs in and out at Alpha, Beta, and Gamma"
+    caption="Staff positions - thumbs in and out at Alpha, Beta, and Gamma"
   />
 </GuideSection>

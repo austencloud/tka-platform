@@ -74,10 +74,10 @@ export function createBuilderState() {
   let redLocations = $state<GridLocation[]>([]);
   let isAnimating = $state(false);
 
-  // Animation callback — set by HandPathBuilderLab to animate hand movement
+  // Animation callback - set by HandPathBuilderLab to animate hand movement
   let animationCallback: ((move: HandMove) => Promise<void>) | null = null;
 
-  // Derived path names — live-update as locations are tapped
+  // Derived path names - live-update as locations are tapped
   const bluePathName = $derived(
     blueLocations.length > 0 ? namer.toName(blueLocations) : ""
   );

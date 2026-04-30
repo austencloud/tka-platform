@@ -12,7 +12,7 @@
   // Palette swatches use the palette's pigment color so each chip reads
   // identity at a glance. Watercolor reads blue, neon reads magenta,
   // blood reads dark red, etc. Palette choice also flips emissive /
-  // watercolor flags inside the translator — user doesn't see those as
+  // watercolor flags inside the translator - user doesn't see those as
   // separate knobs.
   const PALETTES: { id: InkIntent["palette"]; label: string; swatch: string }[] = [
     { id: "india", label: "India", swatch: "#0a0a0a" },
@@ -150,7 +150,7 @@
         <span class="slider-value">{Math.round(state.ink.intensity * 100)}%</span>
       </div>
 
-      <!-- Viscosity — wires through now, sprint 2 renders it as strand breakup -->
+      <!-- Viscosity - wires through now, sprint 2 renders it as strand breakup -->
       <div class="slider-row">
         <label for="ink-viscosity">Viscosity</label>
         <input
@@ -168,7 +168,7 @@
         <span class="slider-value">{Math.round(state.ink.viscosity * 100)}%</span>
       </div>
 
-      <!-- Splatter — wires through now, sprint 2 renders it as burst particles -->
+      <!-- Splatter - wires through now, sprint 2 renders it as burst particles -->
       <div class="slider-row">
         <label for="ink-splatter">Splatter</label>
         <input

@@ -41,11 +41,11 @@
   const INK         = 'rgba(220,240,255,0.95)';  // white-cyan ink
   const INK_DIM     = 'rgba(180,210,240,0.55)';  // dimmer annotations
   const INK_FAINT   = 'rgba(130,180,230,0.30)';  // very faint
-  const BLUE_HAND   = 'rgba(160,220,255,0.90)';  // hand tint — blue
-  const RED_HAND    = 'rgba(255,180,160,0.90)';  // hand tint — red (warm)
+  const BLUE_HAND   = 'rgba(160,220,255,0.90)';  // hand tint - blue
+  const RED_HAND    = 'rgba(255,180,160,0.90)';  // hand tint - red (warm)
   const TITLE_BG    = 'rgba(0,30,70,0.85)';
 
-  // Blueprint is special — we unify every pictograph class to the same bright
+  // Blueprint is special - we unify every pictograph class to the same bright
   // cyan so the canonical recolor simply normalizes everything, and the
   // 'blueprint' edge treatment then produces the two-tone cyanotype look.
   const BLUEPRINT_PALETTE = {
@@ -60,7 +60,7 @@
   const UNIT = 80;            // half-grid unit: distance from center to each grid point
 
   // Grid points (diamond layout).  UPPERCASE keys are this file's internal
-  // convention — our helpers map the lowercase TKA domain compass names
+  // convention - our helpers map the lowercase TKA domain compass names
   // (n, ne, e, ...) into these keys via ptsKey().
   //        N
   //   W         E
@@ -250,7 +250,7 @@
 
   // ─── Fallback-only: dimension-annotated "staff" (hand-position marker) ─────
   // In other eras the staff is a line. Here it's a technical annotation at
-  // a single point — a short diagonal rule with dimension ticks and a label.
+  // a single point - a short diagonal rule with dimension ticks and a label.
   // We pass the hand's endLocation point in.
   function drawStaff(px, py, color, label, labelSide) {
     const len = 52;
@@ -402,7 +402,7 @@
     const R = Math.hypot(s.x - CX, s.y - CY);
 
     // Dashed radius lines from center to arc endpoints (dimension construction
-    // lines — this is a technical drawing, not a motion illustration).
+    // lines - this is a technical drawing, not a motion illustration).
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 0.7;
@@ -514,14 +514,14 @@
   function handBadgeLines(hand, fallbackColorName) {
     if (!hand) return [];
     const colorName = (hand.color || fallbackColorName || '').toString().toUpperCase();
-    const motion = (hand.motionType || '').toString().toUpperCase() || '—';
-    const start  = ptsKey(handLoc(hand))    || '—';
-    const end    = ptsKey(handEndLoc(hand)) || '—';
+    const motion = (hand.motionType || '').toString().toUpperCase() || '-';
+    const start  = ptsKey(handLoc(hand))    || '-';
+    const end    = ptsKey(handEndLoc(hand)) || '-';
     const motionFamily = motion === 'DASH' ? 'DASH'
                        : motion === 'STATIC' ? 'STATIC'
                        : 'SHIFT';
     return [
-      `${colorName} HAND — ${motion}`,
+      `${colorName} HAND - ${motion}`,
       `START: ${start}`,
       `END:   ${end}`,
       `MOTION: ${motionFamily}`,
@@ -600,7 +600,7 @@
     ctx.font = 'bold 8px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`TKA PICTOGRAPH — LETTER ${l}`, TB_X + TB_W/2, TB_Y + 10);
+    ctx.fillText(`TKA PICTOGRAPH - LETTER ${l}`, TB_X + TB_W/2, TB_Y + 10);
 
     ctx.font = '7px "Courier New", monospace';
     ctx.fillStyle = INK_DIM;
@@ -615,8 +615,8 @@
   function drawDrawnByBlock(data) {
     const SB_X = 15, SB_Y = H - 78, SB_W = 160, SB_H = 62;
     const gridMode = String((data && data.gridMode) || 'diamond').toUpperCase();
-    const blueMotion = (data && data.blueHand && data.blueHand.motionType || '—').toString().toUpperCase();
-    const redMotion  = (data && data.redHand  && data.redHand.motionType  || '—').toString().toUpperCase();
+    const blueMotion = (data && data.blueHand && data.blueHand.motionType || '-').toString().toUpperCase();
+    const redMotion  = (data && data.redHand  && data.redHand.motionType  || '-').toString().toUpperCase();
 
     ctx.save();
     ctx.fillStyle = TITLE_BG;
@@ -699,23 +699,23 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Render — called on every pictograph update
+  // Render - called on every pictograph update
   //
   // Two paths:
   //   1. Canonical bitmap available (parent rendered via Canvas2DDirectRenderer):
   //      recolor into a unified cyan palette, apply the 'blueprint' edge
   //      treatment so every drawn pixel becomes bright cyan and everything
   //      else transparent, composite onto the cyanotype background. This
-  //      path inherits all correct motion semantics — pro vs anti, turns
-  //      indicators, dashes, floats — from the canonical renderer without
-  //      reimplementing them here. No pixelation — blueprints are crisp.
+  //      path inherits all correct motion semantics - pro vs anti, turns
+  //      indicators, dashes, floats - from the canonical renderer without
+  //      reimplementing them here. No pixelation - blueprints are crisp.
   //
   //   2. No canonical (standalone page open, or canonical render failed):
   //      fall back to the original dimension-annotated markers + dashed
   //      construction lines so the page still produces a meaningful image.
   //
   // Era chrome (background, graph paper, border, diagonals, title blocks,
-  // badges, watermark) is drawn identically either way — that's where this
+  // badges, watermark) is drawn identically either way - that's where this
   // era's voice lives.
   // ─────────────────────────────────────────────────────────────────────────
   function render(data, canonical, meta) {
@@ -728,7 +728,7 @@
 
     // ── Pictograph core ──
     if (canonical && window.PictographStylize) {
-      // No pixelate for blueprint — crisp technical linework
+      // No pixelate for blueprint - crisp technical linework
       const styled = window.PictographStylize.recolor(canonical, BLUEPRINT_PALETTE, W);
       window.PictographStylize.edgeTreatment(styled, 'blueprint');
       ctx.drawImage(styled, 0, 0, W, H);
@@ -750,7 +750,7 @@
     drawWatermark();
   }
 
-  // ─── Default pictograph — Letter A (what the page rendered before the
+  // ─── Default pictograph - Letter A (what the page rendered before the
   //     data-driven refactor). Also used when this HTML is opened directly
   //     without a parent posting pictograph data.
   const DEFAULT_PICTOGRAPH = {

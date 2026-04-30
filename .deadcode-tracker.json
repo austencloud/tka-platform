@@ -951,6 +951,132 @@
       "deadCount": 0,
       "removedCount": 0,
       "deferredCount": 0
+    },
+    "features/archive": {
+      "scannedAt": "2026-04-29T21:01:31.807Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/campground": {
+      "scannedAt": "2026-04-29T21:02:26.618Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/festivals": {
+      "scannedAt": "2026-04-29T21:02:45.793Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/fuse": {
+      "scannedAt": "2026-04-29T21:26:10.489Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/hannons-camp": {
+      "scannedAt": "2026-04-29T21:26:26.362Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/poi": {
+      "scannedAt": "2026-04-29T21:26:43.686Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/sticker-lab": {
+      "scannedAt": "2026-04-29T21:27:02.290Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/store": {
+      "scannedAt": "2026-04-29T21:27:27.226Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/video": {
+      "scannedAt": "2026-04-29T21:27:45.768Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/village": {
+      "scannedAt": "2026-04-29T21:28:05.782Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/browse": {
+      "scannedAt": "2026-04-29T21:28:26.731Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/desktop": {
+      "scannedAt": "2026-04-29T21:28:41.878Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/effects": {
+      "scannedAt": "2026-04-29T21:31:59.116Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/platform": {
+      "scannedAt": "2026-04-29T21:32:13.457Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/qr-video": {
+      "scannedAt": "2026-04-29T21:32:27.278Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/render-graph": {
+      "scannedAt": "2026-04-29T21:33:24.200Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/timeline": {
+      "scannedAt": "2026-04-29T21:33:36.389Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/video-export": {
+      "scannedAt": "2026-04-29T21:33:49.130Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
     }
   },
   "items": {},
@@ -979,7 +1105,20 @@
     "lib/shared/debug/state/test-preview-state.svelte.ts",
     "lib/shared/device/utils/device-utils.ts",
     "lib/shared/persistence/domain/models/FilteringModels.ts",
-    "lib/shared/sequence-viewer/services/contracts/ISequenceViewerNavigator.ts"
+    "lib/shared/sequence-viewer/services/contracts/ISequenceViewerNavigator.ts",
+    "lib/shared/effects/domain/presets/built-in-ink-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-smoke-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-bubbles-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-frost-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-petals-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-silk-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-led-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-fire-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-trail-presets.ts",
+    "lib/shared/effects/domain/presets/built-in-charcoal-presets.ts",
+    "lib/shared/render-graph/translators/EffectTranslators.ts",
+    "lib/shared/render-graph/translators/LedTranslator.ts",
+    "lib/shared/render-graph/translators/FireTranslator.ts"
   ],
   "stats": {
     "totalRemoved": 0,

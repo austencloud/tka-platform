@@ -4,7 +4,7 @@
  * All vertex positions computed trigonometrically for the equilateral triangle grid.
  * 950x950 SVG space, center at (475, 475).
  *
- * Four modes — one for each direction the apex can point:
+ * Four modes - one for each direction the apex can point:
  *   Upright:  apex N,  base SE + SW
  *   Inverted: apex S,  base NE + NW
  *   Right:    apex E,  base SW + NW

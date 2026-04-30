@@ -6,7 +6,7 @@
  * (one transformation, one sentence) and modular LOOPs (multiple patterns
  * with independent nested transformations).
  *
- * Does NOT modify the LOOPDetector — wraps its output with richer analysis.
+ * Does NOT modify the LOOPDetector - wraps its output with richer analysis.
  */
 
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
@@ -60,7 +60,7 @@ export class LOOPExplainer implements ILOOPExplainer {
       return this.fallbackExplanation(loopComponents, sequence);
     }
 
-    // Try modular decomposition — if the word has repeating sub-patterns
+    // Try modular decomposition - if the word has repeating sub-patterns
     // with detectable independent transformations, explain each one.
     const seeds = this.decomposeSeeds(word, steps);
 

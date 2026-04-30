@@ -15,7 +15,7 @@ const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
  * A single live puff particle.
  *
  * Motion integrates a multi-octave curl-noise flow field (sampled at the
- * puff's own position — no per-particle phase offset, so neighbouring
+ * puff's own position - no per-particle phase offset, so neighbouring
  * puffs move as coherent sheets) with a Boussinesq buoyancy force scaled
  * by per-particle temperature that cools exponentially.
  */
@@ -47,7 +47,7 @@ interface SmokePuff {
 }
 
 const TAU = Math.PI * 2;
-const FADE_IN_DURATION = 0.3; // seconds — soft birth
+const FADE_IN_DURATION = 0.3; // seconds - soft birth
 // Full-life fade curve: hold HOLD_FRACTION of life, decay across remainder.
 const HOLD_FRACTION = 0.4;
 
@@ -56,30 +56,30 @@ const HOLD_FRACTION = 0.4;
 // detail. Sampled at the puff's actual world position (no per-particle
 // phase offset) so nearby puffs share a flow → coherent sheets of motion
 // instead of independent jitter.
-const LARGE_EDDY_SCALE = 0.003; // 1/px — ~330px per eddy
-const SMALL_EDDY_SCALE = 0.012; // 1/px — ~80px wisps
-const LARGE_STRENGTH = 140; // px/s — dominant billow motion
-const SMALL_STRENGTH = 45; // px/s — detail turbulence
+const LARGE_EDDY_SCALE = 0.003; // 1/px - ~330px per eddy
+const SMALL_EDDY_SCALE = 0.012; // 1/px - ~80px wisps
+const LARGE_STRENGTH = 140; // px/s - dominant billow motion
+const SMALL_STRENGTH = 45; // px/s - detail turbulence
 
 // Thermal model (Boussinesq).
 // Puffs spawn hot (temp=1), cool exponentially. Buoyancy is proportional
 // to temperature, so fresh puffs lift fast and older ones settle. This is
 // what produces mushroom-cap expansion without additional forces: young
 // hot puffs overtake older cool ones below them.
-const COOLING = 0.35; // 1/s — halves temperature every ~2 s
+const COOLING = 0.35; // 1/s - halves temperature every ~2 s
 
 // Linear drag toward flow velocity. DRAG of 0.6 /s means the time
-// constant is ~1.7 s — gentle, lets momentum carry across curls
+// constant is ~1.7 s - gentle, lets momentum carry across curls
 // instead of being snuffed out within a quarter second like the old
 // exponential `0.4^dt` drag.
 const DRAG = 0.6; // 1/s
 
 /**
- * Canvas2D smoke renderer — per-tip curl-noise puff emitter with
+ * Canvas2D smoke renderer - per-tip curl-noise puff emitter with
  * continuous analytical flow field + Boussinesq buoyancy.
  *
  * Designed against Bridson 2007 "Curl-Noise for Procedural Fluid Flow" and
- * Schechter/Bridson 2008 "Evolving Sub-Grid Turbulence" — the parts that
+ * Schechter/Bridson 2008 "Evolving Sub-Grid Turbulence" - the parts that
  * translate to a particle system without a grid solver. Each puff samples
  * two octaves of curl at its own position (no per-particle phase offset,
  * which was the previous coherence-breaker), gets an upward target
@@ -181,12 +181,12 @@ export class Smoke2DRenderer {
       const jitter = 0.8 + Math.random() * 0.4;
       const r0 = baseRadius * jitter;
       const r1 = r0 * growthRatio * (0.85 + Math.random() * 0.3);
-      // Tighten spawn spread vs 8×6 old value — reads as entrainment
+      // Tighten spawn spread vs 8×6 old value - reads as entrainment
       // from a narrower source.
       const ox = (Math.random() - 0.5) * 4 * scale;
       const oy = (Math.random() - 0.5) * 3 * scale;
       const lifeJitter = 0.8 + Math.random() * 0.4;
-      // Smoke is translucent — range 0.12-0.37 peak instead of 0.25-0.70.
+      // Smoke is translucent - range 0.12-0.37 peak instead of 0.25-0.70.
       const peakAlpha = 0.12 + 0.25 * params.intensity;
 
       const px = tip.x + ox;
@@ -198,7 +198,7 @@ export class Smoke2DRenderer {
       const c = curl2D(px * LARGE_EDDY_SCALE, py * LARGE_EDDY_SCALE, this.clock);
       const angularVel = (c.vx - c.vy) * 0.8;
 
-      // Inherit a fraction of tip velocity — gives fast tip motion a
+      // Inherit a fraction of tip velocity - gives fast tip motion a
       // visible "ejected plume" direction without overpowering buoyancy.
       const INHERIT = 0.35;
 
@@ -278,7 +278,7 @@ export class Smoke2DRenderer {
       const { r: cr, g: cg, b: cb } = hexToRgb(palette.core);
       const { r: er, g: eg, b: eb } = hexToRgb(palette.edge);
       // Unit-radius gradient reused for every puff. Canvas2D applies the
-      // CTM at paint time, so setTransform scales it per puff — zero
+      // CTM at paint time, so setTransform scales it per puff - zero
       // per-particle gradient allocation.
       const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
       grad.addColorStop(0, `rgba(${cr},${cg},${cb},1)`);

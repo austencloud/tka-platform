@@ -88,7 +88,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
     return Object.values(map).some(v => v.effect === effectType);
   }
 
-  // Per-cell effect overrides — translate cell.effect AND tipEffectMap into
+  // Per-cell effect overrides - translate cell.effect AND tipEffectMap into
   // fireConfig/ledConfig. The renderers must be enabled if ANY tip is assigned
   // the effect, whether via the flat cell.effect or the per-tip matrix.
   const cellFireConfig = $derived.by((): Partial<FireOverlayConfig> | undefined => {
@@ -97,7 +97,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
     if (effect === 'charcoal' || tipMapHasEffect('charcoal')) return { charcoalParams: {} as any };
     if (effect && effect !== 'none') return undefined;
     if (cell.tipEffectMap && Object.keys(cell.tipEffectMap).length > 0) return undefined;
-    return undefined; // No per-cell override — global setting applies
+    return undefined; // No per-cell override - global setting applies
   });
 
   const cellLedConfig = $derived.by((): Partial<LedOverlayConfig> | undefined => {
@@ -105,7 +105,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
     if (effect === 'led' || tipMapHasEffect('led')) return { enabled: true };
     if (effect && effect !== 'none') return { enabled: false };
     if (cell.tipEffectMap && Object.keys(cell.tipEffectMap).length > 0) return { enabled: false };
-    return undefined; // No per-cell override — global setting applies
+    return undefined; // No per-cell override - global setting applies
   });
 
   // Per-cell motion visibility overrides (undefined defaults to visible)
@@ -411,7 +411,6 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 
   .cell-canvas.selected {
     border-color: var(--theme-accent, #8b5cf6);
-    border-width: 3px;
     box-shadow:
       0 0 0 3px rgba(139, 92, 246, 0.45),
       0 0 16px rgba(139, 92, 246, 0.3);

@@ -5,7 +5,7 @@
   HowTkaWorksSection. Lazy-loads the animation engine when scrolled into view,
   then auto-plays the provided sequence in a continuous loop.
 
-  No controls, no overlays — just the raw canvas filling its container.
+  No controls, no overlays - just the raw canvas filling its container.
 -->
 <script lang="ts">
 
@@ -42,7 +42,7 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
   let startPositionDeriver: IStartPositionDeriver | null = null;
   let animationReady = $state(false);
   let animationError = $state(false);
-  // Dynamically imported — null until the card scrolls into view
+  // Dynamically imported - null until the card scrolls into view
   let AnimatorCanvasComponent = $state<Component | null>(null);
 
   // Per-instance visibility manager so this card's settings don't conflict
@@ -141,7 +141,7 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
       const success = playbackController.initialize(prepared, animationState);
       if (!success) throw new Error("Playback init failed");
 
-      // Dynamically import the animation canvas — keeps it out of the initial bundle
+      // Dynamically import the animation canvas - keeps it out of the initial bundle
       const mod = await import(
         "$lib/shared/animation-engine/components/AnimatorCanvas.svelte"
       );

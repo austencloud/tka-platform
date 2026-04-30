@@ -18,13 +18,13 @@ import {
 //   color, propType, isVisible, gridMode, arrowLocation,
 //   arrowPlacementData, propPlacementData, prefloatRotationDirection
 //
-// Preserved fields (domain data — must survive the round-trip):
+// Preserved fields (domain data - must survive the round-trip):
 //   prefloatMotionType. When motionType === "float", this records the pro/anti
 //   type the motion collapsed from. Without it, letter classification and turn
 //   color cannot distinguish which hand the float belongs to (the float's
 //   own rotationDirection is "noRotation", which destroys the signal).
 //
-// prefloatRotationDirection is intentionally NOT stored — it is derivable
+// prefloatRotationDirection is intentionally NOT stored - it is derivable
 // from prefloatMotionType + start/end via HandpathDirectionCalculator at
 // rehydrate time, so persisting it would be redundant.
 //
@@ -104,9 +104,9 @@ export class SequenceDecomposer implements ISequenceDecomposer {
     //
     // Priority order:
     // 1. startPosition (the modern, canonical field)
-    // 2. startingPosition (legacy alias — same semantic, different field name)
+    // 2. startingPosition (legacy alias - same semantic, different field name)
     // 3. steps[0] motion (last-resort: read the initial state from the first beat)
-    // 4. Hard default: NORTH / IN — only reached on empty or fully-corrupt data
+    // 4. Hard default: NORTH / IN - only reached on empty or fully-corrupt data
     const startPositionMotions =
       sequence.startPosition?.motions ?? sequence.startingPosition?.motions;
 

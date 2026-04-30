@@ -4,7 +4,7 @@ export const BUILT_IN_PETALS_PRESETS: EffectsPreset[] = [
   {
     id: "petals-classic",
     name: "Classic",
-    description: "Balanced cherry blossom — soft pink sway.",
+    description: "Balanced cherry blossom - soft pink sway.",
     effectType: "petals",
     builtIn: true,
     previewColors: ["#ffd0e0", "#ffc0d8"],
@@ -23,7 +23,7 @@ export const BUILT_IN_PETALS_PRESETS: EffectsPreset[] = [
   {
     id: "petals-storm",
     name: "Storm",
-    description: "Chaotic autumn fall — wide sway, heavy drop.",
+    description: "Chaotic autumn fall - wide sway, heavy drop.",
     effectType: "petals",
     builtIn: true,
     previewColors: ["#d84820", "#c88020"],
@@ -99,7 +99,7 @@ export const BUILT_IN_PETALS_PRESETS: EffectsPreset[] = [
   {
     id: "petals-tornado",
     name: "Tornado",
-    description: "Extreme sway — spin chaos of autumn leaves.",
+    description: "Extreme sway - spin chaos of autumn leaves.",
     effectType: "petals",
     builtIn: true,
     previewColors: ["#c86828", "#d84820"],

@@ -1,5 +1,5 @@
 /**
- * RetroSoundManager — 8-bit synthesized UI sounds via Web Audio API
+ * RetroSoundManager - 8-bit synthesized UI sounds via Web Audio API
  *
  * Every sound is built from scratch using oscillators and gain nodes.
  * No audio files, no samples, no dependencies. The AudioContext is
@@ -75,7 +75,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 			[262, 150],  // C4
 			[330, 150],  // E4
 			[392, 150],  // G4
-			[523, 300],  // C5 — held longer at the top
+			[523, 300],  // C5 - held longer at the top
 		];
 
 		let offset = 0;
@@ -108,7 +108,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume;
 
-		// Ascending two-note sine chord — airy, welcoming
+		// Ascending two-note sine chord - airy, welcoming
 		this.scheduleNote(ctx, {
 			frequency: 400,
 			type: "sine",
@@ -134,7 +134,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume;
 
-		// Descending two-note — closing, but not alarming
+		// Descending two-note - closing, but not alarming
 		this.scheduleNote(ctx, {
 			frequency: 500,
 			type: "sine",
@@ -160,7 +160,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume * 0.7;
 
-		// Short downward frequency sweep — like shrinking
+		// Short downward frequency sweep - like shrinking
 		const osc = ctx.createOscillator();
 		const gainNode = ctx.createGain();
 
@@ -190,7 +190,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume * 0.7;
 
-		// Short upward frequency sweep — like expanding
+		// Short upward frequency sweep - like expanding
 		const osc = ctx.createOscillator();
 		const gainNode = ctx.createGain();
 
@@ -220,7 +220,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume * 0.5;
 
-		// Soft pop — subtle, not distracting
+		// Soft pop - subtle, not distracting
 		this.scheduleNote(ctx, {
 			frequency: 660,
 			type: "sine",
@@ -238,7 +238,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume;
 
-		// Iconic two-tone ascending chime — recognizable as "Start"
+		// Iconic two-tone ascending chime - recognizable as "Start"
 		this.scheduleNote(ctx, {
 			frequency: 523,  // C5
 			type: "sine",
@@ -264,7 +264,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume * 0.6;
 
-		// Six rapid clicks at irregular intervals — mechanical floppy drive
+		// Six rapid clicks at irregular intervals - mechanical floppy drive
 		const clickOffsets = [0, 0.06, 0.13, 0.185, 0.26, 0.32];
 		const frequencies = [120, 180, 140, 160, 110, 150];
 
@@ -287,7 +287,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume;
 
-		// Hollow thud — item dropped into bin
+		// Hollow thud - item dropped into bin
 		// Low rumble followed by a short high knock
 		this.scheduleNote(ctx, {
 			frequency: 80,
@@ -314,11 +314,11 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume;
 
-		// Welcoming ascending arpeggio — A4, C#5, E5
+		// Welcoming ascending arpeggio - A4, C#5, E5
 		const notes: [number, number, number][] = [
 			[440, 0,    100],  // A4
 			[554, 0.09, 100],  // C#5
-			[659, 0.18, 200],  // E5 — held
+			[659, 0.18, 200],  // E5 - held
 		];
 
 		for (const [frequency, offset, durationMs] of notes) {
@@ -340,7 +340,7 @@ export class RetroSoundManager implements IRetroSoundManager {
 		const now = ctx.currentTime;
 		const gain = this.volume;
 
-		// Harsh descending buzz — unmistakably wrong
+		// Harsh descending buzz - unmistakably wrong
 		this.scheduleNote(ctx, {
 			frequency: 320,
 			type: "square",

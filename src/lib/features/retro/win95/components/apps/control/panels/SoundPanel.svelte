@@ -1,5 +1,5 @@
 <!--
-  Sound sub-panel — volume control, mute, event list, test button.
+  Sound sub-panel - volume control, mute, event list, test button.
 -->
 <script lang="ts">
   import RetroButton from "../../../primitives/RetroButton.svelte";

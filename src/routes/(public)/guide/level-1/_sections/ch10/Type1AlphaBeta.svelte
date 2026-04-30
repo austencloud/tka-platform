@@ -40,7 +40,7 @@
   ];
 </script>
 
-<GuideSection id="type-1-alpha-beta" title="Type 1 — Dual-Shifts">
+<GuideSection id="type-1-alpha-beta" title="Type 1 - Dual-Shifts">
   <p>
     When both hands move to adjacent locations, it's called a Dual-Shift.
   </p>

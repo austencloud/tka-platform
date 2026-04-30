@@ -24,7 +24,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 
 export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
   /**
-   * Check if a sequence can loop seamlessly — position AND orientation must match.
+   * Check if a sequence can loop seamlessly - position AND orientation must match.
    *
    * Even when isCircular is set (meaning the extension code built a full cycle),
    * we still verify orientations match. A positional cycle doesn't guarantee an
@@ -110,7 +110,7 @@ export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
    * Compares each prop's endOrientation on the last step against the starting
    * orientation. Uses the dedicated startPosition's motions when available,
    * otherwise falls back to the first step's startOrientation (which carries
-   * the same information — where the props were when the sequence began).
+   * the same information - where the props were when the sequence began).
    */
   private analyzeOrientationCircularity(sequence: SequenceData): boolean {
     const steps = sequence.steps;

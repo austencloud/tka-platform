@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * RosettaPanel — Visual VTG <-> TKA reference.
+	 * RosettaPanel - Visual VTG <-> TKA reference.
 	 * Every concept gets a rendered pictograph example.
 	 */
 

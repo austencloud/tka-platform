@@ -1,5 +1,5 @@
 <!--
-  RetroUpgrade — UPGRADE.EXE Shareware Nag Dialog
+  RetroUpgrade - UPGRADE.EXE Shareware Nag Dialog
 
   Classic shareware registration nag screen. Warning icon + text block
   with serial number, feature list, and three action buttons.
@@ -32,7 +32,7 @@
   /* Premium status                                                      */
   /* ------------------------------------------------------------------ */
 
-  // Derive premium status from live auth role — reactive to role changes.
+  // Derive premium status from live auth role - reactive to role changes.
   const isPremium = $derived(isPremiumOrAbove(authState.role));
 
   // Display name: prefer Firebase user displayName, fall back to desktop state,
@@ -59,7 +59,7 @@
   let registering = $state(false);
 
   const defaultStatusText = $derived(
-    isPremium ? "Registered copy — thank you!" : "Unregistered copy"
+    isPremium ? "Registered copy - thank you!" : "Unregistered copy"
   );
 
   /* ------------------------------------------------------------------ */

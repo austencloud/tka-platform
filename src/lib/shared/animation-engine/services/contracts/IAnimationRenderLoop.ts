@@ -29,8 +29,9 @@ import type { ISmokeOverlayRenderer } from "./ISmokeOverlayRenderer";
 import type { IInkOverlayRenderer } from "./IInkOverlayRenderer";
 import type { IFrostOverlayRenderer } from "./IFrostOverlayRenderer";
 import type { ISilkOverlayRenderer } from "./ISilkOverlayRenderer";
+import type { IPulseOverlayRenderer } from "./IPulseOverlayRenderer";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
-import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Silk2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -80,6 +81,8 @@ export interface RenderLoopConfig {
   frostRenderer?: IFrostOverlayRenderer | null;
   /** Optional silk overlay renderer that draws per-tip deformable ribbons */
   silkRenderer?: ISilkOverlayRenderer | null;
+  /** Optional pulse overlay renderer that draws expanding wave rings from tip positions */
+  pulseRenderer?: IPulseOverlayRenderer | null;
   /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
   onEffectError?: (effectName: string, error: Error) => void;
 }
@@ -165,6 +168,8 @@ export interface RenderFrameParams {
   frostConfig?: Frost2DParams | null;
   /** Silk overlay parameters (null or undefined = disabled) */
   silkConfig?: Silk2DParams | null;
+  /** Pulse overlay parameters (null or undefined = disabled) */
+  pulseConfig?: Pulse2DParams | null;
   /** Playback speed multiplier (1.0 = 60 BPM). Passed to fire for cache invalidation. */
   playbackSpeed?: number;
   /** Whether sequence loops seamlessly (end position = start position).

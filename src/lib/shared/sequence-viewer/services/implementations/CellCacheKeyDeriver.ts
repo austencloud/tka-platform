@@ -32,14 +32,14 @@
  * - lsp7-: Added motion-intrinsic propType to key. Without this, a start
  *   position rendered with PropType.HAND (hand path mode) and one rendered
  *   with PropType.STAFF (normal mode) shared the same key when the user's
- *   settings prop type was "staff" for both — causing wrong-prop cache hits.
+ *   settings prop type was "staff" for both - causing wrong-prop cache hits.
  * - lsp8-: Composition refactor. Delegates pictograph identity to
  *   PictographKeyHasher instead of independently enumerating motion fields.
  *   Also adds handPathMode, handPointVisibility, printMode, and gridMode
  *   (all previously missing from the flat key). Single source of truth.
  * - lsp9-: Intermediate bump (no behavior change from lsp8).
  * - lsp10-: PictographKeyHasher reverted from djb2 digest to full JSON
- *   string — the lsp8 refactor had silently reintroduced the 32-bit hash
+ *   string - the lsp8 refactor had silently reintroduced the 32-bit hash
  *   collision that lsp3→lsp4 specifically eliminated, causing wrong-arrow
  *   blobs once the cache grew past ~46K entries.
  */
@@ -116,5 +116,5 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
   }
 }
 
-// Singleton — composes the shared PictographKeyHasher instance
+// Singleton - composes the shared PictographKeyHasher instance
 export const cellCacheKeyDeriver = new CellCacheKeyDeriver(pictographKeyHasher);

@@ -16,7 +16,7 @@ export interface IPrintPDFExporter {
   ): Promise<Blob>;
 
   /** Grid layout on Letter/A4 pages. Fronts page, then mirrored backs page.
-   *  Designed for double-sided home printing — flip along long edge and
+   *  Designed for double-sided home printing - flip along long edge and
    *  each back lines up with its front. */
   exportHomePrintPDF(
     pairs: CardPair[],

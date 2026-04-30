@@ -33,7 +33,7 @@ import {
 import type {
   LOOPType} from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 export class SequenceExtender implements ISequenceExtender {
@@ -91,7 +91,7 @@ export class SequenceExtender implements ISequenceExtender {
 
     // Determine extension type
     let extensionType: ExtensionType = "not_extendable";
-    let sliceSize = SliceSize.HALVED;
+    let period = Period.HALVED;
 
     if (isAlreadyComplete) {
       extensionType = "already_complete";
@@ -99,7 +99,7 @@ export class SequenceExtender implements ISequenceExtender {
       extensionType = "half_rotation";
     } else if (isQuarteredValid) {
       extensionType = "quarter_rotation";
-      sliceSize = SliceSize.QUARTERED;
+      period = Period.QUARTERED;
     }
 
     // Get LOOP options filtered by validity for this position pair
@@ -107,7 +107,7 @@ export class SequenceExtender implements ISequenceExtender {
       this.loopValidator.getLOOPOptionsForPositionPair(
         startPosition,
         currentEndPosition,
-        sliceSize
+        period
       );
 
     // Can extend if any LOOP options are available
@@ -159,11 +159,11 @@ export class SequenceExtender implements ISequenceExtender {
     }
 
     const { loopType } = options;
-    // Use explicitly provided sliceSize, otherwise derive from position pair analysis
-    const sliceSize = options.sliceSize ??
+    // Use explicitly provided period, otherwise derive from position pair analysis
+    const period = options.period ??
       (analysis.extensionType === "quarter_rotation"
-        ? SliceSize.QUARTERED
-        : SliceSize.HALVED);
+        ? Period.QUARTERED
+        : Period.HALVED);
 
     // Get the executor for the selected LOOP type
     const executor = this.loopExecutorSelector.getExecutor(loopType);
@@ -180,7 +180,7 @@ export class SequenceExtender implements ISequenceExtender {
     const originalLength = sequenceSteps.length;
 
     // Execute the LOOP transformation (modifies sequenceSteps in place)
-    const completedSteps = executor.executeLOOP(sequenceSteps, sliceSize);
+    const completedSteps = executor.executeLOOP(sequenceSteps, period);
 
     // Return only the new steps (after the original sequence)
     const newSteps = completedSteps.slice(originalLength);
@@ -387,7 +387,7 @@ export class SequenceExtender implements ISequenceExtender {
     bridgeLetter: Letter,
     loopType: LOOPType,
     pictographData?: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData,
-    sliceSize?: SliceSize
+    period?: Period
   ): Promise<SequenceData> {
     // Use appendBridgeBeat to add the bridge, then apply LOOP
     // Pass pictographData to ensure the exact variation (and thus end position) is used
@@ -396,7 +396,7 @@ export class SequenceExtender implements ISequenceExtender {
       bridgeLetter,
       pictographData
     );
-    return this.extendSequence(sequenceWithBridge, { loopType, sliceSize });
+    return this.extendSequence(sequenceWithBridge, { loopType, period });
   }
 }
 

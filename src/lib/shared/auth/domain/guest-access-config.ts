@@ -1,6 +1,6 @@
 // Guests (unauthenticated users) get a limited view of the app.
 // Create and Browse are open, but restricted to specific tabs.
-// Everything else — Learn, Social, Settings — requires signing in.
+// Everything else - Learn, Social, Settings - requires signing in.
 
 import type { AccessTier } from "./AccessTier";
 

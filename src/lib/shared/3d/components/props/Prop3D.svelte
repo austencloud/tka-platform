@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Prop3D — Dispatcher Component
+   * Prop3D - Dispatcher Component
    *
    * Two-tier rendering:
    * 1. If a GLTF model exists in the registry → render GltfProp3D (high quality)

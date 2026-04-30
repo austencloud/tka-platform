@@ -322,7 +322,7 @@ export class Messenger implements IMessenger {
             callback(messages);
           },
           (error) => {
-            // Expected when the user signs out — Firestore revokes access and
+            // Expected when the user signs out - Firestore revokes access and
             // this listener is about to be torn down by the auth listener.
             // Don't alarm the user with a "lost connection" toast.
             if (isPermissionDeniedError(error)) return;

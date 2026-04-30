@@ -133,7 +133,7 @@ Card-based architecture with integrated Generate button:
       cur.gridMode !== last.gridMode ||
       cur.propContinuity !== last.propContinuity ||
       cur.loopType !== last.loopType ||
-      cur.sliceSize !== last.sliceSize ||
+      cur.period !== last.period ||
       cur.constraintPreset !== last.constraintPreset ||
       cur.handPathMode !== last.handPathMode ||
       cur.motionTypeFilter !== last.motionTypeFilter
@@ -245,7 +245,7 @@ Card-based architecture with integrated Generate button:
   </div>
 </div>
 
-<!-- Word input overlay — rendered outside the panel div so it can cover the full viewport on mobile -->
+<!-- Word input overlay - rendered outside the panel div so it can cover the full viewport on mobile -->
 {#if spellModeState.isWordInputOpen}
   <WordInputOverlay
     wordValue={spellModeState.inputWord}

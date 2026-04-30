@@ -7,7 +7,7 @@
  * absolutely-positioned canvas element following the trail/fire/zap/sparkles
  * overlay pattern.
  *
- * Unlike sparkles/motion, echo does not need `dt` — phantoms age by the
+ * Unlike sparkles/motion, echo does not need `dt` - phantoms age by the
  * `currentStep` index already present in `EchoTipInput`, so the beat
  * lattice is authoritative regardless of frame timing jitter.
  */
@@ -28,7 +28,7 @@ export interface IEchoOverlayRenderer {
 
   /**
    * Render one frame of echo overlay. Phantoms age by `tips.currentStep`
-   * so there is no `dt` parameter — the renderer only needs the current
+   * so there is no `dt` parameter - the renderer only needs the current
    * animation step index to detect beat onsets and cull expired phantoms.
    */
   renderFrame(params: Echo2DParams, tips: EchoTipInput): void;

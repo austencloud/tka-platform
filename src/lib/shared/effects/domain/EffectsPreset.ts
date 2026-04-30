@@ -1,7 +1,7 @@
 import type { EffectsConfig, EffectType } from "./EffectsConfig";
 
 /**
- * Deep partial — every field optional, recursively.
+ * Deep partial - every field optional, recursively.
  * Used for preset patches so a preset can touch only the fields
  * it cares about without declaring the full config shape.
  */
@@ -12,7 +12,7 @@ export type DeepPartial<T> = T extends object
 /**
  * A named, described effect preset.
  *
- * Presets are pure data — applying a preset is
+ * Presets are pure data - applying a preset is
  * `config = deepMerge(config, preset.patch)`, not an imperative
  * side-effect chain. This lets presets be serialized, composed,
  * previewed, and synced to Firestore.
@@ -26,9 +26,9 @@ export interface EffectsPreset {
   /** Pure data patch applied over current config. */
   patch: DeepPartial<EffectsConfig>;
   builtIn: boolean;
-  /** Firestore uid — absent for built-in presets. */
+  /** Firestore uid - absent for built-in presets. */
   createdBy?: string;
-  /** epoch ms — absent for built-in presets. */
+  /** epoch ms - absent for built-in presets. */
   createdAt?: number;
   /** Optional thumbnail colors for the picker swatch. */
   previewColors?: [string, string];

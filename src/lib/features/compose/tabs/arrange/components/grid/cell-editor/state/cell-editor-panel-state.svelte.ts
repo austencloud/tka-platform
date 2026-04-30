@@ -13,6 +13,8 @@ export interface PillScopeConfig {
 }
 
 export const PILL_SCOPE_CONFIG: PillScopeConfig[] = [
+  { id: 'grid', scopes: ['grid'] },
+  { id: 'layers', scopes: ['cell'] },
   { id: 'effects', scopes: ['cell', 'layer', 'hand', 'tip'] },
   { id: 'effort', scopes: ['cell', 'layer'] },
   { id: 'playback', scopes: ['cell', 'layer'] },

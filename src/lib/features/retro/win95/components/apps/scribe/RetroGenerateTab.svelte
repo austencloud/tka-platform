@@ -1,5 +1,5 @@
 <!--
-  RetroGenerateTab — Generate tab for SCRIBE.EXE
+  RetroGenerateTab - Generate tab for SCRIBE.EXE
 
   Two modes matching the real Generate tab:
   - FREEFORM: settings cards (level, length, turn intensity, etc.) + Generate

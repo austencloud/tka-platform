@@ -43,7 +43,7 @@ function easeInOutCubic(t: number): number {
  * `maxPerformers` caps the internal `performerCount` value. Realm / museum /
  * duet keep the historical cap of 4 by omitting this parameter. The standalone
  * 3D viewer passes 8 via PerformerManager so formations actually compute
- * slots for performers 5-8 — otherwise getAllPerformerPositions() returns
+ * slots for performers 5-8 - otherwise getAllPerformerPositions() returns
  * only the first 4 indices and the extra performers never move when a
  * preset is applied.
  */

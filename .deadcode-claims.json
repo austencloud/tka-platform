@@ -88,14 +88,6 @@
       "claimedAt": "2026-03-27T07:33:25.899Z",
       "agentId": "agent-1774596805901-lyt2ig"
     },
-    "features/festivals": {
-      "claimedAt": "2026-03-27T07:33:44.400Z",
-      "agentId": "agent-1774596824401-9sn9va"
-    },
-    "features/fuse": {
-      "claimedAt": "2026-03-27T07:34:09.245Z",
-      "agentId": "agent-1774596849246-o2habq"
-    },
     "features/hand-path-builder": {
       "claimedAt": "2026-03-27T07:34:28.598Z",
       "agentId": "agent-1774596868599-mieo4k"
@@ -115,10 +107,6 @@
     "features/social": {
       "claimedAt": "2026-03-27T07:35:30.763Z",
       "agentId": "agent-1774596930763-gopb1w"
-    },
-    "features/video": {
-      "claimedAt": "2026-03-27T07:35:45.735Z",
-      "agentId": "agent-1774596945736-95mp39"
     },
     "shared/config": {
       "claimedAt": "2026-03-27T07:36:09.512Z",

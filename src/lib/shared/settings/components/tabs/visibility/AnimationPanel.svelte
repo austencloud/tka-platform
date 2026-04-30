@@ -46,7 +46,7 @@
     isMobileHidden = false,
   }: Props = $props();
 
-  // Trail "Both Ends" toggle — reads live from animationSettings reactive state
+  // Trail "Both Ends" toggle - reads live from animationSettings reactive state
   const trailsOn = $derived(trailStyle !== "off");
   const bothEnds = $derived(
     animationSettings.trail.trackingMode === TrackingMode.BOTH_ENDS

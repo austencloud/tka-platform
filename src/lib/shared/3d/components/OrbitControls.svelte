@@ -13,7 +13,7 @@
    * - Imperative API (setLookAt / setTarget / fitToSphere) means
    *   snap-to-view can skip hand-rolled rAF interpolation.
    *
-   * Ref: `bind:ref` exposes the native `CameraControls` instance —
+   * Ref: `bind:ref` exposes the native `CameraControls` instance -
    * NOT a three.js OrbitControls facade. Consumers that previously
    * did `controlsRef.target.copy(v)` now call
    * `controlsRef.setTarget(v.x, v.y, v.z, true)`; instead of
@@ -27,7 +27,7 @@
   import * as THREE from "three";
   import CameraControls from "camera-controls";
 
-  // Safe to call more than once — dedupes internally. Ensures the
+  // Safe to call more than once - dedupes internally. Ensures the
   // library has the three.js subset it needs regardless of which
   // consumer mounts first.
   CameraControls.install({ THREE });
@@ -35,7 +35,7 @@
   type Vec3Tuple = [number, number, number];
 
   interface Props {
-    /** Live CameraControls instance — null until the component mounts. */
+    /** Live CameraControls instance - null until the component mounts. */
     ref?: CameraControls | null;
     enabled?: boolean;
     /**
@@ -78,7 +78,7 @@
     /** Fires on every internal update tick (i.e. while animating). */
     onchange?: (controls: CameraControls) => void;
     oncontrolstart?: (controls: CameraControls) => void;
-    /** Fires after the user releases a drag — the "orbit end" moment. */
+    /** Fires after the user releases a drag - the "orbit end" moment. */
     oncontrolend?: (controls: CameraControls) => void;
     /**
      * Fires once with the live instance. Return a cleanup function to
@@ -161,7 +161,7 @@
     };
   });
 
-  // Reactive prop sync — each effect guards on controls being live.
+  // Reactive prop sync - each effect guards on controls being live.
   $effect(() => {
     if (controls) controls.enabled = enabled;
   });

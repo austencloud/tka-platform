@@ -113,7 +113,7 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 			.filter((room) => {
 				// Filter out rooms hosted by THIS browser tab (same session ID).
 				// Rooms from the same user on another device have a different session ID
-				// and will pass through — which is the whole point of multi-device sync.
+				// and will pass through - which is the whole point of multi-device sync.
 				if (room.hostSessionId === localSyncSessionId) {
 					return false;
 				}

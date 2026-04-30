@@ -37,7 +37,7 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
       case Plane.FLOOR:
         return this.computeFloorPole(handTarget, side, bodyCenter);
       default:
-        // Exhaustiveness safety net — all Plane enum values are handled above
+        // Exhaustiveness safety net - all Plane enum values are handled above
         return new Vector3(0, 0, 1);
     }
   }

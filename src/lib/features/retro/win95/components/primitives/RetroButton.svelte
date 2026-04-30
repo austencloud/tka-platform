@@ -1,5 +1,5 @@
 <!--
-  RetroButton — 98.css-styled pushbutton primitive
+  RetroButton - 98.css-styled pushbutton primitive
 
   Renders as either a label string or custom snippet content (for icon buttons).
   The isDefault prop adds the thicker border indicating the dialog's default action.

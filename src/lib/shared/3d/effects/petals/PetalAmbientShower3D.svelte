@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * PetalAmbientShower3D — scene-wide ambient petal shower.
+   * PetalAmbientShower3D - scene-wide ambient petal shower.
    *
    * Spawns petals from a horizontal rectangle above the scene at rate
    * `ambientEmission * ambientAboveRate`. Petals fall with the same sway

@@ -27,7 +27,7 @@ import {
   type PictographData,
   type MotionData as McpMotionData,
 } from "../packages/sequence-engine/src/loop/execution/LOOPExecutor.js";
-import { LOOPType, SliceSize } from "../packages/sequence-engine/src/loop/loop-types.js";
+import { LOOPType, Period } from "../packages/sequence-engine/src/loop/loop-types.js";
 import { QUARTERED_LOOPS } from "../packages/sequence-engine/src/loop/validation/LOOPValidator.js";
 
 /**
@@ -424,7 +424,7 @@ function enumerateAndExecute(
         [startStep, beat1Step, beat2Step],
         seedWord,
         LOOPType.ROTATED,
-        SliceSize.QUARTERED,
+        Period.QUARTERED,
         allPictographs
       );
 

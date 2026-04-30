@@ -176,7 +176,7 @@ Uses pure runes instead of stores for reactivity.
 
   // Dark mode is applied as an inline filter rather than via the global
   // :root.dark CSS cascade. iOS Safari PWA fails to re-apply `filter: invert()`
-  // on an SVG <g> when the class is added after first style resolution —
+  // on an SVG <g> when the class is added after first style resolution -
   // the glyph renders in its native black color against the dark background
   // while the DirectionDot and TurnsColumn (which use inline fills) render fine.
   // Matching DirectionDot's pattern: read dark mode from the visibility manager
@@ -199,7 +199,7 @@ Uses pure runes instead of stores for reactivity.
   // TurnsColumn uses the same sync-cache pattern for positioning.
   // Both MUST agree on dimensions to prevent turn numbers overlapping the letter.
   // Without this, TKAGlyph's $effect updates dimensions AFTER render,
-  // while TurnsColumn's $derived.by reads from cache DURING render — one-frame mismatch.
+  // while TurnsColumn's $derived.by reads from cache DURING render - one-frame mismatch.
   const effectiveDimensions = $derived.by(() => {
     if (letter) {
       const cached = globalDimensionsCache.get(letter);
@@ -219,7 +219,7 @@ Uses pure runes instead of stores for reactivity.
   // keyed by the current letter avoids showing the old letter's image.
   const imageSrc = $derived.by(() => {
     if (!letter) return "";
-    // Sync lookup for current letter — no $effect delay
+    // Sync lookup for current letter - no $effect delay
     const cachedUrl = globalSvgDataUrlCache.get(letter);
     if (cachedUrl) return cachedUrl;
     // Fall back to file path (will be replaced when $effect loads data)

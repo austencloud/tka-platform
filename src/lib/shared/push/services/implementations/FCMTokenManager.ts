@@ -39,7 +39,7 @@ export class FCMTokenManager implements IFCMTokenManager {
 				await navigator.serviceWorker.getRegistration("/");
 			if (!swRegistration) {
 				console.debug(
-					"[FCMTokenManager] No service worker registered — push notifications unavailable (expected in dev)",
+					"[FCMTokenManager] No service worker registered - push notifications unavailable (expected in dev)",
 				);
 				return null;
 			}

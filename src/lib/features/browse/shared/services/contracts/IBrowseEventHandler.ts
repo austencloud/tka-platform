@@ -44,7 +44,7 @@ export interface IBrowseEventHandler {
   /**
    * Handle editing a sequence
    */
-  handleEditSequence(sequence: SequenceData): void;
+  handleEditSequence(sequence: SequenceData): Promise<void>;
 
   /**
    * Handle detail panel actions (play, animate, fullscreen, favorite, edit, delete)

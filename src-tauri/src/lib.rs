@@ -1,4 +1,5 @@
-#[cfg(debug_assertions)]
+mod oauth_server;
+
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -10,12 +11,10 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_http::init())
-        .setup(|_app| {
-            #[cfg(debug_assertions)]
-            {
-                let window = _app.get_webview_window("main").unwrap();
-                window.open_devtools();
-            }
+        .invoke_handler(tauri::generate_handler![oauth_server::start_oauth_server])
+        .setup(|app| {
+            let window = app.get_webview_window("main").unwrap();
+            window.open_devtools();
             Ok(())
         })
         .run(tauri::generate_context!())

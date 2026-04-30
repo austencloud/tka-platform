@@ -1,5 +1,5 @@
 /**
- * LedRenderer3D — LED renderer with mathematically continuous trails.
+ * LedRenderer3D - LED renderer with mathematically continuous trails.
  *
  * Architecture:
  *   - Active head LEDs are rendered as camera-facing billboard sprites
@@ -7,7 +7,7 @@
  *   - Trails are rendered as continuous camera-facing ribbon geometry,
  *     one BufferGeometry per LED. The ribbon is rebuilt every frame from
  *     a rolling history of sample positions. This eliminates the
- *     chain-of-dots artifact that plagues discrete-sample approaches —
+ *     chain-of-dots artifact that plagues discrete-sample approaches -
  *     the trail is a literal solid mesh, not a stack of overlapping
  *     alpha blobs.
  *
@@ -37,7 +37,7 @@ import { QualityTier } from "../types";
 /** Maximum LED tips per prop (matches 2D system's MAX_TOTAL_TIPS / 2) */
 const MAX_LEDS_PER_PROP = 16;
 
-/** LED sprite size in world units — the bright bulb at the active head */
+/** LED sprite size in world units - the bright bulb at the active head */
 const LED_SPRITE_SIZE = 0.35;
 
 /** Ribbon half-width in world units. Set to the bulb's core radius so
@@ -49,7 +49,7 @@ const LED_RIBBON_HALF_WIDTH = LED_SPRITE_SIZE * 0.25;
  *  which is more than enough for any realistic trail fade duration. */
 const MAX_SAMPLES_PER_RIBBON = 512;
 
-/** Maximum head bulb instances — 2 props × MAX_LEDS_PER_PROP, but each
+/** Maximum head bulb instances - 2 props × MAX_LEDS_PER_PROP, but each
  *  renderer only handles one prop's worth, so we only need MAX_LEDS_PER_PROP. */
 const MAX_HEAD_INSTANCES = MAX_LEDS_PER_PROP;
 
@@ -62,7 +62,7 @@ const TRAIL_FADE_DURATION: Record<QualityTier, number> = {
 
 /** Target spacing between ribbon sample points, as a fraction of sprite
  *  size. The ribbon is continuous between samples, so this doesn't need
- *  to be tiny — it only has to be tight enough that polygon edges don't
+ *  to be tiny - it only has to be tight enough that polygon edges don't
  *  cause visible kinks on tight curves. */
 const RIBBON_SAMPLE_SPACING = LED_SPRITE_SIZE * 0.25;
 
@@ -174,7 +174,7 @@ export class LedRenderer3D {
   private fadeDuration: number;
   private parent: Object3D | null = null;
   private ribbonMaterial: ReturnType<typeof createLedRibbonMaterial> | null = null;
-  /** Scratch array for fillOrdered — reused across frames/LEDs. */
+  /** Scratch array for fillOrdered - reused across frames/LEDs. */
   private readonly sampleScratch: RibbonSample[] = new Array(MAX_SAMPLES_PER_RIBBON);
   /** Scratch vectors reused every frame to avoid GC pressure in the hot path. */
   private readonly scratchCameraPosition = new Vector3();

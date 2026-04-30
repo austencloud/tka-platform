@@ -54,7 +54,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
 
   // Formation manager for flexible positioning. Pass maxPerformers through
   // so the standalone viewer's 8-performer cap reaches the formation
-  // engine — otherwise its internal clamp drops performers 5-8 from
+  // engine - otherwise its internal clamp drops performers 5-8 from
   // slot calculations and they never move on preset apply.
   const formationManager: IFormationManager = createFormationManager(1, maxPerformers);
 
@@ -110,7 +110,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * returns slots only for the covered indices. Performers beyond the cap
    * would otherwise freeze at whatever position they spawned at, drifting
    * based on spawn history. Fall back to the default row-pair layout for
-   * any index the preset doesn't cover — this produces a seamless 2-column
+   * any index the preset doesn't cover - this produces a seamless 2-column
    * grid for grid-2x2 at counts 5-8 (since grid-2x2's 4 slots align exactly
    * with rows 0-1 of the row-pair default).
    */
@@ -131,7 +131,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         if (fallback) {
           performer.position.x = fallback.x;
           performer.position.z = fallback.z;
-          // Leave facing unchanged — the default layout doesn't imply a
+          // Leave facing unchanged - the default layout doesn't imply a
           // specific facing, and new performers already face the audience.
         }
       }
@@ -155,7 +155,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
 
   /**
    * Update formation transition (called each frame when transitioning).
-   * Uses the same default-layout fallback as updatePositions — if the
+   * Uses the same default-layout fallback as updatePositions - if the
    * target preset doesn't cover an index, that performer stays at its
    * default row-pair slot instead of drifting.
    */
@@ -178,7 +178,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         if (fallback) {
           performer.position.x = fallback.x;
           performer.position.z = fallback.z;
-          // Leave facing unchanged — the default layout doesn't imply a
+          // Leave facing unchanged - the default layout doesn't imply a
           // specific facing, and new performers already face the audience.
         }
       }

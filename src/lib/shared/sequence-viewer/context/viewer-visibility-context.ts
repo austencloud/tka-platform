@@ -18,7 +18,7 @@ export function getViewerVisibilityContext(): SequenceViewerVisibilityState {
   const ctx = getContext<SequenceViewerVisibilityState | undefined>(KEY);
   if (!ctx) {
     throw new Error(
-      "Viewer visibility context missing — component must be rendered inside SequenceViewerOrchestrator",
+      "Viewer visibility context missing - component must be rendered inside SequenceViewerOrchestrator",
     );
   }
   return ctx;

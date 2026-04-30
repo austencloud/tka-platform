@@ -8,7 +8,7 @@
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
 import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
-import type { SliceSize } from "../loop-types.js";
+import type { Period } from "../loop-types.js";
 import {
   SWAPPED_LOOP_VALIDATION_SET,
   SWAPPED_POSITION_MAP,
@@ -22,7 +22,7 @@ import {
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class SwappedInvertedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], _sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], _period: Period): SequenceStep[] {
     this.validateSequence(sequence);
 
     const startPosition = sequence.shift();

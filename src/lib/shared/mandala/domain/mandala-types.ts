@@ -1,7 +1,7 @@
 export interface SVGPathData {
 	/** SVG path "d" attribute string */
 	d: string;
-	/** Index into prop's tip points array — matches trail system tipIndex */
+	/** Index into prop's tip points array - matches trail system tipIndex */
 	tipIndex: number;
 }
 
@@ -37,7 +37,7 @@ export interface MandalaRenderOptions {
 	show: "blue" | "red" | "both";
 	/** SVG stroke width */
 	strokeWidth?: number;
-	/** Transparent background (no dark rect) — use when embedding in themed containers */
+	/** Transparent background (no dark rect) - use when embedding in themed containers */
 	transparentBackground?: boolean;
 	/** Override the default dark-mode prop colors (e.g. for light-mode backgrounds) */
 	palette?: MandalaPalette;

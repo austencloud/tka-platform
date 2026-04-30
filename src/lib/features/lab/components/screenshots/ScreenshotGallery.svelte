@@ -1,5 +1,5 @@
 <!--
-  ScreenshotGallery — Orchestrator for the module-organized gallery.
+  ScreenshotGallery - Orchestrator for the module-organized gallery.
 
   Subscribes to Firestore via ScreenshotLoader for real-time updates.
   Delegates state management to:
@@ -214,7 +214,7 @@
       url: item.imageUrl,
       type: "image" as const,
       alt: `${formatRouteLabel(item.routeLabel)} on ${item.deviceName}`,
-      name: `${item.deviceName} — ${formatRouteLabel(item.routeLabel)}`,
+      name: `${item.deviceName} - ${formatRouteLabel(item.routeLabel)}`,
       width: item.width || undefined,
       height: item.height || undefined,
     }))

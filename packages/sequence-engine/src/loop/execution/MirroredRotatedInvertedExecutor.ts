@@ -2,7 +2,7 @@
  * Mirrored Rotated Inverted LOOP Executor
  *
  * Composes two operations sequentially:
- * 1. ROTATED (with user-selected slice size)
+ * 1. ROTATED (with user-selected period)
  * 2. MIRRORED_INVERTED (doubles with inverted mirroring)
  *
  * Requires start position on the vertical axis (self-mirroring).
@@ -10,7 +10,7 @@
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
 import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
-import { SliceSize } from "../loop-types.js";
+import { Period } from "../loop-types.js";
 import { VERTICAL_MIRROR_POSITION_MAP } from "../position-maps/strict-loop-position-maps.js";
 import { strictRotatedExecutor } from "./StrictRotatedExecutor.js";
 import { mirroredInvertedExecutor } from "./MirroredInvertedExecutor.js";
@@ -21,7 +21,7 @@ export class MirroredRotatedInvertedExecutor implements ILOOPExecutor {
     private readonly mirroredInvExecutor: ILOOPExecutor = mirroredInvertedExecutor
   ) {}
 
-  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], period: Period): SequenceStep[] {
     const startPos = sequence[0]?.startPosition;
     if (startPos) {
       const mirroredPos = VERTICAL_MIRROR_POSITION_MAP[startPos];
@@ -33,8 +33,8 @@ export class MirroredRotatedInvertedExecutor implements ILOOPExecutor {
       }
     }
 
-    const rotatedSequence = this.rotatedExecutor.executeLOOP(sequence, sliceSize);
-    const finalSequence = this.mirroredInvExecutor.executeLOOP(rotatedSequence, SliceSize.HALVED);
+    const rotatedSequence = this.rotatedExecutor.executeLOOP(sequence, period);
+    const finalSequence = this.mirroredInvExecutor.executeLOOP(rotatedSequence, Period.HALVED);
     return finalSequence;
   }
 }

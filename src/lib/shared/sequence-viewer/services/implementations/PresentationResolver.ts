@@ -42,7 +42,7 @@ export class PresentationResolver implements IPresentationResolver {
       }
       // Infer prop type from motion data when no explicit intent exists
       // (deck sequences, imported sequences). The propType on the motions
-      // IS the intended prop — the sequence was created with that prop.
+      // IS the intended prop - the sequence was created with that prop.
       if (sequence.steps?.length) {
         const firstStep = sequence.steps[0];
         const blueMotion = firstStep?.motions?.blue;

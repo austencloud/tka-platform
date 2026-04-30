@@ -43,7 +43,7 @@ export function createPlaneLockedPreset(plane: Plane3): CameraPreset {
       controls.smoothTime = 0;
       snapShot(false);
 
-      // Re-fit on each loop boundary — use a brief smooth transition
+      // Re-fit on each loop boundary - use a brief smooth transition
       // so tiny mid-recording moves don't jitter.
       const unsubBoundary = ctx.onLoopBoundary(() => {
         controls.smoothTime = 0.5;

@@ -86,7 +86,7 @@
 
     try {
       // Geocode the city + country into coordinates. Falls back to (0, 0) if
-      // the Maps API key isn't configured — the moderator can correct it later.
+      // the Maps API key isn't configured - the moderator can correct it later.
       const coords = await geocodingService.forwardGeocode(city.trim(), country.trim())
         ?? { lat: 0, lng: 0 };
 

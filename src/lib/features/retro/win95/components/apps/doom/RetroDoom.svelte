@@ -1,5 +1,5 @@
 <!--
-  RetroDoom — Playable DOOM shareware via js-dos emulator
+  RetroDoom - Playable DOOM shareware via js-dos emulator
 
   Renders a full js-dos container inside a RetroWindow. The DoomLoader
   handles CDN script injection and emulator lifecycle. When the component
@@ -76,7 +76,7 @@
   {/if}
 
   {#if error}
-    <pre class="doom-error">DOOM.EXE — General Protection Fault
+    <pre class="doom-error">DOOM.EXE - General Protection Fault
 
 {error}
 

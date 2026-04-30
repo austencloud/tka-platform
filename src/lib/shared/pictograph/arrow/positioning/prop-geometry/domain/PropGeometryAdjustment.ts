@@ -15,7 +15,7 @@
  * Key structure encodes the physical scenario without any letter:
  *   gridMode|propType|otherPropType|positionType|endOri|otherEndOri|motionType|turns|arrowColor
  *
- * Values are BASE adjustments — they go through directional tuple rotation
+ * Values are BASE adjustments - they go through directional tuple rotation
  * in the pipeline, so one entry covers all four quadrants automatically.
  */
 
@@ -143,9 +143,9 @@ export function parsePropGeometryKeyString(
  *
  * Returns keys from most specific to least specific:
  * 1. Full key (all 9 dimensions)
- * 2. Drop arrowColor — same adjustment for both blue and red
- * 3. Drop otherPropType — same adjustment regardless of partner prop
- * 4. Drop both arrowColor and otherPropType — broadest match
+ * 2. Drop arrowColor - same adjustment for both blue and red
+ * 3. Drop otherPropType - same adjustment regardless of partner prop
+ * 4. Drop both arrowColor and otherPropType - broadest match
  *
  * Each uses "*" as the wildcard value for the dropped dimension.
  */

@@ -20,10 +20,10 @@
   };
 
   const REASON_COPY_WEBVIEW: Record<PendingActionType, string> = {
-    save: "Saving works best in your browser. We'll open this sequence in Chrome so you can sign in — your save will happen automatically.",
-    favorite: "Favoriting works best in your browser. We'll open this sequence in Chrome so you can sign in — your favorite will apply automatically.",
-    publish: "Publishing works best in your browser. We'll open this sequence in Chrome so you can sign in — your publish will go through automatically.",
-    remix: "Remixing works best in your browser. We'll open this sequence in Chrome so you can sign in — you'll land in the editor.",
+    save: "Saving works best in your browser. We'll open this sequence in Chrome so you can sign in - your save will happen automatically.",
+    favorite: "Favoriting works best in your browser. We'll open this sequence in Chrome so you can sign in - your favorite will apply automatically.",
+    publish: "Publishing works best in your browser. We'll open this sequence in Chrome so you can sign in - your publish will go through automatically.",
+    remix: "Remixing works best in your browser. We'll open this sequence in Chrome so you can sign in - you'll land in the editor.",
     sendTo: "Sending works best in your browser. We'll open this sequence in Chrome so you can sign in.",
   };
 

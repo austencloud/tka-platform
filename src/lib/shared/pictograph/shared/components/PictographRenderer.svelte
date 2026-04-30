@@ -130,7 +130,7 @@ Usage:
     darkMode?: boolean;
     /** Print Mode: pure white background for professional print (Choreo Cards). */
     printMode?: boolean;
-    /** Transparent background — grid and props float on parent's background */
+    /** Transparent background - grid and props float on parent's background */
     transparentBackground?: boolean;
     onToggleTKA?: () => void;
     onToggleVTG?: () => void;
@@ -192,7 +192,7 @@ Usage:
   const propPositions = $derived(pictograph._prepared?.propPositions || {});
   const propAssets = $derived(pictograph._prepared?.propAssets || {});
 
-  // Opacity for dimmed (not hidden) motions — visible enough to see, clearly de-emphasized
+  // Opacity for dimmed (not hidden) motions - visible enough to see, clearly de-emphasized
   const DIMMED_OPACITY = 0.2;
 
   // Motions to render (filtered by visibleHand only; visibility controls opacity, not presence)
@@ -252,7 +252,7 @@ Usage:
     );
   });
 
-  // Both motions fully visible — glyphs that depend on both hands use this
+  // Both motions fully visible - glyphs that depend on both hands use this
   const bothMotionsFullyVisible = $derived(blueMotionVisible && redMotionVisible);
 
   // Glyph opacity: full when both motions visible, dimmed when one is off

@@ -193,7 +193,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Input handler — registered on terminalState.inputHandler            */
+  /* Input handler - registered on terminalState.inputHandler            */
   /* ------------------------------------------------------------------ */
 
   function handleInput(input: string): void {
@@ -361,7 +361,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* CCW turns input step — completes the beat                           */
+  /* CCW turns input step - completes the beat                           */
   /* ------------------------------------------------------------------ */
 
   function handleCCWInput(input: string): void {

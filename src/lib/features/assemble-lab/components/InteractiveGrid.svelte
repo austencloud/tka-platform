@@ -114,7 +114,7 @@
   );
 
   // Rotation angle for active prop at current position
-  // Hands don't rotate — they sit flat at every grid position
+  // Hands don't rotate - they sit flat at every grid position
   const activeRotation = $derived.by(() => {
     if (builderState.currentPosition === null) return 0;
     const settings = getSettings();
@@ -147,7 +147,7 @@
   }
 
   // Compute rotation for a prop at a specific location/orientation
-  // Hands don't rotate — always return 0 for hand props
+  // Hands don't rotate - always return 0 for hand props
   function getRotation(location: GridLocation, orientation: Orientation, propType?: PropType): number {
     if (propType === PropType.HAND) return 0;
     return PropRotAngleManager.calculateRotation(
@@ -221,7 +221,7 @@
             })
           );
         } else {
-          // Blue has no step here — fade out in sync with the active prop's animation
+          // Blue has no step here - fade out in sync with the active prop's animation
           animations.push(fadeOutElement(ghostBluePropGroupRef, ANIMATION_DURATION_MS));
         }
       }
@@ -249,7 +249,7 @@
             })
           );
         } else {
-          // Red has no step here — fade out in sync with the active prop's animation
+          // Red has no step here - fade out in sync with the active prop's animation
           animations.push(fadeOutElement(ghostRedPropGroupRef, ANIMATION_DURATION_MS));
         }
       }
@@ -258,7 +258,7 @@
     });
   });
 
-  // Register undo animation callback — plays reverse animation before state changes
+  // Register undo animation callback - plays reverse animation before state changes
   $effect(() => {
     builderState.setUndoAnimationCallback(async (step: BuilderStep, wasPlacement: boolean) => {
       if (!activePropGroupRef) return;
@@ -377,7 +377,7 @@
   });
 
   // Ghost blue: tracks rest position during red building (syncs with red step count).
-  // Returns null once red goes past blue's last step — the ghost fades out.
+  // Returns null once red goes past blue's last step - the ghost fades out.
   const ghostBlueState = $derived.by(() => {
     if (builderState.activeHand !== MotionColor.RED) return null;
     if (builderState.blueSteps.length === 0) return null;
@@ -385,7 +385,7 @@
 
     const redStepsDone = builderState.redSteps.length;
 
-    // Red has gone past all blue steps — blue doesn't exist at this beat.
+    // Red has gone past all blue steps - blue doesn't exist at this beat.
     // Use > not >= so the ghost stays visible when both hands are at the same count.
     if (redStepsDone > builderState.blueSteps.length) return null;
 
@@ -402,7 +402,7 @@
   });
 
   // Ghost red: tracks rest position during blue building when red has steps ahead.
-  // Returns null once blue goes past red's last step — the ghost fades out.
+  // Returns null once blue goes past red's last step - the ghost fades out.
   const ghostRedState = $derived.by(() => {
     if (builderState.activeHand !== MotionColor.BLUE) return null;
     if (builderState.redSteps.length === 0) return null;
@@ -410,7 +410,7 @@
 
     const blueStepsDone = builderState.blueSteps.length;
 
-    // Blue has gone past all red steps — red doesn't exist at this beat.
+    // Blue has gone past all red steps - red doesn't exist at this beat.
     // Use > not >= so the ghost stays visible when both hands are at the same count.
     if (blueStepsDone > builderState.redSteps.length) return null;
 
@@ -691,7 +691,7 @@
     box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3)), inset 0 1px 0 var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
-  /* Semi-transparent background — lets the app background bleed through */
+  /* Semi-transparent background - lets the app background bleed through */
   .interactive-grid :global(.grid-bg) {
     opacity: 0.75;
     transition: opacity 0.3s ease;
@@ -782,7 +782,7 @@
   }
 
 
-  /* Hit targets — default (idle phase, no hand color yet) */
+  /* Hit targets - default (idle phase, no hand color yet) */
   .hit-target {
     fill: var(--theme-stroke, rgba(255, 255, 255, 0.06));
     stroke: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
@@ -804,7 +804,7 @@
     animation: pulse-red 1.8s ease-in-out infinite;
   }
 
-  /* Current position — solid ring, no pulse, still clickable */
+  /* Current position - solid ring, no pulse, still clickable */
   .hit-target.current-position {
     animation: none;
     cursor: pointer;
@@ -851,7 +851,7 @@
     pointer-events: none;
   }
 
-  /* Blue pulse — fill + stroke + subtle scale */
+  /* Blue pulse - fill + stroke + subtle scale */
   @keyframes pulse-blue {
     0% {
       fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 6%, transparent);
@@ -870,7 +870,7 @@
     }
   }
 
-  /* Red pulse — fill + stroke + subtle scale */
+  /* Red pulse - fill + stroke + subtle scale */
   @keyframes pulse-red {
     0% {
       fill: color-mix(in srgb, var(--prop-red, #ed1c24) 6%, transparent);

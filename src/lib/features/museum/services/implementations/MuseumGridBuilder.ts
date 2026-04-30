@@ -52,7 +52,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
 
     // Step 3: Stamp wall segments + collect door positions
     // Key by "roomId:edgeId" so each room's door gets a unique entry.
-    // Two rooms share the same edgeId for the same connection — without the
+    // Two rooms share the same edgeId for the same connection - without the
     // room prefix the second room's stamp would overwrite the first, and the
     // corridor router would get the same position for both endpoints.
     const stamper = new WallSegmentStamper();
@@ -81,7 +81,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       this.carveCorridorFloor(tiles, segments);
     }
 
-    // Step 6: Derive walls — any empty tile adjacent to a walkable tile becomes a wall
+    // Step 6: Derive walls - any empty tile adjacent to a walkable tile becomes a wall
     this.deriveWalls(tiles, layout.gridWidth, layout.gridHeight);
 
     // Step 7: Place performers + furniture
@@ -90,7 +90,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       this.placeFurniture(room, furniture);
     }
 
-    // Step 8: Spawn position — center of first room, facing north.
+    // Step 8: Spawn position - center of first room, facing north.
     // For the full museum the first room is the entrance lobby (player starts
     // near the south doors). For isolated single-room mode, center is safest.
     const firstRoom = layout.rooms[0]!;
@@ -260,7 +260,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
 
   /**
    * Places furniture definitions inside a room based on center-relative offsets.
-   * Furniture doesn't stamp tiles — it only produces FurnitureDefinition entries
+   * Furniture doesn't stamp tiles - it only produces FurnitureDefinition entries
    * that the 3D renderer reads to place GLTF models.
    */
   private placeFurniture(

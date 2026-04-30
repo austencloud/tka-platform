@@ -2,7 +2,7 @@
  * Hand Path Animator
  *
  * Animates a hand SVG from one grid location to another.
- * Position-only — hands don't rotate, so no staff angle calculation.
+ * Position-only - hands don't rotate, so no staff angle calculation.
  *
  * Movement types (same as SvgPropAnimator):
  * - Shifts (adjacent points): arc path around the grid circle

@@ -78,7 +78,7 @@
     }
   });
 
-  // Apply normal map (adds surface depth — twigs, leaves, dirt ridges)
+  // Apply normal map (adds surface depth - twigs, leaves, dirt ridges)
   $effect(() => {
     const tex = normalTex ? $normalTex : null;
     const mat = materialRef;

@@ -16,7 +16,7 @@
 
   const props: Props = $props();
 
-  // Initialize via $effect.pre — access through props to track initialView reactively
+  // Initialize via $effect.pre - access through props to track initialView reactively
   let activeView = $state<VtgView>("family");
   $effect.pre(() => { activeView = props.initialView ?? "family"; });
 

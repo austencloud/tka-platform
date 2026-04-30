@@ -21,7 +21,7 @@ import {
 import { getAllPositions } from "$lib/features/create/generate/shared/domain/start-position-presets";
 import {
   LOOPType,
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
@@ -78,9 +78,9 @@ const LOOP_TYPE_ROTATION: LOOPType[] = [
  * Slice size options with their probabilities.
  * Quartered (4 slices) is more common as it produces 16-step sequences.
  */
-const SLICE_OPTIONS: { slice: SliceSize; weight: number }[] = [
-  { slice: SliceSize.QUARTERED, weight: 70 }, // 70% - 16 steps total
-  { slice: SliceSize.HALVED, weight: 30 },    // 30% - 8 steps total
+const SLICE_OPTIONS: { slice: Period; weight: number }[] = [
+  { slice: Period.QUARTERED, weight: 70 }, // 70% - 16 steps total
+  { slice: Period.HALVED, weight: 30 },    // 30% - 8 steps total
 ];
 
 export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
@@ -149,7 +149,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
         propContinuity: PropContinuity.CONTINUOUS,
         turnIntensity: settings.turnIntensity,
         loopType: settings.loopType,
-        sliceSize: settings.sliceSize,
+        period: settings.period,
         ...(blockedStartPositions && { blockedStartPositions }),
       });
 
@@ -192,7 +192,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
   ): Promise<GeneratedSequenceInfo | null> {
     const fallbackSettings: GenerationSettings = {
       loopType: LOOPType.ROTATED,
-      sliceSize: SliceSize.QUARTERED,
+      period: Period.QUARTERED,
       difficulty: DifficultyLevel.BEGINNER,
       turnIntensity: 0,
       baseLength: 4,
@@ -213,7 +213,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
         propContinuity: PropContinuity.CONTINUOUS,
         turnIntensity: fallbackSettings.turnIntensity,
         loopType: fallbackSettings.loopType,
-        sliceSize: fallbackSettings.sliceSize,
+        period: fallbackSettings.period,
         ...(blockedStartPositions && { blockedStartPositions }),
       });
 
@@ -244,19 +244,19 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
     this.loopTypeIndex = (this.loopTypeIndex + 1) % LOOP_TYPE_ROTATION.length;
 
     // Select slice size (weighted random)
-    const sliceSize = this.selectWeightedSlice();
+    const period = this.selectWeightedPeriod();
 
     // Total length is 16 steps (standard)
     // The generator divides by slice count internally:
     // - Quartered: 16 / 4 = 4 base steps × 4 slices = 16 total
     // - Halved: 16 / 2 = 8 base steps × 2 slices = 16 total
     const totalSteps = 16;
-    const multiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+    const multiplier = period === Period.QUARTERED ? 4 : 2;
     const baseLength = totalSteps / multiplier;
 
     return {
       loopType,
-      sliceSize,
+      period,
       difficulty: DifficultyLevel.INTERMEDIATE,
       turnIntensity: 1,
       baseLength,
@@ -267,7 +267,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
   /**
    * Select a slice size using weighted random selection.
    */
-  private selectWeightedSlice(): SliceSize {
+  private selectWeightedPeriod(): Period {
     const totalWeight = SLICE_OPTIONS.reduce((sum, opt) => sum + opt.weight, 0);
     let random = Math.random() * totalWeight;
 
@@ -278,7 +278,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
       }
     }
 
-    return SliceSize.QUARTERED; // Default fallback
+    return Period.QUARTERED; // Default fallback
   }
 
   /**

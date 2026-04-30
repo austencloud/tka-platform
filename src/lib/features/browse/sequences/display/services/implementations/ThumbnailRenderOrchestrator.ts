@@ -122,7 +122,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
   /**
    * Nuke every cache layer and force all subsequent requests to render fresh.
    * Call this from the admin "Clear Cloud Thumbnails" flow AFTER deleting
-   * cloud files and local IndexedDB — this handles the remaining in-memory
+   * cloud files and local IndexedDB - this handles the remaining in-memory
    * layers (URL cache, knownExists, static manifest).
    */
   invalidateAllCaches(): void {
@@ -154,7 +154,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     const requestId = this.metrics?.startRequest(true) ?? "";
 
     // Step 0: In-memory URL cache (synchronous, zero latency)
-    // Survives component remounts — eliminates placeholder flash on revisits
+    // Survives component remounts - eliminates placeholder flash on revisits
     if (!mustSkipCache) {
       const memUrl = this.memoryCache.get(key.hash);
       if (memUrl) {

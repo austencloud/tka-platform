@@ -57,7 +57,7 @@
     }
 
     if (newMode === "tip") {
-      // Unilateral props have one end — both trail endpoints share the same tip
+      // Unilateral props have one end - both trail endpoints share the same tip
       const defaultRight = isUnilateral ? 0 : (editorState.points.length > 1 ? 1 : 0);
       const config: TrailPointConfig = {
         left: { type: "tip", index: 0 },
@@ -190,7 +190,7 @@
   {#if mode === "tip"}
     <div class="endpoint-rows">
       {#if isUnilateral}
-        <!-- Unilateral props have one end — single row -->
+        <!-- Unilateral props have one end - single row -->
         <div class="endpoint-row">
           <span class="endpoint-label">Tip</span>
           <div class="chip-row" role="radiogroup" aria-label="Trail tip point">
@@ -361,7 +361,7 @@
     outline-offset: 1px;
   }
 
-  /* Active state — glowing accent */
+  /* Active state - glowing accent */
   .chip.active {
     border-color: var(--theme-accent, #8b5cf6);
     color: var(--theme-accent, #8b5cf6);
@@ -376,7 +376,7 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  /* Off chip — red tint when active */
+  /* Off chip - red tint when active */
   .chip-off.active {
     border-color: var(--semantic-error, #ef4444);
     color: var(--semantic-error, #ef4444);

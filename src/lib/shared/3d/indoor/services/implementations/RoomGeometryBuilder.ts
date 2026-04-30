@@ -566,7 +566,7 @@ export class RoomGeometryBuilder implements IRoomGeometryBuilder {
 		// The floor collider center sits at y=0 with half-thickness 0.25, so its
 		// top surface is at y=0.25. The Rapier capsule is positioned by its center,
 		// so we need center = floorTop + halfHeight + radius to place feet on the
-		// floor. We snap to grid (0.5m resolution) which yields 1.0m — well above
+		// floor. We snap to grid (0.5m resolution) which yields 1.0m - well above
 		// the floor top, but the character controller's snapToGround setting handles
 		// the last fraction of a meter.
 		const floorTopY = 0.25; // floor box: center y=0, half-thickness=0.25

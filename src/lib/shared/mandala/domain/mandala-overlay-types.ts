@@ -2,7 +2,7 @@ import type { PreparedMandalaPaths } from "../services/contracts/IMandalaPathPre
 
 export interface MandalaOverlayConfig {
 	enabled: boolean;
-	/** How long before fully faded — multiplier of loop duration (default: 1.0) */
+	/** How long before fully faded - multiplier of loop duration (default: 1.0) */
 	fadeDurationMultiplier: number;
 	/** Line thickness in canvas pixels (default: 2.5) */
 	strokeWidth: number;
@@ -37,6 +37,6 @@ export interface MandalaOverlayRenderParams {
 	deltaTime: number;
 	/** Canvas size in pixels */
 	canvasSize: number;
-	/** Current animation step index — used to detect seeks/jumps */
+	/** Current animation step index - used to detect seeks/jumps */
 	currentStep: number;
 }

@@ -72,7 +72,7 @@
       return;
     }
 
-    // Validate file size (max 500MB — files over 100MB use multipart upload automatically)
+    // Validate file size (max 500MB - files over 100MB use multipart upload automatically)
     const maxSize = 500 * 1024 * 1024;
     if (file.size > maxSize) {
       uploadError = "Video must be under 500MB";

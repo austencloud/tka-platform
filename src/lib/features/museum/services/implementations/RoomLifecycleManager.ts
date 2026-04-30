@@ -1,5 +1,5 @@
 /**
- * RoomLifecycleManager — progressive room loading state machine.
+ * RoomLifecycleManager - progressive room loading state machine.
  *
  * Tracks whether each room is unvisited, active (geometry built), or cached
  * (geometry torn down but descriptor kept). When the player enters a room,
@@ -39,7 +39,7 @@ export class RoomLifecycleManager implements IRoomLifecycleManager {
   private readonly adjacency = new Map<string, Set<string>>();
   /** Current lifecycle state for every known room */
   private readonly states = new Map<string, RoomState>();
-  /** Descriptor cache — survives geometry teardown */
+  /** Descriptor cache - survives geometry teardown */
   private readonly descriptors = new Map<string, RoomDescriptor>();
 
   constructor(edges: RoomEdge[], _options: RoomLifecycleOptions = {}) {

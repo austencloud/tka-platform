@@ -155,13 +155,13 @@ Props:
 
   // Effective letter dimensions: synchronous cache lookup + prop + async fallback.
   // Uses $derived.by (not $derived(() => fn)) so Svelte tracks all reactive reads
-  // and recalculates SYNCHRONOUSLY when letter/props change — no one-frame lag.
+  // and recalculates SYNCHRONOUSLY when letter/props change - no one-frame lag.
   const effectiveLetterDimensions = $derived.by(() => {
     // Use provided dimensions if explicitly set (not default)
     if (letterDimensions.width !== 100 || letterDimensions.height !== 100) {
       return letterDimensions;
     }
-    // Synchronous cache lookup for the current letter — avoids $effect delay
+    // Synchronous cache lookup for the current letter - avoids $effect delay
     if (letter) {
       const cached = getLetterDimensions(letter);
       if (cached.width !== 100 || cached.height !== 100) {
@@ -210,7 +210,7 @@ Props:
   });
 
   // Viewer-scoped motion visibility (null when this TurnsColumn is rendered
-  // outside a sequence viewer — e.g. browse previews, image export worker).
+  // outside a sequence viewer - e.g. browse previews, image export worker).
   const viewerVisibility = tryGetViewerVisibilityContext();
 
   // A turn number is hidden when its color belongs to a motion the viewer

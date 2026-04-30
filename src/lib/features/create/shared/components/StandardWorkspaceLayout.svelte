@@ -332,7 +332,7 @@
   }
 
 
-  /* Build Another overlay — appears over workspace when assemble is complete */
+  /* Build Another overlay - appears over workspace when assemble is complete */
   .build-another-overlay {
     position: absolute;
     /* bottom is set dynamically via inline style based on buttonPanelHeight */

@@ -64,7 +64,7 @@ function docToHandPath(data: DocumentData, id: string): HandPathData {
   } as HandPathData;
 }
 
-/** Strip undefined values — Firestore rejects them in setDoc/updateDoc. */
+/** Strip undefined values - Firestore rejects them in setDoc/updateDoc. */
 function handPathToDoc(path: HandPathData): Record<string, unknown> {
   const raw: Record<string, unknown> = {
     locations: path.locations,
@@ -167,7 +167,7 @@ export class HandPathRepository implements IHandPathRepository {
       const existing = await getDoc(docRef);
 
       if (existing.exists()) {
-        // Document exists — append to sourceSequenceIds without duplicating
+        // Document exists - append to sourceSequenceIds without duplicating
         await setDoc(docRef, {
           ...handPathToDoc(path),
           provenance: {
@@ -177,7 +177,7 @@ export class HandPathRepository implements IHandPathRepository {
           },
         }, { merge: true });
       } else {
-        // New document — write the full provenance as-is
+        // New document - write the full provenance as-is
         await setDoc(docRef, {
           ...handPathToDoc(path),
           provenance: {

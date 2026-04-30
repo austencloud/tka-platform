@@ -177,11 +177,11 @@ export class LetterBreakdownGenerator implements ILetterBreakdownGenerator {
 
     if (sameType) {
       if (sameStart && sameEnd) {
-        // Same position pair — must differ in rotation
+        // Same position pair - must differ in rotation
         if (entryA.motionGroup !== entryB.motionGroup) {
           return "same-type-different-rotation";
         }
-        // Same type, same positions, same group (e.g. M vs P — different gamma subgroups)
+        // Same type, same positions, same group (e.g. M vs P - different gamma subgroups)
         return "same-type-different-group";
       }
       // Same type, different positions

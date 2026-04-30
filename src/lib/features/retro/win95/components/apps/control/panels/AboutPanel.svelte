@@ -1,5 +1,5 @@
 <!--
-  About TKA-OS sub-panel — system lore and stats.
+  About TKA-OS sub-panel - system lore and stats.
 -->
 <script lang="ts">
   import RetroButton from "../../../primitives/RetroButton.svelte";

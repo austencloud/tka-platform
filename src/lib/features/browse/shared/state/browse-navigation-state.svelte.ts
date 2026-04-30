@@ -48,7 +48,7 @@ const MAX_HISTORY_SIZE = 50;
 
 /**
  * Read the creator ID from the current URL path.
- * Expects paths like /browse/creators/[userId] — returns userId or null.
+ * Expects paths like /browse/creators/[userId] - returns userId or null.
  * Safe to call on non-creators paths (returns null).
  */
 export function getCreatorIdFromURL(): string | null {

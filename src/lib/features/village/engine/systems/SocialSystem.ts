@@ -228,7 +228,7 @@ export class SocialSystem {
 			partner.transform.targetZ = midZ + (toPartnerZ / norm) * halfStop;
 			partner.transform.speed = 1;
 		} else {
-			// Already close enough — skip to interaction
+			// Already close enough - skip to interaction
 			entity.social.state = "approaching";
 			entity.social.partner = partner.id;
 			entity.transform.speed = 0;

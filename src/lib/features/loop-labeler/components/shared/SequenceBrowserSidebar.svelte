@@ -8,6 +8,7 @@
   import type { SequenceEntry } from "../../domain/models/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
   import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
   import type { ILabelFormatter } from "../../services/contracts/ILabelFormatter";
 
@@ -143,7 +144,7 @@
         </div>
         <div class="sequence-details">
           <div class="sequence-item-header">
-            <span class="sequence-word">{seq.word}</span>
+            <span class="sequence-word"><TKAWordGlyph word={seq.word} height={13} darkMode /></span>
             <FontAwesomeIcon
               icon={status.icon}
               size="0.85em"

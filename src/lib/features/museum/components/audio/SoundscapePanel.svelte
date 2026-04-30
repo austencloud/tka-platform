@@ -1,5 +1,5 @@
 <!--
-  Expanded soundscape panel — shown when the bubble is open.
+  Expanded soundscape panel - shown when the bubble is open.
   Lists candidate tracks for the current wing. Click any to audition;
   "Set as default" commits the choice so it plays every time the player
   enters this room.

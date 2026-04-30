@@ -24,7 +24,7 @@ export const APP_DOMAIN = "https://tkaflowarts.com";
  * Returns "app" when under /app, "landing" otherwise.
  * Supports ?mode= override for local dev testing.
  */
-// Paths that are NOT the app — landing page and standalone public routes.
+// Paths that are NOT the app - landing page and standalone public routes.
 // Everything else (including module paths like /festivals/map) is app mode.
 const LANDING_PATHS = new Set([
   "/",

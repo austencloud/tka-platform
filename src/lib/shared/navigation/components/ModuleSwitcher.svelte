@@ -550,7 +550,7 @@
     font-size: var(--font-size-sm, 14px);
   }
 
-  /* Inbox — blue accent */
+  /* Inbox - blue accent */
   .drawer-action.inbox {
     color: var(--semantic-info, #3b82f6);
     border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 25%, transparent);
@@ -561,7 +561,7 @@
     border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
   }
 
-  /* Sign Out — red by default */
+  /* Sign Out - red by default */
   .drawer-action.sign-out {
     color: var(--semantic-error, #ef4444);
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);

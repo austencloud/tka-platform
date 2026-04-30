@@ -43,7 +43,7 @@ export interface RetroCard {
  * for the pixel renderer.
  *
  * Mirrors the same function in notation-adapter. Both adapters operate on
- * the same MotionData shape, so the mapping is identical — kept here to
+ * the same MotionData shape, so the mapping is identical - kept here to
  * avoid a cross-adapter import that would couple two unrelated concerns.
  */
 function motionToRetroHand(motion: MotionData): RetroHandData {
@@ -76,7 +76,7 @@ function fallbackHand(color: MotionColor): RetroHandData {
 
 /**
  * Convert a sequence's steps array to the RetroPictographData list the
- * pixel renderer expects — one entry per beat.
+ * pixel renderer expects - one entry per beat.
  */
 function convertStepsToRetro(steps: readonly StepData[]): RetroPictographData[] {
   return steps.map((step) => {
@@ -97,7 +97,7 @@ function convertStepsToRetro(steps: readonly StepData[]): RetroPictographData[] 
 }
 
 /**
- * Format a JS Date as MM/DD/YY — the DOS-era date style shown on each card.
+ * Format a JS Date as MM/DD/YY - the DOS-era date style shown on each card.
  */
 function formatDosDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");

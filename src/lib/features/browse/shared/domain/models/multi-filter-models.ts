@@ -16,7 +16,7 @@ export interface ActiveFilter {
   value: BrowseFilterValue;
   /** Human-readable label for chip display (e.g., "Level 2", "Favorites") */
   label: string;
-  /** CSS color for chip accent — a CSS variable reference or hex value */
+  /** CSS color for chip accent - a CSS variable reference or hex value */
   chipColor: string;
 }
 

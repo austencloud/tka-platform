@@ -51,7 +51,7 @@
   // Per-performer Sets use the legacy EffectId union. Translate between the
   // canonical EffectType and EffectId where they diverge; unrepresentable
   // keys (echo/water/bubbles/petals/smoke/ink) hide from the per-performer
-  // toggle — Phase 2.5 migrates the per-performer Set to the canonical enum.
+  // toggle - Phase 2.5 migrates the per-performer Set to the canonical enum.
   function toPerformerEffect(key: EffectKey): EffectId | null {
     if (key === "zap") return "electricity";
     if (key === "motion") return "motion";
@@ -94,7 +94,7 @@
       });
       return;
     }
-    // Global fallback — wildcard tip map. Toggling the active effect off
+    // Global fallback - wildcard tip map. Toggling the active effect off
     // returns to "none" so the grid has a consistent off-state semantic.
     const currentlyActive = config.config.tipEffectMap["*"]?.effect === key;
     config.setTipEffectMap({ "*": { effect: currentlyActive ? "none" : key } });

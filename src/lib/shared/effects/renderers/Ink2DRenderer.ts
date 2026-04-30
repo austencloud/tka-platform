@@ -228,7 +228,7 @@ export class Ink2DRenderer {
       const pos = tips[key];
       const enabled = this.isTipEnabled(key, params);
       if (!pos || !enabled) {
-        // Don't clear state — let existing points sag, break, and age out.
+        // Don't clear state - let existing points sag, break, and age out.
         // Only clear lastPos so the next appearance doesn't teleport.
         const state = this.tips[key];
         if (state) state.lastPos = null;
@@ -360,7 +360,7 @@ export class Ink2DRenderer {
   private detectBreakup(params: Ink2DParams): void {
     const threshold = (1 - params.viscosity) * params.breakStretchMax;
     if (threshold <= 0) {
-      // viscosity=1: everything breaks immediately — convert all aged points
+      // viscosity=1: everything breaks immediately - convert all aged points
       for (const key of TIP_KEYS) {
         const state = this.tips[key];
         if (!state || state.points.length < 2) continue;

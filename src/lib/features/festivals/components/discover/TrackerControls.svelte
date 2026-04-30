@@ -25,7 +25,7 @@
     return t ? STATUS_STEPS.findIndex(s => s.value === t.status) : -1;
   });
 
-  // Initialize from tracker prop via $effect to keep in sync — access through props to track reactively
+  // Initialize from tracker prop via $effect to keep in sync - access through props to track reactively
   let notes = $state("");
   let stipend = $state("");
   $effect(() => {
@@ -125,7 +125,7 @@
       aria-label="Clear declined status"
     >
       <i class="fas fa-times" aria-hidden="true"></i>
-      Declined — click to reset
+      Declined - click to reset
     </button>
   {/if}
 

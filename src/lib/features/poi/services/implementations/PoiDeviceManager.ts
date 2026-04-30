@@ -34,7 +34,7 @@ export class PoiDeviceManager implements IPoiDeviceManager {
           results.push(device);
         }
       } catch (err) {
-        // Adapter may not be supported in this browser — skip it
+        // Adapter may not be supported in this browser - skip it
         console.warn(`${adapter.protocolName} scan failed:`, err);
       }
     }

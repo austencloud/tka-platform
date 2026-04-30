@@ -1,5 +1,5 @@
 /**
- * Museum Exhibit Sequences — Pre-baked sequence data for exhibit pictographs.
+ * Museum Exhibit Sequences - Pre-baked sequence data for exhibit pictographs.
  *
  * Each entry maps an exhibit's sequenceId to the step data needed by
  * PictographContainer. Data generated via MCP get_sequence_data tool
@@ -103,7 +103,7 @@ function convertRaw(raw: RawSequence, gridMode: GridMode = "diamond" as GridMode
 // ── Raw sequence data from MCP get_sequence_data ──
 
 const RAW: Record<string, RawSequence> = {
-	// Victorian: Brass Notation Device — simple 3-step pattern (ABD)
+	// Victorian: Brass Notation Device - simple 3-step pattern (ABD)
 	"vic-brass-seq": {
 		word: "ABD",
 		steps: [
@@ -122,7 +122,7 @@ const RAW: Record<string, RawSequence> = {
 		],
 	},
 
-	// Digital: The CRT — first digital sequence (ABBD)
+	// Digital: The CRT - first digital sequence (ABBD)
 	"digital-crt-seq": {
 		word: "ABBD",
 		steps: [
@@ -144,7 +144,7 @@ const RAW: Record<string, RawSequence> = {
 		],
 	},
 
-	// Gallery: The Spiral — centerpiece exhibit (ABCD)
+	// Gallery: The Spiral - centerpiece exhibit (ABCD)
 	"gallery-spiral-seq": {
 		word: "ABCD",
 		steps: [
@@ -166,7 +166,7 @@ const RAW: Record<string, RawSequence> = {
 		],
 	},
 
-	// Gallery: Scribe Training — beginner pattern (EFGH)
+	// Gallery: Scribe Training - beginner pattern (EFGH)
 	"gallery-scribes-seq": {
 		word: "EFGH",
 		steps: [
@@ -188,7 +188,7 @@ const RAW: Record<string, RawSequence> = {
 		],
 	},
 
-	// Gallery: Practice Area — drills pattern (ABD again, different variation)
+	// Gallery: Practice Area - drills pattern (ABD again, different variation)
 	"gallery-practice-seq": {
 		word: "ABD",
 		steps: [
@@ -209,7 +209,7 @@ const RAW: Record<string, RawSequence> = {
 
 	// ── Performer station sequences ──
 
-	// Cave performers — simple repeating pattern (ABAB)
+	// Cave performers - simple repeating pattern (ABAB)
 	"performer-cave-seq": {
 		word: "ABAB",
 		steps: [

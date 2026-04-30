@@ -893,7 +893,7 @@ export const postHogFeatureFlagService = {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          const detail = errorData.detail ? ` — ${errorData.detail}` : "";
+          const detail = errorData.detail ? ` - ${errorData.detail}` : "";
           throw new Error((errorData.message || `HTTP ${response.status}`) + detail);
         }
 

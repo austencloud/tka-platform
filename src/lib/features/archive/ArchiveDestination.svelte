@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * ArchiveDestination — The Kinetic Archive
+	 * ArchiveDestination - The Kinetic Archive
 	 *
 	 * Standalone 3D scene using IndoorScene for physics-based FPS navigation
 	 * with Rapier collision detection and grid-snapped room geometry.

@@ -4,9 +4,9 @@ import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFl
  * Each premium capability needs a FeatureFlagConfig so that
  * postHogFeatureFlagService.canAccess() doesn't fall through to
  * the secure "admin" default. Setting minimumRole: "user" means
- * the role check passes for everyone — the PremiumGateChecker
+ * the role check passes for everyone - the PremiumGateChecker
  * handles the actual premium role check before calling canAccess().
- * Setting enabled: false means the capability is off by default —
+ * Setting enabled: false means the capability is off by default -
  * only users with explicit enabledFeatures overrides get through.
  */
 export const PREMIUM_CAPABILITY_CONFIGS: FeatureFlagConfig[] = [

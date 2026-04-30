@@ -1,18 +1,18 @@
 /**
  * Deck Membership Resolver
  *
- * Given a sequence, compute which decks it belongs to — purely from its data,
+ * Given a sequence, compute which decks it belongs to - purely from its data,
  * never from a stored `deckId` field. Deck membership is a function of:
  *
- *   level        — from SequenceDifficultyCalculator
- *   gridMode     — inherent to the sequence
- *   loopType     — from LOOPDetector
- *   sliceType    — from LOOPDetector
- *   stepCount    — `sequence.steps.length`
- *   reversalPattern — from reversal-matcher
+ *   level        - from SequenceDifficultyCalculator
+ *   gridMode     - inherent to the sequence
+ *   loopType     - from LOOPDetector
+ *   sliceType    - from LOOPDetector
+ *   stepCount    - `sequence.steps.length`
+ *   reversalPattern - from reversal-matcher
  *
- * This lets the system re-derive deck membership for any sequence — including
- * imported ones or ones whose canonical deck doc has been deleted — and
+ * This lets the system re-derive deck membership for any sequence - including
+ * imported ones or ones whose canonical deck doc has been deleted - and
  * handles the orphan-shortcode case where a sequence was shared before its
  * deck origin was recorded.
  */
@@ -42,10 +42,10 @@ export interface DeckSignals {
 export interface SignalProviders {
   /** Returns 1-9. Today only 1/2/3 are classified; L4+ return 1 until classifier extended. */
   readonly analyzeLevel: (steps: readonly StepData[]) => number;
-  /** Returns LOOP type and slice size. Null when the sequence isn't a LOOP. */
+  /** Returns LOOP type and period. Null when the sequence isn't a LOOP. */
   readonly analyzeLoop: (sequence: SequenceData) => {
     loopType: string | null;
-    sliceSize: "halved" | "quartered" | null;
+    period: "halved" | "quartered" | null;
   };
 }
 
@@ -62,7 +62,7 @@ export function buildSignals(sequence: SequenceData, providers: SignalProviders)
     beyondLevel3Features: featureReport.features,
     gridMode: sequence.gridMode ?? null,
     loopType: loopResult.loopType,
-    sliceType: loopResult.sliceSize,
+    sliceType: loopResult.period,
     stepCount: sequence.steps.length,
     reversalPatternId: matchReversalPatternId(sequence.steps),
   };

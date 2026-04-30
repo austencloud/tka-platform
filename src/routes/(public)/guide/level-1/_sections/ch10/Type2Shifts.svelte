@@ -23,7 +23,7 @@
   ];
 </script>
 
-<GuideSection id="type-2-shifts" title="Type 2 — Shifts">
+<GuideSection id="type-2-shifts" title="Type 2 - Shifts">
   <p>
     To move between Γ and α/β, you can shift one hand and keep the other hand static.
     This combination is called a Shift (with a capital "S").

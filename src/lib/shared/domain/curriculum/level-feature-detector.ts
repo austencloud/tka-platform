@@ -1,19 +1,19 @@
 /**
  * Level Feature Detector
  *
- * Scans a sequence for features that place it above Level 3 — the highest
+ * Scans a sequence for features that place it above Level 3 - the highest
  * level the runtime `SequenceDifficultyCalculator` currently classifies.
  *
  * This is an *escape hatch*, not a classifier. When `beyondLevel3` is true,
  * the caller should treat level as unknown rather than guessing L1.
  *
  * Features checked:
- *   L4 — center grid location ("c"), tau/terra positions, centric grid mode,
+ *   L4 - center grid location ("c"), tau/terra positions, centric grid mode,
  *        hash motions, skew modifier on dash
- *   L5 — zeta/eta positions, skewed or 8point grid mode, skew modifier on shift
- *   L6 — interradial orientations (clockIn, clockOut, counterIn, counterOut)
- *   L7 — trigrid grid mode (conjoined)
- *   L8 — any motion/step carrying a `plane` field
+ *   L5 - zeta/eta positions, skewed or 8point grid mode, skew modifier on shift
+ *   L6 - interradial orientations (clockIn, clockOut, counterIn, counterOut)
+ *   L7 - trigrid grid mode (conjoined)
+ *   L8 - any motion/step carrying a `plane` field
  *
  * Feature lists come from:
  *   - src/lib/shared/pictograph/grid/domain/enums/grid-enums.ts

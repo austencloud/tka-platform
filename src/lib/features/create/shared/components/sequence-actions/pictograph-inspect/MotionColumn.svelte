@@ -102,15 +102,15 @@
       <div class="data-block">
         <div class="data-row">
           <span class="key">posX</span>
-          <span class="val num">{motion.arrowPlacementData?.positionX?.toFixed(2) ?? "—"}</span>
+          <span class="val num">{motion.arrowPlacementData?.positionX?.toFixed(2) ?? "-"}</span>
         </div>
         <div class="data-row">
           <span class="key">posY</span>
-          <span class="val num">{motion.arrowPlacementData?.positionY?.toFixed(2) ?? "—"}</span>
+          <span class="val num">{motion.arrowPlacementData?.positionY?.toFixed(2) ?? "-"}</span>
         </div>
         <div class="data-row">
           <span class="key">angle</span>
-          <span class="val num">{motion.arrowPlacementData?.rotationAngle?.toFixed(1) ?? "—"}°</span>
+          <span class="val num">{motion.arrowPlacementData?.rotationAngle?.toFixed(1) ?? "-"}°</span>
         </div>
         <div class="data-row">
           <span class="key">mirrored</span>

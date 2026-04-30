@@ -6,7 +6,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
-// Minimal StepData factory — only the fields the calculator reads.
+// Minimal StepData factory - only the fields the calculator reads.
 function makeStep(
   blueTurns: number | "fl" | null,
   redTurns: number | "fl" | null,

@@ -1,8 +1,8 @@
 <!--
-  RetroTaskManager — TKA-OS Task Manager easter egg
+  RetroTaskManager - TKA-OS Task Manager easter egg
 
   Opens when Ctrl+Alt+Delete is pressed. Shows a table of "running processes"
-  — every single one is NOTATION.DLL. Values update every 2 seconds.
+  - every single one is NOTATION.DLL. Values update every 2 seconds.
   "End Task" refuses to terminate NOTATION.DLL. Obviously.
 
   Domain: Retro Easter Eggs
@@ -28,7 +28,7 @@
   const PROCESS_COUNT = 6;
   const UPDATE_INTERVAL_MS = 2000;
 
-  /** Fixed PIDs — randomized once at mount, never change. */
+  /** Fixed PIDs - randomized once at mount, never change. */
   const PIDS: number[] = Array.from({ length: PROCESS_COUNT }, () =>
     Math.floor(Math.random() * 1000) + 1000
   );

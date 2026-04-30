@@ -1,5 +1,5 @@
 <!--
-  RetroWindow — Draggable, resizable 98.css window primitive
+  RetroWindow - Draggable, resizable 98.css window primitive
 
   Full Win95-style window chrome with:
   - Draggable title bar (mousedown starts, document-level tracking)
@@ -392,7 +392,7 @@
 </script>
 
 {#if !isMinimized}
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions — role="application" IS interactive per WAI-ARIA -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions - role="application" IS interactive per WAI-ARIA -->
   <div
     class="retro-window window"
     class:active={isActive}
@@ -687,7 +687,7 @@
   }
 
   /* ==================================================================
-     Resize handles — invisible 4px zones along window edges
+     Resize handles - invisible 4px zones along window edges
      ================================================================== */
   .resize-handle {
     position: absolute;

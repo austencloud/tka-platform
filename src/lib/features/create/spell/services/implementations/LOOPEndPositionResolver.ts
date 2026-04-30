@@ -14,7 +14,7 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   LOOPType,
-  SliceSize,
+  Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
   HALF_POSITION_MAP,
@@ -32,7 +32,7 @@ export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
   getValidEndPositions(
     startPosition: GridPosition,
     loopType: LOOPType,
-    sliceSize: SliceSize = SliceSize.HALVED
+    period: Period = Period.HALVED
   ): GridPosition[] {
     switch (loopType) {
       // --- REWOUND: No position constraint ---
@@ -46,7 +46,7 @@ export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
       case LOOPType.MIRRORED_ROTATED:
       case LOOPType.MIRRORED_INVERTED_ROTATED:
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
-        return this.getRotatedEndPositions(startPosition, sliceSize);
+        return this.getRotatedEndPositions(startPosition, period);
 
       // --- MIRRORED (vertical mirror, and composites without rotation) ---
       case LOOPType.MIRRORED:
@@ -87,9 +87,9 @@ export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
     startPosition: GridPosition,
     endPosition: GridPosition,
     loopType: LOOPType,
-    sliceSize: SliceSize = SliceSize.HALVED
+    period: Period = Period.HALVED
   ): boolean {
-    const validPositions = this.getValidEndPositions(startPosition, loopType, sliceSize);
+    const validPositions = this.getValidEndPositions(startPosition, loopType, period);
 
     // Empty array means unconstrained - any position is valid
     if (validPositions.length === 0) return true;
@@ -104,9 +104,9 @@ export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
    */
   private getRotatedEndPositions(
     startPosition: GridPosition,
-    sliceSize: SliceSize
+    period: Period
   ): GridPosition[] {
-    if (sliceSize === SliceSize.QUARTERED) {
+    if (period === Period.QUARTERED) {
       const positions: GridPosition[] = [];
       const cw = QUARTER_POSITION_MAP_CW[startPosition];
       const ccw = QUARTER_POSITION_MAP_CCW[startPosition];

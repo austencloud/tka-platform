@@ -36,7 +36,7 @@
           lead: "This sequence uses ",
           parts: [
             { text: "whole turns", bold: true },
-            { text: " — that's Level 2. Add ", bold: false },
+            { text: " - that's Level 2. Add ", bold: false },
             { text: "half turns or floats", bold: true },
             { text: " to reach Level 3.", bold: false },
           ],
@@ -47,7 +47,7 @@
           lead: "This sequence uses ",
           parts: [
             { text: "half turns or floats", bold: true },
-            { text: " — that's Level 3, the full vocabulary.", bold: false },
+            { text: " - that's Level 3, the full vocabulary.", bold: false },
           ],
         };
     }

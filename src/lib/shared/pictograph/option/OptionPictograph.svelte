@@ -1,5 +1,5 @@
 <!--
-  OptionPictograph — Visibility-aware wrapper around PictographRenderer.
+  OptionPictograph - Visibility-aware wrapper around PictographRenderer.
   Subscribes to VisibilityStateManager so option picker pictographs
   reflect all user visibility preferences (motions, grid, glyphs, etc.).
 -->

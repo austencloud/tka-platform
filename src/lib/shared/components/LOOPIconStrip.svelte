@@ -25,6 +25,7 @@ Used in:
   import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOP_ICON_GAP_SCALE } from "@tka/render-composition";
   import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
+  import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
 
   interface Props {
     activeComponents: Set<LOOPComponent>;
@@ -35,6 +36,9 @@ Used in:
      * continues to look the same as before.
      */
     rotationPeriod?: Period;
+    inversionPeriod?: Period;
+    /** Integer LOOP period (2 = halved, 4 = quartered, 8 = eighths). Shown as centered number badge. */
+    period?: number;
     size?: number;
     darkMode?: boolean;
     showFreeformWhenEmpty?: boolean;
@@ -43,10 +47,15 @@ Used in:
   let {
     activeComponents,
     rotationPeriod,
+    inversionPeriod,
+    period,
     size = 16,
     darkMode = true,
     showFreeformWhenEmpty = true,
   }: Props = $props();
+
+  const periodBadge = $derived(period != null && period >= 2 ? String(period) : null);
+  const badgeFontSize = $derived(Math.max(7, Math.round(size * 0.55)));
 
   // Icon configuration - matches Design Lab choices.
   // Rotated's icon + label gets overridden at render time based on
@@ -123,13 +132,15 @@ Used in:
     rotationPeriod === Period.QUARTERED
   );
 
-  // Pick the icon for a component, applying the quartered-rotation override
-  // inline so the primitiveIcons map stays the single definition of visual
-  // truth for the other 5 primitives.
+  const isQuarteredInversion = $derived(
+    inversionPeriod === Period.QUARTERED
+  );
+
   function iconFor(component: LOOPComponent): {
     faClass: string;
     color: string;
     label: string;
+    customSvg?: "checkerboard";
   } | null {
     const base = primitiveIcons[component];
     if (!base) return null;
@@ -138,6 +149,13 @@ Used in:
         faClass: "fas fa-arrows-spin",
         color: base.color,
         label: "Rotated (quartered)",
+      };
+    }
+    if (component === LOOPComponent.INVERTED && isQuarteredInversion) {
+      return {
+        ...base,
+        label: "Inverted (quartered)",
+        customSvg: "checkerboard",
       };
     }
     return base;
@@ -177,18 +195,29 @@ Used in:
     {#each activeList as component}
       {@const icon = iconFor(component)}
       {#if icon}
-        {#if component === LOOPComponent.SWAPPED}
-          <span title={icon.label} style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
-            <SwapIcon size="{size}px" />
-          </span>
-        {:else}
-          <i
-            class={icon.faClass}
-            style="font-size: {size}px; color: {icon.color};"
-            aria-hidden="true"
-            title={icon.label}
-          ></i>
-        {/if}
+        <span class="icon-cell" style="width: {size}px; height: {size}px;" title={icon.label}>
+          {#if component === LOOPComponent.SWAPPED}
+            <span class="custom-icon" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
+              <SwapIcon size="{size}px" />
+            </span>
+          {:else if icon.customSvg === "checkerboard"}
+            <span class="custom-icon" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
+              <CheckerboardCircleIcon size="{size}px" color={icon.color} />
+            </span>
+          {:else}
+            <i
+              class={icon.faClass}
+              style="font-size: {size}px; color: {icon.color};"
+              aria-hidden="true"
+            ></i>
+          {/if}
+          {#if periodBadge}
+            <span
+              class="period-badge"
+              style="font-size: {badgeFontSize}px;"
+            >{periodBadge}</span>
+          {/if}
+        </span>
       {/if}
     {/each}
   {/if}
@@ -208,5 +237,34 @@ Used in:
 
   .loop-icon-strip.dark i {
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  .icon-cell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .custom-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .period-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    pointer-events: none;
+    text-shadow:
+      0 0 3px rgba(0, 0, 0, 0.9),
+      0 0 6px rgba(0, 0, 0, 0.7),
+      0 1px 1px rgba(0, 0, 0, 0.8);
   }
 </style>

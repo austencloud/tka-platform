@@ -19,13 +19,13 @@ const cache = $state<Record<string, MandalaPaths>>({});
 const inFlight = new Map<string, Promise<MandalaPaths | null>>();
 const calculator = new MandalaGeometryCalculator();
 
-/** Synchronous peek — returns cached paths or null. */
+/** Synchronous peek - returns cached paths or null. */
 export function getPrimitivePaths(shapeHash: string): MandalaPaths | null {
   return cache[shapeHash] ?? null;
 }
 
 /**
- * Async load — populates cache for the given shapeHash.
+ * Async load - populates cache for the given shapeHash.
  * Safe to call repeatedly; concurrent calls for the same hash share a promise.
  */
 export async function loadPrimitivePaths(shapeHash: string): Promise<MandalaPaths | null> {
@@ -38,7 +38,7 @@ export async function loadPrimitivePaths(shapeHash: string): Promise<MandalaPath
       await loadPrimitiveCatalog();
       const entry = getCatalogEntry(shapeHash);
 
-      // Stage B: pre-baked paths — use directly.
+      // Stage B: pre-baked paths - use directly.
       if (entry?.paths) {
         cache[shapeHash] = entry.paths;
         return entry.paths;

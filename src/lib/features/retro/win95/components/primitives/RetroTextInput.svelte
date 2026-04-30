@@ -1,5 +1,5 @@
 <!--
-  RetroTextInput — Sunken 3D text field using 98.css styling
+  RetroTextInput - Sunken 3D text field using 98.css styling
 
   Renders as <input> or <textarea> depending on the multiline prop.
   Value is bindable for two-way data flow.

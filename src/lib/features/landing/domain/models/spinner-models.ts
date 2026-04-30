@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { LOOPType, Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 
 /**
@@ -23,8 +23,8 @@ export type SpinnerMode = "library" | "infinite" | "live";
 export interface GenerationSettings {
   /** LOOP type used (e.g., "Rotated", "Mirrored", "Swapped") */
   loopType: LOOPType;
-  /** Slice size (halved = 2 parts, quartered = 4 parts) */
-  sliceSize: SliceSize;
+  /** Period (halved = 2 parts, quartered = 4 parts) */
+  period: Period;
   /** Difficulty level */
   difficulty: DifficultyLevel;
   /** Turn intensity (0-3) */

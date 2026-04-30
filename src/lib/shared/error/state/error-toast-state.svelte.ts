@@ -2,7 +2,7 @@
  * Error Toast State
  *
  * Manages a queue of error toasts that appear in the UI. Separate from the
- * simple toast system — error toasts support progress bars, pause-on-hover,
+ * simple toast system - error toasts support progress bars, pause-on-hover,
  * stacking compression, and auto-report integration that generic toasts don't.
  *
  * Usage:

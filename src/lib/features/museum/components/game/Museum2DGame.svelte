@@ -178,7 +178,7 @@
         </div>
       {/each}
 
-      <!-- Torch glow layer — renders warm light pools around torch tiles -->
+      <!-- Torch glow layer - renders warm light pools around torch tiles -->
       {#each visibleTorches as torch (torch.x + "," + torch.y)}
         <div
           class="torch-glow"
@@ -218,7 +218,7 @@
     contain: strict;
   }
 
-  /* ── Torch glow — warm radial light pools ── */
+  /* ── Torch glow - warm radial light pools ── */
 
   .torch-glow {
     position: absolute;

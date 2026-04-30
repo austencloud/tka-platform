@@ -97,7 +97,7 @@
     Trail Effect
   </h3>
 
-  <!-- Tracking mode (bilateral props only — unilateral props have one end) -->
+  <!-- Tracking mode (bilateral props only - unilateral props have one end) -->
   {#if bilateral}
     <div class="renderer-toggle-section">
       <span class="section-label">Track end</span>
@@ -125,7 +125,7 @@
       class="toggle-btn"
       class:active={trail.hideProps}
       onclick={() => handleHideProps(!trail.hideProps)}
-      aria-label={trail.hideProps ? "Show props" : "Hide props — trails only"}
+      aria-label={trail.hideProps ? "Show props" : "Hide props - trails only"}
       aria-pressed={trail.hideProps}
     >
       {trail.hideProps ? "ON" : "OFF"}

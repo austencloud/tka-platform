@@ -63,7 +63,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
   import ShortcutsHelp from "./keyboard/components/ShortcutsHelp.svelte";
   import KeyboardShortcutCoordinator from "./keyboard/coordinators/KeyboardShortcutCoordinator.svelte";
 
-  // My Props drawer — rendered here (outside sidebar) because the sidebar's
+  // My Props drawer - rendered here (outside sidebar) because the sidebar's
   // backdrop-filter creates a containing block that traps position:fixed
   import MyPropsDrawer from "./navigation/components/account/MyPropsDrawer.svelte";
   import { myPropsDrawerState } from "./navigation/components/account/my-props-drawer-state.svelte";
@@ -172,7 +172,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
 
   // Primary navigation visibility - hide during Browse module scroll or Fuse tour
   const isPrimaryNavVisible = $derived(() => {
-    // Fuse tour owns the full viewport — hide nav so nothing peeks through
+    // Fuse tour owns the full viewport - hide nav so nothing peeks through
     if (fuseTourState.isActive) return false;
     const module = currentModule();
     if (module === "browse") {
@@ -360,7 +360,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
   <ToastContainer />
 </div>
 
-<!-- My Props drawer — must render outside .main-interface to escape
+<!-- My Props drawer - must render outside .main-interface to escape
      the sidebar's backdrop-filter containing block -->
 {#if myPropsDrawerState.propState}
   <MyPropsDrawer

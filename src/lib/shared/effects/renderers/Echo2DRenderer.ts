@@ -2,13 +2,13 @@ import type { Echo2DParams } from "../translators/canvas2d-types";
 
 /**
  * Per-tip input for the echo overlay. Each prop contributes a tip pair
- * (A + B ends of the staff) — a phantom captures the whole pair at once
+ * (A + B ends of the staff) - a phantom captures the whole pair at once
  * so the rendered line correctly connects the two ends the user sees in
  * the live staff.
  *
  * `currentStep` drives beat-onset detection and phantom aging. It is the
  * authoritative step index from the animation engine (fractional, advances
- * during playback) — using it instead of wall-clock dt makes the
+ * during playback) - using it instead of wall-clock dt makes the
  * stroboscope land exactly on the beat grid regardless of frame jitter.
  *
  * `blueColor` / `redColor` are consumed when `params.colorMode === "prop-matched"`.
@@ -20,9 +20,9 @@ export interface EchoTipInput {
   redPosB: { x: number; y: number } | null;
   /** Current animation step index (fractional). Used for beat-onset detection + aging. */
   currentStep: number;
-  /** Hex for blue prop — used when params.colorMode === "prop-matched". */
+  /** Hex for blue prop - used when params.colorMode === "prop-matched". */
   blueColor: string;
-  /** Hex for red prop — used when params.colorMode === "prop-matched". */
+  /** Hex for red prop - used when params.colorMode === "prop-matched". */
   redColor: string;
 }
 
@@ -44,7 +44,7 @@ interface Phantom {
  * step index and are culled once their age (in intervals) reaches `decay`.
  *
  * Rendering uses additive blend so overlapping phantoms brighten where
- * the prop returned to a position — the viewer sees the beat lattice as
+ * the prop returned to a position - the viewer sees the beat lattice as
  * a constellation of fading ghosts.
  */
 export class Echo2DRenderer {
@@ -79,7 +79,7 @@ export class Echo2DRenderer {
       this.lastStepIndex = stepNumber;
     }
 
-    // 2. Cull aged-out phantoms (in-place compaction — zero allocation).
+    // 2. Cull aged-out phantoms (in-place compaction - zero allocation).
     const cullAge = params.decay;
     const ageInIntervals = (p: Phantom) =>
       (tips.currentStep - p.capturedStep) / params.interval;
@@ -156,7 +156,7 @@ export class Echo2DRenderer {
   ): string {
     switch (params.colorMode) {
       case "rainbow":
-        // 47° per beat — coprime with 360 so the cycle doesn't repeat for 360 beats.
+        // 47° per beat - coprime with 360 so the cycle doesn't repeat for 360 beats.
         return `hsl(${(beatIdx * 47) % 360}, 80%, 60%)`;
       case "gradient":
         // Fade from red (hue 0) → violet (hue 240) across decay.

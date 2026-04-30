@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TKA Letter A — Illuminated Manuscript (~1200 AD)</title>
+  <title>TKA Letter A - Illuminated Manuscript (~1200 AD)</title>
   <style>
     body {
       margin: 0;
@@ -92,7 +92,7 @@
       ctx.fillRect(0, 0, W, H);
     });
 
-    // Fibrous texture lines — horizontal & slight diagonal
+    // Fibrous texture lines - horizontal & slight diagonal
     ctx.save();
     ctx.globalAlpha = 0.06;
     for (let y = 2; y < H; y += 3) {
@@ -424,7 +424,7 @@
       ctx.fill();
     });
 
-    // Center grid dot — more elaborate
+    // Center grid dot - more elaborate
     ctx.beginPath();
     ctx.arc(CENTER.x, CENTER.y, 7, 0, Math.PI * 2);
     ctx.fillStyle = GOLD;
@@ -445,7 +445,7 @@
   // ─── Pictograph-data helpers ──────────────────────────────────────────────
   // Convert a HandData record into the raw geometric inputs the existing
   // drawStaff / drawIlluminatedArrow helpers already understand. The fancy
-  // medieval styling in those functions is left completely untouched — we're
+  // medieval styling in those functions is left completely untouched - we're
   // only replacing the hardcoded Letter-A positions with values pulled from
   // whatever pictograph was posted in via PictographBridge.
   function handLoc(hand)    { return String(hand && (hand.location    || hand.startLocation) || '').toLowerCase(); }
@@ -460,14 +460,14 @@
     if (!from || !to) return;
 
     if (hand.motionType === 'dash') {
-      // Straight dash — midpoint control keeps the quill-stroke helper happy
+      // Straight dash - midpoint control keeps the quill-stroke helper happy
       // while producing a visually-straight line.
       const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
       drawIlluminatedArrow(from, to, mainColor, lightColor, mid, 'end');
       return;
     }
 
-    // Arc motion — pull the Bézier control point OUTward from center along
+    // Arc motion - pull the Bézier control point OUTward from center along
     // the midpoint of the arc so the curve bows around the perimeter, matching
     // how the original Letter-A arrows were hand-placed.
     const dir = G.handDirection(hand) || 'cw';
@@ -604,7 +604,7 @@
   }
 
   // ─── 5. ARROWS ────────────────────────────────────────────────────────────
-  // Motion arrows are now driven entirely from the hand data — the start, end
+  // Motion arrows are now driven entirely from the hand data - the start, end
   // and curve direction come from PictographGeometry so any letter's motions
   // end up in the right quadrant with the right arc direction.
   function drawArrows(data) {
@@ -617,7 +617,7 @@
 
     // ── Thick calligraphic curve ──────────────────────────────────────────
     // We draw the curve as a filled calligraphic stroke with varying width
-    // (thick in middle, tapered at ends — like a quill stroke)
+    // (thick in middle, tapered at ends - like a quill stroke)
 
     const steps    = 60;
     const maxWidth = 7;
@@ -714,7 +714,7 @@
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // Small tail flourish — a tiny calligraphic curl at the origin end
+    // Small tail flourish - a tiny calligraphic curl at the origin end
     const srcPt  = points[0];
     const srcTx  = points[2].x - points[0].x;
     const srcTy  = points[2].y - points[0].y;
@@ -785,7 +785,7 @@
 
   // ─── 7. ILLUMINATED CAPITAL ──────────────────────────────────────────────
   // Placed in upper-left quadrant of the inner frame. The bespoke, hand-drawn
-  // capital "A" is the canonical illumination — any other letter falls back to
+  // capital "A" is the canonical illumination - any other letter falls back to
   // a generic serif glyph painted in the same gold-on-blue scheme so the
   // panel still reads as an illuminated initial.
   function drawIlluminatedCapital(letter) {
@@ -882,7 +882,7 @@
 
       ctx.restore();
     } else {
-      // Generic illuminated capital — big serif letter in gold with an ink
+      // Generic illuminated capital - big serif letter in gold with an ink
       // shadow so the panel stays legible for every letter in the alphabet
       // even though only "A" gets the full illumination treatment.
       ctx.save();
@@ -890,7 +890,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // Ink shadow — two passes, slightly offset for depth
+      // Ink shadow - two passes, slightly offset for depth
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.fillText(letter, ax + 2, ay + 2);
       ctx.fillStyle = INK;
@@ -1218,7 +1218,7 @@
   }
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
-  // Single entry point — called once on boot with the default pictograph,
+  // Single entry point - called once on boot with the default pictograph,
   // and again every time PictographBridge delivers a new RetroPictographData
   // from the parent window.
   function render(data, canonical, meta) {
@@ -1239,7 +1239,7 @@
     // structural pixels like a gilded outline), then composite at 0.92 so the
     // parchment texture still reads through faintly.
     //
-    // Fallback: no canonical available — use the original data-driven
+    // Fallback: no canonical available - use the original data-driven
     // illuminated arrows and staves.
     if (canonical && window.PictographStylize) {
       const chunky = window.PictographStylize.pixelate(canonical, W, 140);
@@ -1260,7 +1260,7 @@
     drawIlluminatedCapital(letter);
     drawInscription(letter);
 
-    // Final vignette — gentle darkening at edges to simulate age
+    // Final vignette - gentle darkening at edges to simulate age
     const vignette = ctx.createRadialGradient(250, 250, 180, 250, 250, 360);
     vignette.addColorStop(0,   'rgba(0,0,0,0)');
     vignette.addColorStop(0.7, 'rgba(0,0,0,0)');
@@ -1269,7 +1269,7 @@
     ctx.fillRect(0, 0, W, H);
   }
 
-  // ─── Default pictograph — Letter A (what the page rendered before the
+  // ─── Default pictograph - Letter A (what the page rendered before the
   //     data-driven refactor). Also used when this HTML is opened directly
   //     without a parent posting pictograph data.
   const DEFAULT_PICTOGRAPH = {

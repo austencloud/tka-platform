@@ -99,7 +99,7 @@
     errorMessage = "";
     try {
       await onChangePassword();
-      // Success — show inline confirmation then collapse
+      // Success - show inline confirmation then collapse
       showSuccess = true;
       hapticService?.trigger("success");
       setTimeout(() => {

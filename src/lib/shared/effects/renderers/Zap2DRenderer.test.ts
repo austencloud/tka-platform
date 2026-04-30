@@ -66,7 +66,7 @@ describe("Zap2DRenderer.frequency", () => {
   });
 });
 
-describe("Zap2DRenderer — scale contract", () => {
+describe("Zap2DRenderer - scale contract", () => {
   function mockCtx() {
     const lineWidths: number[] = [];
     let _lineWidth = 1;
@@ -130,7 +130,7 @@ describe("Zap2DRenderer — scale contract", () => {
     r2.render(ctx2, params, tips, 2);
 
     // drawArc sets lineWidth twice per arc (glow pass: lineWidth*2*scale, core pass: lineWidth*scale).
-    // The finally-block restore also writes prevLineWidth=1 unconditionally — exclude it by taking
+    // The finally-block restore also writes prevLineWidth=1 unconditionally - exclude it by taking
     // only the per-draw-call assignments (all but the last restore write).
     const drawn1 = widths1.slice(0, -1);
     const drawn2 = widths2.slice(0, -1);
@@ -168,7 +168,7 @@ describe("Zap2DRenderer — scale contract", () => {
   });
 });
 
-describe("Zap2DRenderer — per-hand color", () => {
+describe("Zap2DRenderer - per-hand color", () => {
   it("uses leftColor for blue-origin crackle spokes and rightColor for red-origin", () => {
     const r = new Zap2DRenderer();
     const styles: string[] = [];

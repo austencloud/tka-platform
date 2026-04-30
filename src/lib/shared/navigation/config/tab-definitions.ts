@@ -799,7 +799,7 @@ export const SOCIAL_TABS: Section[] = [
 
 export const LAB_TABS: Section[] = [
   // ascii-pictograph graduated to Retro module (Mar 2026)
-  // assemble-lab removed — functionality lives in Create module's Assemble tab
+  // assemble-lab removed - functionality lives in Create module's Assemble tab
   {
     id: "attribution",
     label: "Attribution",
@@ -878,7 +878,7 @@ export const LAB_TABS: Section[] = [
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
   },
-  // mandala-drawing removed (Apr 2026) — was just a placeholder notes tab
+  // mandala-drawing removed (Apr 2026) - was just a placeholder notes tab
   // ml-training removed (Mar 2026)
   // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
   // hand-path-explorer graduated to Hand Paths module (Mar 2026)

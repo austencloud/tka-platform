@@ -16,7 +16,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
@@ -62,7 +62,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
 
-  // LOOP detection — uses the circular LOOPDetector singleton directly
+  // LOOP detection - uses the circular LOOPDetector singleton directly
   // (detectLOOPType + SequenceData) rather than the loop-labeler version
   // (detectLOOP + SequenceEntry)
 
@@ -82,7 +82,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
   const isTimelineMode = $derived(getIsTimelineMode());
 
-  // Reactive LOOP detection — the circular detector still owns the
+  // Reactive LOOP detection - the circular detector still owns the
   // isCircular + loopType shape we need for grid alignment and the modal
   // title. The resolver layered on top of it gives us the icon-shaped
   // output (components + rotation slice size) for the badge.
@@ -97,18 +97,22 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
       ? resolveLoopDisplay(currentSequence)
       : {
           components: new Set<LOOPComponent>(),
-          rotationSliceSize: undefined as SliceSize | undefined,
+          rotationPeriod: undefined as Period | undefined,
+          inversionPeriod: undefined as Period | undefined,
+          period: 1,
         }
   );
   const activeComponents = $derived(loopDisplay.components);
-  const rotationSliceSize = $derived(loopDisplay.rotationSliceSize);
+  const rotationPeriod = $derived(loopDisplay.rotationPeriod);
+  const inversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const loopPeriod = $derived(loopDisplay.period);
 
   const hasDetectedLoop = $derived(activeComponents.size > 0);
 
   // LOOP-aligned column count: align the grid to match the LOOP's slice structure
   // so that each row visually represents one slice of the circular pattern.
   const loopAlignedColumnCount = $derived.by(() => {
-    // Gate on circularity, not loopType — a 6-step loop is circular
+    // Gate on circularity, not loopType - a 6-step loop is circular
     // but may not have a recognized loopType (compound detection needs 8+ steps)
     if (!loopDetectionResult?.isCircular) return null;
 
@@ -125,7 +129,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
     return columns;
   });
 
-  // Difficulty analysis — returns both level and the feature that triggered it
+  // Difficulty analysis - returns both level and the feature that triggered it
   const difficultyCalculator = new SequenceDifficultyCalculator();
   const difficultyAnalysis = $derived.by(() => {
     if (!currentSequence?.steps?.length) {
@@ -135,7 +139,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   });
   const difficultyLevel = $derived(difficultyAnalysis.level);
 
-  // Level badge colors — single source of truth shared with the image compositor
+  // Level badge colors - single source of truth shared with the image compositor
   const currentLevelStyle = $derived.by(() => {
     const style = DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
     return { bg: style.cssBg, border: style.border, text: style.text };
@@ -208,7 +212,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
                   color: {currentLevelStyle.text};
                 "
                 title="Level {difficultyLevel}"
-                aria-label="Level {difficultyLevel} — tap for details"
+                aria-label="Level {difficultyLevel} - tap for details"
                 onclick={() => (showDifficultyInfo = true)}
               >
                 {difficultyLevel}
@@ -229,12 +233,14 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
             {#key loopDisplayName}
               <button
                 class="loop-badge-button pop-in"
-                aria-label="{loopDisplayName} LOOP — tap for details"
+                aria-label="{loopDisplayName} LOOP - tap for details"
                 onclick={() => (showLoopInfo = true)}
               >
                 <LOOPIconStrip
                   {activeComponents}
-                  {rotationSliceSize}
+                  {rotationPeriod}
+                  {inversionPeriod}
+                  period={loopPeriod}
                   size={22}
                   darkMode={true}
                   showFreeformWhenEmpty={false}
@@ -297,7 +303,9 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
       <div class="components-strip">
         <LOOPIconStrip
           {activeComponents}
-          {rotationSliceSize}
+          {rotationPeriod}
+          {inversionPeriod}
+          period={loopPeriod}
           size={28}
           darkMode={true}
           showFreeformWhenEmpty={false}
@@ -361,7 +369,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
     min-width: 40px;
   }
 
-  /* Difficulty badge — matches ChoreoCard.svelte proportions */
+  /* Difficulty badge - matches ChoreoCard.svelte proportions */
   .difficulty-badge {
     width: 40px;
     height: 40px;

@@ -13,7 +13,7 @@ import type { PictographData, MotionData } from "../../src/generation/constraint
 import { setLetterTransitionGraph } from "../../src/core/transition-graph/LetterTransitionGraph.js";
 import type { ITransitionGraph } from "../../src/core/transition-graph/ITransitionGraph.js";
 import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/sequence-engine-types.js";
-import { LOOPType, SliceSize } from "../../src/loop/loop-types.js";
+import { LOOPType, Period } from "../../src/loop/loop-types.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock data factory (same pattern as full-build tests)
@@ -225,7 +225,7 @@ describe("SequenceBuilder LOOP extension", () => {
       level: 1,
       loop: {
         type: LOOPType.REWOUND,
-        sliceSize: SliceSize.HALVED,
+        period: Period.HALVED,
       },
     });
 
@@ -241,7 +241,7 @@ describe("SequenceBuilder LOOP extension", () => {
       level: 1,
       loop: {
         type: LOOPType.REWOUND,
-        sliceSize: SliceSize.HALVED,
+        period: Period.HALVED,
       },
     });
 
@@ -260,7 +260,7 @@ describe("SequenceBuilder LOOP extension", () => {
       level: 1,
       loop: {
         type: LOOPType.REWOUND,
-        sliceSize: SliceSize.HALVED,
+        period: Period.HALVED,
       },
     });
 
@@ -277,7 +277,7 @@ describe("SequenceBuilder LOOP extension", () => {
       level: 1,
       loop: {
         type: LOOPType.REWOUND,
-        sliceSize: SliceSize.HALVED,
+        period: Period.HALVED,
       },
     });
 

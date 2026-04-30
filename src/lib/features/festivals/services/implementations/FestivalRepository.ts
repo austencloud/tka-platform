@@ -29,7 +29,7 @@ export class FestivalRepository implements IFestivalRepository {
 
   async create(festival: Omit<Festival, "id">): Promise<string> {
     const db = await getFirestoreInstance();
-    // Firestore rejects undefined values — strip them
+    // Firestore rejects undefined values - strip them
     const cleaned = JSON.parse(JSON.stringify(festival));
     const ref = await addDoc(collection(db, "festivals"), {
       ...cleaned,

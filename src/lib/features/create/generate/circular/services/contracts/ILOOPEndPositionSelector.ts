@@ -1,5 +1,5 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { LOOPType, SliceSize } from "../../domain/models/circular-models";
+import type { LOOPType, Period } from "../../domain/models/circular-models";
 
 /**
  * Service for determining required end positions for LOOP sequences
@@ -13,12 +13,12 @@ export interface ILOOPEndPositionSelector {
    *
    * @param loopType - The type of LOOP being executed
    * @param startPosition - The starting grid position
-   * @param sliceSize - The slice size (only used for rotated LOOP)
+   * @param period - The slice size (only used for rotated LOOP)
    * @returns The grid position where the partial sequence must end, or null if unconstrained
    */
   determineEndPosition(
     loopType: LOOPType,
     startPosition: GridPosition,
-    sliceSize: SliceSize
+    period: Period
   ): GridPosition | null;
 }

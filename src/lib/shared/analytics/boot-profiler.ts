@@ -1,5 +1,5 @@
 /**
- * Boot Profiler — instruments the app initialization pipeline.
+ * Boot Profiler - instruments the app initialization pipeline.
  *
  * Uses performance.mark/measure for DevTools timeline integration,
  * plus a clean console table summary at the end.
@@ -15,7 +15,7 @@
 /**
  * Verbose boot logging (DI container table, phase breakdown) is off by default.
  * Enable by appending `?profile=1` to the URL or setting `localStorage.bootProfile = '1'`.
- * Core Web Vitals (FCP, TTFB, etc.) always log — they flag regressions and are cheap.
+ * Core Web Vitals (FCP, TTFB, etc.) always log - they flag regressions and are cheap.
  */
 export function isBootProfileVerbose(): boolean {
   if (typeof window === "undefined") return false;
@@ -75,7 +75,7 @@ class BootProfiler {
     );
   }
 
-  /** Snapshot vitals currently captured (may be incomplete — some arrive late). */
+  /** Snapshot vitals currently captured (may be incomplete - some arrive late). */
   getVitals(): VitalEntry[] {
     return Array.from(this.vitals.values());
   }
@@ -88,7 +88,7 @@ class BootProfiler {
     try {
       performance.mark(`boot:${label}:start`);
     } catch {
-      // ignored — mark API not available
+      // ignored - mark API not available
     }
   }
 
@@ -173,7 +173,7 @@ class BootProfiler {
     }));
 
     console.group(
-      `%c⚡ Boot Profile — ${Math.round(totalTime)}ms total`,
+      `%c⚡ Boot Profile - ${Math.round(totalTime)}ms total`,
       "font-size: 14px; font-weight: bold; color: #4fc3f7;"
     );
     console.table(tableData);

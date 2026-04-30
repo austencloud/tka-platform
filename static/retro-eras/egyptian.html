@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TKA Letter A — Egyptian Hieroglyph</title>
+  <title>TKA Letter A - Egyptian Hieroglyph</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -66,7 +66,7 @@
       blue:       LAPIS,       // #2E5090
       red:        VERMILLION,  // #C13B2A
       structural: BLACK,       // #1A0F00
-      bg:         null,        // transparent — sandstone shows through
+      bg:         null,        // transparent - sandstone shows through
     };
 
     // ─── Sandstone background with texture ───────────────────────────────────
@@ -80,7 +80,7 @@
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // Papyrus / stone grain lines — horizontal striations
+      // Papyrus / stone grain lines - horizontal striations
       ctx.save();
       ctx.globalAlpha = 0.08;
       for (let y = 0; y < H; y += 3) {
@@ -113,7 +113,7 @@
       const margin = 14;
       const bw = 18; // band width
 
-      // Outer rectangle — thick gold frame
+      // Outer rectangle - thick gold frame
       ctx.save();
       ctx.strokeStyle = BLACK;
       ctx.lineWidth = 2;
@@ -137,7 +137,7 @@
       drawBandPattern(margin, margin + bw, bw, H - margin*2 - bw*2, 'vertical');
       drawBandPattern(W - margin - bw, margin + bw, bw, H - margin*2 - bw*2, 'vertical');
 
-      // Corner squares — gold filled
+      // Corner squares - gold filled
       ctx.fillStyle = GOLD;
       ctx.fillRect(margin, margin, bw, bw);
       ctx.fillRect(W - margin - bw, margin, bw, bw);
@@ -233,14 +233,14 @@
 
       ctx.shadowColor = 'transparent';
 
-      // Letter glyph — scaled to fit the cartouche
+      // Letter glyph - scaled to fit the cartouche
       drawCartoucheLetter(currentLetter, cx, cy);
 
       ctx.restore();
     }
 
     function drawCartoucheLetter(letter, cx, cy) {
-      // Generic letter rendering — works for any alphabet entry.
+      // Generic letter rendering - works for any alphabet entry.
       // Falls back to the original ox-arm hieroglyph for Letter A specifically
       // so that canonical Letter A keeps its bespoke look.
       if (letter === 'A') {
@@ -258,11 +258,11 @@
       ctx.restore();
     }
 
-    // Which letter to render inside the cartouche — updated per render(data).
+    // Which letter to render inside the cartouche - updated per render(data).
     let currentLetter = 'A';
 
     function drawHieroglyphA(cx, cy) {
-      // Stylized vulture / arm glyph for "A" — simplified as a wedge arm shape
+      // Stylized vulture / arm glyph for "A" - simplified as a wedge arm shape
       ctx.save();
       ctx.fillStyle = BLACK;
       ctx.strokeStyle = BLACK;
@@ -376,7 +376,7 @@
     }
 
     // ─── Egyptian-style flat staff ────────────────────────────────────────────
-    // Profile view: a flat stick painted like a tomb painting — thick, bold outlines
+    // Profile view: a flat stick painted like a tomb painting - thick, bold outlines
     function drawStaff(x1, y1, x2, y2, color) {
       const dx = x2 - x1, dy = y2 - y1;
       const len = Math.sqrt(dx*dx + dy*dy);
@@ -396,7 +396,7 @@
       ctx.fill();
       ctx.restore();
 
-      // Staff body — flat fill, Egyptian style
+      // Staff body - flat fill, Egyptian style
       ctx.save();
       ctx.fillStyle = color;
       ctx.strokeStyle = BLACK;
@@ -412,7 +412,7 @@
       ctx.fill();
       ctx.stroke();
 
-      // End caps — rounded knob
+      // End caps - rounded knob
       ctx.fillStyle = CREAM;
       ctx.beginPath();
       ctx.arc(x1, y1, hw * 0.9, 0, Math.PI * 2);
@@ -506,7 +506,7 @@
     }
 
     function drawEgyptianArrowhead(tx, ty, dirX, dirY, color) {
-      // Bold flat triangular arrowhead — Egyptian style, no perspective
+      // Bold flat triangular arrowhead - Egyptian style, no perspective
       const len = 20, hw = 9;
       const nx = -dirY, ny = dirX;  // perpendicular
 
@@ -545,7 +545,7 @@
 
     // ─── Hands (profile view Egyptian style) ─────────────────────────────────
     function drawHand(x, y, color, direction) {
-      // Flat Egyptian profile hand — simplified to palm + fingers suggestion
+      // Flat Egyptian profile hand - simplified to palm + fingers suggestion
       ctx.save();
       ctx.fillStyle = color;
       ctx.strokeStyle = BLACK;
@@ -638,7 +638,7 @@
       ctx.strokeStyle = BLACK;
       ctx.lineWidth = 1;
 
-      // Simple feather/reed glyph — upright stroke with horizontal cuts
+      // Simple feather/reed glyph - upright stroke with horizontal cuts
       ctx.fillRect(x - 1.5, y - 10, 3, 20);
       ctx.strokeRect(x - 1.5, y - 10, 3, 20);
       for (let i = -8; i <= 8; i += 4) {
@@ -904,14 +904,14 @@
     //      pictograph via the bridge): pixelate it to a sharp hieroglyphic
     //      scale, recolor into the Egyptian pigments, apply a hard-edge
     //      treatment. This inherits all correct motion semantics from the
-    //      canonical renderer — pro vs anti, dashes, turn indicators, floats.
+    //      canonical renderer - pro vs anti, dashes, turn indicators, floats.
     //
     //   2. No canonical (page opened directly, or canonical render failed):
     //      fall back to the original data-driven rendering so the standalone
     //      page still produces a complete scene.
     //
-    // The Egyptian chrome — sandstone, border band, cartouche, title, motion
-    // feather glyphs, center ankh, bottom glyph strip, vignette — is drawn
+    // The Egyptian chrome - sandstone, border band, cartouche, title, motion
+    // feather glyphs, center ankh, bottom glyph strip, vignette - is drawn
     // identically either way. That's where the era's voice lives.
     function render(data, canonical, meta) {
       const blue = data.blueHand;
@@ -936,18 +936,18 @@
       // 5. Title divider
       drawTitleArea();
 
-      // 6. Pictograph core — canonical (Path 1) or data-driven fallback
+      // 6. Pictograph core - canonical (Path 1) or data-driven fallback
       if (canonical && window.PictographStylize) {
         // Path 1: pixelate + recolor + hard-edge treatment.
-        //   1. pixelate — downsample canonical to 180px then upsample with
+        //   1. pixelate - downsample canonical to 180px then upsample with
         //      nearest neighbor. 180 is sharp (crisp hieroglyphic feel), not
         //      blocky the way cave painting's 90 would be.
-        //   2. recolor — map canonical's blue/red/structural classes to
+        //   2. recolor - map canonical's blue/red/structural classes to
         //      lapis / vermillion / black (BG stays transparent so the
         //      sandstone panel shows through).
-        //   3. edgeTreatment 'flat' — hard-edged pixels, no soft gradients.
+        //   3. edgeTreatment 'flat' - hard-edged pixels, no soft gradients.
         //      Egyptian flat-profile tomb art has no blur.
-        // Single composite pass, alpha 1.0 — crisp, not layered.
+        // Single composite pass, alpha 1.0 - crisp, not layered.
         const chunky = window.PictographStylize.pixelate(canonical, W, 180);
         const styled = window.PictographStylize.recolor(chunky, EGYPTIAN_PALETTE, W);
         window.PictographStylize.edgeTreatment(styled, 'flat');
@@ -968,7 +968,7 @@
         }
       }
 
-      // 7. Pro motion labels (feather glyphs beside arrows) — purely
+      // 7. Pro motion labels (feather glyphs beside arrows) - purely
       //    decorative, drawn on top of the pictograph in both paths.
       drawMotionLabel(GCX - GR * 0.8, GCY - GR * 0.5, LAPIS);
       drawMotionLabel(GCX + GR * 0.8, GCY + GR * 0.5, VERMILLION);
@@ -995,7 +995,7 @@
       ctx.fillRect(0, 0, W, H);
     }
 
-    // ─── Default pictograph — Letter A (what the page rendered before the
+    // ─── Default pictograph - Letter A (what the page rendered before the
     //     data-driven refactor). Also used when this HTML is opened directly
     //     without a parent posting pictograph data.
     const DEFAULT_PICTOGRAPH = {

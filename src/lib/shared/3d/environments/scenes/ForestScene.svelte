@@ -67,7 +67,7 @@
   // All positions and scales in METERS (1 unit = 1 meter)
   // ========================================
 
-  // Scene feature context — gate campfire/tent visibility and report loading readiness
+  // Scene feature context - gate campfire/tent visibility and report loading readiness
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(null);
   try {
     sceneFeatures = getSceneFeatureContext();
@@ -123,7 +123,7 @@
     });
   });
 
-  // Fallen log placements stay hand-authored — they're intentional focal details.
+  // Fallen log placements stay hand-authored - they're intentional focal details.
   const fallenLogPlacements: [number, number, number, number, boolean][] = [
     [7.0, 4.0, 2.0, Math.PI * 0.3, true],
     [-6.0, 5.5, 1.75, Math.PI * 0.7, true],
@@ -173,7 +173,7 @@
   onMount(() => {
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
-        console.warn("[ForestScene] GLB loading timed out — lifting curtain");
+        console.warn("[ForestScene] GLB loading timed out - lifting curtain");
         sceneFeatures.reportReady("environment");
       }
     }, 15_000);

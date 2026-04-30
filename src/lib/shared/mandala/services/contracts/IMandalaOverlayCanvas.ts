@@ -13,7 +13,7 @@ export interface IMandalaOverlayCanvas {
 	/** Clear all drawn content and reset loop state */
 	clear(): void;
 
-	/** Called when the animation loops — transitions from accumulation to fade mode */
+	/** Called when the animation loops - transitions from accumulation to fade mode */
 	onLoopDetected(): void;
 
 	/** Show or hide the overlay canvas */

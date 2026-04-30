@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Render Graph — Phase 1 parity harness.
+   * Render Graph - Phase 1 parity harness.
    *
    * Two identical motion paths rendered side-by-side:
    *   LEFT  = Canvas2D (real Canvas2DTrailRenderer + destination-out fade,
@@ -36,7 +36,7 @@
   let backend: RenderBackend | null = null;
   let canvas2dCtx: CanvasRenderingContext2D | null = null;
   const trailRenderer = new Canvas2DTrailRenderer();
-  /** Counter for smoothAlphaDecay on the Canvas2D side — mirrors
+  /** Counter for smoothAlphaDecay on the Canvas2D side - mirrors
    *  TrailOverlayCanvas so rgba8 1/255 floor pixels get kicked to zero. */
   let canvas2dDecayCounter = 0;
   const CANVAS2D_DECAY_INTERVAL = 10;
@@ -67,7 +67,7 @@
   let tipCount = $state(2);
   let pointsPerTip = $state(20);
 
-  // Last N positions per tip — shared across both renderers so they
+  // Last N positions per tip - shared across both renderers so they
   // see identical input. NDC for the WebGL2 path; pixel-space for Canvas2D.
   const pathNDC = new Map<string, Array<[number, number]>>();
   const pathPixels = new Map<string, TrailPoint[]>();
@@ -193,7 +193,7 @@
     const ctx = canvas2dCtx;
     if (!ctx) return;
 
-    // 1. Fade existing pixels — matches TrailOverlayCanvas.renderFrame.
+    // 1. Fade existing pixels - matches TrailOverlayCanvas.renderFrame.
     const fadeDurationMs = 1200;
     const safeDuration = Math.max(fadeDurationMs, 16.67);
     const framesForFullFade = safeDuration / 16.67;
@@ -207,7 +207,7 @@
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     ctx.restore();
 
-    // 1b. Kick-to-zero pass — matches TrailOverlayCanvas.smoothAlphaDecay.
+    // 1b. Kick-to-zero pass - matches TrailOverlayCanvas.smoothAlphaDecay.
     // Canvas2D destination-out can't round below 1/255 alpha due to 8-bit
     // integer rounding, leaving a permanent ghost trail. Subtracting a
     // small constant from near-zero pixels every N frames kills it.
@@ -324,12 +324,12 @@
 </script>
 
 <svelte:head>
-  <title>Render Graph — Phase 1 parity</title>
+  <title>Render Graph - Phase 1 parity</title>
 </svelte:head>
 
 <div class="page">
   <header>
-    <h1>Trails — parity gate</h1>
+    <h1>Trails - parity gate</h1>
     <p class="sub">
       Same lissajous path fed to both pipelines. Intent controls on the right
       apply to both. Judge visually: does the WebGL2 side look as good as the

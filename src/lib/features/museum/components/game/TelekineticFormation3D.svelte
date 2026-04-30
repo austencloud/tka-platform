@@ -9,8 +9,8 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
    * arms dynamically reaching toward floating staffs that trace the same
    * sequence on all three primary planes simultaneously.
    *
-   * Center: 3 PerformerRigs (one per plane) — props visible, no avatar, grid visible.
-   * Perimeter: 8 acolytes — avatar visible, no props, no grid.
+   * Center: 3 PerformerRigs (one per plane) - props visible, no avatar, grid visible.
+   * Perimeter: 8 acolytes - avatar visible, no props, no grid.
    * Each acolyte's IK targets track the actual center prop positions every frame,
    * creating a dynamic "telekinetic control" effect where arms subtly shift
    * as the floating staffs move through the sequence.
@@ -74,7 +74,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
 
   // 6 center rigs: each primary plane × 2 (original + mirrored).
   // The mirror swaps blue/red props on the same plane, creating a
-  // symmetric pattern — where the original has blue going N, the
+  // symmetric pattern - where the original has blue going N, the
   // mirror has red going N and blue going where red was.
   interface CenterConfig {
     plane: Plane;
@@ -97,7 +97,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   // WALL mode grid offset (how far forward the hand anchor sits from rig center)
   const GRID_OFFSET = 0.3;
 
-  // LED effect on all prop tips — the telekinetic glow
+  // LED effect on all prop tips - the telekinetic glow
   const LED_EFFECT_MAP: Record<string, { effect: "led" }> = {
     "*": { effect: "led" },
   };
@@ -178,7 +178,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   });
 
   // Dynamic arm tracking: each acolyte's IK targets follow the center props.
-  // We use the WALL center instance as the tracking reference — its prop states
+  // We use the WALL center instance as the tracking reference - its prop states
   // update every frame. We transform those positions from formation space into
   // each acolyte's rig-local hand-anchor space so their arms reach toward the
   // actual floating staffs.
@@ -192,7 +192,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
     const wallRed = wallInstance?.redPropState;
 
     if (!wallBlue || !wallRed) {
-      // No sequence playing yet — arms reach forward at rest
+      // No sequence playing yet - arms reach forward at rest
       return ACOLYTE_POSITIONS.map(() => ({
         blue: {
           centerPathAngle: 0, staffRotationAngle: 0, plane: Plane.WALL,
@@ -262,7 +262,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   });
 </script>
 
-<!-- Formation root — positioned at world coords -->
+<!-- Formation root - positioned at world coords -->
 <T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
 
   <!-- Ritual platform: large stone disc with engraved ring -->

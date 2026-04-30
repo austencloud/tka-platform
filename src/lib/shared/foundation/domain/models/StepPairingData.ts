@@ -7,6 +7,6 @@ export interface StepPairingData {
   readonly redReversal: boolean;
   readonly startPosition: GridPosition | null;
   readonly endPosition: GridPosition | null;
-  // Duration is NOT stored here — derived from solo prop steps
+  // Duration is NOT stored here - derived from solo prop steps
   // Blue's duration is authoritative when combining
 }

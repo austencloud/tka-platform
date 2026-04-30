@@ -225,7 +225,7 @@
     min-height: min-content;
   }
 
-  /* Loop Labeler needs full width — it has its own sidebar + multi-panel layout */
+  /* Loop Labeler needs full width - it has its own sidebar + multi-panel layout */
   .admin-content:has(#loop-labeler-panel) {
     max-width: none;
     overflow: hidden;

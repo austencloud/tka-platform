@@ -1,5 +1,5 @@
 /**
- * FakeLoadingManager — Theatrical progress bar simulation
+ * FakeLoadingManager - Theatrical progress bar simulation
  *
  * Drives the classic Windows "please wait" experience: progress jumps
  * forward erratically, occasionally jumps backward (because of course
@@ -167,7 +167,7 @@ export class FakeLoadingManager implements IFakeLoadingManager {
 	private tick(): void {
 		if (this.isComplete) return;
 
-		// Already at stall threshold — enter the dramatic pause
+		// Already at stall threshold - enter the dramatic pause
 		if (this.progress >= STALL_THRESHOLD) {
 			this.clearTickTimer();
 			this.enterStall();

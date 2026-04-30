@@ -4,7 +4,7 @@ import { EFFECTS_CONFIG_VERSION } from "./EffectsConfig";
 export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   version: EFFECTS_CONFIG_VERSION,
 
-  // Trails on as the global default — new users see motion paths.
+  // Trails on as the global default - new users see motion paths.
   tipEffectMap: { "*": { effect: "trails" } },
 
   trails: {
@@ -117,7 +117,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   // Default smoke maps to the "classic" preset (incense palette). Palette
-  // carries behavioral DNA — lifetime/curl/rise biases live there, not on
+  // carries behavioral DNA - lifetime/curl/rise biases live there, not on
   // the intent. See docs/superpowers/specs/2026-04-15-effects-phase-1i-smoke-design.md
   smoke: {
     ambientEmission: 0.5,
@@ -131,7 +131,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   // Default ink maps to the "classic" preset (india palette). Motion-dominant
-  // stroke medium — slow tip = thick loaded brush, fast tip = thin lifted
+  // stroke medium - slow tip = thick loaded brush, fast tip = thin lifted
   // brush. Sprint 1 (1j.i) ships the stroke MVP; viscosity + splatterIntensity
   // live in the shape now but are sprint-2 knobs (strand breakup + splatter
   // bursts). See docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md
@@ -168,6 +168,23 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
+  pulse: {
+    intensity: 0.7,
+    reach: 0.6,
+    lifetime: 1.0,
+    trigger: "beat",
+    style: "stroke",
+    beatInterval: 1,
+    velocityThreshold: 0.3,
+    thickness: 0.3,
+    palette: "sonar",
+    customColor: "#38bdf8",
+    colorMode: "solid",
+    color: "#38bdf8",
+    colorPalette: ["#38bdf8", "#a855f7", "#22d3ee", "#f472b6", "#fbbf24"],
+    trackingMode: "both_ends",
+  },
+
   activePresets: {
     trails: null,
     fire: null,
@@ -184,5 +201,6 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     ink: null,
     frost: null,
     silk: null,
+    pulse: null,
   },
 };

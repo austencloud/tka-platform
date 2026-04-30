@@ -1,5 +1,5 @@
 <!--
-  RetroScreensaver — Flying Props screensaver for TKA-OS v1.0
+  RetroScreensaver - Flying Props screensaver for TKA-OS v1.0
 
   Bouncing pixel art props on a black screen, DVD logo style. Each prop
   has random starting position, velocity, and size. Click anywhere

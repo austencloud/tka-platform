@@ -1,5 +1,5 @@
 <!--
-  RetroRadioButton — 98.css-styled radio button with label
+  RetroRadioButton - 98.css-styled radio button with label
 
   Uses a shared `name` attribute for radio grouping.
   The `selected` bindable reflects whether THIS option is the active one.

@@ -1,5 +1,5 @@
 <!--
-  AsciiCrtPreview.svelte — CRT monitor preview of the ASCII pictograph render.
+  AsciiCrtPreview.svelte - CRT monitor preview of the ASCII pictograph render.
 
   Uses the same dos-monitor > dos-terminal structure as the real /1989 page,
   including scanlines, vignette, and phosphor glow, so what you see in the
@@ -33,7 +33,7 @@
 </script>
 
 <div class="monitor-wrap">
-  <!-- Physical CRT bezel — same classes as /1989 -->
+  <!-- Physical CRT bezel - same classes as /1989 -->
   <div class="dos-monitor lab-monitor">
     <div class="dos-terminal">
       <div class="dos-output lab-output">

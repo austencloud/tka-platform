@@ -11,14 +11,14 @@
 /**
  * Characters that must NOT be uppercased.
  * Greek lowercase (α, β, γ, ζ, η, τ) and the terra symbol (⊕)
- * would be mangled by toUpperCase() — α becomes Α (Greek capital alpha),
+ * would be mangled by toUpperCase() - α becomes Α (Greek capital alpha),
  * which is not a valid TKA character.
  */
 const PRESERVE_CHARS = new Set(["α", "β", "γ", "ζ", "η", "τ", "⊕"]);
 
 /**
  * Uppercase Latin characters while preserving lowercase Greek and special symbols.
- * Standard toUpperCase() converts α → Α which breaks TKA — this function
+ * Standard toUpperCase() converts α → Α which breaks TKA - this function
  * processes character-by-character, skipping protected symbols.
  */
 export function uppercasePreservingGreek(value: string): string {

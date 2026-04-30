@@ -7,6 +7,7 @@
    */
   import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
+  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     video: ShowcaseVideo;
@@ -262,7 +263,7 @@
               {#if seq.thumbnail}
                 <img src={seq.thumbnail} alt="" class="suggestion-thumb" />
               {/if}
-              <span class="suggestion-word">{seq.word}</span>
+              <span class="suggestion-word"><TKAWordGlyph word={seq.word} height={13} /></span>
               {#if seq.ownerName}
                 <span class="suggestion-owner">by {seq.ownerName}</span>
               {/if}
@@ -296,7 +297,7 @@
                 <i class="fas fa-image" aria-hidden="true"></i>
               </div>
             {/if}
-            <span class="candidate-word">{seq.word}</span>
+            <span class="candidate-word"><TKAWordGlyph word={seq.word} height={13} /></span>
             {#if selectedSequence?.id === seq.id}
               <div class="selected-check">
                 <i class="fas fa-check" aria-hidden="true"></i>

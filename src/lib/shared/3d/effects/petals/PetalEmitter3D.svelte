@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * PetalEmitter3D — per-tip motion-burst petal emitter.
+   * PetalEmitter3D - per-tip motion-burst petal emitter.
    *
    * 3D petals have **dual-source emission** (spec 1h):
    *   1. Ambient: spawned from an above-scene ceiling zone by
@@ -79,7 +79,7 @@
   const FADE_IN_DURATION = 0.12;
 
   // Texture cache keyed by (palette-id, shape, tint). Lazy-baked via
-  // CanvasTexture on first need — small (64x64) so memory stays tight
+  // CanvasTexture on first need - small (64x64) so memory stays tight
   // even across 24+ combinations.
   const textureCache = new Map<string, CanvasTexture>();
 

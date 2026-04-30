@@ -24,7 +24,7 @@ export function getHighlightedBeatFromVideo(
 
 /**
  * Generate evenly-spaced beat timestamps based on BPM.
- * Used as a starting point for manual beat mapping — the user
+ * Used as a starting point for manual beat mapping - the user
  * can then nudge individual timestamps to match the actual performance.
  */
 export function generateEvenBeatTimestamps(

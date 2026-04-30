@@ -78,7 +78,7 @@
 
   const { renderer, camera, scene } = useThrelte();
 
-  // Current camera mode — load from preferences once on init, not continuously.
+  // Current camera mode - load from preferences once on init, not continuously.
   // Access destinationId through $derived alias so the compiler tracks it reactively.
   const _initMode = $derived(cameraPreferences.getModeForDestination(destinationId));
   let mode = $state<CameraMode>(CameraMode.ORBIT);
@@ -113,7 +113,7 @@
   // Noclip mode state (synced with physics provider)
   let noclipEnabled = $state(false);
 
-  // Crouch camera offset — smoothly lerps between 0 (standing) and the delta
+  // Crouch camera offset - smoothly lerps between 0 (standing) and the delta
   // between standing and crouching eye height so the viewpoint drops gradually.
   let crouchHeightOffset = 0;
   const CROUCH_HEIGHT_DROP = SCALE.EYE_HEIGHT - SCALE.CROUCH_EYE_HEIGHT; // ~0.65m
@@ -456,7 +456,7 @@
     // Cache for use in onDestroy (renderer.current may be gone by then)
     cachedCanvas = canvas;
 
-    // Sync pointer lock state — it may already be held if requested before UCC mounted
+    // Sync pointer lock state - it may already be held if requested before UCC mounted
     isPointerLocked = document.pointerLockElement === canvas;
 
     // Initialize input capabilities tracking
@@ -583,7 +583,7 @@
     // For noclip: get the actual camera facing direction (includes pitch)
     cam.getWorldDirection(_forward3D);
 
-    // Calculate speed (crouch overrides sprint — can't sprint while crouching)
+    // Calculate speed (crouch overrides sprint - can't sprint while crouching)
     const speed = isCrouching
       ? moveSpeed * SCALE.CROUCH_MULTIPLIER
       : isSprinting
@@ -732,7 +732,7 @@
 
       if (mode === CameraMode.FIRST_PERSON) {
         // First-person: camera IS the avatar's eyes
-        // Avatar always faces where you're looking — snap, don't lerp
+        // Avatar always faces where you're looking - snap, don't lerp
         (avatarState.snapFacingAngle ?? avatarState.setFacingAngle)(yaw);
 
         const cfg = SETTINGS.firstPerson;

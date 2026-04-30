@@ -97,7 +97,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     ].join("; "),
   );
 
-  // Permissions Policy — block unused browser APIs
+  // Permissions Policy - block unused browser APIs
   response.headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(self), geolocation=(), payment=()",

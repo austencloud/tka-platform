@@ -28,7 +28,7 @@ export function createPropPreferenceState(
 
   async function toggleProp(prop: PropType) {
     // Update local state first (optimistic), then persist in background.
-    // No saving flag — toggles are instant and don't need a loading indicator.
+    // No saving flag - toggles are instant and don't need a loading indicator.
     if (propsISpinWith.includes(prop)) {
       propsISpinWith = propsISpinWith.filter((p) => p !== prop);
       if (favoriteProp === prop) favoriteProp = null;

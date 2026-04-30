@@ -4,13 +4,13 @@
  * Supports both halved (period 2) and quartered (period 4) flipped LOOPs.
  *
  * Period 2 (halved):
- *   Q1 (beats 1..N)     — partial
- *   Q2 (beats N+1..2N)  — horizontal flip (N↔S) of Q1
+ *   Q1 (beats 1..N)     - partial
+ *   Q2 (beats N+1..2N)  - horizontal flip (N↔S) of Q1
  *
  * Period 4 (quartered):
  *   Q1, Q2 as above, plus
- *   Q3 (beats 2N+1..3N) — copy of Q1 with new start orientation
- *   Q4 (beats 3N+1..4N) — horizontal flip of Q3
+ *   Q3 (beats 2N+1..3N) - copy of Q1 with new start orientation
+ *   Q4 (beats 3N+1..4N) - horizontal flip of Q3
  *
  * See StrictMirroredLOOPExecutor for a full explanation of the period-4
  * mechanism.
@@ -31,13 +31,13 @@ import {
   HORIZONTAL_MIRROR_LOCATION_MAP,
   FLIPPED_LOOP_VALIDATION_SET,
 } from "../../domain/constants/strict-loop-position-maps";
-import { SliceSize } from "../../domain/models/circular-models";
+import { Period } from "../../domain/models/circular-models";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class StrictFlippedLOOPExecutor {
   constructor(private OrientationCalculator: IOrientationCalculator) {}
 
-  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -46,8 +46,8 @@ export class StrictFlippedLOOPExecutor {
     }
 
     const partialLength = sequence.length;
-    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
-    const totalLength = partialLength * period;
+    const periodCount = period === Period.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * periodCount;
     const beatsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;

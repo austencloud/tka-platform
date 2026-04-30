@@ -7,7 +7,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
    *
    * A 3D mannequin at a museum performer station that plays a TKA sequence
    * with spinning staves. Uses PerformerRig for the unified transform hierarchy
-   * — no manual STAGE_LIFT math, no sibling Avatar3D/Prop3D/Grid3D calls.
+   * - no manual STAGE_LIFT math, no sibling Avatar3D/Prop3D/Grid3D calls.
    */
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { untrack } from "svelte";
@@ -45,7 +45,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   const autoPlay = props.autoPlay ?? false;
   const showGrid = props.showGrid ?? false;
 
-  // Platform height — the physical pedestal disc.
+  // Platform height - the physical pedestal disc.
   const PLATFORM_HEIGHT = 0.3; // matches cylinder geometry (height 0.3, center at 0.15)
 
   // Avatar3D "stage mode" positions feet at groundY (≈ -1.4m below rig origin),
@@ -64,7 +64,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
     } as SequenceData;
   }
 
-  // Create the avatar instance once — it persists across sequence swaps.
+  // Create the avatar instance once - it persists across sequence swaps.
   // loadSequence() is called reactively whenever sequenceId changes.
   let performerState = $state<ReturnType<typeof createAvatarInstanceState> | null>(null);
 
@@ -90,7 +90,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
     }
   }
 
-  // Resolve sequence whenever sequenceId changes — checks hardcoded
+  // Resolve sequence whenever sequenceId changes - checks hardcoded
   // exhibits first, then falls back to loading from Firestore.
   // Mutations (loadSequence, play) are wrapped in untrack so the effect
   // only re-runs when sequenceId changes, not when internal state updates.
@@ -108,7 +108,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
         return;
       }
 
-      // Not a hardcoded exhibit — try loading from Firestore
+      // Not a hardcoded exhibit - try loading from Firestore
       const loader = getBrowseLoader();
       if (!loader) return;
 
@@ -144,9 +144,9 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   const platformColor = new THREE.Color(0x3a3028);
 </script>
 
-<!-- Station root group — positioned at world coords, children use local coords -->
+<!-- Station root group - positioned at world coords, children use local coords -->
 <T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
-  <!-- Circular platform at floor level (not inside rig — independent of groundOffset) -->
+  <!-- Circular platform at floor level (not inside rig - independent of groundOffset) -->
   <T.Mesh position.y={0.15} castShadow receiveShadow>
     <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
     <T.MeshStandardMaterial color={platformColor} roughness={0.85} />

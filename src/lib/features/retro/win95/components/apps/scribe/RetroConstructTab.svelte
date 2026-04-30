@@ -1,9 +1,9 @@
 <!--
-  RetroConstructTab — Visual sequence builder for SCRIBE.EXE
+  RetroConstructTab - Visual sequence builder for SCRIBE.EXE
 
   Two-phase flow matching the real Construct tab:
-  Phase 1: Start Position Picker — choose Alpha, Beta, or Gamma
-  Phase 2: Option Picker — grid of pictographs to add beats
+  Phase 1: Start Position Picker - choose Alpha, Beta, or Gamma
+  Phase 2: Option Picker - grid of pictographs to add beats
 
   The workspace (beat display) runs along the top as beats accumulate.
 
@@ -56,7 +56,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Option picker — available next letters                              */
+  /* Option picker - available next letters                              */
   /* ------------------------------------------------------------------ */
 
   const ALL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -156,7 +156,7 @@
     </div>
   {:else}
     <!-- ============================================================= -->
-    <!-- Phase 2: Build Mode — workspace + option picker                 -->
+    <!-- Phase 2: Build Mode - workspace + option picker                 -->
     <!-- ============================================================= -->
 
     <!-- Workspace: beat display strip -->

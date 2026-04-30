@@ -4,7 +4,7 @@
    *
    * Bloom + vignette + ACES tone mapping run ONLY in FPS mode. Top-down and
    * flip animation use plain gl.render(). This is both a design choice (bloom
-   * is cinematic immersion — wasted on a tactical overhead view) and a perf
+   * is cinematic immersion - wasted on a tactical overhead view) and a perf
    * requirement: running bloom in top-down then switching to plain render
    * during the flip causes Chrome to stall for 8+ seconds on render target
    * state transitions. By keeping bloom exclusively in FPS, the only
@@ -24,11 +24,11 @@
   import type { WebGLRenderer, Scene, Camera, PerspectiveCamera } from "three";
 
   interface Props {
-    /** All geometry is in the scene — safe to pre-warm bloom shaders */
+    /** All geometry is in the scene - safe to pre-warm bloom shaders */
     geometryReady?: boolean;
-    /** Player is in first-person/third-person mode — bloom is active */
+    /** Player is in first-person/third-person mode - bloom is active */
     fpsActive?: boolean;
-    /** Camera is mid-flip between top-down and FPS — skip bloom */
+    /** Camera is mid-flip between top-down and FPS - skip bloom */
     animating?: boolean;
     /** Spawn position for FPS pre-warm (world coordinates) */
     spawnPosition?: { x: number; z: number };
@@ -128,7 +128,7 @@
         // Pass 1: top-down perspective (current camera position)
         composer.render();
 
-        // Pass 2: FPS perspective — move camera to spawn at eye height,
+        // Pass 2: FPS perspective - move camera to spawn at eye height,
         // render through bloom, then restore. Forces GPU to compile shader
         // variants for the close-up FPS frustum (different from top-down).
         const perspCam = cam as PerspectiveCamera;
@@ -157,7 +157,7 @@
         console.log(`[PostProcess] Pre-warm complete: ${(performance.now() - t0).toFixed(0)}ms (absorbed by overlay)`);
         return;
       }
-      // Geometry still loading — plain render
+      // Geometry still loading - plain render
       gl.render(sc, cam);
       return;
     }

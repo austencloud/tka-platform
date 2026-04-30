@@ -17,7 +17,7 @@
     icon: string;
     title: string;
     description: string;
-    /** Which section to highlight — "all" dims everything for welcome */
+    /** Which section to highlight - "all" dims everything for welcome */
     highlight: "all" | "preview" | "duration" | "turns";
   }
 
@@ -85,7 +85,7 @@
     role="dialog"
     aria-label="Step editor tour"
   >
-    <!-- Click-away to skip (transparent, no dimming — sections handle their own dimming) -->
+    <!-- Click-away to skip (transparent, no dimming - sections handle their own dimming) -->
     <button
       class="tour-backdrop"
       onclick={handleSkip}
@@ -93,7 +93,7 @@
       tabindex="-1"
     ></button>
 
-    <!-- Floating tour card — offset away from highlighted section -->
+    <!-- Floating tour card - offset away from highlighted section -->
     <div
       class="tour-card"
       class:card-above={currentStopInfo.highlight === "turns" || currentStopInfo.highlight === "duration"}

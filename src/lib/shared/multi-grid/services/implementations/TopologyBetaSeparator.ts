@@ -44,7 +44,7 @@ export class TopologyBetaSeparator implements ITopologyBetaSeparator {
     const dist = Math.hypot(bluePx.x - redPx.x, bluePx.y - redPx.y);
     if (dist >= OVERLAP_THRESHOLD_PX) return NO_OFFSET;
 
-    // Props overlap — compute separation axis and distance
+    // Props overlap - compute separation axis and distance
     const axis = this.computeSeparationAxis(topology, blueRef, redRef);
     const betaGridMode = gridMode === "box" ? "box" : "diamond";
     const offset = getBetaOffsetSize(propType, betaGridMode as "diamond" | "box");

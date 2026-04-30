@@ -14,7 +14,7 @@
  */
 
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { LOOPType, Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 export interface ILOOPEndPositionResolver {
   /**
@@ -27,13 +27,13 @@ export interface ILOOPEndPositionResolver {
    *
    * @param startPosition - The sequence's start position
    * @param loopType - The LOOP type to constrain for
-   * @param sliceSize - Halved (180) or quartered (90) rotation. Defaults to HALVED.
+   * @param period - Halved (180) or quartered (90) rotation. Defaults to HALVED.
    * @returns Array of valid end positions, or empty array if unconstrained
    */
   getValidEndPositions(
     startPosition: GridPosition,
     loopType: LOOPType,
-    sliceSize?: SliceSize
+    period?: Period
   ): GridPosition[];
 
   /**
@@ -42,13 +42,13 @@ export interface ILOOPEndPositionResolver {
    * @param startPosition - The sequence's start position
    * @param endPosition - The candidate end position to validate
    * @param loopType - The LOOP type to check against
-   * @param sliceSize - Halved or quartered rotation. Defaults to HALVED.
+   * @param period - Halved or quartered rotation. Defaults to HALVED.
    * @returns True if the end position is compatible with the LOOP type
    */
   isValidEndPosition(
     startPosition: GridPosition,
     endPosition: GridPosition,
     loopType: LOOPType,
-    sliceSize?: SliceSize
+    period?: Period
   ): boolean;
 }

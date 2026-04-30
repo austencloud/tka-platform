@@ -80,7 +80,7 @@ export interface UserFeatureOverrides {
 const CORE_USER_MODULES: ModuleId[] = ["create", "browse", "settings", "feedback"];
 
 /**
- * Tabs that are still in development — visible to admins only,
+ * Tabs that are still in development - visible to admins only,
  * regardless of the parent module's role.
  * Format: "moduleId:tabId"
  */

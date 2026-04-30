@@ -1,5 +1,5 @@
 <!--
-  VillagePropWall — Display board at arena edge showing retired/broken props.
+  VillagePropWall - Display board at arena edge showing retired/broken props.
 -->
 <script lang="ts">
 	import { T } from "@threlte/core";
@@ -75,7 +75,7 @@
 			>
 				<HTML center sprite>
 					<div class="prop-tooltip">
-						<div>{artifact.propType} — {artifact.totalStepsPerformed} beats</div>
+						<div>{artifact.propType} - {artifact.totalStepsPerformed} beats</div>
 						<div>Owners: {artifact.ownershipChain.length}</div>
 						<div>{PROP_WEAR_PROFILES[artifact.propType]?.failureMode ?? "retired"}</div>
 					</div>

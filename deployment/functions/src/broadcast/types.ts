@@ -29,12 +29,12 @@ export type LOOPTypeValue = (typeof LOOPType)[keyof typeof LOOPType];
 /**
  * Slice sizes for LOOP generation.
  */
-export const SliceSize = {
+export const Period = {
   HALVED: "HALVED",
   QUARTERED: "QUARTERED",
 } as const;
 
-export type SliceSizeValue = (typeof SliceSize)[keyof typeof SliceSize];
+export type PeriodValue = (typeof Period)[keyof typeof Period];
 
 /**
  * Motion types for props.
@@ -148,7 +148,7 @@ export interface BroadcastSequence {
   gridMode: string;
   isCircular: boolean;
   loopType: LOOPTypeValue;
-  sliceSize: SliceSizeValue;
+  period: PeriodValue;
   totalSteps: number;
 }
 

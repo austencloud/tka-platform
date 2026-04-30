@@ -49,7 +49,7 @@ function detectClipPrefix(clip: AnimationClip): string {
  * tracks that produce correct results:
  *
  * KEEP:
- * - All .quaternion tracks (bone rotations — the core of animation)
+ * - All .quaternion tracks (bone rotations - the core of animation)
  * - Hips .position track when keepHipsPosition is true (for root motion)
  *
  * FILTER OUT:
@@ -67,13 +67,13 @@ function detectClipPrefix(clip: AnimationClip): string {
  */
 /**
  * @param hipsMode - Controls Hips position track handling:
- *   "strip"    — Remove Hips position entirely (default for idle/jump/fall/land)
- *   "rootMotion" — Keep and make Z relative to first frame (for walk/run root motion)
- *   "pose"     — Keep as-is, no baseline subtraction (for crouch — absolute Y is the pose)
+ *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
+ *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
+ *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
  */
 /**
  * Leg bone names to strip when stripLegBones is true.
- * Exhibit performers don't need leg animation — feet stay planted.
+ * Exhibit performers don't need leg animation - feet stay planted.
  */
 const LEG_BONE_NAMES = new Set([
   "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase",
@@ -101,10 +101,10 @@ function remapClipToSkeleton(
       if (coreName.endsWith("_End")) return false;
       if (/Hand.*4$/.test(coreName)) return false;
 
-      // Strip leg bones for exhibit performers — feet stay perfectly planted
+      // Strip leg bones for exhibit performers - feet stay perfectly planted
       if (stripLegBones && LEG_BONE_NAMES.has(coreName)) return false;
 
-      // Skip Hips quaternion — Mixamo separate exports bake the character's
+      // Skip Hips quaternion - Mixamo separate exports bake the character's
       // base orientation into this track, which lays the avatar flat on its back.
       // The locomotion system controls facing via group rotation instead.
       if (coreName === "Hips" && property === "quaternion") return false;
@@ -112,7 +112,7 @@ function remapClipToSkeleton(
       // Keep Hips position track when needed for root motion or crouch pose.
       if (coreName === "Hips" && property === "position" && hipsMode !== "strip") return true;
 
-      // Keep all other quaternion tracks — bone rotations are the animation.
+      // Keep all other quaternion tracks - bone rotations are the animation.
       // Filter out position/scale tracks (position teleports, scale vanishes).
       if (property === "quaternion") return true;
 
@@ -147,7 +147,7 @@ function remapClipToSkeleton(
       // Pose mode (crouch): Mixamo FBX→GLB Hips position values are in
       // centimeters (~85cm) but the skeleton is in meters (~0.85m). Scale
       // by 0.01 to fix the unit mismatch. Then nudge Z (vertical in GLB)
-      // up by 0.04m — measured via foot bone world-Y logging: the grounded
+      // up by 0.04m - measured via foot bone world-Y logging: the grounded
       // foot's toeBase averaged -0.005m (slightly below floor). The 0.04m
       // correction centers it at +0.035m (flush with floor surface).
       if (coreName === "Hips" && property.includes("position") && hipsMode === "pose") {
@@ -173,7 +173,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   private loader = new GLTFLoader();
   private modelPrefix = "mixamorig";
 
-  // Actions — created from raw clips, no processing
+  // Actions - created from raw clips, no processing
   private idleAction: AnimationAction | null = null;
   private walkActions: Record<DirectionKey, AnimationAction | null> = {
     forward: null,
@@ -305,7 +305,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       key === "strafeLeft" ||
       key === "strafeRight";
 
-    // Crouch uses "pose" mode — keeps Hips position track but scales cm→m
+    // Crouch uses "pose" mode - keeps Hips position track but scales cm→m
     // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
     // This lets the Hips bone drop to the correct crouched height.
     let hipsMode: "strip" | "rootMotion" | "pose" = "strip";
@@ -320,7 +320,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   /**
-   * Create actions from clips — only bone prefix remapping, no track filtering.
+   * Create actions from clips - only bone prefix remapping, no track filtering.
    * Play all simultaneously, control blending purely through weights.
    * This is how the canonical Three.js skinning-blending example works.
    */
@@ -328,7 +328,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     if (!this.mixer) return;
 
 
-    // Idle — starts at weight 1
+    // Idle - starts at weight 1
     const idleClip = this.prepareClip("idle");
     if (idleClip && !this.idleAction) {
       this.idleAction = this.mixer.clipAction(idleClip);
@@ -337,7 +337,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.idleAction.play();
     }
 
-    // Walk directions — start at weight 0
+    // Walk directions - start at weight 0
     for (const key of ["forward", "backward", "strafeLeft", "strafeRight"] as DirectionKey[]) {
       const clip = this.prepareClip(key);
       if (clip && !this.walkActions[key]) {
@@ -389,7 +389,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   /**
-   * Set weight on an action — same helper as the Three.js example.
+   * Set weight on an action - same helper as the Three.js example.
    */
   private setWeight(action: AnimationAction, weight: number): void {
     action.enabled = true;
@@ -490,7 +490,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
 
     // When moving backward (S held), use 100% backward animation regardless
     // of strafe input. Blending backward + strafe produces an awkward hybrid
-    // pose. The physics still moves diagonally — only the animation is pure
+    // pose. The physics still moves diagonally - only the animation is pure
     // backward. This matches how most third-person games handle it.
     if (bw > 0) {
       this.targetDirWeights.forward = 0;
@@ -555,7 +555,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     this.currentIdleWeight += (wantIdle - this.currentIdleWeight) * blendFactor;
     this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
 
-    // Walk directions (scaled by wantWalk — also drives crouch-walk blend)
+    // Walk directions (scaled by wantWalk - also drives crouch-walk blend)
     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
       const dirTarget = this.targetDirWeights[key] * wantWalk;
       const current = this.currentDirWeights[key];

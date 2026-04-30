@@ -95,7 +95,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
     } else {
       onFilterChange([...selectedFamilyIds, familyId]);
     }
-    // Keep dropdown open for multi-select — user closes explicitly or clicks outside
+    // Keep dropdown open for multi-select - user closes explicitly or clicks outside
   }
 
   function handlePointerDownOutside(event: PointerEvent) {

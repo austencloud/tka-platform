@@ -1,8 +1,8 @@
 <!--
   UnifiedEffortSection.svelte
 
-  Merged effort view: pill chips (quick-apply) + scope selector + channel matrix.
-  Replaces the old EffortSection + EffortMatrixDrawer two-step flow.
+  v4 mockup: accordion row showing current effort dot + label + chevron.
+  Expands to reveal quick-apply preset grid + scope selector + channel matrix.
 -->
 <script lang="ts">
   import type {
@@ -36,6 +36,7 @@
     { value: "tip", label: "Per Tip", icon: "fa-crosshairs" },
   ];
 
+  let expanded: boolean = $state(false);
   let scope: Scope = $state<Scope>("cell");
   let localMap: TipEffortMap = $state<TipEffortMap>({});
 
@@ -46,6 +47,12 @@
 
   const blueTipCount = $derived(getTipPoints(bluePropType).points.length);
   const redTipCount = $derived(getTipPoints(redPropType).points.length);
+
+  const activeEffortMeta = $derived(
+    EFFORTS.find((e) => e.id === currentEffort) ??
+    EFFORTS.find(() => true) ??
+    { id: "linear", label: "Linear", color: "#a855f7" }
+  );
 
   interface ChannelRow {
     key: string;
@@ -172,85 +179,181 @@
   }
 </script>
 
-<div class="unified-effort">
-  <!-- Quick-apply pill chips -->
-  <div class="chip-grid" role="radiogroup" aria-label="Effort quality">
-    {#each EFFORTS as effort}
-      <button
-        class="chip"
-        class:active={currentEffort === effort.id}
-        role="radio"
-        aria-checked={currentEffort === effort.id}
-        onclick={() => applyToAll(effort.id)}
-        style:--chip-color={effort.color}
-      >
-        <span class="color-dot" style:background={effort.color}></span>
-        {effort.label}
-      </button>
-    {/each}
-  </div>
+<div class="effort-section">
+  <!-- Section header -->
+  <span class="section-heading">EFFORT</span>
 
-  <!-- Scope selector -->
-  <div class="scope-section">
-    <span class="scope-label" id="effort-scope-label">SCOPE</span>
-    <div class="scope-strip" role="radiogroup" aria-labelledby="effort-scope-label">
-      {#each scopes as s}
-        <button
-          class="scope-seg"
-          class:active={scope === s.value}
-          role="radio"
-          aria-checked={scope === s.value}
-          onclick={() => switchScope(s.value)}
-        >
-          <i class="fas {s.icon}" aria-hidden="true"></i>
-          {s.label}
-        </button>
-      {/each}
-    </div>
-  </div>
+  <!-- Accordion trigger row -->
+  <button
+    class="accordion-row"
+    class:expanded
+    aria-expanded={expanded}
+    onclick={() => (expanded = !expanded)}
+  >
+    <span
+      class="current-dot"
+      style:background={activeEffortMeta.color}
+    ></span>
+    <span class="current-label">{activeEffortMeta.label}</span>
+    <i class="fas fa-chevron-right chevron" aria-hidden="true"></i>
+  </button>
 
-  <!-- Channel rows with 4x2 effort grids -->
-  <div class="matrix-rows">
-    {#each channels as ch (ch.key)}
-      <div class="channel">
-        <div class="channel-id">
-          <span class="channel-dot" style:background={ch.color}></span>
-          <span class="channel-name">{ch.label}</span>
-        </div>
-        <div class="effort-grid">
-          {#each EFFORTS as effort}
+  <!-- Collapsible body -->
+  {#if expanded}
+    <div class="accordion-body">
+      <!-- Quick-apply preset grid -->
+      <div class="chip-grid" role="radiogroup" aria-label="Effort quality">
+        {#each EFFORTS as effort}
+          <button
+            class="chip"
+            class:active={currentEffort === effort.id}
+            role="radio"
+            aria-checked={currentEffort === effort.id}
+            onclick={() => applyToAll(effort.id)}
+            style:--chip-color={effort.color}
+          >
+            <span class="color-dot" style:background={effort.color}></span>
+            {effort.label}
+          </button>
+        {/each}
+      </div>
+
+      <!-- Scope selector -->
+      <div class="scope-section">
+        <span class="scope-label" id="effort-scope-label">SCOPE</span>
+        <div class="scope-strip" role="radiogroup" aria-labelledby="effort-scope-label">
+          {#each scopes as s}
             <button
-              class="effort-btn"
-              class:active={getEffortForKey(ch.key) === effort.id}
-              title={effort.label}
-              onclick={() => setEffort(ch.key, effort.id)}
-              style:--effort-color={effort.color}
+              class="scope-seg"
+              class:active={scope === s.value}
+              role="radio"
+              aria-checked={scope === s.value}
+              onclick={() => switchScope(s.value)}
             >
-              <span class="effort-dot" style:background={effort.color}></span>
-              <span class="effort-label">{effort.label}</span>
+              <i class="fas {s.icon}" aria-hidden="true"></i>
+              {s.label}
             </button>
           {/each}
         </div>
       </div>
-    {/each}
-  </div>
 
-  <div class="hint">Tap a chip to apply to all. Change scope for per-channel control.</div>
+      <!-- Channel rows with per-channel effort grids -->
+      <div class="matrix-rows">
+        {#each channels as ch (ch.key)}
+          <div class="channel">
+            <div class="channel-id">
+              <span class="channel-dot" style:background={ch.color}></span>
+              <span class="channel-name">{ch.label}</span>
+            </div>
+            <div class="effort-grid">
+              {#each EFFORTS as effort}
+                <button
+                  class="effort-btn"
+                  class:active={getEffortForKey(ch.key) === effort.id}
+                  title={effort.label}
+                  onclick={() => setEffort(ch.key, effort.id)}
+                  style:--effort-color={effort.color}
+                >
+                  <span class="effort-dot" style:background={effort.color}></span>
+                  <span class="effort-label">{effort.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .unified-effort {
+  .effort-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ── Section heading ─────────────────────────────────── */
+  .section-heading {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* ── Accordion trigger ───────────────────────────────── */
+  .accordion-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    min-height: 44px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease;
+    text-align: left;
+  }
+
+  .accordion-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .accordion-row.expanded {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .current-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .current-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .chevron {
+    margin-left: auto;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    transition: transform 180ms ease;
+    flex-shrink: 0;
+  }
+
+  .accordion-row.expanded .chevron {
+    transform: rotate(90deg);
+  }
+
+  /* ── Collapsible body ────────────────────────────────── */
+  .accordion-body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
     animation: slideDown 180ms ease-out;
   }
 
   @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-6px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* ── Preset chip grid ────────────────────────────────── */
   .chip-grid {
     display: flex;
     flex-wrap: wrap;
@@ -264,7 +367,7 @@
     gap: 6px;
     padding: 8px clamp(12px, 3cqi, 14px);
     min-height: 44px;
-    border-radius: var(--chip-radius, 22px);
+    border-radius: 8px;
     background: var(--surface-idle, rgba(255, 255, 255, 0.05));
     border: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
@@ -292,6 +395,7 @@
     flex-shrink: 0;
   }
 
+  /* ── Scope selector ──────────────────────────────────── */
   .scope-section {
     display: flex;
     align-items: center;
@@ -339,6 +443,7 @@
   .scope-seg.active { background: rgba(139, 92, 246, 0.15); color: #c084fc; box-shadow: inset 0 -2px 0 #a855f7; }
   .scope-seg i { font-size: 14px; }
 
+  /* ── Channel matrix ──────────────────────────────────── */
   .matrix-rows {
     display: flex;
     flex-direction: column;
@@ -432,15 +537,14 @@
     color: var(--effort-color);
   }
 
-  .hint {
-    text-align: center;
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.2);
-    font-style: italic;
-  }
-
+  /* ── Motion preferences ──────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .unified-effort { animation: none; }
-    .chip, .scope-seg, .effort-btn { transition: none; }
+    .accordion-body { animation: none; }
+    .chevron { transition: none; }
+    .accordion-row,
+    .chip,
+    .scope-seg,
+    .effort-btn,
+    .channel { transition: none; }
   }
 </style>

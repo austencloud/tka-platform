@@ -45,7 +45,7 @@ export class GlobalAdjustmentKeyGenerator
     const gridMode = this.getGridMode(pictographData);
 
     // Generate orientation key.
-    // For staff+staff, collapse to legacy bucket — radial variants are identical.
+    // For staff+staff, collapse to legacy bucket - radial variants are identical.
     const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motionData,
       pictographData

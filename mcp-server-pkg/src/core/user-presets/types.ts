@@ -7,7 +7,7 @@
 
 // Simple string types to avoid dependency on other modules
 export type LoopType = "rewound" | "rotated";
-export type SliceSize = "halved" | "quartered";
+export type Period = "halved" | "quartered";
 export type GridMode = "diamond" | "box" | "skewed";
 
 /**
@@ -17,7 +17,7 @@ export type GridMode = "diamond" | "box" | "skewed";
 export interface PresetConfig {
 	// LOOP settings
 	loopType?: LoopType;
-	sliceSize?: SliceSize;
+	period?: Period;
 	loopComponents?: Array<"rotated" | "mirrored" | "swapped" | "inverted">;
 
 	// Word length (derived from LOOP config or explicit)
@@ -74,7 +74,7 @@ export interface CreatePresetInput {
 
 	// Flattened config fields for easier tool input
 	loopType?: string;
-	sliceSize?: string;
+	period?: string;
 	loopComponents?: string[];
 	wordLength?: number;
 	level?: number;
@@ -94,7 +94,7 @@ export function isValidLoopType(value: string): value is LoopType {
 	return ["rewound", "rotated"].includes(value);
 }
 
-export function isValidSliceSize(value: string): value is SliceSize {
+export function isValidPeriod(value: string): value is Period {
 	return ["halved", "quartered"].includes(value);
 }
 
@@ -124,9 +124,9 @@ export function normalizePresetConfig(input: CreatePresetInput): PresetConfig | 
 		config.loopType = input.loopType;
 	}
 
-	if (input.sliceSize !== undefined) {
-		if (!isValidSliceSize(input.sliceSize)) return null;
-		config.sliceSize = input.sliceSize;
+	if (input.period !== undefined) {
+		if (!isValidPeriod(input.period)) return null;
+		config.period = input.period;
 	}
 
 	if (input.loopComponents !== undefined) {

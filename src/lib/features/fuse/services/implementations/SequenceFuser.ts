@@ -114,7 +114,7 @@ export class SequenceFuser implements ISequenceFuser {
 			: buildMinimalSteps(redLocations, targetLength);
 
 		// Build per-beat step pairings. Without full motion analysis we mark
-		// letter and positions as null/false — downstream hydration fills them.
+		// letter and positions as null/false - downstream hydration fills them.
 		const stepPairings: StepPairingData[] = [];
 		for (let i = 0; i < targetLength; i++) {
 			stepPairings.push({

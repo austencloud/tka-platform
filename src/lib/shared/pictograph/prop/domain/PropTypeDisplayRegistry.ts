@@ -164,7 +164,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
 
 /**
  * Props temporarily deactivated from selection UIs.
- * They still exist in the enum, registry, and saved data — just hidden from pickers.
+ * They still exist in the enum, registry, and saved data - just hidden from pickers.
  * Remove from this set to reactivate.
  */
 export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([

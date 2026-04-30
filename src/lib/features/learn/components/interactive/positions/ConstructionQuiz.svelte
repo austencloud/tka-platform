@@ -92,7 +92,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
       questions.push({ targetType: type, gridMode: grid, difficulty: 3 });
     }
 
-    // Phase 4 (Q9-10): Harder — less common types (gamma-heavy since it's trickiest)
+    // Phase 4 (Q9-10): Harder - less common types (gamma-heavy since it's trickiest)
     const hardTypes: PositionType[] = ["gamma", "gamma", "alpha"];
     for (let i = 0; i < 2; i++) {
       const type = hardTypes[Math.floor(Math.random() * hardTypes.length)]!;
@@ -160,7 +160,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
         advanceToNext();
       }, 1000);
     } else {
-      // Incorrect — show semantic feedback
+      // Incorrect - show semantic feedback
       feedbackState = "incorrect";
       experienceState.recordQuizAnswer(false);
       hapticService?.trigger("error");

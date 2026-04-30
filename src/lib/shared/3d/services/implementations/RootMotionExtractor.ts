@@ -34,7 +34,7 @@ export class RootMotionExtractor implements IRootMotionExtractor {
   private prevYaw = 0;
   private hasPrevious = false;
 
-  // Rest-pose Hips position — captured before any animation plays.
+  // Rest-pose Hips position - captured before any animation plays.
   // After extracting the delta each frame, we restore to this so the
   // skeleton doesn't collapse (Hips Y = hip height above feet).
   private restX = 0;
@@ -70,7 +70,7 @@ export class RootMotionExtractor implements IRootMotionExtractor {
       this.hasPrevious = true;
     } else {
       const rawYawDelta = currentYaw - this.prevYaw;
-      // Clamp absurd deltas (loop boundary) — same pattern as translation.
+      // Clamp absurd deltas (loop boundary) - same pattern as translation.
       // 0.5 rad/frame at 60fps = 30 rad/sec = ~1700°/sec, faster than any
       // realistic turn. Values above this are assumed to be loop boundaries.
       const MAX_YAW_PER_FRAME = 0.5;
@@ -82,7 +82,7 @@ export class RootMotionExtractor implements IRootMotionExtractor {
         yawDelta,
       };
 
-      // Clamp absurd deltas — loop boundary where Hips jumps from
+      // Clamp absurd deltas - loop boundary where Hips jumps from
       // end position back to start. A walk at 1.4m/s at 60fps moves
       // ~2.3cm/frame in Mixamo units. 15cm is generous headroom.
       const MAX_FRAME_DELTA = 15;
@@ -97,9 +97,9 @@ export class RootMotionExtractor implements IRootMotionExtractor {
     this.prevYaw = currentYaw;
 
     // Restore Hips XY to rest position (zero out root motion displacement).
-    // Keep Z untouched — the animation's relative Z contains the natural
+    // Keep Z untouched - the animation's relative Z contains the natural
     // vertical hip bob during walking (hips rise and fall ~2-3cm per step).
-    // Note: rotation.z is NOT restored — the clip's yaw curve drives the
+    // Note: rotation.z is NOT restored - the clip's yaw curve drives the
     // authored rotation, and consumers integrate the delta into the rig.
     this.hipsBone.position.x = this.restX;
     this.hipsBone.position.y = this.restY;

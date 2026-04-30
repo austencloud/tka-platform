@@ -153,7 +153,7 @@ import { getVtgFamilyAggregator } from "$lib/features/choreo-card/getVtgFamilyAg
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
     try {
-      // Lazy-load PrintPDFExporter — it pulls pdf-lib (~400KB + CSP-violating
+      // Lazy-load PrintPDFExporter - it pulls pdf-lib (~400KB + CSP-violating
       // runtime codegen). Only loaded when the user actually exports.
       const { PrintPDFExporter } = await import(
         "$lib/features/choreo-card/services/implementations/PrintPDFExporter"

@@ -87,7 +87,7 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
     }
 
     try {
-      // Check serialized glyph cache first — avoids getBBox() + DOM cloning + serialization
+      // Check serialized glyph cache first - avoids getBBox() + DOM cloning + serialization
       const glyphCacheKey = `${letter}|${turnsTuple}`;
       const cached = serializedGlyphCache.get(glyphCacheKey);
       if (cached) {

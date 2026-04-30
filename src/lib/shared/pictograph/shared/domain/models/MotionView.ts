@@ -1,5 +1,5 @@
 /**
- * MotionView — view-layer data attached to a Motion when rendering a pictograph.
+ * MotionView - view-layer data attached to a Motion when rendering a pictograph.
  *
  * The core `Motion` (from `@tka/tka-types`) describes the structural/engine-compatible
  * contribution of one hand to a single step: motion type, locations, rotation direction,
@@ -9,7 +9,7 @@
  * the engine: visibility flags, prop type preference, computed arrow location, grid
  * mode, placement data, hand path direction, and skew metadata.
  *
- * Paired with a core `Motion` via composition — do NOT embed these fields inside
+ * Paired with a core `Motion` via composition - do NOT embed these fields inside
  * `Motion` or `@tka/tka-types`. Consumers that need both compose at the call site:
  *
  *   type MotionWithView = Motion & MotionView;
@@ -66,7 +66,7 @@ export interface MotionView {
  * should annotate inputs as `MotionWithView` rather than the deprecated
  * `MotionData`.
  *
- * ## Migration blockers — resolved and outstanding
+ * ## Migration blockers - resolved and outstanding
  *
  * ### Resolved 2026-04-20
  *
@@ -74,7 +74,7 @@ export interface MotionView {
  * was loosened to match (commit a299c806). `createMotion` still defaults the
  * runtime value to `Plane.wall` when omitted.
  *
- * ### Outstanding — deeper enum incompatibilities
+ * ### Outstanding - deeper enum incompatibilities
  *
  * The bigger obstacle to swapping `MotionData` -> `Motion` in consumers:
  *

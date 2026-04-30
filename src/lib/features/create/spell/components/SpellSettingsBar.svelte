@@ -404,7 +404,7 @@ Container-aware responsive design (2-tier):
     width: 100%;
   }
 
-  /* Loop expanded: no special sizing needed — group handles it via min-height */
+  /* Loop expanded: no special sizing needed - group handles it via min-height */
 
   /* ============================================================ */
   /* MOBILE LAYOUT */
@@ -420,7 +420,7 @@ Container-aware responsive design (2-tier):
     display: flex;
     gap: 6px;
     width: 100%;
-    /* CRITICAL: No position property — chips must measure offsetLeft/offsetTop from the group */
+    /* CRITICAL: No position property - chips must measure offsetLeft/offsetTop from the group */
   }
 
   /* Match between-row gap to parent's fluid spacing for consistent vertical rhythm */
@@ -586,7 +586,7 @@ Container-aware responsive design (2-tier):
   /* CONTAINER QUERIES: Must come AFTER base styles to override */
   /* ============================================================ */
 
-  /* Desktop: tall tool panel — vertical flex column with labels + expanded options */
+  /* Desktop: tall tool panel - vertical flex column with labels + expanded options */
   @container tool-panel (min-height: 700px) {
     .mobile-layout {
       display: none;

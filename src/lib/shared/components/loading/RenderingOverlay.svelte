@@ -1,5 +1,5 @@
 <!--
-  RenderingOverlay — Shared loading overlay for thumbnail/card re-renders.
+  RenderingOverlay - Shared loading overlay for thumbnail/card re-renders.
 
   Shows a semi-transparent dark overlay with a spinner, status label,
   and optional progress bar. Positioned absolutely within its parent

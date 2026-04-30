@@ -12,6 +12,7 @@
 	import { getContentAppealManager } from '$lib/features/moderation/getContentAppealManager';
 	import type { FlaggedTerm, CreateAppealData } from '../domain/models/content-moderation-models';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
+	import TKAWordGlyph from '$lib/features/choreo-card/components/TKAWordGlyph.svelte';
 
 	interface Props {
 		/** The word/content that was flagged */
@@ -101,7 +102,7 @@
 		<!-- Flagged content display -->
 		<div class="flagged-section" data-animate="2">
 			<h3 class="section-title">{t('moderation_flagged_content')}</h3>
-			<div class="flagged-word">{word}</div>
+			<div class="flagged-word"><TKAWordGlyph {word} height={18} darkMode /></div>
 		</div>
 
 		<!-- {t('moderation_why_flagged')} -->

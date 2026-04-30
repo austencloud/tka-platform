@@ -3,7 +3,7 @@
  *
  * Admin tool for toggling tab visibility via the sidebar context menu.
  * Uses updateGlobalFeatureFlag to enable/disable tabs globally.
- * Role requirements are unchanged — this only controls whether a tab appears at all.
+ * Role requirements are unchanged - this only controls whether a tab appears at all.
  */
 
 import type { ModuleId } from "../../domain/types";

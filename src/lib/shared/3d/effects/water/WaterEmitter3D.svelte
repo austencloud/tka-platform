@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
-   * WaterEmitter3D — per-tip velocity-streaked water droplet emitter.
+   * WaterEmitter3D - per-tip velocity-streaked water droplet emitter.
    *
    * Each droplet renders as a small capsule (thin cylinder) oriented along
-   * its own velocity vector — "frozen raindrop" read, not floating spheres.
+   * its own velocity vector - "frozen raindrop" read, not floating spheres.
    * Gravity is aggressive (-18 m/s²) and lifetimes are short (0.3-0.7s) so
    * droplets fall fast and die fast, distinct from the buoyant long-life
    * spheres the bubbles effect (1g) will use.
@@ -48,7 +48,7 @@
 
   /** Per-tip share of the overall pool. */
   const PER_TIP_CAP = 256;
-  /** Stronger than earth — water reads as fast-falling, not floating. */
+  /** Stronger than earth - water reads as fast-falling, not floating. */
   const GRAVITY_MPS2 = -18;
 
   // Cheap reusable objects so we don't alloc per droplet per frame.
@@ -78,7 +78,7 @@
       const py = position.y;
       const pz = position.z;
 
-      // Small origin jitter — prevents the geometric-perfect line artifact.
+      // Small origin jitter - prevents the geometric-perfect line artifact.
       const ox = (Math.random() - 0.5) * 0.015;
       const oy = (Math.random() - 0.5) * 0.015;
       const oz = (Math.random() - 0.5) * 0.015;
@@ -107,7 +107,7 @@
       spawnAccumulator -= 1;
     }
 
-    // Integrate — aggressive gravity, no drag.
+    // Integrate - aggressive gravity, no drag.
     const surviving: Droplet[] = [];
     for (const d of droplets) {
       d.life += delta;

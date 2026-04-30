@@ -22,7 +22,7 @@
   ];
 </script>
 
-<GuideSection id="type-6-static" title="Type 6 — Static">
+<GuideSection id="type-6-static" title="Type 6 - Static">
   <p>
     Static motions are indicated by no arrow.
   </p>

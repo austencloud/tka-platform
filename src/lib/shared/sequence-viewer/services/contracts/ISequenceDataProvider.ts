@@ -33,7 +33,7 @@ export interface ISequenceDataProvider {
 
   /**
    * Start hydrating a sequence in the background. Returns immediately.
-   * Intended for hover prefetch — starts the Firestore round-trip early
+   * Intended for hover prefetch - starts the Firestore round-trip early
    * so that a subsequent hydrateSequence() call is an instant cache hit.
    *
    * No-ops if the sequence already has motion data or is already prefetching.

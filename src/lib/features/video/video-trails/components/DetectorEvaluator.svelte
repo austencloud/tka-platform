@@ -145,7 +145,7 @@
 
       // For each correction, find the nearest detected endpoint
       const matchDistances: (number | null)[] = corrections.map((correction) => {
-        // Occluded corrections have no expected position — skip matching
+        // Occluded corrections have no expected position - skip matching
         if (!correction.corrected) return null;
 
         // Find nearest detected endpoint (same prop/tip if available, else any)
@@ -227,7 +227,7 @@
 
   {#if correctedFrameCount === 0}
     <p class="empty-hint">
-      Add corrections in the editor first — the evaluator re-runs the detector
+      Add corrections in the editor first - the evaluator re-runs the detector
       on corrected frames and measures how well it did.
     </p>
   {:else}
@@ -322,7 +322,7 @@
                   {/if}
                 </span>
                 <span class="frame-err">
-                  {worstDist > 0 ? formatPx(worstDist) : "—"}
+                  {worstDist > 0 ? formatPx(worstDist) : "-"}
                 </span>
                 <i
                   class="fas {expanded ? 'fa-chevron-up' : 'fa-chevron-down'}"
@@ -385,7 +385,7 @@
   {/if}
 
   {#if hasRun && !evaluating && frameResults.length === 0}
-    <p class="empty-hint">No results — corrections may have been cleared since evaluation started.</p>
+    <p class="empty-hint">No results - corrections may have been cleared since evaluation started.</p>
   {/if}
 </div>
 

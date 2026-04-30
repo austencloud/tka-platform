@@ -1,5 +1,5 @@
 <!--
-  RetroCheckbox — 98.css-styled checkbox with label
+  RetroCheckbox - 98.css-styled checkbox with label
 
   Checked state is bindable. 98.css handles the visual styling
   of the checkbox indicator via the standard input[type="checkbox"].

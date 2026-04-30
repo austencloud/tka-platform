@@ -1,5 +1,5 @@
 /**
- * FireFrameCache — Record & Playback for Looping Fire Sequences
+ * FireFrameCache - Record & Playback for Looping Fire Sequences
  *
  * During the first loop of a fire-enabled sequence, the full Navier-Stokes
  * simulation runs normally. This cache captures the display shader output
@@ -42,7 +42,7 @@ export class FireFrameCache {
   private gl: WebGL2RenderingContext;
   private state: CacheState = "idle";
 
-  // Cache textures (RGBA8, one per frame) — pre-allocated in batches
+  // Cache textures (RGBA8, one per frame) - pre-allocated in batches
   private frames: WebGLTexture[] = [];
   /** Relative timestamps (ms since loop start) for each cached frame */
   private frameTimes: number[] = [];
@@ -156,7 +156,7 @@ export class FireFrameCache {
     if (this.state !== "recording") return;
     const gl = this.gl;
 
-    // Grow texture pool if needed (amortized O(1) — only allocates every BATCH_SIZE frames)
+    // Grow texture pool if needed (amortized O(1) - only allocates every BATCH_SIZE frames)
     if (this.frameIndex >= this.texturePoolSize) {
       this.ensureTexturePool(this.texturePoolSize + FireFrameCache.TEXTURE_BATCH_SIZE);
     }
@@ -197,7 +197,7 @@ export class FireFrameCache {
       this.loopDuration = this.frameTimes[this.frameTimes.length - 1] ?? 0;
       this.state = "warm";
       this.frameIndex = 0;
-      // Destroy recording resources — no longer needed during playback
+      // Destroy recording resources - no longer needed during playback
       this.destroyRecordingFBO();
       this.destroyCopyFBO();
       // Trim excess pool textures beyond what was actually recorded
@@ -365,7 +365,7 @@ export class FireFrameCache {
   }
 
   private releaseFrames(): void {
-    // Frames reference textures from the pool — don't delete them here.
+    // Frames reference textures from the pool - don't delete them here.
     // The pool owns their lifecycle. Just clear the reference array.
     this.frames.length = 0;
     this.frameTimes.length = 0;

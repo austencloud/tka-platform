@@ -41,7 +41,7 @@
     }
   });
 
-  // Contextual hint about the other hand — shown below the main instruction
+  // Contextual hint about the other hand - shown below the main instruction
   const otherHandHint = $derived.by(() => {
     if (builderState.phase === "complete" || builderState.phase === "idle") return "";
     if (otherHandSteps === 0 && activeStepCount > 0) {
@@ -258,7 +258,7 @@
     color: var(--theme-text, #fff);
   }
 
-  /* Inactive hand with no steps yet — pulse to invite the user to start it */
+  /* Inactive hand with no steps yet - pulse to invite the user to start it */
   .hand-switch-btn.needs-attention {
     border-color: color-mix(in srgb, var(--btn-color) 50%, transparent);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
@@ -285,7 +285,7 @@
     outline-offset: 2px;
   }
 
-  /* ── Mobile: hide entirely — BuilderControls handles instruction + hand switching ── */
+  /* ── Mobile: hide entirely - BuilderControls handles instruction + hand switching ── */
   @media (max-width: 768px) {
     .instruction-header {
       display: none;

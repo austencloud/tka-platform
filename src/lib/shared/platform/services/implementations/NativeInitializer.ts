@@ -20,12 +20,12 @@ export class NativeInitializer implements INativeInitializer {
 		await StatusBar.setStyle({ style: Style.Dark });
 
 		if (this.platformDetector.isAndroid) {
-			// Don't overlay on Android — let the system handle status bar space.
+			// Don't overlay on Android - let the system handle status bar space.
 			// The WebView's env(safe-area-inset-top) isn't reliable in Android WebView.
 			await StatusBar.setOverlaysWebView({ overlay: false });
 			await StatusBar.setBackgroundColor({ color: "#0b1d2a" });
 		} else {
-			// iOS handles safe area insets natively via env() — overlay is safe
+			// iOS handles safe area insets natively via env() - overlay is safe
 			await StatusBar.setOverlaysWebView({ overlay: true });
 		}
 	}
@@ -57,7 +57,7 @@ export class NativeInitializer implements INativeInitializer {
 		// When a user taps an App Link / Universal Link (e.g. a QR code targeting
 		// tkaflowarts.com/q/ABC123), Android hands us the full URL. Route to
 		// the matching in-app path via SvelteKit's client navigation so we keep the
-		// app alive — a full reload would drop state and flash the splash screen.
+		// app alive - a full reload would drop state and flash the splash screen.
 		await App.addListener("appUrlOpen", async ({ url }) => {
 			try {
 				const parsed = new URL(url);
@@ -66,7 +66,7 @@ export class NativeInitializer implements INativeInitializer {
 				const { goto } = await import("$app/navigation");
 				await goto(target);
 			} catch {
-				// Malformed URL — ignore. The OS shouldn't hand us one, but don't crash.
+				// Malformed URL - ignore. The OS shouldn't hand us one, but don't crash.
 			}
 		});
 	}

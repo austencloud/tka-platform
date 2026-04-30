@@ -1,5 +1,5 @@
 <!--
-  ConjoinedGridTab.svelte — Entry point for the unified conjoined grid explorer.
+  ConjoinedGridTab.svelte - Entry point for the unified conjoined grid explorer.
 
   Wires the state factory to TopologyCanvas and ConjoinedGridControls.
   Canvas fills the left panel, controls sidebar sits on the right (stacked on mobile).

@@ -1,5 +1,5 @@
 <!--
-  FavoritePicker.svelte — Phase 2 of My Props editor.
+  FavoritePicker.svelte - Phase 2 of My Props editor.
   Shows selected props as larger cards. Tap one to crown it as favorite.
 -->
 <script lang="ts">
@@ -17,7 +17,7 @@
 
   let chosenProp = $state<PropType | null>(null);
 
-  // No longer need layout switching — grid auto-fills
+  // No longer need layout switching - grid auto-fills
 
   function handlePick(prop: PropType) {
     chosenProp = prop;

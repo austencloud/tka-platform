@@ -205,12 +205,12 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
   }
 
   startLogging(): void {
-    // No-op — metrics are collected silently.
+    // No-op - metrics are collected silently.
     // Call logNow() from DevTools console if needed.
   }
 
   stopLogging(): void {
-    // No-op — no active listeners to clean up.
+    // No-op - no active listeners to clean up.
   }
 
   logNow(): void {

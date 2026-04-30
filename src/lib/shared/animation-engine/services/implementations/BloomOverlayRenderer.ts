@@ -7,7 +7,7 @@
  * none, z-index above trails.
  *
  * The canvas is cleared each frame before drawing. Bloom is a stateless
- * effect — no phantom buffers, no particle pools — so draw-fresh every
+ * effect - no phantom buffers, no particle pools - so draw-fresh every
  * frame keeps behavior deterministic when playback is paused or seeks.
  */
 

@@ -246,6 +246,7 @@
     height: 100%;
     overflow: hidden;
     container-type: inline-size;
+    container-name: gallery;
   }
 
   .panel-title {

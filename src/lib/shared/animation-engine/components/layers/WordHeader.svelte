@@ -17,7 +17,18 @@ Supports letter highlighting during animation playback.
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+  import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
+  import { browser } from "$app/environment";
+
+  const cache = browser ? getGlyphCache() : null;
+
+  function getGlyphUrl(letter: string): string | null {
+    if (!cache) return null;
+    const base = isDashLetter(letter) ? getBaseLetter(letter) : letter;
+    return cache.getGlyphDataUrl(base);
+  }
 
   let {
     word = null,
@@ -26,19 +37,19 @@ Supports letter highlighting during animation playback.
     activeStepNumber = null,
     difficultyLevel = null,
     loopComponents = null,
-    rotationSliceSize,
+    rotationPeriod,
+    inversionPeriod,
+    loopPeriod,
   }: {
     word?: string | null;
     visible?: boolean;
     darkMode?: boolean;
-    /** Current beat number during animation playback (1-indexed) for letter highlighting */
     activeStepNumber?: number | null;
-    /** Difficulty level (1-18) to show as a badge on the left */
     difficultyLevel?: number | null;
-    /** LOOP components to show as icon strip on the right */
     loopComponents?: Set<LOOPComponent> | null;
-    /** When ROTATED is active, lets the strip pick fa-arrows-spin (quartered) vs fa-rotate (halved) */
-    rotationSliceSize?: SliceSize;
+    rotationPeriod?: Period;
+    inversionPeriod?: Period;
+    loopPeriod?: number;
   } = $props();
 
   // Difficulty badge styling from shared config
@@ -54,7 +65,7 @@ Supports letter highlighting during animation playback.
   // The word currently being displayed (may lag behind `word` during transitions)
   let displayedWord = $state<string | null>(null);
 
-  // Track for detecting changes (not reactive — only read/written inside the effect)
+  // Track for detecting changes (not reactive - only read/written inside the effect)
   let wasVisible = false;
   let lastWord: string | null = null;
 
@@ -84,7 +95,7 @@ Supports letter highlighting during animation playback.
     const currentWord = word;
     const currentlyVisible = visible;
 
-    // Read internal state without tracking — this effect manages these values,
+    // Read internal state without tracking - this effect manages these values,
     // so re-triggering on its own writes would cause a cleanup race condition
     // that clears animation timers before they fire.
     const prevWord = untrack(() => lastWord);
@@ -199,23 +210,33 @@ Supports letter highlighting during animation playback.
 
     <span class="word-text">
       {#if hasActiveHighlighting && parsedLetters.length > 0 && animationPhase === "idle"}
-        <!-- Active playback mode: highlight current letter -->
         {#each parsedLetters as letter, index (index)}
+          {@const url = getGlyphUrl(letter)}
           <span
             class="letter"
-            class:active={activeLetterIndex === index}>{letter}</span
+            class:active={activeLetterIndex === index}
           >
+            {#if url}
+              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
+            {:else}{letter}{/if}
+          </span>
         {/each}
       {:else}
-        <!-- Animated mode: staggered enter/exit -->
         {#each parsedLetters as letter, index (index)}
+          {@const url = getGlyphUrl(letter)}
           <span
             class="letter animated"
             class:entering={animationPhase === "entering"}
             class:exiting={animationPhase === "exiting"}
             class:visible={animationPhase === "idle"}
             style="--letter-index: {index}; --total-letters: {parsedLetters.length}; --reverse-index: {parsedLetters.length - 1 - index}"
-          >{letter}</span>
+          >
+            {#if url}
+              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
+            {:else}{letter}{/if}
+          </span>
         {/each}
       {/if}
     </span>
@@ -224,7 +245,9 @@ Supports letter highlighting during animation playback.
       <div class="loop-icon-badge">
         <LOOPIconStrip
           activeComponents={loopComponents}
-          {rotationSliceSize}
+          {rotationPeriod}
+          {inversionPeriod}
+          period={loopPeriod}
           size={20}
           darkMode={darkMode}
           showFreeformWhenEmpty={false}
@@ -290,75 +313,73 @@ Supports letter highlighting during animation playback.
   }
 
   .word-text {
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 700;
-    /* Scale font with container width (now references content-wrapper which matches canvas) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.08em;
     font-size: clamp(12px, 6cqw, 28px);
-    letter-spacing: 0.08em;
-    text-align: center;
-    color: var(--theme-text, rgba(31, 41, 55, 1));
-    /* Smooth transition synced with canvas background (150ms) */
-    transition: color var(--duration-fast) ease-out;
-    /* Prevent text from overflowing - truncate if needed */
     max-width: 100%;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
-    /* Padding for word text */
     padding: clamp(6px, 3cqw, 12px) clamp(8px, 4cqw, 16px);
   }
 
-  /* Dark mode: dark background with light text (via prop) */
   .word-header.dark-mode {
     background: var(--theme-panel-bg, rgb(15, 15, 20));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  .word-header.dark-mode .word-text {
-    color: var(--theme-text, rgba(255, 255, 255, 1));
-  }
-
-  /* Fallback: Global .dark class only applies when NOT controlled by prop */
-  /* data-controlled attribute marks prop-controlled instances */
   :global(:root.dark) .word-header:not([data-controlled]) {
     background: var(--theme-panel-bg, rgb(15, 15, 20));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  :global(:root.dark) .word-header:not([data-controlled]) .word-text {
-    color: var(--theme-text, rgba(255, 255, 255, 1));
+  .glyph-img {
+    height: 1em;
+    width: auto;
+    display: block;
   }
 
-  /* Letter highlighting during animation playback */
+  .word-header.dark-mode .glyph-img,
+  :global(:root.dark) .word-header:not([data-controlled]) .glyph-img {
+    filter: invert(0.9);
+  }
+
+  .dash-bar {
+    display: inline-block;
+    height: 0.20em;
+    width: 0.70em;
+    background: currentColor;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+
   .letter {
-    display: inline;
-    color: var(--theme-text-dim, rgba(31, 41, 55, 0.3));
+    display: inline-flex;
+    align-items: center;
+    gap: 0.08em;
+    opacity: 0.2;
     transition:
-      color 0.15s ease,
-      text-shadow 0.15s ease;
+      filter 0.15s ease,
+      opacity 0.15s ease;
   }
 
   .letter.active {
-    color: var(--theme-text, rgba(31, 41, 55, 1));
-    text-shadow: 0 0 10px color-mix(in srgb, var(--theme-text) 30%, transparent);
+    opacity: 1;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
   }
 
-  /* Animated letter states (entering, exiting, visible) */
   .letter.animated {
-    display: inline-block;
-    color: var(--theme-text, rgba(31, 41, 55, 1));
-    /* Start in hidden state */
+    display: inline-flex;
     opacity: 0;
     transform: translateY(8px) scale(0.8);
   }
 
-  /* Entering: animate from hidden to visible with staggered delay */
   .letter.animated.entering {
     animation: letterEnter var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     animation-delay: calc(var(--letter-index) * (180ms / max(var(--total-letters), 4)));
   }
 
-  /* Exiting: animate from visible to hidden with reverse stagger (last letter exits first visually feels better) */
   .letter.animated.exiting {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -366,75 +387,23 @@ Supports letter highlighting during animation playback.
     animation-delay: calc(var(--letter-index) * (120ms / max(var(--total-letters), 4)));
   }
 
-  /* Idle/visible: fully visible, no animation */
   .letter.animated.visible {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 
   @keyframes letterEnter {
-    from {
-      opacity: 0;
-      transform: translateY(8px) scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; transform: translateY(8px) scale(0.8); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   @keyframes letterExit {
-    from {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-    to {
-      opacity: 0;
-      transform: translateY(-6px) scale(0.85);
-    }
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-6px) scale(0.85); }
   }
 
-  /* Dark mode animated letters */
-  .word-header.dark-mode .letter.animated {
-    color: var(--theme-text, rgba(255, 255, 255, 1));
-  }
-
-  /* Dark mode letter styles */
-  .word-header.dark-mode .letter {
-    color: rgba(255, 255, 255, 0.15);
-  }
-
-  .word-header.dark-mode .letter.active {
-    color: #ffffff;
-    text-shadow:
-      0 0 8px rgba(255, 255, 255, 0.6),
-      0 0 24px rgba(255, 255, 255, 0.3);
-  }
-
-  /* Global dark class fallback */
-  :global(:root.dark) .word-header:not([data-controlled]) .letter {
-    color: rgba(255, 255, 255, 0.15);
-  }
-
-  :global(:root.dark) .word-header:not([data-controlled]) .letter.active {
-    color: #ffffff;
-    text-shadow:
-      0 0 8px rgba(255, 255, 255, 0.6),
-      0 0 24px rgba(255, 255, 255, 0.3);
-  }
-
-  :global(:root.dark) .word-header:not([data-controlled]) .letter.animated {
-    color: var(--theme-text, rgba(255, 255, 255, 1));
-  }
-
-  /* Accessibility: respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
-    .letter.animated {
-      animation: none;
-      opacity: 1;
-      transform: none;
-    }
-
+    .letter.animated,
     .letter.animated.entering,
     .letter.animated.exiting,
     .letter.animated.visible {

@@ -25,7 +25,7 @@ import {
   VERTICAL_MIRROR_POSITION_MAP,
   INVERTED_LETTER_MAP,
 } from "../position-maps/strict-loop-position-maps.js";
-import { LOOPType, SliceSize } from "../loop-types.js";
+import { LOOPType, Period } from "../loop-types.js";
 
 // ============================================================================
 // TYPES
@@ -89,7 +89,7 @@ export type DetectionConfidence = "strict" | "probable" | "accidental";
 export interface RichLOOPDetectionResult {
   isCircular: boolean;
   loopType: LOOPType | null;
-  sliceSize: SliceSize | null;
+  period: Period | null;
   confidence: DetectionConfidence;
   compoundPattern?: CompoundPattern;
 }
@@ -294,14 +294,14 @@ export class LOOPDetectorClass {
     const circular = isSequenceCircular(steps);
 
     if (!circular) {
-      return { isCircular: false, loopType: null, sliceSize: null, confidence: "accidental" };
+      return { isCircular: false, loopType: null, period: null, confidence: "accidental" };
     }
 
     // Get letter steps only (exclude start position)
     const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
     if (letterSteps.length < 2) {
-      return { isCircular: true, loopType: null, sliceSize: null, confidence: "accidental" };
+      return { isCircular: true, loopType: null, period: null, confidence: "accidental" };
     }
 
     // Detect transformations at BOTH intervals independently
@@ -315,18 +315,18 @@ export class LOOPDetectorClass {
       halvedTransformations
     );
 
-    // Determine primary slice size and components for LOOP type
-    let sliceSize: SliceSize | null = null;
+    // Determine primary period and components for LOOP type
+    let period: Period | null = null;
     const detectedComponents = new Set<LOOPComponent>();
 
     if (compoundPattern) {
-      sliceSize = SliceSize.QUARTERED;
+      period = Period.QUARTERED;
       compoundPattern.quarteredTransformations.forEach((c) => detectedComponents.add(c));
       compoundPattern.halvedTransformations.forEach((c) => detectedComponents.add(c));
     } else {
-      sliceSize = this.determineSliceSize(letterSteps);
+      period = this.determinePeriod(letterSteps);
 
-      if (this.detectsRotation(letterSteps, sliceSize)) detectedComponents.add(LOOPComponent.ROTATED);
+      if (this.detectsRotation(letterSteps, period)) detectedComponents.add(LOOPComponent.ROTATED);
       if (this.detectsMirroring(letterSteps)) detectedComponents.add(LOOPComponent.MIRRORED);
       if (this.detectsSwapping(letterSteps)) detectedComponents.add(LOOPComponent.SWAPPED);
       if (this.detectsInversion(letterSteps)) detectedComponents.add(LOOPComponent.INVERTED);
@@ -344,25 +344,25 @@ export class LOOPDetectorClass {
     return {
       isCircular: true,
       loopType,
-      sliceSize: detectedComponents.has(LOOPComponent.ROTATED) ? sliceSize : null,
+      period: detectedComponents.has(LOOPComponent.ROTATED) ? period : null,
       confidence,
       compoundPattern: compoundPattern ?? undefined,
     };
   }
 
-  // ============ SLICE SIZE DETERMINATION ============
+  // ============ PERIOD DETERMINATION ============
 
-  private determineSliceSize(steps: readonly SequenceStep[]): SliceSize {
+  private determinePeriod(steps: readonly SequenceStep[]): Period {
     const length = steps.length;
 
     // Check quartered FIRST (more specific)
     if (length >= 4 && length % 4 === 0) {
       if (this.detectsQuarteredRotation(steps)) {
-        return SliceSize.QUARTERED;
+        return Period.QUARTERED;
       }
     }
 
-    return SliceSize.HALVED;
+    return Period.HALVED;
   }
 
   /**
@@ -396,14 +396,14 @@ export class LOOPDetectorClass {
 
   // ============ ROTATION DETECTION ============
 
-  private detectsRotation(steps: readonly SequenceStep[], sliceSize: SliceSize): boolean {
+  private detectsRotation(steps: readonly SequenceStep[], period: Period): boolean {
     const length = steps.length;
 
-    if (sliceSize === SliceSize.QUARTERED) {
+    if (period === Period.QUARTERED) {
       return this.detectsQuarteredRotation(steps);
     }
 
-    if (sliceSize === SliceSize.HALVED && length >= 2 && length % 2 === 0) {
+    if (period === Period.HALVED && length >= 2 && length % 2 === 0) {
       const halfLength = length / 2;
       const h1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
       const h2Start = steps[halfLength] ? this.deriveStartPosition(steps[halfLength]!) : null;

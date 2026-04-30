@@ -1,5 +1,5 @@
 <!--
-  RetroModule.svelte — Retro era renderers: 1989 DOS terminal, 1995 Win95 desktop.
+  RetroModule.svelte - Retro era renderers: 1989 DOS terminal, 1995 Win95 desktop.
   Tabs appear in the sidebar. Navigation handled by the nav system.
 -->
 <script lang="ts">

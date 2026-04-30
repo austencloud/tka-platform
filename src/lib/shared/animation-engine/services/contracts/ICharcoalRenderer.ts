@@ -5,7 +5,7 @@
  * Discrete spark particles with gravity physics, burst emission on
  * direction reversals, and temperature-based color gradients.
  *
- * Architecturally independent from IFireOverlayRenderer — different
+ * Architecturally independent from IFireOverlayRenderer - different
  * physics (gravity+drag vs Navier-Stokes), different shaders
  * (point sprites vs fluid sim), different visual output.
  */

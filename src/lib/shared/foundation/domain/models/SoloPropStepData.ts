@@ -22,7 +22,7 @@ export interface SoloPropStepData {
   // When motionType === "float", this holds the original pro/anti type the
   // float collapsed from. Required for letter/turn-color resolution because
   // float motions have noRotation, which destroys the pro-vs-anti signal.
-  // prefloatRotationDirection is NOT stored — it is derivable from
+  // prefloatRotationDirection is NOT stored - it is derivable from
   // prefloatMotionType + start/end via HandpathDirectionCalculator.
   readonly prefloatMotionType?: MotionType;
 }

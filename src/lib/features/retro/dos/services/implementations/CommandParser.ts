@@ -79,7 +79,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* DIR — List files in current directory                               */
+	/* DIR - List files in current directory                               */
 	/* ------------------------------------------------------------------ */
 
 	private handleDir(args: string[]): void {
@@ -151,7 +151,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* TYPE — Display file contents                                        */
+	/* TYPE - Display file contents                                        */
 	/* ------------------------------------------------------------------ */
 
 	private handleType(args: string[], rawInput: string): void {
@@ -195,7 +195,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* CD — Change directory                                               */
+	/* CD - Change directory                                               */
 	/* ------------------------------------------------------------------ */
 
 	private handleCd(args: string[]): void {
@@ -222,7 +222,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* CLS — Clear screen                                                  */
+	/* CLS - Clear screen                                                  */
 	/* ------------------------------------------------------------------ */
 
 	private handleCls(): void {
@@ -230,7 +230,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* VER — Show version information                                      */
+	/* VER - Show version information                                      */
 	/* ------------------------------------------------------------------ */
 
 	private handleVer(): void {
@@ -242,7 +242,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* HELP — Show available commands or launch tutorial                    */
+	/* HELP - Show available commands or launch tutorial                    */
 	/* ------------------------------------------------------------------ */
 
 	private handleHelp(args: string[]): void {
@@ -275,7 +275,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* SCRIBE — Launch the SCRIBE menu application                         */
+	/* SCRIBE - Launch the SCRIBE menu application                         */
 	/* ------------------------------------------------------------------ */
 
 	private handleScribe(): void {
@@ -284,25 +284,25 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* GENERATE — Shortcut to generate mode with a word                    */
+	/* GENERATE - Shortcut to generate mode with a word                    */
 	/* ------------------------------------------------------------------ */
 
 	private handleGenerate(args: string[]): void {
 		if (args.length === 0) {
-			// No word provided — launch generate mode interactively
+			// No word provided - launch generate mode interactively
 			terminalState.mode = "scribe";
 			terminalState.scribeMode = "generate";
 			return;
 		}
 
-		// Launch generate mode — the word will be passed via terminal state
+		// Launch generate mode - the word will be passed via terminal state
 		// or handled by the generate component reading the args
 		terminalState.mode = "scribe";
 		terminalState.scribeMode = "generate";
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* SPELL — Shortcut to spell mode with a word                          */
+	/* SPELL - Shortcut to spell mode with a word                          */
 	/* ------------------------------------------------------------------ */
 
 	private handleSpell(args: string[]): void {
@@ -317,7 +317,7 @@ export class CommandParser implements ICommandParser {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* REGISTER — Shareware registration easter egg                        */
+	/* REGISTER - Shareware registration easter egg                        */
 	/* ------------------------------------------------------------------ */
 
 	private handleRegister(): void {
@@ -391,7 +391,7 @@ export class CommandParser implements ICommandParser {
 	/**
 	 * Handle serial number input from the REGISTER prompt.
 	 *
-	 * Every serial number is rejected — this is a fictional product from 1989
+	 * Every serial number is rejected - this is a fictional product from 1989
 	 * and Bellweather's registration department has been [REDACTED] since 1997.
 	 * Empty input (user just pressed Enter or ESC) silently returns to prompt.
 	 */

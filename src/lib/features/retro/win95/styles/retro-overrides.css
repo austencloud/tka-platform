@@ -1,5 +1,5 @@
 /*
- * TKA-OS v1.0 — 98.css Overrides
+ * TKA-OS v1.0 - 98.css Overrides
  *
  * Minor overrides to 98.css that establish the TKA-OS identity:
  * disable font smoothing, enforce pixelated rendering, and kill
@@ -26,7 +26,7 @@
 /* Win95 fidelity: no CSS transitions or animations. This globally      */
 /* overrides all animation/transition properties within the retro       */
 /* shell. Individual components do NOT need @media                      */
-/* (prefers-reduced-motion) blocks — this override handles it.          */
+/* (prefers-reduced-motion) blocks - this override handles it.          */
 /* Exceptions (like CRT scanline flicker) use inline styles or          */
 /* JS-driven animation to bypass this when intentional.                 */
 /* -------------------------------------------------------------------- */

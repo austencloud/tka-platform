@@ -1,12 +1,12 @@
 import type { SectionDesignation } from "../../domain/models/section-models";
 import type { TransformationIntervals } from "../../domain/models/label-models";
 import type { ComponentId } from "../../domain/constants/loop-components";
-import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 export interface LOOPDesignationInput {
   components: ComponentId[];
   loopType: string | null;
-  sliceSize?: SliceSize | null;
+  period?: Period | null;
   transformationIntervals?: TransformationIntervals;
 }
 

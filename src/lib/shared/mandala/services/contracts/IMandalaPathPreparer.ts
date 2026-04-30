@@ -18,7 +18,7 @@ export interface IMandalaPathPreparer {
 	/**
 	 * Pre-compute Path2D objects, path lengths, and transform scale from sequence data.
 	 * Returns null if no valid paths can be computed.
-	 * Caches results — only recomputes when steps change.
+	 * Caches results - only recomputes when steps change.
 	 */
 	prepare(
 		steps: readonly StepLike[],

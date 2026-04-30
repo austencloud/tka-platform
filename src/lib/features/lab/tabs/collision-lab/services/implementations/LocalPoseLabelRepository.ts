@@ -40,7 +40,7 @@ const defaultCanonicalLoader: CanonicalLoader = async () => {
 export class LocalPoseLabelRepository implements IPoseLabelRepository {
   private canonicalLoader: CanonicalLoader = defaultCanonicalLoader;
 
-  /** Test seam — replaces the canonical loader. */
+  /** Test seam - replaces the canonical loader. */
   __setCanonicalLoader(loader: CanonicalLoader): void {
     this.canonicalLoader = loader;
   }

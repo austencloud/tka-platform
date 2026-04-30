@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * GltfProp3D — Renders a prop from a loaded GLTF model.
+   * GltfProp3D - Renders a prop from a loaded GLTF model.
    *
    * Loads a .glb file, clones the scene, recolors it to blue/red,
    * and positions it using the same transform pipeline as all other props.
@@ -37,7 +37,7 @@
 
   const propLayer = $derived(props.isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 
-  // Load the GLTF model — useGltf is a one-time hook call, untrack to suppress warning
+  // Load the GLTF model - useGltf is a one-time hook call, untrack to suppress warning
   const gltf = useGltf(untrack(() => props.modelEntry.modelUrl));
 
   // Clone and recolor the scene when the model loads or color changes.
@@ -65,7 +65,7 @@
     }
   });
 
-  // Rotation only — position is handled by the parent PerformerRig scene graph
+  // Rotation only - position is handled by the parent PerformerRig scene graph
   const rotation = $derived(computePropRotation(props.propState));
 
   // Combined scale: model's authored scale × big variant multiplier × user proportions ratio

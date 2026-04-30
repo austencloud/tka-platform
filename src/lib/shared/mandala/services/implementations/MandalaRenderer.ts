@@ -2,7 +2,7 @@
  * MandalaRenderer
  *
  * Takes pre-computed MandalaPaths and renders them to either an SVG string
- * or a Canvas 2D context. The renderer is stateless — it just translates
+ * or a Canvas 2D context. The renderer is stateless - it just translates
  * geometry data into drawing commands, so the same paths can be rendered
  * at any size or style without recomputation.
  */
@@ -81,7 +81,7 @@ export class MandalaRenderer implements IMandalaRenderer {
 		parts.push(`    </filter>`);
 		parts.push(`  </defs>`);
 
-		// Background — skip for card-back or other themed containers
+		// Background - skip for card-back or other themed containers
 		if (!transparentBackground) {
 			parts.push(`  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>`);
 		}
@@ -132,7 +132,7 @@ export class MandalaRenderer implements IMandalaRenderer {
 			}
 		}
 
-		// Render purple overlap paths on top — visually replaces blue+red in overlap regions
+		// Render purple overlap paths on top - visually replaces blue+red in overlap regions
 		if (show === "both" && paths.purple?.length) {
 			for (const pathData of paths.purple) {
 				const attrs = style === "filled"
@@ -225,7 +225,7 @@ export class MandalaRenderer implements IMandalaRenderer {
 		style: "stroke" | "filled",
 		strokeWidth: number,
 	): void {
-		// Path2D accepts SVG path data strings directly — no manual parsing needed.
+		// Path2D accepts SVG path data strings directly - no manual parsing needed.
 		const path = new Path2D(d);
 
 		if (style === "filled") {

@@ -2,7 +2,7 @@
  * SoloPropRepository
  *
  * Persists solo prop artifacts to Firestore under users/{uid}/soloProps.
- * A solo prop record captures a single performer's complete prop path — both
+ * A solo prop record captures a single performer's complete prop path - both
  * the hand trajectory (HandPathData) and the orientation state at each step.
  * Like hand paths, solo props are content-addressed by their contentHash.
  */
@@ -63,7 +63,7 @@ function docToSoloProp(data: DocumentData, id: string): SoloPropData {
   } as SoloPropData;
 }
 
-/** Strip undefined values — Firestore rejects them in setDoc. */
+/** Strip undefined values - Firestore rejects them in setDoc. */
 function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
   const raw: Record<string, unknown> = {
     steps: soloProp.steps,
@@ -171,7 +171,7 @@ export class SoloPropRepository implements ISoloPropRepository {
       const existing = await getDoc(docRef);
 
       if (existing.exists()) {
-        // Document exists — append to sourceSequenceIds without duplicating
+        // Document exists - append to sourceSequenceIds without duplicating
         await setDoc(docRef, {
           ...soloPropToDoc(soloProp),
           provenance: {
@@ -181,7 +181,7 @@ export class SoloPropRepository implements ISoloPropRepository {
           },
         }, { merge: true });
       } else {
-        // New document — write the full provenance as-is
+        // New document - write the full provenance as-is
         await setDoc(docRef, {
           ...soloPropToDoc(soloProp),
           provenance: {

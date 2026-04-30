@@ -121,7 +121,7 @@ export function getMirroredRotatedInvertedSwappedLOOPExecutor() {
 	return _mirroredRotatedInvertedSwapped ??= new MirroredRotatedInvertedSwappedLOOPExecutor(getStrictRotatedLOOPExecutor(), getMirroredSwappedInvertedLOOPExecutor());
 }
 
-// The selector — needs all 15 executors
+// The selector - needs all 15 executors
 export function getLOOPExecutorSelector(): ILOOPExecutorSelector {
 	_check();
 	return _selector ??= new LOOPExecutorSelector(

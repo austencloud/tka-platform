@@ -7,7 +7,7 @@
  * horizontal and vertical segments for a winding journey.
  *
  * Room sizes vary based on their min/max dimensions (compression/release).
- * Corridors are tight (width from edges). No fixed cell grid — each room
+ * Corridors are tight (width from edges). No fixed cell grid - each room
  * gets exactly the space it needs.
  */
 

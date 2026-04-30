@@ -65,9 +65,9 @@ const PARAM_META: Record<string, ParamMeta> = {
     display: "prop continuity",
     values: ["continuous", "random"],
   },
-  sliceSize: {
+  period: {
     type: "cyclic",
-    display: "slice size",
+    display: "period",
     values: ["halved", "quartered"],
   },
   loopType: {
@@ -232,7 +232,7 @@ export class GeneratorCommandHandler implements IVoiceCommandHandler {
       return { success: true, message: displayMsg };
     }
 
-    // Cyclic param — validate value is in the allowed set
+    // Cyclic param - validate value is in the allowed set
     const strVal = String(rawValue);
     if (!meta.values.includes(strVal)) {
       return {
@@ -261,7 +261,7 @@ export class GeneratorCommandHandler implements IVoiceCommandHandler {
     if (meta.type === "numeric") {
       return {
         success: false,
-        message: `Can't toggle ${meta.display} — use "increase" or "decrease"`,
+        message: `Can't toggle ${meta.display} - use "increase" or "decrease"`,
       };
     }
 

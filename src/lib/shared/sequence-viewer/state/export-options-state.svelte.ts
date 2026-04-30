@@ -15,7 +15,7 @@ export type VideoResolution = 720 | 1080 | 2160 | 4320;
 // - "standard": one render per output frame, native resolution.
 // - "cinema": 2× supersampling + 4× temporal motion blur. 3D exports only.
 //             Roughly 4-8× slower than standard but produces a notably
-//             smoother, sharper result — the right choice for finished
+//             smoother, sharper result - the right choice for finished
 //             cuts, portfolio pieces, and anything you plan to share.
 export type VideoQuality = "standard" | "cinema";
 

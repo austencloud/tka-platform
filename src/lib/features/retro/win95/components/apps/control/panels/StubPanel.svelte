@@ -1,5 +1,5 @@
 <!--
-  Themed stub sub-panel — Props, Printers, Network flavor text.
+  Themed stub sub-panel - Props, Printers, Network flavor text.
 -->
 <script lang="ts">
   import RetroButton from "../../../primitives/RetroButton.svelte";
@@ -45,7 +45,7 @@
     {:else if panelId === "network"}
       <div class="stub-header">Network Configuration</div>
       <div class="stub-spacer"></div>
-      TKA-NET v0.1 — Status: Not Connected
+      TKA-NET v0.1 - Status: Not Connected
       <div class="stub-spacer"></div>
       The TKA-NET protocol operates on a classified frequency.
       Connection requires Level 3 clearance from the Order.

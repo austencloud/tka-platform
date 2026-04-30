@@ -22,7 +22,7 @@ interface QueuedTask<T> {
   priority: number;
 }
 
-// Canvas2D rendering is lightweight — 8 concurrent keeps the queue responsive
+// Canvas2D rendering is lightweight - 8 concurrent keeps the queue responsive
 // for deck browsing (136+ sequences) without excessive memory pressure
 const DEFAULT_MAX_CONCURRENT = 8;
 

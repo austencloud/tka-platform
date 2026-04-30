@@ -459,7 +459,7 @@ export class Frost2DRenderer {
     ctx.fillStyle = `rgba(${crystal.r},${crystal.g},${crystal.b},0.3)`;
     ctx.fill();
 
-    // Inner star — alternating deep and shallow vertices
+    // Inner star - alternating deep and shallow vertices
     ctx.beginPath();
     for (let s = 0; s < 12; s++) {
       const a = (TAU / 12) * s - Math.PI / 2;
@@ -579,7 +579,7 @@ export class Frost2DRenderer {
     ctx.fillStyle = `rgba(${sparkle.r},${sparkle.g},${sparkle.b},1)`;
     ctx.fill();
 
-    // Arm tips — tiny bright dots
+    // Arm tips - tiny bright dots
     ctx.globalAlpha = alpha * 0.8;
     for (let arm = 0; arm < 6; arm++) {
       const a = (TAU / 6) * arm - Math.PI / 2;

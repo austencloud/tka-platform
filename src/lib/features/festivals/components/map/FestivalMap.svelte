@@ -97,7 +97,7 @@
         map,
         position: { lat, lng },
         content: pin,
-        title: `${festival.name} — ${festival.location.city}, ${festival.location.country}`,
+        title: `${festival.name} - ${festival.location.city}, ${festival.location.country}`,
       });
 
       marker.addEventListener("gmp-click", () => {

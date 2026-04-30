@@ -1,5 +1,5 @@
 <!--
-  DosBootSequence — POST text animation for the DOS terminal.
+  DosBootSequence - POST text animation for the DOS terminal.
 
   Writes boot text line-by-line with delays to simulate a BIOS POST sequence.
   Click or keypress skips to a condensed version. Calls oncomplete() when the
@@ -49,7 +49,7 @@
     { text: "", delay: 300 },
     { text: startupLore[2] ?? "ORDER DIRECTIVE 7 COMPLIANCE CHECK... PASSED", delay: 600, color: "white" },
     { text: "", delay: 200 },
-    { text: startupLore[1] ?? "TKAUTIL.COM — Notation Utility v1.0", delay: 100 },
+    { text: startupLore[1] ?? "TKAUTIL.COM - Notation Utility v1.0", delay: 100 },
     { text: "Authorized for use by Order-approved personnel only.", delay: 100 },
     { text: "", delay: 400 },
   ];
@@ -92,7 +92,7 @@
           "white",
         );
         terminalState.writeLine(
-          startupLore[1] ?? "TKAUTIL.COM — Notation Utility v1.0",
+          startupLore[1] ?? "TKAUTIL.COM - Notation Utility v1.0",
         );
         terminalState.writeLine(
           startupLore[2] ?? "ORDER DIRECTIVE 7 COMPLIANCE CHECK... PASSED",
@@ -114,5 +114,5 @@
   });
 </script>
 
-<!-- Skip triggers — click or any keypress during boot -->
+<!-- Skip triggers - click or any keypress during boot -->
 <svelte:window onclick={requestSkip} onkeydown={requestSkip} />

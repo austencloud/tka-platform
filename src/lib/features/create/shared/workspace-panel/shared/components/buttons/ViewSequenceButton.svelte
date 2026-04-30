@@ -54,8 +54,8 @@
 
     /*
       Choreographed entrance:
-      1. arrive (400ms) — fade in, gentle scale up
-      2. breathe (2.4s) — scale + glow pulse, loops forever
+      1. arrive (400ms) - fade in, gentle scale up
+      2. breathe (2.4s) - scale + glow pulse, loops forever
     */
     animation:
       arrive 400ms ease-out both,
@@ -73,7 +73,7 @@
     }
   }
 
-  /* Gentle breathing — scale + glow expand together */
+  /* Gentle breathing - scale + glow expand together */
   @keyframes breathe {
     0%, 100% {
       transform: scale(1);

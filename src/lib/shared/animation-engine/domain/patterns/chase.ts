@@ -32,7 +32,7 @@ export function evaluateChase(ctx: TipEvaluationContext): LedColor {
 }
 
 /**
- * Comet pattern: like Chase, but asymmetric — tips behind the head trail
+ * Comet pattern: like Chase, but asymmetric - tips behind the head trail
  * brightly while tips ahead of it are cut off sharply.
  * Gives the impression of motion direction, like a comet with a trailing tail.
  */
@@ -74,7 +74,7 @@ export function evaluateWave(ctx: TipEvaluationContext): LedColor {
 }
 
 /**
- * Cascade pattern: staggered Breathe — each tip runs the same oscillation
+ * Cascade pattern: staggered Breathe - each tip runs the same oscillation
  * but with a quarter-cycle delay per tip index. The effect is a sequential
  * pulse that flows from tip 0 to tip N like a waterfall.
  */

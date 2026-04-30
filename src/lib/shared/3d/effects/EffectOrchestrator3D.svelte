@@ -77,7 +77,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
     /** Parent Object3D to add imperative meshes to (rig group). Falls back to scene root. */
     effectsParentRef?: Object3D;
     /**
-     * @deprecated Ignored — trail parameters now come from EffectsConfigState
+     * @deprecated Ignored - trail parameters now come from EffectsConfigState
      * via context. Left in place so parent components don't break; removed
      * in Phase B when callers migrate.
      */
@@ -113,7 +113,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   const qualityTierDetector = getQualityTierDetector();
   const tipBridge = new TipPositionBridge3D();
 
-  // Canonical effect config — read from context, or create a default-seeded
+  // Canonical effect config - read from context, or create a default-seeded
   // local state as a fallback so this component still works when mounted
   // outside a viewer that sets the context explicitly.
   const effectsState = getEffectsConfigContext() ?? createEffectsConfigState();
@@ -127,13 +127,13 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   const ledCentroid = new Vector3();
   const ledColor = new Color();
 
-  // Charcoal renderer (single instance — all tips share one particle pool)
+  // Charcoal renderer (single instance - all tips share one particle pool)
   let charcoalRenderer: CharcoalRenderer3D | null = null;
 
-  // Fire renderer (single instance — all tips share one particle pool)
+  // Fire renderer (single instance - all tips share one particle pool)
   let fireRenderer: FireRenderer3D | null = null;
 
-  // POV strip renderers — used when a StripPattern is active
+  // POV strip renderers - used when a StripPattern is active
   let bluePovRenderer: PovStripRenderer3D | null = null;
   let redPovRenderer: PovStripRenderer3D | null = null;
 
@@ -147,7 +147,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   // with the static primaryColor hex.
   const _ledEvalCtx = createReusableContext();
   // Module-monotonic start time so the LED pattern animates continuously
-  // across play/pause and across sequence changes — avoids the reset-to-0
+  // across play/pause and across sequence changes - avoids the reset-to-0
   // "flash" you'd get from using raw performance.now() wall-clock seconds.
   const _ledStartMs = performance.now();
 
@@ -206,14 +206,14 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
     { position: null, effect: "none" },
   ]);
 
-  // Mutable arrays for effect tips — updated directly in useTask, read by
+  // Mutable arrays for effect tips - updated directly in useTask, read by
   // renderers in the SAME frame tick (bypasses Svelte's batched prop updates).
   const blueLedTips: LedTipInput[] = [];
   const redLedTips: LedTipInput[] = [];
   const charcoalTips: CharcoalTipInput[] = [];
   const fireTips: FireTipInput[] = [];
 
-  // Viewer3D context for offline export gating — null when rendered outside
+  // Viewer3D context for offline export gating - null when rendered outside
   // the sequence viewer (museum, realm).
   const _viewer3DCtx = tryGetViewer3DContext();
 
@@ -240,7 +240,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
       effectsState.led,
       effectsState.overrides?.led3D as Partial<Parameters<typeof resolveLed3D>[1]> | undefined,
     );
-    // Pattern evaluator needs both colors in normalized LedColor form — it
+    // Pattern evaluator needs both colors in normalized LedColor form - it
     // decides internally whether to interpolate between them or ignore them
     // entirely (e.g. rainbow ignores both).
     //
@@ -501,7 +501,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
       });
     }
 
-    // LED rendering — direct imperative update in the same frame tick.
+    // LED rendering - direct imperative update in the same frame tick.
     // Determine the parent for imperative meshes: effectsParentRef (rig group)
     // or fall back to scene root via camera parent chain.
     const cam = camera.current;
@@ -648,7 +648,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
 
   // Threlte render-loop: call the extracted update function each frame.
   // During offline export, Threlte is in 'manual' render mode so this
-  // only fires when advance() is called — no gating needed.
+  // only fires when advance() is called - no gating needed.
   useTask((delta) => {
     updateEffectsFrame(delta);
   });
@@ -712,6 +712,6 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
 {/each}
 
 <!-- LED, charcoal, and fire effects are managed imperatively by the orchestrator's
-     useTask — renderer instances add meshes to the effectsParentRef (rig group).
+     useTask - renderer instances add meshes to the effectsParentRef (rig group).
      This bypasses Svelte's batched prop propagation so effect data flows
      in the same frame tick as the tip position computation. -->
