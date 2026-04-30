@@ -8,7 +8,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ensureDataLoaded, saveAndOpenImage } from "../shared/server-context.js";
-import { buildSequenceFromLetters, parseWordToLetters } from "../core/sequence-builder-adapter.js";
+import { buildSequenceFromLetters, parseWordToLetters, mcpStepsToEngineSteps, engineStepsToMcpSteps } from "../core/sequence-builder-adapter.js";
 import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
 import { simplifyRepeatedWord } from "../core/word-simplifier.js";
 import { allocateTurns } from "@tka/sequence-engine/generation";
@@ -55,7 +55,7 @@ function autoBridgeForLoop(
     endPosition,
     loopType,
     period,
-    allPictographs
+    allPictographs as any
   );
 
   if (bridgeOptions.length === 0) {
@@ -138,7 +138,7 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
-      const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+      const result = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
 
       if (!result.isValid) {
         return {
@@ -149,8 +149,8 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
-      const detection = detectLOOPFromSteps(result.steps);
-      const circular = isSequenceCircular(result.steps);
+      const detection = detectLOOPFromSteps(mcpStepsToEngineSteps(result.steps) as any);
+      const circular = isSequenceCircular(mcpStepsToEngineSteps(result.steps) as any);
 
       const output = {
         word: result.word,
@@ -206,7 +206,7 @@ export function registerLoopTools(server: McpServer): void {
       }
 
       // Build the base sequence first
-      let baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+      let baseResult = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
 
       if (!baseResult.isValid) {
         return {
@@ -229,7 +229,7 @@ export function registerLoopTools(server: McpServer): void {
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
         // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
-          baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
+          baseResult = buildSequenceFromLetters(letters, allPictographs as any, 1);
           if (!baseResult.isValid) continue;
         }
 
@@ -250,7 +250,7 @@ export function registerLoopTools(server: McpServer): void {
         if (bridgeResult.bridgeAdded) {
           // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
-          finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
+          finalResult = buildSequenceFromLetters(finalLetters, allPictographs as any, 1);
 
           if (!finalResult.isValid) continue;
 
@@ -271,7 +271,7 @@ export function registerLoopTools(server: McpServer): void {
         }
 
         // Try to execute the LOOP
-        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+        loopResult = executeLOOP(mcpStepsToEngineSteps(finalResult.steps) as any, finalResult.word, loopTypeEnum, slice, allPictographs as any);
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -288,12 +288,13 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
+      // Convert engine steps back to MCP steps for orientation overrides and output
+      const mcpLoopSteps = engineStepsToMcpSteps(loopResult.steps as any);
+
       // Apply orientation overrides if specified
-      if (blueStartOrientation || redStartOrientation) {
-        loopResult.steps = recalculateOrientationsWithOverrides(
-          loopResult.steps, blueStartOrientation, redStartOrientation
-        );
-      }
+      const finalMcpSteps = (blueStartOrientation || redStartOrientation)
+        ? recalculateOrientationsWithOverrides(mcpLoopSteps, blueStartOrientation, redStartOrientation)
+        : mcpLoopSteps;
 
       // Format output
       const output = {
@@ -304,14 +305,14 @@ export function registerLoopTools(server: McpServer): void {
         loopType: loopResult.loopType,
         period: loopResult.period,
         isCircular: loopResult.isCircular,
-        stepCount: loopResult.steps.length - 1,
+        stepCount: finalMcpSteps.length - 1,
         startPosition: baseResult.startPosition,
-        endPosition: loopResult.steps[loopResult.steps.length - 1]?.endPosition || "",
-        derivedBeatIndices: loopResult.derivedBeatIndices,
-        steps: loopResult.steps.map((step, i) => ({
+        endPosition: finalMcpSteps[finalMcpSteps.length - 1]?.endPosition || "",
+        derivedStepIndices: loopResult.derivedStepIndices,
+        steps: finalMcpSteps.map((step, i) => ({
           stepNumber: i,
           letter: step.letter,
-          isDerived: loopResult.derivedBeatIndices.includes(i),
+          isDerived: loopResult!.derivedStepIndices.includes(i),
           startPosition: step.startPosition,
           endPosition: step.endPosition,
           blueMotion: {
@@ -380,7 +381,7 @@ export function registerLoopTools(server: McpServer): void {
       }
 
       // Build the base sequence
-      let baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+      let baseResult = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
 
       if (!baseResult.isValid) {
         return {
@@ -403,7 +404,7 @@ export function registerLoopTools(server: McpServer): void {
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
         // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
-          baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
+          baseResult = buildSequenceFromLetters(letters, allPictographs as any, 1);
           if (!baseResult.isValid) continue;
         }
 
@@ -424,7 +425,7 @@ export function registerLoopTools(server: McpServer): void {
         if (bridgeResult.bridgeAdded) {
           // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
-          finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
+          finalResult = buildSequenceFromLetters(finalLetters, allPictographs as any, 1);
 
           if (!finalResult.isValid) continue;
 
@@ -445,7 +446,7 @@ export function registerLoopTools(server: McpServer): void {
         }
 
         // Try to execute the LOOP
-        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+        loopResult = executeLOOP(mcpStepsToEngineSteps(finalResult.steps) as any, finalResult.word, loopTypeEnum, slice, allPictographs as any);
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -462,12 +463,13 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
+      // Convert engine steps back to MCP steps
+      const mcpLoopSteps2 = engineStepsToMcpSteps(loopResult.steps as any);
+
       // Apply orientation overrides if specified
-      if (blueStartOrientation || redStartOrientation) {
-        loopResult.steps = recalculateOrientationsWithOverrides(
-          loopResult.steps, blueStartOrientation, redStartOrientation
-        );
-      }
+      const finalMcpSteps2 = (blueStartOrientation || redStartOrientation)
+        ? recalculateOrientationsWithOverrides(mcpLoopSteps2, blueStartOrientation, redStartOrientation)
+        : mcpLoopSteps2;
 
       try {
         // Parse birthday string to Date if provided
@@ -497,14 +499,14 @@ export function registerLoopTools(server: McpServer): void {
         });
 
         // Allocate turns for each step
-        const stepCount = loopResult.steps.length - 1;
+        const stepCount = finalMcpSteps2.length - 1;
         const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
         // Render composite image
         // Pass derivedBeatIndices so the renderer can dim the transformed beats
         // Simplify word label if it's a repetition (e.g., "ABCABC" → "ABC")
         const displayWord = simplifyRepeatedWord(loopResult.loopWord);
-        const pngBuffer = await renderSequenceToImage(loopResult.steps, displayWord, {
+        const pngBuffer = await renderSequenceToImage(finalMcpSteps2, displayWord, {
           layout,
           cellSize,
           showStepNumbers,
@@ -518,7 +520,8 @@ export function registerLoopTools(server: McpServer): void {
           level,
           turnAllocation,
           loopComponents: parsedLoopComponents,
-          derivedBeatIndices: loopResult.derivedBeatIndices,
+          period: period === "quartered" ? 4 : 2,
+          derivedBeatIndices: loopResult.derivedStepIndices,
           seedWord: loopResult.seedWord,
         });
 
@@ -594,7 +597,7 @@ export function registerLoopTools(server: McpServer): void {
       }
 
       // Build the base sequence
-      let baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+      let baseResult = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts);
 
       if (!baseResult.isValid) {
         return {
@@ -617,7 +620,7 @@ export function registerLoopTools(server: McpServer): void {
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
         // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
-          baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
+          baseResult = buildSequenceFromLetters(letters, allPictographs as any, 1);
           if (!baseResult.isValid) continue;
         }
 
@@ -638,7 +641,7 @@ export function registerLoopTools(server: McpServer): void {
         if (bridgeResult.bridgeAdded) {
           // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
-          finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
+          finalResult = buildSequenceFromLetters(finalLetters, allPictographs as any, 1);
 
           if (!finalResult.isValid) continue;
 
@@ -659,7 +662,7 @@ export function registerLoopTools(server: McpServer): void {
         }
 
         // Try to execute the LOOP
-        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+        loopResult = executeLOOP(mcpStepsToEngineSteps(finalResult.steps) as any, finalResult.word, loopTypeEnum, slice, allPictographs as any);
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -676,12 +679,13 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
+      // Convert engine steps back to MCP steps
+      const mcpLoopSteps3 = engineStepsToMcpSteps(loopResult.steps as any);
+
       // Apply orientation overrides if specified
-      if (blueStartOrientation || redStartOrientation) {
-        loopResult.steps = recalculateOrientationsWithOverrides(
-          loopResult.steps, blueStartOrientation, redStartOrientation
-        );
-      }
+      const finalMcpSteps3 = (blueStartOrientation || redStartOrientation)
+        ? recalculateOrientationsWithOverrides(mcpLoopSteps3, blueStartOrientation, redStartOrientation)
+        : mcpLoopSteps3;
 
       try {
         // Parse birthday string to Date if provided
@@ -711,13 +715,13 @@ export function registerLoopTools(server: McpServer): void {
         });
 
         // Allocate turns for each step
-        const stepCount = loopResult.steps.length - 1;
+        const stepCount = finalMcpSteps3.length - 1;
         const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
         // Render composite image with derivedBeatIndices for proper dimming
         // Simplify word label if it's a repetition (e.g., "ABCABC" → "ABC")
         const displayWord = simplifyRepeatedWord(loopResult.loopWord);
-        const pngBuffer = await renderSequenceToImage(loopResult.steps, displayWord, {
+        const pngBuffer = await renderSequenceToImage(finalMcpSteps3, displayWord, {
           layout,
           cellSize,
           showStepNumbers,
@@ -731,7 +735,8 @@ export function registerLoopTools(server: McpServer): void {
           level,
           turnAllocation,
           loopComponents: parsedLoopComponents,
-          derivedBeatIndices: loopResult.derivedBeatIndices,
+          period: period === "quartered" ? 4 : 2,
+          derivedBeatIndices: loopResult.derivedStepIndices,
           seedWord: loopResult.seedWord,
         });
 
@@ -744,7 +749,7 @@ export function registerLoopTools(server: McpServer): void {
           content: [
             {
               type: "text" as const,
-              text: `Opened LOOP sequence "${loopResult.loopWord}" in system viewer.\n${stepCount} beats, ${layout} layout, ${cellSize}px cells\nLOOP type: ${loopType}\nSeed word: ${loopResult.seedWord}\nDerived beats: ${loopResult.derivedBeatIndices.join(", ")}${bridgeNote}`,
+              text: `Opened LOOP sequence "${loopResult.loopWord}" in system viewer.\n${stepCount} beats, ${layout} layout, ${cellSize}px cells\nLOOP type: ${loopType}\nSeed word: ${loopResult.seedWord}\nDerived beats: ${loopResult.derivedStepIndices.join(", ")}${bridgeNote}`,
             },
           ],
         };

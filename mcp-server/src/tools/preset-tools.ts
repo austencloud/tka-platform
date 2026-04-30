@@ -14,6 +14,8 @@ import {
   buildSequenceForLoop,
   parseWordToLetters,
   generateChainableSequence,
+  mcpStepsToEngineSteps,
+  engineStepsToMcpSteps,
   type SequenceStep,
   type LoopConstraint,
 } from "../core/sequence-builder-adapter.js";
@@ -314,7 +316,7 @@ export function registerPresetTools(server: McpServer): void {
               word = letters.join("");
             }
 
-            const result = buildSequenceForLoop(letters, allPictographs, loopConstraint, 100);
+            const result = buildSequenceForLoop(letters, allPictographs as any, loopConstraint, 100);
             if (result.isValid) {
               steps = result.steps;
               sequenceWord = result.word;
@@ -357,7 +359,7 @@ export function registerPresetTools(server: McpServer): void {
 
           const constrained = buildConstrainedSequence({
             letters,
-            allPictographs,
+            allPictographs: allPictographs as any,
             constraintSet,
           });
 
@@ -377,12 +379,11 @@ export function registerPresetTools(server: McpServer): void {
             blueMotion: picto.blueMotion,
             redMotion: picto.redMotion,
             stepNumber: index,
-            stepNumber: index,
           }));
           sequenceWord = constrained.word;
         } else {
           // Simple sequence building (no LOOP, no constraints)
-          const result = buildSequenceFromLetters(letters, allPictographs, 100);
+          const result = buildSequenceFromLetters(letters, allPictographs as any, 100);
           if (!result.isValid) {
             return {
               content: [{ type: "text" as const, text: `Failed to generate sequence: ${result.error}` }],
@@ -402,7 +403,7 @@ export function registerPresetTools(server: McpServer): void {
           const debugStartPos = steps[0]?.startPosition || "???";
           const debugEndPos = steps[steps.length - 1]?.endPosition || "???";
 
-          const loopResult = executeLOOP(steps, sequenceWord, loopTypeEnum, period, allPictographs);
+          const loopResult = executeLOOP(mcpStepsToEngineSteps(steps) as any, sequenceWord, loopTypeEnum, period, allPictographs as any);
 
           if (!loopResult.success) {
             return {
@@ -425,7 +426,7 @@ export function registerPresetTools(server: McpServer): void {
           const stepCount = loopResult.steps.length - 1;
           const turnAllocation = allocateTurns(stepCount, level as 1 | 2 | 3);
 
-          const pngBuffer = await renderSequenceToImage(loopResult.steps, loopResult.loopWord, {
+          const pngBuffer = await renderSequenceToImage(engineStepsToMcpSteps(loopResult.steps), loopResult.loopWord, {
             layout,
             cellSize,
             showStepNumbers: true,
@@ -433,6 +434,7 @@ export function registerPresetTools(server: McpServer): void {
             darkMode,
             turnAllocation,
             loopComponents: parsedLoopComponents,
+            period: config.period === "quartered" ? 4 : 2,
             showDifficulty: true,
             level: level as 1 | 2 | 3,
           });

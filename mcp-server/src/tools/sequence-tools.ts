@@ -16,6 +16,7 @@ import { ensureDataLoaded, ensureDataLoadedAsync, saveAndOpenImage, generateRand
 import {
   buildSequenceFromLetters,
   parseWordToLetters,
+  mcpStepsToEngineSteps,
   type SequenceResult,
   type BridgeSelections,
 } from "../core/sequence-builder-adapter.js";
@@ -122,7 +123,7 @@ export function registerSequenceTools(server: McpServer): void {
       }
 
       // Get or build the transition matrix
-      const matrix = getTransitionMatrix(allPictographs, gridMode);
+      const matrix = getTransitionMatrix(allPictographs as any, gridMode);
 
       // Analyze the word
       const feasibility = analyzeWordFeasibility(word, letters, matrix);
@@ -154,8 +155,8 @@ export function registerSequenceTools(server: McpServer): void {
       sections.push(`| No prop reversals | ${noPropStatus} | ${noPropDetails} |`);
 
       // Hand reversal every beat
-      const everyHandStatus = feasibility.canHaveHandReversalEveryBeat ? "✅ Yes" : "❌ No";
-      const everyHandDetails = feasibility.canHaveHandReversalEveryBeat
+      const everyHandStatus = feasibility.canHaveHandReversalEveryStep ? "✅ Yes" : "❌ No";
+      const everyHandDetails = feasibility.canHaveHandReversalEveryStep
         ? "All transitions can produce a hand reversal"
         : `${feasibility.noHandReversalPossible.length} transition(s) are always continuous`;
       sections.push(`| Hand reversal every beat | ${everyHandStatus} | ${everyHandDetails} |`);
@@ -180,7 +181,7 @@ export function registerSequenceTools(server: McpServer): void {
         sections.push(feasibility.propReversalBlockers.map(t => `- ${t}`).join("\n"));
       }
 
-      if (feasibility.noHandReversalPossible.length > 0 && !feasibility.canHaveHandReversalEveryBeat) {
+      if (feasibility.noHandReversalPossible.length > 0 && !feasibility.canHaveHandReversalEveryStep) {
         sections.push(`\n### Transitions That Can NEVER Produce Hand Reversal\n`);
         sections.push(feasibility.noHandReversalPossible.map(t => `- ${t}`).join("\n"));
         const explanation = explainConstraintImpossibility(feasibility, "hand-reversal-every-beat");
@@ -271,7 +272,7 @@ export function registerSequenceTools(server: McpServer): void {
         // Run feasibility analysis to generate warnings
         let feasibilityWarnings: string[] = [];
         if (letters.length >= 2) {
-          const matrix = getTransitionMatrix(allPictographs, gridMode);
+          const matrix = getTransitionMatrix(allPictographs as any, gridMode);
           const feasibility = analyzeWordFeasibility(word, letters, matrix);
 
           // Check if user requested constraints that can't be fully satisfied
@@ -285,7 +286,7 @@ export function registerSequenceTools(server: McpServer): void {
           );
 
           // Warning for reversal preset if prop reversal every beat is impossible
-          if (hasReversalConstraint && !feasibility.canHavePropReversalEveryBeat) {
+          if (hasReversalConstraint && !feasibility.canHavePropReversalEveryStep) {
             feasibilityWarnings.push(
               `Prop reversal every beat is not achievable for "${word}". ` +
               `Maximum: ${feasibility.maxPropReversals}/${letters.length - 1} transitions.`
@@ -293,7 +294,7 @@ export function registerSequenceTools(server: McpServer): void {
           }
 
           // Warning for hand path reversal every beat
-          if (hasHandPathEveryConstraint && !feasibility.canHaveHandReversalEveryBeat) {
+          if (hasHandPathEveryConstraint && !feasibility.canHaveHandReversalEveryStep) {
             feasibilityWarnings.push(
               `Hand path reversal every beat is not achievable for "${word}". ` +
               `Maximum: ${feasibility.maxHandReversals}/${letters.length - 1} transitions.`
@@ -320,7 +321,7 @@ export function registerSequenceTools(server: McpServer): void {
         // Use the new constrained builder with beam search
         const result = buildConstrainedSequence({
           letters,
-          allPictographs,
+          allPictographs: allPictographs as any,
           constraintSet,
           beamConfig: {
             maxBacktracks: maxAttempts,
@@ -421,7 +422,7 @@ export function registerSequenceTools(server: McpServer): void {
           )
         : undefined;
 
-      const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts, parsedBridgeSelections);
+      const result = buildSequenceFromLetters(letters, allPictographs as any, maxAttempts, parsedBridgeSelections);
 
       if (!result.isValid) {
         return {
@@ -596,7 +597,7 @@ export function registerSequenceTools(server: McpServer): void {
           period,
           blueStartOrientation,
           redStartOrientation,
-        }, allPictographs);
+        }, allPictographs as any);
 
         result = engineResult.result;
         engineLoopComponents = engineResult.loopComponents;
@@ -640,7 +641,7 @@ export function registerSequenceTools(server: McpServer): void {
           loopDetectionInfo = `LOOP: ${engineLoopComponents.join(", ")}`;
         } else {
           // Auto-detect from steps (for legacy path)
-          const loopResult = detectLOOPFromSteps(result.steps);
+          const loopResult = detectLOOPFromSteps(mcpStepsToEngineSteps(result.steps) as any);
           if (loopResult.isCircular && loopResult.components.length > 0) {
             finalLoopComponents = convertLOOPComponentsToEnum(loopResult.components);
             loopDetectionInfo = `LOOP detected: ${loopResult.components.join(" + ")}`;
@@ -663,6 +664,7 @@ export function registerSequenceTools(server: McpServer): void {
           level,
           turnAllocation,
           loopComponents: finalLoopComponents,
+          period: finalLoopComponents?.length ? (period === "quartered" ? 4 : 2) : undefined,
           showReversals,
           seedWord: displayWord?.toUpperCase() ?? engineSeedWord,
           derivedBeatIndices: engineDerivedBeatIndices,

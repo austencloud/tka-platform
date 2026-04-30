@@ -14,8 +14,12 @@ export interface MotionData {
   endLocation: string;
   motionType: string;
   rotationDirection: string;
-  startOrientation: string; // "in" | "out" | "clock" | "counter"
-  endOrientation: string; // "in" | "out" | "clock" | "counter"
+  startOrientation: string;
+  endOrientation: string;
+  turns?: number | "fl";
+  plane?: string;
+  prefloatMotionType?: string;
+  prefloatRotationDirection?: string;
 }
 
 /**
