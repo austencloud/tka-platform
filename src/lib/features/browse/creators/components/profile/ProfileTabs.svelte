@@ -155,7 +155,7 @@
 
   .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 350px));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 350px));
     justify-content: center;
     gap: 12px;
   }
@@ -222,7 +222,7 @@
 
   @container gallery (max-width: 640px) {
     .gallery-grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 250px));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 250px));
       gap: 8px;
     }
 
@@ -234,7 +234,7 @@
 
   @container gallery (min-width: 2000px) {
     .gallery-grid {
-      grid-template-columns: repeat(auto-fill, minmax(300px, 400px));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 400px));
     }
   }
 
