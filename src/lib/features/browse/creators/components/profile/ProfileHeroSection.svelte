@@ -11,13 +11,19 @@
     isOwnProfile,
     followInProgress,
     onFollowToggle,
+    onFollowersClick,
+    onFollowingClick,
   }: {
     userProfile: EnhancedUserProfile;
     currentUserId?: string | null;
     isOwnProfile: boolean;
     followInProgress: boolean;
     onFollowToggle: () => void;
+    onFollowersClick?: () => void;
+    onFollowingClick?: () => void;
   } = $props();
+
+  const accentColor = $derived(userProfile.profileColor || "var(--theme-accent)");
 
   function handleReportUser() {
     reportModalState.open({
@@ -27,59 +33,88 @@
   }
 </script>
 
-<div class="hero-section" transition:fade={{ duration: 300 }}>
-  <div class="avatar-container">
-    <AvatarImage
-      src={userProfile.avatar}
-      alt={userProfile.displayName}
-      size={120}
-      className="avatar"
-    />
-  </div>
+<div
+  class="hero-section"
+  transition:fade={{ duration: 300 }}
+  style:--profile-color={accentColor}
+>
+  <div class="hero-ambient"></div>
 
-  <div class="user-info">
-    <h1 class="display-name">{userProfile.displayName}</h1>
-    <p class="username">@{userProfile.username}</p>
+  <div class="hero-content">
+    <div class="avatar-container">
+      <div class="avatar-glow"></div>
+      <AvatarImage
+        src={userProfile.avatar}
+        alt={userProfile.displayName}
+        size={120}
+        className="avatar"
+      />
+    </div>
 
-    {#if userProfile.bio}
-      <p class="bio">{userProfile.bio}</p>
-    {/if}
-
-    {#if userProfile.instagramUsername}
-      <a
-        href="https://instagram.com/{userProfile.instagramUsername}"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="instagram-link"
-        aria-label="View {userProfile.displayName}'s Instagram profile"
-      >
-        <i class="fab fa-instagram" aria-hidden="true"></i>
-        <span>@{userProfile.instagramUsername}</span>
-      </a>
-    {/if}
-
-    {#if userProfile.propsISpinWith && userProfile.propsISpinWith.length > 0}
-      <div class="props-row">
-        {#each userProfile.propsISpinWith as prop}
-          <div
-            class="profile-prop-icon"
-            class:favorite={prop === userProfile.favoriteProp}
-            title={getPropTypeDisplayInfo(prop).label}
-          >
-            <img
-              src={getPropTypeDisplayInfo(prop).image}
-              alt={getPropTypeDisplayInfo(prop).label}
-            />
-            {#if prop === userProfile.favoriteProp}
-              <span class="favorite-star" aria-label="Favorite">★</span>
-            {/if}
+    <div class="info-block">
+      <div class="name-row">
+        <h1 class="display-name">{userProfile.displayName}</h1>
+        <span class="username">@{userProfile.username}</span>
+        {#if userProfile.propsISpinWith && userProfile.propsISpinWith.length > 0}
+          <div class="props-row">
+            {#each userProfile.propsISpinWith as prop}
+              <div
+                class="profile-prop-icon"
+                class:favorite={prop === userProfile.favoriteProp}
+                title={getPropTypeDisplayInfo(prop).label}
+              >
+                <img
+                  src={getPropTypeDisplayInfo(prop).image}
+                  alt={getPropTypeDisplayInfo(prop).label}
+                />
+                {#if prop === userProfile.favoriteProp}
+                  <span class="favorite-star" aria-label="Favorite">&#9733;</span>
+                {/if}
+              </div>
+            {/each}
           </div>
-        {/each}
+        {/if}
       </div>
-    {/if}
+
+      {#if userProfile.bio}
+        <p class="bio">{userProfile.bio}</p>
+      {/if}
+
+      {#if userProfile.instagramUsername}
+        <a
+          href="https://instagram.com/{userProfile.instagramUsername}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="instagram-link"
+          aria-label="View {userProfile.displayName}'s Instagram profile"
+        >
+          <i class="fab fa-instagram" aria-hidden="true"></i>
+          <span>@{userProfile.instagramUsername}</span>
+        </a>
+      {/if}
+
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat-value">{userProfile.sequenceCount}</span>
+          <span class="stat-label">Sequences</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{userProfile.collectionCount}</span>
+          <span class="stat-label">Collections</span>
+        </div>
+        <button class="stat stat-clickable" onclick={() => onFollowersClick?.()}>
+          <span class="stat-value">{userProfile.followerCount}</span>
+          <span class="stat-label">Followers</span>
+        </button>
+        <button class="stat stat-clickable" onclick={() => onFollowingClick?.()}>
+          <span class="stat-value">{userProfile.followingCount}</span>
+          <span class="stat-label">Following</span>
+        </button>
+      </div>
+    </div>
 
     {#if currentUserId && !isOwnProfile}
-      <div class="action-buttons">
+      <div class="actions-block">
         <button
           class="follow-button"
           class:following={userProfile.isFollowing}
@@ -115,29 +150,65 @@
     container-type: inline-size;
     container-name: hero-section;
 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    position: relative;
+    overflow: hidden;
     padding: clamp(20px, 4cqi, 32px);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
     border-radius: 16px;
     margin-bottom: 24px;
+    max-width: 900px;
+    margin-inline: auto;
+  }
+
+  .hero-ambient {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        ellipse 60% 80% at 10% 50%,
+        color-mix(in srgb, var(--profile-color) 15%, transparent),
+        transparent 70%
+      );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 24px;
   }
 
   .avatar-container {
     position: relative;
     width: 120px;
     height: 120px;
+    flex-shrink: 0;
   }
 
-  .user-info {
+  .avatar-glow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--profile-color) 30%, transparent);
+    filter: blur(8px);
+    z-index: -1;
+  }
+
+  .info-block {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 8px;
-    width: 100%;
+  }
+
+  .name-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   .display-name {
@@ -145,30 +216,26 @@
     font-size: var(--font-size-3xl);
     font-weight: 700;
     color: var(--theme-text, white);
-    text-align: center;
   }
 
   .username {
-    margin: 0;
     font-size: var(--font-size-base);
     color: var(--theme-text-dim);
   }
 
   .bio {
-    margin: 8px 0 0 0;
+    margin: 4px 0 0 0;
     font-size: var(--font-size-sm);
     line-height: 1.6;
     color: var(--theme-text-dim);
-    text-align: center;
-    max-width: min(400px, 90%);
+    max-width: min(400px, 100%);
   }
 
   .instagram-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-top: 12px;
-    padding: 8px 16px;
+    padding: 6px 14px;
     background: color-mix(in srgb, var(--instagram-brand) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--instagram-brand) 25%, transparent);
     border-radius: 20px;
@@ -177,6 +244,7 @@
     font-weight: 500;
     text-decoration: none;
     transition: all var(--duration-normal) ease;
+    width: fit-content;
   }
 
   .instagram-link:hover {
@@ -189,11 +257,55 @@
     font-size: 16px;
   }
 
-  .action-buttons {
+  .stats-row {
     display: flex;
+    gap: 24px;
+    margin-top: 8px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+  }
+
+  .stat-clickable {
+    cursor: pointer;
+  }
+
+  .stat-clickable:hover .stat-label {
+    color: var(--theme-text);
+  }
+
+  .stat-value {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--theme-text, white);
+  }
+
+  .stat-label {
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    transition: color var(--duration-normal) ease;
+  }
+
+  .stat-clickable .stat-label {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+
+  .actions-block {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    margin-top: 16px;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   .follow-button {
@@ -206,13 +318,13 @@
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
+    white-space: nowrap;
   }
 
   .follow-button:hover {
     filter: brightness(0.9);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px
-      color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
   .follow-button.following {
@@ -242,8 +354,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
+    background: transparent;
+    border: 1px solid transparent;
     border-radius: 8px;
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
@@ -262,32 +374,99 @@
     outline-offset: 2px;
   }
 
-  /* Tablet */
-  @container hero-section (max-width: 600px) {
-    .hero-section {
-      padding: 16px;
+  .props-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-left: 4px;
+  }
+
+  .profile-prop-icon {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+  }
+
+  .profile-prop-icon.favorite {
+    opacity: 1;
+  }
+
+  .profile-prop-icon img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+
+  .favorite-star {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    font-size: 0.65rem;
+    color: gold;
+  }
+
+  /* ═══ Mobile: collapse to centered vertical stack ═══ */
+  @container hero-section (max-width: 640px) {
+    .hero-content {
+      flex-direction: column;
+      text-align: center;
     }
 
     .avatar-container {
-      width: 100px;
-      height: 100px;
+      width: 80px;
+      height: 80px;
+    }
+
+    .name-row {
+      justify-content: center;
     }
 
     .display-name {
       font-size: var(--font-size-2xl);
     }
+
+    .bio {
+      text-align: center;
+      margin-inline: auto;
+    }
+
+    .instagram-link {
+      margin-inline: auto;
+    }
+
+    .stats-row {
+      justify-content: center;
+    }
+
+    .actions-block {
+      flex-direction: row;
+      gap: 12px;
+    }
+
+    .follow-button {
+      padding: 10px 24px;
+    }
+
+    .props-row {
+      justify-content: center;
+      margin-left: 0;
+    }
   }
 
-  /* Mobile */
+  /* ═══ Very narrow ═══ */
   @container hero-section (max-width: 400px) {
     .hero-section {
       padding: 14px;
-      gap: 16px;
     }
 
-    .avatar-container {
-      width: 88px;
-      height: 88px;
+    .stats-row {
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
     .display-name {
@@ -297,15 +476,11 @@
     .username {
       font-size: var(--font-size-sm);
     }
+  }
 
-    .action-buttons {
-      margin-top: 12px;
-      justify-content: center;
-    }
-
-    .follow-button {
-      padding: 10px 24px;
-    }
+  .instagram-link:focus-visible {
+    outline: 3px solid var(--instagram-brand);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -319,46 +494,5 @@
     .instagram-link:hover {
       transform: none;
     }
-  }
-
-  .instagram-link:focus-visible {
-    outline: 3px solid var(--instagram-brand);
-    outline-offset: 2px;
-  }
-
-  .props-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 8px 0;
-  }
-
-  .profile-prop-icon {
-    position: relative;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-  }
-
-  .profile-prop-icon.favorite {
-    opacity: 1;
-  }
-
-  .profile-prop-icon img {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-  }
-
-  .favorite-star {
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    font-size: 0.75rem;
-    color: gold;
   }
 </style>
