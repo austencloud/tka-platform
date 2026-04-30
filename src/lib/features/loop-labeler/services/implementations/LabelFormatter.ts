@@ -67,11 +67,11 @@ export class LabelFormatter implements ILabelFormatter {
     }
   }
 
-  private formatInterval(interval: string | undefined): string {
-    if (!interval || interval === "none") return "";
-    if (interval === "halved") return "½";
-    if (interval === "quartered") return "¼";
-    return interval;
+  private formatInterval(interval: number | undefined): string {
+    if (!interval) return "";
+    if (interval === 2) return "½";
+    if (interval === 4) return "¼";
+    return String(interval);
   }
 
   private componentToIntervalKey(

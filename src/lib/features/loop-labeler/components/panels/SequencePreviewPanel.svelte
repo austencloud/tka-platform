@@ -77,14 +77,14 @@
   function getIntervalTypes(
     designation: {
       transformationIntervals?: {
-        rotation?: string;
-        swap?: string;
-        mirror?: string;
-        flip?: string;
-        invert?: string;
+        rotation?: number;
+        swap?: number;
+        mirror?: number;
+        flip?: number;
+        invert?: number;
       };
     } | null
-  ): string[] {
+  ): number[] {
     if (!designation?.transformationIntervals) return [];
     const intervals = designation.transformationIntervals;
     return [
@@ -93,7 +93,7 @@
       intervals.mirror,
       intervals.flip,
       intervals.invert,
-    ].filter(Boolean) as string[];
+    ].filter(Boolean) as number[];
   }
 
   // Smart default column count based on LOOP detection
@@ -107,7 +107,7 @@
     // 2. Check if ANY designation has quartered interval (prefer 90° over 180°)
     const hasQuartered = allDesignations.some((d) => {
       const intervals = getIntervalTypes(d);
-      return intervals.includes("quartered");
+      return intervals.includes(4);
     });
 
     if (hasQuartered) {
@@ -118,7 +118,7 @@
     // 3. Only if no quartered, check for halved (180°)
     const hasHalved = allDesignations.some((d) => {
       const intervals = getIntervalTypes(d);
-      return intervals.includes("halved");
+      return intervals.includes(2);
     });
 
     if (hasHalved) {

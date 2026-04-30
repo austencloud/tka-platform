@@ -91,10 +91,10 @@ function toLoopComponent(id: ComponentId): LOOPComponent | null {
 }
 
 function mapRotationInterval(
-  interval: string | undefined
+  interval: number | undefined
 ): Period | undefined {
-  if (interval === "halved") return Period.HALVED;
-  if (interval === "quartered") return Period.QUARTERED;
+  if (interval === 2) return Period.HALVED;
+  if (interval === 4) return Period.QUARTERED;
   return undefined;
 }
 

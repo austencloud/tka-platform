@@ -176,7 +176,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     // The detector might label it halved_rotated; the key contract is that
     // rotation interval = "halved" so the icon stays fa-rotate.
     if (result.components.includes("rotated")) {
-      expect(result.transformationIntervals.rotation).toBe("halved");
+      expect(result.transformationIntervals.rotation).toBe(2);
     }
   });
 
@@ -185,13 +185,13 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
 
     expect(result.isCircular).toBe(true);
     expect(result.components).toContain("rotated");
-    expect(result.transformationIntervals.rotation).toBe("quartered");
+    expect(result.transformationIntervals.rotation).toBe(4);
   });
 
   it("halved detection snapshot — full result shape", () => {
     const result = loopDetector.detectLOOP(halvedFixture());
     expect(result.components).toEqual(expect.arrayContaining(["rotated"]));
-    expect(result.transformationIntervals.rotation).toBe("halved");
+    expect(result.transformationIntervals.rotation).toBe(2);
     expect(result.period).toBe(2);
     expect(result.isCircular).toBe(true);
     expect(result.isFreeform).toBe(false);
@@ -200,7 +200,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
   it("quartered detection snapshot — full result shape", () => {
     const result = loopDetector.detectLOOP(quarteredFixture());
     expect(result.components).toEqual(expect.arrayContaining(["rotated"]));
-    expect(result.transformationIntervals.rotation).toBe("quartered");
+    expect(result.transformationIntervals.rotation).toBe(4);
     expect(result.period).toBe(4);
     expect(result.isCircular).toBe(true);
     expect(result.isFreeform).toBe(false);
@@ -477,9 +477,9 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     expect(result.components).toContain("inverted");
     // Period must be 2 (halved), not 4 (quartered)
     expect(result.period).toBe(2);
-    // Transformation intervals should all be halved
-    expect(result.transformationIntervals.rotation).toBe("halved");
-    expect(result.transformationIntervals.swap).toBe("halved");
-    expect(result.transformationIntervals.invert).toBe("halved");
+    // Transformation intervals should all be 2 (halved)
+    expect(result.transformationIntervals.rotation).toBe(2);
+    expect(result.transformationIntervals.swap).toBe(2);
+    expect(result.transformationIntervals.invert).toBe(2);
   });
 });
