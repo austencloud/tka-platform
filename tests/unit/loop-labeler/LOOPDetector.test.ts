@@ -188,6 +188,24 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     expect(result.transformationIntervals.rotation).toBe("quartered");
   });
 
+  it("halved detection snapshot — full result shape", () => {
+    const result = loopDetector.detectLOOP(halvedFixture());
+    expect(result.components).toEqual(expect.arrayContaining(["rotated"]));
+    expect(result.transformationIntervals.rotation).toBe("halved");
+    expect(result.period).toBe(2);
+    expect(result.isCircular).toBe(true);
+    expect(result.isFreeform).toBe(false);
+  });
+
+  it("quartered detection snapshot — full result shape", () => {
+    const result = loopDetector.detectLOOP(quarteredFixture());
+    expect(result.components).toEqual(expect.arrayContaining(["rotated"]));
+    expect(result.transformationIntervals.rotation).toBe("quartered");
+    expect(result.period).toBe(4);
+    expect(result.isCircular).toBe(true);
+    expect(result.isFreeform).toBe(false);
+  });
+
   // ==========================================================================
   // ORIENTATION PASS (Phase 3)
   // ==========================================================================
