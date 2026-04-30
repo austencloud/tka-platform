@@ -164,8 +164,8 @@
     inset: 0;
     background:
       radial-gradient(
-        ellipse 60% 80% at 10% 50%,
-        color-mix(in srgb, var(--profile-color) 15%, transparent),
+        circle 200px at 100px 50%,
+        color-mix(in srgb, var(--profile-color) 12%, transparent),
         transparent 70%
       );
     pointer-events: none;
