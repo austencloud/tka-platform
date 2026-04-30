@@ -940,8 +940,8 @@ function buildCandidateDesignations(allCommon, interval, rotationDirection) {
     // Create human-readable label
     let label = components.join("+");
     if (direction) label += ` (${direction.toUpperCase()})`;
-    if (interval === "quartered") label += " (1/4)";
-    else if (interval === "halved") label += " (1/2)";
+    if (interval === 4) label += " (1/4)";
+    else if (interval === 2) label += " (1/2)";
 
     candidates.push({
       transformation,
@@ -1396,9 +1396,7 @@ function detectLOOPType(sequence) {
         }
         return true;
       })();
-    transformationIntervals.rotation = hasQuarteredRotation
-      ? "quartered"
-      : "halved";
+    transformationIntervals.rotation = hasQuarteredRotation ? 4 : 2;
 
     // Detect rotation direction for quartered rotations
     if (hasQuarteredRotation) {
@@ -1431,7 +1429,7 @@ function detectLOOPType(sequence) {
         }
         return true;
       })();
-    transformationIntervals.swap = hasQuarteredSwap ? "quartered" : "halved";
+    transformationIntervals.swap = hasQuarteredSwap ? 4 : 2;
   }
 
   // Mirror interval
@@ -1440,7 +1438,7 @@ function detectLOOPType(sequence) {
     detectedComponents.includes("mirrored+swapped") ||
     detectedComponents.includes("mirrored+swapped+inverted")
   ) {
-    transformationIntervals.mirror = "halved"; // Mirror is typically halved
+    transformationIntervals.mirror = 2; // Mirror is typically halved
   }
 
   // Invert interval
@@ -1449,7 +1447,7 @@ function detectLOOPType(sequence) {
     detectedComponents.includes("mirrored+swapped+inverted") ||
     detectedComponents.includes("flipped+inverted")
   ) {
-    transformationIntervals.invert = "halved"; // Invert is typically halved
+    transformationIntervals.invert = 2; // Invert is typically halved
   }
 
   // Generate beat-pair analysis - this is the source of truth
@@ -1475,7 +1473,7 @@ function detectLOOPType(sequence) {
       // Build quartered candidate designations
       const quarteredCandidates = buildCandidateDesignations(
         rotation90Patterns,
-        "quartered",
+        4,
         rotationDirection
       );
 
@@ -1489,7 +1487,7 @@ function detectLOOPType(sequence) {
       // Build halved candidates if 180° rotation exists
       const halvedCandidates =
         halved180Patterns.length > 0
-          ? buildCandidateDesignations(halved180Patterns, "halved", null)
+          ? buildCandidateDesignations(halved180Patterns, 2, null)
           : [];
 
       // Combine: halved 180° first (simpler), then quartered 90° patterns
@@ -1505,11 +1503,11 @@ function detectLOOPType(sequence) {
           ? halved180Patterns[0]
           : rotation90Patterns[0];
       const primaryInterval =
-        halved180Patterns.length > 0 ? "halved" : "quartered";
+        halved180Patterns.length > 0 ? 2 : 4;
       const derivedComponents =
         deriveComponentsFromBeatPairPattern(primaryPattern);
       const derivedDirection =
-        primaryInterval === "quartered"
+        primaryInterval === 4
           ? extractRotationDirection(primaryPattern) || rotationDirection
           : null;
 
@@ -1525,7 +1523,7 @@ function detectLOOPType(sequence) {
           derivedIntervals.invert = primaryInterval;
 
         const loopType =
-          primaryInterval === "halved"
+          primaryInterval === 2
             ? derivedComponents.sort().join("_")
             : derivedComponents.sort().join("_") + "_quartered";
 
@@ -1560,7 +1558,7 @@ function detectLOOPType(sequence) {
     // Build ALL candidate designations from common transformations
     const candidateDesignations = buildCandidateDesignations(
       allHalvedCommon,
-      "halved",
+      2,
       rotationDirection
     );
 
@@ -1571,15 +1569,15 @@ function detectLOOPType(sequence) {
     if (derivedComponents.length > 0) {
       const derivedIntervals = {};
       if (derivedComponents.includes("inverted"))
-        derivedIntervals.invert = "halved";
+        derivedIntervals.invert = 2;
       if (derivedComponents.includes("rotated"))
-        derivedIntervals.rotation = "halved";
+        derivedIntervals.rotation = 2;
       if (derivedComponents.includes("swapped"))
-        derivedIntervals.swap = "halved";
+        derivedIntervals.swap = 2;
       if (derivedComponents.includes("mirrored"))
-        derivedIntervals.mirror = "halved";
+        derivedIntervals.mirror = 2;
       if (derivedComponents.includes("flipped"))
-        derivedIntervals.flip = "halved";
+        derivedIntervals.flip = 2;
 
       const loopType = derivedComponents.sort().join("_");
 
@@ -1612,15 +1610,15 @@ function detectLOOPType(sequence) {
     if (derivedComponents.length > 0) {
       const derivedIntervals = {};
       if (derivedComponents.includes("inverted"))
-        derivedIntervals.invert = "halved";
+        derivedIntervals.invert = 2;
       if (derivedComponents.includes("rotated"))
-        derivedIntervals.rotation = "halved";
+        derivedIntervals.rotation = 2;
       if (derivedComponents.includes("swapped"))
-        derivedIntervals.swap = "halved";
+        derivedIntervals.swap = 2;
       if (derivedComponents.includes("mirrored"))
-        derivedIntervals.mirror = "halved";
+        derivedIntervals.mirror = 2;
       if (derivedComponents.includes("flipped"))
-        derivedIntervals.flip = "halved";
+        derivedIntervals.flip = 2;
 
       const loopType = derivedComponents.sort().join("_");
 
