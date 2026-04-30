@@ -103,6 +103,20 @@ const LOOP_TYPE_DEFINITIONS: readonly LoopTypeDefinition[] = [
 
 Adding a new loop type = one line in this table. The entire loop type territory is readable in one screen.
 
+### Formal Link to TRANSFORMATION_PRIORITY
+
+`TRANSFORMATION_PRIORITY` defines the ordering of beat-pair labels. `LOOP_TYPE_DEFINITIONS` defines which labels constitute each loop type. These two lists must cover the same universe of labels — every target in the definitions must appear in the priority list, and every entry in the priority list must be a target of some definition.
+
+Rather than defending this with a runtime test alone, `loop-type-definitions.ts` exports a derived constant:
+
+```ts
+export const ALL_DEFINITION_TARGETS: ReadonlySet<string> = new Set(
+  LOOP_TYPE_DEFINITIONS.flatMap(d => d.targets)
+);
+```
+
+The static validation test asserts bidirectional set equality: `ALL_DEFINITION_TARGETS` === `new Set(TRANSFORMATION_PRIORITY)`. One set, two views — impossible to drift.
+
 ### Check Result
 
 ```ts
@@ -252,7 +266,7 @@ No checker classes. No registry. No 16 files that do the same thing. The definit
 ## What Changes
 
 - **`LOOPDetector.ts`**: Uniform detection logic extracted into the pipeline. LOOPDetector becomes a thin facade: calls `detectLoopPattern()` for uniform detection, falls through to existing modular detection if no result.
-- **`CandidateFormatter`**: `buildCandidateDesignations` may simplify — Stage 6 (`buildCandidates`) absorbs some of its responsibilities since the pipeline already resolves components, intervals, and direction.
+- **`CandidateFormatter`**: Most methods superseded. `deriveComponentsFromPattern` (string-includes parser), `extractRotationDirection`, and `formatCandidateDescription` (90-line if/else chain) all become dead code — the definition table has `components` and `extractDirection` as first-class data, and `buildCandidates` constructs `CandidateInfo` directly from `LoopTypeDefinition` + `UnanimityResult`. Only `formatSingleTransformation` (display formatting) and `toCandidateDesignation` (shape adapter) survive. `buildCandidateDesignations` is replaced entirely by pipeline Stage 6.
 - **New file: `loop-type-definitions.ts`**: The declaration table. Source of truth for the loop type territory.
 - **New files: 7 pipeline stage files** + types + index = 10 new files total, each small and focused.
 
@@ -279,7 +293,7 @@ No checker classes. No registry. No 16 files that do the same thing. The definit
 ## Test Strategy
 
 - **Unit tests per stage**: Each of the 6 pipeline stages gets its own test file with known inputs/outputs
-- **Definition table validation**: Static test that every target in `LOOP_TYPE_DEFINITIONS` exists in `TRANSFORMATION_PRIORITY` (catches typos and drift)
+- **Definition table validation**: Static test that the set of all targets across `LOOP_TYPE_DEFINITIONS` equals the set of labels in `TRANSFORMATION_PRIORITY` (bidirectional — catches typos, drift, AND orphaned priority entries)
 - **Unanimity function tests**: For each of the 16 definitions, a test with a beat-pair set that should match and one that shouldn't
 - **Pipeline integration tests**: Using the existing golden snapshots from LOOPDetector tests
 - **Full corpus validation**: Run pipeline against all 400+ Firestore sequences, compare loopType output to stored loopType
@@ -289,4 +303,4 @@ No checker classes. No registry. No 16 files that do the same thing. The definit
 
 - **Behavioral drift during migration**: New pipeline might produce slightly different results for edge cases. Mitigation: parallel execution with assertion comparison before switching over.
 - **Modular fallthrough logic**: When no uniform pattern matches, the caller must fall through to modular detection cleanly. The pipeline returns an empty array — the facade must handle this transition without dropping sequences.
-- **Definition table correctness**: A typo in a target label silently disables a type. Mitigation: the static validation test catches any target not in `TRANSFORMATION_PRIORITY`.
+- **Definition table correctness**: A typo in a target label silently disables a type. Mitigation: bidirectional set-equality test between definition targets and `TRANSFORMATION_PRIORITY` catches both directions of drift.
