@@ -6,38 +6,15 @@
   import PanelTabs from "$lib/shared/components/panel/PanelTabs.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-  import type {
-    EnhancedUserProfile,
-    UserProfile,
-  } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import AvatarImage from "./AvatarImage.svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
-  type ProfileTab = "gallery" | "followers" | "following";
-
   let {
-    activeTab,
-    userProfile,
     userSequences = [],
-    followerUsers = [],
-    followingUsers = [],
-    followersLoading = false,
-    followingLoading = false,
-    onTabChange,
     onSequenceClick,
-    onUserClick,
   }: {
-    activeTab: ProfileTab;
-    userProfile: EnhancedUserProfile;
     userSequences?: readonly LibrarySequence[];
-    followerUsers?: readonly UserProfile[];
-    followingUsers?: readonly UserProfile[];
-    followersLoading?: boolean;
-    followingLoading?: boolean;
-    onTabChange: (tab: ProfileTab) => void;
     onSequenceClick: (sequence: LibrarySequence) => void;
-    onUserClick: (user: UserProfile) => void;
   } = $props();
 
   let hapticService: IHapticFeedback | undefined;
@@ -53,7 +30,6 @@
     return () => mql.removeEventListener("change", handler);
   });
 
-  // Light mode tracking - reacts to "L" key toggle
   const visibilityManager = getAnimationVisibilityManager();
   let lightMode = $state(!visibilityManager.isDarkMode());
 
@@ -70,27 +46,35 @@
     return () => visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
-  function handleSequenceClick(sequence: LibrarySequence) {
-    hapticService?.trigger("selection");
-    onSequenceClick(sequence);
-  }
+  let activeTab = $state("all");
 
-  function handleUserClick(user: UserProfile) {
-    hapticService?.trigger("selection");
-    onUserClick(user);
-  }
+  const tabs = $derived(() => {
+    const result: { value: string; label: string; icon: string }[] = [
+      { value: "all", label: `All (${userSequences.length})`, icon: "fa-th" },
+    ];
 
-  /**
-   * Get a display name for a sequence, handling malformed/auto-generated names
-   */
-  function getDisplayName(sequence: LibrarySequence): string {
-    // Prefer word (the TKA notation) over name
-    if (sequence.word) {
-      return sequence.word;
+    if (userSequences.length > 0) {
+      result.push({
+        value: "sequences",
+        label: `Sequences (${userSequences.length})`,
+        icon: "fa-list",
+      });
     }
 
+    return result;
+  });
+
+  const filteredSequences = $derived(() => {
+    if (activeTab === "all" || activeTab === "sequences") {
+      return userSequences;
+    }
+    return [];
+  });
+
+  function getDisplayName(sequence: LibrarySequence): string {
+    if (sequence.word) return sequence.word;
+
     if (sequence.name) {
-      // Strip legacy prefixes/suffixes from old data
       const cleaned = sequence.name
         .replace(/^Circular\s+/i, "")
         .replace(/\s+Sequence$/i, "");
@@ -103,160 +87,53 @@
 
     return "Untitled";
   }
+
+  function handleSequenceClick(sequence: LibrarySequence) {
+    hapticService?.trigger("selection");
+    onSequenceClick(sequence);
+  }
 </script>
 
 <div class="tabs-wrapper" transition:fly={{ y: reducedMotion ? 0 : 20, duration: reducedMotion ? 0 : 300, delay: reducedMotion ? 0 : 200 }}>
-  <PanelTabs
-    tabs={[
-      {
-        value: "gallery",
-        label: `Sequences (${userSequences.length})`,
-        icon: "fa-list",
-      },
-      {
-        value: "followers",
-        label: `Followers (${userProfile.followerCount})`,
-        icon: "fa-users",
-      },
-      {
-        value: "following",
-        label: `Following (${userProfile.followingCount})`,
-        icon: "fa-user-plus",
-      },
-    ]}
-    {activeTab}
-    onchange={(tab: string) => onTabChange(tab as ProfileTab)}
-  />
+  {#if tabs().length > 1}
+    <PanelTabs
+      tabs={tabs()}
+      {activeTab}
+      onchange={(tab: string) => (activeTab = tab)}
+    />
+  {/if}
 </div>
 
-<div class="profile-tab-content">
-  {#if activeTab === "gallery"}
-    {#if userSequences.length === 0}
-      <PanelState
-        type="empty"
-        icon="fa-list"
-        title="No Sequences"
-        message="This creator hasn't published any sequences yet."
-      />
-    {:else}
-      <div class="sequences-grid">
-        {#each userSequences as sequence (sequence.id)}
-          <button
-            class="sequence-card"
-            onclick={() => handleSequenceClick(sequence)}
-            transition:fade={{ duration: reducedMotion ? 0 : 200 }}
-            aria-label="View sequence {getDisplayName(sequence)}"
-          >
-            <div class="sequence-thumbnail">
-              <PropAwareThumbnail sequence={sequence} {lightMode} />
-            </div>
+<div class="gallery-content">
+  {#if filteredSequences().length === 0}
+    <PanelState
+      type="empty"
+      icon="fa-list"
+      title="No Sequences"
+      message="This creator hasn't published any sequences yet."
+    />
+  {:else}
+    <div class="gallery-grid">
+      {#each filteredSequences() as sequence (sequence.id)}
+        <button
+          class="gallery-card"
+          onclick={() => handleSequenceClick(sequence)}
+          transition:fade={{ duration: reducedMotion ? 0 : 200 }}
+          aria-label="View sequence {getDisplayName(sequence)}"
+        >
+          <div class="card-thumbnail">
+            <PropAwareThumbnail {sequence} {lightMode} />
+          </div>
 
-            <div class="sequence-info">
-              <div class="sequence-meta">
-                {#if sequence.createdAt}
-                  <span class="meta-item">
-                    <i class="fas fa-clock" aria-hidden="true"></i>
-                    {sequence.createdAt instanceof Date
-                      ? sequence.createdAt.toLocaleDateString()
-                      : new Date(sequence.createdAt).toLocaleDateString()}
-                  </span>
-                {/if}
-                {#if sequence.steps && sequence.steps.length > 0}
-                  <span class="meta-item">
-                    <i class="fas fa-music" aria-hidden="true"></i>
-                    {sequence.steps.length} steps
-                  </span>
-                {/if}
-              </div>
+          {#if sequence.starCount > 0}
+            <div class="star-pill">
+              <span class="star-icon">&#9733;</span>
+              <span class="star-count">{sequence.starCount}</span>
             </div>
-          </button>
-        {/each}
-      </div>
-    {/if}
-  {:else if activeTab === "followers"}
-    {#if followersLoading}
-      <PanelState type="loading" message="Loading followers..." />
-    {:else if followerUsers.length === 0}
-      <PanelState
-        type="empty"
-        icon="fa-users"
-        title="No Followers Yet"
-        message="This user doesn't have any followers yet"
-      />
-    {:else}
-      <div class="user-list-grid">
-        {#each followerUsers as user (user.id)}
-          <button
-            class="user-list-card"
-            onclick={() => handleUserClick(user)}
-            transition:fade={{ duration: reducedMotion ? 0 : 200 }}
-            aria-label="View profile of {user.displayName}"
-          >
-            <div class="user-list-avatar">
-              <AvatarImage src={user.avatar} alt={user.displayName} size={48} />
-            </div>
-            <div class="user-list-info">
-              <h4 class="user-list-name">{user.displayName}</h4>
-              <p class="user-list-username">@{user.username}</p>
-            </div>
-            <div class="user-list-stats">
-              <span class="user-list-stat">
-                <i class="fas fa-list" aria-hidden="true"></i>
-                {user.sequenceCount}
-              </span>
-              <span class="user-list-stat">
-                <i class="fas fa-users" aria-hidden="true"></i>
-                {user.followerCount}
-              </span>
-            </div>
-            <i class="fas fa-chevron-right user-list-arrow" aria-hidden="true"
-            ></i>
-          </button>
-        {/each}
-      </div>
-    {/if}
-  {:else if activeTab === "following"}
-    {#if followingLoading}
-      <PanelState type="loading" message="Loading following..." />
-    {:else if followingUsers.length === 0}
-      <PanelState
-        type="empty"
-        icon="fa-user-plus"
-        title="Not Following Anyone"
-        message="This user isn't following anyone yet"
-      />
-    {:else}
-      <div class="user-list-grid">
-        {#each followingUsers as user (user.id)}
-          <button
-            class="user-list-card"
-            onclick={() => handleUserClick(user)}
-            transition:fade={{ duration: reducedMotion ? 0 : 200 }}
-            aria-label="View profile of {user.displayName}"
-          >
-            <div class="user-list-avatar">
-              <AvatarImage src={user.avatar} alt={user.displayName} size={48} />
-            </div>
-            <div class="user-list-info">
-              <h4 class="user-list-name">{user.displayName}</h4>
-              <p class="user-list-username">@{user.username}</p>
-            </div>
-            <div class="user-list-stats">
-              <span class="user-list-stat">
-                <i class="fas fa-list" aria-hidden="true"></i>
-                {user.sequenceCount}
-              </span>
-              <span class="user-list-stat">
-                <i class="fas fa-users" aria-hidden="true"></i>
-                {user.followerCount}
-              </span>
-            </div>
-            <i class="fas fa-chevron-right user-list-arrow" aria-hidden="true"
-            ></i>
-          </button>
-        {/each}
-      </div>
-    {/if}
+          {/if}
+        </button>
+      {/each}
+    </div>
   {/if}
 </div>
 
@@ -264,207 +141,122 @@
   .tabs-wrapper {
     container-type: inline-size;
     container-name: tabs-wrapper;
-
     display: flex;
     justify-content: center;
     margin-bottom: 16px;
   }
 
-  .profile-tab-content {
+  .gallery-content {
     container-type: inline-size;
-    container-name: tab-content;
-
+    container-name: gallery;
     min-height: 300px;
+    width: 100%;
   }
 
-  .sequences-grid {
+  .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
   }
 
-  /* Wide screens: cap at 3 columns for readability */
-  @container tab-content (min-width: 800px) {
-    .sequences-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  .sequence-card {
+  .gallery-card {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
+    overflow: hidden;
+    padding: 0;
     text-align: left;
   }
 
-  .sequence-card:hover {
+  .gallery-card:hover {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--theme-shadow);
+    box-shadow: var(--shadow-glass-hover, 0 4px 12px rgba(0,0,0,0.3));
   }
 
-  .sequence-thumbnail {
+  .card-thumbnail {
     width: 100%;
-    border-radius: 8px;
-    overflow: hidden;
     container-type: inline-size;
     container-name: sequence-card;
   }
 
-  .sequence-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .sequence-meta {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .meta-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-  }
-
-  .meta-item i {
-    font-size: var(--font-size-compact);
-  }
-
-  .user-list-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .user-list-card {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    text-align: left;
-    width: 100%;
-  }
-
-  .user-list-card:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    transform: translateX(4px);
-  }
-
-  .user-list-avatar {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    flex-shrink: 0;
-  }
-
-  .user-list-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .user-list-name {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--theme-text, white);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .user-list-username {
-    margin: 2px 0 0 0;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .user-list-stats {
-    display: flex;
-    gap: 12px;
-    flex-shrink: 0;
-  }
-
-  .user-list-stat {
+  .star-pill {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
+    padding: 3px 8px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    border-radius: 6px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all var(--duration-normal) ease;
+    pointer-events: none;
   }
 
-  .user-list-stat i {
-    font-size: var(--font-size-compact);
+  .gallery-card:hover .star-pill {
+    opacity: 1;
+    transform: translateY(0);
   }
 
-  .user-list-arrow {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    flex-shrink: 0;
-    transition: transform var(--duration-normal) ease;
+  .star-icon {
+    font-size: 0.7rem;
+    color: #f59e0b;
   }
 
-  .user-list-card:hover .user-list-arrow {
-    transform: translateX(4px);
-    color: var(--theme-text-dim);
+  .star-count {
+    font-size: var(--font-size-xs, 11px);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
   }
 
-  /* Narrow: single column */
-  @container tab-content (max-width: 500px) {
-    .sequences-grid {
-      grid-template-columns: 1fr;
-      gap: 12px;
+  @container gallery (max-width: 640px) {
+    .gallery-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px;
     }
 
-    .sequence-card {
-      padding: 12px;
+    .star-pill {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 
-  /* Very narrow: tighter spacing */
-  @container tab-content (max-width: 360px) {
-    .sequence-card,
-    .user-list-card {
-      padding: 10px;
-      gap: 10px;
+  @container gallery (min-width: 2000px) {
+    .gallery-grid {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sequence-card,
-    .user-list-card {
+    .gallery-card {
       transition: none;
     }
 
-    .sequence-card:hover,
-    .user-list-card:hover {
+    .gallery-card:hover {
       transform: none;
     }
 
-    .user-list-arrow,
-    .user-list-card:hover .user-list-arrow {
-      transition: none;
+    .star-pill {
+      opacity: 1;
       transform: none;
+      transition: none;
+    }
+  }
+
+  @media (hover: none) {
+    .star-pill {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 </style>
