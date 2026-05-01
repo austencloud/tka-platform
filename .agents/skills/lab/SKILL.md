@@ -94,5 +94,5 @@ Report final tab count vs. starting count.
 
 - **Never delete without asking.** The user's half-baked ideas are still their ideas.
 - **Batch deletions.** Don't make 34 individual commits. Group by disposition.
-- **Check for orphaned services.** When deleting a feature directory, check if its DI container registrations need cleanup too.
+- **Check for orphaned services.** When deleting a feature directory, check for orphaned singleton getter files that are no longer imported.
 - **Preserve git history.** Use `git rm` not `rm` so history is preserved.

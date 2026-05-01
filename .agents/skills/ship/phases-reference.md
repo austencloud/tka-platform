@@ -26,8 +26,8 @@ For each confirmed flow, check these 6 dimensions:
 ### 4. Integration Wiring
 - Is the module in `moduleLoaders` in ModuleRenderer.svelte?
 - Is it in `MODULE_DEFINITIONS` in module-definitions.ts?
-- Are its services registered in a DI container?
-- Is the DI container wired into the composition root?
+- Do its services have singleton getters (`get*.ts` files)?
+- Are getters returning real instances (not stubs)?
 - Can the feature actually be reached from the running app?
 
 ### 5. Data Pipeline

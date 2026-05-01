@@ -1,9 +1,9 @@
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
-
 ---
+name: deadcode
 description: Use when cleaning up unused code, after major refactors, or during codebase hygiene passes
-argument-hint: "[scope | --list | --claims | --stats]"
 ---
+
+<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
 
 # Dead Code Detection
 
@@ -35,7 +35,7 @@ Each scope can only be claimed by one agent at a time. Claims expire after 2 hou
 ### DELETE when:
 - File has no imports anywhere in codebase
 - Exports are not used by any other file
-- File is not an entry point (route, hook, DI container)
+- File is not an entry point (route, hook, singleton getter)
 - Not referenced in any config file
 
 ### DEFER when:
@@ -46,7 +46,7 @@ Each scope can only be claimed by one agent at a time. Claims expire after 2 hou
 
 ### FALSE POSITIVE when:
 - Dynamic imports (`await import(...)`)
-- Entry points (routes, hooks, DI containers)
+- Entry points (routes, hooks, singleton getters)
 - Files referenced in configs (vite.config.ts, etc.)
 - Test utilities only used by test files
 - Type-only files used via `/// <reference types="..." />`
@@ -74,8 +74,6 @@ Report summary: how many reviewed, deleted, false positive, deferred.
 ## What NOT to Delete
 
 Even if flagged as dead, never delete without checking:
-- Files in DI container directories
-- Files matching `*Container.ts`
 - Files in `src/routes/` - SvelteKit routing
 - Files with `// @ts-nocheck` at top
 - Anything the user says "wait, we need that"

@@ -1,7 +1,6 @@
 ---
 name: skill-audit
 description: Use when reviewing a skill for quality, completeness, and compliance with writing-skills standards before deployment
-argument-hint: "<skill-name>"
 ---
 
 # Skill Audit

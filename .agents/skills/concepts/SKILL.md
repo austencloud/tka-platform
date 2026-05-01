@@ -1,6 +1,6 @@
 ---
+name: concepts
 description: Use when building, reviewing, or planning any Learn tab concept lesson, or when discussing curriculum design, lesson interactivity, or concept progression
-argument-hint: "[status|next|<concept-id>|philosophy|redesign]"
 ---
 
 # Concept Lesson Development
@@ -81,4 +81,3 @@ Print the 8 principles and the interaction pattern ranking table. Useful for onb
    - What stays (what already works)
    - Why this redesign better serves the philosophy
 5. Wait for user approval before any implementation
-

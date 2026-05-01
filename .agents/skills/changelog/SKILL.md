@@ -1,8 +1,9 @@
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
-
 ---
+name: changelog
 description: Use when preparing release notes or reviewing what changed since last version
 ---
+
+<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
 
 # Changelog Generation
 

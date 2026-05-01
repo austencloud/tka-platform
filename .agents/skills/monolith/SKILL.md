@@ -1,8 +1,9 @@
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
-
 ---
+name: monolith
 description: Use when a file feels too large or has multiple responsibilities that should be separated
 ---
+
+<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
 
 # Monolith Detection
 

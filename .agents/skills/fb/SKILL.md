@@ -1,6 +1,6 @@
 ---
+name: fb
 description: Use when starting work from the feedback queue or claiming a specific feedback item
-argument-hint: "[feedback-id]"
 ---
 
 # Feedback Workflow

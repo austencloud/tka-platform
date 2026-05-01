@@ -1,6 +1,6 @@
 ---
+name: museum
 description: Use when managing museum project items, running department briefings, or tracking creative decisions
-argument-hint: "[session|capture|create|link|search|<id>|list]"
 ---
 
 # Museum Development Tracking System

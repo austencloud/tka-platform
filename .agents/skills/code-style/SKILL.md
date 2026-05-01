@@ -1,40 +1,43 @@
 ---
 name: code-style
-description: Use when writing or editing TypeScript/Svelte code in this project. Covers project-specific architectural decisions that differ from defaults — ITI dependency injection, no utils/helpers directories, no barrel exports, and the conversational commenting style.
+description: Use when writing or editing TypeScript/Svelte code in this project. Covers project-specific architectural decisions that differ from defaults — module singleton getters for service access, no utils/helpers directories, no barrel exports, and the conversational commenting style.
 ---
 
 # TKA Code Style
 
 Project-specific architectural decisions. Standard engineering wisdom (single responsibility, descriptive names, strict types) is assumed.
 
-## Dependency Injection: ITI
+## Service Access: Module Singleton Getters
 
-Services are registered in containers under `src/lib/shared/di/containers/` and consumed via `container.items.X`.
+Services are accessed via colocated getter functions — no central container, no DI framework.
 
 ```typescript
-// container file
-import { createContainer } from "iti";
-export function createYourModuleContainer(deps: YourModuleDeps) {
-  return createContainer()
-    .add({ yourService: () => new YourService(deps.someDep) });
+// Getter file — lives next to the implementation
+// src/lib/features/your-module/services/getYourService.ts
+import { browser } from '$app/environment';
+import { YourService } from './implementations/YourService';
+
+let instance: YourService | null = null;
+
+export function getYourService(): YourService {
+  if (!browser) throw new Error('getYourService() is browser-only');
+  return instance ??= new YourService();
 }
 
-// consumer
-import { container } from "$lib/shared/di";
-const myService = container.items.myService;
+// Consumer
+import { getYourService } from '$lib/features/your-module/services/getYourService';
+const myService = getYourService();
 ```
 
-Every service: interface in `services/contracts/IName.ts`, implementation in `services/implementations/Name.ts`, registered in its container. Composition root is `src/lib/shared/di/index.ts`.
+Every service: interface in `services/contracts/IName.ts`, implementation in `services/implementations/Name.ts`, getter colocated in the same services directory. Side-effect wiring (if any) lives in `src/lib/shared/bootstrap.ts`.
 
 ## Never Create Utility Files
 
-No `utils/`, `helpers/`, or `hooks/` directories. No standalone pure functions in random files. If you think you need a utility, you need a service class registered in a DI container.
+No `utils/`, `helpers/`, or `hooks/` directories. No standalone pure functions in random files. If you think you need a utility, you need a service class with a module singleton getter.
 
 ## No Barrel Exports
 
 Never create `index.ts` files in `src/` that re-export other modules. Vite's bundle bloats dramatically — importing one item from a barrel loads and evaluates the entire barrel, tree-shaking fails, dev-mode network requests skyrocket. Always import directly from source files using relative paths.
-
-**Exception:** `src/lib/shared/di/index.ts` is the composition root, not a barrel.
 
 ## Commenting Style
 

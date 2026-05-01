@@ -1,8 +1,9 @@
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
-
 ---
+name: ai-bust
 description: Use when writing or reviewing user-facing text to check for AI writing patterns, banned words, or robotic tone
 ---
+
+<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
 
 # AI Writing Buster
 

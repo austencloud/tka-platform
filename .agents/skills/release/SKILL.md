@@ -1,4 +1,5 @@
 ---
+name: release
 description: Use when packaging and publishing a new version with changelog and GitHub release
 ---
 

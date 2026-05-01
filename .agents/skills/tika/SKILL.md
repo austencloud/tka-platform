@@ -1,6 +1,6 @@
 ---
+name: tika
 description: Use when TIKA conversations need quality review, grading, or flagging for issues
-argument-hint: "[session|capture|create|link|search|<id>]"
 ---
 
 # TIKA Quality Monitor

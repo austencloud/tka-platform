@@ -54,4 +54,4 @@ Show detailed breakdown of that phase:
 
 - Config: `config/skel2tka-dev.config.js`
 - Feature root: `src/lib/features/skel2tka/`
-- DI container: `src/lib/shared/di/containers/skel2tka-container.ts`
+- Service getters: colocated `get*.ts` files in `src/lib/shared/` for skel2tka services

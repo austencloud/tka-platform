@@ -1,6 +1,6 @@
 ---
 name: new-module
-description: Use when creating a new feature module in src/lib/features/. Walks through module registration, module-definitions wiring, DI container setup, and container-types integration.
+description: Use when creating a new feature module in src/lib/features/. Walks through module registration, module-definitions wiring, and service getter setup.
 ---
 
 # New Module Checklist
@@ -29,31 +29,22 @@ const moduleLoaders = {
 }
 ```
 
-## Step 3: Add ITI container (if module has services)
+## Step 3: Create service getters (if module has services)
 
 ```typescript
-// src/lib/shared/di/containers/yourmodule-container.ts
-import { createContainer } from "iti";
-import { YourService } from "$lib/features/your-module/services/implementations/YourService";
+// src/lib/features/your-module/services/getYourService.ts
+import { browser } from '$app/environment';
+import { YourService } from './implementations/YourService';
 
-export function createYourModuleContainer(deps: YourModuleDeps) {
-  return createContainer()
-    .add({ yourService: () => new YourService(deps.someDep) });
+let instance: YourService | null = null;
+
+export function getYourService(): YourService {
+  if (!browser) throw new Error('getYourService() is browser-only');
+  return instance ??= new YourService();
 }
-
-export type YourModuleContainer = ReturnType<typeof createYourModuleContainer>;
 ```
 
-## Step 4: Wire container types
-
-```typescript
-// src/lib/shared/di/container-types.ts
-import type { YourModuleContainer } from "./containers/yourmodule-container";
-type YourModuleItems = ItemsOf<YourModuleContainer>;
-// Add to IAppContainerItems intersection: ... & YourModuleItems & ...
-```
-
-Then wire into `buildAppContainer()` in `src/lib/shared/di/index.ts`.
+Getter files live next to the implementation they wrap. No central container or container-types file.
 
 ## Navigation is Automatic
 

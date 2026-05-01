@@ -20,7 +20,7 @@ Map the argument to actual files:
 1. Check `src/lib/features/$ARGUMENTS/` for feature directory
 2. Check module definitions in `src/lib/shared/navigation/config/module-definitions.ts`
 3. Check `moduleLoaders` in `src/lib/shared/modules/ModuleRenderer.svelte`
-4. Check DI containers in `src/lib/shared/di/containers/`
+4. Check service getters in `src/lib/shared/` (colocated `get*.ts` files)
 
 If the feature can't be resolved, tell the user and ask for clarification.
 
@@ -30,7 +30,7 @@ Read the feature's full file tree. Build a map of:
 
 - **Components** -- all .svelte files, their parent-child import relationships
 - **Event handlers** -- onclick, onsubmit, dispatch, callback props
-- **Services** -- classes consumed via DI container or direct import
+- **Services** -- classes consumed via singleton getters (`getServiceName()`) or direct import
 - **Navigation** -- module definition entry, tab definitions, route config
 - **Data flow** -- what loads data (loaders, fetchers, Firebase calls), what renders it
 

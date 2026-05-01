@@ -1,6 +1,6 @@
 ---
+name: premium
 description: Use when checking premium gating status, deciding if a feature should be free or premium, or auditing capability flags
-argument-hint: "[feature-name]"
 ---
 
 # Premium Gating
@@ -64,10 +64,9 @@ Help decide if a new feature should be free or premium.
 5. **Show integration point**: Identify the exact file and function where `premiumGateChecker.check()` should be called. The pattern:
 
 ```typescript
-import { container } from "$lib/shared/di";
-import type { IPremiumGateChecker } from "$lib/shared/subscription/services/contracts/IPremiumGateChecker";
+import { getPremiumGateChecker } from "$lib/shared/subscription/getPremiumGateChecker";
 
-const gateChecker = container.items.premiumGateChecker as IPremiumGateChecker;
+const gateChecker = getPremiumGateChecker();
 const result = gateChecker.check("capability:category:name");
 
 if (!result.allowed) {

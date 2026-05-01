@@ -1,8 +1,9 @@
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
-
 ---
+name: audit
 description: Use when assessing code quality of a feature or component across 8 dimensions
 ---
+
+<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
 
 # Audit Command
 

@@ -28,13 +28,13 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | Single responsibility, clean service composition, proper DI |
+| A+ | Single responsibility, clean service composition, proper module singletons |
 | A | Minor coupling, responsibilities clear |
 | B | Some mixed concerns |
 | C | Multiple responsibilities crammed together |
 | F | God component, untestable, spaghetti |
 
-**Check:** Single file = single thing? Services extracted? DI used correctly? No barrel exports?
+**Check:** Single file = single thing? Services extracted? Module singletons used correctly? No barrel exports?
 
 ---
 

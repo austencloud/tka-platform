@@ -96,8 +96,8 @@ ConceptDetailView (shell — handles progress, persistence)
 ### State Management
 
 - `getExperiencePersistence(conceptId)` — survives HMR + page reload
-- `conceptProgressTracker` — from DI container, tracks mastery gradient
-- `hapticFeedback` — from DI container, use for all interactions
+- `conceptProgressTracker` — via `getConceptProgressTracker()`, tracks mastery gradient
+- `hapticFeedback` — via `getHapticFeedback()`, use for all interactions
 
 ### When Building A New Lesson
 

@@ -1,4 +1,5 @@
 ---
+name: submitfb
 description: Use when submitting a bug report, feature request, or feedback item to the tracker
 ---
 

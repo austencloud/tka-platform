@@ -1,6 +1,6 @@
 ---
+name: grant
 description: Use when working on grant applications, checking deadlines, or drafting proposal sections
-argument-hint: "[status|deadlines|<id>|<id> draft|<id> status <new-status>|add|research <query>]"
 ---
 
 # Grant Tracker & Drafting Assistant

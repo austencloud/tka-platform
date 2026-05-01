@@ -1,4 +1,5 @@
 ---
+name: screenshots
 description: Use when checking layout across devices, debugging responsive issues, or capturing pre-release screenshots
 ---
 

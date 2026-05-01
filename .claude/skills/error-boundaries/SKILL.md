@@ -7,7 +7,7 @@ description: Use when adding error handling, try/catch blocks, or considering wh
 
 **Earned, not defensive.** Only add error boundaries where failures are silent, user-blocking, or proven flaky.
 
-Use `container.items.errorHandler.showUserError()` with:
+Use `getErrorHandler().showUserError()` with:
 - `message` — for the user
 - `technicalDetails` — for debugging
 - `context` — `{ module, tab, action }`

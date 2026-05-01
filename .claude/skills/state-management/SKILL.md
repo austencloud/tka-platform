@@ -11,7 +11,7 @@ Every feature module uses this pattern. No exceptions.
 
 | Layer | Job | File |
 |-------|-----|------|
-| DI Service | Business logic (load, save, validate) | `services/implementations/X.ts` |
+| Service | Business logic (load, save, validate) | `services/implementations/X.ts` + getter in `get*.ts` |
 | State Factory | Reactive UI state (`$state`, `$derived`) | `state/x-module-state.svelte.ts` |
 | Context | Distribution to descendants | `context/x-module-context.ts` |
 
@@ -19,7 +19,7 @@ Every feature module uses this pattern. No exceptions.
 
 ```
 ModuleRoot.svelte
-  → createXModuleState(container.items.loader, ...)  // DI services as args
+  → createXModuleState(getLoader(), ...)              // services via getter functions
   → setXModuleContext({ state })                      // set once
 
 AnyChild.svelte
@@ -28,7 +28,7 @@ AnyChild.svelte
 
 ## Rules
 
-1. State factories receive DI services as arguments — never resolve from container internally
+1. State factories receive services as arguments — never resolve internally
 2. Return plain objects with getter accessors — not classes
 3. Context set once in module root — consumed by any descendant
 4. No module-level singletons (no `let instance = null` patterns)
@@ -39,7 +39,7 @@ AnyChild.svelte
 ## Don't
 
 - Prop-drill the entire state object through intermediaries
-- Call `container.items.x` in leaf components for state they could get from context
+- Call service getters in leaf components for state they could get from context
 - Create event handler services with `initialize()` callback wiring
 - Create `*-state-ref.svelte.ts` global reference files
 

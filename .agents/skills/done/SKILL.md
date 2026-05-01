@@ -1,4 +1,5 @@
 ---
+name: done
 description: Use when completing a feedback item or logging a quick fix as done
 ---
 

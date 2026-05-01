@@ -1,6 +1,6 @@
 ---
 name: new-module
-description: Use when creating a new feature module in src/lib/features/. Walks through module registration, module-definitions wiring, DI container setup, and container-types integration.
+description: Use when creating a new feature module in src/lib/features/. Walks through module registration, module-definitions wiring, and service getter setup.
 ---
 
 # New Module Checklist
@@ -29,31 +29,20 @@ const moduleLoaders = {
 }
 ```
 
-## Step 3: Add ITI container (if module has services)
+## Step 3: Add service getters (if module has services)
 
 ```typescript
-// src/lib/shared/di/containers/yourmodule-container.ts
-import { createContainer } from "iti";
-import { YourService } from "$lib/features/your-module/services/implementations/YourService";
+// src/lib/shared/<domain>/getYourService.ts
+import { YourService } from '$lib/features/your-module/services/implementations/YourService';
 
-export function createYourModuleContainer(deps: YourModuleDeps) {
-  return createContainer()
-    .add({ yourService: () => new YourService(deps.someDep) });
+let instance: YourService | null = null;
+export function getYourService(): YourService {
+  if (!instance) instance = new YourService();
+  return instance;
 }
-
-export type YourModuleContainer = ReturnType<typeof createYourModuleContainer>;
 ```
 
-## Step 4: Wire container types
-
-```typescript
-// src/lib/shared/di/container-types.ts
-import type { YourModuleContainer } from "./containers/yourmodule-container";
-type YourModuleItems = ItemsOf<YourModuleContainer>;
-// Add to IAppContainerItems intersection: ... & YourModuleItems & ...
-```
-
-Then wire into `buildAppContainer()` in `src/lib/shared/di/index.ts`.
+Consumers import the getter directly: `import { getYourService } from '$lib/shared/<domain>/getYourService'`.
 
 ## Navigation is Automatic
 
