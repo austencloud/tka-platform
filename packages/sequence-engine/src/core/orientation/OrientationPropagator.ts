@@ -18,9 +18,6 @@ import type {
   Orientation,
 } from "../types/sequence-engine-types.js";
 
-/**
- * Standalone orientation calculator that delegates to the canonical implementation.
- */
 export class OrientationCalculator implements IOrientationCalculator {
   calculateEndOrientation(
     motionType: string,

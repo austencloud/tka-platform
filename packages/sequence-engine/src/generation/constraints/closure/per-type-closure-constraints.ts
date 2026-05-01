@@ -80,9 +80,6 @@ abstract class PerTypeClosureConstraint
   ): boolean;
 }
 
-/**
- * Mirrored closure: vertical-mirror of base beat's positions/motions.
- */
 export class MirroredClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.MIRRORED_CLOSURE;
   readonly description = `Beat i + L/${this.period} is the vertical-mirror of beat i`;
@@ -103,9 +100,6 @@ export class MirroredClosureConstraint extends PerTypeClosureConstraint {
   }
 }
 
-/**
- * Flipped closure: horizontal-mirror of base beat's positions/motions.
- */
 export class FlippedClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.FLIPPED_CLOSURE;
   readonly description = `Beat i + L/${this.period} is the horizontal-flip of beat i`;
@@ -115,9 +109,6 @@ export class FlippedClosureConstraint extends PerTypeClosureConstraint {
   }
 }
 
-/**
- * Swapped closure: blue/red exchanged vs base beat.
- */
 export class SwappedClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.SWAPPED_CLOSURE;
   readonly description = `Beat i + L/${this.period} has blue/red swapped from beat i`;
@@ -145,9 +136,6 @@ export class SwappedClosureConstraint extends PerTypeClosureConstraint {
   }
 }
 
-/**
- * Inverted closure: motion types inverted (pro↔anti) vs base beat.
- */
 export class InvertedClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.INVERTED_CLOSURE;
   readonly description = `Beat i + L/${this.period} is the motion-inversion of beat i`;

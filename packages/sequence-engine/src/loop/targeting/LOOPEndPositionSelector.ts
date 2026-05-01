@@ -28,7 +28,6 @@ export class LOOPEndPositionSelector {
 
   /**
    * Determine the required end position based on LOOP type.
-   *
    * @param loopType - The LOOP type being generated
    * @param startPosition - The sequence's starting position
    * @param period - Halved or quartered

@@ -22,11 +22,9 @@ import { setLetterTransitionGraph } from "../../src/core/transition-graph/Letter
 import type { ITransitionGraph } from "../../src/core/transition-graph/ITransitionGraph.js";
 import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/sequence-engine-types.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock setup: at every position the builder has BOTH a dash-letter and a
 // shift-letter option available, so the soft preference has real room to
 // work. Without this duality the test proves nothing.
-// ─────────────────────────────────────────────────────────────────────────────
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
@@ -213,9 +211,7 @@ function totalSteps(stepsLength: number, skipStart = true): number {
   return skipStart ? stepsLength - 1 : stepsLength;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tests
-// ─────────────────────────────────────────────────────────────────────────────
 
 describe("dashPreference soft bias", () => {
   beforeEach(() => {

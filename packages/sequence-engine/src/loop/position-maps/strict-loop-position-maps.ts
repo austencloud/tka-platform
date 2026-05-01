@@ -19,9 +19,6 @@ import {
   QUARTER_POSITION_MAP_CCW,
 } from "./circular-position-maps.js";
 
-// ============================================================================
-// VERTICAL MIRROR POSITION MAP
-// ============================================================================
 
 /**
  * Mirrors positions vertically across the center horizontal axis (flips east/west).
@@ -72,9 +69,6 @@ export const VERTICAL_MIRROR_LOCATION_MAP: Record<string, string> = {
   c: "c",
 };
 
-// ============================================================================
-// HORIZONTAL MIRROR POSITION MAP
-// ============================================================================
 
 /**
  * Mirrors positions horizontally (flips north/south).
@@ -120,9 +114,6 @@ export const HORIZONTAL_MIRROR_LOCATION_MAP: Record<string, string> = {
   c: "c",
 };
 
-// ============================================================================
-// SWAPPED POSITION MAP
-// ============================================================================
 
 /**
  * Maps positions to their color-swapped equivalents.
@@ -164,9 +155,6 @@ export const SWAPPED_POSITION_MAP: Record<string, string> = {
   terra1: "terra1",
 };
 
-// ============================================================================
-// INVERTED LETTER MAP
-// ============================================================================
 
 /**
  * Maps letters to their inverted pairs (opposite motion types).
@@ -209,9 +197,6 @@ export function getInvertedLetter(letter: string): string {
   return inverted;
 }
 
-// ============================================================================
-// ALPHA-BETA COUNTERPART LETTER MAP
-// ============================================================================
 
 /**
  * Maps letters that share a common gamma endpoint but differ in their alpha/beta section.
@@ -230,16 +215,12 @@ export const ALPHA_BETA_COUNTERPART_LETTER_MAP: Record<string, string> = {
 };
 
 /**
- * Get alpha-beta counterpart letter for a given letter.
  * Returns the letter that shares the same gamma endpoint but swaps alpha<->beta.
  */
 export function getAlphaBetaCounterpart(letter: string): string | null {
   return ALPHA_BETA_COUNTERPART_LETTER_MAP[letter] ?? null;
 }
 
-// ============================================================================
-// COMPOUND LETTER MAP
-// ============================================================================
 
 /**
  * Maps letters that form compound pairs - letters that combine to create circular motion.
@@ -254,16 +235,10 @@ export const COMPOUND_LETTER_MAP: Record<string, string> = {
   "\u03A6": "\u03A8", "\u03A8": "\u03A6", // Phi <-> Psi
 };
 
-/**
- * Get compound pair letter for a given letter.
- */
 export function getCompoundLetter(letter: string): string | null {
   return COMPOUND_LETTER_MAP[letter] ?? null;
 }
 
-// ============================================================================
-// LETTER TRANSFORMATION TYPES
-// ============================================================================
 
 /**
  * Letter Transformation Types for algorithmic detection and generation.
@@ -274,9 +249,6 @@ export enum LetterTransformationType {
   ALPHA_BETA_COUNTERPART = "alpha_beta_counterpart",
 }
 
-/**
- * Check if two letters have a specific transformation relationship.
- */
 export function hasTransformationRelationship(
   letter1: string,
   letter2: string,
@@ -294,9 +266,6 @@ export function hasTransformationRelationship(
   }
 }
 
-/**
- * Get all transformation relationships between two letters.
- */
 export function getLetterRelationships(
   letter1: string,
   letter2: string
@@ -314,9 +283,6 @@ export function getLetterRelationships(
   return relationships;
 }
 
-/**
- * Get the related letter for a given transformation type.
- */
 export function getRelatedLetters(
   letter: string,
   type: LetterTransformationType
@@ -333,9 +299,6 @@ export function getRelatedLetters(
   }
 }
 
-/**
- * Analyze beat pair letters and return their transformation relationships.
- */
 export function analyzeStepPairTransformation(
   letter1: string,
   letter2: string
@@ -356,9 +319,6 @@ export function analyzeStepPairTransformation(
   };
 }
 
-// ============================================================================
-// VALIDATION SETS
-// ============================================================================
 
 /**
  * Mirrored LOOP validation set.

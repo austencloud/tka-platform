@@ -95,9 +95,6 @@ export class GridPositionDeriver {
     });
   }
 
-  /**
-   * Get the grid position for a given hand location pair
-   */
   getGridPositionFromLocations(
     blueLocation: string,
     redLocation: string

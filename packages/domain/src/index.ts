@@ -1,6 +1,3 @@
-// =============================================================================
-// Types
-// =============================================================================
 export type { GlossaryCategory, GlossaryEntry } from "./types/glossary.js";
 export type {
   MotionPattern,
@@ -42,9 +39,6 @@ export type {
   UserKnowledgeOverlay,
 } from "./types/curriculum.js";
 
-// =============================================================================
-// Data
-// =============================================================================
 export { GLOSSARY } from "./data/glossary.js";
 export { LETTER_TYPES } from "./data/letter-types.js";
 export {
@@ -80,9 +74,6 @@ export {
   REVERSAL_NOTATION,
 } from "./data/reversals.js";
 
-// =============================================================================
-// Constants
-// =============================================================================
 export {
   ALL_LETTERS,
   LETTER_TO_TYPE,
@@ -103,9 +94,6 @@ export {
   getPositionsAtLevel,
 } from "./constants/position-groups.js";
 
-// =============================================================================
-// Reference Functions (Phase 2)
-// =============================================================================
 export {
   TYPE_DEFINITIONS,
   getTypeExplanation,
@@ -148,9 +136,6 @@ export {
   findDomainTopic,
 } from "./reference/domain-topics.js";
 
-// =============================================================================
-// Curriculum (Phase 3)
-// =============================================================================
 export { KNOWLEDGE_GRAPH } from "./curriculum/knowledge-graph.js";
 export {
   getConceptById,
@@ -167,8 +152,5 @@ export {
   getExplanationGuidance,
 } from "./curriculum/level-constraints.js";
 
-// =============================================================================
-// i18n
-// =============================================================================
 export type { DomainGlossary } from "./i18n/types.js";
 export { GLOSSARIES } from "./i18n/glossaries.js";

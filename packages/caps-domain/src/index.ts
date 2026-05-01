@@ -1,6 +1,3 @@
-// =============================================================================
-// Types (from data files)
-// =============================================================================
 export type {
 	CAPDefinition,
 	CAPDefinitionScope,
@@ -30,9 +27,6 @@ export type {
 	CAPSearchResultType,
 } from "./reference/search.js";
 
-// =============================================================================
-// Data
-// =============================================================================
 export { CAP_DEFINITIONS } from "./data/definitions.js";
 export { CAP_MATH_MODEL } from "./data/mathematics.js";
 export { EIGHT_STEP_CAPS } from "./data/eight-step-cap.js";
@@ -42,9 +36,6 @@ export { CAP_GLOSSARY } from "./data/glossary.js";
 export { CAP_DOCUMENTS } from "./data/documents.js";
 export { CAP_EXTERNAL_LINKS } from "./data/external-links.js";
 
-// =============================================================================
-// Reference Functions
-// =============================================================================
 export {
 	getCAPDefinition,
 	listCAPDefinitions,

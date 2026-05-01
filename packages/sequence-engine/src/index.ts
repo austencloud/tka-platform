@@ -1,6 +1,5 @@
 /**
  * @tka/sequence-engine
- *
  * Platform-agnostic sequence engine for TKA letter transitions,
  * bridge finding, and orientation propagation.
  *

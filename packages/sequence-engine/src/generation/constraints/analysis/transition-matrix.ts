@@ -42,9 +42,6 @@ export interface TransitionFeasibility {
  */
 export type TransitionMatrix = Map<string, Map<string, TransitionFeasibility>>;
 
-/**
- * Build the complete transition matrix from pictograph data.
- */
 export function buildTransitionMatrix(
   allPictographs: PictographData[]
 ): TransitionMatrix {
@@ -126,7 +123,6 @@ export interface WordFeasibility {
 }
 
 /**
- * Analyze a word's feasibility using the pre-computed matrix.
  * Much faster than re-analyzing all pictographs.
  *
  * NOTE: When no direct transition exists, the system can insert bridge letters
@@ -317,7 +313,6 @@ let cachedMatrix: TransitionMatrix | null = null;
 let cachedGridMode: string | null = null;
 
 /**
- * Get or build the transition matrix for a grid mode.
  * Caches the result for reuse.
  */
 export function getTransitionMatrix(
@@ -336,9 +331,6 @@ export function getTransitionMatrix(
   return cachedMatrix;
 }
 
-/**
- * Clear the cached matrix (useful when data changes).
- */
 export function clearTransitionMatrixCache(): void {
   cachedMatrix = null;
   cachedGridMode = null;

@@ -6,9 +6,6 @@
 
 import type { GridLocation, Orientation } from "../types.js";
 
-// ============================================================================
-// PROP ROTATION MAPS (by grid mode)
-// ============================================================================
 
 /**
  * Diamond grid rotation angles by orientation and location
@@ -220,9 +217,6 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
   centerNW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 225 },
 };
 
-// ============================================================================
-// ARROW ROTATION MAPS (by motion type and direction)
-// ============================================================================
 
 /**
  * PRO rotation maps

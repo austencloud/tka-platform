@@ -22,7 +22,6 @@ export interface CrossDomainMapping {
 	notes?: string;
 }
 
-/** Map a VTG category to its TKA equivalents (case-insensitive) */
 export function vtgToTKA(vtgCategoryId: string): CrossDomainMapping | undefined {
 	const lower = vtgCategoryId.toLowerCase();
 	const category = VTG_CATEGORIES.find((c) => c.id.toLowerCase() === lower);
@@ -33,7 +32,6 @@ export function vtgToTKA(vtgCategoryId: string): CrossDomainMapping | undefined 
 	};
 }
 
-/** Find VTG categories that correspond to a TKA letter */
 export function tkaToVTG(tkaLetterType: string): VTGCategory[] {
 	const upper = tkaLetterType.toUpperCase();
 	return VTG_CATEGORIES.filter((c) =>

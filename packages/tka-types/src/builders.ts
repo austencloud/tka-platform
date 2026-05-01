@@ -59,7 +59,6 @@ function assertTurns(value: unknown): void {
 }
 
 /**
- * Build a Motion. Validates every enum field, freezes the result.
  *
  * Defaults:
  *   - `plane` defaults to `Plane.wall` when not supplied.
@@ -117,9 +116,6 @@ export function createMotion(input: Motion): Motion {
   return Object.freeze(frozen);
 }
 
-/**
- * Return a new frozen Motion with `changes` shallow-merged over `base`.
- */
 export function updateMotion(base: Motion, changes: Partial<Motion>): Motion {
   return createMotion({ ...base, ...changes });
 }
@@ -176,7 +172,6 @@ function validateStepScalars(input: Step): void {
 }
 
 /**
- * Generate a stable-ish id when caller does not supply one.
  * Prefers `crypto.randomUUID` when available; falls back to a time-seeded
  * random string. The returned id is a non-empty string.
  */
@@ -201,7 +196,6 @@ export type CreateStepInput = Omit<Step, "id" | "duration"> & {
 };
 
 /**
- * Build a Step with all invariants enforced.
  *
  * Defaults supplied when omitted:
  *   - `id`: `crypto.randomUUID()` (or a time-seeded fallback).
@@ -235,7 +229,6 @@ export function createStep(input: CreateStepInput): Step {
 }
 
 /**
- * Build a start-position Step (stepNumber 0) for a given grid position.
  *
  * Both hands hold static motions at the center point with radial orientation.
  * `letter` is null (start position has no letter).
@@ -275,7 +268,6 @@ export function createStartStep(pos: GridPosition): Step {
 }
 
 /**
- * Return a new frozen Step with `changes` shallow-merged over `base`.
  * Validations re-run on the merged object.
  */
 export function updateStep(base: Step, changes: Partial<Step>): Step {

@@ -15,12 +15,10 @@ import {
 	VTG_TRANSITION_MATRICES,
 } from "../data/transitions.js";
 
-/** Get a specific transition type definition by ID */
 export function getVTGTransition(id: string): VTGTransition | undefined {
 	return VTG_TRANSITIONS.find((t) => t.id === id);
 }
 
-/** Find the transition type between two VTG categories */
 export function getTransitionBetween(
 	fromCategoryId: string,
 	toCategoryId: string,
@@ -32,7 +30,6 @@ export function getTransitionBetween(
 	return matrix.entries.find((e) => e.toCategoryId === toCategoryId);
 }
 
-/** Find all transitions from a given category, optionally filtered by type */
 export function getTransitionsFrom(
 	categoryId: string,
 	type?: TransitionType,

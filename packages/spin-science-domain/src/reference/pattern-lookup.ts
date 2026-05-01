@@ -32,13 +32,11 @@ export function get324Patterns(filter?: {
 	);
 }
 
-/** Get a single Atomic Hybrid by ID */
 export function getAtomicHybrid(id: string): AtomicHybrid | undefined {
 	// TODO: Implement lookup once hybrid data is populated
 	return ATOMIC_HYBRIDS.find((h) => h.id === id);
 }
 
-/** Get Atomic Hybrids filtered by shape or arm path */
 export function getAtomicHybrids(filter?: {
 	shapeId?: string;
 	armPathId?: string;

@@ -11,7 +11,6 @@ export {
   LOOP_TYPE_LABELS,
   LOOP_TYPE_DESCRIPTIONS,
   ALL_LOOP_TYPES,
-  SUPPORTED_LOOP_TYPES,
   ROTATED_LOOP_TYPES,
   type LOOPOption,
   type LOOPValidationResult,
@@ -21,7 +20,6 @@ export {
 // Validator
 export {
   isLOOPValidForPositionPair,
-  isLOOPSupported,
   getLOOPOptionsForPositionPair,
   getExpectedEndPosition,
   getValidEndPositionsForLoop,

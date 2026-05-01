@@ -11,9 +11,6 @@
 import { REVERSAL_INDICATOR } from "../constants/glyph-positions.js";
 import { BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, RED_COLOR_DARK, RED_COLOR_LIGHT } from "../constants/viewbox.js";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface ReversalDotPosition {
   cx: number;
@@ -26,9 +23,6 @@ export interface ReversalPositions {
   dots: ReversalDotPosition[];
 }
 
-// ============================================================================
-// MAIN CALCULATION FUNCTION
-// ============================================================================
 
 /**
  * Calculate reversal indicator positions.
@@ -37,7 +31,6 @@ export interface ReversalPositions {
  * - Single reversal: dot is centered vertically (at CENTER_Y)
  * - Both reversals: RED on top, BLUE on bottom, spaced by DOT_SPACING
  * - All dots are at X_POSITION (left edge)
- *
  * @param blueReversal - Whether blue motion has a reversal
  * @param redReversal - Whether red motion has a reversal
  * @param isDarkMode - Whether to use dark mode colors
@@ -100,7 +93,6 @@ export function calculateReversalPositions(
 }
 
 /**
- * Helper to get reversal colors for rendering.
  * Useful when you need the colors but not the positions.
  */
 export function getReversalColors(isDarkMode: boolean): {

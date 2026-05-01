@@ -113,7 +113,6 @@ export const ALL_POSITIONS: PositionName[] = [
   ...CENTRIC_POSITIONS,
 ];
 
-/** Get positions available at a given level */
 export function getPositionsAtLevel(level: number): PositionName[] {
   const positions: PositionName[] = [...FOUNDATION_POSITIONS];
   if (level >= 4) positions.push(...CENTRIC_POSITIONS);

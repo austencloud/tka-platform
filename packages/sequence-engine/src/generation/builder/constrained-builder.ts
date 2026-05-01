@@ -116,9 +116,6 @@ export interface ConstrainedBuilderOptions {
   constraintSet: ConstraintSet;
 }
 
-/**
- * Build a sequence using beam search with constraint scoring.
- */
 export function buildConstrainedSequence(
   options: ConstrainedBuilderOptions
 ): ConstrainedSequenceResult {
@@ -515,9 +512,6 @@ export function buildConstrainedSequence(
   return buildResult(bestState, word, constraintSet, statesBrowsed, false);
 }
 
-/**
- * Find a valid Type 6 start position for a given position.
- */
 function findStartPosition(
   allPictographs: PictographData[],
   position: string
@@ -542,7 +536,6 @@ function findStartPosition(
 }
 
 /**
- * Propagate orientations through the sequence for PictographData[].
  * Each beat's start orientation = previous beat's end orientation.
  */
 function propagateOrientations(steps: PictographData[]): PictographData[] {
@@ -608,9 +601,6 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
   return result;
 }
 
-/**
- * Build the final result from a search state.
- */
 function buildResult(
   state: SearchState,
   word: string,
@@ -642,9 +632,6 @@ function buildResult(
   };
 }
 
-/**
- * Empty constraint set for unconstrained generation.
- */
 export function emptyConstraintSet(): ConstraintSet {
   return {
     hard: [],

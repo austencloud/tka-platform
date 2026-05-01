@@ -8,9 +8,6 @@
  * Just pure functions that can run in any JavaScript environment.
  */
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export type {
   GridLocation,
@@ -28,9 +25,6 @@ export type {
 
 export { CARDINAL_LOCATIONS, INTERCARDINAL_LOCATIONS, isCardinal } from "./types.js";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
 
 // Viewbox constants
 export {
@@ -128,9 +122,6 @@ export {
   OPPOSITE_LOCATION_MAP,
 } from "./constants/dash-location-maps.js";
 
-// ============================================================================
-// CALCULATIONS
-// ============================================================================
 
 // Grid position
 export { getHandPointCoordinates, getLayer2PointCoordinates } from "./calculations/grid-position.js";

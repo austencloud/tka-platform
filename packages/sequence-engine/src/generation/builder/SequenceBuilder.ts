@@ -57,10 +57,6 @@ import {
 import { VERTICAL_MIRROR_POSITION_MAP } from "../../loop/position-maps/strict-loop-position-maps.js";
 import { PositionReachabilityAnalyzer, type ReachabilityResult } from "../reachability/PositionReachabilityAnalyzer.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
  * Decide whether to enforce period-4 turn parity for this LOOP request.
  *
@@ -114,9 +110,7 @@ function resolveRotationDirection(
   return original;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Public types
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Options for building a sequence.
@@ -226,10 +220,6 @@ export interface BuildResult {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Builder
-// ─────────────────────────────────────────────────────────────────────────────
-
 export class SequenceBuilder {
   private readonly letterParser = new LetterParser();
   private readonly letterClassifier = new LetterClassifier();
@@ -238,7 +228,6 @@ export class SequenceBuilder {
 
   /**
    * Build a sequence through the 7-stage pipeline.
-   *
    * @throws Error if neither word nor length is provided
    * @throws Error if beam search finds no valid path at all
    */
@@ -254,9 +243,6 @@ export class SequenceBuilder {
     return this.buildByLength(options as BuildOptions & { length: number });
   }
 
-  /**
-   * Word-based generation: parse letters from word, beam search for each letter sequentially.
-   */
   private buildByWord(options: BuildOptions & { word: string }): BuildResult {
     // Stage 1: Parse letters
     const letters = this.letterParser.parse(options.word);
@@ -373,7 +359,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * Length-based generation: pick random letters per beat using beam search with
    * constraint scoring. No bridges needed since every transition is direct.
    */
   private buildByLength(options: BuildOptions & { length: number }): BuildResult {
@@ -653,7 +638,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * Stage 2: Assemble constraints from domain rules + user preferences.
    *
    * Domain constraints are always-on hard constraints that enforce TKA physics.
    * Style constraints come from presets or natural language parsing.
@@ -699,7 +683,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * Resolve the effective propContinuity setting from whichever input source
    * was used (constraintOptions, preset, or NL constraints). Without this,
    * preset-derived propContinuity was lost and postProcess defaulted to
    * random rotation direction assignment — producing prop reversals even
@@ -884,7 +867,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * Stage 6: Extend the seed sequence with a LOOP transformation.
    *
    * The LOOP executors operate on SequenceStep[] directly (via ILOOPExecutor).
    * We select the executor for the requested LOOPType, pass the seed sequence
@@ -951,7 +933,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * LOOP types that combine MIRRORED + ROTATED require the start position to
    * sit on the vertical axis (where vertical_mirror(pos) === pos).
    *
    * If the current position is already on the axis, returns undefined (no change needed).
@@ -987,7 +968,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * Filter variations by hard constraints using the couldSatisfy() fast path.
    * Returns only variations that pass all hard constraint checks — the set of
    * transitions the beam search could actually use.
    */
@@ -1011,7 +991,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * Get ALL valid end positions for a LOOP type + start position + period.
    * For quartered rotated LOOPs, returns both CW and CCW targets.
    * For other types, returns the single valid end position.
    */
@@ -1042,7 +1021,6 @@ export class SequenceBuilder {
   }
 
   /**
-   * Build a position map for LOOP end-position targeting.
    * Maps each possible start position to ALL its valid end positions
    * for the given LOOP type. For quartered rotated LOOPs, each start
    * maps to both CW and CCW targets.

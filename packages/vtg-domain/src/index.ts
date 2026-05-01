@@ -1,6 +1,3 @@
-// =============================================================================
-// Types (from data files)
-// =============================================================================
 export type { VTGCategory } from "./data/categories.js";
 export type { MinimalBeatShape } from "./data/shapes.js";
 export type { VTGPattern } from "./data/patterns.js";
@@ -28,9 +25,6 @@ export type {
 	VTGSearchResultType,
 } from "./reference/search.js";
 
-// =============================================================================
-// VTG Core Data
-// =============================================================================
 export { VTG_CATEGORIES } from "./data/categories.js";
 export { VTG_SHAPES } from "./data/shapes.js";
 export { VTG_PATTERNS, VTG_PATTERN_MATRIX } from "./data/patterns.js";
@@ -46,15 +40,9 @@ export { VTG_GLOSSARY } from "./data/glossary.js";
 export { VTG_DOCUMENTS } from "./data/documents.js";
 export { VTG_EXTERNAL_LINKS } from "./data/external-links.js";
 
-// =============================================================================
-// Elemental Model (SEPARATE system, not part of VTG — see elemental-model.ts)
-// =============================================================================
 export type { ElementDefinition } from "./data/elemental-model.js";
 export { VTG_ELEMENTS } from "./data/elemental-model.js";
 
-// =============================================================================
-// Reference Functions
-// =============================================================================
 export { getVTGPattern, getVTGPatterns } from "./reference/pattern-lookup.js";
 export {
 	getVTGTransition,

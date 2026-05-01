@@ -69,7 +69,6 @@ export interface OrientationReachabilityArgs {
  */
 export class OrientationReachabilityAnalyzer {
   /**
-   * Analyze whether the required end orientation is reachable in the given
    * remaining beats, and return the reachable state set per beat.
    *
    * Algorithm works backward: at beat N-1 (the last), reachable = {end state}.

@@ -17,9 +17,6 @@ export interface TurnAllocation {
   red: (number | "fl")[];
 }
 
-/**
- * Get the pool of possible turn values for a given level.
- */
 function getPossibleTurnsForLevel(level: number): (number | "fl")[] {
   switch (level) {
     case 1:
@@ -33,9 +30,6 @@ function getPossibleTurnsForLevel(level: number): (number | "fl")[] {
   }
 }
 
-/**
- * Random choice from an array.
- */
 function randomChoice<T>(array: T[]): T {
   if (array.length === 0) {
     throw new Error("Cannot choose from empty array");
@@ -55,7 +49,6 @@ export interface TurnAllocationOptions {
 }
 
 /**
- * Convert a turn value to its wheel-quarter contribution mod 4.
  * 1 turn = 180° = 2 wheel-quarters. 0.5 turn = 90° = 1 wheel-quarter.
  * "fl" is a float (special motion state), which contributes 0 wheel-quarters.
  */
@@ -66,7 +59,6 @@ function wheelQuarters(turn: number | "fl"): number {
 
 /**
  * Allocate turns for a sequence.
- *
  * @param stepCount - Number of steps (excluding start position)
  * @param level - Difficulty level (1-3)
  * @param maxTurnIntensity - Maximum turn intensity allowed (0-3, or undefined for level default)
@@ -159,9 +151,6 @@ function allocateSingleHand(
   return result;
 }
 
-/**
- * Get default max turn intensity for a level.
- */
 export function getDefaultMaxTurnIntensity(level: number): number {
   switch (level) {
     case 1:

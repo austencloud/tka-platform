@@ -13,22 +13,17 @@ import type { LetterMappingsJson } from "../types/sequence-engine-types.js";
  */
 export interface ISequenceDataProvider {
   /**
-   * Load letter mappings data.
    * Contains position transitions and categories for all letters.
    */
   loadLetterMappings(): Promise<LetterMappingsJson>;
 
   /**
    * Load pictograph variations for a specific letter.
-   *
    * @param letter - The letter to load variations for (e.g., "D", "Σ")
    * @returns Array of variation data objects
    */
   loadLetterVariations(letter: string): Promise<LetterVariationData[]>;
 
-  /**
-   * Check if the data provider has been initialized.
-   */
   isInitialized(): boolean;
 }
 

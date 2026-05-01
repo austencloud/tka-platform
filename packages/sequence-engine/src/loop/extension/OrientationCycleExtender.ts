@@ -33,7 +33,6 @@ export interface OrientationCycleExtensionResult {
 /**
  * Check if a sequence needs orientation cycle extension, and if so,
  * extend it by cloning beats with recalculated orientations.
- *
  * @param steps - Full step array (step 0 = start position, rest = beats)
  * @param word - The sequence word (will be repeated if extension is needed)
  * @returns Extended result with steps, cycle count, and updated word

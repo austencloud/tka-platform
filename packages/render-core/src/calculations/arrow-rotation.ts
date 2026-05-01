@@ -22,9 +22,6 @@ import {
   FLOAT_COUNTER_CLOCKWISE_MAP,
 } from "../constants/rotation-maps.js";
 
-/**
- * Select rotation map based on motion type and rotation direction
- */
 function selectRotationMap(
   motionType: MotionType,
   rotationDirection: string,
@@ -57,9 +54,6 @@ function selectRotationMap(
   }
 }
 
-/**
- * Calculate arrow rotation angle
- */
 export function calculateArrowRotation(
   motionType: MotionType | string,
   location: GridLocation | string,

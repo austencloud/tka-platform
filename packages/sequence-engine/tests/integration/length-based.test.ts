@@ -13,9 +13,7 @@ import { setLetterTransitionGraph } from "../../src/core/transition-graph/Letter
 import type { ITransitionGraph } from "../../src/core/transition-graph/ITransitionGraph.js";
 import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/sequence-engine-types.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock data factory (same pattern as full-build.test.ts)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
@@ -42,7 +40,6 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock pictograph dataset
 //
 // Same graph as full-build.test.ts but with enough letters at each position
@@ -53,7 +50,6 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
 //   - B: beta3 → alpha1 (pro motions)
 //   - C: alpha1 → alpha1 (pro motions)
 //   - D: beta3 → beta3 (pro motions)
-// ─────────────────────────────────────────────────────────────────────────────
 
 const MOCK_PICTOGRAPHS: PictographData[] = [
   // Start positions (Type 6)
@@ -109,9 +105,7 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
   }),
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock IVariationProvider
-// ─────────────────────────────────────────────────────────────────────────────
 
 class MockVariationProvider implements IVariationProvider {
   private readonly data: PictographData[];
@@ -131,9 +125,7 @@ class MockVariationProvider implements IVariationProvider {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock ITransitionGraph
-// ─────────────────────────────────────────────────────────────────────────────
 
 const LETTER_POSITIONS: Record<string, { start: PositionGroup; end: PositionGroup }> = {
   A: { start: "alpha", end: "beta" },
@@ -221,9 +213,7 @@ class MockTransitionGraph implements ITransitionGraph {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tests
-// ─────────────────────────────────────────────────────────────────────────────
 
 describe("length-based generation", () => {
   let builder: SequenceBuilder;

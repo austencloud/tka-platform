@@ -10,9 +10,6 @@ import { isCardinal, CARDINAL_LOCATIONS } from "../types.js";
 import { getHandPointCoordinates } from "./grid-position.js";
 import { DIAMOND_PROP_ANGLES, BOX_PROP_ANGLES } from "../constants/rotation-maps.js";
 
-/**
- * Get the appropriate angle map based on grid mode and location
- */
 function getAngleMapForLocation(
   location: GridLocation,
   gridMode: GridMode
@@ -28,9 +25,6 @@ function getAngleMapForLocation(
   return BOX_PROP_ANGLES;
 }
 
-/**
- * Calculate prop rotation angle based on location, orientation, and grid mode
- */
 export function calculatePropRotation(
   location: GridLocation | string,
   orientation: Orientation | string,
@@ -50,9 +44,6 @@ export function calculatePropRotation(
   return orientationAngles[normalizedLocation] ?? 0;
 }
 
-/**
- * Calculate prop position (x, y coordinates)
- */
 export function calculatePropPosition(
   location: GridLocation | string,
   gridMode: GridMode
@@ -60,9 +51,6 @@ export function calculatePropPosition(
   return getHandPointCoordinates(location, gridMode);
 }
 
-/**
- * Calculate complete prop placement (position + rotation)
- */
 export function calculatePropPlacement(
   location: GridLocation | string,
   orientation: Orientation | string,

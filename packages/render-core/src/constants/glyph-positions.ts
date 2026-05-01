@@ -7,9 +7,6 @@
 
 import { VIEWBOX_SIZE } from "./viewbox.js";
 
-// ============================================================================
-// TKA GLYPH (bottom-left letter)
-// ============================================================================
 
 export const TKA_GLYPH = {
   X: 50,
@@ -17,9 +14,6 @@ export const TKA_GLYPH = {
   SCALE: 1.0,
 } as const;
 
-// ============================================================================
-// STEP NUMBER (top-left beat number)
-// ============================================================================
 
 export const STEP_NUMBER = {
   X: 50,
@@ -28,18 +22,12 @@ export const STEP_NUMBER = {
   START_FONT_SIZE: 80, // "Start" label uses smaller font
 } as const;
 
-// ============================================================================
-// DIRECTION DOT (same/opp indicator)
-// ============================================================================
 
 export const DIRECTION_DOT = {
   PADDING: 10,
   SIZE: 25,
 } as const;
 
-// ============================================================================
-// TURN NUMBERS
-// ============================================================================
 
 export const TURN_NUMBER = {
   HEIGHT: 45,
@@ -57,9 +45,6 @@ export const TURN_NUMBER = {
   } as Record<string, number>,
 } as const;
 
-// ============================================================================
-// DASH SUFFIX (for Type 3/5 letters)
-// ============================================================================
 
 export const DASH_SUFFIX = {
   WIDTH: 70,
@@ -70,9 +55,6 @@ export const DASH_SUFFIX = {
   FILL_LIGHT: "#231f20",
 } as const;
 
-// ============================================================================
-// VTG GLYPH (bottom-right corner)
-// ============================================================================
 
 export const VTG_GLYPH = {
   WIDTH: 201.24,
@@ -80,9 +62,6 @@ export const VTG_GLYPH = {
   OFFSET_PERCENTAGE: 0.04,
 } as const;
 
-// ============================================================================
-// ELEMENTAL GLYPH (top-right corner)
-// ============================================================================
 
 export const ELEMENTAL_GLYPH = {
   WIDTH: 95,
@@ -90,9 +69,6 @@ export const ELEMENTAL_GLYPH = {
   OFFSET_PERCENTAGE: 0.04,
 } as const;
 
-// ============================================================================
-// POSITION GLYPH (top center, shows α→β etc)
-// ============================================================================
 
 export const POSITION_GLYPH = {
   Y: 50,
@@ -108,9 +84,6 @@ export const POSITION_GLYPH = {
   } as Record<string, { width: number; height: number; yOffset: number }>,
 } as const;
 
-// ============================================================================
-// REVERSAL INDICATORS (left edge, vertically centered)
-// ============================================================================
 
 /**
  * Reversal indicator positioning

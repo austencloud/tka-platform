@@ -12,7 +12,6 @@ import {
   Period,
   LOOP_TYPE_LABELS,
   LOOP_TYPE_DESCRIPTIONS,
-  SUPPORTED_LOOP_TYPES,
   ALL_LOOP_TYPES,
   type LOOPOption,
   type LOOPValidationResult,
@@ -23,9 +22,6 @@ import {
   HORIZONTAL_MIRROR_POSITION_MAP,
 } from "../position-maps/strict-loop-position-maps.js";
 
-// ============================================================================
-// POSITION VALIDATION SETS
-// ============================================================================
 
 /**
  * All valid grid positions (alpha, beta, gamma with variants)
@@ -33,9 +29,6 @@ import {
  */
 const POSITION_GROUPS = ["alpha", "beta", "gamma", "zeta", "eta"] as const;
 
-/**
- * Generate all position variants for a group (1-8 or 1-16 for gamma)
- */
 function generatePositions(group: string, count: number): string[] {
   return Array.from({ length: count }, (_, i) => `${group}${i + 1}`);
 }
@@ -161,9 +154,6 @@ for (let i = 9; i <= 16; i++) {
   QUARTER_POSITION_MAP_CCW[`gamma${i}`] = `gamma${next}`;
 }
 
-// ============================================================================
-// VALIDATION SETS
-// ============================================================================
 
 /**
  * Halved LOOP validation set
@@ -336,13 +326,7 @@ export const ROTATED_SWAPPED_QUARTERED_VALIDATION_SET = new Set<string>([
   }),
 ]);
 
-// ============================================================================
-// VALIDATION LOGIC
-// ============================================================================
 
-/**
- * Check if a LOOP type is valid for a given position pair
- */
 export function isLOOPValidForPositionPair(
   loopType: LOOPType,
   positionPair: string,
@@ -404,16 +388,6 @@ export function isLOOPValidForPositionPair(
   }
 }
 
-/**
- * Check if a LOOP type is currently supported for execution
- */
-export function isLOOPSupported(loopType: LOOPType): boolean {
-  return SUPPORTED_LOOP_TYPES.includes(loopType);
-}
-
-/**
- * Get LOOP options filtered by validity for a position pair
- */
 export function getLOOPOptionsForPositionPair(
   startPosition: string,
   endPosition: string,
@@ -430,16 +404,6 @@ export function getLOOPOptionsForPositionPair(
       description: LOOP_TYPE_DESCRIPTIONS[loopType],
     };
 
-    // Check if this LOOP type is supported (Phase 1)
-    if (!isLOOPSupported(loopType)) {
-      unavailable.push({
-        ...option,
-        reason: "Not yet implemented (coming in future phase)",
-      });
-      continue;
-    }
-
-    // Check if position pair is valid for this LOOP type
     if (isLOOPValidForPositionPair(loopType, positionPair, period)) {
       available.push(option);
     } else {
@@ -453,9 +417,6 @@ export function getLOOPOptionsForPositionPair(
   return { available, unavailable };
 }
 
-/**
- * Get expected end position for a given start position and LOOP type
- */
 export function getExpectedEndPosition(
   startPosition: string,
   loopType: LOOPType,
@@ -496,7 +457,6 @@ export function getExpectedEndPosition(
 /**
  * Find bridge letters that could transition from currentEndPosition to a
  * valid end position for the given LOOP type.
- *
  * @param startPosition - The sequence's start position (used to determine valid LOOP end positions)
  * @param currentEndPosition - Where the sequence currently ends
  * @param loopType - The LOOP type we want to achieve
@@ -541,7 +501,6 @@ export function findBridgeLettersForLoop(
 }
 
 /**
- * Get ALL valid end positions for a given start position and LOOP type.
  * Unlike getExpectedEndPosition which returns a single position, this returns
  * all positions that would make the LOOP valid (e.g., both CW and CCW for quartered).
  */

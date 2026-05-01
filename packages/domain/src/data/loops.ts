@@ -72,9 +72,6 @@ export const LOOP_CONSTRUCTION_PRINCIPLES = {
   patternCompletion: "Trace geometric or symmetric patterns in space for visual and kinesthetic satisfaction",
 } as const;
 
-// ---------------------------------------------------------------------------
-// Compositional LOOP Theory (Feb 2026)
-// ---------------------------------------------------------------------------
 
 /**
  * LOOP classification operates on a reduced parameter space.

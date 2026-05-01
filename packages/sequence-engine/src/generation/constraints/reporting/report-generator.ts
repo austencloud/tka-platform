@@ -18,9 +18,6 @@ import {
   calculateContinuityPercentage,
 } from "../../builder/search-state.js";
 
-/**
- * Generate a constraint report for a completed search state.
- */
 export function generateConstraintReport(
   state: SearchState,
   constraintSet: ConstraintSet
@@ -67,9 +64,6 @@ export function generateConstraintReport(
   };
 }
 
-/**
- * Aggregate per-step constraint scores into sequence-level scores.
- */
 function aggregateStepScores(
   state: SearchState,
   constraintSet: ConstraintSet
@@ -133,9 +127,6 @@ function aggregateStepScores(
   return result;
 }
 
-/**
- * Generate a human-readable description for a constraint result.
- */
 function generateConstraintDescription(
   type: ConstraintType,
   score: number,
@@ -202,9 +193,6 @@ function generateConstraintDescription(
   }
 }
 
-/**
- * Format a constraint report as a string for display.
- */
 export function formatConstraintReport(report: ConstraintReport): string {
   const lines: string[] = [];
 

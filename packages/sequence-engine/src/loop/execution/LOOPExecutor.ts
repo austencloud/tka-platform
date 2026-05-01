@@ -17,9 +17,6 @@ import { LOOPType, Period } from "../loop-types.js";
 import { HALVED_LOOPS, QUARTERED_LOOPS } from "../validation/LOOPValidator.js";
 import { findLetterByMotions } from "../LetterLookup.js";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface MotionData {
   color: string;
@@ -59,9 +56,6 @@ export interface LOOPExecutionResult {
   error?: string;
 }
 
-// ============================================================================
-// LOCATION ROTATION MAPS
-// ============================================================================
 
 /**
  * Grid location identifiers
@@ -127,9 +121,6 @@ const LOCATION_MAP_STATIC: Record<string, string> = {
   nw: "nw",
 };
 
-/**
- * Determine hand rotation direction from start to end location
- */
 function getHandRotationDirection(
   startLocation: string,
   endLocation: string
@@ -160,9 +151,6 @@ function getHandRotationDirection(
   return "static";
 }
 
-/**
- * Get the appropriate location map for a hand rotation direction
- */
 function getLocationMapForHandRotation(
   direction: "cw" | "ccw" | "dash" | "static"
 ): Record<string, string> {
@@ -178,12 +166,8 @@ function getLocationMapForHandRotation(
   }
 }
 
-// ============================================================================
-// REWOUND EXECUTOR
-// ============================================================================
 
 /**
- * Execute the Rewound LOOP
  *
  * Rewound is a temporal transformation that plays the sequence backwards.
  * It takes the partial sequence and appends a reversed copy.
@@ -217,12 +201,10 @@ function executeRewound(
     };
   }
 
-  // Separate start position from actual steps
   const startPositionStep = steps[0]!;
   const actualSteps = steps.slice(1);
   const originalLength = actualSteps.length;
 
-  // Create reversed steps and derive their letters
   const reversedSteps: SequenceStep[] = [];
   const derivedLetters: string[] = [];
   const stepsToReverse = [...actualSteps].reverse();
@@ -255,14 +237,11 @@ function executeRewound(
     reversedSteps.push(rewoundStep);
   }
 
-  // Combine: start position + original steps + reversed steps
   const allSteps = [startPositionStep, ...actualSteps, ...reversedSteps];
 
-  // Build the loop word from seed + derived
   const derivedWord = derivedLetters.join("");
   const loopWord = word + derivedWord;
 
-  // Track which beat indices are derived (1-indexed, excluding start position)
   const derivedStepIndices = Array.from(
     { length: originalLength },
     (_, i) => originalLength + i + 1
@@ -283,7 +262,6 @@ function executeRewound(
 }
 
 /**
- * Create a rewound beat from a source beat
  * Swaps start/end positions and reverses motion directions
  */
 function createRewoundStep(
@@ -307,7 +285,6 @@ function createRewoundStep(
 }
 
 /**
- * Create a rewound motion from source motion
  * Swaps start/end locations and reverses rotation direction
  */
 function createRewoundMotion(
@@ -335,9 +312,6 @@ function createRewoundMotion(
   };
 }
 
-// ============================================================================
-// STRICT ROTATED EXECUTOR
-// ============================================================================
 
 /**
  * Execute the Strict Rotated LOOP
@@ -362,7 +336,6 @@ function executeStrictRotated(
   period: Period,
   allPictographs: PictographData[]
 ): LOOPExecutionResult {
-  // Validate sequence
   if (steps.length < 2) {
     return {
       success: false,
@@ -404,14 +377,12 @@ function executeStrictRotated(
     };
   }
 
-  // Calculate how many steps to generate
   const originalLength = actualSteps.length;
   const entriesToAdd =
     period === Period.HALVED
       ? originalLength
       : originalLength * 3;
 
-  // Generate the new steps and derive letters
   const generatedSteps: SequenceStep[] = [];
   const derivedLetters: string[] = [];
   const allStepsForGeneration = [...actualSteps];
@@ -459,14 +430,11 @@ function executeStrictRotated(
     nextStepNumber++;
   }
 
-  // Combine: start position + original steps + generated steps
   const allSteps = [startPositionStep, ...actualSteps, ...generatedSteps];
 
-  // Build the loop word from seed + derived
   const derivedWord = derivedLetters.join("");
   const loopWord = word + derivedWord;
 
-  // Track which beat indices are derived
   const derivedStepIndices = Array.from(
     { length: entriesToAdd },
     (_, i) => originalLength + i + 1
@@ -486,9 +454,6 @@ function executeStrictRotated(
   };
 }
 
-/**
- * Get the matching index for index mapping
- */
 function getMatchingIndex(
   stepNumber: number,
   finalLength: number,
@@ -503,15 +468,11 @@ function getMatchingIndex(
   }
 }
 
-/**
- * Create a rotated step from a matching step
- */
 function createRotatedStep(
   matchingStep: SequenceStep,
   previousStep: SequenceStep,
   stepNumber: number
 ): SequenceStep {
-  // Get hand rotation directions from the matching step
   const blueHandRotDir = getHandRotationDirection(
     matchingStep.motions.blue.startLocation,
     matchingStep.motions.blue.endLocation
@@ -521,11 +482,9 @@ function createRotatedStep(
     matchingStep.motions.red.endLocation
   );
 
-  // Get location maps
   const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
   const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
 
-  // Calculate new end locations
   const newBlueEndLoc = blueLocationMap[previousStep.motions.blue.endLocation] || previousStep.motions.blue.endLocation;
   const newRedEndLoc = redLocationMap[previousStep.motions.red.endLocation] || previousStep.motions.red.endLocation;
 
@@ -557,7 +516,6 @@ function createRotatedStep(
 }
 
 /**
- * Derive grid position from blue and red end locations
  * This is a simplified version - the full implementation would use GridPositionDeriver
  */
 function derivePositionFromLocations(blueLoc: string, redLoc: string): string {
@@ -582,9 +540,6 @@ function derivePositionFromLocations(blueLoc: string, redLoc: string): string {
   return `gamma${locIndex}`;
 }
 
-/**
- * Get numeric index for a location (for position derivation)
- */
 function getLocationIndex(loc: string): number {
   const mapping: Record<string, number> = {
     n: 1,
@@ -599,13 +554,9 @@ function getLocationIndex(loc: string): number {
   return mapping[loc] || 1;
 }
 
-// ============================================================================
-// MAIN EXECUTOR
-// ============================================================================
 
 /**
  * Execute a LOOP transformation on a sequence
- *
  * @param steps - The sequence steps (including start position)
  * @param word - The seed word
  * @param loopType - Type of LOOP transformation

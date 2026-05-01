@@ -2,9 +2,6 @@ import { describe, it, expect } from "vitest";
 import { PositionReachabilityAnalyzer } from "../../../src/generation/reachability/PositionReachabilityAnalyzer.js";
 import type { PictographData, MotionData } from "../../../src/generation/constraints/types.js";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
@@ -31,9 +28,6 @@ function variation(start: string, end: string, letter = "A"): PictographData {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("PositionReachabilityAnalyzer", () => {
   const analyzer = new PositionReachabilityAnalyzer();

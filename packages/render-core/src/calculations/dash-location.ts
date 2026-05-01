@@ -21,9 +21,6 @@ import {
   OPPOSITE_LOCATION_MAP,
 } from "../constants/dash-location-maps.js";
 
-// ============================================================================
-// INPUT TYPE
-// ============================================================================
 
 export interface DashLocationInput {
   letter: string;
@@ -40,12 +37,8 @@ export interface DashLocationInput {
   gridMode: GridMode;
 }
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
 /**
- * Calculate shift arrow location (midpoint between start and end).
  * This is where pro/anti/float arrows are positioned.
  */
 function calculateShiftLocation(startLoc: GridLocation, endLoc: GridLocation): GridLocation | null {
@@ -72,16 +65,10 @@ function calculateShiftLocation(startLoc: GridLocation, endLoc: GridLocation): G
   return directionPairs[pairKey] || null;
 }
 
-/**
- * Get the opposite location on the grid.
- */
 function getOppositeLocation(location: GridLocation): GridLocation {
   return OPPOSITE_LOCATION_MAP[location] || location;
 }
 
-/**
- * Calculate dash location for non-zero turns based on rotation direction.
- */
 function dashLocationNonZeroTurns(startLocation: GridLocation, rotationDirection: string): GridLocation {
   const rotDir = rotationDirection.toLowerCase();
   const isNoRotation = rotDir === "norotation" || rotDir === "none" || rotDir === "no_rotation" || rotDir === "no_rot";
@@ -104,12 +91,8 @@ function dashLocationNonZeroTurns(startLocation: GridLocation, rotationDirection
   return directionMap?.[startLocation] || startLocation;
 }
 
-// ============================================================================
-// MAIN CALCULATION FUNCTION
-// ============================================================================
 
 /**
- * Calculate the location where a dash arrow should be placed.
  * This is NOT the same as start or end location.
  */
 export function calculateDashLocation(input: DashLocationInput): GridLocation {

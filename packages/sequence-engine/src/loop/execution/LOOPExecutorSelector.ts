@@ -46,9 +46,6 @@ export class LOOPExecutorSelector {
     ]);
   }
 
-  /**
-   * Get the appropriate LOOP executor for the given LOOP type
-   */
   getExecutor(loopType: LOOPType): ILOOPExecutor {
     const executor = this.executorMap.get(loopType);
     if (!executor) {
@@ -60,9 +57,6 @@ export class LOOPExecutorSelector {
     return executor;
   }
 
-  /**
-   * Check if a LOOP type is supported
-   */
   isSupported(loopType: LOOPType): boolean {
     return this.executorMap.has(loopType);
   }

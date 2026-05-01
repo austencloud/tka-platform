@@ -21,7 +21,6 @@ import { Period } from "../loop-types.js";
 export class RotatedEndPositionSelector {
   /**
    * Determine the required end position for a rotated LOOP.
-   *
    * @param period - Whether the rotation is halved (180 degrees) or quartered (90 degrees)
    * @param startPosition - The starting position of the sequence
    * @returns The required end position to complete the rotation
@@ -47,9 +46,6 @@ export class RotatedEndPositionSelector {
     return halvedEnd;
   }
 
-  /**
-   * Check if a given (start, end) position pair is valid for the period.
-   */
   isValidRotatedPair(period: Period, startPosition: string, endPosition: string): boolean {
     if (period === Period.HALVED) {
       return HALF_POSITION_MAP[startPosition] === endPosition;

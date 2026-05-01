@@ -29,7 +29,6 @@ export interface NineSquareSearchResult {
 	data: GridPosition | QFTFormula | GridTransition | FlowArtsGlossaryEntry;
 }
 
-/** Search across all 9-Square and QFT domain data */
 export function searchNineSquare(query: string): NineSquareSearchResult[] {
 	// TODO: Implement search once data files are populated
 	void query;

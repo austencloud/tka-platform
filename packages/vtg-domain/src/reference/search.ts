@@ -40,7 +40,6 @@ interface ContributorResult {
 }
 
 /**
- * Score a candidate string against the query.
  * Returns 0 for no match, higher values for better matches.
  *
  * Scoring tiers:
@@ -64,9 +63,6 @@ function escapeRegex(str: string): string {
 	return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/**
- * Return the best (highest) score from an array of candidate strings.
- */
 function bestScore(candidates: string[], queryLower: string): number {
 	let best = 0;
 	for (const c of candidates) {
@@ -76,7 +72,6 @@ function bestScore(candidates: string[], queryLower: string): number {
 	return best;
 }
 
-/** Search across all VTG domain data */
 export function searchVTG(query: string): VTGSearchResult[] {
 	if (!query || !query.trim()) return [];
 

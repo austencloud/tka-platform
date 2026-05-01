@@ -9,9 +9,6 @@ import type { MotionData } from "../../core/types/sequence-engine-types.js";
 
 export type { MotionData };
 
-// =============================================================================
-// PICTOGRAPH DATA TYPES (shared with sequence builder)
-// =============================================================================
 
 export interface PictographData {
   letter: string;
@@ -23,9 +20,6 @@ export interface PictographData {
   redMotion: MotionData;
 }
 
-// =============================================================================
-// CONSTRAINT INTERFACES
-// =============================================================================
 
 /**
  * Context passed to constraints for evaluation.
@@ -113,15 +107,11 @@ export interface IVariationConstraint extends IConstraint {
  */
 export interface ISequenceConstraint extends IConstraint {
   /**
-   * Evaluate the constraint across the entire sequence.
    * Called after sequence is complete for final scoring.
    */
   evaluateSequence(steps: PictographData[]): ConstraintScore;
 }
 
-// =============================================================================
-// CONSTRAINT SET
-// =============================================================================
 
 /**
  * A set of constraints to apply during generation.
@@ -137,9 +127,6 @@ export interface ConstraintSet {
   weights?: Map<ConstraintType, number>;
 }
 
-// =============================================================================
-// SCORING RESULT
-// =============================================================================
 
 /**
  * Detailed scoring result for a candidate variation.
@@ -161,9 +148,6 @@ export interface VariationScore {
   constraintScores: Map<ConstraintType, ConstraintScore>;
 }
 
-// =============================================================================
-// SEARCH STATE
-// =============================================================================
 
 /**
  * State of a partial sequence during beam search.
@@ -185,9 +169,6 @@ export interface SearchState {
   bridgeStepIndices?: Set<number>;
 }
 
-// =============================================================================
-// CONSTRAINT REPORT
-// =============================================================================
 
 /**
  * Report on how well a generated sequence satisfies constraints.

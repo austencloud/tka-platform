@@ -3,32 +3,38 @@
   "version": "0.1.0",
   "description": "Platform-agnostic sequence engine for TKA letter transitions, bridge finding, and orientation propagation.",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./core": {
       "types": "./src/core/index.ts",
-      "default": "./src/core/index.ts"
+      "import": "./dist/core/index.js",
+      "default": "./dist/core/index.js"
     },
     "./generation": {
       "types": "./src/generation/index.ts",
-      "default": "./src/generation/index.ts"
+      "import": "./dist/generation/index.js",
+      "default": "./dist/generation/index.js"
     },
     "./loop": {
       "types": "./src/loop/index.ts",
-      "default": "./src/loop/index.ts"
+      "import": "./dist/loop/index.js",
+      "default": "./dist/loop/index.js"
     },
     "./analysis": {
       "types": "./src/analysis/index.ts",
-      "default": "./src/analysis/index.ts"
+      "import": "./dist/analysis/index.js",
+      "default": "./dist/analysis/index.js"
     },
     "./harness": {
       "types": "./src/harness/index.ts",
-      "default": "./src/harness/index.ts"
+      "import": "./dist/harness/index.js",
+      "default": "./dist/harness/index.js"
     }
   },
   "files": [

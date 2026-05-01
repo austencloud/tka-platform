@@ -9,9 +9,6 @@
  * The app uses GridPosition/GridLocation enums but their runtime values are identical strings.
  */
 
-// ============================================================================
-// POSITION ZONE UTILITIES
-// ============================================================================
 
 /**
  * Position Zone Types
@@ -20,9 +17,6 @@
  */
 export type PositionZone = "alpha" | "beta" | "gamma1-8" | "gamma9-16";
 
-/**
- * Extract the zone from a grid position string
- */
 export function getPositionZone(position: string): PositionZone {
   if (position.startsWith("alpha")) return "alpha";
   if (position.startsWith("beta")) return "beta";
@@ -33,9 +27,6 @@ export function getPositionZone(position: string): PositionZone {
   throw new Error(`Unknown position: ${position}`);
 }
 
-/**
- * Get the position group name from a grid position string
- */
 export function getPositionGroup(
   position: string
 ): "alpha" | "beta" | "gamma" | "zeta" | "eta" | "tau" | "terra" {
@@ -67,9 +58,6 @@ export interface ZoneCoverageAnalysis {
   };
 }
 
-/**
- * Analyze zone coverage for a list of end positions
- */
 export function analyzeZoneCoverage(
   positions: (string | null | undefined)[]
 ): ZoneCoverageAnalysis {
@@ -117,9 +105,6 @@ export function analyzeZoneCoverage(
   };
 }
 
-// ============================================================================
-// HALF POSITION MAP - 180 degree rotation
-// ============================================================================
 
 /**
  * Maps each position to its opposite position (4 positions away within each 8-position group).
@@ -160,9 +145,6 @@ export const HALF_POSITION_MAP: Record<string, string> = {
   terra1: "terra1",
 };
 
-// ============================================================================
-// QUARTER POSITION MAPS - 90 degree rotation
-// ============================================================================
 
 /**
  * Clockwise 90 degree rotation.
@@ -242,9 +224,6 @@ export const QUARTER_POSITION_MAP_CCW: Record<string, string> = {
   terra1: "terra1",
 };
 
-// ============================================================================
-// VALIDATION SETS
-// ============================================================================
 
 /**
  * Halved LOOP validation set.
@@ -268,9 +247,6 @@ export const QUARTERED_LOOPS = new Set<string>([
   ),
 ]);
 
-// ============================================================================
-// LOCATION ROTATION MAPS
-// ============================================================================
 
 /**
  * Eighth location rotation map - 45 degree clockwise rotation.
@@ -322,9 +298,6 @@ export const LOCATION_MAP_STATIC: Record<string, string> = {
   c: "c",
 };
 
-// ============================================================================
-// HAND ROTATION DIRECTION
-// ============================================================================
 
 /**
  * Hand rotation direction map.
@@ -352,9 +325,6 @@ export const HAND_ROTATION_DIRECTION_MAP = new Map<
   ["ne,ne", "static"], ["se,se", "static"], ["sw,sw", "static"], ["nw,nw", "static"],
 ]);
 
-/**
- * Determine hand rotation direction based on start and end locations.
- */
 export function getHandRotationDirection(
   startLocation: string,
   endLocation: string
@@ -371,9 +341,6 @@ export function getHandRotationDirection(
   return direction;
 }
 
-/**
- * Get location map for a given hand rotation direction.
- */
 export function getLocationMapForHandRotation(
   handRotationDir: "cw" | "ccw" | "dash" | "static"
 ): Record<string, string> {
@@ -392,7 +359,6 @@ export function getLocationMapForHandRotation(
 }
 
 /**
- * Mirror a hand rotation direction across the vertical axis (E↔W flip).
  * CW becomes CCW and vice versa. Dash and static are unchanged.
  */
 export function mirrorHandRotationDirection(

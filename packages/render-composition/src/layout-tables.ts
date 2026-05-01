@@ -270,7 +270,6 @@ export function getLayout(
 }
 
 /**
- * Calculate pixel dimensions for a rendered choreo card.
  *
  * Matches the desktop _create_image() formula:
  *   width  = floor(columns * stepSize)

@@ -72,7 +72,6 @@ export const DIFFICULTY_LEVELS: Record<number, DifficultyLevel> = {
 
 export const DEFAULT_DIFFICULTY_STYLE: DifficultyLevel = DIFFICULTY_LEVELS[1]!;
 
-/** Apply gradient stops to a CanvasGradient. Works with both linear and radial gradients. */
 export function applyGradientStops(
   gradient: CanvasGradient,
   stops: GradientStop[]

@@ -15,9 +15,7 @@ import type { ITransitionGraph } from "../../src/core/transition-graph/ITransiti
 import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/sequence-engine-types.js";
 import { LOOPType, Period } from "../../src/loop/loop-types.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock data factory (same pattern as full-build tests)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
@@ -44,7 +42,6 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock pictograph dataset
 //
 // Same minimal graph as full-build:
@@ -53,7 +50,6 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
 //   B: beta3 → alpha1
 //   C: alpha1 → alpha1
 //   D: beta3 → beta3
-// ─────────────────────────────────────────────────────────────────────────────
 
 const MOCK_PICTOGRAPHS: PictographData[] = [
   makePictograph({
@@ -100,9 +96,7 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
   }),
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock providers
-// ─────────────────────────────────────────────────────────────────────────────
 
 class MockVariationProvider implements IVariationProvider {
   private readonly data: PictographData[];
@@ -204,9 +198,7 @@ class MockTransitionGraph implements ITransitionGraph {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tests
-// ─────────────────────────────────────────────────────────────────────────────
 
 describe("SequenceBuilder LOOP extension", () => {
   let builder: SequenceBuilder;

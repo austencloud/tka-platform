@@ -39,7 +39,6 @@ export interface SpinScienceSearchResult {
 		| FlowArtsGlossaryEntry;
 }
 
-/** Search across all Spin Science domain data */
 export function searchSpinScience(
 	query: string,
 ): SpinScienceSearchResult[] {

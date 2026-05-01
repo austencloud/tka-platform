@@ -98,7 +98,6 @@ export const TERM_ALIASES: Record<string, string> = {
   "qs": "symmetry-invariance",
 } as const;
 
-/** Resolve a term through the alias map. Returns the canonical term. */
 export function resolveTermAlias(term: string): string {
   const normalized = term.toLowerCase().trim();
   return TERM_ALIASES[normalized] ?? normalized;

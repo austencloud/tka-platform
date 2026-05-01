@@ -57,9 +57,6 @@ export interface WordAnalysis {
   propReversalBlockers: string[];
 }
 
-/**
- * Check if a transition between two pictographs has a hand reversal.
- */
 function hasHandReversal(from: PictographData, to: PictographData): { blue: boolean; red: boolean } {
   const fromBlueHandPath = getHandpathDirection(
     from.blueMotion.startLocation,
@@ -89,9 +86,6 @@ function hasHandReversal(from: PictographData, to: PictographData): { blue: bool
   return { blue: blueReversal, red: redReversal };
 }
 
-/**
- * Check if a transition has a prop rotation reversal.
- */
 function hasPropReversal(from: PictographData, to: PictographData): { blue: boolean; red: boolean } {
   // Get effective prop rotation (considering motion type)
   const fromBlueRotation = getEffectivePropRotation(from.blueMotion);
@@ -112,7 +106,6 @@ function hasPropReversal(from: PictographData, to: PictographData): { blue: bool
 }
 
 /**
- * Get effective prop rotation direction considering motion type.
  * Returns null for static motions (no rotation).
  */
 function getEffectivePropRotation(motion: PictographData["blueMotion"]): "cw" | "ccw" | null {
@@ -122,9 +115,6 @@ function getEffectivePropRotation(motion: PictographData["blueMotion"]): "cw" | 
   return motion.rotationDirection as "cw" | "ccw";
 }
 
-/**
- * Analyze a single letter-to-letter transition.
- */
 export function analyzeTransition(
   fromLetter: string,
   toLetter: string,
@@ -195,9 +185,6 @@ export function analyzeTransition(
   };
 }
 
-/**
- * Analyze an entire word for constraint feasibility.
- */
 export function analyzeWord(
   word: string,
   letters: string[],

@@ -9,9 +9,6 @@ import type { GridMode } from "../types.js";
 
 const VIEWBOX_SIZE = 950;
 
-// ============================================================================
-// PROP TYPE ARRAYS (exact lists from app's PropClassification.ts)
-// ============================================================================
 
 const BIG_UNILATERAL_PROPS = [
   "bighoop", "bigfan", "bigtriad", "bigtorch", "bigcontactball",
@@ -30,9 +27,6 @@ const STRICT_PLACED = [
   "bighoop", "doublestar", "bigbuugeng", "bigdoublestar", "triquetra",
 ] as const;
 
-// ============================================================================
-// CLASSIFICATION FUNCTIONS
-// ============================================================================
 
 export function isUnilateralProp(propType: string): boolean {
   const t = propType.toLowerCase();
@@ -57,7 +51,6 @@ export function pictographRequiresStrictHandpoints(
 }
 
 /**
- * Get the beta offset size for a prop type.
  * Box mode applies diagonal compensation (÷√2).
  */
 export function getBetaOffsetSize(propType: string, gridMode?: GridMode): number {

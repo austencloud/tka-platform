@@ -41,7 +41,6 @@ import type { ReachabilityResult } from "../reachability/PositionReachabilityAna
 export type PropContinuityMode = "maximize" | "allow-reversals" | "force-reversals";
 
 /**
- * Enrich a selected variation with its allocated turns and resolved rotation
  * directions. This makes static/dash motions that will get non-zero turns
  * visible to the constraint system on subsequent beats.
  *
@@ -179,9 +178,6 @@ export class BeamSearch {
     private readonly gridMode: string,
   ) {}
 
-  /**
-   * Run beam search to find the best sequence for the given letters.
-   */
   search(
     letters: string[],
     startPosition: string | undefined,
@@ -355,7 +351,6 @@ export class BeamSearch {
   }
 
   /**
-   * Run beam search for length-based generation.
    *
    * Instead of placing specific letters, discovers available letters at each
    * position and picks the best one according to constraint scoring. No bridges
@@ -596,9 +591,6 @@ export class BeamSearch {
     return this.buildResult(bestState, constraintSet, statesExplored, beamPrunings, false);
   }
 
-  /**
-   * Attempt single-letter and multi-letter bridges between two letters.
-   */
   private tryBridges(
     state: SearchState,
     fromLetter: string,
@@ -754,18 +746,12 @@ export class BeamSearch {
     return { newStates, statesExplored };
   }
 
-  /**
-   * Get all variations for a letter across all positions (when no start position given).
-   */
   private getAllVariationsForLetter(letter: string): PictographData[] {
     return this.variationProvider
       .getAllVariations(this.gridMode)
       .filter((p) => p.letter === letter);
   }
 
-  /**
-   * Find a valid Type 6 start position pictograph.
-   */
   private findStartPosition(
     position: string,
   ): { variation: PictographData; index: number } | null {
@@ -787,7 +773,6 @@ export class BeamSearch {
   }
 
   /**
-   * Propagate orientations through the sequence.
    * Each beat's start orientation = previous beat's end orientation.
    */
   private propagateOrientations(steps: PictographData[]): PictographData[] {
@@ -845,9 +830,6 @@ export class BeamSearch {
     return result;
   }
 
-  /**
-   * Build the final result from a search state.
-   */
   private buildResult(
     state: SearchState,
     constraintSet: ConstraintSet,
@@ -875,9 +857,6 @@ export class BeamSearch {
     };
   }
 
-  /**
-   * Build a failure result.
-   */
   private failResult(
     error: string,
     statesExplored: number,

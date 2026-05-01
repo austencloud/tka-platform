@@ -2,9 +2,6 @@ import { describe, it, expect } from "vitest";
 import { PositionTransitionGraph } from "../../../src/generation/reachability/PositionTransitionGraph.js";
 import type { PictographData, MotionData } from "../../../src/generation/constraints/types.js";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
@@ -31,9 +28,6 @@ function variation(start: string, end: string): PictographData {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("PositionTransitionGraph", () => {
   it("builds forward adjacency from variations", () => {

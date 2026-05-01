@@ -14,9 +14,6 @@ import type { GridLocation, VectorDirection } from "../types.js";
 
 type ColorMap = Record<"blue" | "red", VectorDirection>;
 
-// ============================================================================
-// STATIC/DASH DIRECTION MAPS (by location and color)
-// ============================================================================
 
 /**
  * Diamond grid (N/S/E/W) - radial orientation (IN/OUT)
@@ -80,9 +77,6 @@ export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   c: { red: "up", blue: "down" },
 };
 
-// ============================================================================
-// SHIFT MOTION DIRECTION MAPS (by start->end transition)
-// ============================================================================
 
 /**
  * Shift motion transitions - radial orientation
@@ -115,9 +109,6 @@ export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocat
   c: {},
 };
 
-// ============================================================================
-// LETTER I DIRECTION MAPS
-// ============================================================================
 
 /**
  * Letter I (one pro + one anti, same trajectory) has unique offset directions
@@ -148,9 +139,6 @@ export const LETTER_I_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   c: { red: "up", blue: "down" },
 };
 
-// ============================================================================
-// OPPOSITE DIRECTIONS
-// ============================================================================
 
 export const OPPOSITE_DIRECTIONS: Record<VectorDirection, VectorDirection> = {
   up: "down",

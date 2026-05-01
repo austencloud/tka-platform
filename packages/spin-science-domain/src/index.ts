@@ -1,6 +1,3 @@
-// =============================================================================
-// Types (from data files)
-// =============================================================================
 export type { FlowerShape, ShapeMatrixEntry } from "./data/shape-matrix.js";
 export type { PHATPattern } from "./data/phat-chart.js";
 export type { PlaneDefinition } from "./data/three-planes.js";
@@ -20,9 +17,6 @@ export type {
 	SpinScienceSearchResultType,
 } from "./reference/search.js";
 
-// =============================================================================
-// Data
-// =============================================================================
 export {
 	SHAPE_MATRIX_SHAPES,
 	SHAPE_MATRIX_ENTRIES,
@@ -38,9 +32,6 @@ export { SPIN_SCIENCE_GLOSSARY } from "./data/glossary.js";
 export { SPIN_SCIENCE_DOCUMENTS } from "./data/documents.js";
 export { SPIN_SCIENCE_EXTERNAL_LINKS } from "./data/external-links.js";
 
-// =============================================================================
-// Reference Functions
-// =============================================================================
 export {
 	getShapeMatrixEntry,
 	getShapeMatrixRow,

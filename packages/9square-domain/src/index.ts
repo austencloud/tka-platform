@@ -1,6 +1,3 @@
-// =============================================================================
-// Types (from data files)
-// =============================================================================
 export type { GridPosition, GridMode, NineSquareGrid } from "./data/grid.js";
 export type {
 	QFTPositionNumber,
@@ -23,9 +20,6 @@ export type {
 	NineSquareSearchResultType,
 } from "./reference/search.js";
 
-// =============================================================================
-// Data
-// =============================================================================
 export { NINE_SQUARE_POSITIONS, NINE_SQUARE_GRID } from "./data/grid.js";
 export { QFT_POSITIONS, QFT_FORMULAS } from "./data/qft-notation.js";
 export { NINE_SQUARE_TRANSITIONS } from "./data/transitions.js";
@@ -36,9 +30,6 @@ export { NINE_SQUARE_GLOSSARY } from "./data/glossary.js";
 export { NINE_SQUARE_DOCUMENTS } from "./data/documents.js";
 export { NINE_SQUARE_EXTERNAL_LINKS } from "./data/external-links.js";
 
-// =============================================================================
-// Reference Functions
-// =============================================================================
 export { getGridPosition, listGridPositions } from "./reference/grid-lookup.js";
 export { parseQFTFormula, describeQFTFormula } from "./reference/qft-lookup.js";
 export { getGridTransition, getTransitionsFrom } from "./reference/transition-lookup.js";

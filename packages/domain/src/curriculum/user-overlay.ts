@@ -1,7 +1,6 @@
 import type { MajorLevel, UserKnowledgeOverlay } from "../types/curriculum.js";
 import { getConceptById } from "./knowledge-helpers.js";
 
-/** Derive the user's knowledge overlay from their completed concepts */
 export function deriveUserOverlay(completedConceptIds: string[]): UserKnowledgeOverlay {
   const knownTerms = new Set<string>();
   let highestLevel = 0;

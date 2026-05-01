@@ -3,56 +3,68 @@
   "version": "0.1.0",
   "description": "Canonical TKA sequence types — Step, Motion, and enums shared across engine, domain, app, and MCP.",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./step": {
       "types": "./src/step.ts",
-      "default": "./src/step.ts"
+      "import": "./dist/step.js",
+      "default": "./dist/step.js"
     },
     "./motion": {
       "types": "./src/motion.ts",
-      "default": "./src/motion.ts"
+      "import": "./dist/motion.js",
+      "default": "./dist/motion.js"
     },
     "./letter": {
       "types": "./src/letter.ts",
-      "default": "./src/letter.ts"
+      "import": "./dist/letter.js",
+      "default": "./dist/letter.js"
     },
     "./grid": {
       "types": "./src/grid.ts",
-      "default": "./src/grid.ts"
+      "import": "./dist/grid.js",
+      "default": "./dist/grid.js"
     },
     "./motion-type": {
       "types": "./src/motion-type.ts",
-      "default": "./src/motion-type.ts"
+      "import": "./dist/motion-type.js",
+      "default": "./dist/motion-type.js"
     },
     "./rotation-direction": {
       "types": "./src/rotation-direction.ts",
-      "default": "./src/rotation-direction.ts"
+      "import": "./dist/rotation-direction.js",
+      "default": "./dist/rotation-direction.js"
     },
     "./orientation": {
       "types": "./src/orientation.ts",
-      "default": "./src/orientation.ts"
+      "import": "./dist/orientation.js",
+      "default": "./dist/orientation.js"
     },
     "./plane": {
       "types": "./src/plane.ts",
-      "default": "./src/plane.ts"
+      "import": "./dist/plane.js",
+      "default": "./dist/plane.js"
     },
     "./prop-color": {
       "types": "./src/prop-color.ts",
-      "default": "./src/prop-color.ts"
+      "import": "./dist/prop-color.js",
+      "default": "./dist/prop-color.js"
     },
     "./builders": {
       "types": "./src/builders.ts",
-      "default": "./src/builders.ts"
+      "import": "./dist/builders.js",
+      "default": "./dist/builders.js"
     },
     "./guards": {
       "types": "./src/guards.ts",
-      "default": "./src/guards.ts"
+      "import": "./dist/guards.js",
+      "default": "./dist/guards.js"
     }
   },
   "files": [

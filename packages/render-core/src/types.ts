@@ -5,9 +5,6 @@
  * Both the browser app and Node.js MCP server can import these.
  */
 
-// ============================================================================
-// GRID TYPES
-// ============================================================================
 
 /** Grid locations (8 compass points + center) */
 export type GridLocation =
@@ -40,16 +37,10 @@ export const INTERCARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set([
   "nw",
 ]);
 
-/**
- * Check if a location is cardinal (N/E/S/W)
- */
 export function isCardinal(location: string): boolean {
   return CARDINAL_LOCATIONS.has(location.toLowerCase() as GridLocation);
 }
 
-// ============================================================================
-// MOTION TYPES
-// ============================================================================
 
 /** Motion types */
 export type MotionType = "static" | "pro" | "anti" | "dash" | "float";
@@ -81,9 +72,6 @@ export type RotationDirection = "cw" | "ccw" | "no_rot";
 /** Prop colors */
 export type PropColor = "blue" | "red";
 
-// ============================================================================
-// COORDINATE TYPES
-// ============================================================================
 
 /** 2D coordinates */
 export interface Coordinates {
@@ -106,16 +94,10 @@ export interface ArrowPlacement {
   location: GridLocation;
 }
 
-// ============================================================================
-// HAND PATH
-// ============================================================================
 
 /** Hand path directions (movement between locations) */
 export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
 
-// ============================================================================
-// SPINNING PLANE (Future - not yet assigned to a level)
-// ============================================================================
 
 /**
  * The plane in which spinning occurs.
@@ -128,9 +110,6 @@ export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
  */
 export type SpinningPlane = "wall" | "wheel" | "floor";
 
-// ============================================================================
-// VECTOR DIRECTIONS (for beta offset)
-// ============================================================================
 
 /** Vector directions for offset calculations */
 export type VectorDirection =

@@ -28,15 +28,11 @@ const ARC_MOTION_TYPES: ReadonlySet<string> = new Set([
   "pro", "anti", "float",
 ]);
 
-/**
- * Check whether two grid locations are opposite (180 degrees apart).
- */
 export function areOppositeLocations(loc1: string, loc2: string): boolean {
   return OPPOSITE_PAIRS.has(`${loc1}:${loc2}`);
 }
 
 /**
- * Check whether a single motion has a valid path for its motion type.
  * Returns false if the motion is an arc type (PRO/ANTI/FLOAT) traveling
  * between opposite grid points.
  */
@@ -54,7 +50,6 @@ export function isValidMotionPath(motion: MotionData): boolean {
 }
 
 /**
- * Check whether both motions in a pictograph variation have valid paths.
  * Use this to filter out invalid variations from source data.
  */
 export function hasValidMotionPaths(

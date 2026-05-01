@@ -11,7 +11,6 @@ import type { ITransitionGraph } from "./ITransitionGraph.js";
 let instance: ITransitionGraph | null = null;
 
 /**
- * Register the initialized transition graph instance.
  * Must be called before getLetterTransitionGraph().
  */
 export function setLetterTransitionGraph(graph: ITransitionGraph): void {
@@ -19,7 +18,6 @@ export function setLetterTransitionGraph(graph: ITransitionGraph): void {
 }
 
 /**
- * Get the initialized transition graph.
  * Throws if setLetterTransitionGraph() has not been called.
  */
 export function getLetterTransitionGraph(): ITransitionGraph {

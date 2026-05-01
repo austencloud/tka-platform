@@ -98,9 +98,6 @@ HASH_IN_PAIRS.forEach(([start, end]) => {
   handpathMap.set(`${start}_${end}`, HandPath.HASH_IN);
 });
 
-/**
- * Get hand path direction from start/end locations.
- */
 export function getHandpathDirection(startLocation: string | undefined, endLocation: string | undefined): HandPath {
   if (!startLocation || !endLocation) {
     return HandPath.STATIC;
@@ -135,7 +132,6 @@ function isHandPathReversal(prev: HandPath, current: HandPath): boolean {
 }
 
 /**
- * Calculate hand path continuity score between two consecutive steps.
  *
  * Scoring:
  * - cw → cw or ccw → ccw = 1 (continuous)

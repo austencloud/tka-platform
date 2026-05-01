@@ -10,9 +10,6 @@
 
 import type { Coordinates, GridLocation, GridMode } from "../types.js";
 
-// ============================================================================
-// RAW COORDINATE DATA
-// ============================================================================
 
 /**
  * Diamond grid coordinates (cardinal hand points) - STRICT values
@@ -103,9 +100,6 @@ export const BOX_OUTER_POINTS: Readonly<Record<string, Coordinates>> = {
 /** Center point */
 export const CENTER_POINT: Coordinates = { x: 475.0, y: 475.0 };
 
-// ============================================================================
-// FALLBACK COORDINATES
-// ============================================================================
 
 /**
  * Fallback hand point coordinates when mode-specific lookup fails - STRICT values

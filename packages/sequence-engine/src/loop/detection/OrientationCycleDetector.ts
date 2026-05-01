@@ -114,9 +114,6 @@ export function detectOrientationCycle(steps: SequenceStep[]): OrientationCycleR
   };
 }
 
-/**
- * Extract starting orientations from the start-position step or first step.
- */
 function getStartingOrientations(
   startStep: SequenceStep | undefined,
   firstStep: SequenceStep

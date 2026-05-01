@@ -36,9 +36,6 @@ export interface AnnotatedStep extends SequenceStep {
  * that had active rotation for that hand.
  */
 export class ReversalDetector {
-  /**
-   * Detect reversals for an entire sequence and return annotated steps.
-   */
   annotateSequence(steps: SequenceStep[]): AnnotatedStep[] {
     const result: AnnotatedStep[] = [];
 
@@ -57,9 +54,6 @@ export class ReversalDetector {
     return result;
   }
 
-  /**
-   * Detect reversals for a single step by looking at previous steps.
-   */
   detectReversal(
     previousSteps: SequenceStep[],
     currentStep: SequenceStep,
@@ -86,9 +80,6 @@ export class ReversalDetector {
     return info;
   }
 
-  /**
-   * Count total reversals in a sequence (both hands combined).
-   */
   countReversals(steps: SequenceStep[]): number {
     let count = 0;
 
@@ -103,9 +94,6 @@ export class ReversalDetector {
     return count;
   }
 
-  /**
-   * Count reversals per hand separately.
-   */
   countReversalsPerHand(steps: SequenceStep[]): { blue: number; red: number } {
     let blue = 0;
     let red = 0;
@@ -122,7 +110,6 @@ export class ReversalDetector {
   }
 
   /**
-   * Walk backwards through steps to find the last active (non-static)
    * rotation direction for a given hand.
    */
   private getLastActiveRotation(
@@ -138,9 +125,6 @@ export class ReversalDetector {
     return null;
   }
 
-  /**
-   * Get the rotation direction for one hand from a step.
-   */
   private getRotationDirection(
     step: SequenceStep,
     hand: "blue" | "red",
@@ -160,9 +144,6 @@ export class ReversalDetector {
     return null;
   }
 
-  /**
-   * Check whether two rotation directions constitute a reversal.
-   */
   private isReversal(prev: string | null, curr: string | null): boolean {
     if (!prev || !curr) return false;
     if (prev === "noRotation" || prev === "no_rot") return false;

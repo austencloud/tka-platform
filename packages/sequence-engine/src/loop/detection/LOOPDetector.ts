@@ -27,9 +27,6 @@ import {
 } from "../position-maps/strict-loop-position-maps.js";
 import { LOOPType, Period } from "../loop-types.js";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 /**
  * LOOP component primitives that can be detected.
@@ -94,9 +91,6 @@ export interface RichLOOPDetectionResult {
   compoundPattern?: CompoundPattern;
 }
 
-// ============================================================================
-// COMPONENT → LOOP TYPE MAPPING
-// ============================================================================
 
 /**
  * Maps a set of detected components to a LOOPType.
@@ -148,13 +142,7 @@ function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType |
   return null;
 }
 
-// ============================================================================
-// FUNCTIONAL API (backward-compatible with MCP server)
-// ============================================================================
 
-/**
- * Check if a sequence is circular (ends where it starts).
- */
 export function isSequenceCircular(steps: SequenceStep[]): boolean {
   if (steps.length < 2) return false;
 
@@ -166,9 +154,6 @@ export function isSequenceCircular(steps: SequenceStep[]): boolean {
   return startPositionStep.startPosition === lastStep.endPosition;
 }
 
-/**
- * Detect LOOP pattern from sequence steps (functional API).
- */
 export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult {
   const circular = isSequenceCircular(steps);
 
@@ -238,9 +223,6 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
   };
 }
 
-// ============================================================================
-// CLASS-BASED DETECTOR (richer analysis, ported from app)
-// ============================================================================
 
 /**
  * Rich LOOP detector that supports quartered rotation, compound patterns,
@@ -248,9 +230,6 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
  * needing app-specific dependencies.
  */
 export class LOOPDetectorClass {
-  /**
-   * Derive start position from a step's motion locations.
-   */
   private deriveStartPosition(step: SequenceStep): string | null {
     const blue = step.motions.blue;
     const red = step.motions.red;
@@ -266,9 +245,6 @@ export class LOOPDetectorClass {
     }
   }
 
-  /**
-   * Derive end position from a step's motion locations.
-   */
   private deriveEndPosition(step: SequenceStep): string | null {
     const blue = step.motions.blue;
     const red = step.motions.red;
@@ -285,7 +261,6 @@ export class LOOPDetectorClass {
   }
 
   /**
-   * Analyze a sequence and detect its LOOP type.
    * Takes an array of SequenceStep where step 0 is the start position
    * and subsequent steps are the letter steps.
    */
@@ -365,9 +340,6 @@ export class LOOPDetectorClass {
     return Period.HALVED;
   }
 
-  /**
-   * Detect quartered (90 degree) rotation by comparing start positions of each quarter.
-   */
   private detectsQuarteredRotation(steps: readonly SequenceStep[]): boolean {
     const length = steps.length;
     if (length < 4 || length % 4 !== 0) return false;
@@ -691,12 +663,8 @@ export class LOOPDetectorClass {
   }
 }
 
-// ============================================================================
-// SHARED HELPERS (used by both functional and class-based APIs)
-// ============================================================================
 
 /**
- * Check if two motion types are inverted pairs.
  * PRO <-> ANTI are inverted. STATIC, FLOAT, DASH are self-inverted.
  */
 function isMotionTypeInverted(type1: string, type2: string): boolean {
@@ -712,9 +680,6 @@ function isMotionTypeInverted(type1: string, type2: string): boolean {
   return false;
 }
 
-// ============================================================================
-// FUNCTIONAL PATTERN CHECKERS (used by detectLOOPFromSteps)
-// ============================================================================
 
 function checkRotatedPattern(
   steps: SequenceStep[],
@@ -813,8 +778,5 @@ function checkInvertedPattern(steps: SequenceStep[], halfLength: number): boolea
   return matchCount >= threshold;
 }
 
-// ============================================================================
-// SINGLETON EXPORT
-// ============================================================================
 
 export const loopDetectorClass = new LOOPDetectorClass();

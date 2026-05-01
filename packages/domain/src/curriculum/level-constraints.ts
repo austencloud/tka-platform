@@ -1,6 +1,5 @@
 import type { MajorLevel } from "../types/curriculum.js";
 
-/** Get the terms available at each major level (cumulative) */
 export function getLevelConstraints(majorLevel: MajorLevel): string {
   const constraints: string[] = [];
 
@@ -37,7 +36,6 @@ export function getLevelConstraints(majorLevel: MajorLevel): string {
   return constraints.join("\n");
 }
 
-/** Generate explanation level guidance for the LLM */
 export function getExplanationGuidance(majorLevel: MajorLevel): string {
   switch (majorLevel) {
     case 1:

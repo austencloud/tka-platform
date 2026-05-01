@@ -36,7 +36,6 @@ export class PositionTransitionGraph {
     }
   }
 
-  /** Positions reachable FROM the given position (one step forward). */
   getReachableFrom(position: string): Set<string> {
     return this.forward.get(position) ?? new Set();
   }
@@ -46,7 +45,6 @@ export class PositionTransitionGraph {
     return this.reverse.get(position) ?? new Set();
   }
 
-  /** All positions that appear as either start or end in any variation. */
   getAllPositions(): Set<string> {
     const all = new Set<string>();
     for (const pos of this.forward.keys()) all.add(pos);

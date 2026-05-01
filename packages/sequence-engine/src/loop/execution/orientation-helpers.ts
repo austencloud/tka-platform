@@ -10,7 +10,6 @@ import { calculateEndOrientation } from "../../core/orientation/OrientationCalcu
 import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
 
 /**
- * Propagate end orientations from the previous step to the next step's start orientations,
  * then calculate the next step's end orientations.
  *
  * Equivalent to calling:

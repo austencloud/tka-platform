@@ -27,9 +27,6 @@ import {
 } from "../validation/LOOPValidator.js";
 import { loopExecutorSelector, type LOOPExecutorSelector } from "../execution/LOOPExecutorSelector.js";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 /**
  * Categorizes how a sequence can be extended.
@@ -61,16 +58,12 @@ export interface ExtensionOptions {
   period?: Period;
 }
 
-// ============================================================================
-// IMPLEMENTATION
-// ============================================================================
 
 export class SequenceExtender {
   constructor(private readonly executorSelector: LOOPExecutorSelector) {}
 
   /**
    * Analyze a sequence to determine if it can be extended with LOOP patterns.
-   *
    * @param steps - Full step array (step 0 = start position, rest = beats)
    * @returns Analysis of extension possibilities
    */
@@ -162,7 +155,6 @@ export class SequenceExtender {
 
   /**
    * Generate extension steps for a sequence using a LOOP executor.
-   *
    * @param steps - Full step array (step 0 = start position, rest = beats)
    * @param options - LOOP type and period for extension
    * @returns New steps to append after the original sequence
@@ -205,29 +197,17 @@ export class SequenceExtender {
   }
 }
 
-// ============================================================================
-// HELPERS
-// ============================================================================
 
-/**
- * Get the start position from the start-position step (stepNumber 0).
- */
 function getStartPosition(steps: SequenceStep[]): string | null {
   const startStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
   return startStep?.startPosition ?? null;
 }
 
-/**
- * Get the current end position from the last beat step.
- */
 function getCurrentEndPosition(steps: SequenceStep[]): string | null {
   const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
   if (letterSteps.length === 0) return null;
   return letterSteps[letterSteps.length - 1]!.endPosition;
 }
 
-// ============================================================================
-// SINGLETON EXPORT
-// ============================================================================
 
 export const sequenceExtender = new SequenceExtender(loopExecutorSelector);

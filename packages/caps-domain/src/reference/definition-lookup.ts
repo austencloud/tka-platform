@@ -7,12 +7,10 @@
 import type { CAPDefinition, CAPDefinitionScope } from "../data/definitions.js";
 import { CAP_DEFINITIONS } from "../data/definitions.js";
 
-/** Get a specific CAP definition by ID */
 export function getCAPDefinition(id: string): CAPDefinition | undefined {
 	return CAP_DEFINITIONS.find((d) => d.id === id);
 }
 
-/** List all CAP definitions, optionally filtered by scope */
 export function listCAPDefinitions(
 	scope?: CAPDefinitionScope,
 ): CAPDefinition[] {

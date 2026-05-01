@@ -22,7 +22,6 @@ export interface PathCommand {
 
 /**
  * Draw a path from parsed commands onto a Canvas 2D context
- *
  * @param ctx - Canvas 2D rendering context
  * @param commands - Array of parsed path commands
  * @param offsetX - X offset for positioning
@@ -245,7 +244,6 @@ export function drawPathCommands(
 }
 
 /**
- * Convert SVG arc parameters to bezier curves.
  * Based on the SVG arc implementation algorithm.
  */
 function arcToBezier(
@@ -340,9 +338,6 @@ function arcToBezier(
   return curves;
 }
 
-/**
- * Calculate angle between two vectors
- */
 function angle(ux: number, uy: number, vx: number, vy: number): number {
   const sign = ux * vy - uy * vx < 0 ? -1 : 1;
   const dot = ux * vx + uy * vy;
@@ -351,7 +346,6 @@ function angle(ux: number, uy: number, vx: number, vy: number): number {
 }
 
 /**
- * Tokenize an SVG numeric argument string into individual numbers.
  *
  * SVG paths use compact notation where separators are implicit:
  *   - A minus sign starts a new number:  `24-10.7`  →  [24, -10.7]
@@ -370,7 +364,6 @@ function tokenizeNumbers(str: string): number[] {
 
 /**
  * Parse an SVG path "d" attribute string into commands
- *
  * @param d - SVG path data string
  * @returns Array of parsed path commands
  */
@@ -391,9 +384,6 @@ export function parsePathData(d: string): PathCommand[] {
   return commands;
 }
 
-/**
- * Draw an SVG path string onto a Canvas 2D context, scaled from viewBox to target rect.
- */
 export function drawSvgPath(
   ctx: CanvasRenderingContext2D,
   pathData: string,

@@ -54,16 +54,12 @@ const CATEGORY_PAGES: Record<string, string> = {
 };
 
 /**
- * Build a pattern ID from shape and category.
  * Example: "extension" + "tog-opp" => "tog-opp-extension"
  */
 function patternId(categoryId: string, shapeId: string): string {
 	return `${categoryId}-${shapeId}`;
 }
 
-/**
- * Build a default source for a pattern.
- */
 function patternSource(categoryId: string, shapeId: string): SourcedClaim {
 	return {
 		claim: `${shapeId} in ${categoryId} is one of 40 base patterns in the VTG 1:1 set.`,

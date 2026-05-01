@@ -117,7 +117,6 @@ export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
  * fa-rotate (two loopy arrows) to fa-arrows-spin (four outward arrows), so
  * exported images and the live animator header show a different glyph for
  * 90° LOOPs vs 180° LOOPs.
- *
  * @param ctx                  - Canvas 2D context to draw on
  * @param components           - Set of active LOOP component identifiers
  * @param centerX              - Horizontal center of the icon strip

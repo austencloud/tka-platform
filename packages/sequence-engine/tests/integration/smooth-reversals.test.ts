@@ -18,10 +18,8 @@ import { setLetterTransitionGraph } from "../../src/core/transition-graph/Letter
 import type { ITransitionGraph } from "../../src/core/transition-graph/ITransitionGraph.js";
 import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/sequence-engine-types.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock data — must have BOTH cw and ccw variations for each letter so the
 // constraint has a real choice to make.
-// ─────────────────────────────────────────────────────────────────────────────
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
@@ -139,9 +137,7 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
   }),
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock variation provider
-// ─────────────────────────────────────────────────────────────────────────────
 
 class MockVariationProvider implements IVariationProvider {
   getVariations(letter: string, startPosition: string, _gridMode: string): PictographData[] {
@@ -155,9 +151,7 @@ class MockVariationProvider implements IVariationProvider {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Mock transition graph
-// ─────────────────────────────────────────────────────────────────────────────
 
 const mockTransitionGraph: ITransitionGraph = {
   findBridgeLetters: () => [],
@@ -178,9 +172,7 @@ const mockTransitionGraph: ITransitionGraph = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Reversal detection helper
-// ─────────────────────────────────────────────────────────────────────────────
 
 function findReversals(steps: { blueMotion: MotionData; redMotion: MotionData }[]): string[] {
   const issues: string[] = [];
@@ -202,9 +194,7 @@ function findReversals(steps: { blueMotion: MotionData; redMotion: MotionData }[
   return issues;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tests
-// ─────────────────────────────────────────────────────────────────────────────
 
 describe("Smooth constraint prevents prop reversals", () => {
   beforeEach(() => {

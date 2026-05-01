@@ -150,9 +150,6 @@ export class TransitionGraph implements ITransitionGraph {
     return this.findShortestBridgePath(startGroup, targetGroup);
   }
 
-  /**
-   * BFS to find the shortest sequence of letters to get from one position group to another.
-   */
   private findShortestBridgePath(
     startGroup: PositionGroup,
     targetGroup: PositionGroup

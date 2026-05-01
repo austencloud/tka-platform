@@ -82,7 +82,6 @@ const ORIENTATION_TO_INDEX: Record<string, number> = {
 const INDEX_TO_ORIENTATION: readonly string[] = ["in", "clock", "out", "counter"];
 
 /**
- * Advance an orientation by N quarter turns on the 4-cycle.
  * Negative N rewinds.
  */
 export function advanceOrientation(

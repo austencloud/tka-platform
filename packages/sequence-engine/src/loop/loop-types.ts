@@ -69,7 +69,6 @@ export enum Period {
 }
 
 /**
- * Convert Period enum to integer period number.
  *
  * HALVED → 2, QUARTERED → 4. The integer is the count of passes required for a
  * LOOP to return to identity in both position and orientation.
@@ -80,7 +79,6 @@ export function periodToNumber(period: Period | undefined): number {
 }
 
 /**
- * Convert integer period number back to Period enum.
  *
  * 2 → HALVED, 4 → QUARTERED. Period 8 is not yet representable in the enum;
  * callers targeting period 8 must use the integer period API surface.
@@ -170,13 +168,6 @@ export const ALL_LOOP_TYPES: LOOPType[] = [
   LOOPType.REWOUND,
 ];
 
-/**
- * Phase 1 supported LOOP types (for this initial implementation)
- */
-export const SUPPORTED_LOOP_TYPES: LOOPType[] = [
-  LOOPType.REWOUND,
-  LOOPType.ROTATED,
-];
 
 /**
  * LOOP types that involve rotation as part of the transformation

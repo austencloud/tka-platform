@@ -18,7 +18,6 @@ import {
 } from "../constants/grid-coordinates.js";
 
 /**
- * Get hand point coordinates for a location and grid mode.
  * This is the core function for prop positioning.
  */
 export function getHandPointCoordinates(
@@ -60,7 +59,6 @@ export function getHandPointCoordinates(
 }
 
 /**
- * Get layer2 point coordinates for a location and grid mode.
  * Used for arrow positioning.
  */
 export function getLayer2PointCoordinates(

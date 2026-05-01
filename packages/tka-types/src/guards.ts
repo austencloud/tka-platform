@@ -47,7 +47,6 @@ function isTurns(value: unknown): boolean {
 }
 
 /**
- * True iff `value` is a fully-formed Motion object with all required enum
  * fields matching canonical membership.
  */
 export function isMotion(value: unknown): value is Motion {
@@ -76,7 +75,6 @@ export function isMotion(value: unknown): value is Motion {
 }
 
 /**
- * True iff `value` is a fully-formed Step object. Recursively validates
  * `value.motions.blue` and `value.motions.red` via isMotion, including the
  * color-channel invariant (blue.color === "blue", red.color === "red").
  */

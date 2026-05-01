@@ -7,9 +7,6 @@
 
 import type { HandPath, Orientation } from "../types.js";
 
-// ============================================================================
-// HANDPATH CALCULATOR
-// ============================================================================
 
 const CLOCKWISE_PAIRS = [
   ["s", "w"],
@@ -95,21 +92,12 @@ HASH_IN_PAIRS.forEach(([start, end]) => {
   handpathMap.set(`${start}_${end}`, "hashIn");
 });
 
-/**
- * Get handpath direction from start/end locations
- */
 export function getHandpathDirection(startLocation: string, endLocation: string): HandPath {
   const key = `${startLocation.toLowerCase()}_${endLocation.toLowerCase()}`;
   return handpathMap.get(key) || "static";
 }
 
-// ============================================================================
-// ORIENTATION SWITCHING
-// ============================================================================
 
-/**
- * Switch orientation: IN↔OUT, CLOCK↔COUNTER, CENTER_N↔CENTER_S, etc.
- */
 export function switchOrientation(ori: Orientation): Orientation {
   const switchMap: Record<string, Orientation> = {
     in: "out",
@@ -133,9 +121,6 @@ export function switchOrientation(ori: Orientation): Orientation {
   return (switchMap[ori] as Orientation) || ori;
 }
 
-/**
- * Check if an orientation is a center orientation (Level 4).
- */
 function isCenterOrientation(ori: string): boolean {
   return ori.startsWith("center");
 }
@@ -159,7 +144,6 @@ const RADIAL_CW_CYCLE: Orientation[] = [
 ];
 
 /**
- * Calculate fractional turn orientation for center orientations.
  * Each 0.25 turn = 1 compass step (45 degrees). Each 0.5 turn = 2 steps (90 degrees).
  * Center rule: PRO/STATIC step SAME as rotation, ANTI/DASH step OPPOSITE.
  */
@@ -185,12 +169,8 @@ function calculateCenterFractionalTurnOrientation(
   return CENTER_CW_CYCLE[newIdx]!;
 }
 
-// ============================================================================
-// WHOLE TURN ORIENTATION
-// ============================================================================
 
 /**
- * Calculate orientation for whole turns (0, 1, 2, 3)
  *
  * PRO/STATIC: even turns = same, odd turns = switch
  * ANTI/DASH: even turns = switch, odd turns = same
@@ -212,12 +192,8 @@ function calculateWholeTurnOrientation(
   return startOrientation;
 }
 
-// ============================================================================
-// FRACTIONAL TURN ORIENTATION (RADIAL)
-// ============================================================================
 
 /**
- * Calculate fractional turn orientation for radial orientations.
  * Handles 0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2.25, 2.5, etc.
  * Uses the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn
  *
@@ -247,12 +223,8 @@ function calculateRadialFractionalTurnOrientation(
   return RADIAL_CW_CYCLE[newIdx]!;
 }
 
-// ============================================================================
-// FLOAT ORIENTATION
-// ============================================================================
 
 /**
- * Calculate float orientation based on handpath direction.
  * Float uses ANTI/DASH rule: step same direction as handpath, 2 steps (0.5 turns equivalent).
  * Only changes orientation for CW/CCW handpaths; dash/static handpaths preserve orientation.
  * Works for all 8 radial orientations (cardinal + interradial).
@@ -273,9 +245,6 @@ function calculateFloatOrientation(startOrientation: Orientation, handpathDirect
   return RADIAL_CW_CYCLE[newIdx]!;
 }
 
-// ============================================================================
-// INPUT TYPE
-// ============================================================================
 
 export interface OrientationInput {
   motionType: string;
@@ -286,13 +255,9 @@ export interface OrientationInput {
   startOrientation?: string;
 }
 
-// ============================================================================
-// MAIN CALCULATION FUNCTIONS
-// ============================================================================
 
 /**
  * Calculate end orientation from motion data.
- *
  * @param input - Motion data including type, turns, rotation direction, locations
  * @returns Calculated end orientation
  */
@@ -344,7 +309,6 @@ export function calculateEndOrientation(input: OrientationInput): Orientation {
 /**
  * Calculate both start and end orientations for a motion.
  * Start orientation defaults to IN (the universal starting orientation).
- *
  * @param input - Motion data
  * @returns Object with startOrientation and calculated endOrientation
  */

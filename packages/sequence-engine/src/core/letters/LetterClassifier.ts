@@ -46,7 +46,6 @@ export class LetterClassifier {
     }
   }
 
-  /** Returns the type number (1-6) for a letter, or undefined if unknown */
   getType(letter: string): number | undefined {
     return this.typeMap.get(letter);
   }

@@ -86,7 +86,6 @@ export const STEP_NUMBER_FONT_MAX = 28;
 // ── Convenience functions ───────────────────────────────────────────────
 
 /**
- * Narrow-grid scaling factor. For grids with fewer than 3 columns,
  * header/footer heights shrink proportionally so they don't dominate.
  */
 export function narrowGridScale(columns: number): number {

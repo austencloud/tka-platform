@@ -20,9 +20,6 @@ import type {
 
 export type ContinuityMode = "maximize" | "enforce" | "allow";
 
-/**
- * Check if a rotation direction change represents a reversal.
- */
 function isReversal(prev: string, current: string): boolean {
   // Static or no rotation doesn't count as reversal
   if (
@@ -42,7 +39,6 @@ function isReversal(prev: string, current: string): boolean {
 }
 
 /**
- * Find the last non-noRotation direction for a hand by walking backwards
  * through previous steps. Returns null if none found.
  */
 function findLastDirection(
@@ -63,7 +59,6 @@ function findLastDirection(
 }
 
 /**
- * Score one hand's continuity by comparing the candidate's direction against
  * the last real direction in previousSteps.
  *
  * Instead of only comparing adjacent beats (which gives 0-turn statics a

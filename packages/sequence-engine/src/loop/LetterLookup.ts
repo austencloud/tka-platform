@@ -31,7 +31,6 @@ interface PictographData {
 
 /**
  * Find the TKA letter that matches the given blue and red motion parameters.
- *
  * @param blueMotion - Blue motion data (type, locations, rotation)
  * @param redMotion - Red motion data (type, locations, rotation)
  * @param allPictographs - All available pictograph data to search
@@ -120,7 +119,6 @@ export function findLetterByMotions(
 }
 
 /**
- * Get the inverse rotation direction.
  * CW becomes CCW, CCW becomes CW.
  * Static/dash/noRotation stay unchanged.
  */

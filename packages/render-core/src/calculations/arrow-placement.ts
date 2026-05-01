@@ -9,9 +9,6 @@ import type { ArrowPlacement, Coordinates, GridLocation, GridMode, MotionType } 
 import { getLayer2PointCoordinates } from "./grid-position.js";
 import { calculateArrowRotation } from "./arrow-rotation.js";
 
-// ============================================================================
-// ARROW LOCATION CALCULATION
-// ============================================================================
 
 /**
  * Direction pairs mapping for shift arrows (PRO/ANTI/FLOAT)
@@ -47,9 +44,6 @@ const shiftDirectionPairs: Record<string, GridLocation> = {
   [createLocationPairKey(["s", "ne"])]: "e",
 };
 
-/**
- * Calculate arrow location based on motion type and start/end locations
- */
 export function calculateArrowLocation(
   motionType: MotionType | string,
   startLocation: GridLocation | string,
@@ -89,9 +83,6 @@ export function calculateArrowLocation(
   }
 }
 
-/**
- * Calculate arrow position (uses layer2 points for proper spacing)
- */
 export function calculateArrowPosition(
   location: GridLocation | string,
   gridMode: GridMode
@@ -99,9 +90,6 @@ export function calculateArrowPosition(
   return getLayer2PointCoordinates(location, gridMode);
 }
 
-/**
- * Calculate complete arrow placement (location, position, rotation)
- */
 export function calculateArrowPlacement(
   motionType: MotionType | string,
   startLocation: GridLocation | string,

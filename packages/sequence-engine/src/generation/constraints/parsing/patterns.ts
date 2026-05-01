@@ -32,19 +32,14 @@ export interface ConstraintPattern {
   /** Constraint type this pattern produces */
   type: ConstraintType;
 
-  /** Check if the text matches this pattern */
   matches(text: string): boolean;
 
-  /** Build the constraint from matched text */
   build(text: string): IConstraint;
 
   /** Human-readable description of this pattern */
   description: string;
 }
 
-// =============================================================================
-// CONTINUITY PATTERNS
-// =============================================================================
 
 const maximizeContinuityPattern: ConstraintPattern = {
   id: "maximize-continuity",
@@ -92,9 +87,6 @@ const enforceContinuityPattern: ConstraintPattern = {
   },
 };
 
-// =============================================================================
-// DASH PREFERENCE PATTERNS
-// =============================================================================
 
 const maximizeDashesPattern: ConstraintPattern = {
   id: "maximize-dashes",
@@ -194,12 +186,8 @@ const minimizeDashesPattern: ConstraintPattern = {
   },
 };
 
-// =============================================================================
-// PER-HAND DASH PATTERNS
-// =============================================================================
 
 /**
- * Detects per-hand dash preferences from natural language.
  * Examples:
  * - "blue hand lots of dashes" / "left hand maximize dashes"
  * - "red hand minimize dashes" / "right hand few dashes"
@@ -286,9 +274,6 @@ const perHandDashMinimizePattern: ConstraintPattern = {
   },
 };
 
-// =============================================================================
-// MOTION TYPE PATTERNS
-// =============================================================================
 
 function createMotionTypePattern(
   motionType: string,
@@ -332,9 +317,6 @@ function createMotionTypePattern(
   };
 }
 
-// =============================================================================
-// ROTATION DIRECTION PATTERNS
-// =============================================================================
 
 function createRotationPattern(direction: string): ConstraintPattern {
   return {
@@ -358,9 +340,6 @@ function createRotationPattern(direction: string): ConstraintPattern {
   };
 }
 
-// =============================================================================
-// HAND PATH PATTERNS
-// =============================================================================
 
 /**
  * Detects hand path constraints from natural language.
@@ -439,9 +418,6 @@ const handPathReversalEveryStepPattern: ConstraintPattern = {
   },
 };
 
-// =============================================================================
-// PROP REVERSAL PATTERNS (explicit prop/spin reversal control)
-// =============================================================================
 
 /**
  * These patterns explicitly target PROP reversals (spin direction changes)
@@ -484,9 +460,6 @@ const maximizePropContinuityPattern: ConstraintPattern = {
   },
 };
 
-// =============================================================================
-// REVERSAL PATTERNS (general - when user doesn't specify hand vs prop)
-// =============================================================================
 
 const reversalEveryStepPattern: ConstraintPattern = {
   id: "reversal-every-beat",
@@ -523,13 +496,7 @@ const noReversalsPattern: ConstraintPattern = {
   },
 };
 
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
 
-/**
- * Detect which hand(s) a constraint applies to from text.
- */
 function detectHand(text: string): HandTarget {
   if (containsConcept(text, "blue") && !containsConcept(text, "red")) {
     return "blue";
@@ -540,9 +507,6 @@ function detectHand(text: string): HandTarget {
   return "both";
 }
 
-// =============================================================================
-// PATTERN REGISTRY
-// =============================================================================
 
 /**
  * All registered constraint patterns, in priority order.
@@ -598,9 +562,6 @@ export const CONSTRAINT_PATTERNS: ConstraintPattern[] = [
   createRotationPattern("ccw"),
 ];
 
-/**
- * Find patterns that match the given text.
- */
 export function findMatchingPatterns(text: string): ConstraintPattern[] {
   return CONSTRAINT_PATTERNS.filter((pattern) => pattern.matches(text));
 }

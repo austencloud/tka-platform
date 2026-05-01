@@ -7,9 +7,6 @@
 
 import type { GridLocation } from "../types.js";
 
-// ============================================================================
-// Φ_DASH and Ψ_DASH SPECIAL HANDLING MAP
-// ============================================================================
 
 export const PHI_DASH_PSI_DASH_LOCATION_MAP: Record<string, GridLocation> = {
   // Diamond (cardinal) locations
@@ -32,10 +29,8 @@ export const PHI_DASH_PSI_DASH_LOCATION_MAP: Record<string, GridLocation> = {
   "blue,se,nw": "sw",
 };
 
-// ============================================================================
 // LAMBDA ZERO TURNS SPECIAL CASE
 // Key format: "startLocation,endLocation,otherEndLocation"
-// ============================================================================
 
 export const LAMBDA_ZERO_TURNS_LOCATION_MAP: Record<string, GridLocation> = {
   "n,s,w": "e",
@@ -56,10 +51,8 @@ export const LAMBDA_ZERO_TURNS_LOCATION_MAP: Record<string, GridLocation> = {
   "se,nw,ne": "sw",
 };
 
-// ============================================================================
 // DEFAULT ZERO TURNS DASH LOCATION MAP
 // Key format: "startLocation,endLocation"
-// ============================================================================
 
 export const DEFAULT_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, GridLocation> = {
   "n,s": "e",
@@ -72,9 +65,6 @@ export const DEFAULT_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, GridLocation> 
   "se,nw": "sw",
 };
 
-// ============================================================================
-// NON-ZERO TURNS DASH LOCATION MAP (rotation-based)
-// ============================================================================
 
 export const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, Record<GridLocation, GridLocation>> = {
   clockwise: {
@@ -101,10 +91,8 @@ export const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, Record<GridLocatio
   },
 };
 
-// ============================================================================
 // TYPE 3 DASH LOCATION MAPS
 // Key format: "dashStartLocation,shiftArrowLocation"
-// ============================================================================
 
 /**
  * Diamond mode Type3 dash location map
@@ -150,9 +138,6 @@ export const BOX_DASH_LOCATION_MAP: Record<string, GridLocation> = {
   "nw,w": "ne",
 };
 
-// ============================================================================
-// LETTER TYPE CLASSIFICATIONS
-// ============================================================================
 
 export const PHI_DASH_LETTERS = ["Φ-"];
 export const PSI_DASH_LETTERS = ["Ψ-"];
@@ -160,9 +145,6 @@ export const LAMBDA_LETTERS = ["Λ"];
 export const LAMBDA_DASH_LETTERS = ["Λ-"];
 export const TYPE3_LETTERS = ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"];
 
-// ============================================================================
-// OPPOSITE LOCATION MAP
-// ============================================================================
 
 export const OPPOSITE_LOCATION_MAP: Record<GridLocation, GridLocation> = {
   n: "s",

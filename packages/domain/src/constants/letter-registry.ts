@@ -39,17 +39,14 @@ for (const [typeKey, typeInfo] of Object.entries(TYPE_DEFINITIONS)) {
   }
 }
 
-/** Get the type number (1-6) for a letter. Returns undefined if not a valid letter. */
 export function getLetterType(letter: string): LetterTypeNumber | undefined {
   return LETTER_TO_TYPE[letter]?.typeNumber;
 }
 
-/** Check if a string is a valid TKA letter. */
 export function isValidLetter(letter: string): letter is Letter {
   return letter in LETTER_TO_TYPE;
 }
 
-/** Get all letters of a given type number. */
 export function getLettersByType(typeNumber: LetterTypeNumber): Letter[] {
   const key = `type${typeNumber}`;
   return TYPE_DEFINITIONS[key]?.letters ?? [];
