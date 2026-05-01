@@ -1,0 +1,756 @@
+{
+  "areas": [
+    "features/voice-sessions",
+    "shared/keyboard",
+    "features/assemble-lab",
+    "features/connect",
+    "shared/community",
+    "shared/lan-sync",
+    "shared/mandala",
+    "shared/mobile",
+    "shared/video",
+    "features/fuse",
+    "features/landing-preview",
+    "features/sticker-lab",
+    "features/village",
+    "shared/attribution"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "ITierPromotionEngine",
+      "contractPath": "src/lib/features/voice-sessions/services/contracts/ITierPromotionEngine.ts",
+      "implPath": "src/lib/features/voice-sessions/services/implementations/TierPromotionEngine.ts",
+      "implClass": "TierPromotionEngine",
+      "getterPath": "src/lib/features/voice-sessions/getTierPromotionEngine.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVoiceSessionAnalyzer",
+      "contractPath": "src/lib/features/voice-sessions/services/contracts/IVoiceSessionAnalyzer.ts",
+      "implPath": "src/lib/features/voice-sessions/services/implementations/VoiceSessionAnalyzer.ts",
+      "implClass": "VoiceSessionAnalyzer",
+      "getterPath": "src/lib/features/voice-sessions/getVoiceSessionAnalyzer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "FailingTranscript"
+        },
+        {
+          "kind": "interface",
+          "name": "Tier2Candidate"
+        },
+        {
+          "kind": "interface",
+          "name": "SessionSuccessPoint"
+        },
+        {
+          "kind": "interface",
+          "name": "LatencyByTier"
+        },
+        {
+          "kind": "interface",
+          "name": "UnresolvedPattern"
+        },
+        {
+          "kind": "interface",
+          "name": "SessionAnalysis"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IVoiceSessionFormatter",
+      "contractPath": "src/lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter.ts",
+      "implPath": "src/lib/features/voice-sessions/services/implementations/VoiceSessionFormatter.ts",
+      "implClass": "VoiceSessionFormatter",
+      "getterPath": "src/lib/features/voice-sessions/getVoiceSessionFormatter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVoiceSessionReplayer",
+      "contractPath": "src/lib/features/voice-sessions/services/contracts/IVoiceSessionReplayer.ts",
+      "implPath": "src/lib/features/voice-sessions/services/implementations/VoiceSessionReplayer.ts",
+      "implClass": "VoiceSessionReplayer",
+      "getterPath": "src/lib/features/voice-sessions/getVoiceSessionReplayer.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVoiceSessionRepository",
+      "contractPath": "src/lib/features/voice-sessions/services/contracts/IVoiceSessionRepository.ts",
+      "implPath": "src/lib/features/voice-sessions/services/implementations/VoiceSessionRepository.ts",
+      "implClass": "VoiceSessionRepository",
+      "getterPath": "src/lib/features/voice-sessions/getVoiceSessionRepository.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VoiceSessionQueryOptions"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ICommandPalette",
+      "contractPath": "src/lib/shared/keyboard/services/contracts/ICommandPalette.ts",
+      "implPath": "src/lib/shared/keyboard/services/implementations/CommandPalette.ts",
+      "implClass": "CommandPalette",
+      "getterPath": "src/lib/shared/keyboard/getCommandPalette.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IGreekKeyMapper",
+      "contractPath": "src/lib/shared/keyboard/services/contracts/IGreekKeyMapper.ts",
+      "implPath": "src/lib/shared/keyboard/services/implementations/GreekKeyMapper.ts",
+      "implClass": "GreekKeyMapper",
+      "getterPath": "src/lib/shared/keyboard/getGreekKeyMapper.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "GreekKeyMapping"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IKeyboardShortcutManager",
+      "contractPath": "src/lib/shared/keyboard/services/contracts/IKeyboardShortcutManager.ts",
+      "implPath": "src/lib/shared/keyboard/services/implementations/KeyboardShortcutManager.ts",
+      "implClass": "KeyboardShortcutManager",
+      "getterPath": "src/lib/shared/keyboard/getKeyboardShortcutManager.ts",
+      "coExports": [],
+      "consumerCount": 5,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IShortcutCustomizer",
+      "contractPath": "src/lib/shared/keyboard/services/contracts/IShortcutCustomizer.ts",
+      "implPath": "src/lib/shared/keyboard/services/implementations/ShortcutCustomizer.ts",
+      "implClass": "ShortcutCustomizer",
+      "getterPath": "src/lib/shared/keyboard/getShortcutCustomizer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ShortcutWithBinding"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IShortcutRegistry",
+      "contractPath": "src/lib/shared/keyboard/services/contracts/IShortcutRegistry.ts",
+      "implPath": "src/lib/shared/keyboard/services/implementations/ShortcutRegistry.ts",
+      "implClass": "ShortcutRegistry",
+      "getterPath": "src/lib/shared/keyboard/getShortcutRegistry.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBuilderStepConverter",
+      "contractPath": "src/lib/features/assemble-lab/services/contracts/IBuilderStepConverter.ts",
+      "implPath": "src/lib/features/assemble-lab/services/implementations/BuilderStepConverter.ts",
+      "implClass": "BuilderStepConverter",
+      "getterPath": "src/lib/features/assemble-lab/getBuilderStepConverter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IGridHitTargetCalculator",
+      "contractPath": "src/lib/features/assemble-lab/services/contracts/IGridHitTargetCalculator.ts",
+      "implPath": "src/lib/features/assemble-lab/services/implementations/GridHitTargetCalculator.ts",
+      "implClass": "GridHitTargetCalculator",
+      "getterPath": "src/lib/features/assemble-lab/getGridHitTargetCalculator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "GridHitTarget"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IStepMotionDeriver",
+      "contractPath": "src/lib/features/assemble-lab/services/contracts/IStepMotionDeriver.ts",
+      "implPath": "src/lib/features/assemble-lab/services/implementations/StepMotionDeriver.ts",
+      "implClass": "StepMotionDeriver",
+      "getterPath": "src/lib/features/assemble-lab/getStepMotionDeriver.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISvgPropAnimator",
+      "contractPath": "src/lib/features/assemble-lab/services/contracts/ISvgPropAnimator.ts",
+      "implPath": "src/lib/features/assemble-lab/services/implementations/SvgPropAnimator.ts",
+      "implClass": "SvgPropAnimator",
+      "getterPath": "src/lib/features/assemble-lab/getSvgPropAnimator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AnimationParams"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IConnectOrchestrator",
+      "contractPath": "src/lib/features/connect/services/contracts/IConnectOrchestrator.ts",
+      "implPath": "src/lib/features/connect/services/implementations/ConnectOrchestrator.ts",
+      "implClass": "ConnectOrchestrator",
+      "getterPath": "src/lib/features/connect/getConnectOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFriendshipManager",
+      "contractPath": "src/lib/features/connect/services/contracts/IFriendshipManager.ts",
+      "implPath": "src/lib/features/connect/services/implementations/FriendshipManager.ts",
+      "implClass": "FriendshipManager",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IInviteHandler",
+      "contractPath": "src/lib/features/connect/services/contracts/IInviteHandler.ts",
+      "implPath": "src/lib/features/connect/services/implementations/InviteHandler.ts",
+      "implClass": "InviteHandler",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISessionManager",
+      "contractPath": "src/lib/features/connect/services/contracts/ISessionManager.ts",
+      "implPath": "src/lib/features/connect/services/implementations/SessionManager.ts",
+      "implClass": "SessionManager",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IConnectionManager",
+      "contractPath": "src/lib/shared/community/services/contracts/IConnectionManager.ts",
+      "implPath": "src/lib/shared/community/services/implementations/ConnectionManager.ts",
+      "implClass": "ConnectionManager",
+      "getterPath": "src/lib/shared/community/getConnectionManager.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "MutualFollowInfo"
+        },
+        {
+          "kind": "interface",
+          "name": "SharedSequenceSummary"
+        },
+        {
+          "kind": "interface",
+          "name": "ConnectionInfo"
+        },
+        {
+          "kind": "interface",
+          "name": "ConnectionDocument"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ILeaderboardManager",
+      "contractPath": "src/lib/shared/community/services/contracts/ILeaderboardManager.ts",
+      "implPath": "src/lib/shared/community/services/implementations/LeaderboardManager.ts",
+      "implClass": "LeaderboardManager",
+      "getterPath": "src/lib/shared/community/getLeaderboardManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPropPreferencePersister",
+      "contractPath": "src/lib/shared/community/services/contracts/IPropPreferencePersister.ts",
+      "implPath": "src/lib/shared/community/services/implementations/PropPreferencePersister.ts",
+      "implClass": "PropPreferencePersister",
+      "getterPath": "src/lib/shared/community/getPropPreferencePersister.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CatdogCombo"
+        },
+        {
+          "kind": "interface",
+          "name": "PropPreferences"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IUserRepository",
+      "contractPath": "src/lib/shared/community/services/contracts/IUserRepository.ts",
+      "implPath": "src/lib/shared/community/services/implementations/UserRepository.ts",
+      "implClass": "UserRepository",
+      "getterPath": "src/lib/shared/community/getUserRepository.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PaginatedUsersResult"
+        },
+        {
+          "kind": "interface",
+          "name": "PaginatedQueryOptions"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILanSyncCoordinator",
+      "contractPath": "src/lib/shared/lan-sync/services/contracts/ILanSyncCoordinator.ts",
+      "implPath": "src/lib/shared/lan-sync/services/implementations/LanSyncCoordinator.ts",
+      "implClass": "LanSyncCoordinator",
+      "getterPath": "src/lib/shared/lan-sync/getLanSyncCoordinator.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPeerConnectionManager",
+      "contractPath": "src/lib/shared/lan-sync/services/contracts/IPeerConnectionManager.ts",
+      "implPath": "src/lib/shared/lan-sync/services/implementations/PeerConnectionManager.ts",
+      "implClass": "PeerConnectionManager",
+      "getterPath": "src/lib/shared/lan-sync/getPeerConnectionManager.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISyncRoomBroadcaster",
+      "contractPath": "src/lib/shared/lan-sync/services/contracts/ISyncRoomBroadcaster.ts",
+      "implPath": "src/lib/shared/lan-sync/services/implementations/SyncRoomBroadcaster.ts",
+      "implClass": "SyncRoomBroadcaster",
+      "getterPath": "src/lib/shared/lan-sync/getSyncRoomBroadcaster.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISyncRoomDiscovery",
+      "contractPath": "src/lib/shared/lan-sync/services/contracts/ISyncRoomDiscovery.ts",
+      "implPath": "src/lib/shared/lan-sync/services/implementations/SyncRoomDiscovery.ts",
+      "implClass": "SyncRoomDiscovery",
+      "getterPath": "src/lib/shared/lan-sync/getSyncRoomDiscovery.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IMandalaGeometryCalculator",
+      "contractPath": "src/lib/shared/mandala/services/contracts/IMandalaGeometryCalculator.ts",
+      "implPath": "src/lib/shared/mandala/services/implementations/MandalaGeometryCalculator.ts",
+      "implClass": "MandalaGeometryCalculator",
+      "getterPath": "src/lib/shared/mandala/getMandalaGeometryCalculator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "StepLike"
+        },
+        {
+          "kind": "interface",
+          "name": "MotionLike"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IMandalaOverlayCanvas",
+      "contractPath": "src/lib/shared/mandala/services/contracts/IMandalaOverlayCanvas.ts",
+      "implPath": "src/lib/shared/mandala/services/implementations/MandalaOverlayCanvas.ts",
+      "implClass": "MandalaOverlayCanvas",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IMandalaPathPreparer",
+      "contractPath": "src/lib/shared/mandala/services/contracts/IMandalaPathPreparer.ts",
+      "implPath": "src/lib/shared/mandala/services/implementations/MandalaPathPreparer.ts",
+      "implClass": "MandalaPathPreparer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PreparedMandalaPath"
+        },
+        {
+          "kind": "interface",
+          "name": "PreparedMandalaPaths"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IMandalaRenderer",
+      "contractPath": "src/lib/shared/mandala/services/contracts/IMandalaRenderer.ts",
+      "implPath": "src/lib/shared/mandala/services/implementations/MandalaRenderer.ts",
+      "implClass": "MandalaRenderer",
+      "getterPath": "src/lib/shared/mandala/getMandalaRenderer.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IGestureHandler",
+      "contractPath": "src/lib/shared/mobile/services/contracts/IGestureHandler.ts",
+      "implPath": "src/lib/shared/mobile/services/implementations/GestureHandler.ts",
+      "implClass": "GestureHandler",
+      "getterPath": "src/lib/shared/mobile/getGestureHandler.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "GestureDirection"
+        },
+        {
+          "kind": "type",
+          "name": "GestureOrientation"
+        },
+        {
+          "kind": "interface",
+          "name": "SwipeGestureConfig"
+        },
+        {
+          "kind": "interface",
+          "name": "SwipeGestureHandler"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IMobileFullscreenManager",
+      "contractPath": "src/lib/shared/mobile/services/contracts/IMobileFullscreenManager.ts",
+      "implPath": "src/lib/shared/mobile/services/implementations/MobileFullscreenManager.ts",
+      "implClass": "MobileFullscreenManager",
+      "getterPath": "src/lib/shared/mobile/getMobileFullscreenManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPWAEngagementTracker",
+      "contractPath": "src/lib/shared/mobile/services/contracts/IPWAEngagementTracker.ts",
+      "implPath": "src/lib/shared/mobile/services/implementations/PWAEngagementTracker.ts",
+      "implClass": "PWAEngagementTracker",
+      "getterPath": "src/lib/shared/mobile/getPWAEngagementTracker.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PWAEngagementMetrics"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPWAInstallDismissalManager",
+      "contractPath": "src/lib/shared/mobile/services/contracts/IPWAInstallDismissalManager.ts",
+      "implPath": "src/lib/shared/mobile/services/implementations/PWAInstallDismissalManager.ts",
+      "implClass": "PWAInstallDismissalManager",
+      "getterPath": "src/lib/shared/mobile/getPWAInstallDismissalManager.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PWADismissalState"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFrameExtractor",
+      "contractPath": "src/lib/shared/video/services/contracts/IFrameExtractor.ts",
+      "implPath": "src/lib/shared/video/services/implementations/FrameExtractor.ts",
+      "implClass": "FrameExtractor",
+      "getterPath": "src/lib/shared/video/getFrameExtractor.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ExtractedFrame"
+        },
+        {
+          "kind": "interface",
+          "name": "FrameExtractionConfig"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ITrainingDataStore",
+      "contractPath": "src/lib/shared/video/services/contracts/ITrainingDataStore.ts",
+      "implPath": "src/lib/shared/video/services/implementations/TrainingDataStore.ts",
+      "implClass": "TrainingDataStore",
+      "getterPath": "src/lib/shared/video/getTrainingDataStore.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "TrainingDataSource"
+        },
+        {
+          "kind": "interface",
+          "name": "DetectedEndpoint"
+        },
+        {
+          "kind": "interface",
+          "name": "EndpointCorrection"
+        },
+        {
+          "kind": "interface",
+          "name": "BoundingBoxAnnotation"
+        },
+        {
+          "kind": "interface",
+          "name": "HandLandmarkSet"
+        },
+        {
+          "kind": "interface",
+          "name": "TrainingDataEntry"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IVideoCache",
+      "contractPath": "src/lib/shared/video/services/contracts/IVideoCache.ts",
+      "implPath": "src/lib/shared/video/services/implementations/VideoCache.ts",
+      "implClass": "VideoCache",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "GetVideoOptions"
+        },
+        {
+          "kind": "interface",
+          "name": "CacheStats"
+        },
+        {
+          "kind": "interface",
+          "name": "CachedVideo"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVideoSourceProvider",
+      "contractPath": "src/lib/shared/video/services/contracts/IVideoSourceProvider.ts",
+      "implPath": "src/lib/shared/video/services/implementations/VideoSourceProvider.ts",
+      "implClass": "VideoSourceProvider",
+      "getterPath": "src/lib/shared/video/getVideoSourceProvider.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VideoSourceInfo"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFuseAssemblyAnimator",
+      "contractPath": "src/lib/features/fuse/services/contracts/IFuseAssemblyAnimator.ts",
+      "implPath": "src/lib/features/fuse/services/implementations/FuseAssemblyAnimator.ts",
+      "implClass": "FuseAssemblyAnimator",
+      "getterPath": "src/lib/features/fuse/getFuseAssemblyAnimator.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IHandPathLoopDetector",
+      "contractPath": "src/lib/features/fuse/services/contracts/IHandPathLoopDetector.ts",
+      "implPath": "src/lib/features/fuse/services/implementations/HandPathLoopDetector.ts",
+      "implClass": "HandPathLoopDetector",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceFuser",
+      "contractPath": "src/lib/features/fuse/services/contracts/ISequenceFuser.ts",
+      "implPath": "src/lib/features/fuse/services/implementations/SequenceFuser.ts",
+      "implClass": "SequenceFuser",
+      "getterPath": "src/lib/features/fuse/getSequenceFuser.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "FuseOptions"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceMatcher",
+      "contractPath": "src/lib/features/landing-preview/services/contracts/ISequenceMatcher.ts",
+      "implPath": "src/lib/features/landing-preview/services/implementations/SequenceMatcher.ts",
+      "implClass": "SequenceMatcher",
+      "getterPath": "src/lib/features/landing-preview/getSequenceMatcher.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVideoCuratorLoader",
+      "contractPath": "src/lib/features/landing-preview/services/contracts/IVideoCuratorLoader.ts",
+      "implPath": "src/lib/features/landing-preview/services/implementations/VideoCuratorLoader.ts",
+      "implClass": "VideoCuratorLoader",
+      "getterPath": "src/lib/features/landing-preview/getVideoCuratorLoader.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVideoCuratorPersister",
+      "contractPath": "src/lib/features/landing-preview/services/contracts/IVideoCuratorPersister.ts",
+      "implPath": "src/lib/features/landing-preview/services/implementations/VideoCuratorPersister.ts",
+      "implClass": "VideoCuratorPersister",
+      "getterPath": "src/lib/features/landing-preview/getVideoCuratorPersister.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VideoUpdateData"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStickerSheetPdfExporter",
+      "contractPath": "src/lib/features/sticker-lab/services/contracts/IStickerSheetPdfExporter.ts",
+      "implPath": "src/lib/features/sticker-lab/services/implementations/StickerSheetPdfExporter.ts",
+      "implClass": "StickerSheetPdfExporter",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "StickerMandalaLookup"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IStickerSheetRepository",
+      "contractPath": "src/lib/features/sticker-lab/services/contracts/IStickerSheetRepository.ts",
+      "implPath": "src/lib/features/sticker-lab/services/implementations/LocalStickerSheetRepository.ts",
+      "implClass": "LocalStickerSheetRepository",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStickerUnitRenderer",
+      "contractPath": "src/lib/features/sticker-lab/services/contracts/IStickerUnitRenderer.ts",
+      "implPath": "src/lib/features/sticker-lab/services/implementations/StickerUnitRenderer.ts",
+      "implClass": "StickerUnitRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILineageTracker",
+      "contractPath": "src/lib/features/village/services/contracts/ILineageTracker.ts",
+      "implPath": "src/lib/features/village/services/implementations/LineageTracker.ts",
+      "implClass": "LineageTracker",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPersonalityGenerator",
+      "contractPath": "src/lib/features/village/services/contracts/IPersonalityGenerator.ts",
+      "implPath": "src/lib/features/village/services/implementations/PersonalityGenerator.ts",
+      "implClass": "PersonalityGenerator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceMutator",
+      "contractPath": "src/lib/features/village/services/contracts/ISequenceMutator.ts",
+      "implPath": "src/lib/features/village/services/implementations/SequenceMutator.ts",
+      "implClass": "SequenceMutator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "MutationType"
+        },
+        {
+          "kind": "interface",
+          "name": "MutationResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAttributionCapture",
+      "contractPath": "src/lib/shared/attribution/services/contracts/IAttributionCapture.ts",
+      "implPath": "src/lib/shared/attribution/services/implementations/AttributionCapture.ts",
+      "implClass": "AttributionCapture",
+      "getterPath": "src/lib/shared/attribution/getAttributionCapture.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAttributionPersister",
+      "contractPath": "src/lib/shared/attribution/services/contracts/IAttributionPersister.ts",
+      "implPath": "src/lib/shared/attribution/services/implementations/AttributionPersister.ts",
+      "implClass": "AttributionPersister",
+      "getterPath": "src/lib/shared/attribution/getAttributionPersister.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IAttributionPromptTrigger",
+      "contractPath": "src/lib/shared/attribution/services/contracts/IAttributionPromptTrigger.ts",
+      "implPath": "src/lib/shared/attribution/services/implementations/AttributionPromptTrigger.ts",
+      "implClass": "AttributionPromptTrigger",
+      "getterPath": "src/lib/shared/attribution/getAttributionPromptTrigger.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    }
+  ]
+}

@@ -1,15 +1,4 @@
 /**
- * Voice Command Domain Types
- *
- * Type definitions for the "Hey Tika" voice control system.
- * Covers wake word detection, command interpretation, and dispatch.
- */
-
-// ============================================================================
-// Wake Word Detection
-// ============================================================================
-
-/**
  * Detector states:
  * - idle: not running
  * - listening: waiting for wake word ("Hey Tika")
@@ -27,10 +16,6 @@ export interface WakeWordEvent {
   /** When the command was detected */
   timestamp: number;
 }
-
-// ============================================================================
-// Command Categories & Structured Commands
-// ============================================================================
 
 export type VoiceCommandCategory =
   | "navigation"
@@ -62,10 +47,6 @@ export interface CommandContext {
   currentModule: string;
   currentTab: string;
 }
-
-// ============================================================================
-// Command Dispatch
-// ============================================================================
 
 export interface CommandResult {
   success: boolean;

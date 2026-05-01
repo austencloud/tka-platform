@@ -1,11 +1,3 @@
-/**
- * Rotation Maps for Canvas 2D Direct Renderer
- *
- * Ported from the SVG rendering system's rotation configuration files.
- * All angles are in degrees, keyed by GridLocation enum values.
- */
-
-// Grid location string values (matching GridLocation enum)
 type Location = "n" | "e" | "s" | "w" | "ne" | "se" | "sw" | "nw";
 type LocationMap = Record<Location, number>;
 type RotationDirection = "cw" | "ccw";
@@ -14,7 +6,6 @@ export interface RotationMaps {
   static: {
     radial: Record<RotationDirection, LocationMap>;
     nonradial: Record<RotationDirection, LocationMap>;
-    // Override maps for special cases (when rotation_override flag is set)
     radialOverride: Record<Location, Record<RotationDirection, number>>;
     nonradialOverride: Record<Location, Record<RotationDirection, number>>;
   };
@@ -24,23 +15,12 @@ export interface RotationMaps {
   dash: {
     cw: LocationMap;
     ccw: LocationMap;
-    noRotation: Record<string, number>; // Key: "startLoc,endLoc"
+    noRotation: Record<string, number>; 
   };
 }
 
-/**
- * Complete rotation lookup tables for all motion types.
- *
- * Usage:
- *   const angle = ROTATION_MAPS.pro.cw["ne"]; // Returns 0
- *   const angle = ROTATION_MAPS.static.radial.cw["n"]; // Returns 0
- */
 export const ROTATION_MAPS: RotationMaps = {
-  // ============================================================
-  // STATIC ARROWS
-  // ============================================================
   static: {
-    // Radial orientations (IN/OUT) - Used in Diamond Mode
     radial: {
       cw: {
         n: 0,
@@ -63,7 +43,6 @@ export const ROTATION_MAPS: RotationMaps = {
         nw: 315,
       },
     },
-    // Non-radial orientations (CLOCK/COUNTER) - Used in Box Mode
     nonradial: {
       cw: {
         n: 180,
@@ -86,7 +65,6 @@ export const ROTATION_MAPS: RotationMaps = {
         nw: 135,
       },
     },
-    // Override maps for special pictograph configurations
     radialOverride: {
       n: { cw: 180, ccw: 180 },
       e: { cw: 270, ccw: 270 },
@@ -109,9 +87,6 @@ export const ROTATION_MAPS: RotationMaps = {
     },
   },
 
-  // ============================================================
-  // PRO ARROWS
-  // ============================================================
   pro: {
     cw: {
       n: 315,
@@ -135,11 +110,6 @@ export const ROTATION_MAPS: RotationMaps = {
     },
   },
 
-  // ============================================================
-  // ANTI ARROWS
-  // Anti clockwise = PRO counter-clockwise
-  // Anti counter-clockwise = PRO clockwise
-  // ============================================================
   anti: {
     cw: {
       n: 45,
@@ -163,12 +133,6 @@ export const ROTATION_MAPS: RotationMaps = {
     },
   },
 
-  // ============================================================
-  // FLOAT ARROWS
-  // Based on HANDPATH DIRECTION (not prop rotation direction)
-  // Clockwise handpath: S→W, W→N, N→E, E→S, NE→SE, SE→SW, SW→NW, NW→NE
-  // Counter-clockwise handpath: W→S, N→W, E→N, S→E, NE→NW, NW→SW, SW→SE, SE→NE
-  // ============================================================
   float: {
     cw: {
       n: 315,
@@ -192,10 +156,6 @@ export const ROTATION_MAPS: RotationMaps = {
     },
   },
 
-  // ============================================================
-  // DASH ARROWS
-  // Includes special handling for NO_ROTATION cases
-  // ============================================================
   dash: {
     cw: {
       n: 0,
@@ -217,8 +177,6 @@ export const ROTATION_MAPS: RotationMaps = {
       sw: 225,
       nw: 315,
     },
-    // Special angles for NO_ROTATION dash movements (straight line across grid)
-    // Key format: "startLocation,endLocation"
     noRotation: {
       "n,s": 90,
       "e,w": 180,
@@ -232,10 +190,6 @@ export const ROTATION_MAPS: RotationMaps = {
   },
 };
 
-/**
- * Handpath direction pairs for FLOAT arrow rotation calculation.
- * Determines whether hand movement is clockwise, counter-clockwise, or dash (straight).
- */
 export const HANDPATH_PAIRS = {
   clockwise: {
     cardinal: [
@@ -267,13 +221,6 @@ export const HANDPATH_PAIRS = {
   },
 };
 
-/**
- * Calculate handpath direction from start and end locations.
- *
- * @param startLocation - Start grid location
- * @param endLocation - End grid location
- * @returns "cw" | "ccw" | "static" | "dash"
- */
 export function calculateHandpathDirection(
   startLocation: Location,
   endLocation: Location
@@ -282,7 +229,6 @@ export function calculateHandpathDirection(
     return "static";
   }
 
-  // Check clockwise pairs
   const cwCardinal = HANDPATH_PAIRS.clockwise.cardinal;
   const cwDiagonal = HANDPATH_PAIRS.clockwise.diagonal;
   for (const [start, end] of [...cwCardinal, ...cwDiagonal]) {
@@ -291,7 +237,6 @@ export function calculateHandpathDirection(
     }
   }
 
-  // Check counter-clockwise pairs
   const ccwCardinal = HANDPATH_PAIRS.counterClockwise.cardinal;
   const ccwDiagonal = HANDPATH_PAIRS.counterClockwise.diagonal;
   for (const [start, end] of [...ccwCardinal, ...ccwDiagonal]) {
@@ -300,6 +245,5 @@ export function calculateHandpathDirection(
     }
   }
 
-  // Otherwise it's a dash movement (straight line across grid)
   return "dash";
 }

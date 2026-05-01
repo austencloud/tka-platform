@@ -1,16 +1,3 @@
-/**
- * Mock Persistence Service for Testing
- *
- * In-memory implementation of IPersistenceService for testing
- * without actual IndexedDB dependencies.
- */
-
-import type { AppSettings } from "$lib/shared/settings/domain/models/app-settings-models";
-import type { CompleteBrowseState } from "$lib/features/browse/shared/domain/models/browse-models";
-import type { IPersistenceService } from "$lib/shared/persistence/services/contracts/IPersistenceService";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TabId } from "$lib/shared/navigation/domain/models/navigation-types";
 import type { UserProject } from "$lib/features/account/domain/models/library-models";
 import { injectable } from "inversify";
 
@@ -30,10 +17,6 @@ export class MockPersistenceService implements IPersistenceService {
   private _isInitialized = false;
   private _isAvailable = true;
 
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
-
   initialize(): Promise<void> {
     this._isInitialized = true;
   }
@@ -41,10 +24,6 @@ export class MockPersistenceService implements IPersistenceService {
   isAvailable(): boolean {
     return this._isAvailable;
   }
-
-  // ============================================================================
-  // SEQUENCE OPERATIONS
-  // ============================================================================
 
   saveSequence(sequence: SequenceData): Promise<void> {
     this.sequences.set(sequence.id, sequence);
@@ -96,10 +75,6 @@ export class MockPersistenceService implements IPersistenceService {
     );
   }
 
-  // ============================================================================
-  // PICTOGRAPH OPERATIONS
-  // ============================================================================
-
   savePictograph(pictograph: PictographData): Promise<void> {
     this.pictographs.set(pictograph.id, pictograph);
   }
@@ -118,10 +93,6 @@ export class MockPersistenceService implements IPersistenceService {
     return Array.from(this.pictographs.values());
   }
 
-  // ============================================================================
-  // TAB STATE PERSISTENCE
-  // ============================================================================
-
   saveActiveTab(tabId: TabId): Promise<void> {
     this.activeTab = tabId;
   }
@@ -138,10 +109,6 @@ export class MockPersistenceService implements IPersistenceService {
     return (this.tabStates.get(tabId) as T) || null;
   }
 
-  // ============================================================================
-  // Browse STATE PERSISTENCE
-  // ============================================================================
-
   saveBrowseState(state: CompleteBrowseState): Promise<void> {
     this.BrowseState = state;
   }
@@ -150,10 +117,6 @@ export class MockPersistenceService implements IPersistenceService {
     return this.BrowseState;
   }
 
-  // ============================================================================
-  // SETTINGS PERSISTENCE
-  // ============================================================================
-
   saveSettings(settings: AppSettings): Promise<void> {
     this.settings = settings;
   }
@@ -161,10 +124,6 @@ export class MockPersistenceService implements IPersistenceService {
   loadSettings(): Promise<AppSettings | null> {
     return this.settings;
   }
-
-  // ============================================================================
-  // USER PROJECTS
-  // ============================================================================
 
   saveProject(project: UserProject): Promise<void> {
     const id = project.id ?? this.getNextProjectId();
@@ -185,10 +144,6 @@ export class MockPersistenceService implements IPersistenceService {
     const ids = Array.from(this.projects.keys());
     return ids.length > 0 ? Math.max(...ids) + 1 : 1;
   }
-
-  // ============================================================================
-  // UTILITY OPERATIONS
-  // ============================================================================
 
   exportAllData(): Promise<unknown> {
     return {
@@ -227,10 +182,6 @@ export class MockPersistenceService implements IPersistenceService {
       projects: this.projects.size,
     };
   }
-
-  // ============================================================================
-  // SEQUENCE STATE PERSISTENCE
-  // ============================================================================
 
   saveCurrentSequenceState(state: {
     currentSequence: SequenceData | null;

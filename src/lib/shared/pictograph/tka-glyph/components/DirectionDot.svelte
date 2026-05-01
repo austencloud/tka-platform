@@ -1,25 +1,3 @@
-<!--
-DirectionDot.svelte - Same/Opp Direction Indicator
-
-Renders a dot above (same) or below (opp) the TKA letter to indicate
-whether both hands are rotating in the same direction or opposite directions.
-
-Props:
-- direction: "s" | "o" | null - The direction from the parsed turns tuple
-- letterDimensions: Width and height of the letter SVG (already base letter for dash letters)
-- visible: Visibility control (tied to TKA glyph visibility)
-- previewMode: Show at reduced opacity when not visible
-
-Position Calculation (matches legacy):
-- SAME: 10px above letter top, horizontally centered on letter
-- OPP: 10px below letter bottom, horizontally centered on letter
-
-Dark mode: Polls visibility manager for dark mode state (supports pictograph
-dark mode independent of app dark mode). Export uses explicit darkMode prop.
-
-NOTE: For dash letters (Type3/Type5), letterDimensions is already the BASE letter dimensions
-because TKAGlyph now loads the base letter SVG and caches it under the full letter key.
--->
 <script lang="ts">
   import type { DirectionValue } from "../utils/turn-tuple-parser";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -106,9 +84,6 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   const dotCenterX = $derived(dotPosition.x + DOT_SIZE / 2);
   const dotCenterY = $derived(dotPosition.y + DOT_SIZE / 2);
 
-  // ============================================================================
-  // DIRECTION CHANGE ANIMATION
-  // ============================================================================
   // Track when direction changes to trigger a subtle scale-pulse animation.
 
   let prevDirection = $state<DirectionValue | undefined>(undefined);

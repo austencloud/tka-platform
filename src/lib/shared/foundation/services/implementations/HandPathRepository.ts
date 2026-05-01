@@ -1,11 +1,3 @@
-/**
- * HandPathRepository
- *
- * Persists hand path artifacts to Firestore under users/{uid}/handPaths.
- * Hand paths are content-addressed: each unique path shape gets one document,
- * looked up by its contentHash. The id field is the Firestore document ID.
- */
-
 import {
   collection,
   doc,
@@ -28,11 +20,6 @@ import type {
 } from "../contracts/IHandPathRepository";
 import type { ArtifactProvenance } from "../../domain/models/ArtifactProvenance";
 
-// ============================================================================
-// Firestore ↔ domain conversion
-// ============================================================================
-
-/** Firestore stores Date fields as Timestamps. Convert them back on read. */
 function toDateOrUndefined(value: unknown): Date | undefined {
   if (value == null) return undefined;
   if (typeof value === "object" && "toDate" in (value as object)) {
@@ -64,7 +51,6 @@ function docToHandPath(data: DocumentData, id: string): HandPathData {
   } as HandPathData;
 }
 
-/** Strip undefined values - Firestore rejects them in setDoc/updateDoc. */
 function handPathToDoc(path: HandPathData): Record<string, unknown> {
   const raw: Record<string, unknown> = {
     locations: path.locations,
@@ -88,10 +74,6 @@ function handPathToDoc(path: HandPathData): Record<string, unknown> {
 
   return raw;
 }
-
-// ============================================================================
-// Repository
-// ============================================================================
 
 export class HandPathRepository implements IHandPathRepository {
   private getUserId(): string {
@@ -163,11 +145,9 @@ export class HandPathRepository implements IHandPathRepository {
     const docRef = doc(firestore, `users/${uid}/handPaths/${path.id}`);
 
     if (provenance) {
-      // Check if the document already exists so we can merge provenance
       const existing = await getDoc(docRef);
 
       if (existing.exists()) {
-        // Document exists - append to sourceSequenceIds without duplicating
         await setDoc(docRef, {
           ...handPathToDoc(path),
           provenance: {
@@ -177,7 +157,6 @@ export class HandPathRepository implements IHandPathRepository {
           },
         }, { merge: true });
       } else {
-        // New document - write the full provenance as-is
         await setDoc(docRef, {
           ...handPathToDoc(path),
           provenance: {
@@ -199,9 +178,5 @@ export class HandPathRepository implements IHandPathRepository {
     await deleteDoc(docRef);
   }
 }
-
-// ============================================================================
-// Singleton export
-// ============================================================================
 
 export const handPathRepository = new HandPathRepository();

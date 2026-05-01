@@ -1,14 +1,3 @@
-/**
- * SVG Domain Types
- *
- * Domain models for SVG data structures used in pictograph rendering.
- * These are pure data contracts without behavior.
- */
-
-// ============================================================================
-// SVG DATA MODELS
-// ============================================================================
-
 export interface ArrowSvgData {
   id: string;
   svgContent: string;

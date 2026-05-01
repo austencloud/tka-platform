@@ -1,10 +1,3 @@
-/**
- * Sequence Viewer Service Implementation
- *
- * Provides operations for loading, viewing, and editing sequences
- * in the standalone Sequence Viewer context.
- */
-
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -21,10 +14,6 @@ export class SequenceViewer implements ISequenceViewer {
     private persistenceService: IPersistenceService,
     private SequenceEncoder: ISequenceEncoder
   ) {}
-
-  // ============================================
-  // SEQUENCE LOADING
-  // ============================================
 
   async loadSequence(sequenceId: string): Promise<SequenceData | null> {
     try {
@@ -47,10 +36,6 @@ export class SequenceViewer implements ISequenceViewer {
     }
   }
 
-  // ============================================
-  // SEQUENCE MUTATIONS
-  // ============================================
-
   updateStepOrientation(
     sequence: SequenceData,
     stepIndex: number,
@@ -58,7 +43,6 @@ export class SequenceViewer implements ISequenceViewer {
     orientation: string
   ): SequenceData {
     if (stepIndex === 0) {
-      // Update start position
       const startPosition = this.getStartPosition(sequence);
       if (!startPosition) return sequence;
 
@@ -73,7 +57,6 @@ export class SequenceViewer implements ISequenceViewer {
       });
     }
 
-    // Update regular beat (1-indexed in UI, 0-indexed in array)
     const arrayIndex = stepIndex - 1;
     if (arrayIndex < 0 || arrayIndex >= sequence.steps.length) {
       return sequence;
@@ -96,7 +79,6 @@ export class SequenceViewer implements ISequenceViewer {
     turnAmount: number | "fl"
   ): SequenceData {
     if (stepIndex === 0) {
-      // Start position doesn't typically have turns, but handle anyway
       const startPosition = this.getStartPosition(sequence);
       if (!startPosition) return sequence;
 
@@ -111,7 +93,6 @@ export class SequenceViewer implements ISequenceViewer {
       });
     }
 
-    // Update regular beat
     const arrayIndex = stepIndex - 1;
     if (arrayIndex < 0 || arrayIndex >= sequence.steps.length) {
       return sequence;
@@ -128,13 +109,8 @@ export class SequenceViewer implements ISequenceViewer {
   }
 
   removeStep(sequence: SequenceData, stepIndex: number): SequenceData {
-    // stepIndex is 0-indexed here (matches array index)
     return removeStepFromSequence(sequence, stepIndex);
   }
-
-  // ============================================
-  // PERSISTENCE
-  // ============================================
 
   async saveSequence(sequence: SequenceData): Promise<void> {
     try {
@@ -144,10 +120,6 @@ export class SequenceViewer implements ISequenceViewer {
       throw error;
     }
   }
-
-  // ============================================
-  // THUMBNAILS & URLS
-  // ============================================
 
   getThumbnailUrl(sequence: SequenceData, variationIndex = 0): string {
     if (!sequence.thumbnails || sequence.thumbnails.length === 0) {
@@ -170,13 +142,8 @@ export class SequenceViewer implements ISequenceViewer {
     return result.url;
   }
 
-  // ============================================
-  // STEP DATA HELPERS
-  // ============================================
-
   getStepData(sequence: SequenceData, stepIndex: number): StepData | null {
     if (stepIndex === 0) {
-      // Return start position as StepData
       const startPos = this.getStartPosition(sequence);
       if (!startPos) return null;
 
@@ -190,7 +157,6 @@ export class SequenceViewer implements ISequenceViewer {
       } as StepData;
     }
 
-    // Regular beat (1-indexed in UI, 0-indexed in array)
     const arrayIndex = stepIndex - 1;
     if (arrayIndex < 0 || arrayIndex >= sequence.steps.length) {
       return null;
@@ -198,10 +164,6 @@ export class SequenceViewer implements ISequenceViewer {
 
     return sequence.steps[arrayIndex] as StepData;
   }
-
-  // ============================================
-  // PRIVATE HELPERS
-  // ============================================
 
   private getStartPosition(
     sequence: SequenceData

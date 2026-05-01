@@ -1,18 +1,3 @@
-/**
- * GeneratorSubInterpreter
- *
- * Module-scoped to "create". Internally tab-gated to the "generate" tab.
- * Handles voice commands for all generator parameters, generation trigger, and help.
- *
- * Command types:
- * - Set value: "set level to 3", "length 16"
- * - Toggle/cycle: "toggle mode", "cycle grid"
- * - Increment: "increase length", "more turns"
- * - Decrement: "decrease length", "fewer turns"
- * - Generate: "generate", "go", "again"
- * - Help: "what is loop type", "explain grid mode"
- */
-
 import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
 import type {
   VoiceCommand,
@@ -22,10 +7,7 @@ import type {
 import { getGeneratorVoiceRef } from "$lib/features/create/generate/state/generator-voice-ref.svelte";
 import type { GeneratorHelpId } from "$lib/features/create/generate/domain/generator-help-content";
 
-// ============================================================================
 // Generate trigger phrases
-// ============================================================================
-
 const GENERATE_PHRASES = new Set([
   "generate",
   "go",
@@ -49,10 +31,7 @@ const GENERATE_PHRASES = new Set([
   "reroll",
 ]);
 
-// ============================================================================
 // Parameter alias map: spoken term → config key
-// ============================================================================
-
 type GeneratorParam =
   | "level"
   | "length"
@@ -144,10 +123,7 @@ const LOOP_TYPE_ALIASES: Record<string, string> = {
   "mirrored inverted rotated": "mirrored_inverted_rotated",
 };
 
-// ============================================================================
 // Help topic aliases: spoken → GeneratorHelpId
-// ============================================================================
-
 const HELP_TOPIC_ALIASES: Record<string, GeneratorHelpId> = {
   level: "level",
   difficulty: "level",
@@ -182,11 +158,8 @@ const HELP_TOPIC_ALIASES: Record<string, GeneratorHelpId> = {
   "end position": "start-end",
   generate: "generate",
 };
-
-// ============================================================================
 // Regex patterns
-// ============================================================================
-
+const SET_PATTERN =
 // "set {param} to {value}" or "change {param} to {value}" or "make {param} {value}"
 const SET_PATTERN =
   /^(?:set|change|make|switch)\s+(.+?)\s+(?:to|=)\s+(.+)$/;
@@ -207,10 +180,6 @@ const HELP_PATTERN =
 
 // Bare set: "{param} {number}" e.g. "length 16", "level 3"
 const BARE_SET_PATTERN = /^(\w[\w\s]*?)\s+(\d+(?:\.\d+)?)$/;
-
-// ============================================================================
-// Implementation
-// ============================================================================
 
 export class GeneratorSubInterpreter implements ISubInterpreter {
   readonly category: VoiceCommandCategory = "generator";

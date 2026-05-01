@@ -1,10 +1,3 @@
-/**
- * TrainChallengeManager - Train Challenge Service Implementation
- *
- * Manages train challenges with Firestore integration.
- * Handles challenge retrieval, progress tracking, and completion rewards.
- */
-
 import {
   collection,
   doc,
@@ -40,10 +33,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     this._achievementService = achievementService;
   }
 
-  // ============================================================================
-  // CHALLENGE RETRIEVAL
-  // ============================================================================
-
   async getActiveChallenges(): Promise<TrainChallenge[]> {
     try {
       const firestore = await getFirestoreInstance();
@@ -61,7 +50,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
         const data = docSnapshot.data();
         const challenge = this._convertFirestoreChallenge(data, docSnapshot.id);
 
-        // Only include challenges that are currently available
         if (isChallengeAvailable(challenge)) {
           challenges.push(challenge);
         }
@@ -104,7 +92,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     const allChallenges = await this.getActiveChallenges();
     let filtered = allChallenges;
 
-    // Apply filter
     if (filters.filter === "completed") {
       const progress = await this.getUserChallengeProgress();
       const completedIds = new Set(
@@ -119,19 +106,16 @@ export class TrainChallengeManager implements ITrainChallengeManager {
       filtered = filtered.filter((c) => !completedIds.has(c.id));
     }
 
-    // Apply difficulty filter
     if (filters.difficulty) {
       filtered = filtered.filter((c) => c.difficulty === filters.difficulty);
     }
 
-    // Apply mode filter
     if (filters.mode) {
       filtered = filtered.filter(
         (c) => c.requirement.metadata?.mode === filters.mode
       );
     }
 
-    // Apply sorting
     switch (filters.sortBy) {
       case "difficulty":
         filtered.sort(
@@ -158,10 +142,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
 
     return filtered;
   }
-
-  // ============================================================================
-  // PROGRESS TRACKING
-  // ============================================================================
 
   async getUserChallengeProgress(): Promise<UserTrainChallengeProgress[]> {
     const user = getAuthSync().currentUser;
@@ -219,7 +199,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     const existingProgress =
       await this.getUserProgressForChallenge(challengeId);
     if (existingProgress) {
-      return; // Already started
+      return; 
     }
 
     const firestore = await getFirestoreInstance();
@@ -255,7 +235,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
       throw new Error("No user logged in");
     }
 
-    // Ensure challenge is started
     let progress = await this.getUserProgressForChallenge(challengeId);
     if (!progress) {
       await this.startChallenge(challengeId);
@@ -265,7 +244,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
       }
     }
 
-    // Already completed
     if (progress.isCompleted) {
       return;
     }
@@ -274,7 +252,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     const newProgress = progress.progress + increment;
     const updatedAttempts = progress.attempts + 1;
 
-    // Update best score if provided and better than previous
     let bestScore = progress.bestScore;
     if (score) {
       if (
@@ -322,7 +299,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     }
 
     const firestore = await getFirestoreInstance();
-    // Check if bonus condition is met (if applicable)
     const bonusEarned = this._checkBonusCondition(challenge, finalScore);
 
     const progressPath = getUserTrainProgressPath(user.uid);
@@ -336,7 +312,6 @@ export class TrainChallengeManager implements ITrainChallengeManager {
       bonusEarned,
     });
 
-    // Award XP via AchievementManager
     let totalXP = challenge.xpReward;
     if (bonusEarned && challenge.bonusXP) {
       totalXP += challenge.bonusXP;
@@ -392,15 +367,11 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     };
   }
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _convertFirestoreChallenge(data: any, docId: string): TrainChallenge {
     return {
       ...data,
-      id: docId, // Use Firestore document ID as the challenge ID
+      id: docId, 
       createdAt: data.createdAt?.toDate?.() || new Date(),
       startDate: data.startDate?.toDate?.(),
       endDate: data.endDate?.toDate?.(),
@@ -429,17 +400,10 @@ export class TrainChallengeManager implements ITrainChallengeManager {
   ): boolean {
     if (!challenge.bonusCondition) return false;
 
-    // Example bonus conditions:
-    // - "perfect_run": 100% accuracy
-    // - "high_combo": Combo >= 50
-    // - "fast_completion": Time <= threshold
-    // This can be expanded based on your bonus logic
-
     if (challenge.bonusCondition === "perfect_run") {
       return score.accuracy === 100;
     }
 
-    // Default: no bonus earned
     return false;
   }
 }

@@ -1,19 +1,6 @@
-/**
- * PlaybackSubInterpreter
- *
- * Handles play/pause/stop/next/prev/faster/slower/loop/BPM/jump commands.
- * Only matches when an animation playback controller is available (sequence loaded).
- * Falls through to NavigationSubInterpreter if no sequence is loaded, so "play"
- * in the learn module resolves to the "play" tab instead.
- */
-
 import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
 import { getAnimationPlaybackRef } from "../../../../coordinators/animation-playback-ref.svelte";
-
-// ============================================================================
-// Playback patterns
-// ============================================================================
 
 const PLAY_PHRASES = new Set(["play", "resume", "start", "start playing"]);
 const PAUSE_PHRASES = new Set(["pause", "pause playback"]);

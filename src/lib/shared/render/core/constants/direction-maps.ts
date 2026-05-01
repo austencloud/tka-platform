@@ -1,22 +1,6 @@
-/**
- * Beta offset direction maps
- *
- * When two props end at the same location (a "beta" position),
- * they need to be offset from each other so they don't overlap.
- * The direction of offset depends on:
- * - The location (N/S/E/W vs NE/SE/SW/NW)
- * - The orientation type (radial IN/OUT vs non-radial CLOCK/COUNTER)
- * - The motion color (red vs blue)
- * - For shift motions, the start->end transition
- */
-
 import type { GridLocation, VectorDirection } from "../types.js";
 
 type ColorMap = Record<"blue" | "red", VectorDirection>;
-
-// ============================================================================
-// STATIC/DASH DIRECTION MAPS (by location and color)
-// ============================================================================
 
 /**
  * Diamond grid (N/S/E/W) - radial orientation (IN/OUT)
@@ -65,8 +49,6 @@ export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
 
 /**
  * Box grid (NE/SE/SW/NW) - non-radial orientation (CLOCK/COUNTER)
- * Also used for interradial orientations (clockIn/clockOut/counterIn/counterOut)
- * as a close approximation - both are perpendicular-ish to the radial axis.
  */
 export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   ne: { red: "upleft", blue: "downright" },
@@ -79,10 +61,6 @@ export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   w: { red: "upleft", blue: "downright" },
   c: { red: "up", blue: "down" },
 };
-
-// ============================================================================
-// SHIFT MOTION DIRECTION MAPS (by start->end transition)
-// ============================================================================
 
 /**
  * Shift motion transitions - radial orientation
@@ -115,15 +93,6 @@ export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocat
   c: {},
 };
 
-// ============================================================================
-// LETTER I DIRECTION MAPS
-// ============================================================================
-
-/**
- * Letter I (one pro + one anti, same trajectory) has unique offset directions
- * different from generic shift maps.
- * Ported from app's DirectionMaps.ts LETTER_I_RADIAL_MAP / LETTER_I_NON_RADIAL_MAP.
- */
 export const LETTER_I_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   n: { red: "right", blue: "left" },
   e: { red: "down", blue: "up" },
@@ -147,10 +116,6 @@ export const LETTER_I_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   nw: { red: "downright", blue: "upleft" },
   c: { red: "up", blue: "down" },
 };
-
-// ============================================================================
-// OPPOSITE DIRECTIONS
-// ============================================================================
 
 export const OPPOSITE_DIRECTIONS: Record<VectorDirection, VectorDirection> = {
   up: "down",

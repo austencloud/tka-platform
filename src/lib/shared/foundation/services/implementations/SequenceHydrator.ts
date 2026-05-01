@@ -98,20 +98,11 @@ export class SequenceHydrator implements ISequenceHydrator {
 	) {}
 
 	/**
-	 * Re-derives the flat `steps` array from compositional fields.
-	 * Called at every load boundary (LibraryRepository, PublicSequencesLoader,
-	 * SequenceRepository, ArenaRepository).
-	 *
-	 * If a sequence loads with empty steps, check:
-	 *   1. Are compositional fields (blueSoloProp, redSoloProp, stepPairings)
-	 *      present on the Firestore document? If not, run the migration script:
-	 *      `node scripts/migrate-compositional.cjs`
-	 *   2. Is this hydrate() method being called at the load boundary?
-	 *      Every code path that reads from Firestore must call hydrate().
-	 *   3. Does StepDeriver.deriveSteps() throw? Check console for errors.
+	 * Re-derives StepData from compositional fields (SoloPropData + StepPairingData).
+	 * Ensures derived fields are up-to-date with current domain logic.
 	 */
 	hydrate(sequence: SequenceData): SequenceData {
-		// Read-time migration: construct creatorIntent from legacy fields
+		// constructed creatorIntent from legacy fields
 		if (!sequence.creatorIntent) {
 			const legacyPropConfig = sequence.intendedProp;
 			const legacyEffort = sequence.effortTimeline;
@@ -133,10 +124,6 @@ export class SequenceHydrator implements ISequenceHydrator {
 			}
 		}
 
-		// If compositional fields are present, derive steps from them.
-		// This makes compositional fields the authoritative source of truth -
-		// all 173+ consumer files that read .steps get data derived from the
-		// compositional model without any code changes.
 		if (
 			sequence.blueSoloProp &&
 			sequence.redSoloProp &&
@@ -150,18 +137,8 @@ export class SequenceHydrator implements ISequenceHydrator {
 				{ bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false }
 			);
 
-			// Legacy-data backfill: sequences saved before SoloPropStepData
-			// learned to carry prefloatMotionType lost their prefloat on the
-			// decompose pass. The original `sequence.steps` array still on
-			// the Firestore document retains the original motion blobs with
-			// prefloat intact, so we can splice it back into the derived
-			// steps. Once such a sequence is re-saved, the compositional
-			// path will preserve prefloat on its own and this branch becomes
-			// a no-op for that document.
 			const steps = backfillPrefloatFromLegacySteps(derived, sequence.steps);
 
-			// Derive startPosition if missing - compositional fields don't store it,
-			// and without it the 3D viewer has no beat-0 config (avatar plays ahead).
 			let startPosition = sequence.startPosition;
 			if (!startPosition && steps.length > 0) {
 				const first = steps[0];

@@ -1,19 +1,4 @@
-/**
- * Voice Session Domain Types
- *
- * Models for recording and analyzing voice command sessions.
- * A session captures every command's full lifecycle: transcript, tier resolution,
- * interpretation, dispatch result, and timing.
- *
- * Designed for the closed feedback loop:
- *   Record sessions → Identify patterns → Generate fixes → Test against history
- */
-
 import type { VoiceCommand, VoiceCommandCategory, CommandResult } from "./voice-command-types";
-
-// ============================================================================
-// Resolution Tiers
-// ============================================================================
 
 /**
  * Which tier resolved the command:
@@ -23,10 +8,6 @@ import type { VoiceCommand, VoiceCommandCategory, CommandResult } from "./voice-
  * - unresolved: No tier could handle it
  */
 export type ResolutionTier = "tier1_regex" | "tier2_llm" | "tier3_chat" | "unresolved";
-
-// ============================================================================
-// Session Events
-// ============================================================================
 
 /** Details captured when Tier 2 LLM is invoked */
 export interface LLMResolutionDetails {
@@ -48,7 +29,6 @@ export interface ChatResponseDetails {
 
 /**
  * One command's full lifecycle within a voice session.
- * Captures everything needed to analyze why a command succeeded or failed.
  */
 export interface VoiceSessionEvent {
   /** Auto-incrementing index within the session */
@@ -78,10 +58,6 @@ export interface VoiceSessionEvent {
   chatDetails?: ChatResponseDetails;
 }
 
-// ============================================================================
-// Session Aggregates
-// ============================================================================
-
 /** Aggregate statistics computed when a session ends */
 export interface VoiceSessionStats {
   totalEvents: number;
@@ -94,13 +70,8 @@ export interface VoiceSessionStats {
   avgLatencyByTier: Partial<Record<ResolutionTier, number>>;
 }
 
-// ============================================================================
-// Session Models
-// ============================================================================
-
 /**
  * A complete voice command session with all events.
- * Persisted to Firestore after recording.
  */
 export interface VoiceSession {
   id: string;

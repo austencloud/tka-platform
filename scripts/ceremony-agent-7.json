@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IAnimationVisibilitySynchronizer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IAnimationVisibilitySynchronizer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/AnimationVisibilitySynchronizer.ts",
+    "cls": "AnimationVisibilitySynchronizer",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAnimatorCanvasInitializer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IAnimatorCanvasInitializer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/AnimatorCanvasInitializer.ts",
+    "cls": "AnimatorCanvasInitializer",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAnimatorLoader",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IAnimatorLoader.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/AnimatorLoader.ts",
+    "cls": "AnimatorLoader",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IBloomOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IBloomOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/BloomOverlayRenderer.ts",
+    "cls": "BloomOverlayRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBubblesOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IBubblesOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/BubblesOverlayRenderer.ts",
+    "cls": "BubblesOverlayRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICanvasResizer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/ICanvasResizer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/CanvasResizer.svelte.ts",
+    "cls": "CanvasResizer.svelte",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICharcoalRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/ICharcoalRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer.ts",
+    "cls": "CharcoalSparkRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IDarkModeProvider",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IDarkModeProvider.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/DarkModeProvider.ts",
+    "cls": "DarkModeProvider",
+    "getter": "src/lib/shared/animation-engine/getDarkModeProvider.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IDeviceTierDetector",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IDeviceTierDetector.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/DeviceTierDetector.ts",
+    "cls": "DeviceTierDetector",
+    "getter": "src/lib/shared/animation-engine/getDeviceTierDetector.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IEchoOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IEchoOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/EchoOverlayRenderer.ts",
+    "cls": "EchoOverlayRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFireDefaultsLoader",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IFireDefaultsLoader.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/FireDefaultsLoader.ts",
+    "cls": "FireDefaultsLoader",
+    "getter": "src/lib/shared/animation-engine/getFireDefaultsLoader.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFireDefaultsPublisher",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IFireDefaultsPublisher.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/FireDefaultsPublisher.ts",
+    "cls": "FireDefaultsPublisher",
+    "getter": "src/lib/shared/animation-engine/getFireDefaultsPublisher.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFireOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IFireOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer.ts",
+    "cls": "WebGLFireRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFireTipTracker",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IFireTipTracker.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/FireTipTracker.ts",
+    "cls": "FireTipTracker",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IFrameBudgetMonitor",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IFrameBudgetMonitor.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/FrameBudgetMonitor.ts",
+    "cls": "FrameBudgetMonitor",
+    "getter": "src/lib/shared/animation-engine/getFrameBudgetMonitor.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFrostOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IFrostOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/FrostOverlayRenderer.ts",
+    "cls": "FrostOverlayRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IGlyphTextureLoader",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IGlyphTextureLoader.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/GlyphTextureLoader.svelte.ts",
+    "cls": "GlyphTextureLoader.svelte",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IGlyphTransitionController",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IGlyphTransitionController.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/GlyphTransitionController.svelte.ts",
+    "cls": "GlyphTransitionController.svelte",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IInkOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IInkOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/InkOverlayRenderer.ts",
+    "cls": "InkOverlayRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILedOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/ILedOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer.ts",
+    "cls": "WebGLLedRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILedTipTracker",
+    "contract": "src/lib/shared/animation-engine/services/contracts/ILedTipTracker.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/LedTipTracker.ts",
+    "cls": "LedTipTracker",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPetalsOverlayRenderer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IPetalsOverlayRenderer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/PetalsOverlayRenderer.ts",
+    "cls": "PetalsOverlayRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPropPositionCalculator",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IPropPositionCalculator.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/PropPositionCalculator.ts",
+    "cls": "PropPositionCalculator",
+    "getter": "src/lib/shared/animation-engine/getPropPositionCalculator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPropTextureLoader",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IPropTextureLoader.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/PropTextureLoader.svelte.ts",
+    "cls": "PropTextureLoader.svelte",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPropTypeChanger",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IPropTypeChanger.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/PropTypeChanger.svelte.ts",
+    "cls": "PropTypeChanger.svelte",
+    "getter": null,
+    "hasCoExports": true
+  }
+]

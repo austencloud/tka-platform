@@ -25,18 +25,12 @@ const ABBR_TO_LOCATION: Array<{ abbr: string; location: GridLocation }> = (
   .sort((a, b) => b.abbr.length - a.abbr.length);
 
 export class HandPathNamer implements IHandPathNamer {
-  /**
-   * Concatenates each location's abbreviation into a single compact name.
-   * ["n", "ne", "s", "w"] → "NNeSW"
-   */
   toName(locations: readonly GridLocation[]): string {
     return locations.map((loc) => LOCATION_TO_ABBR[loc] ?? loc).join("");
   }
 
   /**
-   * Parses a compact name back into an ordered array of GridLocations.
-   * Uses greedy longest-match scanning so "Ne" is consumed before "N".
-   * Throws if any segment cannot be matched.
+   * Greedy longest-match scanner (matches "Ne" before "N").
    */
   fromName(name: string): GridLocation[] {
     const result: GridLocation[] = [];

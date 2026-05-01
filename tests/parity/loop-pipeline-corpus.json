@@ -1,0 +1,4564 @@
+{
+  "capturedAt": "2026-05-01T00:42:51.630Z",
+  "totalSequences": 423,
+  "matchRate": "81.3%",
+  "results": [
+    {
+      "word": "Ω-YΩXΩ-YΩXΩ-YΩXΩ-YΩX",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "BΣRYEBΣRYEBΣRYEBΣRYE",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "LΘSW-LΘSW-LΘSW-LΘSW-",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΘY-Σ-Z-ΘY-Σ-Z-ΘY-Σ-Z-ΘY-Σ-Z-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "YGFΘ-YGFΘ-YGFΘ-YGFΘ-",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Z-ΩVΛ-Z-ΩVΛ-Z-ΩVΛ-Z-ΩVΛ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "W-Θ-OYEΩ-X-Ω-OZDΘ-",
+      "stored": "inverted",
+      "detected": "strict_inverted",
+      "match": true,
+      "components": [
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "CΨΩXCΨΩXCΨΩXCΨΩX",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Θ-UUΛW-CΔX-Θ-UUΛW-CΔX-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "AABB",
+      "stored": "rotated_inverted",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "IΘZΩΛ-VW-ΨIΘZΩΛ-VW-Ψ",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "W-Θ-W-ΣW-Θ-W-ΣW-Θ-W-ΣW-Θ-W-Σ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Θ-W-Φ-Φ-Θ-W-Φ-Φ-Θ-W-Φ-Φ-Θ-W-Φ-Φ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΘOW-LΘOW-L",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "IDΣZ-IDΣZ-IDΣZ-IDΣZ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "EKEK",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Σ-YΣ-YΣ-YΣ-Y",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "KΘZEΩ-YIΦKΘZEΩ-YIΦKΘZEΩ-YIΦKΘZEΩ-YIΦ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΛZ-GΔ-ΛZ-GΔ-ΛZ-GΔ-ΛZ-GΔ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΣYΦBΣYΦBΣYΦBΣYΦB",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Λ-YΦAΦ-LΩOΛ-YΦAΦ-LΩO",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "XΩ-ΛΛXΨΨ-ΩXΩ-ΛΛXΨΨ-Ω",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΘX-Ω-Z-ΘX-Ω-Z-ΘX-Ω-Z-ΘX-Ω-Z-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "YIDΣYIDΣYIDΣYIDΣ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "TSX-Ω-TSX-Ω-TSX-Ω-TSX-Ω-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "LΘX-Ω-ΛZ-ΩXLΩW-Θ-ΛY-ΘW",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "XΔMVXΔMVXΔMVXΔMV",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Σ-XΩ-YΣ-XΩ-YΣ-XΩ-YΣ-XΩ-Y",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "W-JFAAΨΔ-OW-JFAAΨΔ-O",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ZΨ-HΩΛ-XLΔ-ZΨ-HΩΛ-XLΔ-",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "LΣ-WLFBΦ-ALΣ-WLFBΦ-A",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "JIΦCJIΦCJIΦCJIΦC",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΔX-LΦΔX-LΦΔX-LΦΔX-LΦ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "FΩ-X-AΦ-ΔZ-Ψ-FΩ-X-AΦ-ΔZ-Ψ-",
+      "stored": "mirrored",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΨΣ-YΦKΘUX-ΨΔ-ZΦJΩVW-",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CΩ-Z-Δ-ΛΛ-Λ-Λ-Z-Ψ-Ψ-ΦJΦΣW-CΩ-Z-Δ-ΛΛ-Λ-Λ-Z-Ψ-Ψ-ΦJΦΣW-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΦCΨΨ-ΦCΨΨ-ΦCΨΨ-ΦCΨΨ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΔY-EΦ-ΔY-EΦ-ΔY-EΦ-ΔY-EΦ-",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "AAKE",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "AB",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "ABC",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "AJEΦ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "AKE",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "AKIΦ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ALFALGGF",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ALIΨ-IΦ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ALΣ-X",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "AΔSX",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "AΔUSTZEΣNX-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 20
+    },
+    {
+      "word": "AΣSW",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "B",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "BA",
+      "stored": "mirrored_swapped",
+      "detected": "flipped",
+      "match": true,
+      "components": [
+        "flipped"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "BBKE",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BBLF",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BC",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "BJEA",
+      "stored": "flipped",
+      "detected": "strict_flipped",
+      "match": true,
+      "components": [
+        "flipped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BJFA",
+      "stored": "flipped",
+      "detected": "strict_flipped",
+      "match": true,
+      "components": [
+        "flipped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "BKEΦ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "BLEΩ-TSYF",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "BΔMX",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BΔTW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "BΔTX",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "BΣTW",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "BΣTX",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BΦ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BΦ-AΦ-",
+      "stored": "rotated_swapped",
+      "detected": "repeated",
+      "match": false,
+      "components": [
+        "repeated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BΦ-LΦ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "BΨΦ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "BΘ-Z-ΘWLΦB",
+      "stored": "mirrored_swapped",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "BΘ-Z-ΘWLΦBAΩ-Y-ΩXLΦA",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "C",
+      "stored": "rotated_swapped",
+      "detected": "inverted",
+      "match": false,
+      "components": [
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "CAKE",
+      "stored": "repeated",
+      "detected": "repeated",
+      "match": true,
+      "components": [
+        "repeated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CCCΦ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CCKE",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "CCKΦ",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CΔUW",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CΔΛ-X-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CΣNZIΘUW",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CΣVX",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CΨΘX-",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "CΩ-SW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "CΘ-ZE",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "DCKΨ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "DJ",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "DJII",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "DKIIEJII",
+      "stored": null,
+      "detected": "mirrored_swapped_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "swapped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "DΣPMYDJΘMPWJ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 12
+    },
+    {
+      "word": "DΦ-AΨ",
+      "stored": "flipped",
+      "detected": "strict_flipped",
+      "match": true,
+      "components": [
+        "flipped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "DΦ-CJ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "DΨ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "DΩ-UY-",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "DΘ-QY",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "DΘ-UY-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EBBK",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ECJΨ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ECKΨ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ECΩ-Y-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EJ",
+      "stored": "rotated_swapped",
+      "detected": "flipped",
+      "match": false,
+      "components": [
+        "flipped"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "EJHΨ-",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EJΦK",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EJΨ-I",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EK",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "ELHELG",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "EΔQNZEKΩNQXK",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 12
+    },
+    {
+      "word": "EΔUZ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "EΣQY",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EΣYHDCKΨ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 32
+    },
+    {
+      "word": "EΦ-JΨ-DΦ-KΨ-",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "EΨDΨDΨEΨ",
+      "stored": "inverted_rotated_swapped",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "EΨIΦJΦCΨ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EΨIΦJΦCΨDΨIΦKΦCΨ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EΩ-VY",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "EΩ-Z-ΘY-DΘ-Z",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EΘ-NW-BΘ-TY-",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "EΘ-NW-KΣ-QY-",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "FALG",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "FALΨ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "FBLΨ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "FJ",
+      "stored": "repeated",
+      "detected": "repeated",
+      "match": true,
+      "components": [
+        "repeated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "FL",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "FLII",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "FΦ-BJ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "FΩ-OX-LΔ-RY",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "FΩ-OX-LΔ-RZ-",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "FαΩ-ΛY-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "G",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "GEΘ-Y-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "GFCΨ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "GIΩZ-ΘMOZ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "GΣ-RY",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "GΩWL",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "GΩΛ-Y",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "GΘOZ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "GΘUZ",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "H",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "HΔ-TX-BΩ-TZ-",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "HΔ-Z-Ψ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "HΣ-YFΘ-WΘ-RZ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 36
+    },
+    {
+      "word": "HΨ-HΨ-ββββ",
+      "stored": "mirrored_swapped",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "HΘOY",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "HΘΛ-Z",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "I",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "IHFL",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "IIΔ-ΛΛ-NX-Ψ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "IIΩXKEΣY",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "IΦAJ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "IΦΨ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "IΦΨβ",
+      "stored": "inverted_rotated_swapped",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "IΨ-EK",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "IΨ-ΩY",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "IΩPY-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "JD",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "JIDCKIEC",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "JIEC",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "JIECCC",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "JΦ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "JΨ-DΦ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "JΨ-IE",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "JΨ-IΩΛ-ΛX-C",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 32
+    },
+    {
+      "word": "JΩΛ-X",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KDCΦ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KDΨΦKDΨΦJEΨΦJEΨΦ",
+      "stored": "inverted_rotated_swapped",
+      "detected": "rotated_swapped_inverted",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KE",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "KEΨIIΦ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "KIΦC",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KIΘX-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KΣ-XC",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KΨ-EΦ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "KΨ-ID",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KΩNX-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KΘY-Φ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "KΘΛ-W",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "LF",
+      "stored": "inverted_rotated_swapped",
+      "detected": "mirrored",
+      "match": false,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "LFAA",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "LFBB",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "LFCC",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "LGHFLHGF",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "LHFALGFA",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "LΔ-SW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "LΔ-VNX-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "LΦ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "LΩVX-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "LΩΛ-X",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "MOON",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 4
+    },
+    {
+      "word": "MOONS",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 10
+    },
+    {
+      "word": "MP",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "MROV",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "MT",
+      "stored": "flipped",
+      "detected": "strict_flipped",
+      "match": true,
+      "components": [
+        "flipped"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "MVNU",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "MXΣN",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "MΛWΔ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "NQ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "NROT",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "NRΛRΛ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "OPOSSUM",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 28
+    },
+    {
+      "word": "OPPOSSUM",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 32
+    },
+    {
+      "word": "OR",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "OSOT",
+      "stored": "flipped_inverted",
+      "detected": "flipped_inverted",
+      "match": true,
+      "components": [
+        "flipped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 4
+    },
+    {
+      "word": "OT",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "OTNS",
+      "stored": "repeated",
+      "detected": "strict_repeated",
+      "match": true,
+      "components": [
+        "repeated"
+      ],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "OTRΛ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "OVXΔ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "OYHΘ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "OΛ",
+      "stored": "repeated",
+      "detected": "repeated",
+      "match": true,
+      "components": [
+        "repeated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "OΛ-TΛ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "POSSUM",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 24
+    },
+    {
+      "word": "PQV",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "PΛ-T",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "QNΛP",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "QT",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "QΛ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "QΛ-Z-Θ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "RRRS",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "RT",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "RX-LΔ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "RXAΣYHΦAΣRPZEΣRΛ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 32
+    },
+    {
+      "word": "RYΩΛ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "RZ-FΘ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "RZ-HΣ-",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "RZ-Δ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "RΛ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "RΛTΛ",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "S",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "SN",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "SOTR",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "SZ-ΘΛ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "SZEΘ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "SΛTO",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "T",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "TW-ΨΩ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "TWKΘ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "TYHΘ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "TΛ-SΛ-SΛ-TΛ-",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "U",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "UQVΛ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "USSΛ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "V",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "VNRΛ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "VPUQ",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "VPY-Ω",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "VPZΣ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "W-CBΘ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "W-CΣΛ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "W-KΩΛ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "W-Ω-Z-Ω",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "W-Θ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "WALΣ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "WΩ-W-Ω-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "WΩ-Z-Θ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "X-AAΩ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "X-BΦ-Θ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "X-Θ-QN",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "X-Θ-VΛ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "X-Θ-Y-Δ-",
+      "stored": "repeated",
+      "detected": "strict_repeated",
+      "match": true,
+      "components": [
+        "repeated"
+      ],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "XCKΩ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "XKΣ-PΛ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "XLΦΔ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "XΔ",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "XΔUUY-Δ-Y-Σ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 32
+    },
+    {
+      "word": "XΣΛS",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "XΩ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "XΩ-Λ-Λ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Y-FAΩ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Y-Σ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Y-ΦAΣY-ΦBΣ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Y-βΦΩ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "YΣ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "YΨ-ΦΔX-ΨGFΦ-Θ-TOΛ-Y-Σ-Λ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "YΨ-βΣ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Z-FΩ-OX-LΔ-R",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Z-Δ-",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ZΔ-Y-Δ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ZΨ-Δ-Z-ΘRYΣ-YΨ-Σ-Y-ΩRZΔ-",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Ψ-ΦBΨΨ-ΦBΨΨ-ΦBΨΨ-ΦBΨ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "VΛ-VΛ-VΛ-VΛ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "AΘ-Y-ΦAΘ-Y-ΦAΘ-Y-ΦAΘ-Y-Φ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "GFΨGGFΨGGFΨGGFΨG",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "FCLΔ-PXΔZ-FCLΔ-PXΔZ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΦJΘY-ΦJΘY-ΦJΘY-ΦJΘY-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΘUUY-ΘUUY-ΘUUY-ΘUUY-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Θ-WCCΘ-WCCΘ-WCCΘ-WCC",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Θ-TTWΘ-WΩ-ΛΛWΩ-Λ-ΛOYΦΘ-TTWΘ-WΩ-ΛΛWΩ-Λ-ΛOYΦ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Δ-X-Ω-Y-Δ-X-Ω-Y-Δ-X-Ω-Y-Δ-X-Ω-Y-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "W-Φ-Θ-Λ-W-Φ-Θ-Λ-W-Φ-Θ-Λ-W-Φ-Θ-Λ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΣW-Ω-YDCΣW-Ω-YDC",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "WΣWΣWΣWΣ",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Y-FBBLΣ-RSY-FBBLΣ-RS",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "LFBΦ-Φ-LFBΦ-Φ-LFBΦ-Φ-LFBΦ-Φ-",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Λ-Λ-Y-ΩXΣTRΛ-Λ-Z-ΘWΔSR",
+      "stored": "inverted",
+      "detected": "strict_inverted",
+      "match": true,
+      "components": [
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Z-Δ-QVZ-Δ-QVZ-Δ-QVZ-Δ-QV",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "LΣ-Z-ΦLΣ-Z-ΦLΣ-Z-ΦLΣ-Z-Φ",
+      "stored": "rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "WΩ-WΩ-WΩ-WΩ-",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "ΘΛY-HΘΛY-H",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Δ-STSXL",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 6
+    },
+    {
+      "word": "MTRU",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 4
+    },
+    {
+      "word": "KΣ-NW-",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 4
+    },
+    {
+      "word": "SYΣ-UQ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 5
+    },
+    {
+      "word": "GELIGELI",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "QΛQΛQΛQΛ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "AABB",
+      "stored": "rotated_inverted",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 4
+    },
+    {
+      "word": "seq_1773999581288_9yokhlr24",
+      "stored": "strict_rotated",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 0
+    },
+    {
+      "word": "Δ-OW-BΘ-TX-L",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-RSY-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-RΛY",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-SYΘWΨ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 24
+    },
+    {
+      "word": "Δ-TQZ-",
+      "stored": "swapped",
+      "detected": "strict_swapped",
+      "match": true,
+      "components": [
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Δ-TY-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "Δ-UY-Σ-VZ-Σ-VZ-Δ-UY-",
+      "stored": "inverted_rotated_swapped",
+      "detected": "rotated_swapped_inverted",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-",
+      "stored": "inverted_rotated_swapped",
+      "detected": "rotated_swapped_inverted",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-VNZECKΨ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-VNΛΛVNZ",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-W-Θ-Y-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Δ-Y-Δ-Y",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-ZΦΨΣ-YΦΨΣ-YΦΨΔ-ZΦΨ",
+      "stored": "inverted_rotated_swapped",
+      "detected": "rotated_swapped_inverted",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-ZΩZ-",
+      "stored": "repeated",
+      "detected": "strict_repeated",
+      "match": true,
+      "components": [
+        "repeated"
+      ],
+      "period": 1,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Δ-ΛRY",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Δ-ΛRZ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΔQVΛ-YβΣ-W-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 32
+    },
+    {
+      "word": "ΔSΛW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΔUX-C",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΔZΦ",
+      "stored": "flipped",
+      "detected": "modular_rotated_90",
+      "match": false,
+      "components": [
+        "mirrored",
+        "swapped",
+        "flipped"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "ΔΛYF",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Λ",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 4
+    },
+    {
+      "word": "Λ-S",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Λ-T",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Λ-VXΨΩΛ-W-Ω-",
+      "stored": "mirrored_swapped",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Λ-WΣΛ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Λ-ZΩΛ-Λ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "ΛMWΔ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΛR",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΛRYΔ-ΛO",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 24
+    },
+    {
+      "word": "ΛVNΛSR",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "ΛVΛR",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΛW-AΩ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΛY-IΣ-Λ-VW-Ω-",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΛY-ΘO",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΛZ-ΩO",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-PY-I",
+      "stored": "mirrored_swapped",
+      "detected": "mirrored_swapped",
+      "match": true,
+      "components": [
+        "mirrored",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Σ-RSZ",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-RSZ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-RTZ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-RW-Θ-Z-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "Σ-SZ-",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "Σ-SZ-Ψ-",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-SZ-Ψ-ECJΨ-",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-VNY-",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Σ-W-Φ-J",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-W-Θ-Y-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Σ-X-AΨ",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-Y-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Σ-YΦΨΔ-ZΦΨΔ-ZΦΨΣ-YΦΨ",
+      "stored": "inverted_rotated_swapped",
+      "detected": "rotated_swapped_inverted",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-Z-Σ-W-CΩ-WΨ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-ZΦΨ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Σ-ΛRZΔ-ΛRYΔ-ΛRYΣ-ΛRZ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣOXLΩY-Ψ-Φ",
+      "stored": "mirrored_swapped",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣOXLΩY-Ψ-ΦΔOWLΘZ-Ψ-Φ",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣVPW",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣW",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΣW-AΦ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣWLF",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣX-",
+      "stored": "swapped",
+      "detected": "strict_swapped",
+      "match": true,
+      "components": [
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΣYΣ-W-ΣYΣ-W-ΔZΔ-X-ΔZΔ-X-",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣYΘW",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΣZ-EC",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣΛ-VW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΣΛZ-ΘX-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "Φ-ABB",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Φ-BKE",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Φ-ΔRW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Φ-ΔΛ-X",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΦAΦ-L",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΦKΔ-ZΦJΣ-Y",
+      "stored": "mirrored",
+      "detected": "strict_mirrored",
+      "match": true,
+      "components": [
+        "mirrored"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΦL",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΦLGG",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΦLβ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 12
+    },
+    {
+      "word": "ΦΦ-Lβ",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Ψ-EJΨ-Ψ-DKΨ-",
+      "stored": "inverted",
+      "detected": "inverted",
+      "match": true,
+      "components": [
+        "inverted",
+        "rewound"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Ψ-FΔY-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Ψ-FΦ-Θ-Y-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "Ψ-H",
+      "stored": "rotated",
+      "detected": "rotated_swapped",
+      "match": false,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Ψ-I",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Ψ-Σ-W-K",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Ψ-βEKβ",
+      "stored": "mirrored_swapped",
+      "detected": "repeated",
+      "match": false,
+      "components": [
+        "repeated"
+      ],
+      "period": 2,
+      "rawStepCount": 10
+    },
+    {
+      "word": "ΨDΣW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΨΔ-TW",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΨΦJΦ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Ω-RWΦ-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Ω-TΛ-RY-HΔ-W",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 32
+    },
+    {
+      "word": "Ω-W-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Ω-W-Θ-X-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Ω-X-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Ω-ZΣ-X",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II",
+      "stored": "inverted",
+      "detected": null,
+      "match": false,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-IIΘMYΔ-ZΨ-IIΩNZΣ-YΨ-II",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 32
+    },
+    {
+      "word": "ΩXΔZ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΩZ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "ΩΛ-XJ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "αCΩ-X",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "αLβββΨ-βFαααααααα",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "αΣΛW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "βFαLHHHHβFαLGGGG",
+      "stored": null,
+      "detected": "mirrored_swapped_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "swapped",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "βΦαΨΦΨββ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "βΩOY-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Θ-MΛW",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 19
+    },
+    {
+      "word": "Θ-QVW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Θ-QΛ-ΛW",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 20
+    },
+    {
+      "word": "Θ-W-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ",
+      "stored": "mirrored",
+      "detected": "mirrored_inverted",
+      "match": false,
+      "components": [
+        "mirrored",
+        "inverted"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Θ-X-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Θ-X-ΔX-ΨΣ-NW",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Θ-X-Ω-W-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Θ-Y-Σ-W-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 2,
+      "rawStepCount": 8
+    },
+    {
+      "word": "Θ-ZFα",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Θ-Λ-MW-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "Θ-Λ-Z-Φ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΘW-Ψ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 12
+    },
+    {
+      "word": "ΘX-CJ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΘX-ΣZ",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΘZFL",
+      "stored": null,
+      "detected": null,
+      "match": true,
+      "components": [],
+      "period": 1,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΘZΣ-Z",
+      "stored": "rotated",
+      "detected": "rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΘΛ-X-Ψ",
+      "stored": "rotated_swapped",
+      "detected": "rotated_swapped",
+      "match": true,
+      "components": [
+        "rotated",
+        "swapped"
+      ],
+      "period": 2,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΘΛ-ZG",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    },
+    {
+      "word": "ΘΛ-ΛY-",
+      "stored": "rotated",
+      "detected": "strict_rotated",
+      "match": true,
+      "components": [
+        "rotated"
+      ],
+      "period": 4,
+      "rawStepCount": 16
+    }
+  ]
+}

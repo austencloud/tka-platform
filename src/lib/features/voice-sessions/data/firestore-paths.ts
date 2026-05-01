@@ -1,15 +1,4 @@
 /**
- * Firestore Collection Paths for Voice Sessions
- *
- * Centralized path definitions for voice session persistence.
- * Follows the same pattern as tika/data/firestore-paths.ts.
- */
-
-// ============================================================================
-// USER VOICE SESSION PATHS
-// ============================================================================
-
-/**
  * Path to a user's voice sessions collection
  * @example "users/abc123/voiceSessions"
  */
@@ -27,10 +16,6 @@ export function getUserVoiceSessionPath(
 ): string {
   return `users/${userId}/voiceSessions/${sessionId}`;
 }
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
 
 export const VOICE_SESSION_COLLECTIONS = {
   SESSIONS: "voiceSessions",

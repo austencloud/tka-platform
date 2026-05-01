@@ -1,12 +1,3 @@
-/**
- * Sheet Router Service Implementation
- *
- * Manages route-based navigation for sheets, spotlight views, and animation panels.
- * Handles browser history and URL state for a native app-like experience.
- *
- * Domain: Navigation - Route Management
- */
-
 import { browser } from "$app/environment";
 import {
   pushState as svelteKitPushState,
@@ -20,10 +11,6 @@ import type {
 } from "../contracts/ISheetRouter";
 
 export class SheetRouter implements ISheetRouter {
-  // ============================================================================
-  // Private Helpers
-  // ============================================================================
-
   private parseRouteState(): RouteState {
     if (!browser) return {};
 
@@ -48,7 +35,6 @@ export class SheetRouter implements ISheetRouter {
       state.spotlight = spotlight;
     }
 
-    // Parse animation panel state if animation sheet is open
     if (sheet === "animation") {
       const animSeqId = url.searchParams.get("animSeqId");
       const animSpeed = url.searchParams.get("animSpeed");
@@ -75,7 +61,6 @@ export class SheetRouter implements ISheetRouter {
 
     const url = new URL(window.location.href);
 
-    // Clear all route params first
     url.searchParams.delete("sheet");
     url.searchParams.delete("spotlight");
     url.searchParams.delete("animSeqId");
@@ -84,7 +69,6 @@ export class SheetRouter implements ISheetRouter {
     url.searchParams.delete("animStep");
     url.searchParams.delete("animGrid");
 
-    // Set new params
     if (state.sheet) {
       url.searchParams.set("sheet", state.sheet);
     }
@@ -92,7 +76,6 @@ export class SheetRouter implements ISheetRouter {
       url.searchParams.set("spotlight", state.spotlight);
     }
 
-    // Set animation panel params if present
     if (state.sheet === "animation" && state.animationPanel) {
       if (state.animationPanel.sequenceId) {
         url.searchParams.set("animSeqId", state.animationPanel.sequenceId);
@@ -123,7 +106,6 @@ export class SheetRouter implements ISheetRouter {
       }
     }
 
-    // Update history
     if (mode === "push") {
       svelteKitPushState(url, state);
     } else {
@@ -135,10 +117,6 @@ export class SheetRouter implements ISheetRouter {
     if (!browser) return;
     window.dispatchEvent(new CustomEvent("route-change", { detail: state }));
   }
-
-  // ============================================================================
-  // Sheet Management
-  // ============================================================================
 
   openSheet(sheetType: SheetType): void {
     if (!sheetType || !browser) return;
@@ -170,10 +148,6 @@ export class SheetRouter implements ISheetRouter {
     const state = this.parseRouteState();
     return state.sheet ?? null;
   }
-
-  // ============================================================================
-  // Spotlight Management
-  // ============================================================================
 
   openSpotlight(sequenceId: string): void {
     if (!sequenceId || !browser) return;
@@ -213,10 +187,6 @@ export class SheetRouter implements ISheetRouter {
     url.searchParams.set("spotlight", sequenceId);
     return url.toString();
   }
-
-  // ============================================================================
-  // Animation Panel Management
-  // ============================================================================
 
   openAnimationPanel(animationState?: AnimationPanelState): void {
     if (!browser) return;
@@ -262,10 +232,6 @@ export class SheetRouter implements ISheetRouter {
     const state = this.parseRouteState();
     return state.animationPanel ?? null;
   }
-
-  // ============================================================================
-  // General Route Management
-  // ============================================================================
 
   getCurrentRouteState(): RouteState {
     return this.parseRouteState();

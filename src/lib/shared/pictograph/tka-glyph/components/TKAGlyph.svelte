@@ -1,23 +1,6 @@
-<!--
-TKAGlyph.svelte - Modern Rune-Based TKA Glyph Component
-
-Renders letters, turn indicators, and other TKA notation elements.
-Uses pure runes instead of stores for reactivity.
--->
 <script lang="ts" module>
   import { getLetterImagePath as getPath } from "../utils/letter-image-getter";
   import { Letter as LetterType } from "$lib/shared/foundation/domain/models/Letter";
-
-  // ============================================================================
-  // HMR-AWARE MODULE-LEVEL CACHES
-  // ============================================================================
-  // These caches are shared across ALL TKAGlyph instances to prevent redundant
-  // SVG fetches. They're persisted across HMR to avoid mass network requests
-  // when code changes trigger module reloads.
-  //
-  // Without HMR persistence, every TKAGlyph on screen would refetch its SVG
-  // after any file change, causing 1000+ network requests and 20+ second delays.
-  // ============================================================================
 
   // Restore caches from HMR data if available, otherwise create fresh
   const globalDimensionsCache: Map<string, { width: number; height: number }> =

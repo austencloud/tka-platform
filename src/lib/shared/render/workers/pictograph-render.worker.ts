@@ -1,21 +1,7 @@
-/**
- * Pictograph Render Worker
- *
- * Offloads pictograph rendering to a Web Worker using OffscreenCanvas.
- * Each worker instance maintains its own SvgAssetLoader and LayerCompositor
- * with independent caches (no shared memory with main thread).
- *
- * Message protocol:
- * - Main → Worker: { type: "init" } | { type: "render", id, ... }
- * - Worker → Main: { type: "init-done" } | { type: "render-result", id, blob } | { type: "error", id, message }
- */
-
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
 import type { LayerRenderOptions, LayerVisibility } from "../services/contracts/ILayerCompositor";
 import { LayerCompositor } from "../services/implementations/LayerCompositor";
 import { SvgAssetLoader } from "../services/implementations/SvgAssetLoader";
-
-// ============ Message Types ============
 
 export interface InitMessage {
   type: "init";
@@ -50,8 +36,6 @@ export interface ErrorMessage {
 
 export type WorkerOutMessage = InitDoneMessage | RenderResultMessage | ErrorMessage;
 
-// ============ Worker State ============
-
 let compositor: LayerCompositor | null = null;
 let assetLoader: SvgAssetLoader | null = null;
 let initPromise: Promise<void> | null = null;
@@ -73,8 +57,6 @@ async function doInitialize(): Promise<void> {
   await assetLoader.initialize();
   compositor = new LayerCompositor();
 }
-
-// ============ Message Handler ============
 
 self.onmessage = async (event: MessageEvent<WorkerInMessage>) => {
   const msg = event.data;
@@ -107,8 +89,6 @@ self.onmessage = async (event: MessageEvent<WorkerInMessage>) => {
           msg.stepNumber
         );
 
-        // Convert the composed canvas to a blob
-        // result.canvas is OffscreenCanvas in worker context
         const canvas = result.canvas as OffscreenCanvas;
         const blob = await canvas.convertToBlob({ type: "image/png" });
 

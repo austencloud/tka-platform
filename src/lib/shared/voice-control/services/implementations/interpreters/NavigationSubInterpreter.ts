@@ -1,19 +1,9 @@
-/**
- * NavigationSubInterpreter
- *
- * Lowest priority interpreter. Handles module navigation and tab switching.
- * Runs last in the chain as a catch-all for "go to X", "open Y", "switch to Z".
- */
-
 import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
 import { MODULE_DEFINITIONS } from "../../../../navigation/config/module-definitions";
 import type { ModuleDefinition } from "../../../../navigation/domain/types";
 
-// ============================================================================
 // Module navigation patterns
-// ============================================================================
-
 const MODULE_PATTERNS: RegExp[] = [
   /^(?:go to|goto)\s+(.+)$/,
   /^(?:open)\s+(.+)$/,
@@ -22,10 +12,7 @@ const MODULE_PATTERNS: RegExp[] = [
   /^(?:switch to)\s+(.+)\s+module$/,
 ];
 
-// ============================================================================
 // Tab switching patterns
-// ============================================================================
-
 const TAB_PATTERNS: RegExp[] = [
   /^(?:switch to)\s+(?:the\s+)?(.+?)(?:\s+tab)?$/,
   /^(?:go to|goto)\s+(?:the\s+)?(.+?)\s+tab$/,
@@ -33,10 +20,7 @@ const TAB_PATTERNS: RegExp[] = [
   /^(?:show)\s+(?:the\s+)?(.+?)\s+tab$/,
 ];
 
-// ============================================================================
 // Fuzzy aliases
-// ============================================================================
-
 const MODULE_ALIASES: Record<string, string> = {
   creator: "create",
   creation: "create",
@@ -158,8 +142,6 @@ export class NavigationSubInterpreter implements ISubInterpreter {
     return null;
   }
 
-  // ── Module navigation ─────────────────────────────────────────
-
   private tryParseModuleCommand(text: string): VoiceCommand | null {
     for (const pattern of MODULE_PATTERNS) {
       const match = text.match(pattern);
@@ -196,8 +178,6 @@ export class NavigationSubInterpreter implements ISubInterpreter {
 
     return null;
   }
-
-  // ── Tab switching ─────────────────────────────────────────────
 
   private tryParseTabCommand(text: string, context: CommandContext): VoiceCommand | null {
     for (const pattern of TAB_PATTERNS) {

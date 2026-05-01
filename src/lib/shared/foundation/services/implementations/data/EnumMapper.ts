@@ -1,10 +1,3 @@
-/**
- * EnumMapper - Centralized enum mapping utilities
- *
- * Provides consistent string-to-enum conversion functions used across
- * all data services. Eliminates duplication of mapping logic.
- */
-
 import {
   GridLocation,
   GridPosition,
@@ -26,9 +19,6 @@ export interface IEnumMapper {
 }
 
 export class EnumMapper implements IEnumMapper {
-  /**
-   * Map string motion type to MotionType enum
-   */
   mapMotionType(motionType: string): MotionType {
     if (!motionType) return MotionType.STATIC;
 
@@ -51,9 +41,6 @@ export class EnumMapper implements IEnumMapper {
     }
   }
 
-  /**
-   * Map string location to GridLocation enum
-   */
   mapLocation(location: string): GridLocation {
     if (!location) {
       console.warn(
@@ -87,9 +74,6 @@ export class EnumMapper implements IEnumMapper {
     }
   }
 
-  /**
-   * Map string orientation to Orientation enum
-   */
   mapOrientation(orientation: string): Orientation {
     if (!orientation) return Orientation.IN;
 
@@ -110,9 +94,6 @@ export class EnumMapper implements IEnumMapper {
     }
   }
 
-  /**
-   * Map string rotation direction to RotationDirection enum
-   */
   mapRotationDirection(rotationDirection: string): RotationDirection {
     if (!rotationDirection) return RotationDirection.NO_ROTATION;
 
@@ -132,9 +113,6 @@ export class EnumMapper implements IEnumMapper {
     }
   }
 
-  /**
-   * Convert string position to GridPosition enum
-   */
   convertToGridPosition(
     positionString: string | null | undefined
   ): GridPosition | null {
@@ -155,27 +133,17 @@ export class EnumMapper implements IEnumMapper {
     return null;
   }
 
-  /**
-   * Normalize motion type for comparison (used in CSV matching)
-   */
   normalizeMotionType(motionType: string): string {
     return motionType.toLowerCase().trim();
   }
 
-  /**
-   * Normalize location for comparison (used in CSV matching)
-   */
   normalizeLocation(location: string): string {
     return location.toLowerCase().trim();
   }
 
-  /**
-   * Handle "fl" (float) turns conversion
-   */
   normalizeTurns(turns: number | string): number {
     return turns === "fl" ? 0.5 : Number(turns) || 0;
   }
 }
 
-// Direct singleton export for HMR-friendly imports
 export const enumMapper = new EnumMapper();

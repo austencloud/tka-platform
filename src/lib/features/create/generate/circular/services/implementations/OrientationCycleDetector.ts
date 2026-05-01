@@ -1,14 +1,4 @@
 /**
- * Orientation Cycle Detection Service
- *
- * Determines how many repetitions of a sequence are needed to return
- * to the starting prop orientation.
- *
- * For LOOP sequences, the sequence may return to the starting grid position
- * after one repetition, but the prop orientation might be rotated 90° or 180°.
- * This service detects whether the sequence needs 1, 2, or 4 repetitions
- * to return to both the starting position AND orientation.
- *
  * Algorithm:
  * 1. Extract starting orientation from start position or first beat
  * 2. Track orientation changes through each beat
@@ -27,23 +17,17 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 export interface OrientationCycleResult {
   /** Number of repetitions needed (1, 2, or 4) */
   cycleCount: 1 | 2 | 4;
-  /** Blue prop orientation after each repetition */
   blueOrientations: Orientation[];
-  /** Red prop orientation after each repetition */
   redOrientations: Orientation[];
 }
 
 export class OrientationCycleDetector {
   constructor(private readonly orientationCalculator: IOrientationCalculator) {}
 
-  /**
-   * Detect how many repetitions are needed to return to starting orientation
-   */
   detectOrientationCycle(sequence: SequenceData): OrientationCycleResult {
     const steps = sequence.steps;
 
     if (!steps || steps.length === 0) {
-      // Empty sequence - trivially returns in 1 cycle
       return {
         cycleCount: 1,
         blueOrientations: [Orientation.IN],
@@ -51,17 +35,14 @@ export class OrientationCycleDetector {
       };
     }
 
-    // Get starting orientations
     const startOrientations = this.getStartingOrientations(sequence);
 
-    // Track orientations through repetitions
     const blueOrientations: Orientation[] = [startOrientations.blue];
     const redOrientations: Orientation[] = [startOrientations.red];
 
     let currentBlue = startOrientations.blue;
     let currentRed = startOrientations.red;
 
-    // Simulate up to 4 repetitions
     for (let rep = 1; rep <= 4; rep++) {
       // Step through each beat, recalculating orientations from the accumulated
       // current orientation. We can't just re-read stored endOrientation because
@@ -112,16 +93,13 @@ export class OrientationCycleDetector {
       cycleCount: 4,
       blueOrientations,
       redOrientations,
-    };
-  }
+      };
+      }
 
-  /**
-   * Extract starting orientations from start position or first beat
-   */
-  private getStartingOrientations(sequence: SequenceData): {
-    blue: Orientation;
-    red: Orientation;
-  } {
+      private getStartingOrientations(sequence: SequenceData): {
+      blue: Orientation;
+      red: Orientation;
+      } {
     // Try start position first
     const startPos = sequence.startPosition || sequence.startingPosition;
 
@@ -147,16 +125,13 @@ export class OrientationCycleDetector {
       };
     }
 
-    // Default to IN orientation
+    // Default to IN
     return {
       blue: Orientation.IN,
       red: Orientation.IN,
     };
   }
 
-  /**
-   * Type guard for StartPositionData
-   */
   private isStartPositionData(
     data: StartPositionData | StepData
   ): data is StartPositionData {
@@ -164,9 +139,6 @@ export class OrientationCycleDetector {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 
 export const orientationCycleDetector = new OrientationCycleDetector(

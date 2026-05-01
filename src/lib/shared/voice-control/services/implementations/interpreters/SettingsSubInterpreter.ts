@@ -1,17 +1,7 @@
-/**
- * SettingsSubInterpreter
- *
- * Handles "toggle X", "show/enable/turn on X", "hide/disable/turn off X" commands.
- * Maps spoken setting names to canonical setting keys via alias table.
- */
-
 import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
 
-// ============================================================================
 // Setting alias map: spoken phrase → canonical key
-// ============================================================================
-
 /**
  * Maps natural language names to setting identifiers.
  * The key used by handlers to look up the correct state manager + property.
@@ -62,10 +52,7 @@ const SETTING_ALIASES: Record<string, string> = {
   "shortcut hints": "showShortcutHints",
 };
 
-// ============================================================================
 // Toggle / Show / Hide patterns
-// ============================================================================
-
 /** Matches "toggle grid", "toggle step numbers" */
 const TOGGLE_PATTERN = /^toggle\s+(.+)$/;
 

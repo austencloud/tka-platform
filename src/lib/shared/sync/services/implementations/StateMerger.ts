@@ -1,10 +1,3 @@
-/**
- * State Merger Implementation
- *
- * Handles CRDT-based merging of room state from multiple peers.
- * Uses Last-Writer-Wins semantics based on HLC timestamps.
- */
-
 import type { IStateMerger, MergeResult } from '../contracts/IStateMerger';
 import type { IHybridLogicalClock } from '../contracts/IHybridLogicalClock';
 import type {
@@ -16,8 +9,6 @@ import type {
 } from '../../domain/sync-types';
 
 /**
- * CRDT-based state merger using Hybrid Logical Clocks for ordering.
- *
  * All operations are immutable - inputs are never mutated.
  */
 export class StateMerger implements IStateMerger {
@@ -35,7 +26,6 @@ export class StateMerger implements IStateMerger {
 		const updatedFields = new Set<'playback' | 'sequence' | 'peers'>();
 		let localChanged = false;
 
-		// Merge playback (LWW by HLC)
 		const playbackComparison = this.hlc.compare(
 			remote.playback.anchorHlc,
 			local.playback.anchorHlc
@@ -46,20 +36,17 @@ export class StateMerger implements IStateMerger {
 			localChanged = true;
 		}
 
-		// Merge sequence
 		const mergedSequence = this.mergeSequence(local, remote, updatedFields);
 		if (updatedFields.has('sequence')) {
 			localChanged = true;
 		}
 
-		// Merge peers (union)
 		const mergedPeers = this.mergePeers(local.peers, remote.peers);
 		if (mergedPeers.size !== local.peers.size || this.peersChanged(local.peers, mergedPeers)) {
 			updatedFields.add('peers');
 			localChanged = true;
 		}
 
-		// Use later createdAt for the merged state
 		const createdAtComparison = this.hlc.compare(remote.createdAt, local.createdAt);
 		const mergedCreatedAt = createdAtComparison > 0 ? remote.createdAt : local.createdAt;
 
@@ -82,7 +69,6 @@ export class StateMerger implements IStateMerger {
 	mergeIntent(currentState: SyncedRoomState, intent: PlaybackIntent): SyncedRoomState {
 		const comparison = this.hlc.compare(intent.anchorHlc, currentState.playback.anchorHlc);
 
-		// Only update if the incoming intent is strictly newer
 		if (comparison > 0) {
 			return {
 				...currentState,
@@ -90,27 +76,19 @@ export class StateMerger implements IStateMerger {
 			};
 		}
 
-		// No change - return same reference for optimization
 		return currentState;
 	}
 
-	/**
-	 * Merge a peer info update into the current state.
-	 * Only updates if the incoming peer info is newer.
-	 */
 	mergePeerInfo(currentState: SyncedRoomState, peerInfo: PeerInfo): SyncedRoomState {
 		const existingPeer = currentState.peers.get(peerInfo.nodeId);
 
-		// If peer exists, only update if the incoming info is newer
 		if (existingPeer) {
 			const comparison = this.hlc.compare(peerInfo.lastSeen, existingPeer.lastSeen);
 			if (comparison <= 0) {
-				// Incoming is not newer - no change
 				return currentState;
 			}
 		}
 
-		// Create new peers map with the updated peer
 		const newPeers = new Map(currentState.peers);
 		newPeers.set(peerInfo.nodeId, peerInfo);
 
@@ -120,12 +98,8 @@ export class StateMerger implements IStateMerger {
 		};
 	}
 
-	/**
-	 * Remove a peer from the state.
-	 */
 	removePeer(currentState: SyncedRoomState, nodeId: string): SyncedRoomState {
 		if (!currentState.peers.has(nodeId)) {
-			// Peer doesn't exist - return same reference
 			return currentState;
 		}
 
@@ -162,9 +136,6 @@ export class StateMerger implements IStateMerger {
 		};
 	}
 
-	/**
-	 * Create peer info for this device.
-	 */
 	createPeerInfo(displayName: string, viewMode: ViewMode): PeerInfo {
 		return {
 			nodeId: this.hlc.nodeId,
@@ -173,10 +144,6 @@ export class StateMerger implements IStateMerger {
 			lastSeen: this.hlc.now()
 		};
 	}
-
-	// ============================================================================
-	// Private Helpers
-	// ============================================================================
 
 	/**
 	 * Merge sequence data with preference rules:
@@ -192,7 +159,6 @@ export class StateMerger implements IStateMerger {
 		const localSeq = local.sequence;
 		const remoteSeq = remote.sequence;
 
-		// Same ID - prefer the one with data
 		if (localSeq.id === remoteSeq.id) {
 			if (!localSeq.data && remoteSeq.data) {
 				updatedFields.add('sequence');
@@ -201,7 +167,6 @@ export class StateMerger implements IStateMerger {
 			return localSeq;
 		}
 
-		// Different IDs - prefer the one with later createdAt
 		const createdAtComparison = this.hlc.compare(remote.createdAt, local.createdAt);
 		if (createdAtComparison > 0) {
 			updatedFields.add('sequence');
@@ -221,20 +186,16 @@ export class StateMerger implements IStateMerger {
 	): Map<string, PeerInfo> {
 		const merged = new Map<string, PeerInfo>();
 
-		// Add all local peers
 		for (const [nodeId, peer] of localPeers) {
 			merged.set(nodeId, peer);
 		}
 
-		// Merge in remote peers (only update if newer)
 		for (const [nodeId, remotePeer] of remotePeers) {
 			const existingPeer = merged.get(nodeId);
 
 			if (!existingPeer) {
-				// New peer - add it
 				merged.set(nodeId, remotePeer);
 			} else {
-				// Existing peer - take the one with later lastSeen
 				const comparison = this.hlc.compare(remotePeer.lastSeen, existingPeer.lastSeen);
 				if (comparison > 0) {
 					merged.set(nodeId, remotePeer);
@@ -245,9 +206,6 @@ export class StateMerger implements IStateMerger {
 		return merged;
 	}
 
-	/**
-	 * Check if any peers changed between two maps.
-	 */
 	private peersChanged(
 		oldPeers: Map<string, PeerInfo>,
 		newPeers: Map<string, PeerInfo>
@@ -257,7 +215,6 @@ export class StateMerger implements IStateMerger {
 			if (!oldPeer) {
 				return true;
 			}
-			// Check if any field changed (simple reference comparison for lastSeen)
 			if (
 				oldPeer.displayName !== newPeer.displayName ||
 				oldPeer.viewMode !== newPeer.viewMode ||

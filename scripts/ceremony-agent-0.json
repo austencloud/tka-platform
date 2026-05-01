@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IAspectLayoutPlanner",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IAspectLayoutPlanner.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/AspectLayoutPlanner.ts",
+    "cls": "AspectLayoutPlanner",
+    "getter": "src/lib/features/create/construct/option-picker/getAspectLayoutPlanner.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IContinuationIdentifier",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IContinuationIdentifier.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/ContinuationIdentifier.ts",
+    "cls": "ContinuationIdentifier",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILayoutDetector",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/ILayoutDetector.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/LayoutDetector.ts",
+    "cls": "LayoutDetector",
+    "getter": "src/lib/features/create/construct/option-picker/getLayoutDetector.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IOptionFilter",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IOptionFilter.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/OptionFilter.ts",
+    "cls": "OptionFilter",
+    "getter": "src/lib/features/create/construct/option-picker/getOptionFilter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IOptionLoader",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IOptionLoader.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/OptionLoader.ts",
+    "cls": "OptionLoader",
+    "getter": "src/lib/features/create/construct/option-picker/getOptionLoader.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IOptionOrganizer",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IOptionOrganizer.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/OptionOrganizer.ts",
+    "cls": "OptionOrganizer",
+    "getter": "src/lib/features/create/construct/option-picker/getOptionOrganizer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IOptionSorter",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IOptionSorter.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/OptionSorter.ts",
+    "cls": "OptionSorter",
+    "getter": "src/lib/features/create/construct/option-picker/getOptionSorter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IOptionTransitionCoordinator",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IOptionTransitionCoordinator.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/OptionTransitionCoordinator.ts",
+    "cls": "OptionTransitionCoordinator",
+    "getter": "src/lib/features/create/construct/option-picker/getOptionTransitionCoordinator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPictographPreparer",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IPictographPreparer.ts",
+    "impl": "src/lib/shared/pictograph/shared/services/implementations/PictographPreparer.ts",
+    "cls": "PictographPreparer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPositionAnalyzer",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IPositionAnalyzer.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/PositionAnalyzer.ts",
+    "cls": "PositionAnalyzer",
+    "getter": "src/lib/features/create/construct/option-picker/getPositionAnalyzer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IReversalChecker",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/IReversalChecker.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/ReversalChecker.ts",
+    "cls": "ReversalChecker",
+    "getter": "src/lib/features/create/construct/option-picker/getReversalChecker.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISectionTitleFormatter",
+    "contract": "src/lib/features/create/construct/option-picker/services/contracts/ISectionTitleFormatter.ts",
+    "impl": "src/lib/features/create/construct/option-picker/services/implementations/SectionTitleFormatter.ts",
+    "cls": "SectionTitleFormatter",
+    "getter": "src/lib/features/create/construct/option-picker/getSectionTitleFormatter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IStartPositionManager",
+    "contract": "src/lib/features/create/construct/start-position-picker/services/contracts/IStartPositionManager.ts",
+    "impl": "src/lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager.ts",
+    "cls": "StartPositionManager",
+    "getter": "src/lib/features/create/construct/start-position-picker/getStartPositionManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILOOPEndPositionSelector",
+    "contract": "src/lib/features/create/generate/circular/services/contracts/ILOOPEndPositionSelector.ts",
+    "impl": "src/lib/features/create/generate/circular/services/implementations/LOOPEndPositionSelector.ts",
+    "cls": "LOOPEndPositionSelector",
+    "getter": "src/lib/features/create/generate/circular/getLOOPEndPositionSelector.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILOOPExecutorSelector",
+    "contract": "src/lib/features/create/generate/circular/services/contracts/ILOOPExecutorSelector.ts",
+    "impl": "src/lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector.ts",
+    "cls": "LOOPExecutorSelector",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IOrientationCycleExtender",
+    "contract": "src/lib/features/create/generate/circular/services/contracts/IOrientationCycleExtender.ts",
+    "impl": "src/lib/features/create/generate/circular/services/implementations/OrientationCycleExtender.ts",
+    "cls": "OrientationCycleExtender",
+    "getter": "src/lib/features/create/generate/circular/getOrientationCycleExtender.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFavoriteConfigRepository",
+    "contract": "src/lib/features/create/generate/services/contracts/IFavoriteConfigRepository.ts",
+    "impl": "src/lib/features/create/generate/services/implementations/FavoriteConfigRepository.ts",
+    "cls": "FavoriteConfigRepository",
+    "getter": "src/lib/features/create/generate/getFavoriteConfigRepository.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowserVariationProvider",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/IBrowserVariationProvider.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/BrowserVariationProvider.ts",
+    "cls": "BrowserVariationProvider",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBuildResultTransformer",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/IBuildResultTransformer.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/BuildResultTransformer.ts",
+    "cls": "BuildResultTransformer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICardConfigurator",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/ICardConfigurator.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/CardConfigurator.ts",
+    "cls": "CardConfigurator",
+    "getter": "src/lib/features/create/generate/shared/getCardConfigurator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IGenerationOrchestrator",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/GenerationOrchestrator.ts",
+    "cls": "GenerationOrchestrator",
+    "getter": "src/lib/features/create/generate/shared/getGenerationOrchestrator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILOOPExplanationTextGenerator",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/ILOOPExplanationTextGenerator.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator.ts",
+    "cls": "LOOPExplanationTextGenerator",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILOOPParameterProvider",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/ILOOPParameterProvider.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/LOOPParameterProvider.ts",
+    "cls": "LOOPParameterProvider",
+    "getter": "src/lib/features/create/generate/shared/getLOOPParameterProvider.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILOOPTypeResolver",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/LOOPTypeResolver.ts",
+    "cls": "LOOPTypeResolver",
+    "getter": "src/lib/features/create/generate/shared/getLOOPTypeResolver.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILoopViabilityService",
+    "contract": "src/lib/features/create/generate/shared/services/contracts/ILoopViabilityService.ts",
+    "impl": "src/lib/features/create/generate/shared/services/implementations/LoopViabilityService.ts",
+    "cls": "LoopViabilityService",
+    "getter": "src/lib/features/create/generate/shared/getLoopViabilityService.ts",
+    "hasCoExports": true
+  }
+]

@@ -1,16 +1,3 @@
-/**
- * Collaborative Video Service
- *
- * Manages collaborative videos in Firestore.
- * Collection path: videos/{videoId}
- *
- * Security model:
- * - Only authenticated users can access
- * - Creator can manage collaborators and delete
- * - Collaborators can remove themselves
- * - Public videos visible to all authenticated users
- */
-
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import {
@@ -45,10 +32,6 @@ import type {
 const VIDEOS_COLLECTION = "videos";
 
 export class CollaborativeVideoManager implements ICollaborativeVideoManager {
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
-
   private getUserId(): string {
     const user = getAuthSync().currentUser;
     if (!user) {
@@ -73,9 +56,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     };
   }
 
-  /**
-   * Convert Firestore document to CollaborativeVideo
-   */
   private docToVideo(
     docData: Record<string, unknown>,
     videoId: string
@@ -83,7 +63,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     const createdAtField = docData.createdAt as Timestamp | undefined;
     const updatedAtField = docData.updatedAt as Timestamp | undefined;
 
-    // Parse collaborators
     const collaboratorsData = (docData.collaborators as unknown[]) ?? [];
     const collaborators: VideoCollaborator[] = collaboratorsData.map((c) => {
       const collab = c as Record<string, unknown>;
@@ -97,7 +76,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       };
     });
 
-    // Parse pending invites
     const invitesData = (docData.pendingInvites as unknown[]) ?? [];
     const pendingInvites: CollaborationInvite[] = invitesData.map((i) => {
       const invite = i as Record<string, unknown>;
@@ -118,7 +96,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       };
     });
 
-    // Parse beat map if present
     const beatMapData = docData.beatMap as Record<string, unknown> | undefined;
     const beatMap: StepMap | undefined = beatMapData
       ? {
@@ -152,9 +129,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     };
   }
 
-  /**
-   * Convert CollaborativeVideo to Firestore document
-   */
   private videoToDoc(video: CollaborativeVideo): Record<string, unknown> {
     return {
       videoUrl: video.videoUrl,
@@ -195,7 +169,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       description: video.description ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      // Denormalized fields for efficient querying
       collaboratorIds: video.collaborators.map((c) => c.userId),
       pendingInviteUserIds: video.pendingInvites
         .filter((i) => i.status === "pending")
@@ -203,16 +176,11 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     };
   }
 
-  // ============================================================================
-  // CRUD OPERATIONS
-  // ============================================================================
-
   async saveVideo(video: CollaborativeVideo): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
       const userId = this.getUserId();
 
-      // Ensure current user is the creator
       if (video.creatorId !== userId) {
         throw new Error("Only the creator can save this video");
       }
@@ -290,7 +258,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         throw new Error("Video not found");
       }
 
-      // Only creator can update
       if (video.creatorId !== userId) {
         throw new Error("Only the creator can update this video");
       }
@@ -311,10 +278,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     }
   }
 
-  // ============================================================================
-  // BEAT MAPPING
-  // ============================================================================
-
   async updateStepMap(videoId: string, beatMap: StepMap): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
@@ -325,7 +288,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         throw new Error("Video not found");
       }
 
-      // Any collaborator can update the beat map
       if (!video.collaborators.some((c) => c.userId === userId)) {
         throw new Error("Only collaborators can update the beat map");
       }
@@ -350,10 +312,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     }
   }
 
-  // ============================================================================
-  // COLLABORATION MANAGEMENT
-  // ============================================================================
-
   async inviteCollaborator(
     videoId: string,
     userId: string,
@@ -369,17 +327,14 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         throw new Error("Video not found");
       }
 
-      // Only collaborators can invite others
       if (!video.collaborators.some((c) => c.userId === currentUserId)) {
         throw new Error("Only collaborators can invite others");
       }
 
-      // Check if already a collaborator
       if (video.collaborators.some((c) => c.userId === userId)) {
         throw new Error("User is already a collaborator");
       }
 
-      // Check if already has pending invite
       if (
         video.pendingInvites.some(
           (i) => i.userId === userId && i.status === "pending"
@@ -448,10 +403,8 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         role: "collaborator",
       };
 
-      // Update in a single write
       const docRef = doc(firestore, VIDEOS_COLLECTION, videoId);
 
-      // Remove old invite, add updated one, add collaborator
       const updatedInvites = video.pendingInvites.map((i) =>
         i.userId === userInfo.uid
           ? { ...i, status: "accepted" as const, respondedAt: new Date() }
@@ -549,12 +502,10 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         throw new Error("Video not found");
       }
 
-      // Cannot remove the creator
       if (userId === video.creatorId) {
         throw new Error("Cannot remove the creator");
       }
 
-      // Only creator or self can remove
       if (currentUserId !== video.creatorId && currentUserId !== userId) {
         throw new Error(
           "Only the creator or the user themselves can remove a collaborator"
@@ -591,10 +542,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     }
   }
 
-  // ============================================================================
-  // QUERY OPERATIONS
-  // ============================================================================
-
   async getVideosForSequence(
     sequenceId: string
   ): Promise<CollaborativeVideo[]> {
@@ -624,14 +571,12 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       const userId = this.getUserId();
       const collectionRef = collection(firestore, VIDEOS_COLLECTION);
 
-      // Query videos where user is a collaborator
       const collaboratorQuery = query(
         collectionRef,
         where("collaboratorIds", "array-contains", userId),
         orderBy("createdAt", "desc")
       );
 
-      // Query videos where user has pending invites
       const pendingQuery = query(
         collectionRef,
         where("pendingInviteUserIds", "array-contains", userId)

@@ -1,19 +1,3 @@
-/**
- * Pure helpers that turn AnimationVisibilityStateManager and
- * ExportOptionsStateManager state into the one-line summaries shown beneath
- * each pill label. All four are pure: same input → same output, no
- * closures over reactive state, fully unit-testable.
- */
-
-// ============================================================================
-// Display
-// ============================================================================
-
-/**
- * Single record of every boolean visibility flag the Display pill exposes.
- * Grid is included as a regular field so the denominator is genuinely
- * arity-derived from this record - no hardcoded `+1`.
- */
 export interface DisplayFlags {
   tkaGlyph: boolean;
   stepNumbers: boolean;
@@ -26,14 +10,6 @@ export interface DisplayFlags {
 
 export type PathShape = "arc" | "linear";
 
-/**
- * Returns "<n> / <total> visible · <pathShape>".
- *
- * Path shape is a binary choice between two valid options (arc vs linear),
- * not on/off, so it is surfaced explicitly rather than counted. The
- * denominator is derived from the input arity - adding a new field to
- * DisplayFlags automatically updates the "/ N" denominator.
- */
 export function computeDisplaySummary(
   flags: DisplayFlags,
   pathShape: PathShape,
@@ -44,26 +20,6 @@ export function computeDisplaySummary(
   return `${on} / ${total} visible · ${pathShape}`;
 }
 
-// ============================================================================
-// Effects
-// ============================================================================
-
-/**
- * Returns the active effect's display name, "Off" for "none"/missing, or
- * "Custom" if the id isn't registered in the label map (a drift guard -
- * prevents raw kebab-case from leaking to users when a new effect ships in
- * state before its label entry is added).
- *
- * Accepts the label table as a parameter rather than importing EFFECT_LABELS
- * directly so the function stays pure and testable without module-level
- * coupling.
- *
- * Silent-failure hardening: if `activeEffect` is not a non-empty string,
- * log a warning (surfaces upstream state corruption in dev console) and
- * return "Off" as the safe neutral. Previously an empty/undefined value
- * would silently flow through `labels[""]` → "Custom", hiding the
- * corruption behind a plausible-looking label.
- */
 export function computeEffectsSummary(
   activeEffect: string,
   labels: Record<string, string>,
@@ -76,19 +32,8 @@ export function computeEffectsSummary(
   return labels[activeEffect] ?? "Custom";
 }
 
-// ============================================================================
-// Playback
-// ============================================================================
-
 export type PlaybackModeLike = "continuous" | "step";
 
-/**
- * Silent-failure hardening: BPM must be finite and positive. Upstream
- * corruption (NaN, 0, negative) would otherwise render literally as
- * "NaN BPM" / "0 BPM" to the user, obscuring that the state store is
- * broken. The "- BPM" fallback is a visible "something is wrong" signal,
- * and the warn surfaces the root cause in dev tools.
- */
 export function computePlaybackSummary(
   bpm: number,
   mode: PlaybackModeLike,
@@ -101,10 +46,6 @@ export function computePlaybackSummary(
   return `${bpm} BPM • ${modeLabel}`;
 }
 
-// ============================================================================
-// Export
-// ============================================================================
-
 export interface ExportSummaryInput {
   resolution: number;
   fps: number;
@@ -112,9 +53,6 @@ export interface ExportSummaryInput {
   renderMode: "2d" | "3d";
 }
 
-/** Canonical resolutions the export pipeline supports. Any other value is
- *  either a state bug or an untested configuration; we render a visible
- *  "-" fallback rather than a plausible-looking garbage label. */
 const CANONICAL_RESOLUTIONS = new Set<number>([720, 1080, 2160, 4320]);
 
 export function computeExportSummary(input: ExportSummaryInput): string {

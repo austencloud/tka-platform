@@ -1,12 +1,3 @@
-/**
- * Shared frame extractor.
- *
- * Pulls frames out of a <video> element using an async generator so that
- * only one frame's worth of ImageData is alive at any time. The consumer
- * processes each frame and lets the garbage collector reclaim it before
- * the next one is extracted, keeping memory usage flat even for long videos.
- */
-
 import type {
 	ExtractedFrame,
 	FrameExtractionConfig,
@@ -81,10 +72,6 @@ export class FrameExtractor implements IFrameExtractor {
 			height: canvas.height,
 		};
 	}
-
-	// ---------------------------------------------------------------
-	// Internal
-	// ---------------------------------------------------------------
 
 	private seekTo(
 		videoElement: HTMLVideoElement,

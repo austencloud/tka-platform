@@ -1,23 +1,4 @@
-/**
- * Sequence Encoder Service Implementation
- *
- * Handles encoding and decoding of sequences for URL sharing.
- * Compresses sequence data into ultra-compact URL-safe strings.
- *
- * Format: startPosition|step1|step2|step3|...
- * Each motion: startLoc(2)+endLoc(2)+startOrient(1)+endOrient(1)+rotDir(1)+turns(1+)+type(1)+propType(1)
- *
- * IMPORTANT: The first part is the START POSITION (where the user begins),
- * NOT a beat! Steps are numbered 1, 2, 3, ... The start position is beat 0
- * internally but should not be counted when reporting "total steps".
- *
- * With LZString compression, URLs can be 60-70% smaller for longer sequences.
- *
- * Domain: Navigation - Sequence URL Encoding
- */
-
 import LZString from "lz-string";
-
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
@@ -41,10 +22,6 @@ import type {
   URLPropOptions,
 } from "../contracts/ISequenceEncoder";
 
-// ============================================================================
-// Character Code Mappings
-// ============================================================================
-
 const LOCATION_ENCODE: Record<GridLocation, string> = {
   [GridLocation.NORTH]: "no",
   [GridLocation.EAST]: "ea",
@@ -66,12 +43,10 @@ const ORIENTATION_ENCODE: Record<Orientation, string> = {
   [Orientation.OUT]: "o",
   [Orientation.CLOCK]: "k",
   [Orientation.COUNTER]: "t",
-  // Interradial orientations (Level 6)
   [Orientation.CLOCK_IN]: "I",
   [Orientation.CLOCK_OUT]: "O",
   [Orientation.COUNTER_IN]: "N",
   [Orientation.COUNTER_OUT]: "U",
-  // Centric orientations (Level 5 - prop at center)
   [Orientation.CENTER_N]: "1",
   [Orientation.CENTER_NE]: "2",
   [Orientation.CENTER_E]: "3",
@@ -109,58 +84,41 @@ const MOTION_TYPE_DECODE: Record<string, MotionType> = Object.fromEntries(
 );
 
 const PROP_TYPE_ENCODE: Record<PropType, string> = {
-  // Staff family
   [PropType.STAFF]: "S",
   [PropType.SIMPLESTAFF]: "s",
   [PropType.BIGSTAFF]: "1",
   [PropType.STAFF2]: "2",
-  // Club family
   [PropType.CLUB]: "C",
   [PropType.BIGCLUB]: "c",
-  // Fan family
   [PropType.FAN]: "F",
   [PropType.BIGFAN]: "f",
-  // Triad family
   [PropType.TRIAD]: "T",
   [PropType.BIGTRIAD]: "t",
-  // Hoop family
   [PropType.MINIHOOP]: "M",
   [PropType.BIGHOOP]: "H",
-  // Buugeng family
   [PropType.BUUGENG]: "B",
   [PropType.BIGBUUGENG]: "b",
   [PropType.FRACTALGENG]: "R",
   [PropType.TRIGENG]: "J",
-  // Hand
   [PropType.HAND]: "X",
-  // Triquetra family
   [PropType.TRIQUETRA]: "Q",
   [PropType.TRIQUETRA2]: "q",
-  // Sword
   [PropType.SWORD]: "W",
-  // Chicken family
   [PropType.CHICKEN]: "K",
   [PropType.BIGCHICKEN]: "k",
-  // Guitar family
   [PropType.GUITAR]: "G",
   [PropType.UKULELE]: "u",
-  // Doublestar family
   [PropType.DOUBLESTAR]: "D",
   [PropType.BIGDOUBLESTAR]: "d",
-  // Eightrings family
   [PropType.EIGHTRINGS]: "E",
   [PropType.BIGEIGHTRINGS]: "e",
-  // Contact ball family
   [PropType.CONTACTBALL]: "A",
   [PropType.BIGCONTACTBALL]: "a",
   [PropType.DOUBLECONTACTBALL]: "V",
   [PropType.BIGDOUBLECONTACTBALL]: "v",
-  // Quiad
   [PropType.QUIAD]: "I",
-  // Torch family
   [PropType.TORCH]: "O",
   [PropType.BIGTORCH]: "L",
-  // Poi family (momentum-based)
   [PropType.POI]: "P",
 };
 
@@ -169,19 +127,6 @@ const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(
 ) as Record<string, PropType>;
 
 export class SequenceEncoder implements ISequenceEncoder {
-  // ============================================================================
-  // Public API
-  // ============================================================================
-
-  /**
-   * Encode a sequence into compact URL string format
-   * Format: "startPosition|step1|step2|step3..."
-   *
-   * Pure motion data only. Sequence-level fields (word, loopType,
-   * isCircular, gridMode, letters, positions) are derived at decode
-   * time from the motion primitives - see decode() for where the
-   * derivers run.
-   */
   encode(sequence: SequenceData): string {
     let startPositionStep: StepData | StartPositionData;
     let actualSteps: readonly StepData[];
@@ -219,10 +164,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     return `${encodedStartPosition}|${encodedSteps.join("|")}`;
   }
 
-  /**
-   * Decode a compact URL string into SequenceData
-   * Handles both legacy and current formats
-   */
   decode(encoded: string): SequenceData {
     if (!encoded) {
       throw new Error("Cannot decode empty sequence");
@@ -274,7 +215,6 @@ export class SequenceEncoder implements ISequenceEncoder {
       const startPositionEncoding = parts[0]!;
       const startingPosition = this.decodeBeat(startPositionEncoding, 0);
 
-      // Convert StepData to StartPositionData using the factory function
       const startPosition = createStartPositionData({
         id: startingPosition.id || crypto.randomUUID(),
         letter: startingPosition.letter,
@@ -320,10 +260,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     };
   }
 
-  /**
-   * Encode sequence with optional LZString compression
-   * Uses compression only if it results in shorter output
-   */
   encodeWithCompression(sequence: SequenceData): CompressionResult {
     const rawEncoded = this.encode(sequence);
     const compressed = this.compressString(rawEncoded);
@@ -345,9 +281,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     };
   }
 
-  /**
-   * Decode sequence, handling both compressed and uncompressed formats
-   */
   decodeWithCompression(encoded: string): SequenceData {
     if (encoded.startsWith("z:")) {
       const compressed = encoded.slice(2);
@@ -361,9 +294,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     return this.decode(encoded);
   }
 
-  /**
-   * Generate a shareable URL for a sequence in a specific module
-   */
   generateShareURL(
     sequence: SequenceData,
     module: string,
@@ -398,9 +328,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     };
   }
 
-  /**
-   * Parse a deep link URL and extract module + sequence data
-   */
   parseDeepLink(url: string): DeepLinkParseResult | null {
     try {
       const params = new URLSearchParams(
@@ -426,9 +353,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     }
   }
 
-  /**
-   * Estimate URL length for a sequence
-   */
   estimateURLLength(
     sequence: SequenceData,
     module: string,
@@ -438,11 +362,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     return result.length;
   }
 
-  /**
-   * Generate a standalone viewer URL for a sequence.
-   * Uses /sequence/{encodedSequence} format with self-contained data.
-   * Optional metadata is appended as URL searchParams.
-   */
   generateViewerURL(
     sequence: SequenceData,
     options: { compress?: boolean; metadata?: ShareURLMetadata } = { compress: true }
@@ -477,65 +396,35 @@ export class SequenceEncoder implements ISequenceEncoder {
     };
   }
 
-  // ============================================================================
-  // Route Path Methods
-  // ============================================================================
-
-  /**
-   * Generate just the path for navigating to /sequence/{encoded}.
-   * The encoded string is the compressed sequence data (self-contained, no DB lookup needed).
-   */
   generateSequenceRoutePath(sequence: SequenceData): string {
     const { encoded } = this.encodeWithCompression(sequence);
     return `/sequence/${encodeURIComponent(encoded)}`;
   }
 
-  /**
-   * Parse a sequence route [id] param to determine its type.
-   *
-   * Self-contained encoded sequences start with "z:" (compressed) or contain "|" (uncompressed).
-   * Everything else is treated as a legacy ID (Firebase doc ID, short code, or plain word).
-   */
   parseSequenceRouteId(id: string): SequenceRouteIdParseResult {
     if (!id) {
       return { encoded: null, legacyId: null };
     }
 
-    // URL-decode in case the id came through encoded (e.g. "z%3A..." -> "z:...")
     const decoded = decodeURIComponent(id);
 
-    // Compressed format: starts with "z:"
     if (decoded.startsWith("z:")) {
       return { encoded: decoded, legacyId: null };
     }
 
-    // Uncompressed format: contains pipe delimiters (startPos|step1|step2...)
     if (decoded.includes("|")) {
       return { encoded: decoded, legacyId: null };
     }
 
-    // Legacy: Firebase document ID, short code, or plain word
     return { encoded: null, legacyId: id };
   }
 
-  // ============================================================================
-  // QR Code Offline Methods
-  // ============================================================================
-
-  /** Prefix for inline-encoded offline QR codes */
   private static readonly INLINE_PREFIX = "s~";
 
-  /**
-   * Encode a sequence for QR code offline use.
-   * Returns a string prefixed with "s~" containing compressed sequence data.
-   * Tries compositional encoding first for LOOP sequences (smaller QR codes),
-   * falls back to flat encoding if the sequence doesn't qualify.
-   */
   async encodeForQR(sequence: SequenceData): Promise<string> {
     const flatEncoded = this.encode(sequence);
     const { encoded: compressedFlat } = this.encodeWithCompression(sequence);
 
-    // Try compositional encoding for LOOP sequences (smaller QR codes)
     try {
       const { CompositionalEncoder } = await import(
         "$lib/shared/qr/services/implementations/CompositionalEncoder"
@@ -547,42 +436,24 @@ export class SequenceEncoder implements ISequenceEncoder {
       );
       const recipe = await encoder.tryEncode(flatEncoded, sequence);
       if (recipe) {
-        const recipeResult = `${SequenceEncoder.INLINE_PREFIX}${recipe}`;
-        // TEMP: Verify compositional encoding is working. Remove after confirming.
-        console.log(
-          `[QR] ✓ Recipe encoding for "${sequence.word}": ` +
-          `${compressedFlat.length + 2} → ${recipeResult.length} chars ` +
-          `(${Math.round((1 - recipeResult.length / (compressedFlat.length + 2)) * 100)}% smaller)`
-        );
-        return recipeResult;
+        return `${SequenceEncoder.INLINE_PREFIX}${recipe}`;
       }
     } catch (err) {
-      // TEMP: Surface errors during development. Remove after confirming.
       console.warn("[QR] Compositional encoding error:", err);
     }
 
     return `${SequenceEncoder.INLINE_PREFIX}${compressedFlat}`;
   }
 
-  /**
-   * Check if a code is an inline-encoded offline QR code (starts with "s~")
-   */
   isInlineEncoded(code: string): boolean {
     return code.startsWith(SequenceEncoder.INLINE_PREFIX);
   }
 
-  /**
-   * Decode an inline-encoded QR code string back to SequenceData.
-   * Strips the "s~" prefix, decompresses, and parses.
-   * Handles both recipe-encoded (r:...) and flat-encoded (z:...) formats.
-   */
   async decodeFromQR(encoded: string): Promise<SequenceData> {
-    // Strip prefix if present
     const data = encoded.startsWith(SequenceEncoder.INLINE_PREFIX)
       ? encoded.slice(SequenceEncoder.INLINE_PREFIX.length)
       : encoded;
 
-    // Check for recipe encoding (compositional)
     if (data.startsWith("r:")) {
       const { CompositionalDecoder } = await import(
         "$lib/shared/qr/services/implementations/CompositionalDecoder"
@@ -596,24 +467,13 @@ export class SequenceEncoder implements ISequenceEncoder {
       return this.decode(flatEncoded);
     }
 
-    // Flat encoding - use existing decompression logic
     return this.decodeWithCompression(data);
   }
 
-  /**
-   * Estimate the QR code size needed for offline encoding.
-   * QR version capacities (alphanumeric, error correction M):
-   * - Version 5 (37×37): 224 chars - comfortable phone scan
-   * - Version 10 (57×57): 395 chars - still scannable
-   * - Version 15 (77×77): 589 chars - needs good camera
-   * - Version 20+ : dense, may have scanning issues
-   */
   async estimateOfflineQRSize(sequence: SequenceData): Promise<QRSizeEstimate> {
     const encoded = await this.encodeForQR(sequence);
     const length = encoded.length;
 
-    // QR alphanumeric capacity at error correction M
-    // These are conservative estimates for reliable scanning
     const VERSION_CAPACITIES = [
       { version: 5, capacity: 224, comfortable: true },
       { version: 10, capacity: 395, comfortable: true },
@@ -622,7 +482,7 @@ export class SequenceEncoder implements ISequenceEncoder {
       { version: 25, capacity: 1182, comfortable: false },
     ];
 
-    let recommendedVersion = 40; // Max version
+    let recommendedVersion = 40; 
     let comfortable = false;
 
     for (const { version, capacity, comfortable: isComfortable } of VERSION_CAPACITIES) {
@@ -639,7 +499,6 @@ export class SequenceEncoder implements ISequenceEncoder {
       offlineRecommended: comfortable,
     };
 
-    // Add warnings for large sequences
     if (recommendedVersion > 15) {
       result.warning = `Sequence produces a dense QR code (${length} chars). ` +
         `Consider using online mode for better scanning reliability.`;
@@ -652,14 +511,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     return result;
   }
 
-  // ============================================================================
-  // Private Helpers
-  // ============================================================================
-
-  /**
-   * Build a URL query string from optional metadata.
-   * Returns empty string if no metadata, or "?key=val&key=val" otherwise.
-   */
   private buildMetadataQuery(metadata?: ShareURLMetadata): string {
     if (!metadata) return "";
 
@@ -673,7 +524,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     if (metadata.difficulty) params.set("difficulty", metadata.difficulty);
     if (metadata.birthday) params.set("birthday", metadata.birthday);
 
-    // Prop types - only include if non-default (staff is the default)
     if (metadata.bluePropType && metadata.bluePropType !== PropType.STAFF) {
       const encoded = PROP_TYPE_ENCODE[metadata.bluePropType as PropType];
       if (encoded) params.set("bp", encoded);
@@ -687,10 +537,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     return query ? `?${query}` : "";
   }
 
-  /**
-   * Parse prop type params from URL search params.
-   * Returns decoded prop types or undefined if not present/invalid.
-   */
   parsePropsFromURL(searchParams: URLSearchParams): URLPropOptions {
     const result: URLPropOptions = {};
 
@@ -714,8 +560,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     const endLoc = LOCATION_ENCODE[motion.endLocation];
     const startOrient = ORIENTATION_ENCODE[motion.startOrientation];
     const endOrient = ORIENTATION_ENCODE[motion.endOrientation];
-    // Legacy Firestore docs may store "no_rotation" (snake_case) instead of
-    // "noRotation" (camelCase). Normalize before lookup so all motions encode.
     const normalizedRotDir =
       motion.rotationDirection === ("no_rotation" as RotationDirection)
         ? RotationDirection.NO_ROTATION
@@ -727,8 +571,6 @@ export class SequenceEncoder implements ISequenceEncoder {
         : undefined);
     const turns = motion.turns === "fl" ? "f" : String(motion.turns);
     const type = MOTION_TYPE_ENCODE[motion.motionType];
-    // propType is a viewer preference, not sequence data — legacy Firestore
-    // docs may omit it entirely. Default to STAFF (same as createMotionData).
     const prop = PROP_TYPE_ENCODE[motion.propType] ?? PROP_TYPE_ENCODE[PropType.STAFF];
 
     if (
@@ -834,16 +676,12 @@ export class SequenceEncoder implements ISequenceEncoder {
       turns,
       startOrientation,
       endOrientation,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       color: motionColor as any,
       isVisible: true,
       propType,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       gridMode: gridMode as any,
       arrowLocation: startLocation,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       arrowPlacementData: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       propPlacementData: {} as any,
     };
   }
@@ -851,7 +689,6 @@ export class SequenceEncoder implements ISequenceEncoder {
   private decodeBeat(encoded: string, stepNumber: number): StepData {
     const parts = encoded.split(":");
 
-    // Need exactly 2 parts (blue:red), but either can be empty for no motion
     if (parts.length !== 2) {
       throw new Error(`Invalid beat encoding: ${encoded}`);
     }
@@ -919,14 +756,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     return LZString.decompressFromEncodedURIComponent(compressed);
   }
 
-  /**
-   * Decode the blob, re-encode the result, and compare field-by-field to
-   * detect any data lost in the round trip. Used to gate feed card
-   * rendering so corrupted sequences don't reach the visual layer.
-   *
-   * Returns `{ ok: true, decoded }` when every motion field matches,
-   * or `{ ok: false, reason }` describing the first mismatch found.
-   */
   verifyRoundTrip(
     encoded: string
   ): { ok: true; decoded: SequenceData } | { ok: false; reason: string } {
@@ -991,7 +820,4 @@ export class SequenceEncoder implements ISequenceEncoder {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const sequenceEncoder = new SequenceEncoder();

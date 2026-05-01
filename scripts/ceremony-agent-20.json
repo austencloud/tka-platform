@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IAnimator",
+    "contract": "src/lib/shared/application/services/contracts/IAnimator.ts",
+    "impl": "src/lib/shared/application/services/implementations/Animator.ts",
+    "cls": "Animator",
+    "getter": "src/lib/shared/application/getAnimator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IApplicationInitializer",
+    "contract": "src/lib/shared/application/services/contracts/IApplicationInitializer.ts",
+    "impl": "src/lib/shared/application/services/implementations/ApplicationInitializer.ts",
+    "cls": "ApplicationInitializer",
+    "getter": "src/lib/shared/application/getApplicationInitializer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IComponentManager",
+    "contract": "src/lib/shared/application/services/contracts/IComponentManager.ts",
+    "impl": "src/lib/shared/application/services/implementations/ComponentManager.ts",
+    "cls": "ComponentManager",
+    "getter": "src/lib/shared/application/getComponentManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IDeepLinkResolver",
+    "contract": "src/lib/shared/application/services/contracts/IDeepLinkResolver.ts",
+    "impl": "src/lib/shared/application/services/implementations/DeepLinkResolver.ts",
+    "cls": "DeepLinkResolver",
+    "getter": "src/lib/shared/application/getDeepLinkResolver.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IErrorHandler",
+    "contract": "src/lib/shared/application/services/contracts/IErrorHandler.ts",
+    "impl": "src/lib/shared/application/services/implementations/ErrorHandler.ts",
+    "cls": "ErrorHandler",
+    "getter": "src/lib/shared/application/getErrorHandler.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IResourceTracker",
+    "contract": "src/lib/shared/application/services/contracts/IResourceTracker.ts",
+    "impl": "src/lib/shared/application/services/implementations/ResourceTracker.ts",
+    "cls": "ResourceTracker",
+    "getter": "src/lib/shared/application/getResourceTracker.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IRippleEffect",
+    "contract": "src/lib/shared/application/services/contracts/IRippleEffect.ts",
+    "impl": "src/lib/shared/application/services/implementations/RippleEffect.ts",
+    "cls": "RippleEffect",
+    "getter": "src/lib/shared/application/getRippleEffect.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAchievementManager",
+    "contract": "src/lib/shared/gamification/services/contracts/IAchievementManager.ts",
+    "impl": "src/lib/shared/gamification/services/implementations/AchievementManager.ts",
+    "cls": "AchievementManager",
+    "getter": "src/lib/shared/gamification/getAchievementManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IChallengeCoordinator",
+    "contract": "src/lib/shared/gamification/services/contracts/IChallengeCoordinator.ts",
+    "impl": "src/lib/shared/gamification/services/implementations/ChallengeCoordinator.ts",
+    "cls": "ChallengeCoordinator",
+    "getter": "src/lib/shared/gamification/getChallengeCoordinator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IDailyChallengeManager",
+    "contract": "src/lib/shared/gamification/services/contracts/IDailyChallengeManager.ts",
+    "impl": "src/lib/shared/gamification/services/implementations/DailyChallengeManager.ts",
+    "cls": "DailyChallengeManager",
+    "getter": "src/lib/shared/gamification/getDailyChallengeManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IGamificationNotifier",
+    "contract": "src/lib/shared/gamification/services/contracts/IGamificationNotifier.ts",
+    "impl": "src/lib/shared/gamification/services/implementations/GamificationNotifier.ts",
+    "cls": "GamificationNotifier",
+    "getter": "src/lib/shared/gamification/getGamificationNotifier.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISkillProgressionTracker",
+    "contract": "src/lib/shared/gamification/services/contracts/ISkillProgressionTracker.ts",
+    "impl": "src/lib/shared/gamification/services/implementations/SkillProgressionTracker.ts",
+    "cls": "SkillProgressionTracker",
+    "getter": "src/lib/shared/gamification/getSkillProgressionTracker.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IStreakTracker",
+    "contract": "src/lib/shared/gamification/services/contracts/IStreakTracker.ts",
+    "impl": "src/lib/shared/gamification/services/implementations/StreakTracker.ts",
+    "cls": "StreakTracker",
+    "getter": "src/lib/shared/gamification/getStreakTracker.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IWeeklyChallengeManager",
+    "contract": "src/lib/shared/gamification/services/contracts/IWeeklyChallengeManager.ts",
+    "impl": "src/lib/shared/gamification/services/implementations/WeeklyChallengeManager.ts",
+    "cls": "WeeklyChallengeManager",
+    "getter": "src/lib/shared/gamification/getWeeklyChallengeManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFestivalAttendanceRepository",
+    "contract": "src/lib/features/festivals/services/contracts/IFestivalAttendanceRepository.ts",
+    "impl": "src/lib/features/festivals/services/implementations/FestivalAttendanceRepository.ts",
+    "cls": "FestivalAttendanceRepository",
+    "getter": "src/lib/features/festivals/getFestivalAttendanceRepository.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFestivalLoader",
+    "contract": "src/lib/features/festivals/services/contracts/IFestivalLoader.ts",
+    "impl": "src/lib/features/festivals/services/implementations/FestivalLoader.ts",
+    "cls": "FestivalLoader",
+    "getter": "src/lib/features/festivals/getFestivalLoader.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IFestivalRepository",
+    "contract": "src/lib/features/festivals/services/contracts/IFestivalRepository.ts",
+    "impl": "src/lib/features/festivals/services/implementations/FestivalRepository.ts",
+    "cls": "FestivalRepository",
+    "getter": "src/lib/features/festivals/getFestivalRepository.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFestivalSubmissionReviewer",
+    "contract": "src/lib/features/festivals/services/contracts/IFestivalSubmissionReviewer.ts",
+    "impl": "src/lib/features/festivals/services/implementations/FestivalSubmissionReviewer.ts",
+    "cls": "FestivalSubmissionReviewer",
+    "getter": "src/lib/features/festivals/getFestivalSubmissionReviewer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFestivalTrackerRepository",
+    "contract": "src/lib/features/festivals/services/contracts/IFestivalTrackerRepository.ts",
+    "impl": "src/lib/features/festivals/services/implementations/FestivalTrackerRepository.ts",
+    "cls": "FestivalTrackerRepository",
+    "getter": "src/lib/features/festivals/getFestivalTrackerRepository.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IWorkshopPortfolioRepository",
+    "contract": "src/lib/features/festivals/services/contracts/IWorkshopPortfolioRepository.ts",
+    "impl": "src/lib/features/festivals/services/implementations/WorkshopPortfolioRepository.ts",
+    "cls": "WorkshopPortfolioRepository",
+    "getter": "src/lib/features/festivals/getWorkshopPortfolioRepository.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IContentAppealManager",
+    "contract": "src/lib/features/moderation/services/contracts/IContentAppealManager.ts",
+    "impl": "src/lib/features/moderation/services/implementations/ContentAppealManager.ts",
+    "cls": "ContentAppealManager",
+    "getter": "src/lib/features/moderation/getContentAppealManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IContentModerator",
+    "contract": "src/lib/features/moderation/services/contracts/IContentModerator.ts",
+    "impl": "src/lib/features/moderation/services/implementations/ContentModerator.ts",
+    "cls": "ContentModerator",
+    "getter": "src/lib/features/moderation/getContentModerator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IReportQuerier",
+    "contract": "src/lib/features/moderation/services/contracts/IReportQuerier.ts",
+    "impl": "src/lib/features/moderation/services/implementations/ReportQuerier.ts",
+    "cls": "ReportQuerier",
+    "getter": "src/lib/features/moderation/getReportQuerier.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IReportResolver",
+    "contract": "src/lib/features/moderation/services/contracts/IReportResolver.ts",
+    "impl": "src/lib/features/moderation/services/implementations/ReportResolver.ts",
+    "cls": "ReportResolver",
+    "getter": "src/lib/features/moderation/getReportResolver.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IReportSubmitter",
+    "contract": "src/lib/features/moderation/services/contracts/IReportSubmitter.ts",
+    "impl": "src/lib/features/moderation/services/implementations/ReportSubmitter.ts",
+    "cls": "ReportSubmitter",
+    "getter": "src/lib/features/moderation/getReportSubmitter.ts",
+    "hasCoExports": false
+  }
+]

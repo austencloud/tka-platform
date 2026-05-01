@@ -1,10 +1,3 @@
-/**
- * CSV Pictograph Parser Service - Converts CSV rows to PictographData objects
- *
- * Parses the BoxPictographDataframe.csv data and converts it to typed PictographData.
- * Uses the correct position mapping based on hand location combinations.
- */
-
 import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { GridPosition } from "../../../grid/domain/enums/grid-enums";
 import type { Letter } from "../../../../foundation/domain/models/Letter";
@@ -20,7 +13,6 @@ import type {
 } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
 import { Orientation } from "../../domain/enums/pictograph-enums";
 
-// Map CSV hand path strings to HandPath enum
 function mapHandPath(value: string | undefined): HandPath | null {
   if (!value) return null;
   switch (value.toLowerCase()) {
@@ -41,7 +33,6 @@ function mapHandPath(value: string | undefined): HandPath | null {
   }
 }
 
-// Map CSV skew direction strings to SkewDirection enum
 function mapSkewDir(value: string | undefined): SkewDirection | null {
   if (!value) return null;
   switch (value.trim()) {
@@ -53,22 +44,16 @@ function mapSkewDir(value: string | undefined): SkewDirection | null {
       return null;
   }
 }
+
 export class CSVPictographParser implements ICSVPictographParser {
   constructor(
     private readonly enumMapper: IEnumMapper,
     private readonly orientationService: IOrientationCalculator
   ) {}
 
-  /**
-   * Convert a CSV row to PictographData object
-   * @param row - CSV row data
-   * @param gridMode - Grid mode (diamond/box) for correct positioning
-   */
   parseCSVRowToPictograph(row: CSVRow, gridMode: GridMode): PictographData {
-    // Convert string letter to Letter enum (e.g., "A" -> Letter.A)
     const letter = row.letter as Letter;
 
-    // Create temporary blue motion for orientation calculation
     const tempBlueMotion = createMotionData({
       motionType: this.enumMapper.mapMotionType(row.blueMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
@@ -76,24 +61,21 @@ export class CSVPictographParser implements ICSVPictographParser {
       ),
       startLocation: this.enumMapper.mapLocation(row.blueStartLocation),
       endLocation: this.enumMapper.mapLocation(row.blueEndLocation),
-      startOrientation: Orientation.IN, // Default start orientation
-      turns: 0, // Default turns for CSV data
+      startOrientation: Orientation.IN, 
+      turns: 0, 
       color: MotionColor.BLUE,
-      gridMode: gridMode, // Set grid mode for positioning
+      gridMode: gridMode, 
     });
 
-    // Calculate blue end orientation dynamically
     const blueEndOrientation = this.orientationService.calculateEndOrientation(
       tempBlueMotion,
       MotionColor.BLUE
     );
 
-    // Parse blue hand path, skew steps, and skew direction if present (skewed mode CSV)
     const blueHandPath = mapHandPath(row.blueHandPath);
     const blueSkewSteps = row.blueSkewSteps ? parseInt(row.blueSkewSteps, 10) : null;
     const blueSkewDir = mapSkewDir(row.blueSkewDir);
 
-    // Create final blue motion with calculated end orientation
     const blueMotion = createMotionData({
       motionType: this.enumMapper.mapMotionType(row.blueMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
@@ -102,16 +84,15 @@ export class CSVPictographParser implements ICSVPictographParser {
       startLocation: this.enumMapper.mapLocation(row.blueStartLocation),
       endLocation: this.enumMapper.mapLocation(row.blueEndLocation),
       startOrientation: Orientation.IN,
-      endOrientation: blueEndOrientation, // Include calculated orientation
+      endOrientation: blueEndOrientation, 
       turns: 0,
       color: MotionColor.BLUE,
-      gridMode: gridMode, // Set grid mode for positioning
+      gridMode: gridMode, 
       ...(blueHandPath !== null && { handPath: blueHandPath }),
       ...(blueSkewSteps !== null && { skewSteps: blueSkewSteps }),
       ...(blueSkewDir !== null && { skewDir: blueSkewDir }),
     });
 
-    // Create temporary red motion for orientation calculation
     const tempRedMotion = createMotionData({
       motionType: this.enumMapper.mapMotionType(row.redMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
@@ -119,24 +100,21 @@ export class CSVPictographParser implements ICSVPictographParser {
       ),
       startLocation: this.enumMapper.mapLocation(row.redStartLocation),
       endLocation: this.enumMapper.mapLocation(row.redEndLocation),
-      startOrientation: Orientation.IN, // Default start orientation
-      turns: 0, // Default turns for CSV data
+      startOrientation: Orientation.IN, 
+      turns: 0, 
       color: MotionColor.RED,
-      gridMode: gridMode, // Set grid mode for positioning
+      gridMode: gridMode, 
     });
 
-    // Calculate red end orientation dynamically
     const redEndOrientation = this.orientationService.calculateEndOrientation(
       tempRedMotion,
       MotionColor.RED
     );
 
-    // Parse red hand path, skew steps, and skew direction if present (skewed mode CSV)
     const redHandPath = mapHandPath(row.redHandPath);
     const redSkewSteps = row.redSkewSteps ? parseInt(row.redSkewSteps, 10) : null;
     const redSkewDir = mapSkewDir(row.redSkewDir);
 
-    // Create final red motion with calculated end orientation
     const redMotion = createMotionData({
       motionType: this.enumMapper.mapMotionType(row.redMotionType),
       rotationDirection: this.enumMapper.mapRotationDirection(
@@ -145,17 +123,15 @@ export class CSVPictographParser implements ICSVPictographParser {
       startLocation: this.enumMapper.mapLocation(row.redStartLocation),
       endLocation: this.enumMapper.mapLocation(row.redEndLocation),
       startOrientation: Orientation.IN,
-      endOrientation: redEndOrientation, // Include calculated orientation
+      endOrientation: redEndOrientation, 
       turns: 0,
       color: MotionColor.RED,
-      gridMode: gridMode, // Set grid mode for positioning
+      gridMode: gridMode, 
       ...(redHandPath !== null && { handPath: redHandPath }),
       ...(redSkewSteps !== null && { skewSteps: redSkewSteps }),
       ...(redSkewDir !== null && { skewDir: redSkewDir }),
     });
 
-    // CSV parsing completed successfully
-    // Parse category if present (skewed mode CSV only)
     const category = row.category ? parseInt(row.category, 10) : null;
 
     return createPictographData({
@@ -170,13 +146,9 @@ export class CSVPictographParser implements ICSVPictographParser {
     });
   }
 
-  /**
-   * Convert string position to GridPosition enum
-   */
   private mapStringToGridPosition(position: string): GridPosition | null {
     const upperPosition = position.toUpperCase();
 
-    // Check if it's a valid GridPosition
     if (upperPosition in GridPosition) {
       return GridPosition[upperPosition as keyof typeof GridPosition];
     }
@@ -184,11 +156,6 @@ export class CSVPictographParser implements ICSVPictographParser {
     return null;
   }
 
-  /**
-   * Parse multiple CSV rows for a letter
-   * @param letterRows - CSV rows to parse
-   * @param gridMode - Grid mode (diamond/box) for correct positioning
-   */
   parseLetterPictographs(
     letterRows: CSVRow[],
     gridMode: GridMode
@@ -196,9 +163,6 @@ export class CSVPictographParser implements ICSVPictographParser {
     return letterRows.map((row) => this.parseCSVRowToPictograph(row, gridMode));
   }
 
-  /**
-   * Validate that a CSV row has the expected structure
-   */
   validateCSVRow(row: unknown): row is CSVRow {
     const requiredFields = [
       "letter",
@@ -226,7 +190,6 @@ export class CSVPictographParser implements ICSVPictographParser {
   }
 }
 
-// Direct singleton export for HMR-friendly imports
 import { enumMapper } from "../../../../foundation/services/implementations/data/EnumMapper";
 import { orientationCalculator } from "../../../prop/services/implementations/OrientationCalculator";
 

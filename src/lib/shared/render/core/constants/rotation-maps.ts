@@ -1,14 +1,4 @@
-/**
- * Prop and arrow rotation angle maps
- *
- * Exact values from the original PropRotAngleManager.ts and ProAntiRotationMaps.ts
- */
-
 import type { GridLocation, Orientation } from "../types.js";
-
-// ============================================================================
-// PROP ROTATION MAPS (by grid mode)
-// ============================================================================
 
 /**
  * Diamond grid rotation angles by orientation and location
@@ -220,10 +210,6 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
   centerNW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 225 },
 };
 
-// ============================================================================
-// ARROW ROTATION MAPS (by motion type and direction)
-// ============================================================================
-
 /**
  * PRO rotation maps
  */
@@ -336,10 +322,6 @@ export const STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, numbe
 
 /**
  * DASH rotation maps
- *
- * IMPORTANT: Both CW and CCW maps are IDENTICAL for dash arrows!
- * The rotation angle is based purely on the arrow's location (pointing outward).
- * The CW/CCW only affects mirroring, not the rotation angle itself.
  */
 export const DASH_CLOCKWISE_MAP: Record<GridLocation, number> = {
   n: 0,

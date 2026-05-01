@@ -1,18 +1,3 @@
-<!--
-  /sequence/[id]/+page.svelte
-
-  Dedicated sequence viewer route - the canonical way to view sequences.
-  Uses SequenceViewerOrchestrator for all shared state/logic, keeping only
-  route-specific concerns:
-  - URL param parsing and state restoration
-  - Sequence loading (handoff, encoded URL, legacy ID)
-  - initializeAppServices() for standalone access
-  - SSR metadata (<svelte:head>)
-  - View Transitions
-  - Swipe-to-dismiss gesture (all viewports)
-  - DrawerStack registration (blocks pull-to-refresh)
-  - Browse gallery background (mobile drawer effect)
--->
 <script lang="ts">
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
@@ -68,10 +53,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-
-  // ============================================================================
-  // ROUTE-SPECIFIC STATE
-  // ============================================================================
 
   // Route params
   const sequenceId = $derived($page.params.id);
@@ -143,10 +124,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
   }
 
-  // ============================================================================
-  // LIFECYCLE
-  // ============================================================================
-
   onMount(async () => {
     // Non-blocking: settings sync happens in background.
     // Don't block the viewer on service initialization.
@@ -186,10 +163,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       pageContainer.style.transition = "";
     }
   });
-
-  // ============================================================================
-  // METADATA RESTORATION
-  // ============================================================================
 
   /** Apply URL metadata params to a decoded sequence (fills in data lost during encoding). */
   function applyUrlMetadata(seq: SequenceData): SequenceData {
@@ -270,10 +243,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       // Silent failure - progressive enhancement only
     }
   }
-
-  // ============================================================================
-  // SEQUENCE LOADING
-  // ============================================================================
 
   async function initializeRoute() {
     // Try handoff data first (from Browse gallery)
@@ -433,10 +402,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     goto(returnPath);
   }
 
-  // ============================================================================
-  // SWIPE HANDLING (ALL VIEWPORTS)
-  // ============================================================================
-
   function handleTouchStart(e: TouchEvent, ctx: OrchestratorContext) {
     if (ctx.isFullscreen || ctx.isExportMode) return;
     swipeDismiss.handleTouchStart(e);
@@ -468,14 +433,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       currentIsSwiping = false;
     }
   }
-
-  // ============================================================================
-  // EXPORT HELPERS
-  // ============================================================================
-
-  // ============================================================================
-  // URL HELPERS
-  // ============================================================================
 
   function updateUrlParam(key: string, value: string) {
     if (!browser) return;

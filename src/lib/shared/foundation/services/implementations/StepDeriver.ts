@@ -18,8 +18,6 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { handpathDirectionCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
 
-// Cardinal and intercardinal sets used for per-step grid mode derivation.
-// Mirrors the same logic as HandPathFactory so the two are always consistent.
 const CARDINAL = new Set<GridLocation>([
   GridLocation.NORTH,
   GridLocation.EAST,
@@ -99,12 +97,8 @@ function derivePrefloatRotation(
 }
 
 /**
- * Rehydrates a single SoloPropStepData into a MotionData object by adding the
- * rendering fields that the solo-prop model intentionally omits (color,
- * propType, gridMode, arrowLocation, placement stubs).
- *
- * Also reconstructs the prefloatRotationDirection from the stored
- * prefloatMotionType + start/end pair (see derivePrefloatRotation above).
+ * Reconstructs the prefloatRotationDirection from the stored
+ * prefloatMotionType + start/end pair.
  */
 function rehydrateMotion(
   step: SoloPropStepData,
@@ -133,15 +127,11 @@ function rehydrateMotion(
     propType,
     isVisible: true,
     gridMode,
-    // Renderers recalculate arrowLocation from motion geometry; startLocation
-    // is a safe placeholder that avoids an undefined field.
     arrowLocation: step.startLocation,
     ...(step.prefloatMotionType && {
       prefloatMotionType: step.prefloatMotionType,
     }),
     ...(prefloatRotationDirection && { prefloatRotationDirection }),
-    // arrowPlacementData and propPlacementData default via createMotionData;
-    // renderers recalculate both before drawing.
   });
 }
 
@@ -153,13 +143,10 @@ export class StepDeriver implements IStepDeriver {
     viewerPrefs?: ViewerPreferences
   ): StepData[] {
     const bluePropType = viewerPrefs?.bluePropType ?? PropType.STAFF;
-    // When catDogMode is off, both hands use the blue prop type for consistency.
     const redPropType =
       viewerPrefs?.catDogMode ? (viewerPrefs.redPropType ?? PropType.STAFF) : bluePropType;
     const count = stepPairings.length;
 
-    // Guard: all three arrays must have the same length or downstream rendering
-    // will silently skip beats or access out-of-bounds indices.
     if (blueSoloProp.steps.length !== count || redSoloProp.steps.length !== count) {
       throw new Error(
         `StepDeriver: step array length mismatch - ` +
@@ -191,8 +178,6 @@ export class StepDeriver implements IStepDeriver {
         motions: { blue: blueMotion, red: redMotion },
         gridMode,
         stepNumber: i + 1,
-        // Blue is authoritative for duration when the two props are edited
-        // independently and their timings diverge.
         duration: blueStep.duration,
         blueReversal: pairing.blueReversal,
         redReversal: pairing.redReversal,

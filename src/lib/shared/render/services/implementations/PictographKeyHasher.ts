@@ -1,17 +1,3 @@
-/**
- * PictographKeyHasher
- *
- * Generates deterministic cache keys for pictograph configurations.
- *
- * The key includes all properties that affect the visual SVG output,
- * but explicitly EXCLUDES stepNumber and size to enable cache sharing
- * across sequences with identical pictographs.
- *
- * Returns the full canonical JSON string (not a digest) to avoid
- * the 32-bit hash-collision bug that corrupted ~46K+ entry caches
- * with wrong prop/arrow blobs. IndexedDB handles long string keys fine.
- */
-
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -20,9 +6,6 @@ import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
-/**
- * Internal structure for motion key data
- */
 interface MotionKeyData {
   motionType: string;
   startLocation: string;
@@ -35,9 +18,6 @@ interface MotionKeyData {
   gridMode: string;
 }
 
-/**
- * Internal structure for the complete key input
- */
 interface PictographKeyInput {
   letter: string | undefined;
   blue: MotionKeyData | null;
@@ -69,20 +49,12 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     return JSON.stringify(input, this.sortedReplacer);
   }
 
-  /**
-   * Build the key input object from pictograph data
-   */
   private buildKeyInput(
     data: StepData | PictographData,
     visibility: PictographVisibilityOptions
   ): PictographKeyInput {
-    // Guard against missing motions data
     const motions = data.motions ?? { blue: undefined, red: undefined };
 
-    // Fall back to global settings for prop types when not explicitly provided.
-    // The renderer (PictographPreparer) does the same fallback, so the cache key
-    // must match. Without this, changing the global prop type setting (e.g. from
-    // staff to fan) would serve stale cached images rendered with the old prop type.
     const globalSettings = getSettings();
     const resolvedBlueProp = visibility.bluePropType ?? globalSettings.bluePropType ?? "staff";
     const resolvedRedProp = visibility.redPropType ?? globalSettings.redPropType ?? "staff";
@@ -110,14 +82,9 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     };
   }
 
-  /**
-   * Extract key-relevant properties from motion data
-   */
   private extractMotionKey(motion: MotionData | undefined): MotionKeyData | null {
     if (!motion) return null;
 
-    // Derive gridMode from locations instead of using potentially stale motion.gridMode
-    // This ensures box mode pictographs get different cache keys than diamond mode
     const derivedGridMode = this.deriveGridModeFromLocations(
       motion.startLocation,
       motion.endLocation
@@ -136,10 +103,6 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     };
   }
 
-  /**
-   * Derive grid mode from motion locations
-   * Intercardinal (NE, SE, SW, NW) = BOX, Cardinal (N, E, S, W) = DIAMOND
-   */
   private deriveGridModeFromLocations(
     startLocation: GridLocation | undefined,
     endLocation: GridLocation | undefined
@@ -151,7 +114,6 @@ export class PictographKeyHasher implements IPictographKeyHasher {
       GridLocation.NORTHWEST,
     ];
 
-    // If either location is intercardinal, it's box mode
     if (
       (startLocation && intercardinalLocations.includes(startLocation)) ||
       (endLocation && intercardinalLocations.includes(endLocation))
@@ -162,9 +124,6 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     return GridMode.DIAMOND;
   }
 
-  /**
-   * JSON replacer that sorts object keys for deterministic serialization
-   */
   private sortedReplacer = (_key: string, value: unknown): unknown => {
     if (value && typeof value === "object" && !Array.isArray(value)) {
       return Object.keys(value as Record<string, unknown>)
@@ -181,7 +140,4 @@ export class PictographKeyHasher implements IPictographKeyHasher {
   };
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const pictographKeyHasher = new PictographKeyHasher();

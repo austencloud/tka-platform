@@ -1,9 +1,3 @@
-<!--
-ReversalIndicators.svelte - Reversal Indicator Component
-
-Renders blue and red reversal indicators as colored dots stacked vertically.
-Color-coded dots indicate which motion (blue/red) is reversing between pictographs.
--->
 <script lang="ts">
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
@@ -141,9 +135,6 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
     return CENTER_Y;
   });
 
-  // ============================================================================
-  // REVERSAL CHANGE ANIMATION
-  // ============================================================================
   // Track reversal state changes to trigger CSS animations.
   // Use untracked previous values to avoid reactivity loops.
 

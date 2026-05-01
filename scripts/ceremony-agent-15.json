@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IDimensionCalculator",
+    "contract": "src/lib/shared/render/services/contracts/IDimensionCalculator.ts",
+    "impl": "src/lib/shared/render/services/implementations/DimensionCalculator.ts",
+    "cls": "DimensionCalculator",
+    "getter": "src/lib/shared/render/getDimensionCalculator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IImageComposer",
+    "contract": "src/lib/shared/render/services/contracts/IImageComposer.ts",
+    "impl": "src/lib/shared/render/services/implementations/ImageComposer.ts",
+    "cls": "ImageComposer",
+    "getter": "src/lib/shared/render/getImageComposer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IImageFormatConverter",
+    "contract": "src/lib/shared/render/services/contracts/IImageFormatConverter.ts",
+    "impl": "src/lib/shared/render/services/implementations/ImageFormatConverter.ts",
+    "cls": "ImageFormatConverter",
+    "getter": "src/lib/shared/render/getImageFormatConverter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILayerCompositor",
+    "contract": "src/lib/shared/render/services/contracts/ILayerCompositor.ts",
+    "impl": "src/lib/shared/render/services/implementations/LayerCompositor.ts",
+    "cls": "LayerCompositor",
+    "getter": "src/lib/shared/render/getLayerCompositor.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ILayoutCalculator",
+    "contract": "src/lib/shared/render/services/contracts/ILayoutCalculator.ts",
+    "impl": "src/lib/shared/render/services/implementations/LayoutCalculator.ts",
+    "cls": "LayoutCalculator",
+    "getter": "src/lib/shared/render/getLayoutCalculator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILOOPIconStripRenderer",
+    "contract": "src/lib/shared/render/services/contracts/ILOOPIconStripRenderer.ts",
+    "impl": "src/lib/shared/render/services/implementations/LOOPIconStripRenderer.ts",
+    "cls": "LOOPIconStripRenderer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPictographBlobCache",
+    "contract": "src/lib/shared/render/services/contracts/IPictographBlobCache.ts",
+    "impl": "src/lib/shared/render/services/implementations/PictographBlobCache.ts",
+    "cls": "PictographBlobCache",
+    "getter": "src/lib/shared/render/getPictographBlobCache.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPictographKeyHasher",
+    "contract": "src/lib/shared/render/services/contracts/IPictographKeyHasher.ts",
+    "impl": "src/lib/shared/render/services/implementations/PictographKeyHasher.ts",
+    "cls": "PictographKeyHasher",
+    "getter": "src/lib/shared/render/getPictographKeyHasher.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPictographSVGCache",
+    "contract": "src/lib/shared/render/services/contracts/IPictographSVGCache.ts",
+    "impl": "src/lib/shared/render/services/implementations/PictographSVGCache.ts",
+    "cls": "PictographSVGCache",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceRenderer",
+    "contract": "src/lib/shared/render/services/contracts/ISequenceRenderer.ts",
+    "impl": "src/lib/shared/render/services/implementations/SequenceRenderer.ts",
+    "cls": "SequenceRenderer",
+    "getter": "src/lib/shared/render/getSequenceRenderer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IStepNumberRenderer",
+    "contract": "src/lib/shared/render/services/contracts/IStepNumberRenderer.ts",
+    "impl": "src/lib/shared/render/services/implementations/StepNumberRenderer.ts",
+    "cls": "StepNumberRenderer",
+    "getter": "src/lib/shared/render/getStepNumberRenderer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISVGToCanvasConverter",
+    "contract": "src/lib/shared/render/services/contracts/ISVGToCanvasConverter.ts",
+    "impl": "src/lib/shared/render/services/implementations/SVGToCanvasConverter.ts",
+    "cls": "SVGToCanvasConverter",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ITextRenderer",
+    "contract": "src/lib/shared/render/services/contracts/ITextRenderer.ts",
+    "impl": "src/lib/shared/render/services/implementations/TextRenderer.ts",
+    "cls": "TextRenderer",
+    "getter": "src/lib/shared/render/getTextRenderer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IWorkerRenderPool",
+    "contract": "src/lib/shared/render/services/contracts/IWorkerRenderPool.ts",
+    "impl": "src/lib/shared/render/services/implementations/WorkerRenderPool.ts",
+    "cls": "WorkerRenderPool",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IArrowCollisionResolver",
+    "contract": "src/lib/features/choreo-card/services/contracts/IArrowCollisionResolver.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/ArrowCollisionResolver.ts",
+    "cls": "ArrowCollisionResolver",
+    "getter": "src/lib/features/choreo-card/getArrowCollisionResolver.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICardBackDomRenderer",
+    "contract": "src/lib/features/choreo-card/services/contracts/ICardBackDomRenderer.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/CardBackDomRenderer.ts",
+    "cls": "CardBackDomRenderer",
+    "getter": "src/lib/features/choreo-card/getCardBackDomRenderer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IDeckLoader",
+    "contract": "src/lib/features/choreo-card/services/contracts/IDeckLoader.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/DeckLoader.ts",
+    "cls": "DeckLoader",
+    "getter": "src/lib/features/choreo-card/getDeckLoader.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IHandPathDataBuilder",
+    "contract": "src/lib/features/choreo-card/services/contracts/IHandPathDataBuilder.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/HandPathDataBuilder.ts",
+    "cls": "HandPathDataBuilder",
+    "getter": "src/lib/features/choreo-card/getHandPathDataBuilder.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IInfoCardCanvasRenderer",
+    "contract": "src/lib/features/choreo-card/services/contracts/IInfoCardCanvasRenderer.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/InfoCardCanvasRenderer.ts",
+    "cls": "InfoCardCanvasRenderer",
+    "getter": "src/lib/features/choreo-card/getInfoCardCanvasRenderer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ILOOPExplainer",
+    "contract": "src/lib/features/choreo-card/services/contracts/ILOOPExplainer.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/LOOPExplainer.ts",
+    "cls": "LOOPExplainer",
+    "getter": "src/lib/features/choreo-card/getLOOPExplainer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPrintCardRenderer",
+    "contract": "src/lib/features/choreo-card/services/contracts/IPrintCardRenderer.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/PrintCardRenderer.ts",
+    "cls": "PrintCardRenderer",
+    "getter": "src/lib/features/choreo-card/getPrintCardRenderer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPrintPDFExporter",
+    "contract": "src/lib/features/choreo-card/services/contracts/IPrintPDFExporter.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/PrintPDFExporter.ts",
+    "cls": "PrintPDFExporter",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPrintZipExporter",
+    "contract": "src/lib/features/choreo-card/services/contracts/IPrintZipExporter.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/PrintZipExporter.ts",
+    "cls": "PrintZipExporter",
+    "getter": "src/lib/features/choreo-card/getPrintZipExporter.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceToEntryConverter",
+    "contract": "src/lib/features/choreo-card/services/contracts/ISequenceToEntryConverter.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/SequenceToEntryConverter.ts",
+    "cls": "SequenceToEntryConverter",
+    "getter": "src/lib/features/choreo-card/getSequenceToEntryConverter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IVtgFamilyAggregator",
+    "contract": "src/lib/features/choreo-card/services/contracts/IVtgFamilyAggregator.ts",
+    "impl": "src/lib/features/choreo-card/services/implementations/VtgFamilyAggregator.ts",
+    "cls": "VtgFamilyAggregator",
+    "getter": "src/lib/features/choreo-card/getVtgFamilyAggregator.ts",
+    "hasCoExports": true
+  }
+]

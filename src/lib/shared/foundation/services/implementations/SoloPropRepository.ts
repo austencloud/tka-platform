@@ -1,12 +1,3 @@
-/**
- * SoloPropRepository
- *
- * Persists solo prop artifacts to Firestore under users/{uid}/soloProps.
- * A solo prop record captures a single performer's complete prop path - both
- * the hand trajectory (HandPathData) and the orientation state at each step.
- * Like hand paths, solo props are content-addressed by their contentHash.
- */
-
 import {
   collection,
   doc,
@@ -28,10 +19,6 @@ import type {
   SoloPropFilters,
 } from "../contracts/ISoloPropRepository";
 import type { ArtifactProvenance } from "../../domain/models/ArtifactProvenance";
-
-// ============================================================================
-// Firestore ↔ domain conversion
-// ============================================================================
 
 function toDateOrUndefined(value: unknown): Date | undefined {
   if (value == null) return undefined;
@@ -63,18 +50,13 @@ function docToSoloProp(data: DocumentData, id: string): SoloPropData {
   } as SoloPropData;
 }
 
-/** Strip undefined values - Firestore rejects them in setDoc. */
 function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
   const raw: Record<string, unknown> = {
     steps: soloProp.steps,
     startLocation: soloProp.startLocation,
     startOrientation: soloProp.startOrientation,
     contentHash: soloProp.contentHash,
-    // Store the full handPath inline so queries on its hash can be satisfied
-    // by checking the pathHash field (denormalized below).
     handPath: soloProp.handPath,
-    // Denormalized for the pathHash filter: lets callers find all solo props
-    // that share a specific hand path without a join.
     pathHash: soloProp.handPath.contentHash,
     length: soloProp.length,
     bigrams: soloProp.bigrams,
@@ -91,10 +73,6 @@ function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
 
   return raw;
 }
-
-// ============================================================================
-// Repository
-// ============================================================================
 
 export class SoloPropRepository implements ISoloPropRepository {
   private getUserId(): string {
@@ -144,7 +122,6 @@ export class SoloPropRepository implements ISoloPropRepository {
       q = query(q, where("bigrams", "array-contains", filters.containsBigram));
     }
     if (filters?.pathHash !== undefined) {
-      // pathHash is a denormalized copy of handPath.contentHash written on save
       q = query(q, where("pathHash", "==", filters.pathHash));
     }
     if (filters?.minLength !== undefined) {
@@ -167,11 +144,9 @@ export class SoloPropRepository implements ISoloPropRepository {
     const docRef = doc(firestore, `users/${uid}/soloProps/${soloProp.id}`);
 
     if (provenance) {
-      // Check if the document already exists so we can merge provenance
       const existing = await getDoc(docRef);
 
       if (existing.exists()) {
-        // Document exists - append to sourceSequenceIds without duplicating
         await setDoc(docRef, {
           ...soloPropToDoc(soloProp),
           provenance: {
@@ -181,7 +156,6 @@ export class SoloPropRepository implements ISoloPropRepository {
           },
         }, { merge: true });
       } else {
-        // New document - write the full provenance as-is
         await setDoc(docRef, {
           ...soloPropToDoc(soloProp),
           provenance: {
@@ -203,9 +177,5 @@ export class SoloPropRepository implements ISoloPropRepository {
     await deleteDoc(docRef);
   }
 }
-
-// ============================================================================
-// Singleton export
-// ============================================================================
 
 export const soloPropRepository = new SoloPropRepository();

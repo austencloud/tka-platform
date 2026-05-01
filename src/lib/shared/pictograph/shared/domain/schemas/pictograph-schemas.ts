@@ -1,15 +1,3 @@
-/**
- * Pictograph Zod Schemas
- *
- * Runtime validation schemas for pictograph-specific data boundaries:
- * - Motion data validation
- * - Pictograph data validation
- * - Arrow and prop placement validation
- *
- * ⚠️  USAGE POLICY: Only use for data boundaries with external sources!
- *     Don't use for internal service constructors or component props.
- */
-
 import { z } from "zod";
 import { Letter } from "../../../../foundation/domain/models/Letter";
 import {
@@ -23,10 +11,6 @@ import {
   Orientation,
   RotationDirection,
 } from "../enums/pictograph-enums";
-
-// ============================================================================
-// COORDINATE AND PLACEMENT SCHEMAS
-// ============================================================================
 
 const CoordinateSchema = z
   .object({
@@ -69,10 +53,6 @@ const defaultPropPlacementData = {
   svgCenter: null,
 };
 
-// ============================================================================
-// MOTION AND PICTOGRAPH SCHEMAS
-// ============================================================================
-
 const MotionDataSchema = z.object({
   motionType: z.nativeEnum(MotionType).default(MotionType.STATIC),
   rotationDirection: z
@@ -108,10 +88,6 @@ const PictographDataSchema = z.object({
     .optional()
     .default({} as Record<MotionColor, z.infer<typeof MotionDataSchema>>),
 });
-
-// ============================================================================
-// EXPORTS
-// ============================================================================
 
 export {
   ArrowPlacementDataSchema,

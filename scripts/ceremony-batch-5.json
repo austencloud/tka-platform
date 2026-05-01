@@ -1,0 +1,688 @@
+{
+  "areas": [
+    "features/browse",
+    "features/feedback"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "ICreatorPropFilter",
+      "contractPath": "src/lib/features/browse/creators/services/contracts/ICreatorPropFilter.ts",
+      "implPath": "src/lib/features/browse/creators/services/implementations/CreatorPropFilter.ts",
+      "implClass": "CreatorPropFilter",
+      "getterPath": "src/lib/features/browse/creators/getCreatorPropFilter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IBrowseCache",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IBrowseCache.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/BrowseCache.ts",
+      "implClass": "BrowseCache",
+      "getterPath": "src/lib/features/browse/sequences/display/getBrowseCache.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IBrowseFilter",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IBrowseFilter.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/BrowseFilter.ts",
+      "implClass": "BrowseFilter",
+      "getterPath": "src/lib/features/browse/sequences/display/getBrowseFilter.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBrowseLoader",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IBrowseLoader.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader.ts",
+      "implClass": "PublicSequencesLoader",
+      "getterPath": "src/lib/features/browse/sequences/display/getBrowseLoader.ts",
+      "coExports": [],
+      "consumerCount": 18,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBrowseMetadataExtractor",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IBrowseMetadataExtractor.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/BrowseMetadataExtractor.ts",
+      "implClass": "BrowseMetadataExtractor",
+      "getterPath": "src/lib/features/browse/sequences/display/getBrowseMetadataExtractor.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SequenceMetadata"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IBrowseSectionManager",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IBrowseSectionManager.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/BrowseSectionManager.ts",
+      "implClass": "BrowseSectionManager",
+      "getterPath": "src/lib/features/browse/sequences/display/getBrowseSectionManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IBrowseSorter",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IBrowseSorter.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/BrowseSorter.ts",
+      "implClass": "BrowseSorter",
+      "getterPath": "src/lib/features/browse/sequences/display/getBrowseSorter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBrowseThumbnailProvider",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider.ts",
+      "implClass": "BrowseThumbnailProvider",
+      "getterPath": "src/lib/features/browse/sequences/display/getBrowseThumbnailProvider.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IClaudeCodeCopier",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IClaudeCodeCopier.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/ClaudeCodeCopier.ts",
+      "implClass": "ClaudeCodeCopier",
+      "getterPath": "src/lib/features/browse/sequences/display/getClaudeCodeCopier.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CopyResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ICloudThumbnailCache",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/ICloudThumbnailCache.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache.ts",
+      "implClass": "CloudThumbnailCache",
+      "getterPath": "src/lib/features/browse/sequences/display/getCloudThumbnailCache.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "ThumbnailVariant"
+        },
+        {
+          "kind": "interface",
+          "name": "DeleteProgress"
+        },
+        {
+          "kind": "interface",
+          "name": "CloudThumbnailKey"
+        },
+        {
+          "kind": "interface",
+          "name": "CloudThumbnailResult"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IMultiFilter",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IMultiFilter.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/MultiFilter.ts",
+      "implClass": "MultiFilter",
+      "getterPath": "src/lib/features/browse/sequences/display/getMultiFilter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPinchZoomGridController",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IPinchZoomGridController.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/PinchZoomGridController.ts",
+      "implClass": "PinchZoomGridController",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PinchZoomState"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceDetailLoader",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/ISequenceDetailLoader.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader.ts",
+      "implClass": "SequenceDetailLoader",
+      "getterPath": "src/lib/features/browse/sequences/display/getSequenceDetailLoader.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SequenceLoadResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceDifficultyCalculator",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/ISequenceDifficultyCalculator.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator.ts",
+      "implClass": "SequenceDifficultyCalculator",
+      "getterPath": "src/lib/features/browse/sequences/display/getSequenceDifficultyCalculator.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "DifficultyTrigger"
+        },
+        {
+          "kind": "interface",
+          "name": "DifficultyAnalysis"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IThumbnailKeyDeriver",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailKeyDeriver.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailKeyDeriver.ts",
+      "implClass": "ThumbnailKeyDeriver",
+      "getterPath": "src/lib/features/browse/sequences/display/getThumbnailKeyDeriver.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ThumbnailVisibilitySettings"
+        },
+        {
+          "kind": "interface",
+          "name": "ThumbnailRenderInput"
+        },
+        {
+          "kind": "interface",
+          "name": "ThumbnailCacheKey"
+        },
+        {
+          "kind": "interface",
+          "name": "CompositionDefaults"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IThumbnailLocalCache",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailLocalCache.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailLocalCache.ts",
+      "implClass": "ThumbnailLocalCache",
+      "getterPath": "src/lib/features/browse/sequences/display/getThumbnailLocalCache.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ThumbnailLocalCacheStats"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IThumbnailMetricsCollector",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailMetricsCollector.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector.ts",
+      "implClass": "ThumbnailMetricsCollector",
+      "getterPath": "src/lib/features/browse/sequences/display/getThumbnailMetricsCollector.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "CacheLayer"
+        },
+        {
+          "kind": "interface",
+          "name": "ThumbnailRequestMetrics"
+        },
+        {
+          "kind": "interface",
+          "name": "TimingDistribution"
+        },
+        {
+          "kind": "interface",
+          "name": "ThumbnailMetricsSummary"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IThumbnailRenderer",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailRenderer.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderer.ts",
+      "implClass": "ThumbnailRenderer",
+      "getterPath": "src/lib/features/browse/sequences/display/getThumbnailRenderer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "RenderOptions"
+        },
+        {
+          "kind": "type",
+          "name": "RenderProgressCallback"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IThumbnailRenderOrchestrator",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailRenderOrchestrator.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator.ts",
+      "implClass": "ThumbnailRenderOrchestrator",
+      "getterPath": "src/lib/features/browse/sequences/display/getThumbnailRenderOrchestrator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "RenderProgress"
+        },
+        {
+          "kind": "type",
+          "name": "ThumbnailLoadStatus"
+        },
+        {
+          "kind": "interface",
+          "name": "ThumbnailRequest"
+        },
+        {
+          "kind": "interface",
+          "name": "ThumbnailResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IThumbnailRenderQueue",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailRenderQueue.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderQueue.ts",
+      "implClass": "ThumbnailRenderQueue",
+      "getterPath": "src/lib/features/browse/sequences/display/getThumbnailRenderQueue.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "QueueStats"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVariationGrouper",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IVariationGrouper.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/VariationGrouper.ts",
+      "implClass": "VariationGrouper",
+      "getterPath": "src/lib/features/browse/sequences/display/getVariationGrouper.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VariationGroup"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVideoCountManager",
+      "contractPath": "src/lib/features/browse/sequences/display/services/contracts/IVideoCountManager.ts",
+      "implPath": "src/lib/features/browse/sequences/display/services/implementations/VideoCountManager.ts",
+      "implClass": "VideoCountManager",
+      "getterPath": "src/lib/features/browse/sequences/display/getVideoCountManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IBrowseDataSource",
+      "contractPath": "src/lib/features/browse/shared/services/contracts/IBrowseDataSource.ts",
+      "implPath": "src/lib/features/browse/shared/services/implementations/BrowseDataSource.ts",
+      "implClass": "BrowseDataSource",
+      "getterPath": "src/lib/features/browse/shared/getBrowseDataSource.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "BrowseQueryResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IBrowseEventHandler",
+      "contractPath": "src/lib/features/browse/shared/services/contracts/IBrowseEventHandler.ts",
+      "implPath": "src/lib/features/browse/shared/services/implementations/BrowseEventHandler.ts",
+      "implClass": "BrowseEventHandler",
+      "getterPath": "src/lib/features/browse/shared/getBrowseEventHandler.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "BrowseEventHandlerParams"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IGalleryPrefetcher",
+      "contractPath": "src/lib/features/browse/shared/services/contracts/IGalleryPrefetcher.ts",
+      "implPath": "src/lib/features/browse/shared/services/implementations/GalleryPrefetcher.ts",
+      "implClass": "GalleryPrefetcher",
+      "getterPath": "src/lib/features/browse/shared/getGalleryPrefetcher.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IOptimizedBrowser",
+      "contractPath": "src/lib/features/browse/shared/services/contracts/IOptimizedBrowser.ts",
+      "implPath": "src/lib/features/browse/shared/services/implementations/OptimizedBrowser.ts",
+      "implClass": "OptimizedBrowser",
+      "getterPath": "src/lib/features/browse/shared/getOptimizedBrowser.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SequenceMetadata"
+        },
+        {
+          "kind": "interface",
+          "name": "PaginatedSequences"
+        },
+        {
+          "kind": "interface",
+          "name": "BrowseLoadingState"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IArchiveLoader",
+      "contractPath": "src/lib/features/feedback/services/contracts/IArchiveLoader.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/ArchiveLoader.ts",
+      "implClass": "ArchiveLoader",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IAudioAnalyzer",
+      "contractPath": "src/lib/features/feedback/services/contracts/IAudioAnalyzer.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/AudioAnalyzer.ts",
+      "implClass": "AudioAnalyzer",
+      "getterPath": "src/lib/features/feedback/getAudioAnalyzer.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IClaimStatusDeriver",
+      "contractPath": "src/lib/features/feedback/services/contracts/IClaimStatusDeriver.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/ClaimStatusDeriver.ts",
+      "implClass": "ClaimStatusDeriver",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "ClaimHealth"
+        },
+        {
+          "kind": "interface",
+          "name": "EffectiveStatus"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IContributorLoader",
+      "contractPath": "src/lib/features/feedback/services/contracts/IContributorLoader.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/ContributorLoader.ts",
+      "implClass": "ContributorLoader",
+      "getterPath": "src/lib/features/feedback/getContributorLoader.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFeedbackDocumentMapper",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackDocumentMapper.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackDocumentMapper.ts",
+      "implClass": "FeedbackDocumentMapper",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFeedbackEditor",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackEditor.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackEditor.ts",
+      "implClass": "FeedbackEditor",
+      "getterPath": "src/lib/features/feedback/getFeedbackEditor.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "EditSnapshot"
+        },
+        {
+          "kind": "interface",
+          "name": "EditableFields"
+        },
+        {
+          "kind": "interface",
+          "name": "ValidationResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFeedbackFormatter",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackFormatter.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackFormatter.ts",
+      "implClass": "FeedbackFormatter",
+      "getterPath": "src/lib/features/feedback/getFeedbackFormatter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFeedbackQueryService",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackQueryService.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackQuerier.ts",
+      "implClass": "FeedbackQuerier",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "FeedbackQueryResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFeedbackService",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackService.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackRepository.ts",
+      "implClass": "FeedbackRepository",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFeedbackSorter",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackSorter.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackSorter.ts",
+      "implClass": "FeedbackSorter",
+      "getterPath": "src/lib/features/feedback/getFeedbackSorter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFeedbackStatusService",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackStatusService.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackStatusManager.ts",
+      "implClass": "FeedbackStatusManager",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFeedbackSubmissionService",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackSubmissionService.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackSubmitter.ts",
+      "implClass": "FeedbackSubmitter",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFeedbackSubscriptionService",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackSubscriptionService.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackSubscriber.ts",
+      "implClass": "FeedbackSubscriber",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFeedbackSubtaskManager",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackSubtaskManager.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackSubtaskManager.ts",
+      "implClass": "FeedbackSubtaskManager",
+      "getterPath": "src/lib/features/feedback/getFeedbackSubtaskManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFeedbackTesterWorkflowService",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackTesterWorkflowService.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackTesterWorkflow.ts",
+      "implClass": "FeedbackTesterWorkflow",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFeedbackTypeResolver",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFeedbackTypeResolver.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FeedbackTypeResolver.ts",
+      "implClass": "FeedbackTypeResolver",
+      "getterPath": "src/lib/features/feedback/getFeedbackTypeResolver.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "FeedbackTypeConfig"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFormDraftPersister",
+      "contractPath": "src/lib/features/feedback/services/contracts/IFormDraftPersister.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/FormDraftPersister.svelte.ts",
+      "implClass": "FormDraftPersister.svelte",
+      "getterPath": "src/lib/features/feedback/getFormDraftPersister.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "DraftSaveStatus"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IImageStager",
+      "contractPath": "src/lib/features/feedback/services/contracts/IImageStager.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/ImageStager.ts",
+      "implClass": "ImageStager",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "StagedProgressCallback"
+        },
+        {
+          "kind": "interface",
+          "name": "StagedUploadHandle"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISwimLaneDeriver",
+      "contractPath": "src/lib/features/feedback/services/contracts/ISwimLaneDeriver.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/SwimLaneDeriver.ts",
+      "implClass": "SwimLaneDeriver",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "SwimLane"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITranscriptionClient",
+      "contractPath": "src/lib/features/feedback/services/contracts/ITranscriptionClient.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/TranscriptionClient.ts",
+      "implClass": "TranscriptionClient",
+      "getterPath": "src/lib/features/feedback/getTranscriptionClient.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVersionService",
+      "contractPath": "src/lib/features/feedback/services/contracts/IVersionService.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/VersionManager.ts",
+      "implClass": "VersionManager",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVoiceRecorder",
+      "contractPath": "src/lib/features/feedback/services/contracts/IVoiceRecorder.ts",
+      "implPath": "src/lib/features/feedback/services/implementations/VoiceRecorder.ts",
+      "implClass": "VoiceRecorder",
+      "getterPath": "src/lib/features/feedback/getVoiceRecorder.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VoiceRecordingResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    }
+  ]
+}

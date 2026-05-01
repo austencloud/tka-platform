@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IClaudeCodeCopier",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IClaudeCodeCopier.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/ClaudeCodeCopier.ts",
+    "cls": "ClaudeCodeCopier",
+    "getter": "src/lib/features/browse/sequences/display/getClaudeCodeCopier.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICloudThumbnailCache",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/ICloudThumbnailCache.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache.ts",
+    "cls": "CloudThumbnailCache",
+    "getter": "src/lib/features/browse/sequences/display/getCloudThumbnailCache.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IMultiFilter",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IMultiFilter.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/MultiFilter.ts",
+    "cls": "MultiFilter",
+    "getter": "src/lib/features/browse/sequences/display/getMultiFilter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPinchZoomGridController",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IPinchZoomGridController.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/PinchZoomGridController.ts",
+    "cls": "PinchZoomGridController",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceDetailLoader",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/ISequenceDetailLoader.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader.ts",
+    "cls": "SequenceDetailLoader",
+    "getter": "src/lib/features/browse/sequences/display/getSequenceDetailLoader.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceDifficultyCalculator",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/ISequenceDifficultyCalculator.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator.ts",
+    "cls": "SequenceDifficultyCalculator",
+    "getter": "src/lib/features/browse/sequences/display/getSequenceDifficultyCalculator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IThumbnailKeyDeriver",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailKeyDeriver.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailKeyDeriver.ts",
+    "cls": "ThumbnailKeyDeriver",
+    "getter": "src/lib/features/browse/sequences/display/getThumbnailKeyDeriver.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IThumbnailLocalCache",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailLocalCache.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailLocalCache.ts",
+    "cls": "ThumbnailLocalCache",
+    "getter": "src/lib/features/browse/sequences/display/getThumbnailLocalCache.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IThumbnailMetricsCollector",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailMetricsCollector.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector.ts",
+    "cls": "ThumbnailMetricsCollector",
+    "getter": "src/lib/features/browse/sequences/display/getThumbnailMetricsCollector.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IThumbnailRenderer",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailRenderer.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderer.ts",
+    "cls": "ThumbnailRenderer",
+    "getter": "src/lib/features/browse/sequences/display/getThumbnailRenderer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IThumbnailRenderOrchestrator",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailRenderOrchestrator.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator.ts",
+    "cls": "ThumbnailRenderOrchestrator",
+    "getter": "src/lib/features/browse/sequences/display/getThumbnailRenderOrchestrator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IThumbnailRenderQueue",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IThumbnailRenderQueue.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderQueue.ts",
+    "cls": "ThumbnailRenderQueue",
+    "getter": "src/lib/features/browse/sequences/display/getThumbnailRenderQueue.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IVariationGrouper",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IVariationGrouper.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/VariationGrouper.ts",
+    "cls": "VariationGrouper",
+    "getter": "src/lib/features/browse/sequences/display/getVariationGrouper.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IVideoCountManager",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IVideoCountManager.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/VideoCountManager.ts",
+    "cls": "VideoCountManager",
+    "getter": "src/lib/features/browse/sequences/display/getVideoCountManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowseDataSource",
+    "contract": "src/lib/features/browse/shared/services/contracts/IBrowseDataSource.ts",
+    "impl": "src/lib/features/browse/shared/services/implementations/BrowseDataSource.ts",
+    "cls": "BrowseDataSource",
+    "getter": "src/lib/features/browse/shared/getBrowseDataSource.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IBrowseEventHandler",
+    "contract": "src/lib/features/browse/shared/services/contracts/IBrowseEventHandler.ts",
+    "impl": "src/lib/features/browse/shared/services/implementations/BrowseEventHandler.ts",
+    "cls": "BrowseEventHandler",
+    "getter": "src/lib/features/browse/shared/getBrowseEventHandler.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IGalleryPrefetcher",
+    "contract": "src/lib/features/browse/shared/services/contracts/IGalleryPrefetcher.ts",
+    "impl": "src/lib/features/browse/shared/services/implementations/GalleryPrefetcher.ts",
+    "cls": "GalleryPrefetcher",
+    "getter": "src/lib/features/browse/shared/getGalleryPrefetcher.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IOptimizedBrowser",
+    "contract": "src/lib/features/browse/shared/services/contracts/IOptimizedBrowser.ts",
+    "impl": "src/lib/features/browse/shared/services/implementations/OptimizedBrowser.ts",
+    "cls": "OptimizedBrowser",
+    "getter": "src/lib/features/browse/shared/getOptimizedBrowser.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IArchiveLoader",
+    "contract": "src/lib/features/feedback/services/contracts/IArchiveLoader.ts",
+    "impl": "src/lib/features/feedback/services/implementations/ArchiveLoader.ts",
+    "cls": "ArchiveLoader",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IAudioAnalyzer",
+    "contract": "src/lib/features/feedback/services/contracts/IAudioAnalyzer.ts",
+    "impl": "src/lib/features/feedback/services/implementations/AudioAnalyzer.ts",
+    "cls": "AudioAnalyzer",
+    "getter": "src/lib/features/feedback/getAudioAnalyzer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IClaimStatusDeriver",
+    "contract": "src/lib/features/feedback/services/contracts/IClaimStatusDeriver.ts",
+    "impl": "src/lib/features/feedback/services/implementations/ClaimStatusDeriver.ts",
+    "cls": "ClaimStatusDeriver",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IContributorLoader",
+    "contract": "src/lib/features/feedback/services/contracts/IContributorLoader.ts",
+    "impl": "src/lib/features/feedback/services/implementations/ContributorLoader.ts",
+    "cls": "ContributorLoader",
+    "getter": "src/lib/features/feedback/getContributorLoader.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackDocumentMapper",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackDocumentMapper.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackDocumentMapper.ts",
+    "cls": "FeedbackDocumentMapper",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackEditor",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackEditor.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackEditor.ts",
+    "cls": "FeedbackEditor",
+    "getter": "src/lib/features/feedback/getFeedbackEditor.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IFeedbackFormatter",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackFormatter.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackFormatter.ts",
+    "cls": "FeedbackFormatter",
+    "getter": "src/lib/features/feedback/getFeedbackFormatter.ts",
+    "hasCoExports": false
+  }
+]

@@ -1,0 +1,817 @@
+{
+  "areas": [
+    "features/tika",
+    "features/loop-labeler",
+    "shared/render"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "IConversationMemoryRetriever",
+      "contractPath": "src/lib/features/tika/services/contracts/IConversationMemoryRetriever.ts",
+      "implPath": "src/lib/features/tika/services/implementations/ConversationMemoryRetriever.ts",
+      "implClass": "ConversationMemoryRetriever",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ConversationMemorySummary"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISvgSanitizer",
+      "contractPath": "src/lib/features/tika/services/contracts/ISvgSanitizer.ts",
+      "implPath": "src/lib/features/tika/services/implementations/SvgSanitizer.ts",
+      "implClass": "SvgSanitizer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITikaCapabilityLookup",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaCapabilityLookup.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaCapabilityLookup.ts",
+      "implClass": "TikaCapabilityLookup",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CapabilityMatch"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITikaInteractionTracker",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaInteractionTracker.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaInteractionTracker.ts",
+      "implClass": "TikaInteractionTracker",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "TikaTopicInteraction"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaMarkdownParser",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaMarkdownParser.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaMarkdownParser.ts",
+      "implClass": "TikaMarkdownParser",
+      "getterPath": "src/lib/features/tika/getTikaMarkdownParser.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ParsedMarkdown"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITikaMessageExtractor",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaMessageExtractor.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaMessageExtractor.ts",
+      "implClass": "TikaMessageExtractor",
+      "getterPath": "src/lib/features/tika/getTikaMessageExtractor.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ToolInfo"
+        },
+        {
+          "kind": "interface",
+          "name": "InlineContent"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITikaModelProvider",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaModelProvider.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaModelProvider.ts",
+      "implClass": "TikaModelProvider",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ModelConfig"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaPictographCache",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaPictographCache.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaPictographCache.ts",
+      "implClass": "TikaPictographCache",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "TikaPictographCacheStats"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITikaPictographLoader",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaPictographLoader.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaPictographLoader.ts",
+      "implClass": "TikaPictographLoader",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "MotionData"
+        },
+        {
+          "kind": "interface",
+          "name": "PictographData"
+        },
+        {
+          "kind": "interface",
+          "name": "PictographDataWithMode"
+        },
+        {
+          "kind": "interface",
+          "name": "GlossaryEntry"
+        },
+        {
+          "kind": "interface",
+          "name": "LetterTypeInfo"
+        },
+        {
+          "kind": "interface",
+          "name": "LetterPositionMapping"
+        }
+      ],
+      "consumerCount": 5,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaQuizGenerator",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaQuizGenerator.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaQuizGenerator.ts",
+      "implClass": "TikaQuizGenerator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "QuizDisplayMode"
+        },
+        {
+          "kind": "type",
+          "name": "QuizType"
+        },
+        {
+          "kind": "type",
+          "name": "QuizDifficulty"
+        },
+        {
+          "kind": "interface",
+          "name": "TextOption"
+        },
+        {
+          "kind": "interface",
+          "name": "PictographOption"
+        },
+        {
+          "kind": "interface",
+          "name": "MotionPatternOption"
+        },
+        {
+          "kind": "type",
+          "name": "QuizOption"
+        },
+        {
+          "kind": "interface",
+          "name": "InlineQuiz"
+        },
+        {
+          "kind": "interface",
+          "name": "QuizResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaSequenceGenerator",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaSequenceGenerator.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaSequenceGenerator.ts",
+      "implClass": "TikaSequenceGenerator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SequenceStepMotion"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceStep"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaSequenceValidator",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaSequenceValidator.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaSequenceValidator.ts",
+      "implClass": "TikaSequenceValidator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SequenceTransition"
+        },
+        {
+          "kind": "interface",
+          "name": "InvalidTransition"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceValidationResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaSessionFormatter",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaSessionFormatter.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaSessionFormatter.ts",
+      "implClass": "TikaSessionFormatter",
+      "getterPath": "src/lib/features/tika/getTikaSessionFormatter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITikaSessionRepository",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaSessionRepository.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaSessionRepository.ts",
+      "implClass": "TikaSessionRepository",
+      "getterPath": "src/lib/features/tika/getTikaSessionRepository.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaToolExecutor",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaToolExecutor.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaToolExecutor.ts",
+      "implClass": "TikaToolExecutor",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "InlinePictograph"
+        },
+        {
+          "kind": "interface",
+          "name": "InlineGalleryItem"
+        },
+        {
+          "kind": "interface",
+          "name": "InlineGallery"
+        },
+        {
+          "kind": "interface",
+          "name": "InlineSequencePlayer"
+        },
+        {
+          "kind": "interface",
+          "name": "InlineStepGridItem"
+        },
+        {
+          "kind": "interface",
+          "name": "InlineStepGrid"
+        },
+        {
+          "kind": "interface",
+          "name": "LetterExplanationResult"
+        },
+        {
+          "kind": "interface",
+          "name": "ComparisonResult"
+        },
+        {
+          "kind": "interface",
+          "name": "TypeListResult"
+        },
+        {
+          "kind": "interface",
+          "name": "PictographExample"
+        },
+        {
+          "kind": "interface",
+          "name": "TermDefinitionResult"
+        },
+        {
+          "kind": "interface",
+          "name": "PositionExamplesResult"
+        },
+        {
+          "kind": "interface",
+          "name": "MotionExamplesResult"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceResult"
+        },
+        {
+          "kind": "interface",
+          "name": "StepGridResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITikaWelcomeBuilder",
+      "contractPath": "src/lib/features/tika/services/contracts/ITikaWelcomeBuilder.ts",
+      "implPath": "src/lib/features/tika/services/implementations/TikaWelcomeBuilder.ts",
+      "implClass": "TikaWelcomeBuilder",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "WelcomeSuggestion"
+        },
+        {
+          "kind": "interface",
+          "name": "WelcomeContext"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ICandidateFormatter",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ICandidateFormatter.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/CandidateFormatter.ts",
+      "implClass": "CandidateFormatter",
+      "getterPath": "src/lib/features/loop-labeler/getCandidateFormatter.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "FormattedTransformations"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILabelFormatter",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ILabelFormatter.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/LabelFormatter.ts",
+      "implClass": "LabelFormatter",
+      "getterPath": "src/lib/features/loop-labeler/getLabelFormatter.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "LOOPDesignationInput"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ILayeredPathDetector",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ILayeredPathDetector.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/LayeredPathDetector.ts",
+      "implClass": "LayeredPathDetector",
+      "getterPath": "src/lib/features/loop-labeler/getLayeredPathDetector.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "HandPathCycle"
+        },
+        {
+          "kind": "type",
+          "name": "PositionalCategory"
+        },
+        {
+          "kind": "interface",
+          "name": "ZoneCoverageAnalysis"
+        },
+        {
+          "kind": "interface",
+          "name": "LayeredPathResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPDesignator",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ILOOPDesignator.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/LOOPDesignator.ts",
+      "implClass": "LOOPDesignator",
+      "getterPath": "src/lib/features/loop-labeler/getLOOPDesignator.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "ComponentId"
+        },
+        {
+          "kind": "interface",
+          "name": "LOOPDesignation"
+        },
+        {
+          "kind": "interface",
+          "name": "SectionDesignation"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPLabelsFirebaseRepository",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ILOOPLabelsFirebaseRepository.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/LOOPLabelsFirebaseRepository.ts",
+      "implClass": "LOOPLabelsFirebaseRepository",
+      "getterPath": "src/lib/features/loop-labeler/getLOOPLabelsFirebaseRepository.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "LabeledSequence"
+        }
+      ],
+      "consumerCount": 7,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IReflectionComparer",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/IReflectionComparer.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/comparison/ReflectionComparer.ts",
+      "implClass": "ReflectionComparer",
+      "getterPath": "src/lib/features/loop-labeler/getReflectionComparer.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IRotationComparer",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/IRotationComparer.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/comparison/RotationComparer.ts",
+      "implClass": "RotationComparer",
+      "getterPath": "src/lib/features/loop-labeler/getRotationComparer.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IRuleBasedTagger",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/IRuleBasedTagger.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/RuleBasedTagger.ts",
+      "implClass": "RuleBasedTagger",
+      "getterPath": "src/lib/features/loop-labeler/getRuleBasedTagger.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceFeatureExtractor",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ISequenceFeatureExtractor.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/SequenceFeatureExtractor.ts",
+      "implClass": "SequenceFeatureExtractor",
+      "getterPath": "src/lib/features/loop-labeler/getSequenceFeatureExtractor.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceLoader",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ISequenceLoader.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/SequenceLoader.ts",
+      "implClass": "SequenceLoader",
+      "getterPath": "src/lib/features/loop-labeler/getSequenceLoader.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "FilterMode"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceStats"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStepComparisonOrchestrator",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/IStepComparisonOrchestrator.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/comparison/StepComparisonOrchestrator.ts",
+      "implClass": "StepComparisonOrchestrator",
+      "getterPath": "src/lib/features/loop-labeler/getStepComparisonOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStepDataConverter",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/IStepDataConverter.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/StepDataConverter.ts",
+      "implClass": "StepDataConverter",
+      "getterPath": "src/lib/features/loop-labeler/getStepDataConverter.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "RawStepData"
+        },
+        {
+          "kind": "interface",
+          "name": "RawMotionAttributes"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceEntry"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStepPairAnalyzer",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/IStepPairAnalyzer.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/StepPairAnalyzer.ts",
+      "implClass": "StepPairAnalyzer",
+      "getterPath": "src/lib/features/loop-labeler/getStepPairAnalyzer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "LetterRelationshipInfo"
+        },
+        {
+          "kind": "interface",
+          "name": "StepPairRelationship"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISwapInvertComparer",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ISwapInvertComparer.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/comparison/SwapInvertComparer.ts",
+      "implClass": "SwapInvertComparer",
+      "getterPath": "src/lib/features/loop-labeler/getSwapInvertComparer.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITransformationAnalyzer",
+      "contractPath": "src/lib/features/loop-labeler/services/contracts/ITransformationAnalyzer.ts",
+      "implPath": "src/lib/features/loop-labeler/services/implementations/TransformationAnalyzer.ts",
+      "implClass": "TransformationAnalyzer",
+      "getterPath": "src/lib/features/loop-labeler/getTransformationAnalyzer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AxisAlternatingResult"
+        },
+        {
+          "kind": "type",
+          "name": "SwapRhythmPattern"
+        },
+        {
+          "kind": "interface",
+          "name": "ColumnBehavior"
+        },
+        {
+          "kind": "interface",
+          "name": "ModularAnalysisResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICanvasManager",
+      "contractPath": "src/lib/shared/render/services/contracts/ICanvasManager.ts",
+      "implPath": "src/lib/shared/render/services/implementations/CanvasManager.ts",
+      "implClass": "CanvasManager",
+      "getterPath": "src/lib/shared/render/getCanvasManager.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "IReversalDetector"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IDimensionCalculator",
+      "contractPath": "src/lib/shared/render/services/contracts/IDimensionCalculator.ts",
+      "implPath": "src/lib/shared/render/services/implementations/DimensionCalculator.ts",
+      "implClass": "DimensionCalculator",
+      "getterPath": "src/lib/shared/render/getDimensionCalculator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ImageRenderOptions"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IImageComposer",
+      "contractPath": "src/lib/shared/render/services/contracts/IImageComposer.ts",
+      "implPath": "src/lib/shared/render/services/implementations/ImageComposer.ts",
+      "implClass": "ImageComposer",
+      "getterPath": "src/lib/shared/render/getImageComposer.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "CompositionProgressCallback"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IImageFormatConverter",
+      "contractPath": "src/lib/shared/render/services/contracts/IImageFormatConverter.ts",
+      "implPath": "src/lib/shared/render/services/implementations/ImageFormatConverter.ts",
+      "implClass": "ImageFormatConverter",
+      "getterPath": "src/lib/shared/render/getImageFormatConverter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILayerCompositor",
+      "contractPath": "src/lib/shared/render/services/contracts/ILayerCompositor.ts",
+      "implPath": "src/lib/shared/render/services/implementations/LayerCompositor.ts",
+      "implClass": "LayerCompositor",
+      "getterPath": "src/lib/shared/render/getLayerCompositor.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "RenderCanvas"
+        },
+        {
+          "kind": "type",
+          "name": "RenderContext2D"
+        },
+        {
+          "kind": "type",
+          "name": "LayerType"
+        },
+        {
+          "kind": "interface",
+          "name": "LayerRenderOptions"
+        },
+        {
+          "kind": "interface",
+          "name": "LayerVisibility"
+        },
+        {
+          "kind": "interface",
+          "name": "LayerRenderResult"
+        },
+        {
+          "kind": "interface",
+          "name": "CompositionResult"
+        },
+        {
+          "kind": "interface",
+          "name": "LayerCacheStats"
+        }
+      ],
+      "consumerCount": 7,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILayoutCalculator",
+      "contractPath": "src/lib/shared/render/services/contracts/ILayoutCalculator.ts",
+      "implPath": "src/lib/shared/render/services/implementations/LayoutCalculator.ts",
+      "implClass": "LayoutCalculator",
+      "getterPath": "src/lib/shared/render/getLayoutCalculator.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPIconStripRenderer",
+      "contractPath": "src/lib/shared/render/services/contracts/ILOOPIconStripRenderer.ts",
+      "implPath": "src/lib/shared/render/services/implementations/LOOPIconStripRenderer.ts",
+      "implClass": "LOOPIconStripRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPictographBlobCache",
+      "contractPath": "src/lib/shared/render/services/contracts/IPictographBlobCache.ts",
+      "implPath": "src/lib/shared/render/services/implementations/PictographBlobCache.ts",
+      "implClass": "PictographBlobCache",
+      "getterPath": "src/lib/shared/render/getPictographBlobCache.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PictographBlobCacheStats"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPictographKeyHasher",
+      "contractPath": "src/lib/shared/render/services/contracts/IPictographKeyHasher.ts",
+      "implPath": "src/lib/shared/render/services/implementations/PictographKeyHasher.ts",
+      "implClass": "PictographKeyHasher",
+      "getterPath": "src/lib/shared/render/getPictographKeyHasher.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPictographSVGCache",
+      "contractPath": "src/lib/shared/render/services/contracts/IPictographSVGCache.ts",
+      "implPath": "src/lib/shared/render/services/implementations/PictographSVGCache.ts",
+      "implClass": "PictographSVGCache",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PictographCacheStats"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ISequenceRenderer",
+      "contractPath": "src/lib/shared/render/services/contracts/ISequenceRenderer.ts",
+      "implPath": "src/lib/shared/render/services/implementations/SequenceRenderer.ts",
+      "implClass": "SequenceRenderer",
+      "getterPath": "src/lib/shared/render/getSequenceRenderer.ts",
+      "coExports": [],
+      "consumerCount": 6,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStepNumberRenderer",
+      "contractPath": "src/lib/shared/render/services/contracts/IStepNumberRenderer.ts",
+      "implPath": "src/lib/shared/render/services/implementations/StepNumberRenderer.ts",
+      "implClass": "StepNumberRenderer",
+      "getterPath": "src/lib/shared/render/getStepNumberRenderer.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISVGToCanvasConverter",
+      "contractPath": "src/lib/shared/render/services/contracts/ISVGToCanvasConverter.ts",
+      "implPath": "src/lib/shared/render/services/implementations/SVGToCanvasConverter.ts",
+      "implClass": "SVGToCanvasConverter",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITextRenderer",
+      "contractPath": "src/lib/shared/render/services/contracts/ITextRenderer.ts",
+      "implPath": "src/lib/shared/render/services/implementations/TextRenderer.ts",
+      "implClass": "TextRenderer",
+      "getterPath": "src/lib/shared/render/getTextRenderer.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IWorkerRenderPool",
+      "contractPath": "src/lib/shared/render/services/contracts/IWorkerRenderPool.ts",
+      "implPath": "src/lib/shared/render/services/implementations/WorkerRenderPool.ts",
+      "implClass": "WorkerRenderPool",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    }
+  ]
+}

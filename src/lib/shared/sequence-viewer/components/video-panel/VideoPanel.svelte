@@ -1,13 +1,3 @@
-<!--
-  VideoPanel.svelte
-
-  Lifecycle orchestrator for video management on a sequence.
-  Manages state transitions: loading -> save-first / empty / gallery.
-  Upload flow: empty -> upload (preview) -> uploading -> gallery.
-
-  Replaces the simpler VideoUploadPanel with full gallery support,
-  video count awareness, and step-mapping entry point.
--->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { fade } from "svelte/transition";
@@ -39,10 +29,6 @@
 
   let { sequence, isOwned, bpm, onSaveFirst, onClose }: Props = $props();
 
-  // ============================================================================
-  // STATE
-  // ============================================================================
-
   type PanelState =
     | "loading"
     | "save-first"
@@ -55,35 +41,24 @@
   let panelState = $state<PanelState>("loading");
   let videos = $state<CollaborativeVideo[]>([]);
 
-  // Save-first
   let isSaving = $state(false);
 
-  // File selection
   let selectedFile = $state<File | null>(null);
   let videoPreviewUrl = $state<string | null>(null);
   let videoDuration = $state<number>(0);
   let thumbnail = $state<ThumbnailResult | null>(null);
 
-  // Upload progress
   let isUploading = $state(false);
   let uploadProgress = $state(0);
   let uploadError = $state<string | null>(null);
 
-  // Drag state
   let isDragOver = $state(false);
 
-  // File input ref
   let fileInputEl: HTMLInputElement;
 
-  // Inline playback: which video is currently playing in the gallery
   let playingVideoId = $state<string | null>(null);
 
-  // Beat mapping: which video is being annotated
   let beatMappingVideo = $state<CollaborativeVideo | null>(null);
-
-  // ============================================================================
-  // SERVICES
-  // ============================================================================
 
   const uploadService = getVideoUploader();
   const videoManager = getCollaborativeVideoManager();
@@ -94,17 +69,12 @@
   const currentUser = $derived(getAuthSync().currentUser);
   const canUpload = $derived(!!selectedFile && !isUploading && !!currentUser);
 
-  // ============================================================================
-  // LIFECYCLE: determine initial state
-  // ============================================================================
-
   $effect(() => {
     if (!isOwned) {
       panelState = "save-first";
       return;
     }
 
-    // Load videos for this sequence
     loadVideos();
   });
 
@@ -120,28 +90,17 @@
     }
   }
 
-  // ============================================================================
-  // SAVE-FIRST
-  // ============================================================================
-
   async function handleSaveFirst() {
     isSaving = true;
     try {
       await onSaveFirst();
-      // The orchestrator's isOwned won't update reactively because the local
-      // sequence object doesn't get a new ownerId after save. So we skip
-      // waiting for the reactive update and directly load videos.
       await loadVideos();
     } catch {
-      // Parent handles the error toast
+      // Handled by parent
     } finally {
       isSaving = false;
     }
   }
-
-  // ============================================================================
-  // FILE SELECTION
-  // ============================================================================
 
   function handleFileSelect(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -211,10 +170,6 @@
     fileInputEl?.click();
   }
 
-  // ============================================================================
-  // UPLOAD
-  // ============================================================================
-
   async function handleUpload() {
     if (!selectedFile || !currentUser) return;
 
@@ -249,7 +204,7 @@
           thumbnailUrl = thumbnailResult.url;
           uploadProgress = 100;
         } catch {
-          // Thumbnail upload is optional
+          // Optional
         }
       }
 
@@ -273,7 +228,6 @@
       hapticService?.trigger("success");
       toast.success("Video uploaded");
 
-      // Clean up file state and reload gallery
       cleanupFileState();
       await loadVideos();
     } catch (e) {
@@ -286,10 +240,6 @@
       isUploading = false;
     }
   }
-
-  // ============================================================================
-  // GALLERY ACTIONS
-  // ============================================================================
 
   function handleAddVideo() {
     cleanupFileState();
@@ -311,16 +261,11 @@
     }
   }
 
-  // ============================================================================
-  // BEAT MAPPING
-  // ============================================================================
-
   async function handleStepMapSave(beatMap: StepMap) {
     if (!beatMappingVideo) return;
 
     await videoManager.updateStepMap(beatMappingVideo.id, beatMap);
 
-    // Update the local video list so the beat-map indicator shows immediately
     videos = videos.map((v) =>
       v.id === beatMappingVideo!.id ? { ...v, beatMap, updatedAt: new Date() } : v,
     );
@@ -337,10 +282,6 @@
     panelState = "gallery";
   }
 
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
-
   function cleanupFileState() {
     if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
     selectedFile = null;
@@ -352,12 +293,10 @@
   }
 
   function handleBack() {
-    // Beat mapping: return to gallery
     if (panelState === "step-mapping") {
       handleStepMapClose();
       return;
     }
-    // If in upload/empty sub-state and gallery has videos, go back to gallery
     if (
       (panelState === "empty" || panelState === "upload") &&
       videos.length > 0
@@ -389,7 +328,6 @@
   role="region"
   aria-label="Video panel"
 >
-  <!-- Hidden file input -->
   <input
     bind:this={fileInputEl}
     type="file"
@@ -399,18 +337,12 @@
   />
 
   <div class="panel-content">
-    <!-- ================================================================
-         LOADING
-         ================================================================ -->
     {#if panelState === "loading"}
       <div class="center-state">
         <i class="fas fa-spinner fa-spin loading-spinner" aria-hidden="true"></i>
         <span class="state-label">Loading videos...</span>
       </div>
 
-    <!-- ================================================================
-         SAVE FIRST
-         ================================================================ -->
     {:else if panelState === "save-first"}
       <div class="center-state">
         <div class="state-icon">
@@ -439,9 +371,6 @@
         </div>
       </div>
 
-    <!-- ================================================================
-         EMPTY (file picker / drop zone)
-         ================================================================ -->
     {:else if panelState === "empty"}
       {#if videos.length > 0}
         <button
@@ -469,9 +398,6 @@
         <span class="drop-hint">MP4, WebM, MOV up to 500MB</span>
       </button>
 
-    <!-- ================================================================
-         UPLOAD (preview + upload button)
-         ================================================================ -->
     {:else if panelState === "upload"}
       <div class="preview-section">
         {#if videoPreviewUrl}
@@ -512,9 +438,6 @@
         Upload Video
       </button>
 
-    <!-- ================================================================
-         UPLOADING (progress bar)
-         ================================================================ -->
     {:else if panelState === "uploading"}
       <div class="center-state">
         <div class="progress-section">
@@ -538,14 +461,10 @@
         </div>
       </div>
 
-    <!-- ================================================================
-         GALLERY
-         ================================================================ -->
     {:else if panelState === "gallery"}
       <div class="gallery">
         {#each videos as video (video.id)}
           <div class="gallery-card">
-            <!-- Thumbnail / inline player -->
             <button
               type="button"
               class="gallery-thumb"
@@ -581,7 +500,6 @@
               {/if}
             </button>
 
-            <!-- Info -->
             <div class="gallery-info">
               <div class="gallery-info-row">
                 <span class="gallery-duration"
@@ -633,9 +551,6 @@
         </button>
       </div>
 
-    <!-- ================================================================
-         BEAT MAPPING
-         ================================================================ -->
     {:else if panelState === "step-mapping" && beatMappingVideo}
       <StepMapEditor
         videoUrl={beatMappingVideo.videoUrl}
@@ -673,10 +588,6 @@
     padding: 20px 16px;
     overflow-y: auto;
   }
-
-  /* ============================================================
-   * CENTER STATE (loading, save-first, step-mapping placeholder)
-   * ============================================================ */
 
   .center-state {
     display: flex;
@@ -724,10 +635,6 @@
     margin-top: 8px;
   }
 
-  /* ============================================================
-   * PRIMARY BUTTON (save, upload)
-   * ============================================================ */
-
   .primary-btn {
     display: inline-flex;
     align-items: center;
@@ -765,10 +672,6 @@
     width: 100%;
     flex-shrink: 0;
   }
-
-  /* ============================================================
-   * DROP ZONE
-   * ============================================================ */
 
   .drop-zone {
     display: flex;
@@ -814,10 +717,6 @@
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
   }
-
-  /* ============================================================
-   * VIDEO PREVIEW (upload state)
-   * ============================================================ */
 
   .preview-section {
     display: flex;
@@ -887,10 +786,6 @@
     color: var(--theme-text, white);
   }
 
-  /* ============================================================
-   * PROGRESS
-   * ============================================================ */
-
   .progress-section {
     display: flex;
     flex-direction: column;
@@ -931,10 +826,6 @@
     border-radius: 3px;
     transition: width 0.2s ease;
   }
-
-  /* ============================================================
-   * GALLERY
-   * ============================================================ */
 
   .gallery {
     display: flex;
@@ -1138,10 +1029,6 @@
     background: rgba(255, 255, 255, 0.02);
   }
 
-  /* ============================================================
-   * BACK TO GALLERY
-   * ============================================================ */
-
   .back-to-gallery {
     display: flex;
     align-items: center;
@@ -1163,10 +1050,6 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
-  /* ============================================================
-   * ERROR
-   * ============================================================ */
-
   .error-banner {
     display: flex;
     align-items: center;
@@ -1184,10 +1067,6 @@
     font-size: var(--font-size-min, 14px);
     flex-shrink: 0;
   }
-
-  /* ============================================================
-   * REDUCED MOTION
-   * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
     .drop-zone,

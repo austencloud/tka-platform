@@ -1,0 +1,654 @@
+{
+  "areas": [
+    "features/compose"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "IAudioStorageManager",
+      "contractPath": "src/lib/features/compose/compose/phases/audio/library/services/contracts/IAudioStorageManager.ts",
+      "implPath": "src/lib/features/compose/compose/phases/audio/library/services/implementations/AudioStorageManager.ts",
+      "implClass": "AudioStorageManager",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "UploadProgress"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IAngleCalculator",
+      "contractPath": "src/lib/features/compose/services/contracts/IAngleCalculator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/AngleCalculator.ts",
+      "implClass": "AngleCalculator",
+      "getterPath": "src/lib/features/compose/getAngleCalculator.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAnimationLoop",
+      "contractPath": "src/lib/features/compose/services/contracts/IAnimationLoop.ts",
+      "implPath": "src/lib/features/compose/services/implementations/AnimationLoop.ts",
+      "implClass": "AnimationLoop",
+      "getterPath": "src/lib/features/compose/getAnimationLoop.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAnimationPlaybackControllerFactory",
+      "contractPath": "src/lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory.ts",
+      "implPath": "src/lib/features/compose/services/implementations/AnimationPlaybackControllerFactory.ts",
+      "implClass": "AnimationPlaybackControllerFactory",
+      "getterPath": "src/lib/features/compose/getAnimationPlaybackControllerFactory.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IAnimationRenderer",
+      "contractPath": "src/lib/features/compose/services/contracts/IAnimationRenderer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/Canvas2DAnimationRenderer.ts",
+      "implClass": "Canvas2DAnimationRenderer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AdditionalLayerRenderData"
+        },
+        {
+          "kind": "interface",
+          "name": "AnimationVisibilitySettings"
+        },
+        {
+          "kind": "interface",
+          "name": "RenderSceneParams"
+        }
+      ],
+      "consumerCount": 17,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAnimationStateManager",
+      "contractPath": "src/lib/features/compose/services/contracts/IAnimationStateManager.ts",
+      "implPath": "src/lib/features/compose/services/implementations/AnimationStateManager.ts",
+      "implClass": "AnimationStateManager",
+      "getterPath": "src/lib/features/compose/getAnimationStateManager.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "InterpolationResult"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAnimationStorageManager",
+      "contractPath": "src/lib/features/compose/services/contracts/IAnimationStorageManager.ts",
+      "implPath": "src/lib/features/compose/services/implementations/AnimationStorageManager.ts",
+      "implClass": "AnimationStorageManager",
+      "getterPath": "src/lib/features/compose/getAnimationStorageManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IBackgroundVideoEncoder",
+      "contractPath": "src/lib/features/compose/services/contracts/IBackgroundVideoEncoder.ts",
+      "implPath": "src/lib/features/compose/services/implementations/BackgroundVideoEncoder.ts",
+      "implClass": "BackgroundVideoEncoder",
+      "getterPath": "src/lib/features/compose/getBackgroundVideoEncoder.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "BackgroundExportConfig"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICanvasRenderer",
+      "contractPath": "src/lib/features/compose/services/contracts/ICanvasRenderer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/CanvasRenderer.ts",
+      "implClass": "CanvasRenderer",
+      "getterPath": "src/lib/features/compose/getCanvasRenderer.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICompositeVideoRenderer",
+      "contractPath": "src/lib/features/compose/services/contracts/ICompositeVideoRenderer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/CompositeVideoRenderer.ts",
+      "implClass": "CompositeVideoRenderer",
+      "getterPath": "src/lib/features/compose/getCompositeVideoRenderer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CompositeDimensions"
+        },
+        {
+          "kind": "interface",
+          "name": "CompositeLayoutOptions"
+        },
+        {
+          "kind": "interface",
+          "name": "StepGridPosition"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICompositionRepository",
+      "contractPath": "src/lib/features/compose/services/contracts/ICompositionRepository.ts",
+      "implPath": "src/lib/features/compose/services/implementations/DexieCompositionRepository.ts",
+      "implClass": "DexieCompositionRepository",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CompositionQueryOptions"
+        },
+        {
+          "kind": "interface",
+          "name": "CompositionStats"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ICoordinateUpdater",
+      "contractPath": "src/lib/features/compose/services/contracts/ICoordinateUpdater.ts",
+      "implPath": "src/lib/features/compose/services/implementations/CoordinateUpdater.ts",
+      "implClass": "CoordinateUpdater",
+      "getterPath": "src/lib/features/compose/getCoordinateUpdater.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IEndpointCalculator",
+      "contractPath": "src/lib/features/compose/services/contracts/IEndpointCalculator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/EndpointCalculator.ts",
+      "implClass": "EndpointCalculator",
+      "getterPath": "src/lib/features/compose/getEndpointCalculator.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IExportGlyphPrerenderer",
+      "contractPath": "src/lib/features/compose/services/contracts/IExportGlyphPrerenderer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/ExportGlyphPrerenderer.ts",
+      "implClass": "ExportGlyphPrerenderer",
+      "getterPath": "src/lib/features/compose/getExportGlyphPrerenderer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "GlyphAsset"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropInterpolator",
+      "contractPath": "src/lib/features/compose/services/contracts/IPropInterpolator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/PropInterpolator.ts",
+      "implClass": "PropInterpolator",
+      "getterPath": "src/lib/features/compose/getPropInterpolator.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceAnimationOrchestrator",
+      "contractPath": "src/lib/features/compose/services/contracts/ISequenceAnimationOrchestrator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/SequenceAnimationOrchestrator.ts",
+      "implClass": "SequenceAnimationOrchestrator",
+      "getterPath": "src/lib/features/compose/getSequenceAnimationOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 10,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceLoopabilityChecker",
+      "contractPath": "src/lib/features/compose/services/contracts/ISequenceLoopabilityChecker.ts",
+      "implPath": "src/lib/features/compose/services/implementations/SequenceLoopabilityChecker.ts",
+      "implClass": "SequenceLoopabilityChecker",
+      "getterPath": "src/lib/features/compose/getSequenceLoopabilityChecker.ts",
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceNormalizer",
+      "contractPath": "src/lib/features/compose/services/contracts/ISequenceNormalizer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/SequenceNormalizer.ts",
+      "implClass": "SequenceNormalizer",
+      "getterPath": "src/lib/features/compose/getSequenceNormalizer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "NormalizedSequenceData"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStepCalculator",
+      "contractPath": "src/lib/features/compose/services/contracts/IStepCalculator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/StepCalculator.ts",
+      "implClass": "StepCalculator",
+      "getterPath": "src/lib/features/compose/getStepCalculator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "StepCalculationResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISVGGenerator",
+      "contractPath": "src/lib/features/compose/services/contracts/ISVGGenerator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/SVGGenerator.ts",
+      "implClass": "SVGGenerator",
+      "getterPath": "src/lib/features/compose/getSVGGenerator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PropSvgData"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITrailCapturer",
+      "contractPath": "src/lib/features/compose/services/contracts/ITrailCapturer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/TrailCapturer.ts",
+      "implClass": "TrailCapturer",
+      "getterPath": "src/lib/features/compose/getTrailCapturer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AdditionalLayerProps"
+        },
+        {
+          "kind": "interface",
+          "name": "TrailCapturePropStates"
+        },
+        {
+          "kind": "interface",
+          "name": "PropDimensions"
+        },
+        {
+          "kind": "interface",
+          "name": "TrailCaptureConfig"
+        },
+        {
+          "kind": "interface",
+          "name": "IAnimationCacheService"
+        },
+        {
+          "kind": "interface",
+          "name": "IPerformanceMonitorService"
+        }
+      ],
+      "consumerCount": 11,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITunnelModeSequenceManager",
+      "contractPath": "src/lib/features/compose/services/contracts/ITunnelModeSequenceManager.ts",
+      "implPath": "src/lib/features/compose/services/implementations/TunnelModeSequenceManager.ts",
+      "implClass": "TunnelModeSequenceManager",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "SequenceType"
+        },
+        {
+          "kind": "type",
+          "name": "TransformOperation"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IVideoExporter",
+      "contractPath": "src/lib/features/compose/services/contracts/IVideoExporter.ts",
+      "implPath": "src/lib/features/compose/services/implementations/VideoExporter.ts",
+      "implClass": "VideoExporter",
+      "getterPath": "src/lib/features/compose/getVideoExporter.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "VideoFormat"
+        },
+        {
+          "kind": "interface",
+          "name": "VideoExportOptions"
+        },
+        {
+          "kind": "interface",
+          "name": "VideoExportProgress"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVideoExportOrchestrator",
+      "contractPath": "src/lib/features/compose/services/contracts/IVideoExportOrchestrator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/VideoExportOrchestrator.ts",
+      "implClass": "VideoExportOrchestrator",
+      "getterPath": "src/lib/features/compose/getVideoExportOrchestrator.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "VideoExportFormat"
+        },
+        {
+          "kind": "interface",
+          "name": "VideoExportProgress"
+        },
+        {
+          "kind": "type",
+          "name": "VideoResolution"
+        },
+        {
+          "kind": "interface",
+          "name": "VideoEffectOverrides"
+        },
+        {
+          "kind": "interface",
+          "name": "VideoExportOrchestratorOptions"
+        }
+      ],
+      "consumerCount": 7,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVideoGenerationCoordinator",
+      "contractPath": "src/lib/features/compose/services/contracts/IVideoGenerationCoordinator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/VideoGenerationCoordinator.ts",
+      "implClass": "VideoGenerationCoordinator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VideoGenerationOptions"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVideoPlayer",
+      "contractPath": "src/lib/features/compose/services/contracts/IVideoPlayer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/VideoPlayer.ts",
+      "implClass": "VideoPlayer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVideoPreRenderer",
+      "contractPath": "src/lib/features/compose/services/contracts/IVideoPreRenderer.ts",
+      "implPath": "src/lib/features/compose/services/implementations/VideoPreRenderer.ts",
+      "implClass": "VideoPreRenderer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VideoRenderProgress"
+        },
+        {
+          "kind": "interface",
+          "name": "VideoRenderResult"
+        },
+        {
+          "kind": "interface",
+          "name": "VideoRenderOptions"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrangeCompositionConverter",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeCompositionConverter.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeCompositionConverter.ts",
+      "implClass": "ArrangeCompositionConverter",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "GridStateSnapshot"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrangeGridPersister",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeGridPersister.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeGridPersister.ts",
+      "implClass": "ArrangeGridPersister",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getArrangeGridPersister.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrangeGridSerializer",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeGridSerializer.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeGridSerializer.ts",
+      "implClass": "ArrangeGridSerializer",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getArrangeGridSerializer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SerializationContext"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrangeKeyboardHandler",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeKeyboardHandler.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeKeyboardHandler.ts",
+      "implClass": "ArrangeKeyboardHandler",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getArrangeKeyboardHandler.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "KeyboardContext"
+        },
+        {
+          "kind": "interface",
+          "name": "KeyboardCallbacks"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrangeLayerTransformer",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeLayerTransformer.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeLayerTransformer.ts",
+      "implClass": "ArrangeLayerTransformer",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getArrangeLayerTransformer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "TransformResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrangePlaybackEngine",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangePlaybackEngine.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangePlaybackEngine.ts",
+      "implClass": "ArrangePlaybackEngine",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getArrangePlaybackEngine.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrangeStepCalculator",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeStepCalculator.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeStepCalculator.ts",
+      "implClass": "ArrangeStepCalculator",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getArrangeStepCalculator.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrangeUndoManager",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeUndoManager.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeUndoManager.ts",
+      "implClass": "ArrangeUndoManager",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getArrangeUndoManager.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "ArrangeUndoOperationType"
+        },
+        {
+          "kind": "interface",
+          "name": "ArrangeGridSnapshot"
+        },
+        {
+          "kind": "interface",
+          "name": "UndoResult"
+        },
+        {
+          "kind": "interface",
+          "name": "ArrangeUndoEntry"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICellTransformStack",
+      "contractPath": "src/lib/features/compose/tabs/arrange/services/contracts/ICellTransformStack.ts",
+      "implPath": "src/lib/features/compose/tabs/arrange/services/implementations/CellTransformStack.ts",
+      "implClass": "CellTransformStack",
+      "getterPath": "src/lib/features/compose/tabs/arrange/getCellTransformStack.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ICompositionLayoutCalculator",
+      "contractPath": "src/lib/features/compose/tabs/browse/services/contracts/ICompositionLayoutCalculator.ts",
+      "implPath": "src/lib/features/compose/tabs/browse/services/implementations/CompositionLayoutCalculator.ts",
+      "implClass": "CompositionLayoutCalculator",
+      "getterPath": "src/lib/features/compose/tabs/browse/getCompositionLayoutCalculator.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "CardSize"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ICompositionThumbnailResolver",
+      "contractPath": "src/lib/features/compose/tabs/browse/services/contracts/ICompositionThumbnailResolver.ts",
+      "implPath": "src/lib/features/compose/tabs/browse/services/implementations/CompositionThumbnailResolver.ts",
+      "implClass": "CompositionThumbnailResolver",
+      "getterPath": "src/lib/features/compose/tabs/browse/getCompositionThumbnailResolver.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITimelinePlayer",
+      "contractPath": "src/lib/features/compose/timeline/services/contracts/ITimelinePlayer.ts",
+      "implPath": "src/lib/features/compose/timeline/services/implementations/TimelinePlaybackService.ts",
+      "implClass": "TimelinePlaybackService",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ActiveClipInfo"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITimelineSnapper",
+      "contractPath": "src/lib/features/compose/timeline/services/contracts/ITimelineSnapper.ts",
+      "implPath": "src/lib/features/compose/timeline/services/implementations/TimelineSnapService.ts",
+      "implClass": "TimelineSnapService",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "SnapType"
+        },
+        {
+          "kind": "interface",
+          "name": "SnapPoint"
+        },
+        {
+          "kind": "interface",
+          "name": "SnapResult"
+        },
+        {
+          "kind": "interface",
+          "name": "SnapContext"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ITimelineUndoManager",
+      "contractPath": "src/lib/features/compose/timeline/services/contracts/ITimelineUndoManager.ts",
+      "implPath": "src/lib/features/compose/timeline/services/implementations/TimelineUndoManager.ts",
+      "implClass": "TimelineUndoManager",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "TimelineUndoOperationType"
+        },
+        {
+          "kind": "interface",
+          "name": "TimelineProjectSnapshot"
+        },
+        {
+          "kind": "interface",
+          "name": "TimelineUndoEntry"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    }
+  ]
+}

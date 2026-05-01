@@ -1,21 +1,3 @@
-/**
- * WorkerRenderPool
- *
- * Manages a pool of Web Workers for off-main-thread pictograph rendering.
- * Uses round-robin task distribution with promise-based response matching.
- *
- * Architecture:
- * - Spawns min(navigator.hardwareConcurrency, 4) workers
- * - Each worker has its own SvgAssetLoader + LayerCompositor
- * - Workers are lazily initialized on first render request
- * - Falls back to main-thread LayerCompositor when workers unavailable
- *
- * Fallback triggers:
- * - typeof Worker === "undefined" (SSR)
- * - typeof OffscreenCanvas === "undefined" (old browsers)
- * - Worker creation fails (CSP restrictions)
- */
-
 import type { IWorkerRenderPool } from "../contracts/IWorkerRenderPool";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { LayerRenderOptions, LayerVisibility } from "../contracts/ILayerCompositor";
@@ -42,13 +24,11 @@ export class WorkerRenderPool implements IWorkerRenderPool {
   private workers: WorkerEntry[] = [];
   private pendingRenders = new Map<number, PendingRender>();
   private nextRequestId = 0;
-  private nextWorkerIndex = 0;
   private initialized = false;
   private initializing: Promise<void> | null = null;
   private useWorkers: boolean;
   private terminated = false;
 
-  // Main-thread fallback (lazy-loaded)
   private fallbackCompositor: InstanceType<typeof import("./LayerCompositor").LayerCompositor> | null = null;
 
   constructor() {
@@ -69,20 +49,16 @@ export class WorkerRenderPool implements IWorkerRenderPool {
       throw new Error("WorkerRenderPool has been terminated");
     }
 
-    // Ensure pool is initialized
     await this.ensureInitialized();
 
-    // If using workers, send to worker pool (with main-thread fallback)
     if (this.useWorkers && this.workers.length > 0) {
       try {
         return await this.renderOnWorker(preparedData, options, visibility, stepNumber);
       } catch {
-        // Worker failed - fall back to main-thread rendering silently
         return this.renderOnMainThread(preparedData, options, visibility, stepNumber);
       }
     }
 
-    // Fallback: main-thread rendering
     return this.renderOnMainThread(preparedData, options, visibility, stepNumber);
   }
 
@@ -93,14 +69,11 @@ export class WorkerRenderPool implements IWorkerRenderPool {
     }
     this.workers = [];
 
-    // Reject all pending renders
-    for (const [id, pending] of this.pendingRenders) {
+    for (const [, pending] of this.pendingRenders) {
       pending.reject(new Error("Worker pool terminated"));
     }
     this.pendingRenders.clear();
   }
-
-  // ============ Initialization ============
 
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) return;
@@ -117,7 +90,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
 
   private async doInitialize(): Promise<void> {
     if (!this.useWorkers) {
-      // No worker support - fall back to main thread
       this.initialized = true;
       return;
     }
@@ -125,7 +97,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
     try {
       const poolSize = Math.min(navigator.hardwareConcurrency || 2, 4);
 
-      // Create workers
       const workerEntries: WorkerEntry[] = [];
       const initPromises: Promise<void>[] = [];
 
@@ -142,22 +113,17 @@ export class WorkerRenderPool implements IWorkerRenderPool {
             pendingCount: 0,
           };
 
-          // Set up message handler
           worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
             this.handleWorkerMessage(event.data);
           };
 
           workerEntries.push(entry);
 
-          // Send init message and wait for response
           const initPromise = new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
               reject(new Error(`Worker ${i} init timeout (10s)`));
             }, 10000);
 
-            // If the worker module fails to load, onerror fires before
-            // any message exchange - reject immediately instead of
-            // waiting for the 10s timeout.
             worker.onerror = (error) => {
               clearTimeout(timeout);
               reject(new Error(`Worker ${i} module error: ${error.message}`));
@@ -189,10 +155,8 @@ export class WorkerRenderPool implements IWorkerRenderPool {
         }
       }
 
-      // Wait for all workers to initialize
       const results = await Promise.allSettled(initPromises);
 
-      // Only keep workers that initialized successfully
       for (let i = 0; i < workerEntries.length; i++) {
         const result = results[i];
         if (result?.status === "fulfilled") {
@@ -208,7 +172,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
         console.warn("[WorkerRenderPool] No workers initialized, falling back to main thread");
         this.useWorkers = false;
       } else {
-        // Set up persistent message handlers now that init is complete
         for (const entry of this.workers) {
           entry.worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
             this.handleWorkerMessage(event.data);
@@ -223,8 +186,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
     this.initialized = true;
   }
 
-  // ============ Worker Rendering ============
-
   private renderOnWorker(
     preparedData: PreparedPictographData,
     options: LayerRenderOptions,
@@ -234,16 +195,11 @@ export class WorkerRenderPool implements IWorkerRenderPool {
     return new Promise((resolve, reject) => {
       const id = this.nextRequestId++;
 
-      // Store the pending render
       this.pendingRenders.set(id, { resolve, reject });
 
-      // Pick the worker with the fewest pending tasks (least-loaded)
       const worker = this.pickWorker();
       worker.pendingCount++;
 
-      // Strip Svelte 5 reactive proxies via JSON round-trip.
-      // postMessage uses structured clone which cannot handle Proxy objects,
-      // and PictographPreparer returns $state-wrapped data.
       const msg: WorkerInMessage = JSON.parse(JSON.stringify({
         type: "render",
         id,
@@ -258,7 +214,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
   }
 
   private pickWorker(): WorkerEntry {
-    // Least-loaded worker selection
     let bestEntry = this.workers[0]!;
     let bestCount = bestEntry.pendingCount;
 
@@ -300,8 +255,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
   }
 
   private decrementPendingCount(): void {
-    // Decrement the count on whichever worker has the highest pending count
-    // (approximate, since we don't track which worker handled which request)
     let maxEntry: WorkerEntry | null = null;
     let maxCount = 0;
     for (const entry of this.workers) {
@@ -314,8 +267,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
       maxEntry.pendingCount--;
     }
   }
-
-  // ============ Main Thread Fallback ============
 
   private async renderOnMainThread(
     preparedData: PreparedPictographData,
@@ -335,13 +286,11 @@ export class WorkerRenderPool implements IWorkerRenderPool {
       stepNumber
     );
 
-    // Convert canvas to blob
     const canvas = result.canvas;
     if (canvas instanceof OffscreenCanvas) {
       return canvas.convertToBlob({ type: "image/png" });
     }
 
-    // HTMLCanvasElement fallback
     return new Promise((resolve, reject) => {
       (canvas as HTMLCanvasElement).toBlob(
         (blob) => (blob ? resolve(blob) : reject(new Error("toBlob returned null"))),
@@ -351,7 +300,6 @@ export class WorkerRenderPool implements IWorkerRenderPool {
   }
 }
 
-// Singleton instance
 let poolInstance: WorkerRenderPool | null = null;
 
 export function getWorkerRenderPool(): WorkerRenderPool {

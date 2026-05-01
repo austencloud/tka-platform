@@ -1,16 +1,7 @@
-/**
- * LOOP Icon Strip Renderer
- *
- * Delegates to @tka/render-composition for SVG-path-based icon rendering.
- * The class exists for DI container compatibility; all drawing logic lives
- * in the shared package.
- */
-
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { ILOOPIconStripRenderer } from "../contracts/ILOOPIconStripRenderer";
 import { renderLoopIconStrip, type LOOPComponentId } from "@tka/render-composition";
 
-/** LOOPComponent enum values are already lowercase strings matching LOOPComponentId */
 function toComponentId(c: LOOPComponent): LOOPComponentId {
   return c as unknown as LOOPComponentId;
 }
@@ -33,7 +24,4 @@ export class LOOPIconStripRenderer implements ILOOPIconStripRenderer {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const loopIconStripRenderer = new LOOPIconStripRenderer();

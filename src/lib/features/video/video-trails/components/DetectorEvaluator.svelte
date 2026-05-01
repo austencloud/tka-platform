@@ -13,16 +13,12 @@
   const { videoElement }: Props = $props();
   const { state: trailsState } = getVideoTrailsContext();
 
-  // Per-frame result after evaluation
   interface FrameResult {
     frame: number;
     detected: DetectedEndpoint[];
     corrections: EndpointCorrection[];
-    // For each correction: distance to nearest detected endpoint (null if no match)
     matchDistances: (number | null)[];
-    // Corrections where the detector had no detection at all
     missCount: number;
-    // Detections with no corresponding correction (accepted as-is)
     falsePositiveCount: number;
   }
 
@@ -32,17 +28,13 @@
   let expandedFrames = $state<Set<number>>(new Set());
   let hasRun = $state(false);
 
-  // --------------------------------------------------------------------------
-  // Summary metrics (derived from frameResults)
-  // --------------------------------------------------------------------------
-
   const ACCURACY_THRESHOLD_PX = 10;
 
   const summaryMetrics = $derived.by(() => {
     if (frameResults.length === 0) return null;
 
     let totalCorrections = 0;
-    let accurateHits = 0;       // Within threshold
+    let accurateHits = 0;       
     let totalError = 0;
     let errorCount = 0;
     let totalMisses = 0;
@@ -89,10 +81,6 @@
     !!videoElement && !!trailsState.source && correctedFrameCount > 0 && !evaluating
   );
 
-  // --------------------------------------------------------------------------
-  // Evaluation runner
-  // --------------------------------------------------------------------------
-
   async function runEvaluation() {
     if (!videoElement || !trailsState.source) return;
 
@@ -108,7 +96,6 @@
     const ctx = offscreen.getContext("2d", { willReadFrequently: true });
     if (!ctx) { evaluating = false; return; }
 
-    // Resolve active detector from DI container
     const registration = DETECTOR_REGISTRY.find(
       (r) => r.id === trailsState.activeDetectorId
     );
@@ -126,7 +113,6 @@
       const frame = correctedFrameNumbers[i]!;
       progress = i / correctedFrameNumbers.length;
 
-      // Seek to frame
       videoElement.currentTime = frame / trailsState.source.fps;
       await new Promise<void>((resolve) => {
         const onSeeked = () => {
@@ -136,19 +122,15 @@
         videoElement!.addEventListener("seeked", onSeeked);
       });
 
-      // Capture frame and detect
       ctx.drawImage(videoElement, 0, 0);
       const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
       const detected = detector.detect(imageData, trailsState.detectionConfig);
 
       const corrections = trailsState.corrections[frame] ?? [];
 
-      // For each correction, find the nearest detected endpoint
       const matchDistances: (number | null)[] = corrections.map((correction) => {
-        // Occluded corrections have no expected position - skip matching
         if (!correction.corrected) return null;
 
-        // Find nearest detected endpoint (same prop/tip if available, else any)
         let minDist: number | null = null;
         for (const det of detected) {
           const dx = det.x - correction.corrected.x;
@@ -159,16 +141,12 @@
         return minDist;
       });
 
-      // Miss: correction has a corrected position but detector returned nothing nearby
       const missCount = corrections.filter((c, idx) => {
         if (!c.corrected) return false;
         const dist = matchDistances[idx] ?? null;
-        // A "miss" means no detection at all, or the nearest was way off
         return dist === null || dist > ACCURACY_THRESHOLD_PX * 3;
       }).length;
 
-      // False positive: detected endpoints that don't match any correction
-      // We consider it a false positive if no correction is within 20px
       const falsePositiveCount = detected.filter((det) => {
         return !corrections.some((c) => {
           if (!c.corrected) return false;
@@ -185,10 +163,6 @@
     progress = 1;
     evaluating = false;
   }
-
-  // --------------------------------------------------------------------------
-  // UI helpers
-  // --------------------------------------------------------------------------
 
   function toggleFrameExpanded(frame: number) {
     const next = new Set(expandedFrames);
@@ -212,7 +186,6 @@
   }
 
   function accuracyClass(value: number): string {
-    // Higher is better for accuracy
     if (value >= 90) return "good";
     if (value <= 60) return "bad";
     return "neutral";
@@ -448,7 +421,6 @@
     background: transparent;
   }
 
-  /* Progress */
   .progress-bar-wrap {
     height: 4px;
     border-radius: 2px;
@@ -470,7 +442,6 @@
     text-align: center;
   }
 
-  /* Summary metrics */
   .metrics-section {
     display: flex;
     flex-direction: column;
@@ -533,7 +504,6 @@
     color: var(--theme-text, #fff);
   }
 
-  /* Per-frame results */
   .frames-section {
     display: flex;
     flex-direction: column;
@@ -628,7 +598,6 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
   }
 
-  /* Expanded detail table */
   .frame-detail {
     padding: 8px;
     background: rgba(0, 0, 0, 0.2);

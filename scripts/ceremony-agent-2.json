@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IPanelPersister",
+    "contract": "src/lib/features/create/shared/services/contracts/IPanelPersister.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/PanelPersister.svelte.ts",
+    "cls": "PanelPersister.svelte",
+    "getter": "src/lib/features/create/shared/getPanelPersister.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IResponsiveLayoutManager",
+    "contract": "src/lib/features/create/shared/services/contracts/IResponsiveLayoutManager.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/ResponsiveLayoutManager.ts",
+    "cls": "ResponsiveLayoutManager",
+    "getter": "src/lib/features/create/shared/getResponsiveLayoutManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IReversalDetector",
+    "contract": "src/lib/features/create/shared/services/contracts/IReversalDetector.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/ReversalDetector.ts",
+    "cls": "ReversalDetector",
+    "getter": "src/lib/features/create/shared/getReversalDetector.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IRotationDirectionPatternManager",
+    "contract": "src/lib/features/create/shared/services/contracts/IRotationDirectionPatternManager.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/RotationDirectionPatternManager.ts",
+    "cls": "RotationDirectionPatternManager",
+    "getter": "src/lib/features/create/shared/getRotationDirectionPatternManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceAnalyzer",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceAnalyzer.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceAnalyzer.ts",
+    "cls": "SequenceAnalyzer",
+    "getter": "src/lib/features/create/shared/getSequenceAnalyzer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceDomainManager",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceDomainManager.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceDomainManager.ts",
+    "cls": "SequenceDomainManager",
+    "getter": "src/lib/features/create/shared/getSequenceDomainManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceEquivalenceDetector",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector.ts",
+    "impl": "src/lib/shared/comparison/services/implementations/SequenceEquivalenceDetector.ts",
+    "cls": "SequenceEquivalenceDetector",
+    "getter": "src/lib/shared/comparison/getSequenceEquivalenceDetector.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceExporter",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceExporter.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceExporter.ts",
+    "cls": "SequenceExporter",
+    "getter": "src/lib/features/create/shared/getSequenceExporter.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceExtender",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceExtender.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceExtender.ts",
+    "cls": "SequenceExtender",
+    "getter": "src/lib/features/create/shared/getSequenceExtender.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceImporter",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceImporter.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceImporter.ts",
+    "cls": "SequenceImporter",
+    "getter": "src/lib/features/create/shared/getSequenceImporter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceIndexer",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceIndexer.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceIndexer.ts",
+    "cls": "SequenceIndexer",
+    "getter": "src/lib/features/create/shared/getSequenceIndexer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceJsonExporter",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceJsonExporter.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceJsonExporter.ts",
+    "cls": "SequenceJsonExporter",
+    "getter": "src/lib/features/create/shared/getSequenceJsonExporter.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequencePersister",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequencePersister.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequencePersister.ts",
+    "cls": "SequencePersister",
+    "getter": "src/lib/features/create/shared/getSequencePersister.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceRepository",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceRepository.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceRepository.ts",
+    "cls": "SequenceRepository",
+    "getter": "src/lib/features/create/shared/getSequenceRepository.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceStatsCalculator",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceStatsCalculator.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceStatsCalculator.ts",
+    "cls": "SequenceStatsCalculator",
+    "getter": "src/lib/features/create/shared/getSequenceStatsCalculator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceTransferHandler",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceTransferHandler.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceTransferHandler.ts",
+    "cls": "SequenceTransferHandler",
+    "getter": "src/lib/features/create/shared/getSequenceTransferHandler.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceTransformer",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceTransformer.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer.ts",
+    "cls": "SequenceTransformer",
+    "getter": "src/lib/features/create/shared/getSequenceTransformer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceValidator",
+    "contract": "src/lib/features/create/shared/services/contracts/ISequenceValidator.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SequenceValidator.ts",
+    "cls": "SequenceValidator",
+    "getter": "src/lib/features/create/shared/getSequenceValidator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IStepOperator",
+    "contract": "src/lib/features/create/shared/services/contracts/IStepOperator.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/StepOperator.ts",
+    "cls": "StepOperator",
+    "getter": "src/lib/features/create/shared/getStepOperator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISubDrawerStatePersister",
+    "contract": "src/lib/features/create/shared/services/contracts/ISubDrawerStatePersister.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/SubDrawerStatePersister.ts",
+    "cls": "SubDrawerStatePersister",
+    "getter": "src/lib/features/create/shared/getSubDrawerStatePersister.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITurnPatternManager",
+    "contract": "src/lib/features/create/shared/services/contracts/ITurnPatternManager.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/TurnPatternManager.ts",
+    "cls": "TurnPatternManager",
+    "getter": "src/lib/features/create/shared/getTurnPatternManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IUndoManager",
+    "contract": "src/lib/features/create/shared/services/contracts/IUndoManager.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/UndoManager.ts",
+    "cls": "UndoManager",
+    "getter": "src/lib/features/create/shared/getUndoManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IWordCyclicEquivalenceDetector",
+    "contract": "src/lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector.ts",
+    "impl": "src/lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector.ts",
+    "cls": "WordCyclicEquivalenceDetector",
+    "getter": "src/lib/features/create/shared/getWordCyclicEquivalenceDetector.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IStepCellAnimationManager",
+    "contract": "src/lib/features/create/shared/workspace-panel/sequence-display/services/contracts/IStepCellAnimationManager.ts",
+    "impl": "src/lib/features/create/shared/workspace-panel/sequence-display/services/implementations/StepCellAnimationManager.ts",
+    "cls": "StepCellAnimationManager",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IWorkbench",
+    "contract": "src/lib/features/create/shared/workspace-panel/shared/services/contracts/IWorkbench.ts",
+    "impl": "src/lib/features/create/shared/workspace-panel/shared/services/implementations/Workbench.ts",
+    "cls": "Workbench",
+    "getter": "src/lib/features/create/shared/workspace-panel/shared/getWorkbench.ts",
+    "hasCoExports": false
+  }
+]

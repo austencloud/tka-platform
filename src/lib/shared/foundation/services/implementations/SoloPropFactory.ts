@@ -6,9 +6,6 @@ import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-// Extracts the ordered list of hand positions from a sequence of steps.
-// The hand visits: start of first step, then end of each successive step.
-// This works because the end of step[i] is the start of step[i+1].
 function extractHandPathLocations(
   steps: readonly SoloPropStepData[]
 ): GridLocation[] {

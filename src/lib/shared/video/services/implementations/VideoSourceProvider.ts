@@ -1,14 +1,3 @@
-/**
- * Shared video source provider.
- *
- * Creates a single hidden <video> element and an offscreen canvas so that
- * any module can load a video, seek to arbitrary frames, and pull out
- * ImageData without building its own video infrastructure.
- *
- * The video element is appended to the DOM (hidden) because some browsers
- * won't decode frames reliably for off-DOM elements.
- */
-
 import type {
 	IVideoSourceProvider,
 	VideoSourceInfo,
@@ -127,10 +116,6 @@ export class VideoSourceProvider implements IVideoSourceProvider {
 		this.offscreenCtx = null;
 		this.currentInfo = null;
 	}
-
-	// ---------------------------------------------------------------
-	// Internal
-	// ---------------------------------------------------------------
 
 	private ensureVideoElement(): void {
 		if (this.videoEl) return;

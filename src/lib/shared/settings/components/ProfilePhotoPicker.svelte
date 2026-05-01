@@ -1,18 +1,3 @@
-<!--
-  ProfilePhotoPicker.svelte - Profile photo selection
-
-  Options:
-  1. Upload a photo
-  2. Use Google photo (if linked)
-  3. Use Facebook photo (if linked)
-  4. Generate avatar (gradient + prop) - auto-matches user's theme
-
-  Adaptive layouts:
-  - Desktop tall: Side-by-side modal
-  - Desktop short: Tabbed modal
-  - Mobile: Drawer with tabs
-  - Mobile compact: Drawer with wizard
--->
 <script lang="ts">
   import { getProfilePictureManager } from "$lib/shared/auth/getProfilePictureManager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -27,12 +12,9 @@
   import { detectLayout } from "$lib/shared/settings/services/PhotoPickerLayoutDetector";
   import type { PhotoSelection } from "$lib/shared/settings/domain/photo-picker-types";
 
-  // Child components
   import PhotoOptionsList from "$lib/shared/settings/components/photo-picker/PhotoOptionsList.svelte";
   import AvatarGenerator from "$lib/shared/settings/components/photo-picker/AvatarGenerator.svelte";
   import AvatarGeneratorWizard from "$lib/shared/settings/components/photo-picker/AvatarGeneratorWizard.svelte";
-
-  // ============ PROPS ============
 
   interface Props {
     isOpen: boolean;
@@ -48,8 +30,6 @@
 
   let { isOpen = $bindable(), onClose, onPhotoSelected, profileColor, onColorChange, savedGooglePhotoUrl }: Props = $props();
 
-  // ============ STATE ============
-
   let activeTab = $state<"options" | "generate">("options");
   let selectedGradientId = $state<string>("twilight");
   let selectedProp = $state<PropType>(PropType.STAFF);
@@ -58,11 +38,8 @@
   let fileInputRef: HTMLInputElement | null = $state(null);
   let initialized = $state(false);
 
-  // Wizard component ref for header control
   let wizardRef: AvatarGeneratorWizard | null = $state(null);
   let wizardStep = $state<"style" | "shade" | "prop" | "confirm">("style");
-
-  // ============ DERIVED ============
 
   const user = $derived(authState.user);
   const profilePictureManager = getProfilePictureManager();
@@ -70,9 +47,6 @@
     user ? profilePictureManager.getProviderIds(user) : {}
   );
 
-  // Get Google photo URL. Priority:
-  // 1. Live provider data (freshest, but null after avatar switch)
-  // 2. Saved URL from Firestore (persisted on first login, survives avatar switches)
   const googlePhotoUrl = $derived.by(() => {
     if (!user) return null;
     const googleProvider = user.providerData.find(
@@ -80,8 +54,6 @@
     );
     return googleProvider?.photoURL || savedGooglePhotoUrl || null;
   });
-
-  // ============ LAYOUT DETECTION ============
 
   let viewportWidth = $state(
     typeof window !== "undefined" ? window.innerWidth : 800
@@ -108,14 +80,11 @@
     ALL_GRADIENTS.find((g) => g.id === selectedGradientId) ?? ALL_GRADIENTS[0]!
   );
 
-  // ============ INITIALIZATION ============
-
   $effect(() => {
     if (initialized) return;
 
     const settings = getSettings();
 
-    // Set gradient based on user's background theme
     if (settings.backgroundType) {
       const matchingGradientId = THEME_TO_GRADIENT[settings.backgroundType];
       if (matchingGradientId) {
@@ -123,15 +92,12 @@
       }
     }
 
-    // Set prop based on user's favorite
     if (settings.bluePropType) {
       selectedProp = settings.bluePropType;
     }
 
     initialized = true;
   });
-
-  // ============ ACTIONS ============
 
   function handleClose() {
     activeTab = "options";
@@ -149,7 +115,6 @@
     const file = input.files?.[0];
     if (!file) return;
 
-    // Validate file size (5MB limit)
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
       errorMessage = "Image must be smaller than 5MB";
@@ -157,7 +122,6 @@
       return;
     }
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       errorMessage = "Please select an image file";
       input.value = "";
@@ -252,7 +216,6 @@
     }
   }
 
-  // Track wizard step for header
   $effect(() => {
     if (wizardRef) {
       wizardStep = wizardRef.getStep();
@@ -432,10 +395,6 @@
 />
 
 <style>
-  /* ═══════════════════════════════════════════════════════════════════
-     MODAL LAYOUT
-     ═══════════════════════════════════════════════════════════════════ */
-
   .modal-layout {
     display: flex;
     flex-direction: column;
@@ -478,10 +437,6 @@
     max-width: 240px;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     DRAWER LAYOUT
-     ═══════════════════════════════════════════════════════════════════ */
-
   .drawer-layout {
     display: flex;
     flex-direction: column;
@@ -521,10 +476,6 @@
     flex-shrink: 0;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
-
-  /* ═══════════════════════════════════════════════════════════════════
-     SHARED BUTTONS
-     ═══════════════════════════════════════════════════════════════════ */
 
   .close-btn {
     width: 40px;
@@ -594,10 +545,6 @@
     border-color: var(--theme-accent, #6366f1);
     color: white;
   }
-
-  /* ═══════════════════════════════════════════════════════════════════
-     UTILITIES
-     ═══════════════════════════════════════════════════════════════════ */
 
   .sr-only {
     position: absolute;

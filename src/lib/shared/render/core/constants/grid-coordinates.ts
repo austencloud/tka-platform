@@ -1,15 +1,4 @@
-/**
- * Grid coordinate data for pictograph rendering
- *
- * Coordinates are in the 950x950 scene coordinate system with center at (475, 475).
- * This is the single source of truth for all grid positioning.
- */
-
 import type { Coordinates, GridLocation, GridMode } from "../types.js";
-
-// ============================================================================
-// RAW COORDINATE DATA
-// ============================================================================
 
 /**
  * Diamond grid coordinates (cardinal hand points)
@@ -95,10 +84,6 @@ export const BOX_OUTER_POINTS: Readonly<Record<string, Coordinates>> = {
 
 /** Center point */
 export const CENTER_POINT: Coordinates = { x: 475.0, y: 475.0 };
-
-// ============================================================================
-// FALLBACK COORDINATES
-// ============================================================================
 
 /**
  * Fallback hand point coordinates when mode-specific lookup fails

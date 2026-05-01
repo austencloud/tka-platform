@@ -1,17 +1,3 @@
-/**
- * Unified Animation System
- *
- * Centralized animation presets using Svelte's built-in svelte/motion.
- * Provides consistent spring physics and easing across the entire application.
- */
-
-// ============================================================================
-// Spring Presets
-// ============================================================================
-
-/**
- * Spring configuration presets for different animation feels
- */
 export const springPresets = {
   /** Gentle, smooth animations - good for subtle UI feedback */
   gentle: {
@@ -44,21 +30,9 @@ export const springPresets = {
   },
 } as const;
 
-// ============================================================================
-// Tween Presets
-// ============================================================================
-
-/**
- * Easing functions for tweened animations
- */
 export const easingPresets = {
-  /** Smooth ease in and out */
   easeInOut: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
-
-  /** Ease out (decelerate) */
   easeOut: (t: number) => t * (2 - t),
-
-  /** Ease in (accelerate) */
   easeIn: (t: number) => t * t,
 
   /** Cubic ease out - smoother deceleration */
@@ -74,7 +48,7 @@ export const easingPresets = {
 } as const;
 
 /**
- * Duration presets for tweened animations (in milliseconds)
+ * Duration presets in milliseconds.
  */
 export const durationPresets = {
   instant: 0,
@@ -84,13 +58,6 @@ export const durationPresets = {
   verySlow: 600,
 } as const;
 
-// ============================================================================
-// Animation Variant Configurations
-// ============================================================================
-
-/**
- * Animation variant configuration
- */
 export interface AnimationVariantConfig {
   from: {
     opacity?: number;
@@ -110,8 +77,7 @@ export interface AnimationVariantConfig {
 }
 
 /**
- * Beat cell animation variants
- * Each variant defines how opacity, scale, position, and filter should animate
+ * Beat cell animation variants.
  */
 export const beatAnimationVariants: Record<string, AnimationVariantConfig> = {
   springPop: {
@@ -145,20 +111,10 @@ export const beatAnimationVariants: Record<string, AnimationVariantConfig> = {
   },
 } as const;
 
-// ============================================================================
-// Animation State Interpolation Helpers
-// ============================================================================
-
-/**
- * Interpolate between two values based on progress (0-1)
- */
 export function lerp(start: number, end: number, progress: number): number {
   return start + (end - start) * progress;
 }
 
-/**
- * Generate CSS transform string from animation values
- */
 export function buildTransform(values: {
   x?: number;
   y?: number;
@@ -184,9 +140,6 @@ export function buildTransform(values: {
   return parts.join(" ");
 }
 
-/**
- * Generate CSS filter string from animation values
- */
 export function buildFilter(values: {
   blur?: number;
   brightness?: number;
@@ -209,9 +162,6 @@ export function buildFilter(values: {
   return parts.join(" ");
 }
 
-/**
- * Interpolate between animation variant states
- */
 export function interpolateVariant(
   variant: AnimationVariantConfig,
   progress: number
@@ -226,10 +176,6 @@ export function interpolateVariant(
     blur: lerp(from.blur ?? 0, to.blur ?? 0, progress),
   };
 }
-
-// ============================================================================
-// Type Exports
-// ============================================================================
 
 export type SpringPreset = keyof typeof springPresets;
 export type EasingPreset = keyof typeof easingPresets;

@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "ISVGGenerator",
+    "contract": "src/lib/features/compose/services/contracts/ISVGGenerator.ts",
+    "impl": "src/lib/features/compose/services/implementations/SVGGenerator.ts",
+    "cls": "SVGGenerator",
+    "getter": "src/lib/features/compose/getSVGGenerator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITrailCapturer",
+    "contract": "src/lib/features/compose/services/contracts/ITrailCapturer.ts",
+    "impl": "src/lib/features/compose/services/implementations/TrailCapturer.ts",
+    "cls": "TrailCapturer",
+    "getter": "src/lib/features/compose/getTrailCapturer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITunnelModeSequenceManager",
+    "contract": "src/lib/features/compose/services/contracts/ITunnelModeSequenceManager.ts",
+    "impl": "src/lib/features/compose/services/implementations/TunnelModeSequenceManager.ts",
+    "cls": "TunnelModeSequenceManager",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IVideoExporter",
+    "contract": "src/lib/features/compose/services/contracts/IVideoExporter.ts",
+    "impl": "src/lib/features/compose/services/implementations/VideoExporter.ts",
+    "cls": "VideoExporter",
+    "getter": "src/lib/features/compose/getVideoExporter.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IVideoExportOrchestrator",
+    "contract": "src/lib/features/compose/services/contracts/IVideoExportOrchestrator.ts",
+    "impl": "src/lib/features/compose/services/implementations/VideoExportOrchestrator.ts",
+    "cls": "VideoExportOrchestrator",
+    "getter": "src/lib/features/compose/getVideoExportOrchestrator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IVideoGenerationCoordinator",
+    "contract": "src/lib/features/compose/services/contracts/IVideoGenerationCoordinator.ts",
+    "impl": "src/lib/features/compose/services/implementations/VideoGenerationCoordinator.ts",
+    "cls": "VideoGenerationCoordinator",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IVideoPlayer",
+    "contract": "src/lib/features/compose/services/contracts/IVideoPlayer.ts",
+    "impl": "src/lib/features/compose/services/implementations/VideoPlayer.ts",
+    "cls": "VideoPlayer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IVideoPreRenderer",
+    "contract": "src/lib/features/compose/services/contracts/IVideoPreRenderer.ts",
+    "impl": "src/lib/features/compose/services/implementations/VideoPreRenderer.ts",
+    "cls": "VideoPreRenderer",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IArrangeCompositionConverter",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeCompositionConverter.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeCompositionConverter.ts",
+    "cls": "ArrangeCompositionConverter",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IArrangeGridPersister",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeGridPersister.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeGridPersister.ts",
+    "cls": "ArrangeGridPersister",
+    "getter": "src/lib/features/compose/tabs/arrange/getArrangeGridPersister.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IArrangeGridSerializer",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeGridSerializer.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeGridSerializer.ts",
+    "cls": "ArrangeGridSerializer",
+    "getter": "src/lib/features/compose/tabs/arrange/getArrangeGridSerializer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IArrangeKeyboardHandler",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeKeyboardHandler.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeKeyboardHandler.ts",
+    "cls": "ArrangeKeyboardHandler",
+    "getter": "src/lib/features/compose/tabs/arrange/getArrangeKeyboardHandler.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IArrangeLayerTransformer",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeLayerTransformer.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeLayerTransformer.ts",
+    "cls": "ArrangeLayerTransformer",
+    "getter": "src/lib/features/compose/tabs/arrange/getArrangeLayerTransformer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IArrangePlaybackEngine",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangePlaybackEngine.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangePlaybackEngine.ts",
+    "cls": "ArrangePlaybackEngine",
+    "getter": "src/lib/features/compose/tabs/arrange/getArrangePlaybackEngine.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IArrangeStepCalculator",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeStepCalculator.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeStepCalculator.ts",
+    "cls": "ArrangeStepCalculator",
+    "getter": "src/lib/features/compose/tabs/arrange/getArrangeStepCalculator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IArrangeUndoManager",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/IArrangeUndoManager.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/ArrangeUndoManager.ts",
+    "cls": "ArrangeUndoManager",
+    "getter": "src/lib/features/compose/tabs/arrange/getArrangeUndoManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICellTransformStack",
+    "contract": "src/lib/features/compose/tabs/arrange/services/contracts/ICellTransformStack.ts",
+    "impl": "src/lib/features/compose/tabs/arrange/services/implementations/CellTransformStack.ts",
+    "cls": "CellTransformStack",
+    "getter": "src/lib/features/compose/tabs/arrange/getCellTransformStack.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICompositionLayoutCalculator",
+    "contract": "src/lib/features/compose/tabs/browse/services/contracts/ICompositionLayoutCalculator.ts",
+    "impl": "src/lib/features/compose/tabs/browse/services/implementations/CompositionLayoutCalculator.ts",
+    "cls": "CompositionLayoutCalculator",
+    "getter": "src/lib/features/compose/tabs/browse/getCompositionLayoutCalculator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICompositionThumbnailResolver",
+    "contract": "src/lib/features/compose/tabs/browse/services/contracts/ICompositionThumbnailResolver.ts",
+    "impl": "src/lib/features/compose/tabs/browse/services/implementations/CompositionThumbnailResolver.ts",
+    "cls": "CompositionThumbnailResolver",
+    "getter": "src/lib/features/compose/tabs/browse/getCompositionThumbnailResolver.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ITimelinePlayer",
+    "contract": "src/lib/features/compose/timeline/services/contracts/ITimelinePlayer.ts",
+    "impl": "src/lib/features/compose/timeline/services/implementations/TimelinePlaybackService.ts",
+    "cls": "TimelinePlaybackService",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITimelineSnapper",
+    "contract": "src/lib/features/compose/timeline/services/contracts/ITimelineSnapper.ts",
+    "impl": "src/lib/features/compose/timeline/services/implementations/TimelineSnapService.ts",
+    "cls": "TimelineSnapService",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITimelineUndoManager",
+    "contract": "src/lib/features/compose/timeline/services/contracts/ITimelineUndoManager.ts",
+    "impl": "src/lib/features/compose/timeline/services/implementations/TimelineUndoManager.ts",
+    "cls": "TimelineUndoManager",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAnimationPrecomputer",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IAnimationPrecomputer.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/AnimationPrecomputer.svelte.ts",
+    "cls": "AnimationPrecomputer.svelte",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAnimationRenderLoop",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IAnimationRenderLoop.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/AnimationRenderLoop.ts",
+    "cls": "AnimationRenderLoop",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAnimationShortcutRegistrar",
+    "contract": "src/lib/shared/animation-engine/services/contracts/IAnimationShortcutRegistrar.ts",
+    "impl": "src/lib/shared/animation-engine/services/implementations/AnimationShortcutRegistrar.ts",
+    "cls": "AnimationShortcutRegistrar",
+    "getter": null,
+    "hasCoExports": true
+  }
+]

@@ -1,10 +1,3 @@
-/**
- * LOOPLabelerController
- *
- * All behavior/actions for the LOOP Labeler.
- * Operates on LOOPLabelerState, uses services via LOOPLabelerServiceLocator.
- */
-
 import type { LOOPLabelerState } from "./loop-labeler-state.svelte";
 import type { LabelingMode } from "../domain/types/labeler-types";
 import type { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
@@ -22,10 +15,6 @@ export class LOOPLabelerController {
     private state: LOOPLabelerState,
     private services: LOOPLabelerServiceLocator
   ) {}
-
-  // ============================================================
-  // PERSISTENCE
-  // ============================================================
 
   loadPersistedState(): {
     filterMode?: FilterMode;
@@ -81,10 +70,6 @@ export class LOOPLabelerController {
     }
   }
 
-  // ============================================================
-  // INITIALIZATION
-  // ============================================================
-
   async initialize(): Promise<void> {
     const sequenceLoader = this.services.sequenceLoader;
     const labelsRepo = this.services.labelsRepository;
@@ -98,16 +83,15 @@ export class LOOPLabelerController {
     try {
       const persisted = this.loadPersistedState();
       const lastSequenceId = persisted?.lastSequenceId;
+
       const nav = this.services.navigator;
       const urlSeqId = nav?.getSequenceFromUrl();
 
       const sequenceIdToRestore = urlSeqId || lastSequenceId || null;
 
-      // Load sequences
       const sequences = await sequenceLoader.loadSequences();
       this.state.setSequences(sequences);
 
-      // Check URL filter if localStorage didn't have one
       if (!persisted?.filterMode) {
         const urlFilter = nav?.getFilterFromUrl();
         if (
@@ -118,7 +102,6 @@ export class LOOPLabelerController {
         }
       }
 
-      // Subscribe to labels
       let isInitialLoad = true;
       const isExternalUrl = urlSeqId !== null && urlSeqId !== lastSequenceId;
 
@@ -193,10 +176,6 @@ export class LOOPLabelerController {
       this.state.setPopstateHandler(null);
     }
   }
-
-  // ============================================================
-  // NAVIGATION
-  // ============================================================
 
   private navigateToSequenceInternal(
     sequenceId: string,
@@ -307,32 +286,19 @@ export class LOOPLabelerController {
     });
   }
 
-  // ============================================================
-  // DETAIL LOADING
-  // ============================================================
-
-  /** Tracks in-flight fetches to prevent duplicate requests */
   private detailFetchInFlight = new Set<string>();
 
-  /**
-   * Ensure the current sequence has fullMetadata loaded.
-   * If not, lazy-fetch from the source library document.
-   * Returns immediately if data is already present.
-   */
   async ensureSequenceDetail(): Promise<void> {
     const seq = this.state.currentSequence;
     if (!seq) return;
 
-    // Already has data
     if (seq.fullMetadata?.sequence && seq.fullMetadata.sequence.length > 0) return;
 
-    // No source ref - can't fetch
     if (!seq.sourceRef) {
       console.warn(`[LOOPLabelerController] No sourceRef for sequence "${seq.word}" (${seq.id})`);
       return;
     }
 
-    // Already fetching
     if (this.detailFetchInFlight.has(seq.id)) return;
 
     this.detailFetchInFlight.add(seq.id);
@@ -343,7 +309,6 @@ export class LOOPLabelerController {
       const rawSequence = await loader.loadSequenceDetail(seq.sourceRef);
       if (!rawSequence || rawSequence.length === 0) return;
 
-      // Extract authoritative grid mode from metadata element (index 0)
       const metadataGridMode = rawSequence[0]?.gridMode;
 
       this.state.updateSequenceDetail(
@@ -357,10 +322,6 @@ export class LOOPLabelerController {
       this.detailFetchInFlight.delete(seq.id);
     }
   }
-
-  // ============================================================
-  // FILTERS & UI STATE
-  // ============================================================
 
   setFilterMode(mode: FilterMode): void {
     this.state.setFilterModeInternal(mode);
@@ -395,29 +356,21 @@ export class LOOPLabelerController {
     this.persistState();
   }
 
-  // ============================================================
-  // LABELS MANAGEMENT
-  // ============================================================
-
   async saveLabel(label: LabeledSequence): Promise<void> {
     const repo = this.services.labelsRepository;
     if (!repo) return;
 
-    // Optimistic update for responsive UI
     this.state.updateLabel(label.word, label);
     this.state.setSyncStatus("syncing");
 
     try {
-      // Firebase FIRST - this is the source of truth
       await repo.saveLabelToFirebase(label.word, label);
 
-      // Then update localStorage as cache
       repo.saveToLocalStorage(this.state.labels);
 
       this.state.setSyncStatus("synced");
     } catch (error) {
       console.error("[LOOPLabelerController] Failed to save label:", error);
-      // Still save to localStorage as fallback (will be recovered on next load)
       repo.saveToLocalStorage(this.state.labels);
       this.state.setSyncStatus("error");
     }
@@ -427,21 +380,17 @@ export class LOOPLabelerController {
     const repo = this.services.labelsRepository;
     if (!repo) return;
 
-    // Optimistic update for responsive UI
     this.state.deleteLabel(word);
     this.state.setSyncStatus("syncing");
 
     try {
-      // Firebase FIRST - this is the source of truth
       await repo.deleteLabelFromFirebase(word);
 
-      // Then update localStorage as cache
       repo.saveToLocalStorage(this.state.labels);
 
       this.state.setSyncStatus("synced");
     } catch (error) {
       console.error("[LOOPLabelerController] Failed to delete label:", error);
-      // Still save to localStorage as fallback
       repo.saveToLocalStorage(this.state.labels);
       this.state.setSyncStatus("error");
     }
@@ -486,14 +435,6 @@ export class LOOPLabelerController {
     }
   }
 
-  // ============================================================
-  // LABELING OPERATIONS
-  // ============================================================
-
-  /**
-   * Verify a sequence - marks the computed detection as verified.
-   * With on-the-fly detection, this just marks "verified" without storing designations.
-   */
   async verifySequence(
     sequence: SequenceEntry,
     detection: LOOPDetectionResult | null,
@@ -501,10 +442,10 @@ export class LOOPLabelerController {
   ): Promise<void> {
     const label: LabeledSequence = {
       word: sequence.word,
-      designations: [], // Don't store - computed on-the-fly
+      designations: [], 
       isFreeform: detection?.isFreeform ?? false,
       isModular: detection?.isModular ?? false,
-      needsVerification: false, // Mark as verified
+      needsVerification: false, 
       labeledAt: new Date().toISOString(),
       notes: currentLabel?.notes || "",
       sections: currentLabel?.sections || [],
@@ -514,9 +455,6 @@ export class LOOPLabelerController {
     await this.saveLabel(label);
   }
 
-  /**
-   * Mark a sequence as freeform (circular but no recognizable pattern).
-   */
   async markAsFreeform(
     sequence: SequenceEntry,
     currentLabel: LabeledSequence | null,
@@ -537,9 +475,6 @@ export class LOOPLabelerController {
     await this.saveLabel(label);
   }
 
-  /**
-   * Mark a sequence as unknown (needs further investigation).
-   */
   async markAsUnknown(
     sequence: SequenceEntry,
     currentLabel: LabeledSequence | null,
@@ -551,7 +486,7 @@ export class LOOPLabelerController {
       isFreeform: false,
       isModular: false,
       isUnknown: true,
-      needsVerification: true, // Keep in review queue
+      needsVerification: true, 
       labeledAt: new Date().toISOString(),
       notes: notes || "Marked as unknown - needs further investigation",
       sections: currentLabel?.sections || [],
@@ -561,10 +496,6 @@ export class LOOPLabelerController {
     await this.saveLabel(label);
   }
 
-  /**
-   * Save a modular detection result directly.
-   * Used when detection found a modular pattern.
-   */
   async saveModularDetection(
     sequence: SequenceEntry,
     detection: LOOPDetectionResult,
@@ -586,10 +517,6 @@ export class LOOPLabelerController {
 
     await this.saveLabel(label);
   }
-
-  // ============================================================
-  // EXPORT / IMPORT
-  // ============================================================
 
   exportLabels(): void {
     this.services.navigator?.exportLabelsAsJson(this.state.labels);
@@ -623,10 +550,6 @@ export class LOOPLabelerController {
     }
   }
 
-  // ============================================================
-  // RESET
-  // ============================================================
-
   reset(): void {
     this.dispose();
     this.services.clear();
@@ -637,4 +560,3 @@ export class LOOPLabelerController {
     this.services.cacheAll();
   }
 }
-  

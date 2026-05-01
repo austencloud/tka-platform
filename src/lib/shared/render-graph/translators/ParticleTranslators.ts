@@ -1,11 +1,3 @@
-/**
- * Particle-family intent → ParticlePassPayload translators.
- *
- * Pure functions: each takes a canonical intent from EffectsConfig plus
- * per-tip runtime state, emits a backend-neutral ParticlePassPayload.
- * Covers all 6 particle effects: water, bubbles, petals, smoke, charcoal, sparkles.
- */
-
 import type {
   WaterIntent,
   BubblesIntent,
@@ -22,18 +14,10 @@ import type {
   ParticleShape,
 } from "../domain/ParticlePass";
 
-// ---------------------------------------------------------------------------
-// Shared context
-// ---------------------------------------------------------------------------
-
 export interface ParticleTranslationContext {
   tips: Array<{ tipId: string; position: [number, number]; velocity: number }>;
   elapsedSeconds: number;
 }
-
-// ---------------------------------------------------------------------------
-// Palette → color helpers
-// ---------------------------------------------------------------------------
 
 const PALETTE_COLORS: Record<string, [number, number, number]> = {
   classic: [0.3, 0.5, 0.9], mercury: [0.7, 0.7, 0.75], acid: [0.2, 1.0, 0.3],
@@ -59,10 +43,6 @@ function paletteToRgb(palette: string, customColor: string): [number, number, nu
   if (palette === "custom") return hexToRgb(customColor);
   return PALETTE_COLORS[palette] ?? [1, 1, 1];
 }
-
-// ---------------------------------------------------------------------------
-// Shared tip-state builder
-// ---------------------------------------------------------------------------
 
 interface TipParams {
   tipId: string;
@@ -103,10 +83,6 @@ function buildTipState(p: TipParams): ParticleTipState {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Water
-// ---------------------------------------------------------------------------
-
 export function toWaterPayload(
   intent: WaterIntent,
   ctx: ParticleTranslationContext,
@@ -124,10 +100,6 @@ export function toWaterPayload(
   });
   return { tips };
 }
-
-// ---------------------------------------------------------------------------
-// Bubbles
-// ---------------------------------------------------------------------------
 
 export function toBubblesPayload(
   intent: BubblesIntent,
@@ -149,10 +121,6 @@ export function toBubblesPayload(
   return { tips };
 }
 
-// ---------------------------------------------------------------------------
-// Petals
-// ---------------------------------------------------------------------------
-
 export function toPetalsPayload(
   intent: PetalsIntent,
   ctx: ParticleTranslationContext,
@@ -172,10 +140,6 @@ export function toPetalsPayload(
   });
   return { tips };
 }
-
-// ---------------------------------------------------------------------------
-// Smoke
-// ---------------------------------------------------------------------------
 
 export function toSmokePayload(
   intent: SmokeIntent,
@@ -198,10 +162,6 @@ export function toSmokePayload(
   return { tips };
 }
 
-// ---------------------------------------------------------------------------
-// Charcoal
-// ---------------------------------------------------------------------------
-
 export function toCharcoalPayload(
   intent: CharcoalIntent,
   ctx: ParticleTranslationContext,
@@ -219,10 +179,6 @@ export function toCharcoalPayload(
   });
   return { tips };
 }
-
-// ---------------------------------------------------------------------------
-// Sparkles
-// ---------------------------------------------------------------------------
 
 export function toSparklesPayload(
   intent: SparklesIntent,
@@ -247,5 +203,5 @@ export function toSparklesPayload(
 function resolveSparkleColor(intent: SparklesIntent): [number, number, number] {
   if (intent.colorMode === "solid") return hexToRgb(intent.color);
   if (intent.colorMode === "palette" && intent.palette.length > 0) return hexToRgb(intent.palette[0]!);
-  return [1, 1, 1]; // rainbow / fallback
+  return [1, 1, 1]; 
 }

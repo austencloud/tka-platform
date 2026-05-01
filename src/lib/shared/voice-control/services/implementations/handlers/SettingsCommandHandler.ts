@@ -1,11 +1,3 @@
-/**
- * SettingsCommandHandler
- *
- * Executes settings toggle/show/hide voice commands by delegating
- * to the appropriate state manager (animation visibility, pictograph
- * visibility, or app settings).
- */
-
 import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
@@ -15,10 +7,6 @@ import type {
 import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
 import { getVisibilityStateManager } from "../../../../pictograph/shared/state/visibility-state.svelte";
 import { settingsService } from "../../../../settings/state/SettingsState.svelte";
-
-// ============================================================================
-// Setting routing: which state manager owns each setting key
-// ============================================================================
 
 type SettingOwner = "animVis" | "pictVis" | "appSettings";
 
@@ -83,7 +71,6 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
   }
 
   private handleEffectCommand(command: VoiceCommand): CommandResult {
-    // Target format: "effect:fire" | "effect:charcoal" | "effect:led" | "effect:trails"
     const effectName = command.target.slice("effect:".length) as import("../../../../animation-engine/domain/types/TipEffectTypes").EffectType;
     const mgr = getAnimationVisibilityManager();
     const displayName = effectName.charAt(0).toUpperCase() + effectName.slice(1);
@@ -99,73 +86,46 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
         mgr.setActiveEffect("none");
         return { success: true, message: `${displayName}: OFF` };
       }
-      case "toggle": {
-        const isActive = mgr.getActiveEffect() === effectName;
-        mgr.setActiveEffect(isActive ? "none" : effectName);
-        return { success: true, message: `${displayName}: ${isActive ? "OFF" : "ON"}` };
-      }
       default:
-        return { success: false, message: `Unknown action for effect: "${command.action}"` };
+        return { success: false, message: `Action "${command.action}" not supported for effects` };
     }
   }
 
   private toggle(route: SettingRoute): CommandResult {
-    const current = this.getValue(route);
-    const newValue = !current;
-    this.setValue(route, newValue);
-    const label = newValue ? "ON" : "OFF";
-    return { success: true, message: `${route.displayName}: ${label}` };
+    const newVal = !this.getValue(route);
+    return this.set(route, newVal);
   }
 
   private set(route: SettingRoute, value: boolean): CommandResult {
-    this.setValue(route, value);
-    const label = value ? "ON" : "OFF";
-    return { success: true, message: `${route.displayName}: ${label}` };
+    const { owner, property, displayName } = route;
+
+    if (owner === "animVis") {
+      const mgr = getAnimationVisibilityManager();
+      (mgr as any)[property] = value;
+    } else if (owner === "pictVis") {
+      const mgr = getVisibilityStateManager();
+      (mgr as any)[property] = value;
+    } else if (owner === "appSettings") {
+      settingsService.updateSettings({ [property]: value });
+    }
+
+    const status = value ? "ON" : "OFF";
+    return { success: true, message: `${displayName}: ${status}` };
   }
 
   private getValue(route: SettingRoute): boolean {
-    switch (route.owner) {
-      case "animVis": {
-        const mgr = getAnimationVisibilityManager();
-        if (route.property === "darkMode") return mgr.isDarkMode();
-        return mgr.getVisibility(route.property as any);
-      }
-      case "pictVis": {
-        const mgr = getVisibilityStateManager();
-        if (route.property === "showGrid") return mgr.getGridVisibility();
-        return mgr.getGlyphVisibility(route.property);
-      }
-      case "appSettings": {
-        const settings = settingsService.settings;
-        return !!(settings as unknown as Record<string, unknown>)[route.property];
-      }
-    }
-  }
+    const { owner, property } = route;
 
-  private setValue(route: SettingRoute, value: boolean): void {
-    switch (route.owner) {
-      case "animVis": {
-        const mgr = getAnimationVisibilityManager();
-        if (route.property === "darkMode") {
-          mgr.setDarkMode(value);
-        } else {
-          mgr.setVisibility(route.property as any, value);
-        }
-        break;
-      }
-      case "pictVis": {
-        const mgr = getVisibilityStateManager();
-        if (route.property === "showGrid") {
-          mgr.setGridVisibility(value);
-        } else {
-          mgr.setGlyphVisibility(route.property, value);
-        }
-        break;
-      }
-      case "appSettings": {
-        void settingsService.updateSetting(route.property as any, value);
-        break;
-      }
+    if (owner === "animVis") {
+      const mgr = getAnimationVisibilityManager();
+      return (mgr as any)[property] as boolean;
+    } else if (owner === "pictVis") {
+      const mgr = getVisibilityStateManager();
+      return (mgr as any)[property] as boolean;
+    } else if (owner === "appSettings") {
+      return (settingsService.settings as any)[property] as boolean;
     }
+
+    return false;
   }
 }

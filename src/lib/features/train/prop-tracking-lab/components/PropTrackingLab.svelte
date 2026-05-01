@@ -1,16 +1,3 @@
-<!--
-	PropTrackingLab.svelte - Proof of Concept for Skel2TKA Pipeline
-
-	This lab validates the core tracking loop:
-	1. User uploads a video of prop spinning
-	2. User draws bounding box on first frame
-	3. System tracks prop across all frames
-	4. System detects tip/endpoint trajectory
-	5. User marks keyframes
-	6. System computes rotation between keyframes
-
-	Educational notes are included as comments throughout.
--->
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import type {
@@ -24,20 +11,14 @@
 	import TrajectoryOverlay from './TrajectoryOverlay.svelte';
 	import ControlBar from './ControlBar.svelte';
 
-	// ============================================================
-	// STATE
-	// ============================================================
-
-	// Video state
 	let videoFile = $state<File | null>(null);
 	let videoUrl = $state<string | null>(null);
 	let videoElement = $state<HTMLVideoElement | null>(null);
 	let videoDuration = $state(0);
 	let videoWidth = $state(0);
 	let videoHeight = $state(0);
-	let fps = $state(30); // Will be estimated from video
+	let fps = $state(30);
 
-	// Tracking state
 	type LabPhase = 'upload' | 'draw-box' | 'tracking' | 'review';
 	let phase = $state<LabPhase>('upload');
 	let initialBox = $state<BoundingBox | null>(null);
@@ -46,23 +27,16 @@
 	let isTracking = $state(false);
 	let trackingProgress = $state(0);
 
-	// Canvas for frame extraction
 	let extractionCanvas: HTMLCanvasElement | null = null;
 	let extractionCtx: CanvasRenderingContext2D | null = null;
 
-	// Tracker instance
 	const tracker = new SimplePropTracker();
-
-	// ============================================================
-	// VIDEO LOADING
-	// ============================================================
 
 	function handleFileSelect(event: Event) {
 		const input = event.target as HTMLInputElement;
 		if (input.files && input.files[0]) {
 			const file = input.files[0];
 
-			// Validate it's a video
 			if (!file.type.startsWith('video/')) {
 				alert('Please select a video file');
 				return;
@@ -77,26 +51,18 @@
 	function handleVideoLoaded(event: Event) {
 		const video = event.target as HTMLVideoElement;
 		videoElement = video;
-		videoDuration = video.duration * 1000; // Convert to ms
+		videoDuration = video.duration * 1000; 
 		videoWidth = video.videoWidth;
 		videoHeight = video.videoHeight;
 
-		// Estimate FPS (default to 30 if we can't determine)
-		// Note: Browser doesn't expose actual FPS, so we estimate
 		fps = 30;
 
-		// Pause at first frame
 		video.currentTime = 0;
 		video.pause();
 	}
 
-	// ============================================================
-	// BOUNDING BOX DRAWING
-	// ============================================================
-
 	function handleBoxDrawn(box: BoundingBox) {
 		initialBox = box;
-		// Ready to start tracking
 	}
 
 	async function startTracking() {
@@ -107,7 +73,6 @@
 		trackedFrames = [];
 		trackingProgress = 0;
 
-		// Create extraction canvas
 		extractionCanvas = document.createElement('canvas');
 		extractionCanvas.width = videoWidth;
 		extractionCanvas.height = videoHeight;
@@ -118,11 +83,9 @@
 			return;
 		}
 
-		// Extract and track each frame
 		const totalFrames = Math.floor((videoDuration / 1000) * fps);
 		const frameDuration = 1000 / fps;
 
-		// Initialize tracker with first frame
 		videoElement.currentTime = 0;
 		await waitForSeek(videoElement);
 
@@ -133,7 +96,6 @@
 		trackedFrames = [firstTrackedFrame];
 		trackingProgress = 1 / totalFrames;
 
-		// Track remaining frames
 		for (let i = 1; i < totalFrames; i++) {
 			const timestamp = i * frameDuration;
 			videoElement.currentTime = timestamp / 1000;
@@ -146,7 +108,6 @@
 			trackedFrames = [...trackedFrames, trackedFrame];
 			trackingProgress = (i + 1) / totalFrames;
 
-			// Yield to UI every 10 frames
 			if (i % 10 === 0) {
 				await new Promise(resolve => setTimeout(resolve, 0));
 			}
@@ -157,10 +118,6 @@
 		currentFrameIndex = 0;
 	}
 
-	/**
-	 * Wait for video seek to complete.
-	 * This is necessary because setting currentTime is asynchronous.
-	 */
 	function waitForSeek(video: HTMLVideoElement): Promise<void> {
 		return new Promise(resolve => {
 			const handler = () => {
@@ -170,10 +127,6 @@
 			video.addEventListener('seeked', handler);
 		});
 	}
-
-	// ============================================================
-	// KEYFRAME MANAGEMENT
-	// ============================================================
 
 	function toggleKeyframe(frameIndex: number) {
 		trackedFrames = trackedFrames.map((frame, i) =>
@@ -186,10 +139,6 @@
 	function markCurrentAsKeyframe() {
 		toggleKeyframe(currentFrameIndex);
 	}
-
-	// ============================================================
-	// PLAYBACK CONTROLS
-	// ============================================================
 
 	function seekToFrame(index: number) {
 		if (index >= 0 && index < trackedFrames.length) {
@@ -226,17 +175,9 @@
 		}
 	}
 
-	// ============================================================
-	// DERIVED STATE
-	// ============================================================
-
 	let currentFrame = $derived(trackedFrames[currentFrameIndex] ?? null);
 	let keyframeCount = $derived(trackedFrames.filter(f => f.isKeyframe).length);
 	let trajectory = $derived(trackedFrames.map(f => f.tip).filter((t): t is NormalizedPoint => t !== null));
-
-	// ============================================================
-	// CLEANUP
-	// ============================================================
 
 	onDestroy(() => {
 		if (videoUrl) {

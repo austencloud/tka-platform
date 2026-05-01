@@ -18,20 +18,16 @@ export function createVideoTrailsState(
   corrector: IDetectionCorrector,
   tipAdapter: IVideoTipAdapter,
 ) {
-  // Sub-navigation - persisted to sessionStorage so HMR doesn't bounce you back
   const ACTIVE_VIEW_KEY = "video-trails-active-view";
   const storedView = (typeof sessionStorage !== "undefined"
     ? sessionStorage.getItem(ACTIVE_VIEW_KEY) as VideoTrailsView | null
     : null) ?? "workspace";
   let activeView = $state<VideoTrailsView>(storedView);
 
-  // ---------------------------------------------------------------------------
-  // Session persistence helpers - survive HMR and soft reloads
-  // ---------------------------------------------------------------------------
   const SESSION_PREFIX = "video-trails-";
 
   function sessionSave(key: string, value: unknown): void {
-    try { sessionStorage.setItem(SESSION_PREFIX + key, JSON.stringify(value)); } catch { /* quota */ }
+    try { sessionStorage.setItem(SESSION_PREFIX + key, JSON.stringify(value)); } catch { }
   }
 
   function sessionLoad<T>(key: string): T | null {
@@ -41,17 +37,14 @@ export function createVideoTrailsState(
     } catch { return null; }
   }
 
-  // Source
   let source = $state<VideoSource | null>(null);
   let sourceMode = $state<"file" | "camera" | "sequence">("file");
 
-  // Playback - restore currentFrame from session so HMR doesn't jump to 0
   let isPlaying = $state(false);
   let currentFrame = $state(sessionLoad<number>("currentFrame") ?? 0);
   let playbackSpeed = $state(1);
   let totalFrames = $state(0);
 
-  // Detection
   let activeDetectorId = $state("led-threshold-v1");
   let detectionConfig = $state<DetectionConfig>({ ...DEFAULT_DETECTION_CONFIG });
   let frameDetections = $state<Record<number, DetectedEndpoint[]>>(
@@ -59,30 +52,24 @@ export function createVideoTrailsState(
   );
   let isDetecting = $state(false);
 
-  // Corrections - restored from session so placed points survive HMR
   let corrections = $state<Record<number, EndpointCorrection[]>>(
     sessionLoad<Record<number, EndpointCorrection[]>>("corrections") ?? {},
   );
   let correctionCount = $derived(Object.keys(corrections).length);
 
-  // Effects
   let effectConfig = $state<EffectConfig>({ ...DEFAULT_EFFECT_CONFIG });
 
-  // Project
   let currentProject = $state<VideoTrailsProject | null>(null);
   let projects = $state<VideoTrailsProject[]>([]);
   let isDirty = $state(false);
 
-  // Export
   let exportState = $state<ExportState>({ phase: "idle" });
 
-  // Derived: current frame's corrected endpoints
   let currentEndpoints = $derived.by(() => {
     const detected = frameDetections[currentFrame] ?? [];
     return corrector.applyCorrections(currentFrame, detected, corrections);
   });
 
-  // Derived: frames with low-confidence detections
   let lowConfidenceFrames = $derived.by(() => {
     const frames: number[] = [];
     for (const [frame, endpoints] of Object.entries(frameDetections)) {
@@ -91,7 +78,6 @@ export function createVideoTrailsState(
     return frames;
   });
 
-  // Actions
   function loadVideo(file: File): void {
     const url = URL.createObjectURL(file);
     source = {

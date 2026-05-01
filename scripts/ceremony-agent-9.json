@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IFingerAnimator",
+    "contract": "src/lib/shared/3d/services/contracts/IFingerAnimator.ts",
+    "impl": "src/lib/shared/3d/services/implementations/FingerAnimator.ts",
+    "cls": "FingerAnimator",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFootPlanter",
+    "contract": "src/lib/shared/3d/services/contracts/IFootPlanter.ts",
+    "impl": "src/lib/shared/3d/services/implementations/FootPlanter.ts",
+    "cls": "FootPlanter",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IIKSolver",
+    "contract": "src/lib/shared/3d/services/contracts/IIKSolver.ts",
+    "impl": "src/lib/shared/3d/services/implementations/IKSolver.ts",
+    "cls": "IKSolver",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ILegAnimator",
+    "contract": "src/lib/shared/3d/services/contracts/ILegAnimator.ts",
+    "impl": "src/lib/shared/3d/services/implementations/LegAnimator.ts",
+    "cls": "LegAnimator",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ILegIKSolver",
+    "contract": "src/lib/shared/3d/services/contracts/ILegIKSolver.ts",
+    "impl": "src/lib/shared/3d/services/implementations/HingeConstrainedLegIKSolver.ts",
+    "cls": "HingeConstrainedLegIKSolver",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ILocomotionAnimator",
+    "contract": "src/lib/shared/3d/services/contracts/ILocomotionAnimator.ts",
+    "impl": "src/lib/shared/3d/services/implementations/LocomotionAnimator.ts",
+    "cls": "LocomotionAnimator",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IOffline3DExporter",
+    "contract": "src/lib/shared/3d/services/contracts/IOffline3DExporter.ts",
+    "impl": "src/lib/shared/3d/services/implementations/Offline3DExporter.ts",
+    "cls": "Offline3DExporter",
+    "getter": "src/lib/shared/3d/getOffline3DExporter.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IOrientationMapper",
+    "contract": "src/lib/shared/3d/services/contracts/IOrientationMapper.ts",
+    "impl": "src/lib/shared/3d/services/implementations/OrientationMapper.ts",
+    "cls": "OrientationMapper",
+    "getter": "src/lib/shared/3d/getOrientationMapper.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPlaneCoordinateMapper",
+    "contract": "src/lib/shared/3d/services/contracts/IPlaneCoordinateMapper.ts",
+    "impl": "src/lib/shared/3d/services/implementations/PlaneCoordinateMapper.ts",
+    "cls": "PlaneCoordinateMapper",
+    "getter": "src/lib/shared/3d/getPlaneCoordinateMapper.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPropStateInterpolator",
+    "contract": "src/lib/shared/3d/services/contracts/IPropStateInterpolator.ts",
+    "impl": "src/lib/shared/3d/services/implementations/PropStateInterpolator.ts",
+    "cls": "PropStateInterpolator",
+    "getter": "src/lib/shared/3d/getPropStateInterpolator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IRootMotionExtractor",
+    "contract": "src/lib/shared/3d/services/contracts/IRootMotionExtractor.ts",
+    "impl": "src/lib/shared/3d/services/implementations/RootMotionExtractor.ts",
+    "cls": "RootMotionExtractor",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IScene3DPersister",
+    "contract": "src/lib/shared/3d/services/contracts/IScene3DPersister.ts",
+    "impl": "src/lib/shared/3d/services/implementations/Scene3DPersister.ts",
+    "cls": "Scene3DPersister",
+    "getter": "src/lib/shared/3d/getScene3DPersister.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISceneOrchestrator",
+    "contract": "src/lib/shared/3d/services/contracts/ISceneOrchestrator.ts",
+    "impl": "src/lib/shared/3d/services/implementations/StageSceneAdapter.ts",
+    "cls": "StageSceneAdapter",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISequenceConverter",
+    "contract": "src/lib/shared/3d/services/contracts/ISequenceConverter.ts",
+    "impl": "src/lib/shared/3d/services/implementations/SequenceConverter.ts",
+    "cls": "SequenceConverter",
+    "getter": "src/lib/shared/3d/getSequenceConverter.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISpineTwister",
+    "contract": "src/lib/shared/3d/services/contracts/ISpineTwister.ts",
+    "impl": "src/lib/shared/3d/services/implementations/SpineTwister.ts",
+    "cls": "SpineTwister",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITurnAnimator",
+    "contract": "src/lib/shared/3d/services/contracts/ITurnAnimator.ts",
+    "impl": "src/lib/shared/3d/services/implementations/ClipBasedTurnAnimator.ts",
+    "cls": "ClipBasedTurnAnimator",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IViewer3DUndoManager",
+    "contract": "src/lib/shared/3d/services/contracts/IViewer3DUndoManager.ts",
+    "impl": "src/lib/shared/3d/services/implementations/Viewer3DUndoManager.ts",
+    "cls": "Viewer3DUndoManager",
+    "getter": "src/lib/shared/3d/getViewer3DUndoManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICreatorPropFilter",
+    "contract": "src/lib/features/browse/creators/services/contracts/ICreatorPropFilter.ts",
+    "impl": "src/lib/features/browse/creators/services/implementations/CreatorPropFilter.ts",
+    "cls": "CreatorPropFilter",
+    "getter": "src/lib/features/browse/creators/getCreatorPropFilter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowseCache",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IBrowseCache.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/BrowseCache.ts",
+    "cls": "BrowseCache",
+    "getter": "src/lib/features/browse/sequences/display/getBrowseCache.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowseFilter",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IBrowseFilter.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/BrowseFilter.ts",
+    "cls": "BrowseFilter",
+    "getter": "src/lib/features/browse/sequences/display/getBrowseFilter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowseLoader",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IBrowseLoader.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader.ts",
+    "cls": "PublicSequencesLoader",
+    "getter": "src/lib/features/browse/sequences/display/getBrowseLoader.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowseMetadataExtractor",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IBrowseMetadataExtractor.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/BrowseMetadataExtractor.ts",
+    "cls": "BrowseMetadataExtractor",
+    "getter": "src/lib/features/browse/sequences/display/getBrowseMetadataExtractor.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IBrowseSectionManager",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IBrowseSectionManager.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/BrowseSectionManager.ts",
+    "cls": "BrowseSectionManager",
+    "getter": "src/lib/features/browse/sequences/display/getBrowseSectionManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowseSorter",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IBrowseSorter.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/BrowseSorter.ts",
+    "cls": "BrowseSorter",
+    "getter": "src/lib/features/browse/sequences/display/getBrowseSorter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBrowseThumbnailProvider",
+    "contract": "src/lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider.ts",
+    "impl": "src/lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider.ts",
+    "cls": "BrowseThumbnailProvider",
+    "getter": "src/lib/features/browse/sequences/display/getBrowseThumbnailProvider.ts",
+    "hasCoExports": false
+  }
+]

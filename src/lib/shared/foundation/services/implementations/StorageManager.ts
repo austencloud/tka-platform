@@ -1,16 +1,6 @@
-/**
- * Storage Service Implementation
- *
- * Provides safe wrappers around localStorage and sessionStorage
- * to prevent JSON parsing errors and undefined value issues.
- */
-
 import type { IStorageManager } from "../contracts/IStorageManager";
 
 export class StorageManager implements IStorageManager {
-  /**
-   * Safely get and parse a value from sessionStorage
-   */
   safeSessionStorageGet<T>(
     key: string,
     defaultValue: T | null = null
@@ -18,7 +8,6 @@ export class StorageManager implements IStorageManager {
     try {
       const stored = sessionStorage.getItem(key);
 
-      // Check for undefined, null, or empty string values
       if (
         !stored ||
         stored === "undefined" ||
@@ -38,9 +27,6 @@ export class StorageManager implements IStorageManager {
     }
   }
 
-  /**
-   * Safely set a value to sessionStorage
-   */
   safeSessionStorageSet<T>(key: string, value: T): void {
     try {
       sessionStorage.setItem(key, JSON.stringify(value));
@@ -52,14 +38,10 @@ export class StorageManager implements IStorageManager {
     }
   }
 
-  /**
-   * Safely get and parse a value from localStorage
-   */
   safeLocalStorageGet<T>(key: string, defaultValue: T | null = null): T | null {
     try {
       const stored = localStorage.getItem(key);
 
-      // Check for undefined, null, or empty string values
       if (
         !stored ||
         stored === "undefined" ||
@@ -79,9 +61,6 @@ export class StorageManager implements IStorageManager {
     }
   }
 
-  /**
-   * Safely set a value to localStorage
-   */
   safeLocalStorageSet<T>(key: string, value: T): void {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -90,9 +69,6 @@ export class StorageManager implements IStorageManager {
     }
   }
 
-  /**
-   * Remove a key from sessionStorage
-   */
   removeSessionStorageItem(key: string): void {
     try {
       sessionStorage.removeItem(key);
@@ -101,9 +77,6 @@ export class StorageManager implements IStorageManager {
     }
   }
 
-  /**
-   * Remove a key from localStorage
-   */
   removeLocalStorageItem(key: string): void {
     try {
       localStorage.removeItem(key);
@@ -112,9 +85,6 @@ export class StorageManager implements IStorageManager {
     }
   }
 
-  /**
-   * Clear all sessionStorage
-   */
   clearSessionStorage(): void {
     try {
       sessionStorage.clear();
@@ -123,9 +93,6 @@ export class StorageManager implements IStorageManager {
     }
   }
 
-  /**
-   * Clear all localStorage
-   */
   clearLocalStorage(): void {
     try {
       localStorage.clear();

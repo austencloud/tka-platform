@@ -1,12 +1,3 @@
-/**
- * Shader library.
- *
- * Holds GLSL source for every pass type this backend can execute.
- * Compiles lazily on first use and caches the resulting WebGLProgram
- * keyed by program id. Attribute + uniform locations are looked up
- * once at link time and exposed as a strongly-typed handle.
- */
-
 export interface CompiledProgram {
   program: WebGLProgram;
   attribs: Record<string, number>;
@@ -20,7 +11,6 @@ interface ProgramSpec {
   uniforms: readonly string[];
 }
 
-/** Fullscreen-triangle vertex shader. Emits clip-space position + uv without vertex buffer. */
 const FULLSCREEN_VERT = `#version 300 es
 precision highp float;
 out vec2 v_uv;
@@ -34,15 +24,6 @@ void main() {
 }
 `;
 
-/**
- * Decay shader - multiplicative fade + subtract-to-zero floor kill.
- *
- * Multiplies premultiplied RGBA by u_alphaFactor (matches Canvas2D
- * destination-out), then subtracts u_alphaSubtract to push 8-bit
- * precision-floored pixels (1/255) to real zero. Without the subtract,
- * rgba8 FBOs leave a permanent gray "ghost trail" from pixels that
- * multiplicative decay can never round below 1/255.
- */
 const DECAY_FRAG = `#version 300 es
 precision highp float;
 in vec2 v_uv;
@@ -56,7 +37,6 @@ void main() {
 }
 `;
 
-/** Composite shader - sample premultiplied source with an optional tint. */
 const COMPOSITE_FRAG = `#version 300 es
 precision highp float;
 in vec2 v_uv;
@@ -68,11 +48,6 @@ void main() {
 }
 `;
 
-/**
- * Trail mesh vertex shader. Interleaved input: (x, y, edge_t, alpha).
- *   - edge_t: −1 at left polygon edge, +1 at right edge (for AA).
- *   - alpha:  head→tail opacity ramp already embedded by mesh builder.
- */
 const TRAIL_MESH_VERT = `#version 300 es
 precision highp float;
 in vec2 a_position;
@@ -84,21 +59,11 @@ out float v_alpha;
 void main() {
   v_edge_t = a_edge_t;
   v_alpha = a_alpha;
-  // Map age-normalized z (0=newest, 1=oldest) to clip-space [-1, 1].
-  // With depthFunc(LEQUAL) + depth cleared to 1.0, newest fragments win.
-  // When depth test is disabled (existing stamp path), z has no effect.
   float zClip = a_z * 2.0 - 1.0;
   gl_Position = vec4(a_position, zClip, 1.0);
 }
 `;
 
-/**
- * Trail mesh fragment shader - sharp polygon with anti-aliased edge only.
- *
- * Glow diffusion is produced by a separable Gaussian blur pass on the
- * accumulator FBO, not by this shader. Keeping this shader sharp means
- * the subsequent blur has crisp geometry to spread from.
- */
 const TRAIL_MESH_FRAG = `#version 300 es
 precision highp float;
 in float v_edge_t;
@@ -113,14 +78,6 @@ void main() {
 }
 `;
 
-/**
- * Separable Gaussian blur. 9-tap symmetric kernel with sigma ≈ 2.
- *
- * u_direction = (1/width, 0) for horizontal pass, (0, 1/height) for
- * vertical. u_stride scales the tap offset so a single blur program
- * handles any radius - small stride = tight halo, large stride = wide
- * atmospheric bloom.
- */
 const GAUSSIAN_BLUR_FRAG = `#version 300 es
 precision highp float;
 in vec2 v_uv;
@@ -148,13 +105,6 @@ void main() {
 }
 `;
 
-/**
- * Trail composite - sharp + blurred additive bloom.
- *
- * Both inputs are premultiplied. Output is premultiplied. Downstream
- * blend is (ONE, ONE_MINUS_SRC_ALPHA). u_glowMix scales the blurred
- * contribution: 0 = sharp only, 1 = full bloom.
- */
 const TRAIL_COMPOSITE_FRAG = `#version 300 es
 precision highp float;
 in vec2 v_uv;
@@ -169,12 +119,6 @@ void main() {
 }
 `;
 
-// ============================================================
-// Fire simulation shaders (from FluidShaderSources.ts)
-// Multi-pass Navier-Stokes fluid sim with combustion + blackbody
-// ============================================================
-
-/** Fire quad vertex shader - 6-vertex fullscreen quad via gl_VertexID. */
 const FIRE_VERTEX = `#version 300 es
 precision highp float;
 
@@ -192,17 +136,16 @@ void main() {
 }
 `;
 
-/** Splat: inject a Gaussian blob of value at a point. */
 const FIRE_SPLAT_FRAG = `#version 300 es
 precision highp float;
 
 in vec2 v_uv;
 out vec4 fragColor;
 
-uniform sampler2D u_target;    // existing field to add into
-uniform vec2 u_point;          // splat center in [0,1] UV space
-uniform vec3 u_splatValue;     // value to inject (rgb or rg for velocity)
-uniform float u_radius;        // Gaussian radius in UV space
+uniform sampler2D u_target;   
+uniform vec2 u_point;          
+uniform vec3 u_splatValue;     
+uniform float u_radius;        
 
 void main() {
   vec4 existing = texture(u_target, v_uv);
@@ -213,28 +156,25 @@ void main() {
 }
 `;
 
-/** Advection: Semi-Lagrangian backtracing. */
 const FIRE_ADVECTION_FRAG = `#version 300 es
 precision highp float;
 
 in vec2 v_uv;
 out vec4 fragColor;
 
-uniform sampler2D u_velocity;  // velocity field
-uniform sampler2D u_source;    // field to advect (can be velocity itself)
-uniform vec2 u_texelSize;      // 1.0 / simResolution
-uniform float u_dt;            // timestep
-uniform float u_dissipation;   // decay factor (0.99 = slow fade, 0.9 = fast fade)
+uniform sampler2D u_velocity;  
+uniform sampler2D u_source;    
+uniform vec2 u_texelSize;      
+uniform float u_dt;            
+uniform float u_dissipation;   
 
 void main() {
   vec2 vel = texture(u_velocity, v_uv).xy;
-  // Backtrace: where did this fluid come from?
   vec2 prevUV = v_uv - u_dt * vel * u_texelSize;
   fragColor = u_dissipation * texture(u_source, prevUV);
 }
 `;
 
-/** Curl: compute the scalar curl (vorticity) of 2D velocity field. */
 const FIRE_CURL_FRAG = `#version 300 es
 precision highp float;
 
@@ -254,7 +194,6 @@ void main() {
 }
 `;
 
-/** Vorticity confinement: restore small-scale rotational detail. */
 const FIRE_VORTICITY_FRAG = `#version 300 es
 precision highp float;
 
@@ -265,8 +204,8 @@ uniform sampler2D u_velocity;
 uniform sampler2D u_curl;
 uniform vec2 u_texelSize;
 uniform float u_dt;
-uniform float u_strength;    // vorticity confinement coefficient
-uniform float u_time;        // seconds, for flickering pulse
+uniform float u_strength;    
+uniform float u_time;        
 
 void main() {
   float cL = texture(u_curl, v_uv - vec2(u_texelSize.x, 0.0)).x;
@@ -275,19 +214,13 @@ void main() {
   float cT = texture(u_curl, v_uv + vec2(0.0, u_texelSize.y)).x;
   float cC = texture(u_curl, v_uv).x;
 
-  // Gradient of absolute curl
   vec2 grad = vec2(abs(cR) - abs(cL), abs(cT) - abs(cB)) * 0.5;
   float len = max(length(grad), 1e-5);
   vec2 N = grad / len;
 
-  // Time-varying vorticity pulse: real flames flicker at ~10-15 Hz due to
-  // periodic vortex shedding. Modulating the confinement strength at this
-  // frequency creates a natural pulsing amplification of rotational detail
-  // that matches the physical vortex shedding cycle.
-  float pulse = 1.0 + 0.4 * sin(u_time * 2.0 * 3.14159 * 12.0)   // ~12 Hz primary
-                     + 0.2 * sin(u_time * 2.0 * 3.14159 * 7.3);  // ~7 Hz secondary
+  float pulse = 1.0 + 0.4 * sin(u_time * 2.0 * 3.14159 * 12.0)   
+                     + 0.2 * sin(u_time * 2.0 * 3.14159 * 7.3);  
 
-  // Force perpendicular to curl gradient
   vec2 force = u_strength * pulse * vec2(N.y, -N.x) * cC;
 
   vec2 vel = texture(u_velocity, v_uv).xy;
@@ -295,7 +228,6 @@ void main() {
 }
 `;
 
-/** Buoyancy: hot fluid rises, cool fluid sinks. */
 const FIRE_BUOYANCY_FRAG = `#version 300 es
 precision highp float;
 
@@ -305,27 +237,21 @@ out vec4 fragColor;
 uniform sampler2D u_velocity;
 uniform sampler2D u_temperature;
 uniform float u_dt;
-uniform float u_buoyancy;          // buoyancy strength
-uniform float u_ambientTemp;       // baseline temperature
-uniform float u_terminalVelocity;  // max velocity magnitude from buoyancy/gravity
-uniform float u_gravity;           // constant vertical force (negative = downward)
+uniform float u_buoyancy;          
+uniform float u_ambientTemp;       
+uniform float u_terminalVelocity;  
+uniform float u_gravity;           
 
 void main() {
   vec2 vel = texture(u_velocity, v_uv).xy;
   float temp = texture(u_temperature, v_uv).x;
 
-  // Buoyancy force: upward (+Y in UV space) proportional to temperature above ambient
   float buoyForce = u_buoyancy * (temp - u_ambientTemp);
 
-  // Gravity: constant vertical force on any heated fluid.
-  // Only acts on fluid with some temperature (prevents drift in empty space).
   float gravForce = u_gravity * step(0.01, temp);
 
   float totalForce = buoyForce + gravForce;
 
-  // Terminal velocity: attenuate force when velocity is already moving in the
-  // same direction as the force, preventing runaway accumulation.
-  // Works symmetrically for both upward (buoyancy) and downward (gravity) forces.
   float speedInForceDir = sign(totalForce) * vel.y;
   float attenuation = max(0.0, 1.0 - speedInForceDir / u_terminalVelocity);
   vel.y += totalForce * attenuation * u_dt;
@@ -334,7 +260,6 @@ void main() {
 }
 `;
 
-/** Curl noise turbulence: divergence-free velocity perturbation at flame boundaries. */
 const FIRE_CURL_NOISE_FRAG = `#version 300 es
 precision highp float;
 
@@ -346,9 +271,8 @@ uniform sampler2D u_temperature;
 uniform vec2 u_texelSize;
 uniform float u_dt;
 uniform float u_time;
-uniform float u_strength;      // curl noise amplitude
+uniform float u_strength;      
 
-// 2D gradient noise (Perlin-style)
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
@@ -365,14 +289,13 @@ float gradientNoise(vec2 p) {
   vec2 u = f * f * (3.0 - 2.0 * f);
 
   float n00 = dot(gradHash(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0));
-  float n10 = dot(gradHash(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));
+  float n10 = dot(gradHash(i + vec2(1.0, 1.0)), f - vec2(1.0, 0.0));
   float n01 = dot(gradHash(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
   float n11 = dot(gradHash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
 
   return mix(mix(n00, n10, u.x), mix(n01, n11, u.x), u.y);
 }
 
-// 3-octave FBM of gradient noise, used as a scalar potential field.
 float noisePotential(vec2 p, float time) {
   float n = 0.0;
   float amp = 0.5;
@@ -391,20 +314,17 @@ void main() {
   vec2 vel = texture(u_velocity, v_uv).xy;
   float temp = texture(u_temperature, v_uv).x;
 
-  // Compute temperature gradient magnitude
   float tL = texture(u_temperature, v_uv - vec2(u_texelSize.x, 0.0)).x;
   float tR = texture(u_temperature, v_uv + vec2(u_texelSize.x, 0.0)).x;
   float tB = texture(u_temperature, v_uv - vec2(0.0, u_texelSize.y)).x;
   float tT = texture(u_temperature, v_uv + vec2(0.0, u_texelSize.y)).x;
   float gradMag = length(vec2(tR - tL, tT - tB)) * 0.5;
 
-  // Spatial mask: turbulence is strongest at the flame boundary
   float boundaryMask = smoothstep(0.0, 0.8, gradMag * 6.0);
   float heatMask = smoothstep(0.0, 0.15, temp);
   float mask = boundaryMask * heatMask;
 
   if (mask > 0.001) {
-    // Curl of the noise potential: in 2D, curl(psi) = (dpsi/dy, -dpsi/dx).
     float eps = 0.003;
     float psiR = noisePotential(v_uv + vec2(eps, 0.0), u_time);
     float psiL = noisePotential(v_uv - vec2(eps, 0.0), u_time);
@@ -414,7 +334,6 @@ void main() {
     float dpdx = (psiR - psiL) / (2.0 * eps);
     float dpdy = (psiT - psiB) / (2.0 * eps);
 
-    // curl(psi) = (dpsi/dy, -dpsi/dx)
     vec2 curlForce = vec2(dpdy, -dpdx);
 
     vel += curlForce * u_strength * mask * u_dt;
@@ -424,7 +343,6 @@ void main() {
 }
 `;
 
-/** Combustion + Cooling: fuel burns to produce heat, temperature decays. */
 const FIRE_COMBUSTION_FRAG = `#version 300 es
 precision highp float;
 
@@ -434,30 +352,27 @@ out vec4 fragColor;
 uniform sampler2D u_temperature;
 uniform sampler2D u_fuel;
 uniform float u_dt;
-uniform float u_burnRate;       // how fast fuel converts to heat
-uniform float u_burnTemp;       // temperature at which fuel ignites
-uniform float u_fuelEfficiency; // heat produced per unit fuel burned
-uniform float u_coolingRate;    // radiative cooling coefficient
-uniform float u_ambientTemp;    // baseline temperature
+uniform float u_burnRate;       
+uniform float u_burnTemp;       
+uniform float u_fuelEfficiency; 
+uniform float u_coolingRate;    
+uniform float u_ambientTemp;    
 
 void main() {
   float temp = texture(u_temperature, v_uv).x;
   float fuel = texture(u_fuel, v_uv).x;
 
-  // Combustion: fuel contributes heat proportional to its density
   float burnAmount = 0.0;
   if (temp > u_burnTemp && fuel > 0.0) {
     burnAmount = min(fuel, u_burnRate * u_dt);
   }
 
-  // Spontaneous combustion for freshly injected fuel (bootstrap ignition)
   if (fuel > 0.5) {
     burnAmount = max(burnAmount, min(fuel * 0.3, u_burnRate * u_dt * 2.0));
   }
 
   float newTemp = temp + burnAmount * u_fuelEfficiency;
 
-  // Radiative cooling toward ambient
   float cooling = u_coolingRate * (newTemp - u_ambientTemp) * u_dt;
   newTemp = max(u_ambientTemp, newTemp - cooling);
 
@@ -465,7 +380,6 @@ void main() {
 }
 `;
 
-/** Divergence: compute velocity field divergence for pressure solve. */
 const FIRE_DIVERGENCE_FRAG = `#version 300 es
 precision highp float;
 
@@ -485,7 +399,6 @@ void main() {
 }
 `;
 
-/** Jacobi iteration: iteratively solve pressure Poisson equation. */
 const FIRE_JACOBI_FRAG = `#version 300 es
 precision highp float;
 
@@ -503,13 +416,11 @@ void main() {
   float pT = texture(u_pressure, v_uv + vec2(0.0, u_texelSize.y)).x;
   float div = texture(u_divergence, v_uv).x;
 
-  // Jacobi iteration: p_new = (sum of neighbors - divergence) / 4
   float pressure = (pL + pR + pB + pT - div) * 0.25;
   fragColor = vec4(pressure, 0.0, 0.0, 1.0);
 }
 `;
 
-/** Gradient subtraction: make velocity divergence-free. */
 const FIRE_GRADIENT_SUBTRACT_FRAG = `#version 300 es
 precision highp float;
 
@@ -532,7 +443,6 @@ void main() {
 }
 `;
 
-/** Clear: fill a texture with a uniform value. */
 const FIRE_CLEAR_FRAG = `#version 300 es
 precision highp float;
 
@@ -546,7 +456,6 @@ void main() {
 }
 `;
 
-/** Display: two-layer fire rendering (fluid sim trail + wick cores). */
 const FIRE_DISPLAY_FRAG = `#version 300 es
 precision highp float;
 
@@ -557,16 +466,14 @@ uniform sampler2D u_temperature;
 uniform sampler2D u_fuel;
 uniform sampler2D u_colorField;
 uniform float u_displayIntensity;
-uniform float u_colorBlend; // 0.0 = natural, 0.5 = tinted, 1.0 = colored
-uniform float u_time;       // seconds, for FBM noise animation
+uniform float u_colorBlend; 
+uniform float u_time;       
 
-// Per-fuel-source color curve (replaces hardcoded blackbody ramp)
-uniform vec3 u_colorCold;   // FireColorCurve.coldColor
-uniform vec3 u_colorMid;    // FireColorCurve.midColor
-uniform vec3 u_colorHot;    // FireColorCurve.hotColor
-uniform vec3 u_colorCore;   // FireColorCurve.coreColor
+uniform vec3 u_colorCold;   
+uniform vec3 u_colorMid;    
+uniform vec3 u_colorHot;    
+uniform vec3 u_colorCore;   
 
-// Wick core rendering uniforms (up to 16 tips for multi-point props like fans)
 uniform vec2 u_tipPositions[16];
 uniform float u_tipSpeeds[16];
 uniform float u_tipFlameScales[16];
@@ -574,7 +481,6 @@ uniform vec3 u_tipColors[16];
 uniform int u_tipCount;
 uniform vec2 u_aspectCorrect;
 
-// ---- FBM noise for high-frequency fire detail ----
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
@@ -582,7 +488,7 @@ float hash(vec2 p) {
 float valueNoise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f); // smoothstep interpolation
+  f = f * f * (3.0 - 2.0 * f); 
   float a = hash(i);
   float b = hash(i + vec2(1.0, 0.0));
   float c = hash(i + vec2(0.0, 1.0));
@@ -590,7 +496,6 @@ float valueNoise(vec2 p) {
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-// 3-octave FBM scrolling upward to match fire's natural rise.
 float fireNoise(vec2 uv, float time) {
   float n = 0.0;
   float amp = 0.5;
@@ -605,7 +510,6 @@ float fireNoise(vec2 uv, float time) {
   return n;
 }
 
-// Natural fire color ramp driven by per-fuel-source uniforms
 vec3 blackbodyColor(float t) {
   vec3 color;
   if (t < 0.4) {
@@ -626,7 +530,6 @@ vec3 blackbodyColor(float t) {
   return color;
 }
 
-// Fully colored blackbody: temperature ramp entirely in prop color.
 vec3 coloredBlackbody(float t, vec3 propColor) {
   vec3 darkBase = propColor * 0.15;
   vec3 brightMid = propColor;
@@ -658,11 +561,9 @@ void main() {
   vec3 color = vec3(0.0);
   float alpha = 0.0;
 
-  // --- Layer 1: Fluid sim trail ---
   float fireIntensity = temp + fuel * 0.5;
   fireIntensity *= u_displayIntensity;
 
-  // FBM noise detail: modulate intensity for high-frequency flickering.
   if (fireIntensity > 0.05) {
     float noise = fireNoise(v_uv, u_time);
     fireIntensity *= 0.7 + 0.3 * noise;
@@ -687,7 +588,6 @@ void main() {
     alpha = trailAlpha;
   }
 
-  // --- Layer 2: Wick cores ---
   for (int i = 0; i < 16; i++) {
     if (i >= u_tipCount) break;
 
@@ -695,22 +595,18 @@ void main() {
     vec2 delta = (v_uv - u_tipPositions[i]) * u_aspectCorrect;
     float dist2 = dot(delta, delta);
 
-    // Wick tip color: blend from fuel-source hot color toward prop color
     vec3 tipColor = mix(u_colorHot, u_tipColors[i], u_colorBlend);
 
-    // Inner core: white-hot center (always white regardless of mode)
     float coreR = 0.006 * fs;
     float coreR2 = coreR * coreR;
     float core = exp(-dist2 / coreR2);
     vec3 coreColor = vec3(1.0, 0.95, 0.85) * core * 4.0 * u_displayIntensity;
 
-    // Middle flame body
     float bodyR = 0.018 * fs;
     float bodyR2 = bodyR * bodyR;
     float body = exp(-dist2 / bodyR2);
     vec3 bodyColor = tipColor * body * 2.5 * u_displayIntensity;
 
-    // Outer glow
     float glowR = 0.035 * fs;
     float glowR2 = glowR * glowR;
     float glow = exp(-dist2 / glowR2);
@@ -726,7 +622,6 @@ void main() {
 }
 `;
 
-/** Fire bloom composite: scene + bloom mip chain. */
 const FIRE_BLOOM_COMPOSITE_FRAG = `#version 300 es
 precision highp float;
 
@@ -741,20 +636,12 @@ void main() {
   vec4 scene = texture(u_scene, v_uv);
   vec4 bloom = texture(u_bloom, v_uv);
 
-  // Additive bloom: bright areas glow beyond their bounds
   vec4 combined = scene + bloom * u_bloomStrength;
 
-  // Premultiplied alpha output
   fragColor = vec4(combined.rgb, max(combined.a, max(combined.r, max(combined.g, combined.b))));
 }
 `;
 
-// ============================================================
-// LED bloom shaders (from LedShaderSources.ts)
-// PBR bloom downsample + upsample for LED glow pipeline
-// ============================================================
-
-/** PBR Bloom Downsample: 13-tap energy-preserving kernel. */
 const BLOOM_DOWNSAMPLE_FRAG = `#version 300 es
 precision highp float;
 
@@ -765,7 +652,6 @@ uniform vec2 u_texelSize;
 out vec4 fragColor;
 
 void main() {
-  // 13-tap downsample with energy-preserving weights
   vec4 A = texture(u_source, v_uv + u_texelSize * vec2(-1.0, -1.0));
   vec4 B = texture(u_source, v_uv + u_texelSize * vec2( 0.0, -1.0));
   vec4 C = texture(u_source, v_uv + u_texelSize * vec2( 1.0, -1.0));
@@ -780,7 +666,6 @@ void main() {
   vec4 L = texture(u_source, v_uv + u_texelSize * vec2(-1.0,  1.0));
   vec4 M = texture(u_source, v_uv + u_texelSize * vec2( 1.0,  1.0));
 
-  // Energy-preserving weights (LearnOpenGL PBR Bloom 13-tap)
   fragColor = E * 0.125
             + (D + F + I + K) * 0.125
             + (B + G + H + J) * 0.0625
@@ -788,21 +673,19 @@ void main() {
 }
 `;
 
-/** PBR Bloom Upsample: 3x3 tent filter for progressive upsampling. */
 const BLOOM_UPSAMPLE_FRAG = `#version 300 es
 precision highp float;
 
 in vec2 v_uv;
 uniform sampler2D u_source;
 uniform vec2 u_texelSize;
-uniform float u_bloomRadius; // controls spread (default 1.0)
+uniform float u_bloomRadius; 
 
 out vec4 fragColor;
 
 void main() {
   vec2 ts = u_texelSize * u_bloomRadius;
 
-  // 3x3 tent filter (weights: 1,2,1 / 2,4,2 / 1,2,1) normalized by 16
   vec4 sum = vec4(0.0);
   sum += texture(u_source, v_uv + vec2(-ts.x, -ts.y)) * 1.0;
   sum += texture(u_source, v_uv + vec2( 0.0,  -ts.y)) * 2.0;
@@ -817,8 +700,6 @@ void main() {
   fragColor = sum / 16.0;
 }
 `;
-
-// ── LED shaders ─────────────────────────────────────────────────────────────
 
 const LED_SPRITE_VERT = `#version 300 es
 precision highp float;
@@ -916,8 +797,6 @@ void main() {
 }
 `;
 
-// ── Particle shaders ────────────────────────────────────────────────────────
-
 const PARTICLE_SPRITE_VERT = `#version 300 es
 precision highp float;
 in vec2 a_position;
@@ -982,8 +861,6 @@ void main() {
   fragColor = vec4(col, v_color.a * alpha);
 }
 `;
-
-// ── Overlay effect shaders ──────────────────────────────────────────────────
 
 const EFFECT_HALO_FRAG = `#version 300 es
 precision highp float;
@@ -1132,8 +1009,6 @@ const PROGRAMS: Record<string, ProgramSpec> = {
     attribs: [],
     uniforms: ["u_sharp", "u_blur", "u_glowMix"],
   },
-
-  // ── Fire simulation programs ──────────────────────────────────────────────
   "fire-splat": {
     vertex: FIRE_VERTEX,
     fragment: FIRE_SPLAT_FRAG,
@@ -1224,8 +1099,6 @@ const PROGRAMS: Record<string, ProgramSpec> = {
     attribs: [],
     uniforms: ["u_scene", "u_bloom", "u_bloomStrength"],
   },
-
-  // ── LED programs ──────────────────────────────────────────────────────────
   "led-sprite": {
     vertex: LED_SPRITE_VERT,
     fragment: LED_SPRITE_FRAG,
@@ -1244,16 +1117,12 @@ const PROGRAMS: Record<string, ProgramSpec> = {
     attribs: [],
     uniforms: ["u_ledTrail", "u_bloom", "u_bloomIntensity"],
   },
-
-  // ── Particle programs ─────────────────────────────────────────────────────
   "particle-sprite": {
     vertex: PARTICLE_SPRITE_VERT,
     fragment: PARTICLE_SPRITE_FRAG,
     attribs: ["a_position", "a_color", "a_size", "a_rotation", "a_shape", "a_age"],
     uniforms: ["u_resolution"],
   },
-
-  // ── Shared bloom programs ────────────────────────────────────────────────
   "bloom-downsample": {
     vertex: FULLSCREEN_VERT,
     fragment: BLOOM_DOWNSAMPLE_FRAG,
@@ -1266,8 +1135,6 @@ const PROGRAMS: Record<string, ProgramSpec> = {
     attribs: [],
     uniforms: ["u_source", "u_texelSize", "u_bloomRadius"],
   },
-
-  // ── Overlay effect programs ─────────────────────────────────────────────
   "effect-halo": {
     vertex: FULLSCREEN_VERT,
     fragment: EFFECT_HALO_FRAG,

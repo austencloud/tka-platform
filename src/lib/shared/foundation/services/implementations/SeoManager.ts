@@ -1,26 +1,16 @@
-/**
- * SEO Service Implementation
- *
- * Handles SEO-related functionality including link generation
- * and meta tag management.
- */
-
 import type { ISeoManager, SEOLinkOptions } from "../contracts/ISeoManager";
 
 export class SeoManager implements ISeoManager {
   /**
-   * Generate a special SEO link that will redirect users to the SPA
-   * but still provide SEO benefits
+   * Generate a special SEO link that redirects users to the SPA
    */
   createSEOLink(path: string, options: SEOLinkOptions = {}): string {
     const { tab, section, seoMode = false } = options;
 
     if (seoMode) {
-      // Return direct SEO page URL for bots/special cases
       return `/${path}`;
     }
 
-    // Return main app URL with parameters for user redirection
     const params = new URLSearchParams();
     if (tab) params.set("tab", tab);
     if (section) params.set("section", section);
@@ -29,9 +19,6 @@ export class SeoManager implements ISeoManager {
     return queryString ? `/?${queryString}` : "/";
   }
 
-  /**
-   * Generate meta tags for a given page
-   */
   generateMetaTags(options: {
     title?: string;
     description?: string;
@@ -75,9 +62,6 @@ export class SeoManager implements ISeoManager {
     return metaTags;
   }
 
-  /**
-   * Check if the current request is from a search engine bot
-   */
   isBotRequest(userAgent?: string): boolean {
     if (!userAgent && typeof navigator !== "undefined") {
       userAgent = navigator.userAgent;
@@ -108,7 +92,7 @@ export class SeoManager implements ISeoManager {
   }
 
   /**
-   * Enhanced redirect logic for SEO pages
+   * Small delay allows SEO crawlers to see content, then redirects users to home with params.
    */
   handleSEORedirect(targetTab: string, targetSection?: string): void {
     if (typeof window === "undefined") return;

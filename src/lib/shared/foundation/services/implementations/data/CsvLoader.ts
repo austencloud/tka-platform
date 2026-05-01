@@ -1,16 +1,3 @@
-/**
- * CSV Loader Service Implementation
- *
- * Handles loading and caching of CSV data from static files or preloaded window data.
- * Provides a single source of truth for raw CSV content without parsing logic.
- *
- * Loading priority:
- * 1. Module-level in-memory cache (fastest, same session)
- * 2. window.csvData pre-injection
- * 3. fetch() from static files (normal online path)
- * 4. IndexedDB persistent cache (offline fallback)
- */
-
 import type { CsvDataSet } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ICSVLoader } from "../../contracts/data/ICSVLoader";
@@ -34,7 +21,6 @@ export class CsvLoader implements ICSVLoader {
     try {
       const csvData = await this.loadCsvData();
 
-      // Determine which file was requested and return appropriate data
       if (filename.includes("Diamond") || filename.includes("diamond")) {
         return {
           success: true,
@@ -287,8 +273,6 @@ export class CsvLoader implements ICSVLoader {
       );
     }
   }
-
-  // --- IndexedDB persistent cache ---
 
   private openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {

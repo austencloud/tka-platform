@@ -1,15 +1,3 @@
-/**
- * SVG Conversion Service Interfaces
- *
- * Service contracts for converting SVG elements and strings to Canvas.
- * Consolidates the SVG-to-Canvas conversion logic that was duplicated
- * across 4+ different services in the image export system.
- */
-
-// ============================================================================
-// DATA CONTRACTS (Domain Models)
-// ============================================================================
-
 export interface RenderQualitySettings {
   antialiasing: boolean;
   smoothScaling?: boolean;

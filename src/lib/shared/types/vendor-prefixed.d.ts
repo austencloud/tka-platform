@@ -1,14 +1,3 @@
-/**
- * Vendor-Prefixed Browser API Type Declarations
- *
- * These extend the standard DOM types with vendor-prefixed APIs
- * that are still used for cross-browser compatibility.
- */
-
-// ============================================================================
-// Fullscreen API - Vendor Prefixes
-// ============================================================================
-
 interface Document {
   /** @deprecated Use standard fullscreenEnabled */
   readonly webkitFullscreenEnabled?: boolean;
@@ -41,18 +30,10 @@ interface HTMLElement {
   msRequestFullscreen?: () => Promise<void>;
 }
 
-// ============================================================================
-// Navigator Extensions
-// ============================================================================
-
 interface Navigator {
   /** iOS Safari standalone mode detection */
   readonly standalone?: boolean;
 }
-
-// ============================================================================
-// Speech Recognition API
-// ============================================================================
 
 interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
@@ -117,19 +98,8 @@ interface SpeechRecognitionConstructor {
 interface Window {
   SpeechRecognition?: SpeechRecognitionConstructor;
   webkitSpeechRecognition?: SpeechRecognitionConstructor;
-}
-
-// ============================================================================
-// Audio Context - Vendor Prefixes
-// ============================================================================
-
-interface Window {
   webkitAudioContext?: typeof AudioContext;
 }
-
-// ============================================================================
-// Performance Memory API (Chrome-specific)
-// ============================================================================
 
 interface PerformanceMemory {
   readonly jsHeapSizeLimit: number;
@@ -141,10 +111,6 @@ interface Performance {
   readonly memory?: PerformanceMemory;
 }
 
-// ============================================================================
-// Canvas Capture (for video recording)
-// ============================================================================
-
 interface HTMLCanvasElement {
   captureStream(frameRate?: number): MediaStream;
 }
@@ -153,10 +119,6 @@ interface CanvasCaptureMediaStreamTrack extends MediaStreamTrack {
   readonly canvas: HTMLCanvasElement;
   requestFrame(): void;
 }
-
-// ============================================================================
-// Google Identity Services (One Tap) API
-// ============================================================================
 
 interface GoogleAccountsId {
   initialize(config: {
@@ -205,5 +167,3 @@ interface Window {
     accounts: GoogleAccounts;
   };
 }
-
-// Note: No export {} - this file provides ambient type declarations for vendor-prefixed APIs

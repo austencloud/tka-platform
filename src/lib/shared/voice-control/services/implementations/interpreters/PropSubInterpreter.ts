@@ -1,17 +1,7 @@
-/**
- * PropSubInterpreter
- *
- * Handles prop type changes: "change props to poi", "use fans",
- * "change blue prop to staff", etc.
- */
-
 import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
 
-// ============================================================================
 // Prop type aliases: spoken name → canonical prop type
-// ============================================================================
-
 const PROP_ALIASES: Record<string, string> = {
   staff: "staff",
   staves: "staff",
@@ -39,10 +29,7 @@ const PROP_ALIASES: Record<string, string> = {
   minihoop: "minihoop",
 };
 
-// ============================================================================
 // Patterns
-// ============================================================================
-
 /** "change props to poi" or "change prop to fans" */
 const CHANGE_BOTH_PATTERN = /^change\s+(?:props?|prop type)\s+to\s+(.+)$/;
 

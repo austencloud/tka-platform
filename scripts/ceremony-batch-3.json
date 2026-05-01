@@ -1,0 +1,578 @@
+{
+  "areas": [
+    "shared/animation-engine"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "IAnimationPrecomputer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IAnimationPrecomputer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/AnimationPrecomputer.svelte.ts",
+      "implClass": "AnimationPrecomputer.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PropDimensions"
+        },
+        {
+          "kind": "interface",
+          "name": "PrecomputationServiceConfig"
+        },
+        {
+          "kind": "interface",
+          "name": "PrecomputationState"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAnimationRenderLoop",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IAnimationRenderLoop.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/AnimationRenderLoop.ts",
+      "implClass": "AnimationRenderLoop",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "RenderLoopConfig"
+        },
+        {
+          "kind": "interface",
+          "name": "PropDimensions"
+        },
+        {
+          "kind": "interface",
+          "name": "RenderVisibilitySettings"
+        },
+        {
+          "kind": "interface",
+          "name": "RenderPropsState"
+        },
+        {
+          "kind": "interface",
+          "name": "RenderFrameParams"
+        }
+      ],
+      "consumerCount": 6,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAnimationShortcutRegistrar",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IAnimationShortcutRegistrar.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/AnimationShortcutRegistrar.ts",
+      "implClass": "AnimationShortcutRegistrar",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AnimationShortcutHandlers"
+        },
+        {
+          "kind": "interface",
+          "name": "AnimationShortcutDefinition"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IAnimationVisibilitySynchronizer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IAnimationVisibilitySynchronizer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/AnimationVisibilitySynchronizer.ts",
+      "implClass": "AnimationVisibilitySynchronizer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AnimationVisibilityState"
+        },
+        {
+          "kind": "type",
+          "name": "VisibilityStateCallback"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAnimatorCanvasInitializer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IAnimatorCanvasInitializer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/AnimatorCanvasInitializer.ts",
+      "implClass": "AnimatorCanvasInitializer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "InitializationResult"
+        },
+        {
+          "kind": "interface",
+          "name": "InitializerCallbacks"
+        },
+        {
+          "kind": "interface",
+          "name": "InitializerDependencies"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IAnimatorLoader",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IAnimatorLoader.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/AnimatorLoader.ts",
+      "implClass": "AnimatorLoader",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AnimatorServices"
+        },
+        {
+          "kind": "type",
+          "name": "AnimatorServiceLoadResult"
+        },
+        {
+          "kind": "type",
+          "name": "AnimationRendererLoadResult"
+        },
+        {
+          "kind": "type",
+          "name": "PixiLoadResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IBloomOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IBloomOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/BloomOverlayRenderer.ts",
+      "implClass": "BloomOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBubblesOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IBubblesOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/BubblesOverlayRenderer.ts",
+      "implClass": "BubblesOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICanvasResizer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ICanvasResizer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/CanvasResizer.svelte.ts",
+      "implClass": "CanvasResizer.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "const",
+          "name": "DEFAULT_CANVAS_SIZE"
+        },
+        {
+          "kind": "interface",
+          "name": "ResizableRenderer"
+        },
+        {
+          "kind": "interface",
+          "name": "CanvasResizeState"
+        }
+      ],
+      "consumerCount": 5,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICharcoalRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ICharcoalRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer.ts",
+      "implClass": "CharcoalSparkRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IDarkModeProvider",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IDarkModeProvider.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/DarkModeProvider.ts",
+      "implClass": "DarkModeProvider",
+      "getterPath": "src/lib/shared/animation-engine/getDarkModeProvider.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IDeviceTierDetector",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IDeviceTierDetector.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/DeviceTierDetector.ts",
+      "implClass": "DeviceTierDetector",
+      "getterPath": "src/lib/shared/animation-engine/getDeviceTierDetector.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IEchoOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IEchoOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/EchoOverlayRenderer.ts",
+      "implClass": "EchoOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFireDefaultsLoader",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IFireDefaultsLoader.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/FireDefaultsLoader.ts",
+      "implClass": "FireDefaultsLoader",
+      "getterPath": "src/lib/shared/animation-engine/getFireDefaultsLoader.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFireDefaultsPublisher",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IFireDefaultsPublisher.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/FireDefaultsPublisher.ts",
+      "implClass": "FireDefaultsPublisher",
+      "getterPath": "src/lib/shared/animation-engine/getFireDefaultsPublisher.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFireOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IFireOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer.ts",
+      "implClass": "WebGLFireRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 5,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFireTipTracker",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IFireTipTracker.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/FireTipTracker.ts",
+      "implClass": "FireTipTracker",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "FireTipTrackerConfig"
+        },
+        {
+          "kind": "interface",
+          "name": "FireTipUpdateResult"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFrameBudgetMonitor",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IFrameBudgetMonitor.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/FrameBudgetMonitor.ts",
+      "implClass": "FrameBudgetMonitor",
+      "getterPath": "src/lib/shared/animation-engine/getFrameBudgetMonitor.ts",
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFrostOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IFrostOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/FrostOverlayRenderer.ts",
+      "implClass": "FrostOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IGlyphTextureLoader",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IGlyphTextureLoader.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/GlyphTextureLoader.svelte.ts",
+      "implClass": "GlyphTextureLoader.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PendingGlyph"
+        },
+        {
+          "kind": "interface",
+          "name": "GlyphTextureState"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IGlyphTransitionController",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IGlyphTransitionController.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/GlyphTransitionController.svelte.ts",
+      "implClass": "GlyphTransitionController.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "GlyphTransitionState"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IInkOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IInkOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/InkOverlayRenderer.ts",
+      "implClass": "InkOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILedOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ILedOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer.ts",
+      "implClass": "WebGLLedRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILedTipTracker",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ILedTipTracker.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/LedTipTracker.ts",
+      "implClass": "LedTipTracker",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "LedTipTrackerConfig"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPetalsOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IPetalsOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/PetalsOverlayRenderer.ts",
+      "implClass": "PetalsOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropPositionCalculator",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IPropPositionCalculator.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/PropPositionCalculator.ts",
+      "implClass": "PropPositionCalculator",
+      "getterPath": "src/lib/shared/animation-engine/getPropPositionCalculator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PropEndpointConfig"
+        },
+        {
+          "kind": "interface",
+          "name": "PropEndpointResult"
+        },
+        {
+          "kind": "interface",
+          "name": "PropEndpointPair"
+        }
+      ],
+      "consumerCount": 5,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropTextureLoader",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IPropTextureLoader.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/PropTextureLoader.svelte.ts",
+      "implClass": "PropTextureLoader.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PropDimensions"
+        },
+        {
+          "kind": "const",
+          "name": "PROP_DIMENSIONS"
+        },
+        {
+          "kind": "const",
+          "name": "DEFAULT_PROP_DIMENSIONS"
+        },
+        {
+          "kind": "function",
+          "name": "getPropDimensions"
+        },
+        {
+          "kind": "interface",
+          "name": "PropTextureState"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropTypeChanger",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IPropTypeChanger.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/PropTypeChanger.svelte.ts",
+      "implClass": "PropTypeChanger.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PropTypeChangerState"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPulseOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IPulseOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/PulseOverlayRenderer.ts",
+      "implClass": "PulseOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceAnimationOrchestrator",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ISequenceAnimationOrchestrator.ts",
+      "implPath": "src/lib/features/compose/services/implementations/SequenceAnimationOrchestrator.ts",
+      "implClass": "SequenceAnimationOrchestrator",
+      "getterPath": "src/lib/features/compose/getSequenceAnimationOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 10,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceCache",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ISequenceCache.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/SequenceCache.svelte.ts",
+      "implClass": "SequenceCache.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SequenceCacheState"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceChainingOrchestrator",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator.ts",
+      "implClass": "SequenceChainingOrchestrator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "SourceMode"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISilkOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ISilkOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/SilkOverlayRenderer.ts",
+      "implClass": "SilkOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISmokeOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ISmokeOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/SmokeOverlayRenderer.ts",
+      "implClass": "SmokeOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISparklesOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ISparklesOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/SparklesOverlayRenderer.ts",
+      "implClass": "SparklesOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITipEffectResolver",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ITipEffectResolver.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/TipEffectResolver.ts",
+      "implClass": "TipEffectResolver",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITrailSettingsSynchronizer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/ITrailSettingsSynchronizer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/TrailSettingsSynchronizer.svelte.ts",
+      "implClass": "TrailSettingsSynchronizer.svelte",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "RenderTriggerCallback"
+        },
+        {
+          "kind": "interface",
+          "name": "TrailSettingsSyncState"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IWaterOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IWaterOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/WaterOverlayRenderer.ts",
+      "implClass": "WaterOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IZapOverlayRenderer",
+      "contractPath": "src/lib/shared/animation-engine/services/contracts/IZapOverlayRenderer.ts",
+      "implPath": "src/lib/shared/animation-engine/services/implementations/ZapOverlayRenderer.ts",
+      "implClass": "ZapOverlayRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    }
+  ]
+}

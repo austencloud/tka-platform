@@ -1,9 +1,5 @@
 import type { ISwipeGestureHandler } from "../contracts/ISwipeGestureHandler";
 
-/**
- * Handles swipe-to-dismiss gesture detection for mobile modals.
- * Tracks vertical swipe gestures starting from top of screen.
- */
 export class SwipeGestureHandler implements ISwipeGestureHandler {
   private _swipeY = 0;
   private _swipeStartY = 0;
@@ -27,7 +23,6 @@ export class SwipeGestureHandler implements ISwipeGestureHandler {
   }
 
   handleTouchStart(clientY: number, maxStartY = 150): boolean {
-    // Only start swipe from top portion of modal
     if (clientY < maxStartY) {
       this._swipeStartY = clientY;
       this._isSwiping = true;
@@ -39,7 +34,6 @@ export class SwipeGestureHandler implements ISwipeGestureHandler {
   handleTouchMove(clientY: number): void {
     if (!this._isSwiping) return;
     const delta = clientY - this._swipeStartY;
-    // Only allow downward swipe
     if (delta > 0) {
       this._swipeY = delta;
     }
@@ -59,7 +53,4 @@ export class SwipeGestureHandler implements ISwipeGestureHandler {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const swipeGestureHandler = new SwipeGestureHandler();

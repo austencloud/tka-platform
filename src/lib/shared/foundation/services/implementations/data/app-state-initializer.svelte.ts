@@ -1,28 +1,12 @@
-/**
- * Initialization Service Factory
- *
- * Manages application initialization state and progress.
- * Clean separation of initialization logic from other concerns.
- */
-
 import type { IAppStateInitializer } from "../../../../application/state/app-state-contracts";
 
-/**
- * Factory function to create app state initializer
- * Uses Svelte 5 runes for reactivity
- */
 export function createAppStateInitializer(): IAppStateInitializer {
-  // Initialization state using Svelte 5 runes
   let isInitialized = $state<boolean>(false);
   let isInitializing = $state<boolean>(false);
   let initializationError = $state<string | null>(null);
   let initializationProgress = $state<number>(0);
 
   return {
-    // ============================================================================
-    // GETTERS
-    // ============================================================================
-
     get isInitialized() {
       return isInitialized;
     },
@@ -39,14 +23,9 @@ export function createAppStateInitializer(): IAppStateInitializer {
       return initializationProgress;
     },
 
-    // Derived state
     get initializationComplete() {
       return initializationProgress >= 100;
     },
-
-    // ============================================================================
-    // ACTIONS
-    // ============================================================================
 
     setInitializationState(
       initialized: boolean,

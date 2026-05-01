@@ -1,10 +1,3 @@
-/**
- * File Download Service Implementation
- *
- * Cross-browser utilities for downloading files from Blob objects.
- * Handles browser compatibility and provides progress feedback.
- */
-
 import type {
   IFileDownloader,
   DownloadOptions,
@@ -13,9 +6,6 @@ import type {
 } from "../contracts/IFileDownloader";
 
 export class FileDownloader implements IFileDownloader {
-  /**
-   * Download a single file from a Blob
-   */
   async downloadBlob(
     blob: Blob,
     filename: string,
@@ -23,22 +13,16 @@ export class FileDownloader implements IFileDownloader {
   ): Promise<DownloadResult> {
     return new Promise((resolve) => {
       try {
-        // Create object URL for the blob
         const url = URL.createObjectURL(blob);
 
-        // Create temporary anchor element
         const anchor = document.createElement("a");
         anchor.href = url;
         anchor.download = filename;
         anchor.style.display = "none";
 
-        // Add to DOM temporarily
         document.body.appendChild(anchor);
-
-        // Trigger download
         anchor.click();
 
-        // Cleanup
         document.body.removeChild(anchor);
         URL.revokeObjectURL(url);
 
@@ -57,7 +41,7 @@ export class FileDownloader implements IFileDownloader {
   }
 
   /**
-   * Download multiple files with delay to prevent browser blocking
+   * Prevents browser blocking multiple parallel downloads.
    */
   async downloadBlobBatch(
     blobs: Array<{ blob: Blob; filename: string }>,
@@ -85,11 +69,7 @@ export class FileDownloader implements IFileDownloader {
   }
 
   /**
-   * Generate a safe filename from a string.
-   * Preserves Unicode letters and numbers (modern filesystems - NTFS, APFS, ext4 -
-   * handle them fine). Strips only characters forbidden on Windows/macOS/Linux:
-   * `< > : " / \ | ? *` and C0 control chars. Also trims trailing dots/spaces
-   * (forbidden on Windows) and collapses any whitespace to single spaces.
+   * Preserves Unicode, strips < > : " / \ | ? * and C0 control chars.
    */
   sanitizeFilename(filename: string): string {
     return filename
@@ -100,9 +80,6 @@ export class FileDownloader implements IFileDownloader {
       .substring(0, 200);
   }
 
-  /**
-   * Generate a timestamped filename
-   */
   generateTimestampedFilename(
     baseName: string,
     extension: string,
@@ -120,9 +97,6 @@ export class FileDownloader implements IFileDownloader {
     return `${sanitizedBaseName}_${timestamp}.${extension}`;
   }
 
-  /**
-   * Check if browser supports file downloads
-   */
   supportsFileDownload(): boolean {
     try {
       // Check for required APIs
@@ -137,9 +111,6 @@ export class FileDownloader implements IFileDownloader {
     }
   }
 
-  /**
-   * Get recommended file extension for a MIME type
-   */
   getFileExtensionForMimeType(mimeType: string): string {
     const mimeTypeMap: Record<string, string> = {
       "image/png": "png",
@@ -154,7 +125,4 @@ export class FileDownloader implements IFileDownloader {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const fileDownloader = new FileDownloader();

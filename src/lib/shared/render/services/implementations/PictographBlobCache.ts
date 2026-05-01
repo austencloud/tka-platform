@@ -1,20 +1,4 @@
-/**
- * PictographBlobCache
- *
- * Layer 1 of the two-layer pictograph caching system.
- * Persists rasterized pictograph images (as Blobs) to IndexedDB.
- *
- * Why Blobs instead of SVG strings?
- * - SVG strings must be re-parsed and rasterized by the browser on every load
- * - Blobs are already rasterized PNG/WebP data, so creating images is instant
- * - Benchmark showed SVG cache had 0.1% speedup vs 91.9% for memory cache
- *   because the bottleneck was SVG parsing, not generation
- *
- * Follows the BrowseThumbnailCache pattern exactly for consistency.
- */
-
 import { browser } from "$app/environment";
-
 import type {
   IPictographBlobCache,
   PictographBlobCacheStats,
@@ -22,20 +6,6 @@ import type {
 
 const DB_NAME = "pictograph-blob-cache";
 const STORE_NAME = "blobs";
-// v2: Cache keys now include visibility settings (nonRadialPoints, handPointVisibility,
-// showTKA, showReversals). All v1 entries are stale and cleared on upgrade.
-// v3: Cache keys now include orientation and rotation direction data
-// (startOrientation, endOrientation, rotationDirection). v2 entries are stale.
-// v4: ImageComposer write-through was contaminating entries with baked-in step numbers.
-// All pre-v4 entries may have step numbers in "nonum" blobs - clear everything.
-// v5: Dark mode cross-fade implementation may have cached images with wrong theme colors.
-// All pre-v5 entries may have light-mode colors in dark-mode keyed entries - clear everything.
-// v6: Switched from 32-bit djb2 hash keys (lsp3-) to full string keys (lsp4-).
-// The hash had collision risk after ~46K entries, causing wrong prop type blobs to be served.
-// All lsp3- entries must be cleared since they can't be looked up under lsp4- keys anyway.
-// v7: lsp8 refactor silently reintroduced the djb2 hash via PictographKeyHasher, producing
-// wrong-arrow blobs once the cache grew past ~46K entries. Reverted to full JSON string
-// keys (lsp10-). All pre-v7 entries may be collision-poisoned - clear everything.
 const DB_VERSION = 7;
 
 interface CachedBlobEntry {
@@ -72,13 +42,6 @@ export class PictographBlobCache implements IPictographBlobCache {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
         } else if (oldVersion < 7) {
-          // v1→v2: keys added visibility settings.
-          // v2→v3: keys added orientation data.
-          // v3→v4: ImageComposer write-through contamination (step numbers baked in).
-          // v4→v5: dark mode cross-fade may have cached wrong theme colors.
-          // v5→v6: switched from djb2 hash keys to full string keys (collision fix).
-          // v6→v7: lsp8 reintroduced the djb2 collision; reverted to full JSON string keys.
-          // All pre-v7 entries may be collision-poisoned - clear them.
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }
@@ -164,7 +127,6 @@ export class PictographBlobCache implements IPictographBlobCache {
       const tx = db.transaction(STORE_NAME, "readwrite");
       const store = tx.objectStore(STORE_NAME);
 
-      // Check if key exists first
       const exists = await new Promise<boolean>((resolve, reject) => {
         const countReq = store.count(IDBKeyRange.only(key));
         countReq.onerror = () => reject(countReq.error);
@@ -249,7 +211,6 @@ export class PictographBlobCache implements IPictographBlobCache {
       const store = tx.objectStore(STORE_NAME);
       const index = store.index("timestamp");
 
-      // Get all entries sorted by timestamp (oldest first)
       const entries: Array<{ key: string; size: number }> = [];
 
       await new Promise<void>((resolve, reject) => {
@@ -268,7 +229,6 @@ export class PictographBlobCache implements IPictographBlobCache {
         };
       });
 
-      // Delete oldest entries until under limit
       let currentSize = stats.sizeBytes;
       let deletedCount = 0;
 
@@ -293,14 +253,6 @@ export class PictographBlobCache implements IPictographBlobCache {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-// Use this instead of getPictographBlobCache() to avoid DI container rebuilds.
-// IndexedDB connection is managed internally, so no HMR concerns for the instance itself.
-// ============================================================================
-
-// HMR-aware singleton instance
 let hmrPictographBlobCacheInstance: PictographBlobCache | null =
   import.meta.hot?.data?.pictographBlobCacheInstance ?? null;
 

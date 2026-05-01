@@ -1,0 +1,540 @@
+{
+  "areas": [
+    "shared/pictograph"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "IArrowAdjustmentProcessor",
+      "contractPath": "src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowAdjustmentProcessor.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowAdjustmentProcessor.ts",
+      "implClass": "ArrowAdjustmentProcessor",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrowCoordinateTransformer",
+      "contractPath": "src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowCoordinateTransformer.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowCoordinateTransformer.ts",
+      "implClass": "ArrowCoordinateTransformer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrowDataProcessor",
+      "contractPath": "src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowDataProcessor.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowDataProcessor.ts",
+      "implClass": "ArrowDataProcessor",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowGridCoordinator",
+      "contractPath": "src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowGridCoordinator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowGridCoordinator.ts",
+      "implClass": "ArrowGridCoordinator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowLifecycleManager",
+      "contractPath": "src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowLifecycleManager.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowLifecycleManager.ts",
+      "implClass": "ArrowLifecycleManager",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ArrowLifecycleOptions"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowQuadrantCalculator",
+      "contractPath": "src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowQuadrantCalculator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowQuadrantCalculator.ts",
+      "implClass": "ArrowQuadrantCalculator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowAdjustmentCalculator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowAdjustmentCalculator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator.ts",
+      "implClass": "ArrowAdjustmentCalculator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowLocationCalculator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowLocationCalculator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator.ts",
+      "implClass": "ArrowLocationCalculator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowLocator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowLocator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocator.ts",
+      "implClass": "ArrowLocator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ArrowLocationInput"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrowRotationCalculator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowRotationCalculator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowRotationCalculator.ts",
+      "implClass": "ArrowRotationCalculator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IHandpathDirectionCalculator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IHandpathDirectionCalculator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator.ts",
+      "implClass": "HandpathDirectionCalculator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "HandpathDirection"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IScreenSpaceAdjustmentTransformer",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IScreenSpaceAdjustmentTransformer.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer.ts",
+      "implClass": "ScreenSpaceAdjustmentTransformer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IShiftLocationCalculator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IShiftLocationCalculator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ShiftLocationCalculator.ts",
+      "implClass": "ShiftLocationCalculator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IStaticLocationCalculator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IStaticLocationCalculator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/StaticLocationCalculator.ts",
+      "implClass": "StaticLocationCalculator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IGlobalAdjustmentKeyGenerator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/global/services/contracts/IGlobalAdjustmentKeyGenerator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/global/services/implementations/GlobalAdjustmentKeyGenerator.ts",
+      "implClass": "GlobalAdjustmentKeyGenerator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "KeyGeneratorPropOptions"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IGlobalArrowAdjustmentPersister",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/global/services/contracts/IGlobalArrowAdjustmentPersister.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/global/services/implementations/GlobalArrowAdjustmentPersister.ts",
+      "implClass": "GlobalArrowAdjustmentPersister",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IGlobalArrowAdjustmentRepository",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/global/services/contracts/IGlobalArrowAdjustmentRepository.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/global/services/implementations/GlobalArrowAdjustmentRepository.ts",
+      "implClass": "GlobalArrowAdjustmentRepository",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CascadingLookupResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowPlacementKeyGenerator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/contracts/IArrowPlacementKeyGenerator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/ArrowPlacementKeyGenerator.ts",
+      "implClass": "ArrowPlacementKeyGenerator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IAttributeKeyGenerator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/contracts/IAttributeKeyGenerator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/AttributeKeyGenerator.ts",
+      "implClass": "AttributeKeyGenerator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISpecialPlacementOriKeyGenerator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/contracts/ISpecialPlacementOriKeyGenerator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator.ts",
+      "implClass": "SpecialPlacementOriKeyGenerator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITurnsTupleKeyGenerator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/contracts/ITurnsTupleKeyGenerator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/TurnsTupleKeyGenerator.ts",
+      "implClass": "TurnsTupleKeyGenerator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowPlacer",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/contracts/IArrowPlacer.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/ArrowPlacer.ts",
+      "implClass": "ArrowPlacer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ISpecialPlacer"
+        },
+        {
+          "kind": "interface",
+          "name": "IDefaultPlacer"
+        },
+        {
+          "kind": "interface",
+          "name": "IArrowAdjustmentLookup"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILetterClassifier",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/contracts/ILetterClassifier.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/LetterClassifier.ts",
+      "implClass": "LetterClassifier",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISpecialPlacementDataProvider",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/contracts/ISpecialPlacementDataProvider.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementDataProvider.ts",
+      "implClass": "SpecialPlacementDataProvider",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISpecialPlacementLookup",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/contracts/ISpecialPlacementLookup.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementLookup.ts",
+      "implClass": "SpecialPlacementLookup",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISpecialPlacer",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/contracts/ISpecialPlacer.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer.ts",
+      "implClass": "SpecialPlacer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITurnsTupleGenerator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator.ts",
+      "implClass": "TurnsTupleGenerator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 7,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropGeometryAdjustmentRepository",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/prop-geometry/services/contracts/IPropGeometryAdjustmentRepository.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/positioning/prop-geometry/services/implementations/PropGeometryAdjustmentRepository.ts",
+      "implClass": "PropGeometryAdjustmentRepository",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CascadingPropGeometryResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowPositioningOrchestrator",
+      "contractPath": "src/lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator.ts",
+      "implClass": "ArrowPositioningOrchestrator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowPathResolver",
+      "contractPath": "src/lib/shared/pictograph/arrow/rendering/services/contracts/IArrowPathResolver.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowPathResolver.ts",
+      "implClass": "ArrowPathResolver",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowRenderer",
+      "contractPath": "src/lib/shared/pictograph/arrow/rendering/services/contracts/IArrowRenderer.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowRenderer.ts",
+      "implClass": "ArrowRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrowSvgColorTransformer",
+      "contractPath": "src/lib/shared/pictograph/arrow/rendering/services/contracts/IArrowSvgColorTransformer.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgColorTransformer.ts",
+      "implClass": "ArrowSvgColorTransformer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ISvgColorTransformer"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowSvgLoader",
+      "contractPath": "src/lib/shared/pictograph/arrow/rendering/services/contracts/IArrowSvgLoader.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgLoader.ts",
+      "implClass": "ArrowSvgLoader",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ArrowSvgLoadOptions"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IArrowSvgParser",
+      "contractPath": "src/lib/shared/pictograph/arrow/rendering/services/contracts/IArrowSvgParser.ts",
+      "implPath": "src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgParser.ts",
+      "implClass": "ArrowSvgParser",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IGridModeDeriver",
+      "contractPath": "src/lib/shared/pictograph/grid/services/contracts/IGridModeDeriver.ts",
+      "implPath": "src/lib/shared/pictograph/grid/services/implementations/GridModeDeriver.ts",
+      "implClass": "GridModeDeriver",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 12,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IGridPositionDeriver",
+      "contractPath": "src/lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver.ts",
+      "implPath": "src/lib/shared/pictograph/grid/services/implementations/GridPositionDeriver.ts",
+      "implClass": "GridPositionDeriver",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 15,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IGridRenderer",
+      "contractPath": "src/lib/shared/pictograph/grid/services/contracts/IGridRenderer.ts",
+      "implPath": "src/lib/shared/pictograph/grid/services/implementations/GridRenderer.ts",
+      "implClass": "GridRenderer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IBetaDetector",
+      "contractPath": "src/lib/shared/pictograph/prop/services/contracts/IBetaDetector.ts",
+      "implPath": "src/lib/shared/pictograph/prop/services/implementations/BetaDetector.ts",
+      "implClass": "BetaDetector",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IOrientationChecker",
+      "contractPath": "src/lib/shared/pictograph/prop/services/contracts/IOrientationChecker.ts",
+      "implPath": "src/lib/shared/pictograph/prop/services/implementations/OrientationChecker.ts",
+      "implClass": "OrientationChecker",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropPlacer",
+      "contractPath": "src/lib/shared/pictograph/prop/services/contracts/IPropPlacer.ts",
+      "implPath": "src/lib/shared/pictograph/prop/services/implementations/PropPlacer.ts",
+      "implClass": "PropPlacer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PropPlacementVisibility"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropSvgLoader",
+      "contractPath": "src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader.ts",
+      "implPath": "src/lib/shared/pictograph/prop/services/implementations/PropSvgLoader.ts",
+      "implClass": "PropSvgLoader",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PropSvgLoadOptions"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPropTypeConfigurator",
+      "contractPath": "src/lib/shared/pictograph/prop/services/contracts/IPropTypeConfigurator.ts",
+      "implPath": "src/lib/shared/pictograph/prop/services/implementations/PropTypeConfigurator.ts",
+      "implClass": "PropTypeConfigurator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPictographCoordinator",
+      "contractPath": "src/lib/shared/pictograph/shared/services/contracts/IPictographCoordinator.ts",
+      "implPath": "src/lib/shared/pictograph/shared/services/implementations/PictographCoordinator.ts",
+      "implClass": "PictographCoordinator",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PictographRenderingState"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPictographPreparer",
+      "contractPath": "src/lib/shared/pictograph/shared/services/contracts/IPictographPreparer.ts",
+      "implPath": "src/lib/shared/pictograph/shared/services/implementations/PictographPreparer.ts",
+      "implClass": "PictographPreparer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PrepareOptions"
+        }
+      ],
+      "consumerCount": 9,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStartPositionDeriver",
+      "contractPath": "src/lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver.ts",
+      "implPath": "src/lib/shared/pictograph/shared/services/implementations/StartPositionDeriver.ts",
+      "implClass": "StartPositionDeriver",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISvgPreloader",
+      "contractPath": "src/lib/shared/pictograph/shared/services/contracts/ISvgPreloader.ts",
+      "implPath": "src/lib/shared/pictograph/shared/services/implementations/SvgPreloader.ts",
+      "implClass": "SvgPreloader",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    }
+  ]
+}

@@ -1,16 +1,3 @@
-/**
- * Shared training data store backed by IndexedDB.
- *
- * All three video-processing modules (Video Trails, Skel2TKA, ML Training)
- * write their training data here in a common format. Corrections from one
- * module are visible to the others, and the whole dataset can be exported
- * as JSON for offline model training.
- *
- * IndexedDB indexes:
- *   - "source"     - quick filter by originating module
- *   - "frameIndex" - find all annotations for a given frame
- */
-
 import type {
 	ITrainingDataStore,
 	TrainingDataEntry,
@@ -23,10 +10,6 @@ const STORE_NAME = "entries";
 
 export class TrainingDataStore implements ITrainingDataStore {
 	private dbPromise: Promise<IDBDatabase> | null = null;
-
-	// ---------------------------------------------------------------
-	// Public API
-	// ---------------------------------------------------------------
 
 	async save(entry: TrainingDataEntry): Promise<void> {
 		const db = await this.getDb();
@@ -153,10 +136,6 @@ export class TrainingDataStore implements ITrainingDataStore {
 		const entries = await this.getAll();
 		return JSON.stringify(entries, null, 2);
 	}
-
-	// ---------------------------------------------------------------
-	// Internal: IndexedDB lifecycle
-	// ---------------------------------------------------------------
 
 	private getDb(): Promise<IDBDatabase> {
 		if (!this.dbPromise) {

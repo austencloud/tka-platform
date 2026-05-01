@@ -1,17 +1,4 @@
 <script lang="ts">
-  /**
-   * Viewer3DScene
-   *
-   * Inner 3D scene content for the sequence viewer. Renders inside a Threlte
-   * <Canvas>. Drives avatar pose purely through the useTask sync loop - the
-   * orchestrator controls currentStep and this component puppets the avatar
-   * to match. avatarState.play() is never called here.
-   *
-   * All avatar/grid/prop/effect wiring is delegated to PerformerRig, which
-   * owns the unified transform hierarchy. This component handles environment,
-   * lighting, dual-wheel prop swapping, and the puppet-mode sync loop.
-   */
-
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
@@ -167,9 +154,6 @@
     }
   });
 
-  // ---------------------------------------------------------------
-  // Raycasting: let users click a performer's body in 3D to select them.
-  // ---------------------------------------------------------------
   const raycaster = new Raycaster();
   const pointer = new Vector2();
 

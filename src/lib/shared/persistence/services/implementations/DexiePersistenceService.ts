@@ -1,11 +1,3 @@
-/**
- * Dexie Persistence Service Implementation
- *
- * This is where the magic happens! This service implements all the database
- * operations using Dexie. Your components will call these methods, and this
- * service handles all the IndexedDB complexity behind the scenes.
- */
-
 import type { AppSettings } from "../../../settings/domain/AppSettings";
 import type { CompleteBrowseState } from "../../../../features/browse/shared/domain/models/browse-models";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
@@ -22,10 +14,6 @@ import type { UserWorkData } from "../../domain/models/UserWorkData";
 import type { IPersistenceService } from "../contracts/IPersistenceService";
 
 export class DexiePersistenceService implements IPersistenceService {
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
-
   async initialize(): Promise<void> {
     try {
       await db.open();
@@ -38,10 +26,6 @@ export class DexiePersistenceService implements IPersistenceService {
   isAvailable(): boolean {
     return typeof window !== "undefined" && "indexedDB" in window;
   }
-
-  // ============================================================================
-  // SEQUENCE OPERATIONS
-  // ============================================================================
 
   async saveSequence(sequence: SequenceData): Promise<void> {
     try {
@@ -71,7 +55,6 @@ export class DexiePersistenceService implements IPersistenceService {
     try {
       let query = db.sequences.toCollection();
 
-      // Apply filters if provided
       if (filter) {
         if (filter.author) {
           query = query.filter((seq) => seq.author === filter.author);
@@ -105,9 +88,6 @@ export class DexiePersistenceService implements IPersistenceService {
     }
   }
 
-  /**
-   * Alias for getAllSequences (required by ISequenceRepository contract)
-   */
   async loadAllSequences(): Promise<SequenceData[]> {
     return this.getAllSequences();
   }
@@ -128,10 +108,6 @@ export class DexiePersistenceService implements IPersistenceService {
       return [];
     }
   }
-
-  // ============================================================================
-  // PICTOGRAPH OPERATIONS
-  // ============================================================================
 
   async savePictograph(pictograph: PictographData): Promise<void> {
     try {
@@ -169,10 +145,6 @@ export class DexiePersistenceService implements IPersistenceService {
       return [];
     }
   }
-
-  // ============================================================================
-  // TAB STATE PERSISTENCE
-  // ============================================================================
 
   async saveActiveTab(tabId: TabId): Promise<void> {
     try {
@@ -218,10 +190,6 @@ export class DexiePersistenceService implements IPersistenceService {
     }
   }
 
-  // ============================================================================
-  // Browse STATE PERSISTENCE
-  // ============================================================================
-
   async saveBrowseState(state: CompleteBrowseState): Promise<void> {
     try {
       await this.saveUserWork(UserWorkType.Browse_STATE, "browse", state);
@@ -243,10 +211,6 @@ export class DexiePersistenceService implements IPersistenceService {
     }
   }
 
-  // ============================================================================
-  // SETTINGS PERSISTENCE
-  // ============================================================================
-
   async saveSettings(settings: AppSettings): Promise<void> {
     try {
       await db.settings.put({ ...settings, id: "default" } as AppSettings & {
@@ -267,10 +231,6 @@ export class DexiePersistenceService implements IPersistenceService {
       return null;
     }
   }
-
-  // ============================================================================
-  // USER PROJECTS
-  // ============================================================================
 
   async saveProject(project: UserProject): Promise<void> {
     try {
@@ -298,10 +258,6 @@ export class DexiePersistenceService implements IPersistenceService {
       throw error;
     }
   }
-
-  // ============================================================================
-  // UTILITY OPERATIONS
-  // ============================================================================
 
   async exportAllData(): Promise<unknown> {
     try {
@@ -364,13 +320,6 @@ export class DexiePersistenceService implements IPersistenceService {
     }
   }
 
-  // ============================================================================
-  // PRIVATE HELPER METHODS
-  // ============================================================================
-
-  /**
-   * Generic method to save user work data
-   */
   private async saveUserWork(
     type: UserWorkType,
     tabId: string,
@@ -384,7 +333,6 @@ export class DexiePersistenceService implements IPersistenceService {
       version: 1,
     };
 
-    // Update existing record or create new one
     const existing = await db.userWork.where({ type, tabId }).first();
 
     if (existing) {
@@ -397,9 +345,6 @@ export class DexiePersistenceService implements IPersistenceService {
     }
   }
 
-  /**
-   * Generic method to load user work data
-   */
   private async loadUserWork(
     type: UserWorkType,
     tabId: string
@@ -409,16 +354,7 @@ export class DexiePersistenceService implements IPersistenceService {
     return workData?.data ?? null;
   }
 
-  // ============================================================================
-  // SEQUENCE STATE PERSISTENCE (for hot module replacement survival)
-  // ============================================================================
-
-  /**
-   * Generate mode-specific localStorage key
-   * Each creation mode (Constructor, Generator, Assembler) has its own workspace
-   */
   private getSequenceStateKey(mode: string): string {
-    // Normalize mode name and create mode-specific key
     const normalizedMode = mode.toLowerCase();
     return `tka-${normalizedMode}-sequence-state-v1`;
   }
@@ -433,7 +369,6 @@ export class DexiePersistenceService implements IPersistenceService {
       const mode = state.activeBuildSection ?? "construct";
       const storageKey = this.getSequenceStateKey(mode);
 
-      // Use localStorage for immediate persistence that survives hot module replacement
       const stateData = {
         currentSequence: state.currentSequence,
         selectedStartPosition: state.selectedStartPosition,
@@ -467,15 +402,13 @@ export class DexiePersistenceService implements IPersistenceService {
 
       const parsed: unknown = JSON.parse(stateJson);
 
-      // Type guard to validate the parsed data
       if (!this.isValidSequenceState(parsed)) {
         console.warn("❌ Invalid sequence state structure, clearing state");
         await this.clearCurrentSequenceState(targetMode);
         return null;
       }
 
-      // Check if the state is not too old (24 hours max)
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      const maxAge = 24 * 60 * 60 * 1000; 
       if (
         typeof parsed.timestamp === "number" &&
         Date.now() - parsed.timestamp > maxAge
@@ -485,7 +418,6 @@ export class DexiePersistenceService implements IPersistenceService {
       }
 
       return {
-        // Use createSequenceData for backwards compatibility (beats -> steps migration)
         currentSequence: parsed.currentSequence
           ? createSequenceData(parsed.currentSequence)
           : null,
@@ -499,9 +431,6 @@ export class DexiePersistenceService implements IPersistenceService {
     }
   }
 
-  /**
-   * Type guard for sequence state validation
-   */
   private isValidSequenceState(obj: unknown): obj is {
     currentSequence: SequenceData | null;
     selectedStartPosition: StartPositionData | null;
@@ -525,11 +454,9 @@ export class DexiePersistenceService implements IPersistenceService {
   clearCurrentSequenceState(mode?: string): Promise<void> {
     try {
       if (mode) {
-        // Clear specific mode
         const storageKey = this.getSequenceStateKey(mode);
         localStorage.removeItem(storageKey);
       } else {
-        // Clear all modes
         const modes = ["construct", "generate", "assemble"];
         modes.forEach((m) => {
           const storageKey = this.getSequenceStateKey(m);
@@ -544,7 +471,4 @@ export class DexiePersistenceService implements IPersistenceService {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const dexiePersistenceService = new DexiePersistenceService();

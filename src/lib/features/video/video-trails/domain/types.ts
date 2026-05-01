@@ -1,9 +1,5 @@
 import type { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
-// ============================================================================
-// Detection
-// ============================================================================
-
 export interface DetectedEndpoint {
   x: number;
   y: number;
@@ -37,10 +33,6 @@ export interface DetectorRegistration {
   capabilities: DetectorCapabilities;
 }
 
-// ============================================================================
-// Corrections
-// ============================================================================
-
 export interface EndpointCorrection {
   propIndex: 0 | 1;
   tipIndex: number;
@@ -68,10 +60,6 @@ export interface TrainingPair {
   corrected: EndpointCorrection[];
   metadata: CorrectionFrame["metadata"];
 }
-
-// ============================================================================
-// Effects
-// ============================================================================
 
 export interface FireEffectConfig {
   enabled: boolean;
@@ -113,10 +101,6 @@ export interface EffectConfig {
   charcoal: CharcoalEffectConfig;
 }
 
-// ============================================================================
-// Video Source
-// ============================================================================
-
 export interface VideoSource {
   type: "file" | "camera" | "sequence";
   url: string;
@@ -126,10 +110,6 @@ export interface VideoSource {
   frameCount: number;
   fps: number;
 }
-
-// ============================================================================
-// Export
-// ============================================================================
 
 export type ExportPhase = "idle" | "preparing" | "recording" | "encoding" | "complete" | "error";
 
@@ -156,10 +136,6 @@ export interface VideoExportRecord {
   fileSize: number;
   blobUrl?: string;
 }
-
-// ============================================================================
-// Project
-// ============================================================================
 
 export interface VideoTrailsProject {
   id: string;
@@ -196,15 +172,7 @@ export interface VideoTrailsProject {
   thumbnail: string;
 }
 
-// ============================================================================
-// Sub-navigation
-// ============================================================================
-
 export type VideoTrailsView = "workspace" | "detection-studio" | "library";
-
-// ============================================================================
-// Defaults
-// ============================================================================
 
 export const DEFAULT_DETECTION_CONFIG: DetectionConfig = {
   threshold: 0.7,

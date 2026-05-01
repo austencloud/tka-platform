@@ -1,0 +1,1208 @@
+{
+  "areas": [
+    "features/create"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "IAspectLayoutPlanner",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IAspectLayoutPlanner.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/AspectLayoutPlanner.ts",
+      "implClass": "AspectLayoutPlanner",
+      "getterPath": "src/lib/features/create/construct/option-picker/getAspectLayoutPlanner.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "TypeCount"
+        },
+        {
+          "kind": "interface",
+          "name": "LayoutRow"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IContinuationIdentifier",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IContinuationIdentifier.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/ContinuationIdentifier.ts",
+      "implClass": "ContinuationIdentifier",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ILayoutDetector",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/ILayoutDetector.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/LayoutDetector.ts",
+      "implClass": "LayoutDetector",
+      "getterPath": "src/lib/features/create/construct/option-picker/getLayoutDetector.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "LayoutConfig"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IOptionFilter",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IOptionFilter.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/OptionFilter.ts",
+      "implClass": "OptionFilter",
+      "getterPath": "src/lib/features/create/construct/option-picker/getOptionFilter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IOptionLoader",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IOptionLoader.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/OptionLoader.ts",
+      "implClass": "OptionLoader",
+      "getterPath": "src/lib/features/create/construct/option-picker/getOptionLoader.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IOptionOrganizer",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IOptionOrganizer.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/OptionOrganizer.ts",
+      "implClass": "OptionOrganizer",
+      "getterPath": "src/lib/features/create/construct/option-picker/getOptionOrganizer.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IOptionSorter",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IOptionSorter.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/OptionSorter.ts",
+      "implClass": "OptionSorter",
+      "getterPath": "src/lib/features/create/construct/option-picker/getOptionSorter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IOptionTransitionCoordinator",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IOptionTransitionCoordinator.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/OptionTransitionCoordinator.ts",
+      "implClass": "OptionTransitionCoordinator",
+      "getterPath": "src/lib/features/create/construct/option-picker/getOptionTransitionCoordinator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "TransitionLifecycle"
+        },
+        {
+          "kind": "interface",
+          "name": "TransitionCallbacks"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPictographPreparer",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IPictographPreparer.ts",
+      "implPath": "src/lib/shared/pictograph/shared/services/implementations/PictographPreparer.ts",
+      "implClass": "PictographPreparer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 9,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPositionAnalyzer",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IPositionAnalyzer.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/PositionAnalyzer.ts",
+      "implClass": "PositionAnalyzer",
+      "getterPath": "src/lib/features/create/construct/option-picker/getPositionAnalyzer.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "RotationRelation"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IReversalChecker",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/IReversalChecker.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/ReversalChecker.ts",
+      "implClass": "ReversalChecker",
+      "getterPath": "src/lib/features/create/construct/option-picker/getReversalChecker.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISectionTitleFormatter",
+      "contractPath": "src/lib/features/create/construct/option-picker/services/contracts/ISectionTitleFormatter.ts",
+      "implPath": "src/lib/features/create/construct/option-picker/services/implementations/SectionTitleFormatter.ts",
+      "implClass": "SectionTitleFormatter",
+      "getterPath": "src/lib/features/create/construct/option-picker/getSectionTitleFormatter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IStartPositionManager",
+      "contractPath": "src/lib/features/create/construct/start-position-picker/services/contracts/IStartPositionManager.ts",
+      "implPath": "src/lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager.ts",
+      "implClass": "StartPositionManager",
+      "getterPath": "src/lib/features/create/construct/start-position-picker/getStartPositionManager.ts",
+      "coExports": [],
+      "consumerCount": 6,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPEndPositionSelector",
+      "contractPath": "src/lib/features/create/generate/circular/services/contracts/ILOOPEndPositionSelector.ts",
+      "implPath": "src/lib/features/create/generate/circular/services/implementations/LOOPEndPositionSelector.ts",
+      "implClass": "LOOPEndPositionSelector",
+      "getterPath": "src/lib/features/create/generate/circular/getLOOPEndPositionSelector.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ILOOPExecutorSelector",
+      "contractPath": "src/lib/features/create/generate/circular/services/contracts/ILOOPExecutorSelector.ts",
+      "implPath": "src/lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector.ts",
+      "implClass": "LOOPExecutorSelector",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IOrientationCycleExtender",
+      "contractPath": "src/lib/features/create/generate/circular/services/contracts/IOrientationCycleExtender.ts",
+      "implPath": "src/lib/features/create/generate/circular/services/implementations/OrientationCycleExtender.ts",
+      "implClass": "OrientationCycleExtender",
+      "getterPath": "src/lib/features/create/generate/circular/getOrientationCycleExtender.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IFavoriteConfigRepository",
+      "contractPath": "src/lib/features/create/generate/services/contracts/IFavoriteConfigRepository.ts",
+      "implPath": "src/lib/features/create/generate/services/implementations/FavoriteConfigRepository.ts",
+      "implClass": "FavoriteConfigRepository",
+      "getterPath": "src/lib/features/create/generate/getFavoriteConfigRepository.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBrowserVariationProvider",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/IBrowserVariationProvider.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/BrowserVariationProvider.ts",
+      "implClass": "BrowserVariationProvider",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBuildResultTransformer",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/IBuildResultTransformer.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/BuildResultTransformer.ts",
+      "implClass": "BuildResultTransformer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICardConfigurator",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ICardConfigurator.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/CardConfigurator.ts",
+      "implClass": "CardConfigurator",
+      "getterPath": "src/lib/features/create/generate/shared/getCardConfigurator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CardDescriptor"
+        },
+        {
+          "kind": "interface",
+          "name": "CardHandlers"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IGenerationOrchestrator",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/GenerationOrchestrator.ts",
+      "implClass": "GenerationOrchestrator",
+      "getterPath": "src/lib/features/create/generate/shared/getGenerationOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPExplanationTextGenerator",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ILOOPExplanationTextGenerator.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator.ts",
+      "implClass": "LOOPExplanationTextGenerator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ILOOPParameterProvider",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ILOOPParameterProvider.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/LOOPParameterProvider.ts",
+      "implClass": "LOOPParameterProvider",
+      "getterPath": "src/lib/features/create/generate/shared/getLOOPParameterProvider.ts",
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPTypeResolver",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/LOOPTypeResolver.ts",
+      "implClass": "LOOPTypeResolver",
+      "getterPath": "src/lib/features/create/generate/shared/getLOOPTypeResolver.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILoopViabilityService",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ILoopViabilityService.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/LoopViabilityService.ts",
+      "implClass": "LoopViabilityService",
+      "getterPath": "src/lib/features/create/generate/shared/getLoopViabilityService.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "LoopViabilityCheck"
+        },
+        {
+          "kind": "interface",
+          "name": "LoopViabilityArgs"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPictographFilter",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/IPictographFilter.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/PictographFilter.ts",
+      "implClass": "PictographFilter",
+      "getterPath": "src/lib/features/create/generate/shared/getPictographFilter.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IResponsiveTypographer",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/IResponsiveTypographer.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/ResponsiveTypographer.ts",
+      "implClass": "ResponsiveTypographer",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceMetadataManager",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ISequenceMetadataManager.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/SequenceMetadataManager.ts",
+      "implClass": "SequenceMetadataManager",
+      "getterPath": "src/lib/features/create/generate/shared/getSequenceMetadataManager.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStartPositionSelector",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/IStartPositionSelector.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/StartPositionSelector.ts",
+      "implClass": "StartPositionSelector",
+      "getterPath": "src/lib/features/create/generate/shared/getStartPositionSelector.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IStepConverter",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/IStepConverter.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/StepConverter.ts",
+      "implClass": "StepConverter",
+      "getterPath": "src/lib/features/create/generate/shared/getStepConverter.ts",
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITurnAllocator",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ITurnAllocator.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/TurnAllocator.ts",
+      "implClass": "TurnAllocator",
+      "getterPath": "src/lib/features/create/generate/shared/getTurnAllocator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "TurnAllocation"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ITurnManager",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ITurnManager.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/TurnManager.ts",
+      "implClass": "TurnManager",
+      "getterPath": "src/lib/features/create/generate/shared/getTurnManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITypographyScaler",
+      "contractPath": "src/lib/features/create/generate/shared/services/contracts/ITypographyScaler.ts",
+      "implPath": "src/lib/features/create/generate/shared/services/implementations/TypographyScaler.ts",
+      "implClass": "TypographyScaler",
+      "getterPath": "src/lib/features/create/generate/shared/getTypographyScaler.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArrowAdjustmentOrchestrator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IArrowAdjustmentOrchestrator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/ArrowAdjustmentOrchestrator.ts",
+      "implClass": "ArrowAdjustmentOrchestrator",
+      "getterPath": "src/lib/features/create/shared/getArrowAdjustmentOrchestrator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "SelectedArrowContext"
+        },
+        {
+          "kind": "interface",
+          "name": "ApplyMovementResult"
+        },
+        {
+          "kind": "interface",
+          "name": "AdjustmentTargetKey"
+        },
+        {
+          "kind": "interface",
+          "name": "CascadingLookupResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IBridgeFinder",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IBridgeFinder.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/BridgeFinder.ts",
+      "implClass": "BridgeFinder",
+      "getterPath": "src/lib/features/create/shared/getBridgeFinder.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IConstructCoordinator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IConstructCoordinator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/ConstructCoordinator.ts",
+      "implClass": "ConstructCoordinator",
+      "getterPath": "src/lib/features/create/shared/getConstructCoordinator.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "IBuildConstructSectionCoordinator"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICreateModuleEffectCoordinator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ICreateModuleEffectCoordinator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/CreateModuleEffectCoordinator.ts",
+      "implClass": "CreateModuleEffectCoordinator",
+      "getterPath": "src/lib/features/create/shared/getCreateModuleEffectCoordinator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CreateModuleEffectConfig"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICreateModuleEventHandler",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ICreateModuleEventHandler.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/CreateModuleEventHandler.ts",
+      "implClass": "CreateModuleEventHandler",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ICreateModuleHandlers",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ICreateModuleHandlers.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/CreateModuleHandlers.ts",
+      "implClass": "CreateModuleHandlers",
+      "getterPath": "src/lib/features/create/shared/getCreateModuleHandlers.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ClearSequenceParams"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICreateModuleInitializer",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ICreateModuleInitializer.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/CreateModuleInitializer.ts",
+      "implClass": "CreateModuleInitializer",
+      "getterPath": "src/lib/features/create/shared/getCreateModuleInitializer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CreateModuleInitializationResult"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceLoadResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ICreateModuleOrchestrator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ICreateModuleOrchestrator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/CreateModuleOrchestrator.ts",
+      "implClass": "CreateModuleOrchestrator",
+      "getterPath": "src/lib/features/create/shared/getCreateModuleOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 6,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICreateModuleTransitioner",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ICreateModuleTransitioner.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/CreateModuleTransitioner.ts",
+      "implClass": "CreateModuleTransitioner",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IDeepLinkSequenceHandler",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IDeepLinkSequenceHandler.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/DeepLinkSequenceHandler.ts",
+      "implClass": "DeepLinkSequenceHandler",
+      "getterPath": "src/lib/features/create/shared/getDeepLinkSequenceHandler.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "DeepLinkLoadResult"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IDurationPatternManager",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IDurationPatternManager.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/DurationPatternManager.ts",
+      "implClass": "DurationPatternManager",
+      "getterPath": "src/lib/features/create/shared/getDurationPatternManager.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "DurationPatternApplyResult"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IExtensionFlowCoordinator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IExtensionFlowCoordinator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/ExtensionFlowCoordinator.ts",
+      "implClass": "ExtensionFlowCoordinator",
+      "getterPath": "src/lib/features/create/shared/getExtensionFlowCoordinator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ExtensionFlowStart"
+        },
+        {
+          "kind": "interface",
+          "name": "BridgeAppendResult"
+        },
+        {
+          "kind": "interface",
+          "name": "ExtensionApplyResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFirstStepAnalyzer",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IFirstStepAnalyzer.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/FirstStepAnalyzer.ts",
+      "implClass": "FirstStepAnalyzer",
+      "getterPath": "src/lib/features/create/shared/getFirstStepAnalyzer.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "FirstBeatAnalysisResult"
+        },
+        {
+          "kind": "interface",
+          "name": "FirstBeatResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IKeyboardArrowAdjuster",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IKeyboardArrowAdjuster.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/KeyboardArrowAdjuster.ts",
+      "implClass": "KeyboardArrowAdjuster",
+      "getterPath": "src/lib/features/create/shared/getKeyboardArrowAdjuster.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPValidator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ILOOPValidator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/LOOPValidator.ts",
+      "implClass": "LOOPValidator",
+      "getterPath": "src/lib/features/create/shared/getLOOPValidator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "LOOPValidationResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "INavigationSyncer",
+      "contractPath": "src/lib/features/create/shared/services/contracts/INavigationSyncer.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/NavigationSyncer.ts",
+      "implClass": "NavigationSyncer",
+      "getterPath": "src/lib/features/create/shared/getNavigationSyncer.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "CreateTab"
+        },
+        {
+          "kind": "type",
+          "name": "BuildSection"
+        },
+        {
+          "kind": "interface",
+          "name": "CreateModuleStateForSync"
+        },
+        {
+          "kind": "interface",
+          "name": "NavigationStateForSync"
+        }
+      ],
+      "consumerCount": 5,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IOrientationAlignmentCalculator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IOrientationAlignmentCalculator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/OrientationAlignmentCalculator.ts",
+      "implClass": "OrientationAlignmentCalculator",
+      "getterPath": "src/lib/features/create/shared/getOrientationAlignmentCalculator.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPanelPersister",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IPanelPersister.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/PanelPersister.svelte.ts",
+      "implClass": "PanelPersister.svelte",
+      "getterPath": "src/lib/features/create/shared/getPanelPersister.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "PanelId"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IResponsiveLayoutManager",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IResponsiveLayoutManager.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/ResponsiveLayoutManager.ts",
+      "implClass": "ResponsiveLayoutManager",
+      "getterPath": "src/lib/features/create/shared/getResponsiveLayoutManager.ts",
+      "coExports": [],
+      "consumerCount": 5,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IReversalDetector",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IReversalDetector.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/ReversalDetector.ts",
+      "implClass": "ReversalDetector",
+      "getterPath": "src/lib/features/create/shared/getReversalDetector.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ReversalInfo"
+        },
+        {
+          "kind": "interface",
+          "name": "PictographWithReversals"
+        }
+      ],
+      "consumerCount": 15,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IRotationDirectionPatternManager",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IRotationDirectionPatternManager.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/RotationDirectionPatternManager.ts",
+      "implClass": "RotationDirectionPatternManager",
+      "getterPath": "src/lib/features/create/shared/getRotationDirectionPatternManager.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "TargetHand"
+        },
+        {
+          "kind": "interface",
+          "name": "RotationDirectionPatternApplyResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ISequenceAnalyzer",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceAnalyzer.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceAnalyzer.ts",
+      "implClass": "SequenceAnalyzer",
+      "getterPath": "src/lib/features/create/shared/getSequenceAnalyzer.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "CircularType"
+        },
+        {
+          "kind": "type",
+          "name": "StrictLoopType"
+        },
+        {
+          "kind": "interface",
+          "name": "CircularityAnalysis"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceDomainManager",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceDomainManager.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceDomainManager.ts",
+      "implClass": "SequenceDomainManager",
+      "getterPath": "src/lib/features/create/shared/getSequenceDomainManager.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceEquivalenceDetector",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector.ts",
+      "implPath": "src/lib/shared/comparison/services/implementations/SequenceEquivalenceDetector.ts",
+      "implClass": "SequenceEquivalenceDetector",
+      "getterPath": "src/lib/shared/comparison/getSequenceEquivalenceDetector.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "EquivalenceResult"
+        },
+        {
+          "kind": "type",
+          "name": "EquivalenceType"
+        },
+        {
+          "kind": "interface",
+          "name": "TransformDetails"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceSignature"
+        },
+        {
+          "kind": "interface",
+          "name": "StepSignature"
+        },
+        {
+          "kind": "interface",
+          "name": "MotionSignature"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ISequenceExporter",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceExporter.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceExporter.ts",
+      "implClass": "SequenceExporter",
+      "getterPath": "src/lib/features/create/shared/getSequenceExporter.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ExportableSequenceData"
+        },
+        {
+          "kind": "interface",
+          "name": "CondensedSequenceData"
+        },
+        {
+          "kind": "interface",
+          "name": "CondensedStartPosition"
+        },
+        {
+          "kind": "interface",
+          "name": "CondensedStartMotion"
+        },
+        {
+          "kind": "interface",
+          "name": "CondensedStepData"
+        },
+        {
+          "kind": "interface",
+          "name": "CondensedMotionData"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceExtender",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceExtender.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceExtender.ts",
+      "implClass": "SequenceExtender",
+      "getterPath": "src/lib/features/create/shared/getSequenceExtender.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "ExtensionType"
+        },
+        {
+          "kind": "interface",
+          "name": "LOOPOption"
+        },
+        {
+          "kind": "interface",
+          "name": "ExtensionAnalysis"
+        },
+        {
+          "kind": "interface",
+          "name": "ExtensionOptions"
+        },
+        {
+          "kind": "type",
+          "name": "RotationRelation"
+        },
+        {
+          "kind": "interface",
+          "name": "OrientationAlignment"
+        },
+        {
+          "kind": "interface",
+          "name": "CircularizationOption"
+        }
+      ],
+      "consumerCount": 13,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceImporter",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceImporter.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceImporter.ts",
+      "implClass": "SequenceImporter",
+      "getterPath": "src/lib/features/create/shared/getSequenceImporter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceIndexer",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceIndexer.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceIndexer.ts",
+      "implClass": "SequenceIndexer",
+      "getterPath": "src/lib/features/create/shared/getSequenceIndexer.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceJsonExporter",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceJsonExporter.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceJsonExporter.ts",
+      "implClass": "SequenceJsonExporter",
+      "getterPath": "src/lib/features/create/shared/getSequenceJsonExporter.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "MinimalMotion"
+        },
+        {
+          "kind": "interface",
+          "name": "MinimalStep"
+        },
+        {
+          "kind": "interface",
+          "name": "SequenceKey"
+        },
+        {
+          "kind": "interface",
+          "name": "MinimalSequence"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "ISequencePersister",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequencePersister.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequencePersister.ts",
+      "implClass": "SequencePersister",
+      "getterPath": "src/lib/features/create/shared/getSequencePersister.ts",
+      "coExports": [],
+      "consumerCount": 12,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceRepository",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceRepository.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceRepository.ts",
+      "implClass": "SequenceRepository",
+      "getterPath": "src/lib/features/create/shared/getSequenceRepository.ts",
+      "coExports": [],
+      "consumerCount": 17,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceStatsCalculator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceStatsCalculator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceStatsCalculator.ts",
+      "implClass": "SequenceStatsCalculator",
+      "getterPath": "src/lib/features/create/shared/getSequenceStatsCalculator.ts",
+      "coExports": [],
+      "consumerCount": 9,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceTransferHandler",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceTransferHandler.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceTransferHandler.ts",
+      "implClass": "SequenceTransferHandler",
+      "getterPath": "src/lib/features/create/shared/getSequenceTransferHandler.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "TransferCheckResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISequenceTransformer",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceTransformer.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer.ts",
+      "implClass": "SequenceTransformer",
+      "getterPath": "src/lib/features/create/shared/getSequenceTransformer.ts",
+      "coExports": [],
+      "consumerCount": 15,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceValidator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISequenceValidator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SequenceValidator.ts",
+      "implClass": "SequenceValidator",
+      "getterPath": "src/lib/features/create/shared/getSequenceValidator.ts",
+      "coExports": [],
+      "consumerCount": 9,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStepOperator",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IStepOperator.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/StepOperator.ts",
+      "implClass": "StepOperator",
+      "getterPath": "src/lib/features/create/shared/getStepOperator.ts",
+      "coExports": [],
+      "consumerCount": 6,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISubDrawerStatePersister",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ISubDrawerStatePersister.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/SubDrawerStatePersister.ts",
+      "implClass": "SubDrawerStatePersister",
+      "getterPath": "src/lib/features/create/shared/getSubDrawerStatePersister.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "SubDrawerType"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITurnPatternManager",
+      "contractPath": "src/lib/features/create/shared/services/contracts/ITurnPatternManager.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/TurnPatternManager.ts",
+      "implClass": "TurnPatternManager",
+      "getterPath": "src/lib/features/create/shared/getTurnPatternManager.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "TargetHand"
+        },
+        {
+          "kind": "interface",
+          "name": "TurnPatternApplyResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-coexport"
+    },
+    {
+      "interfaceName": "IUndoManager",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IUndoManager.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/UndoManager.ts",
+      "implClass": "UndoManager",
+      "getterPath": "src/lib/features/create/shared/getUndoManager.ts",
+      "coExports": [
+        {
+          "kind": "enum",
+          "name": "UndoOperationType"
+        },
+        {
+          "kind": "interface",
+          "name": "UndoMetadata"
+        },
+        {
+          "kind": "interface",
+          "name": "CreateModuleStateSnapshot"
+        },
+        {
+          "kind": "interface",
+          "name": "UndoHistoryEntry"
+        }
+      ],
+      "consumerCount": 11,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IWordCyclicEquivalenceDetector",
+      "contractPath": "src/lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector.ts",
+      "implPath": "src/lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector.ts",
+      "implClass": "WordCyclicEquivalenceDetector",
+      "getterPath": "src/lib/features/create/shared/getWordCyclicEquivalenceDetector.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "WordCyclicEquivalenceResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStepCellAnimationManager",
+      "contractPath": "src/lib/features/create/shared/workspace-panel/sequence-display/services/contracts/IStepCellAnimationManager.ts",
+      "implPath": "src/lib/features/create/shared/workspace-panel/sequence-display/services/implementations/StepCellAnimationManager.ts",
+      "implClass": "StepCellAnimationManager",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "StepCellAnimationState"
+        },
+        {
+          "kind": "interface",
+          "name": "StepCellAnimationConfig"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IWorkbench",
+      "contractPath": "src/lib/features/create/shared/workspace-panel/shared/services/contracts/IWorkbench.ts",
+      "implPath": "src/lib/features/create/shared/workspace-panel/shared/services/implementations/Workbench.ts",
+      "implClass": "Workbench",
+      "getterPath": "src/lib/features/create/shared/workspace-panel/shared/getWorkbench.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ILetterTransitionGraph",
+      "contractPath": "src/lib/features/create/spell/services/contracts/ILetterTransitionGraph.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/LetterTransitionGraph.ts",
+      "implClass": "LetterTransitionGraph",
+      "getterPath": "src/lib/features/create/spell/getLetterTransitionGraph.ts",
+      "coExports": [],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILetterTypeClassifier",
+      "contractPath": "src/lib/features/create/spell/services/contracts/ILetterTypeClassifier.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/LetterTypeClassifier.ts",
+      "implClass": "LetterTypeClassifier",
+      "getterPath": "src/lib/features/create/spell/getLetterTypeClassifier.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILOOPEndPositionResolver",
+      "contractPath": "src/lib/features/create/spell/services/contracts/ILOOPEndPositionResolver.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/LOOPEndPositionResolver.ts",
+      "implClass": "LOOPEndPositionResolver",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IOrientationContinuityValidator",
+      "contractPath": "src/lib/features/create/spell/services/contracts/IOrientationContinuityValidator.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/OrientationContinuityValidator.ts",
+      "implClass": "OrientationContinuityValidator",
+      "getterPath": "src/lib/features/create/spell/getOrientationContinuityValidator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "OrientationContinuityError"
+        },
+        {
+          "kind": "interface",
+          "name": "TransitionValidationResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IRandomSequenceGenerator",
+      "contractPath": "src/lib/features/create/spell/services/contracts/IRandomSequenceGenerator.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/RandomSequenceGenerator.ts",
+      "implClass": "RandomSequenceGenerator",
+      "getterPath": "src/lib/features/create/spell/getRandomSequenceGenerator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "RandomSequenceGenerationOptions"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISpellServiceLoader",
+      "contractPath": "src/lib/features/create/spell/services/contracts/ISpellServiceLoader.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/SpellServiceLoader.ts",
+      "implClass": "SpellServiceLoader",
+      "getterPath": "src/lib/features/create/spell/getSpellServiceLoader.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStartPositionValidator",
+      "contractPath": "src/lib/features/create/spell/services/contracts/IStartPositionValidator.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/StartPositionValidator.ts",
+      "implClass": "StartPositionValidator",
+      "getterPath": "src/lib/features/create/spell/getStartPositionValidator.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVariationConstraintBuilder",
+      "contractPath": "src/lib/features/create/spell/services/contracts/IVariationConstraintBuilder.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/VariationConstraintBuilder.ts",
+      "implClass": "VariationConstraintBuilder",
+      "getterPath": "src/lib/features/create/spell/getVariationConstraintBuilder.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVariationExplorationOrchestrator",
+      "contractPath": "src/lib/features/create/spell/services/contracts/IVariationExplorationOrchestrator.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/VariationExplorationOrchestrator.ts",
+      "implClass": "VariationExplorationOrchestrator",
+      "getterPath": "src/lib/features/create/spell/getVariationExplorationOrchestrator.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "WordParseResult"
+        },
+        {
+          "kind": "interface",
+          "name": "WordParseOptions"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IWordSequenceGenerator",
+      "contractPath": "src/lib/features/create/spell/services/contracts/IWordSequenceGenerator.ts",
+      "implPath": "src/lib/features/create/spell/services/implementations/WordSequenceGenerator.ts",
+      "implClass": "WordSequenceGenerator",
+      "getterPath": "src/lib/features/create/spell/getWordSequenceGenerator.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    }
+  ]
+}

@@ -1,10 +1,3 @@
-/**
- * Animation Utilities
- *
- * Svelte 5 runes-based animation utilities using svelte/motion.
- * Uses the new Spring and Tween classes (not deprecated functions).
- */
-
 import { Spring, Tween } from "svelte/motion";
 import {
   springPresets,
@@ -17,13 +10,6 @@ import {
   type AnimationVariantConfig,
 } from "./presets";
 
-// ============================================================================
-// Beat Animation
-// ============================================================================
-
-/**
- * Beat animation controller
- */
 export class StepAnimation {
   readonly progress: Spring<number>;
   private readonly variantConfig: AnimationVariantConfig;
@@ -43,7 +29,6 @@ export class StepAnimation {
   }
 
   reset() {
-    // Instant reset by creating new Spring with target value
     this.progress.target = 0;
   }
 
@@ -74,13 +59,6 @@ export class StepAnimation {
   }
 }
 
-// ============================================================================
-// Presence Animation
-// ============================================================================
-
-/**
- * Presence animation controller for enter/exit animations
- */
 export class PresenceAnimation {
   readonly opacity: Spring<number>;
   readonly scale: Spring<number>;
@@ -106,13 +84,6 @@ export class PresenceAnimation {
   }
 }
 
-// ============================================================================
-// Gesture Animation
-// ============================================================================
-
-/**
- * Gesture animation controller for drag/swipe interactions
- */
 export class GestureAnimation {
   readonly x: Spring<number>;
   readonly y: Spring<number>;
@@ -133,13 +104,6 @@ export class GestureAnimation {
   }
 }
 
-// ============================================================================
-// Simple Utilities
-// ============================================================================
-
-/**
- * Create a spring with a preset configuration
- */
 export function createSpring(
   initialValue: number = 0,
   preset: SpringPreset = "snappy"
@@ -147,9 +111,6 @@ export function createSpring(
   return new Spring(initialValue, springPresets[preset]);
 }
 
-/**
- * Create a tweened value
- */
 export function createTween(
   initialValue: number = 0,
   duration: number = 250,
@@ -164,13 +125,6 @@ export function createTween(
   return new Tween(initialValue, options);
 }
 
-// ============================================================================
-// Staggered Animations
-// ============================================================================
-
-/**
- * Staggered animation controller for lists
- */
 export class StaggeredAnimation {
   readonly animations: Spring<number>[];
 

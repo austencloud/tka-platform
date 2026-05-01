@@ -21,12 +21,10 @@ const INTERCARDINAL_LOCATIONS = new Set<GridLocation>([
 ]);
 
 function deriveGridMode(locations: readonly GridLocation[]): GridMode {
-  // If CENTER is present anywhere, the path uses the centric grid
   if (locations.includes(GridLocation.CENTER)) {
     return GridMode.CENTRIC;
   }
 
-  // Filter out CENTER for mode analysis (already handled above)
   const perimeter = locations.filter((loc) => loc !== GridLocation.CENTER);
 
   if (perimeter.length === 0) {
@@ -79,8 +77,6 @@ export class HandPathFactory implements IHandPathFactory {
 
     const startLocation = locations[0] as GridLocation;
     const endLocation = locations[locations.length - 1] as GridLocation;
-    // The number of beats (steps) in the path. Each consecutive pair of
-    // locations defines one step, so beat count is locations.length - 1.
     const length = locations.length - 1;
     const bigrams = buildBigrams(locations);
     const uniqueLocations = deduplicateLocations(locations);

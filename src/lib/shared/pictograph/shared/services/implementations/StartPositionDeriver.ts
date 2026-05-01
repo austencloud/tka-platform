@@ -1,11 +1,3 @@
-/**
- * Start Position Deriver
- *
- * Derives/reconstructs start position data from the first beat of a sequence.
- * When sequences don't store explicit start positions, this service can
- * reconstruct them by examining the first beat's motion start locations.
- */
-
 import type { IStartPositionDeriver } from "../contracts/IStartPositionDeriver";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -34,30 +26,24 @@ export class StartPositionDeriver implements IStartPositionDeriver {
       );
     }
 
-    // Get the START locations from the first beat's motions
     const blueStartLocation = blueMotion.startLocation;
     const redStartLocation = redMotion.startLocation;
 
-    // Derive the grid position from the two hand locations
     const gridPosition = this.gridPositionDeriver.getGridPositionFromLocations(
       blueStartLocation,
       redStartLocation
     );
 
-    // Determine the letter from the grid position (alpha, beta, or gamma)
     const letter = this.getLetterFromGridPosition(gridPosition);
 
-    // Get grid mode from the motion (they should all have the same grid mode)
     const gridMode = blueMotion.gridMode;
 
-    // Create static motion data for the start position
-    // Start positions have no movement - props are stationary at starting locations
     const blueStaticMotion = createMotionData({
       motionType: MotionType.STATIC,
       startLocation: blueStartLocation,
-      endLocation: blueStartLocation, // Static: start === end
+      endLocation: blueStartLocation, 
       startOrientation: blueMotion.startOrientation,
-      endOrientation: blueMotion.startOrientation, // Static: orientation doesn't change
+      endOrientation: blueMotion.startOrientation, 
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
       color: MotionColor.BLUE,
@@ -70,9 +56,9 @@ export class StartPositionDeriver implements IStartPositionDeriver {
     const redStaticMotion = createMotionData({
       motionType: MotionType.STATIC,
       startLocation: redStartLocation,
-      endLocation: redStartLocation, // Static: start === end
+      endLocation: redStartLocation, 
       startOrientation: redMotion.startOrientation,
-      endOrientation: redMotion.startOrientation, // Static: orientation doesn't change
+      endOrientation: redMotion.startOrientation, 
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
       color: MotionColor.RED,
@@ -82,7 +68,6 @@ export class StartPositionDeriver implements IStartPositionDeriver {
       gridMode,
     });
 
-    // Create the start position pictograph data
     const pictographData = createPictographData({
       id: `derived-start-${gridPosition}`,
       letter,
@@ -94,7 +79,6 @@ export class StartPositionDeriver implements IStartPositionDeriver {
       },
     });
 
-    // Return as StartPositionData with the discriminator
     return {
       ...pictographData,
       isStartPosition: true,
@@ -105,7 +89,6 @@ export class StartPositionDeriver implements IStartPositionDeriver {
   getOrDeriveStartPosition(
     sequence: SequenceData
   ): StartPositionData | StepData | null {
-    // Check for existing start position data first
     if (sequence.startPosition) {
       return sequence.startPosition;
     }
@@ -114,7 +97,6 @@ export class StartPositionDeriver implements IStartPositionDeriver {
       return sequence.startingPosition;
     }
 
-    // No stored start position - derive from first beat
     const firstStep = sequence.steps?.[0];
     if (firstStep) {
       try {
@@ -128,9 +110,6 @@ export class StartPositionDeriver implements IStartPositionDeriver {
     return null;
   }
 
-  /**
-   * Map grid position to the corresponding Greek letter
-   */
   private getLetterFromGridPosition(position: GridPosition): Letter {
     const positionStr = position.toString().toLowerCase();
 
@@ -144,7 +123,6 @@ export class StartPositionDeriver implements IStartPositionDeriver {
       return Letter.GAMMA;
     }
 
-    // Fallback - shouldn't happen with valid positions
     console.warn(
       `Unknown grid position type: ${position}, defaulting to ALPHA`
     );
@@ -152,10 +130,6 @@ export class StartPositionDeriver implements IStartPositionDeriver {
   }
 }
 
-// ============================================================================
-// DIRECT EXPORT - Use this instead of startPositionDeriver
-// This avoids DI container rebuilds when this file changes
-// ============================================================================
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 export const startPositionDeriver = new StartPositionDeriver(gridPositionDeriver);

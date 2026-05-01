@@ -1,14 +1,3 @@
-/**
- * NetworkStatusMonitor
- *
- * Monitors network connectivity using browser APIs:
- * - navigator.onLine for basic connectivity
- * - Network Information API for detailed connection info
- *
- * Provides reactive state for UI components and notifies
- * other sync services of network changes.
- */
-
 import type {
 	INetworkStatusMonitor,
 	NetworkStatus,
@@ -17,9 +6,6 @@ import type {
 	NetworkChangeEvent
 } from '../contracts/INetworkStatusMonitor';
 
-/**
- * Extended NetworkInformation interface for Navigator.connection.
- */
 interface NetworkInformation extends EventTarget {
 	type?: string;
 	effectiveType?: string;
@@ -30,50 +16,33 @@ interface NetworkInformation extends EventTarget {
 	onchange?: EventListener | null;
 }
 
-/**
- * Navigator with optional connection property.
- */
 interface NavigatorWithConnection extends Navigator {
 	connection?: NetworkInformation;
 	mozConnection?: NetworkInformation;
 	webkitConnection?: NetworkInformation;
 }
 
-/**
- * NetworkStatusMonitor implementation.
- */
 export class NetworkStatusMonitor implements INetworkStatusMonitor {
-	// Current status
 	private _status: NetworkStatus;
-
-	// State
 	private _isRunning: boolean = false;
 	private _isNetworkInfoSupported: boolean = false;
 
-	// Event handlers
 	private boundOnlineHandler: () => void;
 	private boundOfflineHandler: () => void;
 	private boundConnectionChangeHandler: () => void;
 
-	// Callbacks
 	private onlineChangeCallbacks: Set<(isOnline: boolean) => void> = new Set();
 	private changeCallbacks: Set<(event: NetworkChangeEvent) => void> = new Set();
 	private connectionTypeCallbacks: Set<(type: NetworkConnectionType) => void> = new Set();
 
 	constructor() {
-		// Initialize with current state
 		this._status = this.getCurrentStatus();
 		this._isNetworkInfoSupported = this.checkNetworkInfoSupport();
 
-		// Bind handlers
 		this.boundOnlineHandler = this.handleOnline.bind(this);
 		this.boundOfflineHandler = this.handleOffline.bind(this);
 		this.boundConnectionChangeHandler = this.handleConnectionChange.bind(this);
 	}
-
-	// =========================================================================
-	// Public Getters
-	// =========================================================================
 
 	get status(): NetworkStatus {
 		return this._status;
@@ -95,24 +64,17 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 		return this._isNetworkInfoSupported;
 	}
 
-	// =========================================================================
-	// Lifecycle Methods
-	// =========================================================================
-
 	start(): void {
 		if (this._isRunning) return;
 		this._isRunning = true;
 
-		// Refresh current status
 		this._status = this.getCurrentStatus();
 
-		// Set up event listeners
 		if (typeof window !== 'undefined') {
 			window.addEventListener('online', this.boundOnlineHandler);
 			window.addEventListener('offline', this.boundOfflineHandler);
 		}
 
-		// Set up network change listener
 		const connection = this.getNetworkConnection();
 		if (connection) {
 			connection.addEventListener('change', this.boundConnectionChangeHandler);
@@ -123,7 +85,6 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 		if (!this._isRunning) return;
 		this._isRunning = false;
 
-		// Remove event listeners
 		if (typeof window !== 'undefined') {
 			window.removeEventListener('online', this.boundOnlineHandler);
 			window.removeEventListener('offline', this.boundOfflineHandler);
@@ -142,23 +103,14 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 		this.connectionTypeCallbacks.clear();
 	}
 
-	// =========================================================================
-	// Public Methods
-	// =========================================================================
-
 	refresh(): void {
 		const previous = { ...this._status };
 		this._status = this.getCurrentStatus();
 
-		// Only emit if something changed
 		if (this.hasStatusChanged(previous, this._status)) {
 			this.emitChanges(previous, this._status);
 		}
 	}
-
-	// =========================================================================
-	// Event Subscriptions
-	// =========================================================================
 
 	onOnlineChange(callback: (isOnline: boolean) => void): () => void {
 		this.onlineChangeCallbacks.add(callback);
@@ -175,15 +127,10 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 		return () => this.connectionTypeCallbacks.delete(callback);
 	}
 
-	// =========================================================================
-	// Private: Event Handlers
-	// =========================================================================
-
 	private handleOnline(): void {
 		const previous = { ...this._status };
 		this._status = this.getCurrentStatus();
 
-		// Notify online change
 		for (const callback of this.onlineChangeCallbacks) {
 			callback(true);
 		}
@@ -200,7 +147,6 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 			lastUpdated: Date.now()
 		};
 
-		// Notify online change
 		for (const callback of this.onlineChangeCallbacks) {
 			callback(false);
 		}
@@ -212,7 +158,6 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 		const previous = { ...this._status };
 		this._status = this.getCurrentStatus();
 
-		// Notify connection type change if it changed
 		if (previous.connectionType !== this._status.connectionType) {
 			for (const callback of this.connectionTypeCallbacks) {
 				callback(this._status.connectionType);
@@ -221,10 +166,6 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 
 		this.emitChanges(previous, this._status);
 	}
-
-	// =========================================================================
-	// Private: Status Detection
-	// =========================================================================
 
 	private getCurrentStatus(): NetworkStatus {
 		const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
@@ -244,7 +185,6 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 		}
 
 		if (!connection) {
-			// No Network Information API - return basic status
 			return {
 				isOnline: true,
 				connectionType: 'unknown',
@@ -319,8 +259,6 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 	}
 
 	private isConnectionMetered(type?: string): boolean {
-		// Cellular connections are typically metered
-		// Wifi and ethernet are typically unmetered
 		switch (type) {
 			case 'cellular':
 			case 'wimax':
@@ -329,14 +267,9 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 			case 'ethernet':
 				return false;
 			default:
-				// Unknown - assume metered to be safe
 				return true;
 		}
 	}
-
-	// =========================================================================
-	// Private: Change Detection and Emission
-	// =========================================================================
 
 	private hasStatusChanged(previous: NetworkStatus, current: NetworkStatus): boolean {
 		return (

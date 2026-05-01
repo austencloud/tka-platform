@@ -29,12 +29,6 @@ import {
 import { loopOrientationDetector } from "./LOOPOrientationDetector";
 import { detectUniformPattern } from "./detection";
 
-/**
- * Map a legacy ComponentId string to the LOOPComponent enum, or null when the
- * id (e.g., "modular", "repeated") has no enum equivalent. Phase 3 replaces
- * this with a domain-aware detector; Phase 1 uses it only to populate the
- * new `componentsDetailed` field conservatively.
- */
 function componentIdToLOOPComponent(id: ComponentId): LOOPComponent | null {
   switch (id) {
     case "rotated":
@@ -77,14 +71,6 @@ function periodFromIntervals(
   return Math.max(...values);
 }
 
-/**
- * Combine location and orientation domain component arrays.
- *
- * Merge semantics: when the same LOOPComponent appears in both domains, the
- * result has `domain: "both"`. Otherwise each component keeps its originating
- * domain. Reserved primitives from either side flow through unchanged -
- * consumer resolvers strip them via RESERVED_ORIENTATION_PRIMITIVES.
- */
 function mergeComponents(
   locationComponents: DetectedComponent[],
   orientationComponents: DetectedComponent[]
@@ -108,10 +94,6 @@ function mergeComponents(
   return out;
 }
 
-/**
- * Service for detecting Linked Orbital Offset Patterns (LOOPs) in sequences.
- * Orchestrates the detection process using specialized services.
- */
 export class LOOPDetector implements ILOOPDetector {
   constructor(
     private comparisonOrchestrator: IStepComparisonOrchestrator,
@@ -144,13 +126,6 @@ export class LOOPDetector implements ILOOPDetector {
     return this.augmentWithOrientation(result, sequence);
   }
 
-  /**
-   * Augment a location-only detection result with the orientation pass.
-   *
-   * Runs the orientation detector, merges components, lifts `period` to
-   * max(location, orientation). Called as a post-pass so every existing
-   * builder return path gets orientation-aware without being rewritten.
-   */
   private augmentWithOrientation(
     result: LOOPDetectionResult,
     sequence: SequenceEntry
@@ -206,13 +181,8 @@ export class LOOPDetector implements ILOOPDetector {
       return this.buildFreeformResult(polyrhythmic, layeredPath);
     }
 
-    // === NEW PIPELINE: uniform pattern detection ===
     const candidates = detectUniformPattern(steps, this.comparisonOrchestrator);
 
-    // If "repeated" is among the candidates, the beats are identical and all
-    // other matches (rotated, mirrored, etc.) are trivially true due to the
-    // identity property. Drop them — "repeated" is not a LOOP pattern worth
-    // surfacing, so the fallback path handles it properly.
     const hasRepeated = candidates.some(
       c => c.components.includes("repeated") && !c.components.includes("rewound")
     );
@@ -281,7 +251,6 @@ export class LOOPDetector implements ILOOPDetector {
       };
     }
 
-    // === FALLBACK: modular / freeform (unchanged) ===
     const halvedStepPairs =
       this.comparisonOrchestrator.generateHalvedBeatPairs(steps);
     this.analysisService.reprioritizeBeatPairs(halvedStepPairs);
@@ -294,7 +263,6 @@ export class LOOPDetector implements ILOOPDetector {
         this.comparisonOrchestrator.detectRotationDirection(steps);
     }
 
-    // Try modular quartered detection
     if (steps.length >= 4 && steps.length % 4 === 0) {
       const quarteredStepPairs =
         this.comparisonOrchestrator.generateQuarteredBeatPairs(steps);
@@ -336,7 +304,6 @@ export class LOOPDetector implements ILOOPDetector {
     const isModular = !hasUnknown && recognizedPatterns.length > 1;
     const isFreeform = hasUnknown || recognizedPatterns.length === 0;
 
-    // Check for axis-alternating pattern when modular
     const axisAlternating = isModular
       ? this.analysisService.detectAxisAlternatingPattern(
           halvedStepPairs,
@@ -431,7 +398,6 @@ export class LOOPDetector implements ILOOPDetector {
     polyrhythmic: PolyrhythmicLOOPResult,
     layeredPath: LayeredPathResult
   ): LOOPDetectionResult | null {
-    // Check for high UNKNOWN rate - if too many beat pairs are unknown, this isn't modular
     const unknownCount = quarteredStepPairs.filter((pair) => {
       const primary = pair.detectedTransformations[0]?.toUpperCase() || "";
       return primary === "UNKNOWN" || primary === "";
@@ -439,22 +405,17 @@ export class LOOPDetector implements ILOOPDetector {
 
     const unknownRate = unknownCount / quarteredStepPairs.length;
     if (unknownRate >= 0.5) {
-      // 50% or more UNKNOWN = not a modular pattern, let fallback handle as freeform
       return null;
     }
 
-    // Check if all beat pairs have the SAME detected transformation
-    // If so, this is UNIFORM, not modular - let halved detection handle it
     const detectedPrimaries = quarteredStepPairs.map(
       (pair) => pair.detectedTransformations[0]?.toUpperCase() || "UNKNOWN"
     );
     const uniqueDetected = new Set(detectedPrimaries);
     if (uniqueDetected.size === 1 && !uniqueDetected.has("UNKNOWN")) {
-      // All beat pairs have the same transformation - this is uniform, not modular
       return null;
     }
 
-    // Use 4 columns for quartered patterns (positions 1,2,3,4 within each quarter)
     const modularAnalysis = this.analysisService.detectModularPattern(
       quarteredStepPairs,
       4
@@ -464,7 +425,6 @@ export class LOOPDetector implements ILOOPDetector {
       return null;
     }
 
-    // Build modular pattern description
     const modularPattern: ModularPattern = {
       isModular: true,
       baseTransformation: modularAnalysis.baseTransformation,
@@ -473,7 +433,6 @@ export class LOOPDetector implements ILOOPDetector {
       description: modularAnalysis.description,
     };
 
-    // Derive components from the base transformation and swap info
     const components: ComponentId[] = [];
     if (modularAnalysis.baseTransformation) {
       const baseComponents = this.formattingService.deriveComponentsFromPattern(
@@ -506,7 +465,6 @@ export class LOOPDetector implements ILOOPDetector {
       components.push("flipped");
     }
 
-    // Build intervals - base is quartered, swap is also quartered for modular patterns
     const intervals: TransformationIntervals = {};
     if (components.includes("rotated")) intervals.rotation = 4;
     if (components.includes("swapped")) {
@@ -516,7 +474,6 @@ export class LOOPDetector implements ILOOPDetector {
     if (components.includes("mirrored")) intervals.mirror = 4;
     if (components.includes("flipped")) intervals.flip = 4;
 
-    // Build loopType
     const rotDir =
       rotationDirection === "ccw"
         ? "_ccw"
@@ -528,7 +485,6 @@ export class LOOPDetector implements ILOOPDetector {
         ? `modular_rotated_90${rotDir}_swap_${modularAnalysis.swapRhythm}`
         : `modular_rotated_90${rotDir}`;
 
-    // Build candidate designation with binary swap pattern
     const binarySwapPattern = modularAnalysis.columnBehaviors
       .map((c) => (c.isSwapped ? "1" : "0"))
       .join("");
@@ -574,12 +530,6 @@ export class LOOPDetector implements ILOOPDetector {
     };
   }
 
-  /**
-   * Check halved step pairs for 180°-level primitives (inverted, mirrored,
-   * flipped) and add them to an existing detection result. This handles
-   * compound patterns where a quartered rotation has additional transformations
-   * at the halved level that the quartered-only analysis missed.
-   */
   private quarteredMotionsConsistent(
     steps: ExtractedStep[],
     quarterLength: number
@@ -633,10 +583,6 @@ export class LOOPDetector implements ILOOPDetector {
     }
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 
 import { stepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
 import { transformationAnalyzer } from "./TransformationAnalyzer";

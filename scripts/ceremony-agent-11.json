@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IFeedbackQueryService",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackQueryService.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackQuerier.ts",
+    "cls": "FeedbackQuerier",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IFeedbackService",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackService.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackRepository.ts",
+    "cls": "FeedbackRepository",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackSorter",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackSorter.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackSorter.ts",
+    "cls": "FeedbackSorter",
+    "getter": "src/lib/features/feedback/getFeedbackSorter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackStatusService",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackStatusService.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackStatusManager.ts",
+    "cls": "FeedbackStatusManager",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackSubmissionService",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackSubmissionService.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackSubmitter.ts",
+    "cls": "FeedbackSubmitter",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackSubscriptionService",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackSubscriptionService.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackSubscriber.ts",
+    "cls": "FeedbackSubscriber",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackSubtaskManager",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackSubtaskManager.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackSubtaskManager.ts",
+    "cls": "FeedbackSubtaskManager",
+    "getter": "src/lib/features/feedback/getFeedbackSubtaskManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackTesterWorkflowService",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackTesterWorkflowService.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackTesterWorkflow.ts",
+    "cls": "FeedbackTesterWorkflow",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFeedbackTypeResolver",
+    "contract": "src/lib/features/feedback/services/contracts/IFeedbackTypeResolver.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FeedbackTypeResolver.ts",
+    "cls": "FeedbackTypeResolver",
+    "getter": "src/lib/features/feedback/getFeedbackTypeResolver.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IFormDraftPersister",
+    "contract": "src/lib/features/feedback/services/contracts/IFormDraftPersister.ts",
+    "impl": "src/lib/features/feedback/services/implementations/FormDraftPersister.svelte.ts",
+    "cls": "FormDraftPersister.svelte",
+    "getter": "src/lib/features/feedback/getFormDraftPersister.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IImageStager",
+    "contract": "src/lib/features/feedback/services/contracts/IImageStager.ts",
+    "impl": "src/lib/features/feedback/services/implementations/ImageStager.ts",
+    "cls": "ImageStager",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISwimLaneDeriver",
+    "contract": "src/lib/features/feedback/services/contracts/ISwimLaneDeriver.ts",
+    "impl": "src/lib/features/feedback/services/implementations/SwimLaneDeriver.ts",
+    "cls": "SwimLaneDeriver",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITranscriptionClient",
+    "contract": "src/lib/features/feedback/services/contracts/ITranscriptionClient.ts",
+    "impl": "src/lib/features/feedback/services/implementations/TranscriptionClient.ts",
+    "cls": "TranscriptionClient",
+    "getter": "src/lib/features/feedback/getTranscriptionClient.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IVersionService",
+    "contract": "src/lib/features/feedback/services/contracts/IVersionService.ts",
+    "impl": "src/lib/features/feedback/services/implementations/VersionManager.ts",
+    "cls": "VersionManager",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IVoiceRecorder",
+    "contract": "src/lib/features/feedback/services/contracts/IVoiceRecorder.ts",
+    "impl": "src/lib/features/feedback/services/implementations/VoiceRecorder.ts",
+    "cls": "VoiceRecorder",
+    "getter": "src/lib/features/feedback/getVoiceRecorder.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICSVLoader",
+    "contract": "src/lib/shared/foundation/services/contracts/data/ICSVLoader.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/data/CsvLoader.ts",
+    "cls": "CsvLoader",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICSVParser",
+    "contract": "src/lib/shared/foundation/services/contracts/data/ICSVParser.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/data/CsvParser.ts",
+    "cls": "CsvParser",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICSVPictographParser",
+    "contract": "src/lib/shared/foundation/services/contracts/data/ICSVPictographParser.ts",
+    "impl": "src/lib/shared/pictograph/shared/services/implementations/CSVPictographParser.ts",
+    "cls": "CSVPictographParser",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IEnumMapper",
+    "contract": "src/lib/shared/foundation/services/contracts/data/IEnumMapper.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/data/EnumMapper.ts",
+    "cls": "EnumMapper",
+    "getter": "src/lib/shared/foundation/getEnumMapper.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IContentHasher",
+    "contract": "src/lib/shared/foundation/services/contracts/IContentHasher.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/ContentHasher.ts",
+    "cls": "ContentHasher",
+    "getter": "src/lib/shared/foundation/getContentHasher.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IFileDownloader",
+    "contract": "src/lib/shared/foundation/services/contracts/IFileDownloader.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/FileDownloader.ts",
+    "cls": "FileDownloader",
+    "getter": "src/lib/shared/foundation/getFileDownloader.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IHandPathFactory",
+    "contract": "src/lib/shared/foundation/services/contracts/IHandPathFactory.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/HandPathFactory.ts",
+    "cls": "HandPathFactory",
+    "getter": "src/lib/shared/foundation/getHandPathFactory.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IHandPathNamer",
+    "contract": "src/lib/shared/foundation/services/contracts/IHandPathNamer.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/HandPathNamer.ts",
+    "cls": "HandPathNamer",
+    "getter": "src/lib/shared/foundation/getHandPathNamer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IHandPathRepository",
+    "contract": "src/lib/shared/foundation/services/contracts/IHandPathRepository.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/HandPathRepository.ts",
+    "cls": "HandPathRepository",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISeoManager",
+    "contract": "src/lib/shared/foundation/services/contracts/ISeoManager.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/SeoManager.ts",
+    "cls": "SeoManager",
+    "getter": "src/lib/shared/foundation/getSeoManager.ts",
+    "hasCoExports": true
+  }
+]

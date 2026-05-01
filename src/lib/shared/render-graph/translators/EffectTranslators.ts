@@ -1,11 +1,3 @@
-/**
- * Non-particle effect intent → pass-payload translators.
- *
- * Pure functions: each takes a canonical intent from EffectsConfig plus
- * per-tip runtime state, emits a backend-neutral payload from EffectPasses.
- * Covers: echo, bloom, zap, pulse, ink, frost, silk.
- */
-
 import type {
   EchoIntent,
   BloomIntent,
@@ -32,12 +24,7 @@ import type {
   SilkRibbon,
 } from "../domain/EffectPasses";
 
-// ---------------------------------------------------------------------------
-// Shared color helpers
-// ---------------------------------------------------------------------------
-
 const PALETTE_COLORS: Record<string, [number, number, number]> = {
-  // particle-family (shared with ParticleTranslators)
   classic: [0.3, 0.5, 0.9], mercury: [0.7, 0.7, 0.75], acid: [0.2, 1.0, 0.3],
   blood: [0.7, 0.05, 0.05], spirit: [0.6, 0.4, 0.9],
   soap: [0.7, 0.85, 1.0], champagne: [1.0, 0.9, 0.6], oil: [0.2, 0.15, 0.3],
@@ -45,15 +32,11 @@ const PALETTE_COLORS: Record<string, [number, number, number]> = {
   ash: [0.5, 0.5, 0.5], gold: [1.0, 0.85, 0.3],
   incense: [0.6, 0.55, 0.5], fog: [0.7, 0.7, 0.7], genie: [0.4, 0.2, 0.8],
   cursed: [0.3, 0.0, 0.3], campfire: [0.5, 0.3, 0.2],
-  // pulse palettes
   sonar: [0.22, 0.74, 0.97], ripple: [0.58, 0.77, 0.99],
   neon: [0.94, 0.67, 0.99], ember: [1.0, 0.38, 0.0], void: [0.25, 0.25, 0.38],
-  // ink palettes
   india: [0.05, 0.02, 0.0], sumi: [0.1, 0.1, 0.12], watercolor: [0.3, 0.5, 0.7],
-  // frost palettes
   glacial: [0.63, 0.85, 1.0], breath: [0.82, 0.91, 0.94],
   black_ice: [0.13, 0.16, 0.19], aurora: [0.38, 1.0, 0.5], diamond: [0.91, 0.91, 0.94],
-  // silk palettes
   satin: [0.75, 0.75, 0.82], velvet: [0.38, 0.0, 0.09],
   ethereal: [0.75, 0.5, 1.0], shadow: [0.06, 0.06, 0.13],
   gold_leaf: [0.63, 0.44, 0.0],
@@ -73,10 +56,6 @@ function paletteToRgb(palette: string, customColor: string): [number, number, nu
   if (palette === "custom") return hexToRgb(customColor);
   return PALETTE_COLORS[palette] ?? [1, 1, 1];
 }
-
-// ---------------------------------------------------------------------------
-// Echo
-// ---------------------------------------------------------------------------
 
 export interface EchoTranslationContext {
   phantoms: Array<{ bluePos: [number, number]; redPos: [number, number]; age: number }>;
@@ -100,10 +79,6 @@ export function toEchoPayload(
     maxAge: intent.decay,
   };
 }
-
-// ---------------------------------------------------------------------------
-// Bloom
-// ---------------------------------------------------------------------------
 
 export interface BloomTranslationContext {
   tips: Array<{ position: [number, number]; tipId: string }>;
@@ -159,10 +134,6 @@ function pickBloomColor(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Zap
-// ---------------------------------------------------------------------------
-
 export interface ZapTranslationContext {
   tipPairs: Array<{ from: [number, number]; to: [number, number] }>;
   frameCount: number;
@@ -197,10 +168,6 @@ export function toZapPayload(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Pulse
-// ---------------------------------------------------------------------------
-
 export interface PulseTranslationContext {
   activeRings: Array<{
     center: [number, number];
@@ -227,10 +194,6 @@ export function toPulsePayload(
     intensity: intent.intensity,
   };
 }
-
-// ---------------------------------------------------------------------------
-// Ink
-// ---------------------------------------------------------------------------
 
 export interface InkTranslationContext {
   tips: Array<{
@@ -263,10 +226,6 @@ export function toInkPayload(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Frost
-// ---------------------------------------------------------------------------
-
 export interface FrostTranslationContext {
   tips: Array<{ position: [number, number]; radius: number }>;
 }
@@ -292,10 +251,6 @@ export function toFrostPayload(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Silk
-// ---------------------------------------------------------------------------
-
 export interface SilkTranslationContext {
   tips: Array<{
     tipId: string;
@@ -311,7 +266,6 @@ export function toSilkPayload(
 ): SilkPassPayload {
   const [r, g, b] = paletteToRgb(intent.palette, intent.customColor);
   const width = intent.width * 0.02;
-  // Duration 0..1 maps to 0.5..4.0s → invert to decay rate
   const lifetimeSeconds = 0.5 + intent.duration * 3.5;
   const decayPerSecond = 1 / lifetimeSeconds;
 
@@ -326,10 +280,6 @@ export function toSilkPayload(
 
   return { ribbons, decayPerSecond, intensity: intent.intensity };
 }
-
-// ---------------------------------------------------------------------------
-// HSV helper (for rainbow color modes)
-// ---------------------------------------------------------------------------
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
   const i = Math.floor(h * 6);

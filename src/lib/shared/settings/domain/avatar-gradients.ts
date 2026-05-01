@@ -1,10 +1,3 @@
-/**
- * Avatar gradient definitions for profile photo generation
- *
- * Organized by color families (warm, cool, vibrant, earth, dark)
- * with mappings to background themes for auto-matching user preferences.
- */
-
 import { BackgroundType } from "@austencloud/backgrounds";
 
 export interface GradientOption {
@@ -20,8 +13,6 @@ export interface ColorFamily {
   icon: string;
 }
 
-// ============ COLOR FAMILIES ============
-
 export const COLOR_FAMILIES: ColorFamily[] = [
   { id: "warm", name: "Warm", icon: "fa-fire" },
   { id: "cool", name: "Cool", icon: "fa-snowflake" },
@@ -30,10 +21,7 @@ export const COLOR_FAMILIES: ColorFamily[] = [
   { id: "dark", name: "Dark", icon: "fa-moon" },
 ];
 
-// ============ ALL GRADIENTS ============
-
 export const ALL_GRADIENTS: GradientOption[] = [
-  // Warm family
   {
     id: "sunset",
     name: "Sunset",
@@ -58,7 +46,6 @@ export const ALL_GRADIENTS: GradientOption[] = [
     gradient: "linear-gradient(135deg, #f43f5e 0%, #fb7185 50%, #fda4af 100%)",
     family: "warm",
   },
-  // Cool family
   {
     id: "ocean",
     name: "Ocean",
@@ -83,7 +70,6 @@ export const ALL_GRADIENTS: GradientOption[] = [
     gradient: "linear-gradient(135deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%)",
     family: "cool",
   },
-  // Vibrant family
   {
     id: "rainbow",
     name: "Rainbow",
@@ -112,7 +98,6 @@ export const ALL_GRADIENTS: GradientOption[] = [
       "linear-gradient(135deg, #1e1b4b 0%, #7c3aed 30%, #ec4899 60%, #fbbf24 100%)",
     family: "vibrant",
   },
-  // Earth family
   {
     id: "forest",
     name: "Forest",
@@ -137,7 +122,6 @@ export const ALL_GRADIENTS: GradientOption[] = [
     gradient: "linear-gradient(135deg, #78350f 0%, #a16207 50%, #84cc16 100%)",
     family: "earth",
   },
-  // Dark family
   {
     id: "midnight",
     name: "Midnight",
@@ -164,11 +148,6 @@ export const ALL_GRADIENTS: GradientOption[] = [
   },
 ];
 
-// ============ THEME MAPPINGS ============
-
-/**
- * Maps background types to gradient families for auto-selection
- */
 export const THEME_TO_FAMILY: Record<BackgroundType, string> = {
   [BackgroundType.PRIDE]: "vibrant",
   [BackgroundType.SNOWFALL]: "cool",
@@ -182,9 +161,6 @@ export const THEME_TO_FAMILY: Record<BackgroundType, string> = {
   [BackgroundType.LINEAR_GRADIENT]: "vibrant",
 };
 
-/**
- * Maps background types to specific gradients for closer matching
- */
 export const THEME_TO_GRADIENT: Record<BackgroundType, string> = {
   [BackgroundType.PRIDE]: "rainbow",
   [BackgroundType.SNOWFALL]: "arctic",
@@ -198,25 +174,14 @@ export const THEME_TO_GRADIENT: Record<BackgroundType, string> = {
   [BackgroundType.LINEAR_GRADIENT]: "cosmic",
 };
 
-// ============ HELPER FUNCTIONS ============
-
-/**
- * Get gradients for a specific family
- */
 export function getGradientsByFamily(familyId: string): GradientOption[] {
   return ALL_GRADIENTS.filter((g) => g.family === familyId);
 }
 
-/**
- * Find a gradient by ID
- */
 export function getGradientById(id: string): GradientOption | undefined {
   return ALL_GRADIENTS.find((g) => g.id === id);
 }
 
-/**
- * Get the default gradient for a background type
- */
 export function getDefaultGradientForTheme(
   backgroundType: BackgroundType
 ): GradientOption {
@@ -224,16 +189,10 @@ export function getDefaultGradientForTheme(
   return getGradientById(gradientId) ?? ALL_GRADIENTS[0]!;
 }
 
-/**
- * Extract the primary accent color from a gradient string.
- * Uses the middle color stop for balanced representation.
- */
 export function getGradientAccentColor(gradient: string): string {
-  // Extract all hex colors from the gradient
   const hexColors = gradient.match(/#[0-9a-fA-F]{6}/g) ?? [];
-  if (hexColors.length === 0) return "#6366f1"; // fallback
+  if (hexColors.length === 0) return "#6366f1"; 
 
-  // Use middle color for balanced representation
   const middleIndex = Math.floor(hexColors.length / 2);
   return hexColors[middleIndex] ?? hexColors[0] ?? "#6366f1";
 }

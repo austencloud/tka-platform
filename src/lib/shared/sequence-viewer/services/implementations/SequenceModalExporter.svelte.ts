@@ -20,17 +20,12 @@ import { recordExportThroughput } from "../../state/export-timing-tracker";
 import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
 
-/**
- * Orchestrates sequence exports (image, video).
- * Combined exports (animation + choreo card) are handled by Compose module.
- */
 export class SequenceModalExporter implements ISequenceModalExporter {
   private _isExporting = $state(false);
   private _progress = $state<VideoExportProgress | null>(null);
   private _error = $state<string | null>(null);
   private _previewBlobUrl = $state<string | null>(null);
 
-  // Lazy-loaded services
   private _videoExportOrchestrator: IVideoExportOrchestrator | null = null;
   private _sequenceRenderer: ISequenceRenderer | null = null;
   private _activeExporter: IOffline3DExporter | null = null;
@@ -71,7 +66,6 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     this._isExporting = true;
     this._error = null;
     this._progress = { progress: 0, stage: "capturing" };
-    // Revoke any previous preview URL
     this.revokePreviewUrl();
 
     const exportStartTime = performance.now();
@@ -107,13 +101,11 @@ export class SequenceModalExporter implements ISequenceModalExporter {
         }
       );
 
-      // Record device throughput for future time estimates
       const exportDurationMs = performance.now() - exportStartTime;
       if (capturedFrameCount > 0 && exportDurationMs > 0) {
         recordExportThroughput(options.resolution, capturedFrameCount, exportDurationMs);
       }
 
-      // Create preview URL from the exported blob
       this._previewBlobUrl = URL.createObjectURL(blob);
     } catch (error) {
       if ((error as Error).message !== "Export cancelled") {
@@ -227,9 +219,6 @@ export class SequenceModalExporter implements ISequenceModalExporter {
         },
       });
 
-      // Match what WordHeader/WordLabel show on screen: collapse repeated
-      // kernels ("VΛ-VΛ-VΛ-VΛ-" → "VΛ-") then map Greek → ASCII shorthand
-      // (Λ → lam, Σ → sig, etc.) so the filename becomes "Vlam-.png".
       const seq = deps.sequence;
       const rawName =
         seq.displayName || seq.intendedWord || seq.word || "sequence";
@@ -286,7 +275,4 @@ export class SequenceModalExporter implements ISequenceModalExporter {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const sequenceModalExporter = new SequenceModalExporter();

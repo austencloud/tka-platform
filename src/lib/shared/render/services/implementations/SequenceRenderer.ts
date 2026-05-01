@@ -1,12 +1,4 @@
-/**
- * Main Sequence Render Service
- *
- * Pure image generation service - orchestrates all rendering operations.
- * No download/sharing logic - only creates images from sequence data.
- */
-
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-
 import type { ISequenceRenderer } from "../contracts/ISequenceRenderer";
 import { LayoutCalculator } from "./LayoutCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
@@ -22,10 +14,6 @@ export class SequenceRenderer implements ISequenceRenderer {
     private formatService: IImageFormatConverter
   ) {}
 
-  /**
-   * Render a complete sequence as a canvas
-   * Pure rendering - returns canvas for further processing
-   */
   async renderSequenceToCanvas(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions> = {},
@@ -37,10 +25,8 @@ export class SequenceRenderer implements ISequenceRenderer {
     }
 
     try {
-      // Get full options with defaults
       const fullOptions = this.mergeWithDefaults(options);
 
-      // Validate before rendering
       const validation = this.validateRender(sequence, fullOptions);
       if (!validation.valid) {
         throw new Error(
@@ -48,8 +34,6 @@ export class SequenceRenderer implements ISequenceRenderer {
         );
       }
 
-      // Render the sequence using composition service (with progress callback)
-      // cardMode uses the 5:7 playing card layout; standard mode uses the default grid layout
       const canvas = fullOptions.cardMode
         ? await this.compositionService.composeCardImage(
             sequence,
@@ -72,10 +56,6 @@ export class SequenceRenderer implements ISequenceRenderer {
     }
   }
 
-  /**
-   * Render a sequence as an image blob
-   * For use by sharing/export modules
-   */
   async renderSequenceToBlob(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions> = {},
@@ -87,10 +67,8 @@ export class SequenceRenderer implements ISequenceRenderer {
     }
 
     try {
-      // Get full options with defaults
       const fullOptions = this.mergeWithDefaults(options);
 
-      // Render to canvas first (with progress callback)
       const canvas = await this.renderSequenceToCanvas(
         sequence,
         fullOptions,
@@ -98,7 +76,6 @@ export class SequenceRenderer implements ISequenceRenderer {
         signal
       );
 
-      // Convert to blob using format service
       const blob = await this.formatService.canvasToBlob(canvas, {
         format: fullOptions.format.toLowerCase() as "png" | "jpeg" | "webp",
         quality: fullOptions.quality,
@@ -118,10 +95,6 @@ export class SequenceRenderer implements ISequenceRenderer {
     }
   }
 
-  /**
-   * Generate a preview image (smaller scale for UI)
-   * Returns data URL for immediate display in components
-   */
   async generatePreview(
     sequence: SequenceData,
     options: Partial<SequenceExportOptions> = {}
@@ -131,20 +104,17 @@ export class SequenceRenderer implements ISequenceRenderer {
     }
 
     try {
-      // Create preview options - use passed values or fall back to preview defaults
       const previewOptions = this.mergeWithDefaults({
-        stepScale: options.stepScale ?? 0.5, // Default to smaller scale, but allow override
-        quality: options.quality ?? 0.8, // Default to decent quality, but allow override
-        ...options, // Spread AFTER defaults so explicit options take precedence
+        stepScale: options.stepScale ?? 0.5, 
+        quality: options.quality ?? 0.8, 
+        ...options, 
       });
 
-      // Render to canvas
       const canvas = await this.renderSequenceToCanvas(
         sequence,
         previewOptions
       );
 
-      // Convert to data URL for immediate display
       return this.formatService.canvasToDataURL(canvas, {
         format: previewOptions.format.toLowerCase() as "png" | "jpeg" | "webp",
         quality: previewOptions.quality,
@@ -162,28 +132,20 @@ export class SequenceRenderer implements ISequenceRenderer {
     }
   }
 
-  /**
-   * Validate sequence and options before rendering
-   * Returns validation result with specific error messages
-   */
   validateRender(
     sequence: SequenceData,
     options: SequenceExportOptions
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // Validate sequence
     if (!sequence) {
       errors.push("Sequence data is required");
     } else {
       if (!sequence.steps || sequence.steps.length === 0) {
         errors.push("Sequence must contain at least one beat");
       }
-      // Word validation disabled - not required for grid-only exports
-      // Sequences can be exported without words for minimal visualization
     }
 
-    // Validate options
     if (options.width && options.width <= 0) {
       errors.push("Width must be positive");
     }
@@ -200,13 +162,8 @@ export class SequenceRenderer implements ISequenceRenderer {
     };
   }
 
-  /**
-   * Get default render options
-   * Returns desktop-compatible default settings
-   */
   getDefaultOptions(): SequenceExportOptions {
     return {
-      // Core export settings
       includeStartPosition: true,
       addStepNumbers: true,
       addReversalSymbols: true,
@@ -215,33 +172,24 @@ export class SequenceRenderer implements ISequenceRenderer {
       combinedGrids: false,
       addDifficultyLevel: true,
 
-      // Scaling and sizing
       stepScale: 1.0,
-      stepSize: LayoutCalculator.getBaseBeatSize(), // Use desktop-compatible BASE_BEAT_SIZE (150px)
-      margin: 0, // No margin - steps are directly adjacent like StepGrid
+      stepSize: LayoutCalculator.getBaseBeatSize(), 
+      margin: 0, 
 
-      // Visibility settings
       redVisible: true,
       blueVisible: true,
 
-      // User information
       userName: "",
       exportDate: new Date().toISOString(),
       notes: "",
 
-      // Output format
       format: "PNG",
       quality: 1.0,
       scale: 1.0,
-      // width and height are calculated dynamically based on content
       backgroundColor: "#FFFFFF",
     };
   }
 
-  /**
-   * Batch render multiple sequences
-   * Returns array of canvases for further processing
-   */
   async batchRender(
     sequences: SequenceData[],
     options: SequenceExportOptions
@@ -266,9 +214,6 @@ export class SequenceRenderer implements ISequenceRenderer {
     }
   }
 
-  /**
-   * Merge provided options with defaults
-   */
   private mergeWithDefaults(
     options: Partial<SequenceExportOptions>
   ): SequenceExportOptions {
@@ -277,9 +222,6 @@ export class SequenceRenderer implements ISequenceRenderer {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { imageComposer } from "./ImageComposer";
 import { imageFormatConverter } from "./ImageFormatConverter";
 

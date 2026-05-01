@@ -41,6 +41,9 @@ importers:
       '@austencloud/drawer':
         specifier: ^0.1.0
         version: 0.1.0(svelte@5.49.2)
+      '@austencloud/environments-3d':
+        specifier: file:../shared-packages/packages/environments-3d
+        version: file:../shared-packages/packages/environments-3d(@austencloud/backgrounds@0.2.0)(@austencloud/scene-3d@file:../shared-packages/packages/scene-3d(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0))(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
       '@austencloud/feedback-cli':
         specifier: ^1.0.0
         version: 1.0.0
@@ -71,6 +74,9 @@ importers:
       '@austencloud/media-tagging-ui':
         specifier: ^0.1.0
         version: 0.1.0(svelte@5.49.2)
+      '@austencloud/scene-3d':
+        specifier: file:../shared-packages/packages/scene-3d
+        version: file:../shared-packages/packages/scene-3d(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
       '@austencloud/sidebar':
         specifier: ^0.1.0
         version: 0.1.0(svelte@5.49.2)
@@ -790,6 +796,16 @@ packages:
     peerDependencies:
       svelte: ^5.0.0
 
+  '@austencloud/environments-3d@file:../shared-packages/packages/environments-3d':
+    resolution: {directory: ../shared-packages/packages/environments-3d, type: directory}
+    peerDependencies:
+      '@austencloud/backgrounds': '>=0.1.0'
+      '@austencloud/scene-3d': '>=0.1.0'
+      '@threlte/core': '>=8.0.0'
+      '@threlte/extras': '>=9.0.0'
+      svelte: '>=5.0.0'
+      three: '>=0.170.0'
+
   '@austencloud/feedback-cli@1.0.0':
     resolution: {integrity: sha512-me/ijj0voKUzfGCrddtYsmaifxgJdtdFD1Lkl1Fd2DZj8BGGVrXv8k5MN19Dlk7on3FKIa6pSCm8gsvGOHjFNg==}
     engines: {node: '>=18'}
@@ -839,6 +855,14 @@ packages:
     resolution: {integrity: sha512-XOhRlb3aGA67Cgiju2A5uvGU8zAB9N+nMWOKBnjaeNPtCipUNKTOdizYhWdchSodrYVRaT3Mj0cdmE3cZI/sog==}
     peerDependencies:
       svelte: ^5.0.0
+
+  '@austencloud/scene-3d@file:../shared-packages/packages/scene-3d':
+    resolution: {directory: ../shared-packages/packages/scene-3d, type: directory}
+    peerDependencies:
+      '@threlte/core': '>=8.0.0'
+      '@threlte/extras': '>=9.0.0'
+      svelte: '>=5.0.0'
+      three: '>=0.170.0'
 
   '@austencloud/sidebar@0.1.0':
     resolution: {integrity: sha512-xxzHWuHpechMk5uFOrN/Xxrb6angRUtIfKxxfFW4fYP8lPlnrKM3Bd1wqYXVjvp6VyBO4XIBaQvmE3sKqVsyFg==}
@@ -7670,6 +7694,15 @@ snapshots:
     dependencies:
       svelte: 5.49.2
 
+  '@austencloud/environments-3d@file:../shared-packages/packages/environments-3d(@austencloud/backgrounds@0.2.0)(@austencloud/scene-3d@file:../shared-packages/packages/scene-3d(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0))(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
+    dependencies:
+      '@austencloud/backgrounds': 0.2.0
+      '@austencloud/scene-3d': file:../shared-packages/packages/scene-3d(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
+      '@threlte/core': 8.3.1(svelte@5.49.2)(three@0.182.0)
+      '@threlte/extras': 9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0)
+      svelte: 5.49.2
+      three: 0.182.0
+
   '@austencloud/feedback-cli@1.0.0':
     dependencies:
       firebase-admin: 13.6.1
@@ -7717,6 +7750,13 @@ snapshots:
       '@austencloud/media-tagging-core': 0.1.0
       '@austencloud/media-tagging-types': 0.1.0
       svelte: 5.49.2
+
+  '@austencloud/scene-3d@file:../shared-packages/packages/scene-3d(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
+    dependencies:
+      '@threlte/core': 8.3.1(svelte@5.49.2)(three@0.182.0)
+      '@threlte/extras': 9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0)
+      svelte: 5.49.2
+      three: 0.182.0
 
   '@austencloud/sidebar@0.1.0(svelte@5.49.2)':
     dependencies:

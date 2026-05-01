@@ -1,13 +1,3 @@
-/**
- * LOOP Labeler State
- *
- * Pure data container with reactive state using Svelte 5 runes.
- * All behavior lives in LOOPLabelerController.
- *
- * NOTE: This file should NOT import LOOPLabelerController to avoid circular deps.
- * The controller is instantiated in the module component that uses both.
- */
-
 import type { SequenceEntry } from "../domain/models/sequence-models";
 import type {
   LabeledSequence,
@@ -17,10 +7,8 @@ import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
 import { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
 import type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 
-// Re-export for backwards compatibility
 export type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 
-// Service locator instance for accessing DI services
 const loopLabelerServices = new LOOPLabelerServiceLocator();
 
 interface LOOPLabelerStateData {
@@ -44,10 +32,6 @@ export class LOOPLabelerState {
   private detectionCache = new Map<string, LOOPDetectionResult>();
   private wasRestoredFromHMR = false;
 
-  // ============================================================
-  // INITIALIZATION
-  // ============================================================
-
   private getInitialState(): LOOPLabelerStateData {
     if (import.meta.hot?.data.LOOPLabelerState) {
       this.wasRestoredFromHMR = true;
@@ -70,10 +54,6 @@ export class LOOPLabelerState {
       popstateHandler: null,
     };
   }
-
-  // ============================================================
-  // GETTERS (simple property access)
-  // ============================================================
 
   get sequences() {
     return this.data.sequences;
@@ -120,10 +100,6 @@ export class LOOPLabelerState {
   get isHMRRestored() {
     return this.wasRestoredFromHMR;
   }
-
-  // ============================================================
-  // DERIVED GETTERS
-  // ============================================================
 
   get circularSequences(): SequenceEntry[] {
     return this.data.sequences.filter((s) => s.isCircular);
@@ -178,18 +154,10 @@ export class LOOPLabelerState {
     return loader.calculateStats(this.circularSequences, this.data.labels);
   }
 
-  // ============================================================
-  // SETTERS (called by Controller)
-  // ============================================================
-
   setSequences(sequences: SequenceEntry[]) {
     this.data.sequences = sequences;
   }
 
-  /**
-   * Update a specific sequence's fullMetadata (and optionally gridMode).
-   * Used by lazy-fetch to populate step data after loading from source.
-   */
   updateSequenceDetail(
     sequenceId: string,
     fullMetadata: SequenceEntry["fullMetadata"],
@@ -198,7 +166,6 @@ export class LOOPLabelerState {
     const idx = this.data.sequences.findIndex((s) => s.id === sequenceId);
     if (idx < 0) return;
 
-    // Replace the sequence object to trigger reactivity
     const updated = { ...this.data.sequences[idx]!, fullMetadata };
     if (gridMode !== undefined) {
       updated.gridMode = gridMode;
@@ -254,10 +221,6 @@ export class LOOPLabelerState {
     this.data.popstateHandler = handler;
   }
 
-  // ============================================================
-  // LABEL MUTATIONS (called by Controller)
-  // ============================================================
-
   updateLabel(word: string, label: LabeledSequence) {
     this.data.labels.set(word, label);
     this.data.labels = new Map(this.data.labels);
@@ -282,10 +245,6 @@ export class LOOPLabelerState {
     }
   }
 
-  // ============================================================
-  // RESET
-  // ============================================================
-
   reset() {
     this.data = {
       sequences: [],
@@ -305,10 +264,6 @@ export class LOOPLabelerState {
     this.detectionCache.clear();
   }
 
-  // ============================================================
-  // HMR DATA EXPORT
-  // ============================================================
-
   getHMRData(): LOOPLabelerStateData {
     return {
       ...this.data,
@@ -316,13 +271,3 @@ export class LOOPLabelerState {
     };
   }
 }
-
-// ============================================================
-// NOTE ON INSTANTIATION
-// ============================================================
-//
-// Singletons (loopLabelerState, loopLabelerServices, loopLabelerController)
-// are created in loop-labeler-composition.ts to avoid circular dependencies.
-// Import from there, not from this file.
-//
-// This file only exports the CLASS and TYPES.

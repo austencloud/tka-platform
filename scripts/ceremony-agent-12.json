@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "ISequenceComposer",
+    "contract": "src/lib/shared/foundation/services/contracts/ISequenceComposer.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/SequenceComposer.ts",
+    "cls": "SequenceComposer",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceDecomposer",
+    "contract": "src/lib/shared/foundation/services/contracts/ISequenceDecomposer.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/SequenceDecomposer.ts",
+    "cls": "SequenceDecomposer",
+    "getter": "src/lib/shared/foundation/getSequenceDecomposer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceHydrator",
+    "contract": "src/lib/shared/foundation/services/contracts/ISequenceHydrator.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/SequenceHydrator.ts",
+    "cls": "SequenceHydrator",
+    "getter": "src/lib/shared/foundation/getSequenceHydrator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISoloPropFactory",
+    "contract": "src/lib/shared/foundation/services/contracts/ISoloPropFactory.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/SoloPropFactory.ts",
+    "cls": "SoloPropFactory",
+    "getter": "src/lib/shared/foundation/getSoloPropFactory.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISoloPropRepository",
+    "contract": "src/lib/shared/foundation/services/contracts/ISoloPropRepository.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/SoloPropRepository.ts",
+    "cls": "SoloPropRepository",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IStepDeriver",
+    "contract": "src/lib/shared/foundation/services/contracts/IStepDeriver.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/StepDeriver.ts",
+    "cls": "StepDeriver",
+    "getter": "src/lib/shared/foundation/getStepDeriver.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IStorageManager",
+    "contract": "src/lib/shared/foundation/services/contracts/IStorageManager.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/StorageManager.ts",
+    "cls": "StorageManager",
+    "getter": "src/lib/shared/foundation/getStorageManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISvgImageConverter",
+    "contract": "src/lib/shared/foundation/services/contracts/ISvgImageConverter.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/SvgImageConverter.ts",
+    "cls": "SvgImageConverter",
+    "getter": "src/lib/shared/foundation/getSvgImageConverter.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IWordDeriver",
+    "contract": "src/lib/shared/foundation/services/contracts/IWordDeriver.ts",
+    "impl": "src/lib/shared/foundation/services/implementations/WordDeriver.ts",
+    "cls": "WordDeriver",
+    "getter": "src/lib/shared/foundation/getWordDeriver.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IInteractionDetector",
+    "contract": "src/lib/features/museum/scenes/procedural/services/contracts/IInteractionDetector.ts",
+    "impl": "src/lib/features/museum/scenes/procedural/services/implementations/InteractionDetector.ts",
+    "cls": "InteractionDetector",
+    "getter": "src/lib/features/museum/getInteractionDetector.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IMuseumPersister",
+    "contract": "src/lib/features/museum/scenes/procedural/services/contracts/IMuseumPersister.ts",
+    "impl": "src/lib/features/museum/scenes/procedural/services/implementations/MuseumPersister.ts",
+    "cls": "MuseumPersister",
+    "getter": "src/lib/features/museum/getMuseumPersister.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICorridorRouter",
+    "contract": "src/lib/features/museum/services/contracts/ICorridorRouter.ts",
+    "impl": "src/lib/features/museum/services/implementations/CorridorRouter.ts",
+    "cls": "CorridorRouter",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILayoutEngine",
+    "contract": "src/lib/features/museum/services/contracts/ILayoutEngine.ts",
+    "impl": "src/lib/features/museum/services/implementations/GraphLayoutEngine.ts",
+    "cls": "GraphLayoutEngine",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ILayoutValidator",
+    "contract": "src/lib/features/museum/services/contracts/ILayoutValidator.ts",
+    "impl": "src/lib/features/museum/services/implementations/LayoutValidator.ts",
+    "cls": "LayoutValidator",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IMuseumDesignValidator",
+    "contract": "src/lib/features/museum/services/contracts/IMuseumDesignValidator.ts",
+    "impl": "src/lib/features/museum/services/implementations/MuseumDesignValidator.ts",
+    "cls": "MuseumDesignValidator",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IMuseumGridBuilder",
+    "contract": "src/lib/features/museum/services/contracts/IMuseumGridBuilder.ts",
+    "impl": "src/lib/features/museum/services/implementations/MuseumGridBuilder.ts",
+    "cls": "MuseumGridBuilder",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IMuseumGridPersister",
+    "contract": "src/lib/features/museum/services/contracts/IMuseumGridPersister.ts",
+    "impl": "src/lib/features/museum/services/implementations/MuseumGridPersister.ts",
+    "cls": "MuseumGridPersister",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IMuseumModelLoader",
+    "contract": "src/lib/features/museum/services/contracts/IMuseumModelLoader.ts",
+    "impl": "src/lib/features/museum/services/implementations/MuseumModelLoader.ts",
+    "cls": "MuseumModelLoader",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IMuseumRoomSerializer",
+    "contract": "src/lib/features/museum/services/contracts/IMuseumRoomSerializer.ts",
+    "impl": "src/lib/features/museum/services/implementations/MuseumRoomSerializer.ts",
+    "cls": "MuseumRoomSerializer",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPlacementPersister",
+    "contract": "src/lib/features/museum/services/contracts/IPlacementPersister.ts",
+    "impl": "src/lib/features/museum/services/implementations/PlacementPersister.ts",
+    "cls": "PlacementPersister",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPlaqueTextureGenerator",
+    "contract": "src/lib/features/museum/services/contracts/IPlaqueTextureGenerator.ts",
+    "impl": "src/lib/features/museum/services/implementations/PlaqueTextureGenerator.ts",
+    "cls": "PlaqueTextureGenerator",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IProximityGrid",
+    "contract": "src/lib/features/museum/services/contracts/IProximityGrid.ts",
+    "impl": "src/lib/features/museum/services/implementations/ProximityGrid.ts",
+    "cls": "ProximityGrid",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IRoomLifecycleManager",
+    "contract": "src/lib/features/museum/services/contracts/IRoomLifecycleManager.ts",
+    "impl": "src/lib/features/museum/services/implementations/RoomLifecycleManager.ts",
+    "cls": "RoomLifecycleManager",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IRoomStreamingManager",
+    "contract": "src/lib/features/museum/services/contracts/IRoomStreamingManager.ts",
+    "impl": "src/lib/features/museum/services/implementations/RoomStreamingManager.ts",
+    "cls": "RoomStreamingManager",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITileGridAnalyzer",
+    "contract": "src/lib/features/museum/services/contracts/ITileGridAnalyzer.ts",
+    "impl": "src/lib/features/museum/services/implementations/TileGridAnalyzer.ts",
+    "cls": "TileGridAnalyzer",
+    "getter": null,
+    "hasCoExports": true
+  }
+]

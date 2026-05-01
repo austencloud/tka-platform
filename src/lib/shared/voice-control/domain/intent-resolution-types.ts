@@ -1,16 +1,4 @@
-/**
- * Intent Resolution Types
- *
- * Shared types for the tiered voice command resolution system.
- * Tier 1 (regex) and Tier 2 (LLM) both produce VoiceCommand objects.
- * These types define the LLM resolution layer.
- */
-
 import type { VoiceCommand, VoiceCommandCategory } from "./voice-command-types";
-
-// ============================================================================
-// Intent Resolution
-// ============================================================================
 
 /** Result from the LLM intent resolver */
 export interface IntentResolution {
@@ -48,10 +36,6 @@ export interface VoiceCommandLLMOutput {
   args?: Record<string, string | boolean | number>;
   confidence: number;
 }
-
-// ============================================================================
-// Action Catalog
-// ============================================================================
 
 /** A single available voice command action */
 export interface ActionDefinition {

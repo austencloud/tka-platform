@@ -1,20 +1,8 @@
-/**
- * Replay Engine Domain Types
- *
- * Types for comparing recorded voice sessions against the current
- * interpreter pipeline. Enables regression testing: "did my regex
- * change break something that used to work?"
- */
-
 import type {
   VoiceSessionEvent,
   ResolutionTier,
 } from "$lib/shared/voice-control/domain/voice-session-types";
 import type { VoiceCommand } from "$lib/shared/voice-control/domain/voice-command-types";
-
-// ============================================================================
-// Diff Classification
-// ============================================================================
 
 /**
  * How the current interpretation differs from what was originally recorded:
@@ -24,10 +12,6 @@ import type { VoiceCommand } from "$lib/shared/voice-control/domain/voice-comman
  * - CHANGED: Different interpretation (neither clearly better nor worse)
  */
 export type ReplayDiffType = "SAME" | "IMPROVED" | "REGRESSED" | "CHANGED";
-
-// ============================================================================
-// Per-Event Comparison
-// ============================================================================
 
 /** Side-by-side comparison of one event's original vs current interpretation */
 export interface ReplayEventComparison {
@@ -49,10 +33,6 @@ export interface ReplayEventComparison {
   originalEvent: VoiceSessionEvent;
 }
 
-// ============================================================================
-// Session-Level Summary
-// ============================================================================
-
 /** Aggregate counts across all events in a replayed session */
 export interface ReplaySessionSummary {
   /** Events with identical interpretation */
@@ -66,10 +46,6 @@ export interface ReplaySessionSummary {
   /** Total events compared */
   totalCount: number;
 }
-
-// ============================================================================
-// Complete Replay Result
-// ============================================================================
 
 /** Full result of replaying a session through the current pipeline */
 export interface ReplayResult {

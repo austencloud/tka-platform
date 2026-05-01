@@ -1,11 +1,3 @@
-/**
- * Text Rendering Service
- *
- * Handles rendering of sequence titles, user info, and other text overlays
- * on exported images. Delegates header and footer rendering to
- * @tka/render-composition for cross-environment consistency.
- */
-
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
 import type { ILOOPIconStripRenderer } from "../contracts/ILOOPIconStripRenderer";
@@ -15,21 +7,23 @@ import type {
 } from "../../domain/models/SequenceExportOptions";
 import type { ITextRenderer } from "../contracts/ITextRenderer";
 import {
-  DIFFICULTY_LEVELS,
-  DEFAULT_DIFFICULTY_STYLE,
-  DIFFICULTY_FONT_FAMILY,
-  applyGradientStops,
-} from "$lib/shared/config/difficulty-styles";
-import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId, type LoopRotationPeriod, type LoopInversionPeriod, type GlyphImageData, type CompressedSegment } from "@tka/render-composition";
+  renderHeader,
+  renderFooter,
+  FOOTER_FONT_SCALE,
+  type LOOPComponentId,
+  type LoopRotationPeriod,
+  type LoopInversionPeriod,
+  type GlyphImageData,
+  type CompressedSegment,
+} from "@tka/render-composition";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { compressWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 export class TextRenderer implements ITextRenderer {
-  // Font configuration matching WordLabel component exactly
-  private readonly titleFontFamily = "Georgia, serif"; // Matches WordLabel
-  private readonly titleFontWeight = "600"; // Matches WordLabel
+  private readonly titleFontFamily = "Georgia, serif";
+  private readonly titleFontWeight = "600";
   private readonly fallbackFontFamily =
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
@@ -40,12 +34,6 @@ export class TextRenderer implements ITextRenderer {
 
   private glyphImageCache = new Map<string, GlyphImageData>();
 
-  /**
-   * Eagerly load all TKA letter SVGs as HTMLImageElement objects.
-   * Call once at app startup (fire-and-forget from +layout.svelte).
-   * Until this resolves, renderWordHeader falls back to text.
-   * Idempotent - safe to call multiple times.
-   */
   async preloadGlyphImages(): Promise<void> {
     if (this.glyphImageCache.size > 0) return;
     const cache = getGlyphCache();
@@ -69,17 +57,16 @@ export class TextRenderer implements ITextRenderer {
             });
             resolve();
           };
-          img.onerror = () => { clearTimeout(timer); resolve(); };
+          img.onerror = () => {
+            clearTimeout(timer);
+            resolve();
+          };
           img.src = dataUrl;
         });
       })
     );
   }
 
-  /**
-   * Build a Map<token, GlyphImageData> for the letters in `word`.
-   * Returns an empty map if preloadGlyphImages hasn't been called yet.
-   */
   buildGlyphMap(word: string): Map<string, GlyphImageData> {
     if (!word || this.glyphImageCache.size === 0) {
       return new Map();
@@ -93,15 +80,11 @@ export class TextRenderer implements ITextRenderer {
     return result;
   }
 
-  /**
-   * Render sequence word/title text at the top center of the canvas
-   * @deprecated Use renderWordFooter instead for Browser Gallery style
-   */
   renderWordText(
     canvas: HTMLCanvasElement,
     word: string,
     options: TextRenderOptions,
-    stepCount: number = 3 // Default to 3+ steps scaling
+    stepCount: number = 3
   ): void {
     if (!word || word.trim() === "") {
       return;
@@ -112,43 +95,30 @@ export class TextRenderer implements ITextRenderer {
       return;
     }
 
-    // Get desktop-compatible font scaling based on beat count
     const scalingFactors =
       this.dimensionService.getTextScalingFactors(stepCount);
 
-    // Calculate title area height (matches ImageComposer logic)
-    // titleHeight is already scaled by stepScale internally
     const titleHeight = this.calculateTitleHeight(
       stepCount,
       options.stepScale || 1
     );
-    // Apply font scaling factor - but NOT stepScale again since titleHeight is already scaled
-    // Additional 0.7 multiplier to reduce overall font size for better visual balance
     const finalFontSize = titleHeight * scalingFactors.fontScale * 0.7;
 
-    // Set font properties using Georgia serif font (matches WordLabel)
     ctx.font = `${this.titleFontWeight} ${finalFontSize}px ${this.titleFontFamily}`;
-    ctx.fillStyle = "black"; // Matches WordLabel color
+    ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Calculate positioning
     const centerX = canvas.width / 2;
     const centerY = titleHeight / 2;
 
     this.drawTitleBackground(ctx, canvas.width, titleHeight);
 
-    // Set text color to dark gray for visibility
     ctx.fillStyle = "black";
 
-    // Render the text
     ctx.fillText(word, centerX, centerY);
   }
 
-  /**
-   * Render word in a footer at the bottom of the canvas
-   * Uses Browser Gallery style: color-coded gradient background based on difficulty level
-   */
   renderWordFooter(
     canvas: HTMLCanvasElement,
     word: string,
@@ -165,13 +135,10 @@ export class TextRenderer implements ITextRenderer {
       return;
     }
 
-    // Get level style (gradient colors and text color) matching Browser Gallery
     const levelStyle = this.getLevelStyle(difficultyLevel);
 
-    // Calculate footer position (at the bottom of the canvas)
     const footerY = canvas.height - footerHeight;
 
-    // Draw gradient background
     this.drawFooterGradient(
       ctx,
       0,
@@ -181,28 +148,19 @@ export class TextRenderer implements ITextRenderer {
       levelStyle
     );
 
-    // Calculate font size based on footer height (larger, bolder text)
     const finalFontSize = footerHeight * FOOTER_FONT_SCALE;
 
-    // Set font properties - bold weight for emphasis
     ctx.font = `700 ${finalFontSize}px ${this.titleFontFamily}`;
     ctx.fillStyle = levelStyle.textColor;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Calculate positioning (centered in footer)
     const centerX = canvas.width / 2;
     const centerY = footerY + footerHeight / 2;
 
-    // Render the text
     ctx.fillText(word, centerX, centerY);
   }
 
-  /**
-   * Render word in a header at the top of the canvas.
-   * Delegates to @tka/render-composition's renderHeader for cross-environment
-   * consistency (same output as MCP server).
-   */
   renderWordHeader(
     canvas: HTMLCanvasElement,
     word: string,
@@ -223,7 +181,6 @@ export class TextRenderer implements ITextRenderer {
       return;
     }
 
-    // Convert app enum Set to package string Set
     let packageComponents: Set<LOOPComponentId> | undefined;
     if (loopComponents && loopComponents.size > 0) {
       packageComponents = new Set<LOOPComponentId>();
@@ -234,7 +191,8 @@ export class TextRenderer implements ITextRenderer {
 
     const glyphImages = this.buildGlyphMap(word ?? "");
     const segments = word ? compressWord(word) : undefined;
-    const hasCompression = segments && segments.some((s: CompressedSegment) => s.repeat > 1);
+    const hasCompression =
+      segments && segments.some((s: CompressedSegment) => s.repeat > 1);
 
     renderHeader(ctx, {
       canvasWidth: canvas.width,
@@ -254,11 +212,6 @@ export class TextRenderer implements ITextRenderer {
     });
   }
 
-  /**
-   * Render user information at the bottom of the canvas.
-   * Delegates to @tka/render-composition's renderFooter for cross-environment
-   * consistency (same output as MCP server).
-   */
   renderUserInfo(
     canvas: HTMLCanvasElement,
     userInfo: UserExportInfo,
@@ -288,15 +241,13 @@ export class TextRenderer implements ITextRenderer {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Resolve the notes text (custom > userInfo.notes > default)
     const notes =
       customNotesText && customNotesText.trim() !== ""
         ? customNotesText
         : userInfo.notes && userInfo.notes.trim() !== ""
           ? userInfo.notes
-          : undefined; // package will default to "The Kinetic Alphabet"
+          : undefined;
 
-    // Resolve the date to display
     const birthday = userInfo.birthday
       ? userInfo.birthday
       : userInfo.exportDate
@@ -321,9 +272,6 @@ export class TextRenderer implements ITextRenderer {
     });
   }
 
-  /**
-   * Render difficulty level badge with beautiful gradients
-   */
   renderDifficultyBadge(
     canvas: HTMLCanvasElement,
     level: number,
@@ -338,7 +286,6 @@ export class TextRenderer implements ITextRenderer {
     const centerX = x + radius;
     const centerY = y + radius;
 
-    // Create gradient based on difficulty level
     const gradient = this.createDifficultyGradient(
       ctx,
       centerX,
@@ -347,28 +294,22 @@ export class TextRenderer implements ITextRenderer {
       level
     );
 
-    // Draw badge background with gradient
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Draw badge border
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw level text
-    ctx.fillStyle = "#000000"; // Black text for better contrast on gradients
+    ctx.fillStyle = "#000000";
     ctx.font = `bold ${size * 0.6}px ${this.fallbackFontFamily}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(level.toString(), centerX, centerY);
   }
 
-  /**
-   * Calculate text dimensions for layout planning
-   */
   measureText(
     text: string,
     fontFamily: string,
@@ -384,13 +325,10 @@ export class TextRenderer implements ITextRenderer {
 
     return {
       width: metrics.width,
-      height: fontSize, // Approximate height
+      height: fontSize,
     };
   }
 
-  /**
-   * Apply custom kerning to text
-   */
   renderTextWithKerning(
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -406,7 +344,7 @@ export class TextRenderer implements ITextRenderer {
     let currentX = x;
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
-      if (!char) continue; // Skip if char is undefined
+      if (!char) continue;
       ctx.fillText(char, currentX, y);
 
       const charWidth = ctx.measureText(char).width;
@@ -414,19 +352,14 @@ export class TextRenderer implements ITextRenderer {
     }
   }
 
-  /**
-   * Draw subtle background behind title text
-   */
   private drawTitleBackground(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number
   ): void {
-    // Very subtle white background
     ctx.fillStyle = "rgba(235, 235, 235, 0.98)";
     ctx.fillRect(0, 0, width, height);
 
-    // Very subtle bottom border
     ctx.strokeStyle = "rgba(0, 0, 0, 0.05)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -435,10 +368,6 @@ export class TextRenderer implements ITextRenderer {
     ctx.stroke();
   }
 
-  /**
-   * Get level style (colors) matching Browser Gallery SequenceCard
-   * 1=white, 2=silver, 3=gold, 4=red, 5=purple
-   */
   private getLevelStyle(level: number): {
     background: string[];
     textColor: string;
@@ -448,7 +377,6 @@ export class TextRenderer implements ITextRenderer {
       { background: string[]; textColor: string }
     > = {
       1: {
-        // White - Beginner
         background: [
           "rgba(255, 255, 255, 0.98)",
           "rgba(250, 250, 250, 0.95)",
@@ -458,7 +386,6 @@ export class TextRenderer implements ITextRenderer {
         textColor: "#1f2937",
       },
       2: {
-        // Silver - Intermediate
         background: [
           "rgba(220, 220, 225, 0.98)",
           "rgba(192, 192, 200, 0.95)",
@@ -468,7 +395,6 @@ export class TextRenderer implements ITextRenderer {
         textColor: "#1f2937",
       },
       3: {
-        // Gold - Advanced
         background: [
           "rgba(255, 215, 0, 0.98)",
           "rgba(238, 201, 0, 0.95)",
@@ -478,7 +404,6 @@ export class TextRenderer implements ITextRenderer {
         textColor: "#1f2937",
       },
       4: {
-        // Red - Expert
         background: [
           "rgba(255, 120, 120, 0.98)",
           "rgba(239, 68, 68, 0.95)",
@@ -488,7 +413,6 @@ export class TextRenderer implements ITextRenderer {
         textColor: "#ffffff",
       },
       5: {
-        // Purple - Legendary
         background: [
           "rgba(216, 180, 254, 0.98)",
           "rgba(168, 85, 247, 0.95)",
@@ -507,9 +431,6 @@ export class TextRenderer implements ITextRenderer {
     return levelStyles[level] ?? defaultStyle;
   }
 
-  /**
-   * Draw gradient background for footer
-   */
   private drawFooterGradient(
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -518,10 +439,8 @@ export class TextRenderer implements ITextRenderer {
     height: number,
     levelStyle: { background: string[]; textColor: string }
   ): void {
-    // Create linear gradient at 135 degrees (matching CSS gradient)
     const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
 
-    // Add color stops matching the Browser Gallery CSS gradients
     gradient.addColorStop(0, levelStyle.background[0] ?? "#374151");
     gradient.addColorStop(0.3, levelStyle.background[1] ?? "#1f2937");
     gradient.addColorStop(0.6, levelStyle.background[2] ?? "#111827");
@@ -531,13 +450,9 @@ export class TextRenderer implements ITextRenderer {
     ctx.fillRect(x, y, width, height);
   }
 
-  /**
-   * Calculate title height based on beat count (matches desktop logic)
-   */
   private calculateTitleHeight(stepCount: number, stepScale: number): number {
     let baseHeight = 0;
 
-    // Match desktop logic exactly based on beat count
     if (stepCount === 0) {
       baseHeight = 0;
     } else if (stepCount === 1) {
@@ -545,18 +460,12 @@ export class TextRenderer implements ITextRenderer {
     } else if (stepCount === 2) {
       baseHeight = 200;
     } else {
-      // stepCount >= 3
       baseHeight = 300;
     }
 
-    // Apply beat scale
     return Math.floor(baseHeight * stepScale);
   }
 
-  /**
-   * Create beautiful gradient for difficulty level badge
-   * Based on legacy desktop gradient definitions
-   */
   private createDifficultyGradient(
     ctx: CanvasRenderingContext2D,
     centerX: number,
@@ -564,7 +473,6 @@ export class TextRenderer implements ITextRenderer {
     radius: number,
     level: number
   ): CanvasGradient {
-    // Create radial gradient from center to edge
     const gradient = ctx.createRadialGradient(
       centerX,
       centerY,
@@ -575,17 +483,14 @@ export class TextRenderer implements ITextRenderer {
     );
 
     if (level <= 2) {
-      // Beginner - Light gray (solid color, matches desktop)
       gradient.addColorStop(0, "rgb(245, 245, 245)");
       gradient.addColorStop(1, "rgb(225, 225, 225)");
     } else if (level <= 4) {
-      // Intermediate - Gray gradient (matches desktop)
       gradient.addColorStop(0, "rgb(180, 180, 180)");
       gradient.addColorStop(0.3, "rgb(170, 170, 170)");
       gradient.addColorStop(0.6, "rgb(120, 120, 120)");
       gradient.addColorStop(1, "rgb(110, 110, 110)");
     } else {
-      // Advanced - Gold/brown gradient (matches desktop)
       gradient.addColorStop(0, "rgb(255, 215, 0)");
       gradient.addColorStop(0.2, "rgb(238, 201, 0)");
       gradient.addColorStop(0.4, "rgb(218, 165, 32)");
@@ -598,9 +503,6 @@ export class TextRenderer implements ITextRenderer {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { dimensionCalculator } from "./DimensionCalculator";
 import { loopIconStripRenderer } from "./LOOPIconStripRenderer";
 

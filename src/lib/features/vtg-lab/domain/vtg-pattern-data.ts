@@ -1,22 +1,3 @@
-/**
- * VTG Pattern Data
- *
- * Complete enumeration of all VTG modes mapped to TKA letters.
- * Data sourced from vtg-calculator.ts lookup tables and compound-letters.json.
- *
- * Classification rules (Diamond grid mode - the default):
- *   SS (Split-Same):     A, B, C       - alpha→alpha, fixed
- *   TS (Together-Same):  G, H, I       - beta→beta, fixed
- *   TO (Together-Opp):   D, E, F       - beta→alpha, position-dependent*
- *   SO (Split-Opp):      J, K, L       - alpha→beta, position-dependent*
- *   QS (Quarter-Same):   S, T, U, V    - gamma→gamma, fixed
- *   QO (Quarter-Opp):    M, N, O, P, Q, R - gamma→gamma, fixed
- *
- * * D/E/F default to TO in Diamond mode but classify as SO at beta3/beta7.
- *   J/K/L default to TO in Diamond mode but classify as SO at alpha1/alpha5.
- *   The lab shows the PRIMARY classification with a note.
- */
-
 import type {
 	VtgModeGroup,
 	VtgPatternEntry,
@@ -27,10 +8,6 @@ import type {
 	BeyondVtgItem,
 } from "./vtg-lab-types";
 
-// ---------------------------------------------------------------------------
-// Helper to build pattern entries
-// ---------------------------------------------------------------------------
-
 function entry(
 	letter: string,
 	rotationStyle: "pro/pro" | "anti/anti" | "hybrid",
@@ -40,10 +17,6 @@ function entry(
 ): VtgPatternEntry {
 	return { letter, rotationStyle, positionTransition, isPositionDependent, positionNote };
 }
-
-// ---------------------------------------------------------------------------
-// SS - Split-Same (A, B, C)
-// ---------------------------------------------------------------------------
 
 const SS_GROUPS: RotationGroup[] = [
 	{
@@ -63,10 +36,6 @@ const SS_GROUPS: RotationGroup[] = [
 	},
 ];
 
-// ---------------------------------------------------------------------------
-// TS - Together-Same (G, H, I)
-// ---------------------------------------------------------------------------
-
 const TS_GROUPS: RotationGroup[] = [
 	{
 		style: "pro/pro",
@@ -84,10 +53,6 @@ const TS_GROUPS: RotationGroup[] = [
 		entries: [entry("I", "hybrid", "beta \u2192 beta")],
 	},
 ];
-
-// ---------------------------------------------------------------------------
-// TO - Together-Opposite (D, E, F)
-// ---------------------------------------------------------------------------
 
 const TO_NOTE =
 	"At beta3/beta7 in Diamond mode, these classify as Split-Opp instead.";
@@ -134,10 +99,6 @@ const TO_COMPOUNDS: CompoundInfo[] = [
 	},
 ];
 
-// ---------------------------------------------------------------------------
-// SO - Split-Opposite (J, K, L)
-// ---------------------------------------------------------------------------
-
 const SO_NOTE =
 	"At alpha1/alpha5 in Diamond mode, these classify as Split-Opp. At other alpha positions, they classify as Tog-Opp.";
 
@@ -159,11 +120,7 @@ const SO_GROUPS: RotationGroup[] = [
 	},
 ];
 
-const SO_COMPOUNDS: CompoundInfo[] = TO_COMPOUNDS; // Same compounds, other half
-
-// ---------------------------------------------------------------------------
-// QS - Quarter-Same (S, T, U, V)
-// ---------------------------------------------------------------------------
+const SO_COMPOUNDS: CompoundInfo[] = TO_COMPOUNDS;
 
 const QS_GROUPS: RotationGroup[] = [
 	{
@@ -183,10 +140,6 @@ const QS_GROUPS: RotationGroup[] = [
 		],
 	},
 ];
-
-// ---------------------------------------------------------------------------
-// QO - Quarter-Opposite (M, N, O, P, Q, R)
-// ---------------------------------------------------------------------------
 
 const QO_GROUPS: RotationGroup[] = [
 	{
@@ -238,10 +191,6 @@ const QO_COMPOUNDS: CompoundInfo[] = [
 		cycle: "gamma \u2192 gamma (internal cycle)",
 	},
 ];
-
-// ---------------------------------------------------------------------------
-// Assembled mode groups
-// ---------------------------------------------------------------------------
 
 export const VTG_MODE_GROUPS: VtgModeGroup[] = [
 	{
@@ -310,12 +259,7 @@ export const VTG_MODE_GROUPS: VtgModeGroup[] = [
 	},
 ];
 
-// ---------------------------------------------------------------------------
-// Terminology comparison (VTG <-> TKA)
-// ---------------------------------------------------------------------------
-
 export const TERMINOLOGY_ROWS: TerminologyRow[] = [
-	// --- Timing (phase relationship between two props) ---
 	{
 		vtgTerm: "Together (tog)",
 		vtgMeaning: "Both props pass through the downbeat (south) at the same moment",
@@ -334,7 +278,6 @@ export const TERMINOLOGY_ROWS: TerminologyRow[] = [
 		tkaTerm: "Gamma",
 		tkaMeaning: "Hands form a right angle on the grid",
 	},
-	// --- Direction (relative rotation of two props) ---
 	{
 		vtgTerm: "Same direction",
 		vtgMeaning: "Both props rotate the same way (both CW or both CCW)",
@@ -347,7 +290,6 @@ export const TERMINOLOGY_ROWS: TerminologyRow[] = [
 		tkaTerm: "Opposite rotation",
 		tkaMeaning: "One hand pro, the other anti (hybrid)",
 	},
-	// --- Spin type (prop rotation relative to hand path) ---
 	{
 		vtgTerm: "Inspin (prospin)",
 		vtgMeaning: "Prop rotates the same direction as the hand's circular path",
@@ -360,14 +302,12 @@ export const TERMINOLOGY_ROWS: TerminologyRow[] = [
 		tkaTerm: "Anti",
 		tkaMeaning: "Prop rotates against the hand's path direction",
 	},
-	// --- Reference system ---
 	{
 		vtgTerm: "Downbeat",
 		vtgMeaning: "The lowest point of the prop's circle (south / 6 o'clock). Anchor for all VTG timing.",
 		tkaTerm: "(no equivalent)",
 		tkaMeaning: "TKA is center-referenced, not ground-referenced",
 	},
-	// --- Flower shapes ---
 	{
 		vtgTerm: "Extension",
 		vtgMeaning: "1:1 inspin. Prop follows the arm with no extra rotation. Looks like a longer arm.",
@@ -386,7 +326,6 @@ export const TERMINOLOGY_ROWS: TerminologyRow[] = [
 		tkaTerm: "(no single term)",
 		tkaMeaning: "TKA describes the components: motion type + turns + position transitions",
 	},
-	// --- Transitions ---
 	{
 		vtgTerm: "Stall",
 		vtgMeaning: "Prop stops momentarily, then continues. Used for direction changes and transitions.",
@@ -399,7 +338,6 @@ export const TERMINOLOGY_ROWS: TerminologyRow[] = [
 		tkaTerm: "Hybrid rotation",
 		tkaMeaning: "One hand pro, the other anti. Letters C, F, I, L, O, R, U, V.",
 	},
-	// --- Planes ---
 	{
 		vtgTerm: "Wall plane",
 		vtgMeaning: "Prop spins in a vertical circle facing the audience",
@@ -413,10 +351,6 @@ export const TERMINOLOGY_ROWS: TerminologyRow[] = [
 		tkaMeaning: "Side view plane. Optional annotation on motion data.",
 	},
 ];
-
-// ---------------------------------------------------------------------------
-// Turn ratio mappings (VTG ratios <-> TKA turns)
-// ---------------------------------------------------------------------------
 
 export const TURN_RATIO_MAPPINGS: TurnRatioMapping[] = [
 	{
@@ -456,10 +390,6 @@ export const TURN_RATIO_MAPPINGS: TurnRatioMapping[] = [
 		tkaDescription: "Three turns per beat",
 	},
 ];
-
-// ---------------------------------------------------------------------------
-// What TKA covers beyond VTG
-// ---------------------------------------------------------------------------
 
 export const BEYOND_VTG_ITEMS: BeyondVtgItem[] = [
 	{

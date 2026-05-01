@@ -1,15 +1,6 @@
-/**
- * Image Format Converter Service - CONSOLIDATED
- *
- * Uses native browser APIs + file-saver for clean, simple image conversion.
- * Consolidates functionality from FileExportService to eliminate redundancy.
- * Provides both format conversion and file download capabilities.
- */
-
 import type { IFileDownloader } from "../../../foundation/services/contracts/IFileDownloader";
 import type { IImageFormatConverter } from "../contracts/IImageFormatConverter";
 
-// Define missing types locally for now
 interface ImageFormatOptions {
   format: "png" | "jpeg" | "webp";
   quality?: number;
@@ -24,9 +15,7 @@ interface OptimizationSettings {
 
 export class ImageFormatConverter implements IImageFormatConverter {
   constructor(private fileDownloadService: IFileDownloader) {}
-  /**
-   * Convert Canvas to Blob using native browser API
-   */
+
   async canvasToBlob(
     canvas: HTMLCanvasElement,
     options: ImageFormatOptions
@@ -43,9 +32,6 @@ export class ImageFormatConverter implements IImageFormatConverter {
     });
   }
 
-  /**
-   * Convert Canvas to Data URL using native browser API
-   */
   canvasToDataURL(
     canvas: HTMLCanvasElement,
     options: ImageFormatOptions
@@ -54,9 +40,6 @@ export class ImageFormatConverter implements IImageFormatConverter {
     return canvas.toDataURL(this.getMimeType(options.format), options.quality);
   }
 
-  /**
-   * Batch convert multiple canvases
-   */
   async convertMultipleCanvasesToBlobs(
     canvases: HTMLCanvasElement[],
     options: ImageFormatOptions
@@ -66,10 +49,6 @@ export class ImageFormatConverter implements IImageFormatConverter {
     );
   }
 
-  /**
-   * Download blob as file using file-saver
-   * Only works in browser context
-   */
   async downloadBlob(blob: Blob, filename: string): Promise<void> {
     if (typeof window === 'undefined') {
       throw new Error('downloadBlob is only available in browser context');
@@ -78,16 +57,15 @@ export class ImageFormatConverter implements IImageFormatConverter {
     saveAs(blob, filename);
   }
 
-  // Simple implementations for interface compatibility
   async optimizeForUseCase(
     blob: Blob,
     _optimization: OptimizationSettings
   ): Promise<Blob> {
-    return blob; // No optimization needed for dance notation
+    return blob;
   }
 
   getOptimalFormat(_canvas: HTMLCanvasElement): "PNG" | "JPEG" | "WEBP" {
-    return "PNG"; // PNG is fine for dance diagrams
+    return "PNG";
   }
 
   validateFormatOptions(options: ImageFormatOptions): boolean {
@@ -102,7 +80,7 @@ export class ImageFormatConverter implements IImageFormatConverter {
     _canvas: HTMLCanvasElement,
     _options: ImageFormatOptions
   ): number {
-    return 100000; // Rough estimate - not critical for this app
+    return 100000;
   }
 
   getConversionStats() {
@@ -118,10 +96,6 @@ export class ImageFormatConverter implements IImageFormatConverter {
     // No cleanup needed
   }
 
-  /**
-   * Download canvas as file (consolidated from FileExportService)
-   * Handles canvas-to-blob conversion and browser downloads
-   */
   async downloadCanvas(
     canvas: HTMLCanvasElement,
     filename: string,
@@ -142,42 +116,30 @@ export class ImageFormatConverter implements IImageFormatConverter {
     }
   }
 
-  /**
-   * Generate versioned filename (consolidated from FileExportService)
-   * Matches desktop filename generation with versioning
-   */
   generateVersionedFilename(
     word: string,
     format: string,
     timestamp?: Date
   ): string {
-    // Sanitize word for filename use
     const sanitizedWord = this.sanitizeForFilename(word) || "sequence";
 
-    // Use provided timestamp or current time
     const date = timestamp || new Date();
     const dateString = date.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
 
-    // Generate version number (in real implementation, this would check for existing files)
     const version = 1;
 
-    // Format extension
     const extension = format.toLowerCase();
 
     return `${sanitizedWord}_v${version}_${dateString}.${extension}`;
   }
 
-  /**
-   * Sanitize string for filename use
-   */
   private sanitizeForFilename(input: string): string {
     if (!input) return "";
 
-    // Replace invalid filename characters with underscores
     return input
       .replace(/[<>:"/\\|?*]/g, "_")
       .replace(/\s+/g, "_")
-      .substring(0, 100); // Reasonable length limit
+      .substring(0, 100);
   }
 
   private getMimeType(format: string): string {
@@ -193,9 +155,6 @@ export class ImageFormatConverter implements IImageFormatConverter {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
 
 export const imageFormatConverter = new ImageFormatConverter(fileDownloader);

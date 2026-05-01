@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IPropSvgLoader",
+    "contract": "src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader.ts",
+    "impl": "src/lib/shared/pictograph/prop/services/implementations/PropSvgLoader.ts",
+    "cls": "PropSvgLoader",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPropTypeConfigurator",
+    "contract": "src/lib/shared/pictograph/prop/services/contracts/IPropTypeConfigurator.ts",
+    "impl": "src/lib/shared/pictograph/prop/services/implementations/PropTypeConfigurator.ts",
+    "cls": "PropTypeConfigurator",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPictographCoordinator",
+    "contract": "src/lib/shared/pictograph/shared/services/contracts/IPictographCoordinator.ts",
+    "impl": "src/lib/shared/pictograph/shared/services/implementations/PictographCoordinator.ts",
+    "cls": "PictographCoordinator",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPictographPreparer",
+    "contract": "src/lib/shared/pictograph/shared/services/contracts/IPictographPreparer.ts",
+    "impl": "src/lib/shared/pictograph/shared/services/implementations/PictographPreparer.ts",
+    "cls": "PictographPreparer",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IStartPositionDeriver",
+    "contract": "src/lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver.ts",
+    "impl": "src/lib/shared/pictograph/shared/services/implementations/StartPositionDeriver.ts",
+    "cls": "StartPositionDeriver",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISvgPreloader",
+    "contract": "src/lib/shared/pictograph/shared/services/contracts/ISvgPreloader.ts",
+    "impl": "src/lib/shared/pictograph/shared/services/implementations/SvgPreloader.ts",
+    "cls": "SvgPreloader",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IAudioStorageManager",
+    "contract": "src/lib/features/compose/compose/phases/audio/library/services/contracts/IAudioStorageManager.ts",
+    "impl": "src/lib/features/compose/compose/phases/audio/library/services/implementations/AudioStorageManager.ts",
+    "cls": "AudioStorageManager",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAngleCalculator",
+    "contract": "src/lib/features/compose/services/contracts/IAngleCalculator.ts",
+    "impl": "src/lib/features/compose/services/implementations/AngleCalculator.ts",
+    "cls": "AngleCalculator",
+    "getter": "src/lib/features/compose/getAngleCalculator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IAnimationLoop",
+    "contract": "src/lib/features/compose/services/contracts/IAnimationLoop.ts",
+    "impl": "src/lib/features/compose/services/implementations/AnimationLoop.ts",
+    "cls": "AnimationLoop",
+    "getter": "src/lib/features/compose/getAnimationLoop.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IAnimationPlaybackControllerFactory",
+    "contract": "src/lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory.ts",
+    "impl": "src/lib/features/compose/services/implementations/AnimationPlaybackControllerFactory.ts",
+    "cls": "AnimationPlaybackControllerFactory",
+    "getter": "src/lib/features/compose/getAnimationPlaybackControllerFactory.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IAnimationRenderer",
+    "contract": "src/lib/features/compose/services/contracts/IAnimationRenderer.ts",
+    "impl": "src/lib/features/compose/services/implementations/Canvas2DAnimationRenderer.ts",
+    "cls": "Canvas2DAnimationRenderer",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAnimationStateManager",
+    "contract": "src/lib/features/compose/services/contracts/IAnimationStateManager.ts",
+    "impl": "src/lib/features/compose/services/implementations/AnimationStateManager.ts",
+    "cls": "AnimationStateManager",
+    "getter": "src/lib/features/compose/getAnimationStateManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IAnimationStorageManager",
+    "contract": "src/lib/features/compose/services/contracts/IAnimationStorageManager.ts",
+    "impl": "src/lib/features/compose/services/implementations/AnimationStorageManager.ts",
+    "cls": "AnimationStorageManager",
+    "getter": "src/lib/features/compose/getAnimationStorageManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IBackgroundVideoEncoder",
+    "contract": "src/lib/features/compose/services/contracts/IBackgroundVideoEncoder.ts",
+    "impl": "src/lib/features/compose/services/implementations/BackgroundVideoEncoder.ts",
+    "cls": "BackgroundVideoEncoder",
+    "getter": "src/lib/features/compose/getBackgroundVideoEncoder.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICanvasRenderer",
+    "contract": "src/lib/features/compose/services/contracts/ICanvasRenderer.ts",
+    "impl": "src/lib/features/compose/services/implementations/CanvasRenderer.ts",
+    "cls": "CanvasRenderer",
+    "getter": "src/lib/features/compose/getCanvasRenderer.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICompositeVideoRenderer",
+    "contract": "src/lib/features/compose/services/contracts/ICompositeVideoRenderer.ts",
+    "impl": "src/lib/features/compose/services/implementations/CompositeVideoRenderer.ts",
+    "cls": "CompositeVideoRenderer",
+    "getter": "src/lib/features/compose/getCompositeVideoRenderer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICompositionRepository",
+    "contract": "src/lib/features/compose/services/contracts/ICompositionRepository.ts",
+    "impl": "src/lib/features/compose/services/implementations/DexieCompositionRepository.ts",
+    "cls": "DexieCompositionRepository",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICoordinateUpdater",
+    "contract": "src/lib/features/compose/services/contracts/ICoordinateUpdater.ts",
+    "impl": "src/lib/features/compose/services/implementations/CoordinateUpdater.ts",
+    "cls": "CoordinateUpdater",
+    "getter": "src/lib/features/compose/getCoordinateUpdater.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IEndpointCalculator",
+    "contract": "src/lib/features/compose/services/contracts/IEndpointCalculator.ts",
+    "impl": "src/lib/features/compose/services/implementations/EndpointCalculator.ts",
+    "cls": "EndpointCalculator",
+    "getter": "src/lib/features/compose/getEndpointCalculator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IExportGlyphPrerenderer",
+    "contract": "src/lib/features/compose/services/contracts/IExportGlyphPrerenderer.ts",
+    "impl": "src/lib/features/compose/services/implementations/ExportGlyphPrerenderer.ts",
+    "cls": "ExportGlyphPrerenderer",
+    "getter": "src/lib/features/compose/getExportGlyphPrerenderer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPropInterpolator",
+    "contract": "src/lib/features/compose/services/contracts/IPropInterpolator.ts",
+    "impl": "src/lib/features/compose/services/implementations/PropInterpolator.ts",
+    "cls": "PropInterpolator",
+    "getter": "src/lib/features/compose/getPropInterpolator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceAnimationOrchestrator",
+    "contract": "src/lib/features/compose/services/contracts/ISequenceAnimationOrchestrator.ts",
+    "impl": "src/lib/features/compose/services/implementations/SequenceAnimationOrchestrator.ts",
+    "cls": "SequenceAnimationOrchestrator",
+    "getter": "src/lib/features/compose/getSequenceAnimationOrchestrator.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceLoopabilityChecker",
+    "contract": "src/lib/features/compose/services/contracts/ISequenceLoopabilityChecker.ts",
+    "impl": "src/lib/features/compose/services/implementations/SequenceLoopabilityChecker.ts",
+    "cls": "SequenceLoopabilityChecker",
+    "getter": "src/lib/features/compose/getSequenceLoopabilityChecker.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ISequenceNormalizer",
+    "contract": "src/lib/features/compose/services/contracts/ISequenceNormalizer.ts",
+    "impl": "src/lib/features/compose/services/implementations/SequenceNormalizer.ts",
+    "cls": "SequenceNormalizer",
+    "getter": "src/lib/features/compose/getSequenceNormalizer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IStepCalculator",
+    "contract": "src/lib/features/compose/services/contracts/IStepCalculator.ts",
+    "impl": "src/lib/features/compose/services/implementations/StepCalculator.ts",
+    "cls": "StepCalculator",
+    "getter": "src/lib/features/compose/getStepCalculator.ts",
+    "hasCoExports": true
+  }
+]

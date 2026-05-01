@@ -1,14 +1,3 @@
-/**
- * Shared types for pictograph rendering calculations
- *
- * Uses string literal unions for cross-environment compatibility.
- * Both the browser app and Node.js MCP server can import these.
- */
-
-// ============================================================================
-// GRID TYPES
-// ============================================================================
-
 /** Grid locations (8 compass points + center) */
 export type GridLocation =
   | "n"
@@ -40,16 +29,9 @@ export const INTERCARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set([
   "nw",
 ]);
 
-/**
- * Check if a location is cardinal (N/E/S/W)
- */
 export function isCardinal(location: string): boolean {
   return CARDINAL_LOCATIONS.has(location.toLowerCase() as GridLocation);
 }
-
-// ============================================================================
-// MOTION TYPES
-// ============================================================================
 
 /** Motion types */
 export type MotionType = "static" | "pro" | "anti" | "dash" | "float";
@@ -81,10 +63,6 @@ export type RotationDirection = "cw" | "ccw" | "no_rot";
 /** Prop colors */
 export type PropColor = "blue" | "red";
 
-// ============================================================================
-// COORDINATE TYPES
-// ============================================================================
-
 /** 2D coordinates */
 export interface Coordinates {
   x: number;
@@ -106,16 +84,8 @@ export interface ArrowPlacement {
   location: GridLocation;
 }
 
-// ============================================================================
-// HAND PATH
-// ============================================================================
-
 /** Hand path directions (movement between locations) */
 export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
-
-// ============================================================================
-// SPINNING PLANE (Future - not yet assigned to a level)
-// ============================================================================
 
 /**
  * The plane in which spinning occurs.
@@ -127,10 +97,6 @@ export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
  * Note: Level 6 is interradial orientations. Planes are a separate future concept (Level 8).
  */
 export type SpinningPlane = "wall" | "wheel" | "floor";
-
-// ============================================================================
-// VECTOR DIRECTIONS (for beta offset)
-// ============================================================================
 
 /** Vector directions for offset calculations */
 export type VectorDirection =

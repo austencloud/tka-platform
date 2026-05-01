@@ -1,33 +1,7 @@
-/**
- * Profile Settings Context
- *
- * Context-based state for profile settings feature.
- * State lives in the component tree, not the module graph.
- * This enables proper HMR without full page reloads.
- *
- * HMR test edit - this should NOT cause a full page reload!
- *
- * Usage:
- *   // In root component (ProfileTab.svelte):
- *   const state = createProfileSettingsState();
- *   setContext(PROFILE_SETTINGS_KEY, state);
- *
- *   // In child components:
- *   const state = getProfileSettingsContext();
- */
-
 import { getContext, setContext } from "svelte";
 import type { User } from "firebase/auth";
 
-// ============================================================================
-// CONTEXT KEY
-// ============================================================================
-
 const PROFILE_SETTINGS_KEY = Symbol("profile-settings");
-
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export type SettingsTab =
   | "personal"
@@ -67,12 +41,7 @@ export interface ViewportState {
   availableHeight: number;
 }
 
-// ============================================================================
-// FACTORY FUNCTION
-// ============================================================================
-
 export function createProfileSettingsState() {
-  // Form state
   const personalInfo = $state<PersonalInfoState>({
     displayName: "",
     email: "",
@@ -93,7 +62,6 @@ export function createProfileSettingsState() {
     password: "",
   });
 
-  // UI state
   const ui = $state<UIState>({
     activeTab: "personal",
     previousTab: "personal",
@@ -106,17 +74,14 @@ export function createProfileSettingsState() {
     changingEmail: false,
   });
 
-  // Viewport state
   const viewport = $state<ViewportState>({
     contentContainer: null,
     availableHeight: 0,
   });
 
-  // Tab order for transitions
   const TAB_ORDER: SettingsTab[] = ["personal", "security", "subscription"];
 
   return {
-    // State objects (reactive)
     personalInfo,
     originalPersonalInfo,
     password,
@@ -124,14 +89,12 @@ export function createProfileSettingsState() {
     ui,
     viewport,
 
-    // Computed values
     isCompactMode: () => viewport.availableHeight > 0 && viewport.availableHeight < 600,
     isVeryCompactMode: () => viewport.availableHeight > 0 && viewport.availableHeight < 500,
 
     hasPersonalInfoChanges: () =>
       personalInfo.displayName !== originalPersonalInfo.displayName,
 
-    // User-dependent helpers
     hasPasswordProvider: (user: User | null): boolean => {
       if (!user?.providerData) return false;
       return user.providerData.some(
@@ -147,7 +110,6 @@ export function createProfileSettingsState() {
       );
     },
 
-    // State synchronization
     syncWithUser: (user: User | null) => {
       if (user) {
         const displayName = user.displayName || "";
@@ -160,7 +122,6 @@ export function createProfileSettingsState() {
       }
     },
 
-    // Reset functions
     resetPersonalInfoForm: () => {
       personalInfo.displayName = originalPersonalInfo.displayName;
       personalInfo.email = originalPersonalInfo.email;
@@ -185,7 +146,6 @@ export function createProfileSettingsState() {
       ui.changingEmail = false;
     },
 
-    // Tab transitions
     updateTabTransition: (newTab: SettingsTab) => {
       const oldIndex = TAB_ORDER.indexOf(ui.activeTab);
       const newIndex = TAB_ORDER.indexOf(newTab);
@@ -196,7 +156,6 @@ export function createProfileSettingsState() {
       ui.activeTab = newTab;
     },
 
-    // Viewport tracking
     setupViewportTracking: (): (() => void) | null => {
       if (!viewport.contentContainer) return null;
 
@@ -217,10 +176,6 @@ export function createProfileSettingsState() {
 
 export type ProfileSettingsState = ReturnType<typeof createProfileSettingsState>;
 
-// ============================================================================
-// CONTEXT HELPERS
-// ============================================================================
-
 export function setProfileSettingsContext(state: ProfileSettingsState): void {
   setContext(PROFILE_SETTINGS_KEY, state);
 }
@@ -235,10 +190,6 @@ export function getProfileSettingsContext(): ProfileSettingsState {
   return ctx;
 }
 
-/**
- * Optional getter that returns undefined if context not available.
- * Useful for components that can work with or without the context.
- */
 export function tryGetProfileSettingsContext(): ProfileSettingsState | undefined {
   return getContext<ProfileSettingsState | undefined>(PROFILE_SETTINGS_KEY);
 }

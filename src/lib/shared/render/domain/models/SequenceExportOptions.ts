@@ -1,19 +1,7 @@
-/**
- * TKA Image Export Core Domain Types
- *
- * Core domain models for the TKA image export system.
- * Contains the main configuration types and fundamental data structures.
- */
-
 import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 
-// ============================================================================
-// EXPORT OPTIONS AND CONFIGURATION
-// ============================================================================
-
 export interface SequenceExportOptions {
-  // Core export settings (match desktop defaults)
   includeStartPosition: boolean;
   /** "row" = start position as top row, "column" = start position as left column */
   startPositionLayout?: "row" | "column";
@@ -24,44 +12,32 @@ export interface SequenceExportOptions {
   addWord: boolean;
   combinedGrids: boolean;
   addDifficultyLevel: boolean;
-  customName?: string; // Optional custom name for header (overrides word when provided)
+  customName?: string; 
 
-  // LOOP glyph settings
-  loopType?: LOOPType; // LOOP type to display as glyph badge in header
-  showLoopGlyph?: boolean; // Whether to show the LOOP glyph (defaults to true if loopType is set)
+  loopType?: LOOPType; 
+  showLoopGlyph?: boolean; 
 
-  // Granular footer controls - footer renders if any of these are true
-  showCreatorName?: boolean; // Bottom-left: creator name
-  showNotes?: boolean; // Bottom-center: notes text
-  showBirthday?: boolean; // Bottom-right: birthday date
-  customNotesText?: string; // Custom text for center notes (default: "The Kinetic Alphabet")
+  showCreatorName?: boolean; 
+  showNotes?: boolean; 
+  showBirthday?: boolean; 
+  customNotesText?: string; 
   /** Left-side label override (e.g. "QS 1:1" for deck cards) */
   leftLabel?: string;
   /** Pre-loaded elemental icon image to draw in footer before the left label */
   elementIcon?: CanvasImageSource;
 
-  // Prop type override (optional)
-  // If provided, overrides the prop type for all steps in the sequence
-  // Used for batch re-rendering sequences with different prop types
   propTypeOverride?: PropType;
 
-  // Per-color prop type overrides for cat-dog mode (optional)
-  // When provided, overrides props for specific colors independently
   bluePropTypeOverride?: PropType;
   redPropTypeOverride?: PropType;
 
-  // Scaling and sizing
   stepScale: number;
   stepSize: number;
   margin: number;
 
-  // Visibility settings (prop colors)
   redVisible: boolean;
   blueVisible: boolean;
 
-  // Pictograph visibility overrides (optional)
-  // When provided, these override the global visibility settings
-  // Useful for batch exports with specific visibility requirements
   visibilityOverrides?: {
     showTKA?: boolean;
     showVTG?: boolean;
@@ -88,19 +64,16 @@ export interface SequenceExportOptions {
     handPathMode?: boolean;
   };
 
-  // User information
   userName: string;
   exportDate: string;
   notes: string;
   /** Original creation date of the sequence (for birthday display) */
   birthday?: Date;
 
-  // Layout override
-  columnCount?: number | null;  // Override auto-calculated column count (null/undefined = auto)
+  columnCount?: number | null;  
 
-  // Output format
   format: "PNG" | "JPEG" | "WebP";
-  quality: number; // 0-1 for JPEG
+  quality: number; 
   scale: number;
   width?: number;
   height?: number;
@@ -143,7 +116,7 @@ export interface UserExportInfo {
   userName: string;
   notes: string;
   exportDate: string;
-  birthday?: Date; // Original creation date of the sequence
+  birthday?: Date; 
 }
 
 export interface LayoutData {
@@ -154,10 +127,6 @@ export interface LayoutData {
   additionalHeightTop: number;
   additionalHeightBottom: number;
 }
-
-// ============================================================================
-// EXPORT PROGRESS AND RESULTS
-// ============================================================================
 
 export interface ExportProgress {
   stage: "validation" | "rendering" | "composition" | "share" | "complete";
@@ -191,10 +160,6 @@ export interface SequenceExportResult {
   };
 }
 
-// ============================================================================
-// RENDERING CONFIGURATION
-// ============================================================================
-
 export interface SequenceRenderQualitySettings {
   antialiasing: boolean;
   smoothScaling: boolean;
@@ -209,10 +174,6 @@ export interface LayoutConstraints {
   maxBeatSize: number;
   aspectRatio?: number;
 }
-
-// ============================================================================
-// SERVICE INTERFACE SYMBOLS
-// ============================================================================
 
 export const ITKAImageExportServiceInterface = Symbol.for(
   "ITKAImageExportService"

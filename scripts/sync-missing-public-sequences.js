@@ -135,7 +135,6 @@ async function syncMissingPublicSequences() {
       word: seq.word,
       thumbnails: seq.thumbnails || [],
       sequenceLength: seq.beatsCount || 0,
-      forkCount: 0,
       viewCount: 0,
       starCount: 0,
       tags: [],

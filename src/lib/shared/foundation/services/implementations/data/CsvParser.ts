@@ -1,17 +1,8 @@
-/**
- * CSV Parser Service Implementation
- *
- * Provides consistent CSV parsing functionality used across all data services.
- * Handles line splitting, header extraction, and row parsing with error handling.
- */
-
 import type {
   CSVParseResult as CsvParseResult,
   ParsedCsvRow,
 } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
-// import type { ICSVParser } from "../../contracts";
 
-// Temporary interface definition
 interface ICSVParser {
   parse(csvContent: string): Record<string, unknown>[];
   parseRow(row: string): string[];
@@ -25,20 +16,15 @@ interface CsvParseError {
 }
 
 export class CSVParser implements ICSVParser {
-  // Interface methods (delegates to existing methods)
   parse(csvContent: string): Record<string, unknown>[] {
     const result = this.parseCSV(csvContent);
     return result.rows;
   }
 
   parseRow(row: string): string[] {
-    // Simple row parsing - split by comma and trim
     return row.split(",").map((cell) => cell.trim());
   }
 
-  /**
-   * Parse CSV text into structured result with detailed error reporting
-   */
   parseCSV(csvText: string): CsvParseResult {
     const result: CsvParseResult = {
       headers: [],
@@ -132,9 +118,6 @@ export class CSVParser implements ICSVParser {
     }
   }
 
-  /**
-   * Simple CSV parsing that returns only successful rows (legacy compatibility)
-   */
   parseCSVToRows(csvText: string): ParsedCsvRow[] {
     const result = this.parseCSV(csvText);
 
@@ -150,9 +133,6 @@ export class CSVParser implements ICSVParser {
     return result.rows;
   }
 
-  /**
-   * Validate CSV structure before parsing
-   */
   validateCSVStructure(csvText: string): {
     isValid: boolean;
     errors: string[];
@@ -203,9 +183,6 @@ export class CSVParser implements ICSVParser {
     return { isValid: errors.length === 0, errors };
   }
 
-  /**
-   * Create a ParsedCsvRow from headers and values
-   */
   createRowFromValues(headers: string[], values: string[]): ParsedCsvRow {
     const row: Record<string, string> = {};
 
@@ -213,7 +190,6 @@ export class CSVParser implements ICSVParser {
       row[header] = values[index] ?? "";
     });
 
-    // Ensure required fields exist with defaults
     return {
       letter: row["letter"] || "",
       startPosition: row["startPosition"] || "",
@@ -222,21 +198,17 @@ export class CSVParser implements ICSVParser {
       direction: row["direction"] || "",
       blueMotionType: row["blueMotionType"] || "",
       blueRotationDirection: row["blueRotationDirection"] || "",
-      blueStartLocation: row["blueStartLocation"] || row["blueStartLoc"] || "", // Handle variations
-      blueEndLocation: row["blueEndLocation"] || row["blueEndLocation"] || "", // Handle variations
+      blueStartLocation: row["blueStartLocation"] || row["blueStartLoc"] || "", 
+      blueEndLocation: row["blueEndLocation"] || row["blueEndLocation"] || "", 
       redMotionType: row["redMotionType"] || "",
       redRotationDirection: row["redRotationDirection"] || "",
-      redStartLocation: row["redStartLocation"] || row["redStartLoc"] || "", // Handle variations
-      redEndLocation: row["redEndLocation"] || row["redEndLocation"] || "", // Handle variations
-      ...row, // Include all other fields
+      redStartLocation: row["redStartLocation"] || row["redStartLoc"] || "", 
+      redEndLocation: row["redEndLocation"] || row["redEndLocation"] || "", 
+      ...row, 
     } as ParsedCsvRow;
   }
 
-  /**
-   * Validate that a row has required fields
-   */
   private isValidRow(row: ParsedCsvRow): boolean {
-    // Check that required fields exist and are not empty strings
     const hasLetter = !!(row["letter"] && row["letter"].trim() !== "");
     const hasStartPosition = !!(
       row["startPosition"] && row["startPosition"].trim() !== ""
@@ -248,9 +220,6 @@ export class CSVParser implements ICSVParser {
     return hasLetter && hasStartPosition && hasEndPosition;
   }
 
-  /**
-   * Get column mapping for different CSV formats (if needed)
-   */
   getColumnMapping(headers: string[]): Record<string, string> {
     const mapping: Record<string, string> = {};
 

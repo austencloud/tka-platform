@@ -1,11 +1,3 @@
-/**
- * Cross-session pattern analyzer for voice command data.
- *
- * Pure computation - no side effects, no network calls.
- * Aggregates VoiceSession[] into actionable insights about
- * failure patterns, T2 promotion candidates, and latency.
- */
-
 import type {
   VoiceSession,
   VoiceSessionEvent,
@@ -22,10 +14,8 @@ import type {
   UnresolvedPattern,
 } from "../contracts/IVoiceSessionAnalyzer";
 
-/** Minimum consistent T2 hits before flagging as a promotion candidate */
 const TIER2_CANDIDATE_THRESHOLD = 3;
 
-/** Maximum results per category to avoid overwhelming output */
 const MAX_RESULTS_PER_CATEGORY = 20;
 
 export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
@@ -46,10 +36,6 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
       unresolvedPatterns: this.findUnresolvedPatterns(sessions),
     };
   }
-
-  // --------------------------------------------------------------------------
-  // Top Failing Transcripts
-  // --------------------------------------------------------------------------
 
   private findTopFailingTranscripts(
     sessions: VoiceSession[]
@@ -93,16 +79,7 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
       .slice(0, MAX_RESULTS_PER_CATEGORY);
   }
 
-  // --------------------------------------------------------------------------
-  // Tier 2 Promotion Candidates
-  // --------------------------------------------------------------------------
-
-  /**
-   * Finds transcripts that consistently hit T2 LLM and resolve to the same command.
-   * These are prime candidates for new T1 regex patterns.
-   */
   private findTier2Candidates(sessions: VoiceSession[]): Tier2Candidate[] {
-    // Key: normalized transcript -> command signature -> aggregation
     const transcriptCommandMap = new Map<
       string,
       Map<
@@ -153,7 +130,6 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
     const candidates: Tier2Candidate[] = [];
 
     for (const [transcript, commandMap] of transcriptCommandMap) {
-      // Find the dominant command interpretation for this transcript
       let dominant:
         | {
             category: VoiceCommandCategory;
@@ -189,10 +165,6 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
       .slice(0, MAX_RESULTS_PER_CATEGORY);
   }
 
-  // --------------------------------------------------------------------------
-  // Success Rate Trend
-  // --------------------------------------------------------------------------
-
   private computeSuccessRateTrend(
     sessions: VoiceSession[]
   ): SessionSuccessPoint[] {
@@ -208,10 +180,6 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
         totalEvents: session.stats.totalEvents,
       }));
   }
-
-  // --------------------------------------------------------------------------
-  // Latency by Tier
-  // --------------------------------------------------------------------------
 
   private computeLatencyByTier(events: VoiceSessionEvent[]): LatencyByTier[] {
     const tierLatencies = new Map<
@@ -244,10 +212,6 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
       sampleCount: data.count,
     }));
   }
-
-  // --------------------------------------------------------------------------
-  // Unresolved Patterns
-  // --------------------------------------------------------------------------
 
   private findUnresolvedPatterns(
     sessions: VoiceSession[]
@@ -284,7 +248,6 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
 
     return Array.from(patternMap.entries())
       .map(([transcript, data]) => {
-        // Find the most common context
         let primaryContextKey = "";
         let maxCount = 0;
         for (const [key, count] of data.contextCounts) {
@@ -304,10 +267,6 @@ export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
       .sort((a, b) => b.occurrences - a.occurrences)
       .slice(0, MAX_RESULTS_PER_CATEGORY);
   }
-
-  // --------------------------------------------------------------------------
-  // Helpers
-  // --------------------------------------------------------------------------
 
   private normalizeTranscript(transcript: string): string {
     return transcript.toLowerCase().trim().replace(/\s+/g, " ");

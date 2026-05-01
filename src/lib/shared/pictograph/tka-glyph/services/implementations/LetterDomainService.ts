@@ -1,12 +1,4 @@
-/**
- * Letter Domain Service
- * 
- * Handles TKA letter-specific domain logic, including position continuity
- * and categorical color schemes.
- */
-
 import letterMappings from "../../../../../../../static/data/learn/letter-mappings.json";
-
 export type TKALetter = keyof typeof letterMappings.letters;
 
 export interface LetterPositionData {

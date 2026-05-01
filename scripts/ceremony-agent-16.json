@@ -1,0 +1,202 @@
+[
+  {
+    "iface": "IGalleryItemAdapter",
+    "contract": "src/lib/features/lab/services/contracts/IGalleryItemAdapter.ts",
+    "impl": "src/lib/features/lab/services/implementations/GalleryItemAdapter.ts",
+    "cls": "GalleryItemAdapter",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "IScreenshotLoader",
+    "contract": "src/lib/features/lab/services/contracts/IScreenshotLoader.ts",
+    "impl": "src/lib/features/lab/services/implementations/ScreenshotLoader.ts",
+    "cls": "ScreenshotLoader",
+    "getter": "src/lib/features/lab/getScreenshotLoader.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IScreenshotOrchestrator",
+    "contract": "src/lib/features/lab/services/contracts/IScreenshotOrchestrator.ts",
+    "impl": "src/lib/features/lab/services/implementations/ScreenshotOrchestrator.ts",
+    "cls": "ScreenshotOrchestrator",
+    "getter": "src/lib/features/lab/getScreenshotOrchestrator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IScreenshotTagController",
+    "contract": "src/lib/features/lab/services/contracts/IScreenshotTagController.ts",
+    "impl": "src/lib/features/lab/services/implementations/ScreenshotTagController.ts",
+    "cls": "ScreenshotTagController",
+    "getter": "src/lib/features/lab/getScreenshotTagController.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IScreenshotUploader",
+    "contract": "src/lib/features/lab/services/contracts/IScreenshotUploader.ts",
+    "impl": "src/lib/features/lab/services/implementations/ScreenshotUploader.ts",
+    "cls": "ScreenshotUploader",
+    "getter": "src/lib/features/lab/getScreenshotUploader.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IScreenshotUploadOrchestrator",
+    "contract": "src/lib/features/lab/services/contracts/IScreenshotUploadOrchestrator.ts",
+    "impl": "src/lib/features/lab/services/implementations/ScreenshotUploadOrchestrator.ts",
+    "cls": "ScreenshotUploadOrchestrator",
+    "getter": "src/lib/features/lab/getScreenshotUploadOrchestrator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICandidateGenerator",
+    "contract": "src/lib/features/lab/tabs/collision-lab/services/contracts/ICandidateGenerator.ts",
+    "impl": "src/lib/features/lab/tabs/collision-lab/services/implementations/CandidateGenerator.ts",
+    "cls": "CandidateGenerator",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPoseEnumerator",
+    "contract": "src/lib/features/lab/tabs/collision-lab/services/contracts/IPoseEnumerator.ts",
+    "impl": "src/lib/features/lab/tabs/collision-lab/services/implementations/DiamondPoseEnumerator.ts",
+    "cls": "DiamondPoseEnumerator",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IPoseLabelRepository",
+    "contract": "src/lib/features/lab/tabs/collision-lab/services/contracts/IPoseLabelRepository.ts",
+    "impl": "src/lib/features/lab/tabs/collision-lab/services/implementations/LocalPoseLabelRepository.ts",
+    "cls": "LocalPoseLabelRepository",
+    "getter": null,
+    "hasCoExports": false
+  },
+  {
+    "iface": "IStanceOptimizer",
+    "contract": "src/lib/features/lab/tabs/collision-lab/services/contracts/IStanceOptimizer.ts",
+    "impl": "src/lib/features/lab/tabs/collision-lab/services/implementations/StanceOptimizer.ts",
+    "cls": "StanceOptimizer",
+    "getter": "src/lib/features/lab/tabs/collision-lab/getStanceOptimizer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IStanceSimulator",
+    "contract": "src/lib/features/lab/tabs/collision-lab/services/contracts/IStanceSimulator.ts",
+    "impl": "src/lib/features/lab/tabs/collision-lab/services/implementations/StanceSimulator.ts",
+    "cls": "StanceSimulator",
+    "getter": "src/lib/features/lab/tabs/collision-lab/getStanceSimulator.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPropTracker",
+    "contract": "src/lib/features/train/prop-tracking-lab/services/contracts/IPropTracker.ts",
+    "impl": "src/lib/features/train/prop-tracking-lab/services/implementations/SimplePropTracker.ts",
+    "cls": "SimplePropTracker",
+    "getter": null,
+    "hasCoExports": true
+  },
+  {
+    "iface": "ICameraManager",
+    "contract": "src/lib/features/train/services/contracts/ICameraManager.ts",
+    "impl": "src/lib/features/train/services/implementations/CameraManager.ts",
+    "cls": "CameraManager",
+    "getter": "src/lib/features/train/getCameraManager.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IHandAssigner",
+    "contract": "src/lib/features/train/services/contracts/IHandAssigner.ts",
+    "impl": "src/lib/features/train/services/implementations/HandAssigner.ts",
+    "cls": "HandAssigner",
+    "getter": "src/lib/features/train/getHandAssigner.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IHandednessAnalyzer",
+    "contract": "src/lib/features/train/services/contracts/IHandednessAnalyzer.ts",
+    "impl": "src/lib/features/train/services/implementations/HandednessAnalyzer.ts",
+    "cls": "HandednessAnalyzer",
+    "getter": "src/lib/features/train/getHandednessAnalyzer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IHandLandmarker",
+    "contract": "src/lib/features/train/services/contracts/IHandLandmarker.ts",
+    "impl": "src/lib/features/train/services/implementations/HandLandmarker.ts",
+    "cls": "HandLandmarker",
+    "getter": "src/lib/features/train/getHandLandmarker.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IHandStateAnalyzer",
+    "contract": "src/lib/features/train/services/contracts/IHandStateAnalyzer.ts",
+    "impl": "src/lib/features/train/services/implementations/HandStateAnalyzer.ts",
+    "cls": "HandStateAnalyzer",
+    "getter": "src/lib/features/train/getHandStateAnalyzer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IHandTrackingStabilizer",
+    "contract": "src/lib/features/train/services/contracts/IHandTrackingStabilizer.ts",
+    "impl": "src/lib/features/train/services/implementations/HandTrackingStabilizer.ts",
+    "cls": "HandTrackingStabilizer",
+    "getter": "src/lib/features/train/getHandTrackingStabilizer.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPerformanceHistoryTracker",
+    "contract": "src/lib/features/train/services/contracts/IPerformanceHistoryTracker.ts",
+    "impl": "src/lib/features/train/services/implementations/PerformanceHistoryTracker.ts",
+    "cls": "PerformanceHistoryTracker",
+    "getter": "src/lib/features/train/getPerformanceHistoryTracker.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "IPositionDetector",
+    "contract": "src/lib/features/train/services/contracts/IPositionDetector.ts",
+    "impl": "src/lib/features/train/services/implementations/MediaPipeDetector.ts",
+    "cls": "MediaPipeDetector",
+    "getter": "src/lib/features/train/getPositionDetector.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ISessionCompletionProcessor",
+    "contract": "src/lib/features/train/services/contracts/ISessionCompletionProcessor.ts",
+    "impl": "src/lib/features/train/services/implementations/SessionCompletionProcessor.ts",
+    "cls": "SessionCompletionProcessor",
+    "getter": "src/lib/features/train/getSessionCompletionProcessor.ts",
+    "hasCoExports": true
+  },
+  {
+    "iface": "ITrainChallengeManager",
+    "contract": "src/lib/features/train/services/contracts/ITrainChallengeManager.ts",
+    "impl": "src/lib/features/train/services/implementations/TrainChallengeManager.ts",
+    "cls": "TrainChallengeManager",
+    "getter": "src/lib/features/train/getTrainChallengeManager.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICodexLetterMappingRepo",
+    "contract": "src/lib/features/learn/codex/services/contracts/ICodexLetterMappingRepo.ts",
+    "impl": "src/lib/features/learn/codex/services/implementations/CodexLetterMappingRepo.ts",
+    "cls": "CodexLetterMappingRepo",
+    "getter": "src/lib/features/learn/codex/getCodexLetterMappingRepo.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "ICodexPictographUpdater",
+    "contract": "src/lib/features/learn/codex/services/contracts/ICodexPictographUpdater.ts",
+    "impl": "src/lib/features/learn/codex/services/implementations/CodexPictographUpdater.ts",
+    "cls": "CodexPictographUpdater",
+    "getter": "src/lib/features/learn/codex/getCodexPictographUpdater.ts",
+    "hasCoExports": false
+  },
+  {
+    "iface": "IQuizSessionManager",
+    "contract": "src/lib/features/learn/quiz/services/contracts/IQuizSessionManager.ts",
+    "impl": "src/lib/features/learn/quiz/services/implementations/QuizSessionManager.ts",
+    "cls": "QuizSessionManager",
+    "getter": "src/lib/features/learn/quiz/getQuizSessionManager.ts",
+    "hasCoExports": false
+  }
+]

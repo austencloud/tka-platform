@@ -1,28 +1,4 @@
-<!--
-  SequenceViewerOrchestrator.svelte
-
-  Headless orchestrator component that owns all sequence viewer state and logic.
-  Both the route (/sequence/[id]) and the drawer host render this component,
-  passing a children snippet that receives the full context object.
-
-  Delegates to focused modules:
-  - PlaybackController.svelte.ts - playback state, stepping, practice training
-  - ExportCoordinator.svelte.ts - 2D/3D export routing, recording, progress
-  - PropContextResolver.svelte.ts - prop context toggle, presentation resolution
-  - ImageCompositionSync.svelte.ts - image composition settings sync
-  - AuthActionQueue.svelte.ts - pending-action queue, sign-in routing
-
-  The orchestrator retains:
-  - Service initialization bootstrap
-  - Keyboard shortcuts (Escape, Space, P)
-  - Fullscreen & UI modes
-  - LAN sync coordination
-  - Navigation actions (Open in Compose, Edit, Save, Delete, Share)
-  - Dark mode unification
-  - Composing extracted children
--->
 <script lang="ts" module>
-
 import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
 import { getCollectionManager } from "$lib/features/library/getCollectionManager";
@@ -52,17 +28,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   export type ExportType = "animation" | "image" | "both";
   export type PlaybackSource = "animation" | "video";
 
-  /**
-   * Full context passed to children snippet.
-   * Contains all state and handlers needed to render the sequence viewer UI.
-   */
   export interface OrchestratorContext {
-    // Sequence data
     sequence: SequenceData | null;
     effectiveSequence: SequenceData | null;
     hasSequence: boolean;
 
-    // Playback state
     isPlayingLocal: boolean;
     currentStepLocal: number;
     bpmLocal: number;
@@ -71,7 +41,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     highlightedStepIndex: number | null;
     animationLoading: boolean;
 
-    // Video-synced playback
     playbackSource: PlaybackSource;
     videoPlaybackBeatIndex: number | null;
     activeStepMap: StepMap | null;
@@ -80,7 +49,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     onVideoTimeUpdate: (currentTime: number) => void;
     modalAnimationState: AnimationPanelState;
 
-    // View state
     viewMode: ViewMode;
     isMobile: boolean;
     isFullscreen: boolean;
@@ -88,33 +56,26 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     fullscreenStackVertical: boolean;
     editingPane: 'animation' | 'image' | 'video-upload' | null;
 
-    // Export state
     isExportMode: boolean;
     exportType: ExportType | null;
     exportOptions: ReturnType<typeof import("$lib/shared/sequence-viewer/state/export-options-state.svelte").getExportOptionsState>;
     isExporting: boolean;
     exportProgress: VideoExportProgress | null;
     exportError: string | null;
-    /** Object URL of exported video for in-app preview, null when no preview active */
     previewBlobUrl: string | null;
-    /** Duration in seconds of a single sequence playthrough at current BPM */
     singlePlayDuration: number;
 
-    // Practice training
     practiceActive: boolean;
     practiceState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState>;
 
-    // Settings
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
     catDogModeEnabled: boolean | undefined;
 
-    // Prop context toggle (for header compact toggle)
     presentation: ResolvedPresentation | null;
     togglePropContext: () => void;
     activeContext: ViewingContext;
 
-    // Prop source tracking
     handleSetAsIntended: () => Promise<void>;
 
     imgShowWord: boolean;
@@ -127,18 +88,14 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     imgDarkMode: boolean;
     imgColumnCount: number | null;
 
-    // Sync
     isSyncToggling: boolean;
     isSyncActive: boolean;
     isSyncConnected: boolean;
 
-    // Canvas state
     canvasReady: boolean;
 
-    // Render progress
     onRenderProgress: (loaded: number, total: number) => void;
 
-    // Auth
     isLoggedIn: boolean;
     userName: string;
     isOwned: boolean;
@@ -149,11 +106,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handlePublishAction: () => Promise<void>;
     handleUnpublishAction: () => Promise<void>;
 
-    // Playback mode
     playbackMode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode;
     handlePlaybackModeChange: (mode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode) => void;
 
-    // Handlers
     handlePlaybackToggle: () => void;
     handleBpmChange: (bpm: number) => void;
     handleStepClick: (stepIndex: number) => void;
@@ -175,7 +130,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handleShare: () => void;
     handleDelete: () => Promise<void>;
     handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
-    /** Called by footer action buttons; if signed in, runs realHandler; else captures intent + opens sign-in sheet. */
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) => void;
     handleUnifiedDarkModeToggle: () => void;
     handlePracticeStart: () => void;
@@ -190,26 +144,18 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handleRetryExport: () => void;
     dismissPreview: () => void;
 
-    // Pre-assembled prop groups for ViewerSplitPane
     splitPanePlayback: ViewerPlaybackState;
     splitPaneImageComposition: ImageCompositionProps;
     splitPanePropRendering: PropRenderingProps;
 
-    // 3D render mode
     renderMode: '2d' | '3d';
     viewer3DState: ReturnType<typeof import("$lib/shared/3d/state/viewer-3d-state.svelte").createViewer3DState>;
 
-    // 3D recording UI state
-    /** Countdown value (3, 2, 1) before 3D recording starts. 0 = not counting down. */
     countdownValue: number;
-    /** Whether a real-time 3D recording is in progress */
     isRecording3D: boolean;
-    /** Elapsed seconds of the current 3D recording */
     recordingElapsed: number;
-    /** Stop the current 3D recording and proceed to export */
     handleStopRecording: () => void;
 
-    /** Per-viewer motion visibility state (ephemeral, resets on sequence change) */
     viewerVisibility: SequenceViewerVisibilityState;
   }
 </script>
@@ -258,41 +204,24 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
 
-  // ── Extracted modules ──
   import { createPlaybackController } from "./PlaybackController.svelte";
   import { createExportCoordinator } from "./ExportCoordinator.svelte";
   import { createPropContextResolver } from "./PropContextResolver.svelte";
   import { createImageCompositionSync } from "./ImageCompositionSync.svelte";
   import { createAuthActionQueue } from "./AuthActionQueue.svelte";
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
-
   interface Props {
-    /** The sequence to display. Null while loading. */
     sequence: SequenceData | null;
-    /** Whether we're on mobile. */
     isMobile: boolean;
-    /** Initial BPM to restore. */
     initialBpm?: number;
-    /** Initial playback step to restore. */
     initialStep?: number;
-    /** Initial view mode. */
     initialViewMode?: ViewMode;
-    /** Callback when back/dismiss is triggered. */
     onBack: () => void;
-    /** Optional: callback to update a URL param (route-only). */
     onUrlParamChange?: (key: string, value: string) => void;
-    /** Whether to block clicks (e.g., during swipe). */
     blockClicks?: boolean;
-    /** Controls how props are resolved: "notation" uses viewer settings, "creator-expression" uses creator's intent. */
     viewingContext?: ViewingContext;
-    /** When true, forces unauthenticated view (shows "Get App" footer instead of save/edit). Debug tool via ?guest=1. */
     forceGuest?: boolean;
-    /** Initial 2D/3D render mode (e.g. from URL param). */
     initialRenderMode?: '2d' | '3d';
-    /** Children snippet receiving the full orchestrator context. */
     children: Snippet<[OrchestratorContext]>;
   }
 
@@ -311,36 +240,19 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     children,
   }: Props = $props();
 
-  // ============================================================================
-  // SERVICE BOOTSTRAP
-  // ============================================================================
-
   const modalAnimationState = createAnimationPanelState();
   let animationServicesReady = $state(false);
   let animationLoading = $state(false);
   let lastLoadedSequenceId: string | null = null;
 
-  // Services
   let playbackControllerRef = $state<IAnimationPlaybackController | null>(null);
   let sequenceDataProvider: ISequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
 
-  // ============================================================================
-  // EXTRACTED MODULES
-  // ============================================================================
-
-  // ── Playback ──
-  // Factory receives hardcoded defaults; the $effect.pre below immediately
-  // syncs the real prop values (runs before first render), avoiding
-  // state_referenced_locally by never reading initialBpm/initialStep outside
-  // a reactive context.
   const playback = createPlaybackController({ modalAnimationState, initialBpm: 60, initialStep: 0 });
 
-  // Sync initial values when props change (mirrors original $effect.pre)
   $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = initialBpm; });
 
-  // ── Export ──
-  // 3D viewer state - created once, distributed via Svelte context
   const viewer3DState = createViewer3DState({
     propInterpolator: getPropStateInterpolator(),
     sequenceConverter: getSequenceConverter(),
@@ -352,45 +264,24 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   const exportCoord = createExportCoordinator({ viewer3DState, accessibilityHelper });
 
-  // ── Prop context ──
-  // viewingContext is NOT passed here - the factory doesn't read it from deps.
-  // Instead, activeContext is resolved reactively via getActiveContext(viewingContext)
-  // in the $derived block below.
   const propContext = createPropContextResolver({});
 
-  // ── Image composition ──
   const imgComp = createImageCompositionSync();
 
-  // ── Auth action queue ──
   const authQueue = createAuthActionQueue();
 
-  // Wire export's exit-edit-mode callback
   exportCoord.setExitEditModeCallback(() => exitEditMode());
 
-  // Wire playback's URL param callback reactively so the reference stays
-  // current if the parent swaps it (avoids state_referenced_locally warning).
   $effect(() => {
     playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  // ============================================================================
-  // VIEW MODE STATE
-  // ============================================================================
-
   let viewMode = $state<ViewMode>(sequenceModalPersistence.loadViewMode());
   $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
-
-  // ============================================================================
-  // FULLSCREEN STATE
-  // ============================================================================
 
   let isFullscreen = $state(false);
   let fullscreenControlsVisible = $state(false);
   let controlsHideTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  // ============================================================================
-  // EDIT MODE STATE
-  // ============================================================================
 
   const EDITING_PANE_SESSION_KEY = "tka-viewer-editing-pane";
   const EDITING_PANE_TTL_MS = 2000;
@@ -426,7 +317,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         sessionStorage.setItem(EDITING_PANE_SESSION_KEY, JSON.stringify(payload));
       }
     } catch {
-      // storage unavailable or full
+      // ignore
     }
   }
   let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(
@@ -436,26 +327,14 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     persistEditingPane(editingPane, sequence?.id ?? null);
   });
 
-  // ============================================================================
-  // VIDEO-SYNCED PLAYBACK
-  // ============================================================================
-
   let playbackSource = $state<PlaybackSource>("animation");
   let videoPlaybackBeatIndex = $state<number | null>(null);
   let activeStepMap = $state<StepMap | null>(null);
-
-  // ============================================================================
-  // EXPORT MODE (derived)
-  // ============================================================================
 
   const isExportMode = $derived(editingPane !== null);
   const exportType = $derived<ExportType | null>(
     editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null
   );
-
-  // ============================================================================
-  // RENDER PROGRESS
-  // ============================================================================
 
   let cellsLoaded = $state(0);
   let totalCells = $state(0);
@@ -465,24 +344,12 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     totalCells = total;
   }
 
-  // ============================================================================
-  // LAN SYNC
-  // ============================================================================
-
   let isSyncToggling = $state(false);
-
-  // ============================================================================
-  // SETTINGS
-  // ============================================================================
 
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType);
   const redPropType = $derived(settings.redPropType);
   const catDogModeEnabled = $derived(settings.catDogMode);
-
-  // ============================================================================
-  // MOTION VISIBILITY
-  // ============================================================================
 
   const viewerVisibility = new SequenceViewerVisibilityState();
   setViewerVisibilityContext(viewerVisibility);
@@ -491,10 +358,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     void sequence?.id;
     viewerVisibility.reset();
   });
-
-  // ============================================================================
-  // ANIMATION VISIBILITY & EFFECTS
-  // ============================================================================
 
   const animationVisibility = getAnimationVisibilityManager();
 
@@ -519,10 +382,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
   });
 
-  // ============================================================================
-  // PROP CONTEXT (derived from extracted module)
-  // ============================================================================
-
   const activeContext = $derived(propContext.getActiveContext(viewingContext));
 
   const presentation = $derived.by((): ResolvedPresentation => {
@@ -544,16 +403,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     propContext.togglePropContext(activeContext);
   }
 
-  // Sync active props to animation orchestrator
   $effect(() => {
     const blue = activeBlueProp;
     const red = activeRedProp;
     propContext.syncPropsToOrchestrator(blue, red, animationServicesReady);
   });
-
-  // ============================================================================
-  // DURATION (for export UI)
-  // ============================================================================
 
   const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
   const hasSequence = $derived(effectiveSequence !== null);
@@ -565,10 +419,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     const speed = playback.bpmLocal / 60;
     return totalDurationUnits / speed;
   });
-
-  // ============================================================================
-  // AUTH / OWNERSHIP DERIVED
-  // ============================================================================
 
   const isOwned = $derived(
     !!sequence?.ownerId &&
@@ -622,12 +472,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   }
 
   async function handlePublishAction() {
-    console.log("[Orchestrator] handlePublishAction called, sequence:", sequence?.id);
     if (!sequence) return;
     try {
       const repo = getLibraryRepository() as ILibraryRepository;
       await repo.publishSequence(sequence.id);
-      console.log("[Orchestrator] publishSequence completed");
     } catch (e) {
       console.error("[Orchestrator] publishSequence FAILED:", e);
     }
@@ -638,10 +486,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     const repo = getLibraryRepository() as ILibraryRepository;
     await repo.unpublishSequence(sequence.id);
   }
-
-  // ============================================================================
-  // STEP / LETTER DERIVED (uses playback state)
-  // ============================================================================
 
   const showPreviousBeat = $derived(
     playback.arrivedViaStepping &&
@@ -700,28 +544,19 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   const fullscreenStackVertical = $derived(previewAspectRatio > 1.3);
 
-  // ============================================================================
-  // LIFECYCLE
-  // ============================================================================
-
   let keydownCleanup: (() => void) | null = null;
   let imageCompositionCleanup: (() => void) | null = null;
 
   onMount(() => {
-    // Bootstrap auth queue from URL
     authQueue.bootstrapFromUrl();
 
-    // Keyboard handler
     window.addEventListener("keydown", handleKeydown, { capture: true });
     keydownCleanup = () => window.removeEventListener("keydown", handleKeydown, { capture: true });
 
-    // Image composition sync
     imageCompositionCleanup = imgComp.registerObserver();
 
-    // Playback mode sync from visibility manager
     playback.registerVisibilityObserver();
 
-    // Load services
     void loadServices();
   });
 
@@ -736,14 +571,12 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     clearControlsTimeout();
   });
 
-  // Initialize animation when sequence becomes available and services are ready
   $effect(() => {
     if (sequence && animationServicesReady && playbackControllerRef) {
       initializeAnimation(sequence);
     }
   });
 
-  // Restore pathShape from sequence metadata when the sequence changes
   $effect(() => {
     const savedPathShape = sequence?.metadata?.pathShape;
     if (savedPathShape === "arc" || savedPathShape === "linear") {
@@ -751,7 +584,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   });
 
-  // Sync render mode to URL param
   $effect(() => {
     if (viewer3DState.renderMode === '3d') {
       onUrlParamChange?.('render', '3d');
@@ -760,7 +592,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   });
 
-  // Restore 3D mode on first load
   let _3dRestored = false;
   $effect(() => {
     if (_3dRestored) return;
@@ -775,10 +606,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
     _3dRestored = true;
   });
-
-  // ============================================================================
-  // LAN SYNC EFFECT
-  // ============================================================================
 
   let lastAppliedSyncTimestamp = 0;
 
@@ -808,10 +635,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   });
 
-  // ============================================================================
-  // AUTH REPLAY EFFECT
-  // ============================================================================
-
   $effect(() => {
     authQueue.replayPendingAction({
       handleSave,
@@ -823,17 +646,12 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     });
   });
 
-  // ============================================================================
-  // SERVICES
-  // ============================================================================
-
   async function loadServices() {
     try {
       playbackControllerRef = getAnimationPlaybackController();
       sequenceDataProvider = getSequenceDataProvider();
       hapticService = getHapticFeedback();
 
-      // Wire dependencies to extracted modules
       playback.setPlaybackController(playbackControllerRef);
       playback.setHapticService(hapticService);
 
@@ -899,10 +717,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  // ============================================================================
-  // FOCUS MODE (EDIT MODE)
-  // ============================================================================
-
   let wasPlayingBeforeImageExport = false;
 
   function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
@@ -945,10 +759,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     accessibilityHelper.announce("Split view restored");
   }
 
-  // ============================================================================
-  // FULLSCREEN
-  // ============================================================================
-
   function enterFullscreen() {
     hapticService?.trigger("selection");
     isFullscreen = true;
@@ -989,10 +799,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  // ============================================================================
-  // EXPORT (delegates to ExportCoordinator)
-  // ============================================================================
-
   async function handleExport() {
     await exportCoord.handleExport(
       editingPane,
@@ -1011,10 +817,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       imgComp.imgShowQRCode,
     );
   }
-
-  // ============================================================================
-  // LAN SYNC TOGGLE
-  // ============================================================================
 
   async function handleSyncToggle() {
     if (isSyncToggling || !sequence) return;
@@ -1051,10 +853,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       isSyncToggling = false;
     }
   }
-
-  // ============================================================================
-  // NAVIGATION ACTIONS
-  // ============================================================================
 
   async function handleOpenInCompose(preset: 'stagger' | 'mirror' | 'combo-export' = 'stagger') {
     if (!sequence) return;
@@ -1095,10 +893,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     showToast({ message: "Opening for editing...", type: "info", duration: 2000 });
     void handleModuleChange("create", "construct");
   }
-
-  // ============================================================================
-  // ACTION HANDLERS
-  // ============================================================================
 
   async function handleSave() {
     hapticService?.trigger("selection");
@@ -1237,7 +1031,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         });
         shareUrl = result.url;
       } catch {
-        // Fallback to current URL if encoding fails
+        // ignore
       }
     }
 
@@ -1283,10 +1077,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     animationVisibility.setDarkMode(newValue);
   }
 
-  // ============================================================================
-  // KEYBOARD
-  // ============================================================================
-
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -1312,10 +1102,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  // ============================================================================
-  // BACK HANDLER
-  // ============================================================================
-
   function handleBackInternal() {
     playback.stopPracticeIfActive();
 
@@ -1331,10 +1117,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     accessibilityHelper.restoreFocus();
     onBack();
   }
-
-  // ============================================================================
-  // VIDEO-SYNCED PLAYBACK
-  // ============================================================================
 
   function handleVideoTimeUpdate(currentTime: number) {
     if (playbackSource !== "video" || !activeStepMap) return;
@@ -1362,17 +1144,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  // ============================================================================
-  // CONTEXT OBJECT
-  // ============================================================================
-
   const context: OrchestratorContext = $derived({
-    // Sequence data
     sequence,
     effectiveSequence,
     hasSequence,
 
-    // Playback
     isPlayingLocal: playback.isPlayingLocal,
     currentStepLocal: playback.currentStepLocal,
     bpmLocal: playback.bpmLocal,
@@ -1382,7 +1158,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     animationLoading,
     modalAnimationState,
 
-    // Video-synced playback
     playbackSource,
     videoPlaybackBeatIndex,
     activeStepMap,
@@ -1390,7 +1165,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     setActiveStepMap,
     onVideoTimeUpdate: handleVideoTimeUpdate,
 
-    // View state
     viewMode,
     isMobile,
     isFullscreen,
@@ -1398,7 +1172,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     fullscreenStackVertical,
     editingPane,
 
-    // Export
     isExportMode,
     exportType,
     exportOptions: exportCoord.exportOptions,
@@ -1408,21 +1181,17 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     previewBlobUrl: exportCoord.previewBlobUrl,
     singlePlayDuration,
 
-    // Practice
     practiceActive: playback.practiceActive,
     practiceState: playback.practiceState,
 
-    // Settings (active prop values, resolved from source)
     bluePropType: activeBlueProp,
     redPropType: activeRedProp,
     catDogModeEnabled: activeCatDog,
 
-    // Prop context toggle
     presentation: presentation ?? null,
     togglePropContext,
     activeContext,
 
-    // Prop source tracking
     handleSetAsIntended,
 
     imgShowWord: imgComp.imgShowWord,
@@ -1435,28 +1204,22 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     imgDarkMode: imgComp.imgDarkMode,
     imgColumnCount: imgComp.imgColumnCount,
 
-    // Sync
     isSyncToggling,
     isSyncActive: lanSyncState.isActive,
     isSyncConnected: lanSyncState.isConnected,
 
-    // Canvas state
     canvasReady: (viewer3DState.renderMode === '3d' ? !!viewer3DState.webglCanvas : !!exportCoord.animationCanvas) && !!playbackControllerRef,
 
-    // Render progress
     onRenderProgress: handleRenderProgress,
 
-    // 3D render mode
     renderMode: viewer3DState.renderMode,
     viewer3DState,
 
-    // 3D recording UI state
     countdownValue: exportCoord.countdownValue,
     isRecording3D: exportCoord.isRecording3D,
     recordingElapsed: exportCoord.recordingElapsed,
     handleStopRecording: () => exportCoord.handleStopRecording(),
 
-    // Auth (?guest=1 overrides to unauthenticated view for debugging shared link UX)
     isLoggedIn: forceGuest ? false : authState.isAuthenticated,
     userName: authState.user?.displayName || "",
     isOwned,
@@ -1467,11 +1230,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handlePublishAction,
     handleUnpublishAction,
 
-    // Playback mode
     playbackMode: modalAnimationState.playbackMode,
     handlePlaybackModeChange: playback.handlePlaybackModeChange,
 
-    // Handlers
     handlePlaybackToggle: playback.handlePlaybackToggle,
     handleProgressBarSeek: playback.handleProgressBarSeek,
     handleProgressBarScrubStart: playback.handleProgressBarScrubStart,
@@ -1508,7 +1269,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handleRetryExport: () => exportCoord.handleRetryExport(handleExport),
     dismissPreview: exportCoord.dismissPreview,
 
-    // Pre-assembled prop groups for ViewerSplitPane
     splitPanePlayback: {
       animationState: modalAnimationState,
       animationLoading,
@@ -1540,22 +1300,16 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       catDogModeEnabled: activeCatDog,
     },
 
-    // Motion visibility
     viewerVisibility,
   });
 </script>
 
-<!-- Render children with full context -->
 {@render children(context)}
 
-
-<!-- Screen reader announcements -->
 <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
   {accessibilityHelper.announcement}
 </div>
 
-<!-- Pending-action sign-in sheet. Appears when a guest taps a gated action
-     or arrives with a ?pending= URL param after a browser handoff. -->
 <SignInSheet
   open={authQueue.signInSheetOpen}
   reason={authQueue.signInSheetReason}
@@ -1564,11 +1318,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   onDismiss={() => authQueue.closeSignInSheet()}
 />
 
-<!-- Loads the Google Identity Services script and registers the FedCM
-     credential callback. The sheet's primary button invokes `prompt()` on
-     this to show Google's native One Tap card - the only sign-in flow that
-     works reliably on mobile web. autoPrompt is false so it doesn't appear
-     unprompted; we trigger it on user click. -->
 <GoogleOneTap autoPrompt={false} />
 
 <style>
@@ -1583,5 +1332,4 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     white-space: nowrap;
     border: 0;
   }
-
 </style>

@@ -25,9 +25,6 @@ export class SequenceComposer implements ISequenceComposer {
       );
     }
 
-    // Build per-beat pairing metadata. Letter resolution and reversal
-    // detection are handled by dedicated services wired in separately, so
-    // we set those fields to their deferred-computation defaults here.
     const pairings: StepPairingData[] = blue.steps.map(() => ({
       letter: null,
       blueReversal: false,
@@ -36,12 +33,8 @@ export class SequenceComposer implements ISequenceComposer {
       endPosition: null,
     }));
 
-    // Rehydrate StepData[] for backward compatibility with consumers that
-    // still work against the flat step model rather than the compositional one.
     const derivedSteps = this.stepDeriver.deriveSteps(blue, red, pairings);
 
-    // All letters are null until a letter-resolution pass runs, so the
-    // TKA word is empty at this stage.
     const derivedWord = "";
 
     return createSequenceData({

@@ -1,21 +1,6 @@
-/**
- * Action Catalog
- *
- * Static catalog of all available voice command actions. This is the source of truth
- * for what the LLM can produce. Each entry maps to a (category, action, target) tuple
- * that the existing CommandDispatcher and handlers already understand.
- *
- * Used by:
- * - voice-command-prompt.ts to build the LLM system prompt
- * - LLMIntentResolver to validate LLM output against known actions
- */
-
 import type { ActionDefinition } from "../domain/intent-resolution-types";
 
 export const ACTION_CATALOG: ActionDefinition[] = [
-  // ========================================================================
-  // Navigation (global)
-  // ========================================================================
   {
     category: "navigation",
     action: "navigate_module",
@@ -30,29 +15,17 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "switch_tab",
     description: "Switch to a tab within the current module",
     validTargets: [
-      // Create tabs
       "construct", "assemble", "generate", "spell",
-      // Learn tabs
       "concepts", "play", "codex",
-      // Browse tabs
       "gallery", "collections", "creators",
-      // Compose tabs
       "arrange", "browse",
-      // Train tabs
       "practice", "challenges", "progress",
-      // Settings tabs
       "profile", "props", "theme", "visibility", "keyboard",
       "preferences", "language", "release-notes",
-      // Feedback tabs
       "submit", "my-feedback", "manage",
-      // Watch tabs
       "feed", "library",
     ],
   },
-
-  // ========================================================================
-  // Playback (global, when sequence is loaded)
-  // ========================================================================
   {
     category: "playback",
     action: "play",
@@ -105,10 +78,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Jump to a specific step number",
     validArgs: { value: "number (step number)" },
   },
-
-  // ========================================================================
-  // Generator (create module, generate tab only)
-  // ========================================================================
   {
     category: "generator",
     action: "generate",
@@ -156,10 +125,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     activeInModules: ["create"],
     activeInTabs: ["generate"],
   },
-
-  // ========================================================================
-  // Create (create module)
-  // ========================================================================
   {
     category: "create",
     action: "undo",
@@ -208,10 +173,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Rotate the sequence orientation",
     activeInModules: ["create"],
   },
-
-  // ========================================================================
-  // Settings (global)
-  // ========================================================================
   {
     category: "settings",
     action: "toggle",
@@ -243,10 +204,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
       "wordHeader", "progressBar", "props",
     ],
   },
-
-  // ========================================================================
-  // Prop (global)
-  // ========================================================================
   {
     category: "prop",
     action: "change_prop",
@@ -257,10 +214,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     ],
     validArgs: { hand: "both | blue | red" },
   },
-
-  // ========================================================================
-  // Sequence (global, when viewing a sequence)
-  // ========================================================================
   {
     category: "sequence",
     action: "save_to_library",
@@ -291,10 +244,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "open_in_create",
     description: "Open the current sequence in the create/edit module",
   },
-
-  // ========================================================================
-  // Search (browse module)
-  // ========================================================================
   {
     category: "search",
     action: "search",
@@ -322,10 +271,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Clear all active filters and show all sequences",
     activeInModules: ["browse"],
   },
-
-  // ========================================================================
-  // UI (global)
-  // ========================================================================
   {
     category: "ui",
     action: "scroll_up",
@@ -346,10 +291,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "fullscreen",
     description: "Toggle fullscreen mode",
   },
-
-  // ========================================================================
-  // System
-  // ========================================================================
   {
     category: "system",
     action: "unknown",
@@ -357,11 +298,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
   },
 ];
 
-/**
- * Filter the action catalog to only actions available in the given context.
- * Module-scoped actions are excluded if the user isn't in that module.
- * Tab-scoped actions are excluded if the user isn't on that tab.
- */
 export function getAvailableActions(
   currentModule: string,
   currentTab: string,
@@ -377,11 +313,6 @@ export function getAvailableActions(
   });
 }
 
-/**
- * Get all actions annotated with availability context.
- * The LLM sees every action so it can produce navigation-first compound commands,
- * but knows which ones require navigating to a different module/tab first.
- */
 export function getAllActionsWithContext(
   currentModule: string,
   currentTab: string,
@@ -396,7 +327,6 @@ export function getAllActionsWithContext(
   });
 }
 
-/** Set of all valid categories */
 export const VALID_CATEGORIES = new Set(
   ACTION_CATALOG.map((a) => a.category),
 );

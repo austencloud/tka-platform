@@ -1,0 +1,657 @@
+{
+  "areas": [
+    "shared/share",
+    "shared/voice-control",
+    "features/arena",
+    "features/background-builder",
+    "features/community",
+    "features/hall-of-shame",
+    "features/poi",
+    "features/poi-lab",
+    "features/promo-generator",
+    "features/video"
+  ],
+  "interfaces": [
+    {
+      "interfaceName": "IInstagramLinker",
+      "contractPath": "src/lib/shared/share/services/contracts/IInstagramLinker.ts",
+      "implPath": "src/lib/shared/share/services/implementations/InstagramLinker.ts",
+      "implClass": "InstagramLinker",
+      "getterPath": "src/lib/shared/share/getInstagramLinker.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IMediaBundler",
+      "contractPath": "src/lib/shared/share/services/contracts/IMediaBundler.ts",
+      "implPath": "src/lib/shared/share/services/implementations/MediaBundler.ts",
+      "implClass": "MediaBundler",
+      "getterPath": "src/lib/shared/share/getMediaBundler.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IR2Presigner",
+      "contractPath": "src/lib/shared/share/services/contracts/IR2Presigner.ts",
+      "implPath": "src/lib/shared/share/services/implementations/R2Presigner.ts",
+      "implClass": "R2Presigner",
+      "getterPath": "src/lib/shared/share/getR2Presigner.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ISequenceImageSharer",
+      "contractPath": "src/lib/shared/share/services/contracts/ISequenceImageSharer.ts",
+      "implPath": "src/lib/shared/share/services/implementations/SequenceImageSharer.ts",
+      "implClass": "SequenceImageSharer",
+      "getterPath": "src/lib/shared/share/getSequenceImageSharer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "ShareResult"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ISharer",
+      "contractPath": "src/lib/shared/share/services/contracts/ISharer.ts",
+      "implPath": "src/lib/shared/share/services/implementations/Sharer.ts",
+      "implClass": "Sharer",
+      "getterPath": "src/lib/shared/share/getSharer.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "ImageGenerationProgressCallback"
+        }
+      ],
+      "consumerCount": 6,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVideoUploader",
+      "contractPath": "src/lib/shared/share/services/contracts/IVideoUploader.ts",
+      "implPath": "src/lib/shared/share/services/implementations/R2VideoUploader.ts",
+      "implClass": "R2VideoUploader",
+      "getterPath": "src/lib/shared/share/getVideoUploader.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "VideoUploadResult"
+        },
+        {
+          "kind": "interface",
+          "name": "UploadOptions"
+        },
+        {
+          "kind": "interface",
+          "name": "MultipartUploadState"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICommandDispatcher",
+      "contractPath": "src/lib/shared/voice-control/services/contracts/ICommandDispatcher.ts",
+      "implPath": "src/lib/shared/voice-control/services/implementations/CommandDispatcher.ts",
+      "implClass": "CommandDispatcher",
+      "getterPath": "src/lib/shared/voice-control/getCommandDispatcher.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "IVoiceCommandHandler"
+        }
+      ],
+      "consumerCount": 9,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICommandInterpreter",
+      "contractPath": "src/lib/shared/voice-control/services/contracts/ICommandInterpreter.ts",
+      "implPath": "src/lib/shared/voice-control/services/implementations/CommandInterpreter.ts",
+      "implClass": "CommandInterpreter",
+      "getterPath": "src/lib/shared/voice-control/getCommandInterpreter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IIntentResolver",
+      "contractPath": "src/lib/shared/voice-control/services/contracts/IIntentResolver.ts",
+      "implPath": "src/lib/shared/voice-control/services/implementations/LLMIntentResolver.ts",
+      "implClass": "LLMIntentResolver",
+      "getterPath": "src/lib/shared/voice-control/getIntentResolver.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "ITTSProvider",
+      "contractPath": "src/lib/shared/voice-control/services/contracts/ITTSProvider.ts",
+      "implPath": "src/lib/shared/voice-control/services/implementations/WebSpeechTTSProvider.ts",
+      "implClass": "WebSpeechTTSProvider",
+      "getterPath": "src/lib/shared/voice-control/getTTSProvider.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVoiceSessionRecorder",
+      "contractPath": "src/lib/shared/voice-control/services/contracts/IVoiceSessionRecorder.ts",
+      "implPath": "src/lib/shared/voice-control/services/implementations/VoiceSessionRecorder.ts",
+      "implClass": "VoiceSessionRecorder",
+      "getterPath": "src/lib/shared/voice-control/getVoiceSessionRecorder.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "RecordEventParams"
+        },
+        {
+          "kind": "type",
+          "name": "SessionEndedCallback"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IWakeWordDetector",
+      "contractPath": "src/lib/shared/voice-control/services/contracts/IWakeWordDetector.ts",
+      "implPath": "src/lib/shared/voice-control/services/implementations/WakeWordDetector.ts",
+      "implClass": "WakeWordDetector",
+      "getterPath": "src/lib/shared/voice-control/getWakeWordDetector.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArenaOrchestrator",
+      "contractPath": "src/lib/features/arena/services/contracts/IArenaOrchestrator.ts",
+      "implPath": "src/lib/features/arena/services/implementations/ArenaOrchestrator.ts",
+      "implClass": "ArenaOrchestrator",
+      "getterPath": "src/lib/features/arena/getArenaOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IArenaRepository",
+      "contractPath": "src/lib/features/arena/services/contracts/IArenaRepository.ts",
+      "implPath": "src/lib/features/arena/services/implementations/ArenaRepository.ts",
+      "implClass": "ArenaRepository",
+      "getterPath": "src/lib/features/arena/getArenaRepository.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IMatchupSelector",
+      "contractPath": "src/lib/features/arena/services/contracts/IMatchupSelector.ts",
+      "implPath": "src/lib/features/arena/services/implementations/MatchupSelector.ts",
+      "implClass": "MatchupSelector",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "MatchupCandidate"
+        }
+      ],
+      "consumerCount": 4,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IRatingCalculator",
+      "contractPath": "src/lib/features/arena/services/contracts/IRatingCalculator.ts",
+      "implPath": "src/lib/features/arena/services/implementations/RatingCalculator.ts",
+      "implClass": "RatingCalculator",
+      "getterPath": null,
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStabilityAnalyzer",
+      "contractPath": "src/lib/features/arena/services/contracts/IStabilityAnalyzer.ts",
+      "implPath": "src/lib/features/arena/services/implementations/StabilityAnalyzer.ts",
+      "implClass": "StabilityAnalyzer",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "StabilityReport"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICoralAssetLoader",
+      "contractPath": "src/lib/features/background-builder/services/contracts/ICoralAssetLoader.ts",
+      "implPath": "src/lib/features/background-builder/services/implementations/CoralAssetLoader.ts",
+      "implClass": "CoralAssetLoader",
+      "getterPath": "src/lib/features/background-builder/getCoralAssetLoader.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ICoralSceneRenderer",
+      "contractPath": "src/lib/features/background-builder/services/contracts/ICoralSceneRenderer.ts",
+      "implPath": "src/lib/features/background-builder/services/implementations/CoralSceneRenderer.ts",
+      "implClass": "CoralSceneRenderer",
+      "getterPath": "src/lib/features/background-builder/getCoralSceneRenderer.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CoralSceneConfig"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "INightSkyLabController",
+      "contractPath": "src/lib/features/background-builder/services/contracts/INightSkyLabController.ts",
+      "implPath": "src/lib/features/background-builder/services/implementations/NightSkyLabController.ts",
+      "implClass": "NightSkyLabController",
+      "getterPath": "src/lib/features/background-builder/getNightSkyLabController.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "NightSkyLayers"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPreviewAnimationController",
+      "contractPath": "src/lib/features/background-builder/services/contracts/IPreviewAnimationController.ts",
+      "implPath": "src/lib/features/background-builder/services/implementations/PreviewAnimationController.ts",
+      "implClass": "PreviewAnimationController",
+      "getterPath": "src/lib/features/background-builder/getPreviewAnimationController.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "PreviewStats"
+        },
+        {
+          "kind": "interface",
+          "name": "PlacementConfig"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IUFOStatusPoller",
+      "contractPath": "src/lib/features/background-builder/services/contracts/IUFOStatusPoller.ts",
+      "implPath": "src/lib/features/background-builder/services/implementations/UFOStatusPoller.ts",
+      "implClass": "UFOStatusPoller",
+      "getterPath": "src/lib/features/background-builder/getUFOStatusPoller.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "UFOStatusSnapshot"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IFollowingFeedProvider",
+      "contractPath": "src/lib/features/community/services/contracts/IFollowingFeedProvider.ts",
+      "implPath": "src/lib/features/community/services/implementations/FollowingFeedProvider.ts",
+      "implClass": "FollowingFeedProvider",
+      "getterPath": "src/lib/features/community/getFollowingFeedProvider.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "FollowingFeedItem"
+        },
+        {
+          "kind": "interface",
+          "name": "FollowingFeedOptions"
+        }
+      ],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IGeocodingService",
+      "contractPath": "src/lib/features/community/services/contracts/IGeocodingService.ts",
+      "implPath": "src/lib/features/community/services/implementations/GeocodingService.ts",
+      "implClass": "GeocodingService",
+      "getterPath": "src/lib/features/community/getGeocodingService.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "CityLocation"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILocationProvider",
+      "contractPath": "src/lib/features/community/services/contracts/ILocationProvider.ts",
+      "implPath": "src/lib/features/community/services/implementations/LocationProvider.ts",
+      "implClass": "LocationProvider",
+      "getterPath": "src/lib/features/community/getLocationProvider.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "GeolocationPosition"
+        },
+        {
+          "kind": "interface",
+          "name": "GeolocationError"
+        }
+      ],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "ILocationSharingOrchestrator",
+      "contractPath": "src/lib/features/community/services/contracts/ILocationSharingOrchestrator.ts",
+      "implPath": "src/lib/features/community/services/implementations/LocationSharingOrchestrator.ts",
+      "implClass": "LocationSharingOrchestrator",
+      "getterPath": "src/lib/features/community/getLocationSharingOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IUserLocationRepository",
+      "contractPath": "src/lib/features/community/services/contracts/IUserLocationRepository.ts",
+      "implPath": "src/lib/features/community/services/implementations/UserLocationRepository.ts",
+      "implClass": "UserLocationRepository",
+      "getterPath": "src/lib/features/community/getUserLocationRepository.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IAgeVerifier",
+      "contractPath": "src/lib/features/hall-of-shame/services/contracts/IAgeVerifier.ts",
+      "implPath": "src/lib/features/hall-of-shame/services/implementations/AgeVerifier.ts",
+      "implClass": "AgeVerifier",
+      "getterPath": "src/lib/features/hall-of-shame/getAgeVerifier.ts",
+      "coExports": [],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IHallOfShameLoader",
+      "contractPath": "src/lib/features/hall-of-shame/services/contracts/IHallOfShameLoader.ts",
+      "implPath": "src/lib/features/hall-of-shame/services/implementations/HallOfShameLoader.ts",
+      "implClass": "HallOfShameLoader",
+      "getterPath": "src/lib/features/hall-of-shame/getHallOfShameLoader.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IHallOfShameSubmitter",
+      "contractPath": "src/lib/features/hall-of-shame/services/contracts/IHallOfShameSubmitter.ts",
+      "implPath": "src/lib/features/hall-of-shame/services/implementations/HallOfShameSubmitter.ts",
+      "implClass": "HallOfShameSubmitter",
+      "getterPath": "src/lib/features/hall-of-shame/getHallOfShameSubmitter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IHallOfShameVoter",
+      "contractPath": "src/lib/features/hall-of-shame/services/contracts/IHallOfShameVoter.ts",
+      "implPath": "src/lib/features/hall-of-shame/services/implementations/HallOfShameVoter.ts",
+      "implClass": "HallOfShameVoter",
+      "getterPath": "src/lib/features/hall-of-shame/getHallOfShameVoter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IShameQueueManager",
+      "contractPath": "src/lib/features/hall-of-shame/services/contracts/IShameQueueManager.ts",
+      "implPath": "src/lib/features/hall-of-shame/services/implementations/ShameQueueManager.ts",
+      "implClass": "ShameQueueManager",
+      "getterPath": "src/lib/features/hall-of-shame/getShameQueueManager.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IImagePatternLoader",
+      "contractPath": "src/lib/features/poi/services/contracts/IImagePatternLoader.ts",
+      "implPath": "src/lib/features/poi/services/implementations/ImagePatternLoader.ts",
+      "implClass": "ImagePatternLoader",
+      "getterPath": "src/lib/features/poi/getImagePatternLoader.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPoiDeviceAdapter",
+      "contractPath": "src/lib/features/poi/services/contracts/IPoiDeviceAdapter.ts",
+      "implPath": "src/lib/features/poi/services/implementations/OpenPixelPoiAdapter.ts",
+      "implClass": "OpenPixelPoiAdapter",
+      "getterPath": null,
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "IPoiConnection"
+        }
+      ],
+      "consumerCount": 3,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPoiDeviceManager",
+      "contractPath": "src/lib/features/poi/services/contracts/IPoiDeviceManager.ts",
+      "implPath": "src/lib/features/poi/services/implementations/PoiDeviceManager.ts",
+      "implClass": "PoiDeviceManager",
+      "getterPath": "src/lib/features/poi/getPoiDeviceManager.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPoiImageLibrary",
+      "contractPath": "src/lib/features/poi/services/contracts/IPoiImageLibrary.ts",
+      "implPath": "src/lib/features/poi/services/implementations/PoiImageLibrary.ts",
+      "implClass": "PoiImageLibrary",
+      "getterPath": "src/lib/features/poi/getPoiImageLibrary.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IStripPatternEngine",
+      "contractPath": "src/lib/features/poi/services/contracts/IStripPatternEngine.ts",
+      "implPath": "src/lib/features/poi/services/implementations/StripPatternEngine.ts",
+      "implClass": "StripPatternEngine",
+      "getterPath": "src/lib/features/poi/getStripPatternEngine.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPoiConstraintValidator",
+      "contractPath": "src/lib/features/poi-lab/services/contracts/IPoiConstraintValidator.ts",
+      "implPath": "src/lib/features/poi-lab/services/implementations/PoiConstraintValidator.ts",
+      "implClass": "PoiConstraintValidator",
+      "getterPath": "src/lib/features/poi-lab/getPoiConstraintValidator.ts",
+      "coExports": [],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPoiGravityOrientationDeriver",
+      "contractPath": "src/lib/features/poi-lab/services/contracts/IPoiGravityOrientationDeriver.ts",
+      "implPath": "src/lib/features/poi-lab/services/implementations/PoiGravityOrientationDeriver.ts",
+      "implClass": "PoiGravityOrientationDeriver",
+      "getterPath": "src/lib/features/poi-lab/getPoiGravityOrientationDeriver.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPoiOptionFilterDecorator",
+      "contractPath": "src/lib/features/poi-lab/services/contracts/IPoiOptionFilterDecorator.ts",
+      "implPath": "src/lib/features/poi-lab/services/implementations/PoiOptionFilterDecorator.ts",
+      "implClass": "PoiOptionFilterDecorator",
+      "getterPath": "src/lib/features/poi-lab/getPoiOptionFilterDecorator.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPoiSequenceValidator",
+      "contractPath": "src/lib/features/poi-lab/services/contracts/IPoiSequenceValidator.ts",
+      "implPath": "src/lib/features/poi-lab/services/implementations/PoiSequenceValidator.ts",
+      "implClass": "PoiSequenceValidator",
+      "getterPath": "src/lib/features/poi-lab/getPoiSequenceValidator.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVTGTerminologyMapper",
+      "contractPath": "src/lib/features/poi-lab/services/contracts/IVTGTerminologyMapper.ts",
+      "implPath": "src/lib/features/poi-lab/services/implementations/VTGTerminologyMapper.ts",
+      "implClass": "VTGTerminologyMapper",
+      "getterPath": "src/lib/features/poi-lab/getVTGTerminologyMapper.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPromoAnimationController",
+      "contractPath": "src/lib/features/promo-generator/services/contracts/IPromoAnimationController.ts",
+      "implPath": "src/lib/features/promo-generator/services/implementations/PromoAnimationController.ts",
+      "implClass": "PromoAnimationController",
+      "getterPath": "src/lib/features/promo-generator/getPromoAnimationController.ts",
+      "coExports": [
+        {
+          "kind": "interface",
+          "name": "AnimationPlaybackState"
+        },
+        {
+          "kind": "type",
+          "name": "AnimationProgressCallback"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPromoOrchestrator",
+      "contractPath": "src/lib/features/promo-generator/services/contracts/IPromoOrchestrator.ts",
+      "implPath": "src/lib/features/promo-generator/services/implementations/PromoOrchestrator.ts",
+      "implClass": "PromoOrchestrator",
+      "getterPath": "src/lib/features/promo-generator/getPromoOrchestrator.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IPromoSceneManager",
+      "contractPath": "src/lib/features/promo-generator/services/contracts/IPromoSceneManager.ts",
+      "implPath": "src/lib/features/promo-generator/services/implementations/PromoSceneManager.ts",
+      "implClass": "PromoSceneManager",
+      "getterPath": "src/lib/features/promo-generator/getPromoSceneManager.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IPromoVideoExporter",
+      "contractPath": "src/lib/features/promo-generator/services/contracts/IPromoVideoExporter.ts",
+      "implPath": "src/lib/features/promo-generator/services/implementations/PromoVideoExporter.ts",
+      "implClass": "PromoVideoExporter",
+      "getterPath": "src/lib/features/promo-generator/getPromoVideoExporter.ts",
+      "coExports": [
+        {
+          "kind": "type",
+          "name": "ExportProgressCallback"
+        },
+        {
+          "kind": "type",
+          "name": "ExportStage"
+        },
+        {
+          "kind": "interface",
+          "name": "ExportResult"
+        }
+      ],
+      "consumerCount": 2,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IScreenshotInjector",
+      "contractPath": "src/lib/features/promo-generator/services/contracts/IScreenshotInjector.ts",
+      "implPath": "src/lib/features/promo-generator/services/implementations/ScreenshotInjector.ts",
+      "implClass": "ScreenshotInjector",
+      "getterPath": "src/lib/features/promo-generator/getScreenshotInjector.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IDetectionCorrector",
+      "contractPath": "src/lib/features/video/video-trails/services/contracts/IDetectionCorrector.ts",
+      "implPath": "src/lib/features/video/video-trails/services/implementations/DetectionCorrector.ts",
+      "implClass": "DetectionCorrector",
+      "getterPath": "src/lib/features/video/video-trails/getDetectionCorrector.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IEffectConfigMapper",
+      "contractPath": "src/lib/features/video/video-trails/services/contracts/IEffectConfigMapper.ts",
+      "implPath": "src/lib/features/video/video-trails/services/implementations/EffectConfigMapper.ts",
+      "implClass": "EffectConfigMapper",
+      "getterPath": "src/lib/features/video/video-trails/getEffectConfigMapper.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVideoTipAdapter",
+      "contractPath": "src/lib/features/video/video-trails/services/contracts/IVideoTipAdapter.ts",
+      "implPath": "src/lib/features/video/video-trails/services/implementations/VideoTipAdapter.ts",
+      "implClass": "VideoTipAdapter",
+      "getterPath": "src/lib/features/video/video-trails/getVideoTipAdapter.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    },
+    {
+      "interfaceName": "IVideoTrailsExporter",
+      "contractPath": "src/lib/features/video/video-trails/services/contracts/IVideoTrailsExporter.ts",
+      "implPath": "src/lib/features/video/video-trails/services/implementations/VideoTrailsExporter.ts",
+      "implClass": "VideoTrailsExporter",
+      "getterPath": "src/lib/features/video/video-trails/getVideoTrailsExporter.ts",
+      "coExports": [],
+      "consumerCount": 0,
+      "category": "zero-consumer-safe"
+    },
+    {
+      "interfaceName": "IVideoTrailsRepository",
+      "contractPath": "src/lib/features/video/video-trails/services/contracts/IVideoTrailsRepository.ts",
+      "implPath": "src/lib/features/video/video-trails/services/implementations/VideoTrailsRepository.ts",
+      "implClass": "VideoTrailsRepository",
+      "getterPath": "src/lib/features/video/video-trails/getVideoTrailsRepository.ts",
+      "coExports": [],
+      "consumerCount": 1,
+      "category": "has-consumers"
+    }
+  ]
+}

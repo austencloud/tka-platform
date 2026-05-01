@@ -1,21 +1,4 @@
-<!--
-  SequenceViewerDrawerHost.svelte
-
-  Hosts the mobile sequence viewer as a drawer overlay.
-  Lives in MainApplication.svelte outside the auth gate so external links
-  (QR codes, shared URLs) work for both authenticated and unauthenticated users.
-  When a sequence is opened on mobile, this drawer slides up from the bottom,
-  covering whatever is loading behind it (Browse gallery, landing page, etc.).
-
-  Features:
-  - Full-height bottom drawer
-  - Back button / popstate closes drawer
-  - Swipe-to-dismiss via Drawer component
-  - All viewer functionality via SequenceViewerOrchestrator
-  - Landscape mode: footer moves to side column, header compacts
--->
 <script lang="ts">
-
 import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
@@ -29,7 +12,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     closeSequenceOverlay,
     openSequenceOverlay,
   } from "../state/sequence-viewer-overlay-state.svelte";
-  // Components
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
@@ -38,7 +20,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
-  // Services
   import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
@@ -75,14 +56,10 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
   }
 
-  // Video count for badge display on the Video button
   let videoCount = $state(0);
 
   $effect(() => {
     const seq = overlay.sequence;
-    // Guests can't read collaborative videos (Firestore rules require auth).
-    // Skip the fetch to avoid a "Missing or insufficient permissions" console
-    // error on every QR-scan / logged-out viewer open.
     if (!seq?.id || !authState.isAuthenticated) {
       videoCount = 0;
       return;
@@ -96,7 +73,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     });
   });
 
-  // Width detection for responsive layout in split pane
   let isMobileWidth = $state(true);
 
   $effect(() => {
@@ -109,21 +85,17 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     return undefined;
   });
 
-  // Landscape detection via DeviceDetector (single source of truth)
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
   let isLandscape = $derived(responsiveSettings?.isLandscapeMobile ?? false);
 
-  // Track drawer open state for binding
   let drawerOpen = $state(false);
 
-  // Export sidebar collapse state (desktop only)
   let exportSidebarCollapsed = $state(false);
 
   function toggleExportSidebar() {
     exportSidebarCollapsed = !exportSidebarCollapsed;
   }
 
-  // Reset sidebar visibility when entering export mode
   $effect(() => {
     if (overlay.isOpen) {
       exportSidebarCollapsed = false;
@@ -145,32 +117,23 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     }
   }
 
-  // Delete confirmation state
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard context menu
   let rerenderTrigger = $state(0);
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
-  // Sync overlay state to drawer state
   $effect(() => {
     drawerOpen = overlay.isOpen;
   });
 
-  // ============================================================================
-  // POPSTATE (BACK BUTTON)
-  // ============================================================================
-
   function handlePopState(event: PopStateEvent) {
-    // If the drawer is open and user pressed back, close it
     if (overlay.isOpen) {
       closeSequenceOverlay();
     }
   }
 
   onMount(() => {
-    // Landscape detection via DeviceDetector
     let deviceCleanup: (() => void) | undefined;
     try {
       const deviceDetector: IDeviceDetector = getDeviceDetector();
@@ -183,7 +146,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
       console.warn("SequenceViewerDrawerHost: Failed to resolve DeviceDetector", error);
     }
 
-    // Popstate (back button) listener
     window.addEventListener("popstate", handlePopState);
 
     return () => {
@@ -192,15 +154,8 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     };
   });
 
-  // URL bootstrap: when the page loaded with ?v=<code>, resolve it and open
-  // the drawer populated with that sequence. Runs as an effect so we can wait
-  // for Firebase auth to settle - the short code may resolve to a sequence in
-  // the user's own private Firestore namespace, which requires authentication.
-  // Attempting the read before auth is ready returns "insufficient permissions".
   let bootstrapAttempted = false;
   $effect(() => {
-    // Re-read on every auth state change until we either succeed or the URL
-    // no longer has ?v=. Gated by bootstrapAttempted so we only try once.
     const loading = authState.loading;
     if (loading || bootstrapAttempted) return;
     bootstrapAttempted = true;
@@ -216,16 +171,10 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
       const manager = getShortCodeManager();
       const resolved = await manager.resolveShortCode(code);
       if (!resolved) {
-        // Unresolvable code - strip it so the browser's base history entry
-        // doesn't keep pulling the user back to a broken URL on every back
-        // navigation or drawer close.
         stripInvalidV(code);
         return;
       }
 
-      // Fire-and-forget scan telemetry - only for genuine scans. Skips
-      // reloads, back/forward nav, and repeat session visits to avoid
-      // inflating scanCount on refresh.
       const encoder = getSequenceEncoder();
       const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
       if (
@@ -251,10 +200,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
       const stillMatches = new URL(window.location.href).searchParams.get("v") === code;
       if (!stillMatches) return;
 
-      // Hydrate BEFORE opening the overlay. Without this, the drawer
-      // renders a sequence with empty `word` and null `loopType` -
-      // viewer footer, reversal indicators, and loop-type badge all
-      // showed blank on refresh (bug report 2026-04-19).
       const hydrated = await hydrateSequence(resolved, {
         letterDeriver: getLetterDeriver(),
         positionDeriver: getPositionDeriver(),
@@ -286,12 +231,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     replaceState(url.pathname + url.search + url.hash, {});
   }
 
-  // ============================================================================
-  // DISMISS
-  // ============================================================================
-
   function handleDismiss() {
-    // Read state BEFORE closing (closeSequenceOverlay clears it)
     const path = overlay.dismissPath;
     const wasOpen = overlay.isOpen;
     const wasFromUrl = overlay.openedFromUrl;
@@ -299,19 +239,13 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     closeSequenceOverlay();
 
     if (path) {
-      // External link: navigate to app destination instead of going back
       goto(path, { replaceState: true });
     } else if (wasOpen && !wasFromUrl) {
-      // In-app open: go back in history to remove the entry we pushed.
-      // For URL-bootstrapped opens the ?v= strip already handled the URL and
-      // there's no pushed entry to pop - history.back() here would leave the
-      // app, which is not what the user wants when dismissing a restored viewer.
       window.history.back();
     }
   }
 
   function handleDrawerClose() {
-    // Called by Drawer when it closes (backdrop click, escape, swipe)
     handleDismiss();
   }
 </script>
@@ -339,17 +273,11 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
         {@const isImageExportActive = ctx.editingPane === "image"}
         {@const isVideoUploadActive = ctx.editingPane === "video-upload"}
         {@const isAnyExportActive = ctx.editingPane !== null}
-        <!-- 3D Record Scene mode: fullscreen chrome overlay replaces the
-             right-sidebar ExportVideoDrawer. When a preview blob is ready
-             (recording finished), yield to the sidebar so VideoPreviewPanel
-             can show the playback/redownload UI. -->
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
-          <!-- Header - adapts between normal viewer and export mode -->
           <header class="drawer-header">
               {#if isAnyExportActive}
-                <!-- Export mode: back arrow returns to viewer -->
                 <button
                   type="button"
                   class="drawer-back-button"
@@ -380,7 +308,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
                   {/if}
                 </div>
               {:else}
-                <!-- Normal viewer: dismiss + export/settings actions -->
                 <button
                   type="button"
                   class="drawer-back-button"
@@ -439,9 +366,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
               {/if}
             </header>
 
-          <!-- Main area: body + footer side-by-side in landscape, stacked in portrait -->
           <div class="drawer-main">
-            <!-- Content: single ViewerSplitPane reused across all modes -->
             <div class="drawer-body-content">
               {#if ctx.hasSequence && ctx.effectiveSequence}
                 <div
@@ -580,7 +505,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
               {/if}
             </div>
 
-            <!-- Footer: collapses via CSS during export modes for smooth transition -->
             <div class="footer-collapse" class:collapsed={isAnyExportActive}>
               <ViewerFooter
                 bpm={ctx.bpmLocal}
@@ -613,7 +537,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
               />
             </div>
 
-            <!-- Export bottom bar: absolutely positioned at bottom, slides up from below -->
             {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
               <div
                 class="export-footer-overlay"
@@ -740,7 +663,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     white-space: nowrap;
   }
 
-  /* Standalone title (export mode) centers itself when not in a title group */
   .drawer-header-title:only-child {
     position: absolute;
     left: 50%;
@@ -821,7 +743,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     color: var(--theme-text, #ffffff);
   }
 
-  /* Active state for toggle buttons (e.g. sidebar settings toggle) */
   .header-action-btn.active {
     color: var(--theme-accent, #6366f1);
   }
@@ -831,8 +752,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     outline-offset: 2px;
   }
 
-  /* Main area wraps body + footer in a flex column.
-     Body fills remaining space; footer is a normal flex child at the bottom. */
   .drawer-main {
     display: flex;
     flex-direction: column;
@@ -842,7 +761,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     position: relative;
   }
 
-  /* Landscape: footer is a side column, collapses horizontally */
   .landscape .footer-collapse {
     grid-template-rows: 1fr;
     grid-template-columns: 1fr;
@@ -865,7 +783,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     overflow: hidden;
   }
 
-  /* Landscape: compact header - icon-only back button, no title, minimal height */
   .landscape .drawer-header {
     padding-top: 2px;
     padding-bottom: 2px;
@@ -891,11 +808,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     min-height: 32px;
   }
 
-  /* Viewer + export panel container.
-     Desktop: ALWAYS a grid so the sidebar column can transition smoothly from
-     0fr to 320px. If we only became a grid on export-active, the browser has no
-     starting grid state and the 320px allocation happens instantly (no transition).
-     Mobile: stays default (block), switches to flex column in export mode. */
   .viewer-and-export {
     --export-sidebar-width: 560px;
     position: relative;
@@ -904,9 +816,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     overflow: hidden;
   }
 
-  /* Desktop: always a grid with a sidebar column that starts collapsed.
-     IMPORTANT: use 0px (not 0fr) so CSS can interpolate between 0px → 320px.
-     fr and px are different unit types - the browser can't transition between them. */
   .viewer-and-export.desktop {
     display: grid;
     grid-template-columns: 1fr 0px;
@@ -914,23 +823,19 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Desktop: split pane is a grid child (relative, not absolute) */
   .viewer-and-export.desktop :global(.view-container) {
     position: relative;
     inset: auto;
   }
 
-  /* Desktop export active: sidebar column expands to its width */
   .viewer-and-export.export-active.desktop {
     grid-template-columns: 1fr var(--export-sidebar-width);
   }
 
-  /* Desktop sidebar collapsed: column shrinks back to zero */
   .viewer-and-export.export-active.desktop.sidebar-collapsed {
     grid-template-columns: 1fr 0px;
   }
 
-  /* Export panel - grid child on desktop, flex child on mobile */
   .export-panel-container {
     overflow: hidden;
     overflow-y: auto;
@@ -941,7 +846,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   }
 
   @media (max-width: 767px) {
-    /* Mobile: export panel is inline in the flex layout */
     .viewer-and-export.export-active {
       display: flex;
       flex-direction: column;
@@ -955,7 +859,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
-    /* Mobile: ViewerSplitPane participates in flex flow */
     .viewer-and-export.export-active :global(.view-container) {
       position: relative;
       inset: auto;
@@ -965,8 +868,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     }
   }
 
-  /* Export footer overlay - absolutely positioned at bottom of drawer-main,
-     overlays the footer area so the export bar rises up from below */
   .export-footer-overlay {
     position: absolute;
     bottom: 0;
@@ -975,9 +876,6 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     z-index: 3;
   }
 
-  /* Footer - uses CSS grid row collapse for smooth height animation.
-     grid-template-rows: 1fr → 0fr smoothly collapses the footer to zero height
-     while the flex body above grows to fill the freed space. */
   .footer-collapse {
     display: grid;
     grid-template-rows: 1fr;
@@ -1003,15 +901,12 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
     }
   }
 
-  /* Override Drawer defaults for full-screen sequence viewer */
   :global(.sequence-viewer-drawer) {
     --sheet-bg: var(--theme-panel-bg, #0a0a14) !important;
     --sheet-filter: none !important;
-    /* Remove border radius since this drawer fills the viewport */
     --sheet-border-radius-top-left: 0px !important;
     --sheet-border-radius-top-right: 0px !important;
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
-
 </style>

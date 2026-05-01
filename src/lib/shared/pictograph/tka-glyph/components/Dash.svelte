@@ -1,17 +1,3 @@
-<!--
-Dash.svelte - Letter Dash Component
-
-Renders the dash suffix for Type3 and Type5 letters (e.g., "X-", "Φ-").
-Positioned to the right of the letter with a small gap.
-
-This component exists because legacy architecture renders the dash separately
-from the letter, allowing the direction dot to center over just the letter.
-
-Dark mode: This component is rendered INSIDE TKAGlyph's group, which applies
-filter: invert(0.9) for dark mode. Therefore, Dash should ALWAYS be black
-(like the letter SVGs) and let the parent's filter handle the inversion.
-DO NOT add dark mode color logic here - it would cause double-inversion!
--->
 <script lang="ts">
   // Constants from legacy implementation and dash.svg viewBox
   const DASH_WIDTH = 70;
@@ -46,12 +32,7 @@ DO NOT add dark mode color logic here - it would cause double-inversion!
   const centerX = $derived(dashX + DASH_WIDTH / 2);
   const centerY = $derived(dashY + DASH_HEIGHT / 2);
 
-  // ============================================================================
-  // DASH APPEARANCE ANIMATION
-  // ============================================================================
   // Track when dash appears (visibility goes from false to true).
-  // Note: The parent TKAGlyph handles letter change animations, so we only
-  // animate when the dash itself appears (non-dash → dash letter change).
 
   let prevVisible = $state<boolean | undefined>(undefined);
   let isAnimating = $state(false);

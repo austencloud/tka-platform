@@ -1,10 +1,9 @@
 <script lang="ts">
-
-import { getEffectConfigMapper } from "$lib/features/video/video-trails/getEffectConfigMapper";
-import { getVideoTipAdapter } from "$lib/features/video/video-trails/getVideoTipAdapter";
-import { getVideoTrailsExporter } from "$lib/features/video/video-trails/getVideoTrailsExporter";
-import { getLedThresholdDetector } from "$lib/features/video/video-trails/getLedThresholdDetector";
-import { getColorEndpointDetector } from "$lib/features/video/video-trails/getColorEndpointDetector";
+  import { getEffectConfigMapper } from "$lib/features/video/video-trails/getEffectConfigMapper";
+  import { getVideoTipAdapter } from "$lib/features/video/video-trails/getVideoTipAdapter";
+  import { getVideoTrailsExporter } from "$lib/features/video/video-trails/getVideoTrailsExporter";
+  import { getLedThresholdDetector } from "$lib/features/video/video-trails/getLedThresholdDetector";
+  import { getColorEndpointDetector } from "$lib/features/video/video-trails/getColorEndpointDetector";
   import { onMount, onDestroy } from "svelte";
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
@@ -27,14 +26,11 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
 
   const { state: trailsState } = getVideoTrailsContext();
 
-  // DI services
   const configMapper = getEffectConfigMapper() as IEffectConfigMapper;
   const tipAdapter = getVideoTipAdapter() as IVideoTipAdapter;
 
-  // Canvas stack reference
   let canvasStack: EffectCanvasStack | undefined = $state(undefined);
 
-  // Video element - lives in the DOM as a hidden element for reliable playback
   let videoEl: HTMLVideoElement | undefined = $state(undefined);
   let offscreenCanvas: HTMLCanvasElement | null = null;
   let offscreenCtx: CanvasRenderingContext2D | null = null;
@@ -42,28 +38,18 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   let canvasWidth = $state(640);
   let canvasHeight = $state(360);
 
-  // Throttle detection to every Nth frame - detection is CPU-heavy (pixel scanning,
-  // flood-fill, k-means) and running it at 60fps causes choppy video playback.
-  // The video frame still draws every RAF tick for smooth visuals.
   let detectionFrameCounter = 0;
   const DETECTION_EVERY_N_FRAMES = 3;
 
-  // Renderers
   let fireRenderer: WebGLFireRenderer | null = null;
   let ledRenderer: WebGLLedRenderer | null = null;
   let charcoalRenderer: CharcoalSparkRenderer | null = null;
   const trailRenderer = new Canvas2DTrailRenderer();
 
-  // Trail buffers
   let blueTrailPoints: TrailPoint[] = [];
   let redTrailPoints: TrailPoint[] = [];
 
-  // Persistence key for IndexedDB
   const VIDEO_PERSIST_KEY = "video-trails-last-video";
-
-  // ---------------------------------------------------------------------------
-  // Video persistence - store/restore video blob via IndexedDB
-  // ---------------------------------------------------------------------------
 
   async function persistVideoBlob(file: File): Promise<void> {
     try {
@@ -74,9 +60,7 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
       });
-    } catch {
-      // Persistence is best-effort
-    }
+    } catch { }
   }
 
   async function loadPersistedVideo(): Promise<{ blob: Blob; name: string } | null> {
@@ -111,10 +95,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // On mount: restore persisted video if available
-  // ---------------------------------------------------------------------------
-
   onMount(async () => {
     const persisted = await loadPersistedVideo();
     if (persisted && !trailsState.source) {
@@ -123,17 +103,10 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
     }
   });
 
-  // ---------------------------------------------------------------------------
-  // Video source loading - set src on the DOM <video> element
-  // ---------------------------------------------------------------------------
-
   $effect(() => {
     const url = trailsState.source?.url;
     if (!url || !videoEl) return;
-
-    // Guard: don't reload if src is already set to this URL
     if (videoEl.src === url) return;
-
     videoEl.src = url;
     videoEl.load();
   });
@@ -155,28 +128,20 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   }
 
   function handleVideoCanPlay() {
-    // Draw the first frame immediately so the canvas isn't black before playback
     canvasStack?.drawVideoFrame(videoEl!);
-
     if (trailsState.isPlaying && videoEl?.paused) {
       videoEl.play().catch(() => {});
     }
   }
 
-  // Intercept loadVideo to also persist the blob
   const originalLoadVideo = trailsState.loadVideo.bind(trailsState);
   trailsState.loadVideo = (file: File) => {
     originalLoadVideo(file);
     persistVideoBlob(file);
   };
 
-  // ---------------------------------------------------------------------------
-  // Playback control
-  // ---------------------------------------------------------------------------
-
   $effect(() => {
     if (!videoEl) return;
-
     if (trailsState.isPlaying) {
       videoEl.playbackRate = trailsState.playbackSpeed;
       if (videoEl.readyState >= 3) {
@@ -197,10 +162,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
       }
     }
   });
-
-  // ---------------------------------------------------------------------------
-  // Renderer lifecycle
-  // ---------------------------------------------------------------------------
 
   $effect(() => {
     const enabled = trailsState.effectConfig.fire.enabled;
@@ -247,10 +208,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
     }
   });
 
-  // ---------------------------------------------------------------------------
-  // Detection + rendering loop
-  // ---------------------------------------------------------------------------
-
   function getDetector(): IEndpointDetector {
     const reg = DETECTOR_REGISTRY.find((r) => r.id === trailsState.activeDetectorId);
     const key = reg?.containerKey ?? "ledThresholdDetector";
@@ -264,22 +221,16 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   function processCurrentFrame(): void {
     if (!videoEl || videoEl.readyState < 2) return;
 
-    // Always draw video frame at full framerate for smooth visuals
     canvasStack?.drawVideoFrame(videoEl);
 
-    // Only update reactive state when the frame actually changes to avoid
-    // unnecessary Svelte re-renders (setCurrentFrame creates new state objects)
     const frameIndex = Math.round(videoEl.currentTime * (trailsState.source?.fps ?? 30));
     if (frameIndex !== trailsState.currentFrame) {
       trailsState.setCurrentFrame(frameIndex);
     }
 
-    // Throttle the expensive detection work (pixel scanning, flood-fill, k-means)
-    // to every Nth frame. Video rendering stays at full framerate above.
     detectionFrameCounter++;
     if (detectionFrameCounter % DETECTION_EVERY_N_FRAMES !== 0) return;
 
-    // Detection requires offscreen canvas
     if (!offscreenCtx || !offscreenCanvas) return;
 
     offscreenCtx.drawImage(videoEl, 0, 0, canvasWidth, canvasHeight);
@@ -294,7 +245,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
     const fireTips = tipAdapter.mapToFireTips(endpoints, Math.max(canvasWidth, canvasHeight), currentTime);
     const trailPoints = tipAdapter.mapToTrailPoints(endpoints, currentTime);
 
-    // Trails
     if (effects.trails.enabled) {
       const trailSettings = configMapper.toTrailSettings(effects.trails);
       const maxPoints = trailSettings.maxPoints;
@@ -323,7 +273,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
       }
     }
 
-    // Fire
     if (effects.fire.enabled && fireRenderer?.isInitialized()) {
       fireRenderer.renderFire(
         { tips: fireTips, currentTime, canvasWidth, canvasHeight, darkMode: true } as FireFrameInput,
@@ -331,7 +280,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
       );
     }
 
-    // Charcoal
     if (effects.charcoal.enabled && charcoalRenderer?.isInitialized()) {
       charcoalRenderer.renderCharcoal(
         { tips: fireTips, currentTime, canvasWidth, canvasHeight, darkMode: true } as FireFrameInput,
@@ -339,7 +287,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
       );
     }
 
-    // LED
     if (effects.led.enabled && ledRenderer?.isInitialized()) {
       const ledConfig = configMapper.toLedConfig(effects.led);
       const ledTips = tipAdapter.mapToLedTips(endpoints, currentTime, ledConfig);
@@ -366,10 +313,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Export
-  // ---------------------------------------------------------------------------
-
   async function handleExport(config: ExportConfig): Promise<void> {
     if (!videoEl || !canvasStack) return;
     const exporter = getVideoTrailsExporter();
@@ -383,10 +326,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Cleanup
-  // ---------------------------------------------------------------------------
-
   onDestroy(() => {
     stopDetectionLoop();
     tipAdapter.reset();
@@ -399,7 +338,6 @@ import { getColorEndpointDetector } from "$lib/features/video/video-trails/getCo
   });
 </script>
 
-<!-- Hidden video element in the DOM for reliable cross-browser playback -->
 <video
   bind:this={videoEl}
   class="hidden-video"

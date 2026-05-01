@@ -8,23 +8,14 @@ const STORAGE_KEYS = {
   columnCount: "tka_seq_details_img_columnCount",
 } as const;
 
-/**
- * Persists sequence modal user preferences to localStorage.
- *
- * Note: Image visibility settings are now managed by ImageCompositionManager
- * for Firebase sync. This service only handles modal-specific settings.
- */
 export class SequenceModalPersistence implements ISequenceModalPersistence {
   loadViewMode(): ViewMode {
     if (typeof localStorage === "undefined") return "split";
 
     const saved = localStorage.getItem(STORAGE_KEYS.viewMode);
-    // Valid animation/split modes
     if (saved === "animation" || saved === "split") {
       return saved;
     }
-    // "image" saved mode gets converted to "split" so animation is visible
-    // (spacebar implies wanting to see animation, not static image)
     return "split";
   }
 
@@ -41,7 +32,7 @@ export class SequenceModalPersistence implements ISequenceModalPersistence {
       const parsed = parseInt(saved, 10);
       if (!isNaN(parsed)) return parsed;
     }
-    return null; // Auto
+    return null; 
   }
 
   saveColumnCount(value: number | null): void {
@@ -50,7 +41,4 @@ export class SequenceModalPersistence implements ISequenceModalPersistence {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const sequenceModalPersistence = new SequenceModalPersistence();

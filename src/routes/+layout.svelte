@@ -10,10 +10,6 @@
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
 
-  // ============================================================================
-  // VIEW TRANSITIONS API
-  // Enables smooth morphing animations between pages (e.g., thumbnail → viewer)
-  // ============================================================================
   onNavigate((navigation) => {
     // Skip if browser doesn't support View Transitions API
     if (!document.startViewTransition) return;
@@ -54,24 +50,6 @@
     });
   });
 
-  // ============================================================================
-  // STALE URL-PARAM SANITIZER
-  //
-  // Some URL params are owned by specific features (e.g. `?seq=` belongs to
-  // the loop-labeler admin tool for deep-linking sequences by id). When the
-  // user navigates AWAY from that feature, the params stick around because
-  // no one cleans them up - they cargo-cult through every subsequent URL
-  // change until the next hard reload.
-  //
-  // This is more than cosmetic: the stale params feed the shortcode
-  // race-condition pattern. A `?v=CODE` viewer-bootstrap URL with a leftover
-  // `?seq=<id>` can look like two different sequences to two different state
-  // systems, each of which may try to createShortCode() for "its" sequence
-  // at the same time. Strip the junk on every navigation that isn't on a
-  // route that owns the param.
-  //
-  // Add new entries here as features start/stop owning URL params.
-  // ============================================================================
   const OWNED_PARAMS: Record<string, readonly string[]> = {
     // loop-labeler (/test/loop-labeler) uses these for deep-link state.
     seq: ["/test/loop-labeler"],
@@ -103,19 +81,6 @@
     children: Snippet;
   }>();
 
-  // ============================================================================
-  // PARALLEL IMPORT KICKOFF (pre-onMount)
-  //
-  // Start fetching all app-mode JS chunks the moment this module is evaluated,
-  // NOT when onMount runs. onMount waits for Svelte hydration - by then the
-  // browser is idle and could have been downloading chunks already.
-  //
-  // Fetching at module-top lets all vendor chunks (firebase, iti, etc.) stream
-  // in parallel with hydration. When onMount finally needs them, they're cached.
-  //
-  // Guard: only run in app mode. Landing/retro routes must not pay this cost.
-  // The helper is reused for the landing→app upgrade path (afterNavigate).
-  // ============================================================================
   /**
    * First-path-segment → module chunk preloader. Keep synchronized with
    * ModuleRenderer.moduleLoaders. Unlisted segments fall through to lazy load.
@@ -414,11 +379,6 @@
     // 3s timeout is the safety net if no module signals.
     bootProfiler.scheduleSummary(3000);
 
-    // ========================================================================
-    // BACKGROUND INIT - fire-and-forget. The UI is interactive at this point;
-    // these are observability + secondary banners that don't need to block.
-    // Each is wrapped to log its own timing without holding up the boot.
-    // ========================================================================
     const runDeferred = () => {
       // Web Vitals - analytics, never user-visible
       bootProfiler.mark("web-vitals");

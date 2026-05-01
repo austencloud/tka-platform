@@ -1,21 +1,3 @@
-/**
- * Animation Constants
- *
- * Centralized timing and distance constants for Svelte transitions.
- * Use with native Svelte transitions (fade, fly, scale, slide).
- *
- * @example
- * import { fade, fly } from 'svelte/transition';
- * import { DURATION, SLIDE, STAGGER } from '$lib/shared/transitions/transitions';
- *
- * <div in:fade={{ duration: DURATION.normal }}>
- * <div in:fly={{ y: SLIDE.md, duration: DURATION.fast, delay: i * STAGGER.normal }}>
- */
-
-// ============================================================================
-// DURATION CONSTANTS (match CSS variables in app.css)
-// ============================================================================
-
 export const DURATION = {
   /** 100ms - Micro-feedback (hover states, toggles) */
   instant: 100,
@@ -29,10 +11,6 @@ export const DURATION = {
   dramatic: 350,
 } as const;
 
-// ============================================================================
-// STAGGER CONSTANTS (for sequenced animations)
-// ============================================================================
-
 export const STAGGER = {
   /** 30ms - Tight sequences (list items) */
   micro: 30,
@@ -41,10 +19,6 @@ export const STAGGER = {
   /** 80ms - Spread out (major sections) */
   relaxed: 80,
 } as const;
-
-// ============================================================================
-// SLIDE DISTANCE CONSTANTS (for fly transitions)
-// ============================================================================
 
 export const SLIDE = {
   /** 8px - Subtle slides (tabs) */

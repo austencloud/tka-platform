@@ -1,19 +1,3 @@
-/**
- * OfflineCacheOrchestrator
- *
- * Coordinates proactive background caching so the app works offline.
- *
- * Two tasks run in sequence after the gallery first loads:
- *  1. Gallery metadata - persisted automatically by GalleryOfflineCache whenever
- *     PublicSequencesLoader fetches from Firestore. Nothing to do here.
- *  2. Thumbnail prefetch - download each sequence's first thumbnail into
- *     ThumbnailLocalCache so the gallery renders without network.
- *
- * Background mode throttles concurrency to connection quality so the prefetch
- * is invisible to the user. Full-speed mode (user-triggered "Download for
- * offline") uses maximum concurrency.
- */
-
 import type { IOfflineCacheOrchestrator } from "../contracts/IOfflineCacheOrchestrator";
 import type { INetworkStatusMonitor } from "$lib/shared/sync/services/contracts/INetworkStatusMonitor";
 import type { IGalleryOfflineCache } from "../contracts/IGalleryOfflineCache";
@@ -32,36 +16,28 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
   ) {}
 
   /**
-   * Start background prefetch after the gallery loads.
-   * Only proceeds if we actually have cached gallery data to pull URLs from.
-   * Runs at adaptive concurrency so it doesn't compete with foreground traffic.
+   * Adaptive concurrency prefetch (throttles to connection quality).
    */
   async startBackgroundCache(): Promise<void> {
     this.cancelled = false;
 
     const stats = await this.galleryCache.getStats();
     if (stats.count === 0) {
-      // Gallery hasn't loaded yet - nothing to prefetch.
       return;
     }
 
     await this.prefetchThumbnails(false);
   }
 
-  /**
-   * User-triggered "Download for offline". Runs at full speed (10 concurrent).
-   */
   async downloadForOffline(): Promise<void> {
     this.cancelled = false;
     await this.prefetchThumbnails(true);
   }
 
-  /** Cancel any in-progress prefetch. */
   cancel(): void {
     this.cancelled = true;
   }
 
-  /** Combined stats for the settings panel. */
   async getCacheStats(): Promise<OfflineCacheStats> {
     const [galleryStats, thumbnailStats] = await Promise.all([
       this.galleryCache.getStats(),
@@ -72,12 +48,11 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
       galleryLastSyncedAt: galleryStats.lastSyncedAt,
       thumbnailsCached: thumbnailStats.count,
       thumbnailsSizeBytes: thumbnailStats.sizeBytes,
-      propSvgsCached: true, // Always true - prop SVGs are in Workbox precache
+      propSvgsCached: true, 
       isOfflineReady: galleryStats.count > 0,
     };
   }
 
-  /** Wipe everything. Cancels in-progress work first. */
   async clearOfflineCache(): Promise<void> {
     this.cancel();
     await Promise.all([
@@ -86,16 +61,6 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
     ]);
   }
 
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Download thumbnails for all cached gallery sequences that don't already
-   * have a local copy.
-   *
-   * @param fullSpeed - true = max concurrency (10); false = adaptive to network
-   */
   private async prefetchThumbnails(fullSpeed: boolean): Promise<void> {
     if (this.prefetching) return;
     this.prefetching = true;

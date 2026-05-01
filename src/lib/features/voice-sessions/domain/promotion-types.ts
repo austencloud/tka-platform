@@ -1,16 +1,4 @@
-/**
- * Tier Promotion Engine Domain Types
- *
- * Types for auto-generating T1 regex pattern candidates from
- * recurring T2 LLM interpretations. When a transcript consistently
- * hits T2 and resolves to the same command, it should become a regex.
- */
-
 import type { VoiceCommandCategory } from "$lib/shared/voice-control/domain/voice-command-types";
-
-// ============================================================================
-// Promotion Status
-// ============================================================================
 
 /**
  * Lifecycle of a promotion candidate:
@@ -21,10 +9,6 @@ import type { VoiceCommandCategory } from "$lib/shared/voice-control/domain/voic
  */
 export type PromotionStatus = "pending" | "approved" | "rejected" | "applied";
 
-// ============================================================================
-// Evidence
-// ============================================================================
-
 /** One occurrence of a T2 hit that supports the promotion */
 export interface PromotionEvidence {
   /** Session ID where this occurred */
@@ -34,10 +18,6 @@ export interface PromotionEvidence {
   /** LLM confidence for this resolution */
   confidence: number;
 }
-
-// ============================================================================
-// Candidate
-// ============================================================================
 
 /** A T2 transcript pattern that should become a T1 regex */
 export interface PromotionCandidate {

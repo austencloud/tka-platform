@@ -1,14 +1,3 @@
-/**
- * R2VideoUploader
- *
- * Uploads user videos, animations, and thumbnails to Cloudflare R2 via
- * presigned URLs. Handles single-file uploads (<100MB) and multipart
- * uploads (>=100MB) with resume capability.
- *
- * The browser never touches R2 credentials. It calls Cloud Functions
- * to get presigned URLs, then PUTs directly to R2.
- */
-
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type {
   IVideoUploader,
@@ -20,37 +9,16 @@ import type { IR2Presigner } from "../contracts/IR2Presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** Files >= 100MB use multipart upload */
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024;
-
-/** Each multipart chunk is 10MB */
 const PART_SIZE = 10 * 1024 * 1024;
-
-/** Upload up to 3 parts at a time */
 const MAX_CONCURRENT_PARTS = 3;
-
-/** Retry attempts for transient network errors */
 const MAX_RETRIES = 3;
-
-/** Base delay between retries (doubles each attempt) */
 const RETRY_BASE_DELAY_MS = 1000;
-
-/** localStorage key for multipart resume state */
 const STORAGE_KEY = "tka-multipart-uploads";
-
-/** Stale multipart entries older than 24 hours are purged */
 const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
-// ============================================================================
-// File fingerprinting (for duplicate detection and resume matching)
-// ============================================================================
-
 async function computeFileFingerprint(file: File | Blob): Promise<string> {
-  const SAMPLE_SIZE = 1024 * 1024; // 1MB
+  const SAMPLE_SIZE = 1024 * 1024;
   const head = file.slice(0, SAMPLE_SIZE);
   const tail = file.slice(Math.max(0, file.size - SAMPLE_SIZE));
   const combined = new Blob([head, tail]);
@@ -62,10 +30,6 @@ async function computeFileFingerprint(file: File | Blob): Promise<string> {
     `-${file.size}`
   );
 }
-
-// ============================================================================
-// localStorage helpers for multipart resume
-// ============================================================================
 
 function loadMultipartState(): Record<string, MultipartUploadState & { startedAt: number; fileName: string; fileSize: number }> {
   try {
@@ -106,10 +70,6 @@ function purgeStaleEntries(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   }
 }
-
-// ============================================================================
-// XHR upload helper (supports progress and abort)
-// ============================================================================
 
 function xhrPutOnce(
   url: string,
@@ -153,7 +113,6 @@ function xhrPutOnce(
     };
 
     xhr.onerror = () => {
-      // Extract the R2 host from the presigned URL for diagnostics
       let host = "unknown";
       try { host = new URL(url).host; } catch { /* ignore */ }
       const err = new Error(
@@ -191,7 +150,6 @@ async function xhrPut(
       const isNetworkError = error?.isNetworkError === true;
       const isLastAttempt = attempt === MAX_RETRIES - 1;
 
-      // Don't retry user-initiated aborts or non-network errors (like HTTP 4xx/5xx)
       if (isAbort || !isNetworkError || isLastAttempt) {
         throw error;
       }
@@ -204,13 +162,8 @@ async function xhrPut(
     }
   }
 
-  // Unreachable, but TypeScript needs it
   throw new Error("Upload failed after retries");
 }
-
-// ============================================================================
-// R2VideoUploader
-// ============================================================================
 
 export class R2VideoUploader implements IVideoUploader {
   private readonly presigner: IR2Presigner;
@@ -218,15 +171,10 @@ export class R2VideoUploader implements IVideoUploader {
   constructor(presigner: IR2Presigner) {
     this.presigner = presigner;
 
-    // Purge stale multipart entries on construction
     if (typeof window !== "undefined") {
       purgeStaleEntries();
     }
   }
-
-  // --------------------------------------------------------------------------
-  // Private helpers
-  // --------------------------------------------------------------------------
 
   private getUserId(): string {
     const user = getAuthSync().currentUser;
@@ -252,10 +200,6 @@ export class R2VideoUploader implements IVideoUploader {
     });
     throw error;
   }
-
-  // --------------------------------------------------------------------------
-  // Single file upload (<100MB)
-  // --------------------------------------------------------------------------
 
   private async uploadSingle(
     fileName: string,
@@ -285,10 +229,6 @@ export class R2VideoUploader implements IVideoUploader {
     return { url: publicUrl, key };
   }
 
-  // --------------------------------------------------------------------------
-  // Multipart upload (>=100MB)
-  // --------------------------------------------------------------------------
-
   private async uploadMultipart(
     fileName: string,
     contentType: string,
@@ -301,27 +241,23 @@ export class R2VideoUploader implements IVideoUploader {
     const totalParts = Math.ceil(file.size / PART_SIZE);
     const fingerprint = await computeFileFingerprint(file instanceof File ? file : new File([file], "blob"));
 
-    // Check for resumable state
     let savedState = loadMultipartState()[fingerprint] as (MultipartUploadState & { startedAt: number; fileName: string; fileSize: number }) | undefined;
     let uploadId: string;
     let key: string;
     let completedParts: Array<{ ETag: string; PartNumber: number }> = [];
 
     if (savedState && !savedState.startedAt) {
-      // Stale entry with no timestamp, discard it
       removeMultipartState(fingerprint);
       savedState = undefined;
     }
 
     if (savedState) {
-      // Resume: verify which parts R2 still has
       const { parts: confirmedParts, expired } = await this.presigner.listParts({
         key: savedState.key,
         uploadId: savedState.uploadId,
       });
 
       if (expired) {
-        // Upload expired, start fresh
         removeMultipartState(fingerprint);
         const startResult = await this.presigner.startMultipart({ fileName, contentType, userId, category, sequenceId });
         uploadId = startResult.uploadId;
@@ -346,7 +282,6 @@ export class R2VideoUploader implements IVideoUploader {
       key = startResult.key;
     }
 
-    // Determine which parts still need uploading
     const completedPartNumbers = new Set(completedParts.map((p) => p.PartNumber));
     const missingParts: number[] = [];
     for (let i = 1; i <= totalParts; i++) {
@@ -355,10 +290,8 @@ export class R2VideoUploader implements IVideoUploader {
       }
     }
 
-    // Track per-part progress for overall progress calculation
     const partProgress = new Map<number, number>();
     const totalBytes = file.size;
-    // Already-completed bytes
     let completedBytes = 0;
     for (const pn of completedPartNumbers) {
       const start = (pn - 1) * PART_SIZE;
@@ -374,7 +307,6 @@ export class R2VideoUploader implements IVideoUploader {
       options?.onProgress?.(Math.round((current / totalBytes) * 100));
     };
 
-    // Upload missing parts with concurrency limit
     const uploadPart = async (partNumber: number) => {
       const start = (partNumber - 1) * PART_SIZE;
       const end = Math.min(start + PART_SIZE, file.size);
@@ -400,7 +332,6 @@ export class R2VideoUploader implements IVideoUploader {
       const part = { ETag: etag, PartNumber: partNumber };
       completedParts.push(part);
 
-      // Persist state after each part for resume
       saveMultipartState(fingerprint, {
         uploadId,
         key,
@@ -413,7 +344,6 @@ export class R2VideoUploader implements IVideoUploader {
       });
     };
 
-    // Process parts with concurrency limit
     const queue = [...missingParts];
     const workers: Promise<void>[] = [];
 
@@ -430,25 +360,18 @@ export class R2VideoUploader implements IVideoUploader {
 
     await Promise.all(workers);
 
-    // Sort parts by number before completing
     completedParts.sort((a, b) => a.PartNumber - b.PartNumber);
 
-    // Complete the multipart upload
     const { publicUrl } = await this.presigner.completeMultipart({
       key,
       uploadId,
       parts: completedParts,
     });
 
-    // Clean up localStorage
     removeMultipartState(fingerprint);
 
     return { url: publicUrl, key };
   }
-
-  // --------------------------------------------------------------------------
-  // Public API
-  // --------------------------------------------------------------------------
 
   async uploadPerformanceVideo(
     sequenceId: string,
@@ -516,11 +439,6 @@ export class R2VideoUploader implements IVideoUploader {
   }
 
   getPublicUrl(key: string): string {
-    // Constructs the full public URL from the R2 public base URL and the
-    // object key. VITE_R2_PUBLIC_URL must be set in .env (e.g.,
-    // VITE_R2_PUBLIC_URL=https://pub-xxx.r2.dev or a custom domain).
-    // In practice, callers usually use the `url` from VideoUploadResult,
-    // but this method is available for constructing URLs from stored keys.
     const baseUrl = import.meta.env.VITE_R2_PUBLIC_URL || "";
     return `${baseUrl}/${key}`;
   }
@@ -566,9 +484,6 @@ export class R2VideoUploader implements IVideoUploader {
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
-      // Don't show error modal here - let the caller (LibrarySaveService)
-      // decide how to present this. It treats thumbnail failure as a
-      // non-blocking warning since the sequence saves regardless.
       console.error("R2VideoUploader: Failed to upload-thumbnail:", error);
       throw error;
     }

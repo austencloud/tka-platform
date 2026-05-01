@@ -1,12 +1,3 @@
-/**
- * GeneratorCommandHandler
- *
- * Executes generator voice commands by delegating to the generator panel's
- * state via the global GeneratorVoiceRef.
- *
- * Handles: set, toggle, increment, decrement, generate, help.
- */
-
 import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
@@ -20,10 +11,7 @@ import {
 import type { GeneratorHelpId } from "$lib/features/create/generate/domain/generator-help-content";
 import type { UIGenerationConfig } from "$lib/features/create/generate/shared/utils/config-mapper";
 
-// ============================================================================
 // Parameter metadata for validation
-// ============================================================================
-
 interface NumericParamMeta {
   type: "numeric";
   display: string;
@@ -92,10 +80,7 @@ const PARAM_META: Record<string, ParamMeta> = {
   },
 };
 
-// ============================================================================
 // Display name helpers
-// ============================================================================
-
 const LOOP_TYPE_DISPLAY: Record<string, string> = {
   rotated: "Rotated",
   mirrored: "Mirrored",
@@ -127,10 +112,6 @@ function getConfigValue(
 ): string | number | undefined {
   return (config as unknown as Record<string, string | number>)[key];
 }
-
-// ============================================================================
-// Handler
-// ============================================================================
 
 export class GeneratorCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["generator"];
