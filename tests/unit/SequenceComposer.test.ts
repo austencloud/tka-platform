@@ -1,12 +1,3 @@
-/**
- * SequenceComposer Tests
- *
- * Combining two SoloPropData objects into a SequenceData is the load-bearing
- * operation in the compositional sequence model. A mismatch in step counts,
- * missing hashes, or dropped metadata would silently corrupt every sequence
- * created through this path. These tests pin that contract.
- */
-
 import { describe, it, expect } from "vitest";
 import { SequenceComposer } from "$lib/shared/foundation/services/implementations/SequenceComposer";
 import { StepDeriver } from "$lib/shared/foundation/services/implementations/StepDeriver";
@@ -20,10 +11,6 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function makeStep(
   startLocation: GridLocation,
@@ -43,19 +30,11 @@ function makeStep(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Shared service instances
-// ---------------------------------------------------------------------------
-
 const hasher = new ContentHasher();
 const handPathFactory = new HandPathFactory(hasher);
 const soloPropFactory = new SoloPropFactory(handPathFactory, hasher);
 const stepDeriver = new StepDeriver();
 const composer = new SequenceComposer(stepDeriver, hasher);
-
-// ---------------------------------------------------------------------------
-// Standard two-step solo props used across multiple tests
-// ---------------------------------------------------------------------------
 
 const blueStep1 = makeStep(GridLocation.NORTH, GridLocation.EAST);
 const blueStep2 = makeStep(GridLocation.EAST, GridLocation.SOUTH);
@@ -74,15 +53,7 @@ const twoStepRed = soloPropFactory.create(
   Orientation.OUT
 );
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("SequenceComposer", () => {
-  // -------------------------------------------------------------------------
-  // Basic output shape
-  // -------------------------------------------------------------------------
-
   describe("combine — basic output shape", () => {
     it("produces a SequenceData with the correct number of steps", () => {
       const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
@@ -96,10 +67,6 @@ describe("SequenceComposer", () => {
       expect(result.word).toBe("");
     });
   });
-
-  // -------------------------------------------------------------------------
-  // Mismatch guard
-  // -------------------------------------------------------------------------
 
   describe("combine — step count mismatch", () => {
     it("throws when blue has more steps than red", () => {
@@ -145,10 +112,6 @@ describe("SequenceComposer", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Content hashes
-  // -------------------------------------------------------------------------
-
   describe("combine — content hashes", () => {
     it("stores bluePathHash matching the blue hand path contentHash", () => {
       const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
@@ -174,10 +137,6 @@ describe("SequenceComposer", () => {
       expect(result.redSoloHash).toBe(twoStepRed.contentHash);
     });
   });
-
-  // -------------------------------------------------------------------------
-  // Backward-compatibility: steps array
-  // -------------------------------------------------------------------------
 
   describe("combine — derived steps (backward compat)", () => {
     it("steps are 1-indexed", () => {

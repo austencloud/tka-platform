@@ -1,10 +1,4 @@
 /**
- * Global Arrow Adjustment Tests
- *
- * Tests for the 3-layer prop-specific arrow adjustment system.
- * These are "silent bug" candidates - if broken, wrong adjustments
- * would apply without any visible error.
- *
  * HIGH VALUE:
  * 1. Key serialization round-trip (5/6/7 part keys)
  * 2. Cascading lookup priority (Layer 3 → 2 → 1)
@@ -19,10 +13,6 @@ import {
   getKeyLayer,
   type GlobalAdjustmentKey,
 } from "../../../src/lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
-
-// ============================================================================
-// TEST 1: KEY SERIALIZATION ROUND-TRIP
-// ============================================================================
 
 describe("Key Serialization", () => {
   describe("generateAdjustmentKeyString", () => {
@@ -213,10 +203,6 @@ describe("Key Serialization", () => {
   });
 });
 
-// ============================================================================
-// TEST 2: KEY LAYER CLASSIFICATION
-// ============================================================================
-
 describe("getKeyLayer", () => {
   it("returns Layer 1 for base key (no prop types)", () => {
     const key: GlobalAdjustmentKey = {
@@ -274,10 +260,6 @@ describe("getKeyLayer", () => {
   });
 });
 
-// ============================================================================
-// TEST 3: DEFAULT SAVE LAYER LOGIC
-// ============================================================================
-
 describe("Default Save Layer Logic", () => {
   /**
    * This tests the logic used in ArrowAdjustmentPanel to determine
@@ -328,10 +310,6 @@ describe("Default Save Layer Logic", () => {
     ).toBe(2);
   });
 });
-
-// ============================================================================
-// TEST 4: CASCADING LOOKUP PRIORITY
-// ============================================================================
 
 describe("Cascading Lookup Priority", () => {
   /**

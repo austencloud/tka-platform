@@ -1,18 +1,3 @@
-/**
- * MandalaGeometryCalculator Tests
- *
- * The math inside this calculator is the riskiest part of the mandala feature.
- * A wrong sign, a missed staff-angle chain, or a broken interpolation produces
- * paths that look plausible but have invisible junction gaps or wrong shapes.
- * These tests pin the exact numeric behavior of every motion type and the
- * staff-angle chaining mechanism.
- *
- * Junction continuity is tested by parsing the SVG path "d" strings: every
- * sequence of beats should produce a single continuous path whose C-command
- * endpoints exactly match the next C-command start (within floating-point
- * tolerance).
- */
-
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -25,10 +10,6 @@ import {
   MANDALA_GRID_RADIUS,
   BASE_SAMPLES_PER_BEAT,
 } from "$lib/shared/mandala/domain/mandala-constants";
-
-// ---------------------------------------------------------------------------
-// Path parsing helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Extract all curve endpoint coordinates from an SVG path "d" string.
@@ -126,10 +107,6 @@ function maxBeatJunctionGap(d: string, samplesPerBeat: number, stepCount: number
   }
   return maxGap;
 }
-
-// ---------------------------------------------------------------------------
-// Test fixtures
-// ---------------------------------------------------------------------------
 
 /**
  * ALΦ sequence (3-beat seed + 180° rotation copies = 6 beats).
@@ -437,10 +414,6 @@ const ANTI_PRO_PAIR: StepLike[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Load 16-beat test sequence from fixture file
-// ---------------------------------------------------------------------------
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -454,14 +427,8 @@ const SIXTEEN_BEAT_STEPS = fixtureJson.steps.filter(
   (s) => s.motions?.blue || s.motions?.red
 );
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("MandalaGeometryCalculator", () => {
   const calc = new MandalaGeometryCalculator();
-
-  // ─── Test 1: Junction continuity (basic multi-beat) ─────────────────────
 
   describe("junction continuity", () => {
     it("produces a single continuous path (one M command) for a 2-beat sequence", () => {
@@ -486,8 +453,6 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
-  // ─── Test 2: PRO motion produces arc (constant radius) ──────────────────
-
   describe("PRO motion produces arc", () => {
     it("blue tip path maintains approximately constant radius for s→w PRO beat", () => {
       const result = calc.calculate(SINGLE_PRO_STEP);
@@ -511,8 +476,6 @@ describe("MandalaGeometryCalculator", () => {
       expect(maxR - minR).toBeLessThan(2);
     });
   });
-
-  // ─── Test 3: DASH goes through center ───────────────────────────────────
 
   describe("DASH motion passes through center", () => {
     it("blue hand at t=0.5 is near origin for s→n DASH", () => {
@@ -568,8 +531,6 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
-  // ─── Test 4: STATIC motion keeps hand in place ──────────────────────────
-
   describe("STATIC motion", () => {
     it("all tip points share the same x coordinate for static hand at south", () => {
       const result = calc.calculate(SINGLE_STATIC_STEP);
@@ -602,8 +563,6 @@ describe("MandalaGeometryCalculator", () => {
       expect(maxY - minY).toBeLessThan(0.02);
     });
   });
-
-  // ─── Test 5: FLOAT traces a shift arc with constant prop angle ──────────
 
   describe("FLOAT motion produces an arc with constant prop angle", () => {
     it("blue produces a path (float is a shift, it must be drawn)", () => {
@@ -691,8 +650,6 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
-  // ─── Test 6: Tip inset applied ──────────────────────────────────────────
-
   describe("tip inset applied", () => {
     it("tip radius is reduced by DEFAULT_TIP_INSET_PX relative to raw staff length", () => {
       // For a static motion with out orientation, the tip points directly away
@@ -734,8 +691,6 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
-  // ─── Test 7: Staff angle chaining fixes beat 2→3 junction (ALΦ) ─────────
-
   describe("staff angle chaining — ALΦ beat 2→3 transition", () => {
     it("beat 2→3 junction gap < 0.02px for blue (this was the 160px bug)", () => {
       // Without staff-angle chaining, beat 3 (dash) starts with an orientation-
@@ -763,8 +718,6 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
-  // ─── Test 8: Full 16-beat loop — all 15 junctions < 0.01px ─────────────
-
   describe("full 16-beat loop junction continuity", () => {
     it("Ω-YΩXΩ-YΩX sequence has all paths as single continuous curves", () => {
       expect(SIXTEEN_BEAT_STEPS.length).toBeGreaterThan(0);
@@ -789,8 +742,6 @@ describe("MandalaGeometryCalculator", () => {
       }
     });
   });
-
-  // ─── Test 9: ANTI uses -centerMovement (opposite sign from PRO) ─────────
 
   describe("ANTI motion staff rotation is opposite to PRO", () => {
     it("anti and pro from same start/end produce different tip paths", () => {
@@ -828,8 +779,6 @@ describe("MandalaGeometryCalculator", () => {
       expect(endDist).toBeGreaterThan(1);
     });
   });
-
-  // ─── Test 10: Adaptive sampling ─────────────────────────────────────────
 
   describe("adaptive sampling", () => {
     it("1.5-turn motion produces more SVG C commands than 0-turn motion", () => {

@@ -1,18 +1,3 @@
-/**
- * SequenceHydrator round-trip smoke test.
- *
- * Protects against the regression class that bit us on 2026-04-19:
- * a shortcode resolves to a sequence whose motions are intact but
- * whose semantic fields (word, loopType, isCircular, gridMode) come
- * back empty, breaking the viewer footer and loop-type badge.
- *
- * The test encodes a hand-built sequence, decodes it, feeds the
- * decoded form through `hydrateSequence` with the real pure-client
- * derivers (position, gridMode, loop) plus a stubbed letter deriver
- * (the real one needs the pictograph dataframe loaded — out of scope
- * for a smoke test). Asserts the derived fields come back populated.
- */
-
 import { describe, expect, it } from "vitest";
 
 import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
@@ -38,10 +23,6 @@ import {
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-// ============================================================================
-// FIXTURES
-// ============================================================================
-
 function makeStep(
   stepNumber: number,
   blue: Partial<Parameters<typeof createMotionData>[0]>,
@@ -64,7 +45,6 @@ function makeStep(
   };
 }
 
-/** Cardinal-only sequence → gridMode must come back as "diamond". */
 function buildDiamondSequence(): SequenceData {
   const start = makeStep(
     0,
@@ -137,12 +117,6 @@ function buildDiamondSequence(): SequenceData {
   });
 }
 
-/**
- * Stub letter deriver — the real one loads the full pictograph
- * dataframe, which is out of scope for a smoke test. This stub just
- * stamps deterministic letters + the derived word so we can verify
- * the hydrator wires the letter pass's output through correctly.
- */
 const stubLetterDeriver: ILetterDeriver = {
   async deriveLettersForSequence(sequence: SequenceData): Promise<SequenceData> {
     const steps = sequence.steps.map((step, i) => ({
@@ -157,10 +131,6 @@ const stubLetterDeriver: ILetterDeriver = {
   },
 };
 
-// ============================================================================
-// TESTS
-// ============================================================================
-
 describe("hydrateSequence — encode/decode round-trip", () => {
   it("restores gridMode, word, and per-step letter/positions after decode", async () => {
     const encoder = new SequenceEncoder();
@@ -168,21 +138,13 @@ describe("hydrateSequence — encode/decode round-trip", () => {
 
     const original = buildDiamondSequence();
 
-    // Simulate the live path: encode → compress → decompress → decode.
-    // `decodeWithCompression` is what every resolver actually calls.
     const { encoded } = encoder.encodeWithCompression(original);
     const decoded = encoder.decodeWithCompression(encoded);
 
-    // Sanity check — the decoded sequence should have the raw motion
-    // primitives but none of the derived fields yet. If this assertion
-    // ever fails it means the encoder itself started shipping metadata,
-    // which would invalidate the derive-at-decode architecture.
     expect(decoded.word).toBe("");
     expect(decoded.steps[0]?.letter).toBeNull();
     expect(decoded.steps[0]?.startPosition).toBeNull();
 
-    // Hydrate with the real pure-client derivers (position + loop +
-    // gridMode) and a stubbed letter deriver.
     const hydrated = await hydrateSequence(decoded, {
       letterDeriver: stubLetterDeriver,
       positionDeriver,
@@ -190,31 +152,20 @@ describe("hydrateSequence — encode/decode round-trip", () => {
       gridModeDeriver,
     });
 
-    // Letter deriver populated word + per-step letters.
     expect(hydrated.word).toBe("A");
     expect(hydrated.steps[0]?.letter).toBe("A");
 
-    // Position deriver populated per-step positions.
     expect(hydrated.steps[0]?.startPosition).toBeTruthy();
     expect(hydrated.steps[0]?.endPosition).toBeTruthy();
 
-    // GridMode inferred from cardinal-only locations.
     expect(hydrated.gridMode).toBe("diamond");
 
-    // Loop detector ran (short sequence — not circular, not a LOOP type).
     expect(hydrated.isCircular).toBe(false);
 
-    // Hydration stamp so downstream reactivity can distinguish hydrated
-    // from unhydrated sequences.
     expect(hydrated.metadata._hydratedAt).toBeTypeOf("number");
   });
 
   it("preserves fractional turns (0.5) through encode → decode", () => {
-    // Regression: LPhOrr scanned 2026-04-20 rendered with arrows in the wrong
-    // tier because the decoder used parseInt(turnsCode, 10), which floors "0.5"
-    // to 0. Every anti motion with half-turns came back as 0-turn, silently.
-    // The diagnostic format (ClaudeCodeCopier) surfaced t=0 everywhere even
-    // though Firestore had turns=0.5.
     const encoder = new SequenceEncoder();
 
     const original = createSequenceData({

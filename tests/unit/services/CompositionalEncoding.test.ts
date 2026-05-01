@@ -1,14 +1,3 @@
-/**
- * Compositional Encoding Tests
- *
- * Tests the recipe encoding format (r:{tag}:{hash}:{compressed seed})
- * used for LOOP sequences to produce smaller QR codes.
- *
- * Silent bug risk: if the recipe encoding produces a wrong sequence,
- * the pictographs render incorrectly with no visible error. The QR
- * code works but shows wrong movements. Hash verification is the safety net.
- */
-
 import { describe, expect, it, beforeEach } from "vitest";
 import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 import { CompositionalDecoder } from "$lib/shared/qr/services/implementations/CompositionalDecoder";
@@ -32,10 +21,6 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-
-// ============================================================================
-// HELPERS (same pattern as SequenceEncoder.test.ts)
-// ============================================================================
 
 function makeStep(
   stepNumber: number,
@@ -169,20 +154,12 @@ function buildSimple3StepSequence(): SequenceData {
   ]);
 }
 
-// ============================================================================
-// TESTS
-// ============================================================================
-
 describe("CompositionalEncoding", () => {
   let encoder: SequenceEncoder;
 
   beforeEach(() => {
     encoder = new SequenceEncoder();
   });
-
-  // ==========================================================================
-  // CONSTANTS AND FORMAT
-  // ==========================================================================
 
   describe("LOOP_TYPE_TAGS", () => {
     it("maps all single-transform LOOP types to compact tags", () => {
@@ -213,22 +190,13 @@ describe("CompositionalEncoding", () => {
     });
   });
 
-  // ==========================================================================
-  // FLAT ENCODING REGRESSION
-  // ==========================================================================
-
   describe("encodeForQR/decodeFromQR: flat encoding still works", () => {
     it("non-LOOP sequences use flat encoding (s~z: format)", async () => {
       const seq = buildSimple3StepSequence();
       const encoded = await encoder.encodeForQR(seq);
 
-      // Should start with s~ prefix
       expect(encoded.startsWith("s~")).toBe(true);
-
-      // Should NOT use recipe encoding (non-LOOP)
       expect(encoded.startsWith("s~r:")).toBe(false);
-
-      // Should use z: compression
       expect(encoded.startsWith("s~z:")).toBe(true);
     });
 
@@ -237,10 +205,8 @@ describe("CompositionalEncoding", () => {
       const encoded = await encoder.encodeForQR(seq);
       const decoded = await encoder.decodeFromQR(encoded);
 
-      // Step count preserved
       expect(decoded.steps).toHaveLength(3);
 
-      // Motion data preserved
       expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
       expect(decoded.steps[0].motions.red!.motionType).toBe(MotionType.ANTI);
       expect(decoded.steps[0].motions.blue!.startLocation).toBe(
@@ -251,10 +217,6 @@ describe("CompositionalEncoding", () => {
       );
     });
   });
-
-  // ==========================================================================
-  // COMPOSITIONAL DECODER UNIT TESTS
-  // ==========================================================================
 
   describe("CompositionalDecoder", () => {
     it("isRecipeEncoded correctly identifies recipe strings", () => {
@@ -324,10 +286,6 @@ describe("CompositionalEncoding", () => {
     });
   });
 
-  // ==========================================================================
-  // HASH VERIFICATION
-  // ==========================================================================
-
   describe("computeRecipeHash", () => {
     it("produces an 8-character hex string", async () => {
       const hash = await computeRecipeHash("test data");
@@ -347,10 +305,6 @@ describe("CompositionalEncoding", () => {
       expect(hash1).toBe(hash2);
     });
   });
-
-  // ==========================================================================
-  // INLINE ENCODING DETECTION
-  // ==========================================================================
 
   describe("isInlineEncoded", () => {
     it("detects s~ prefix", () => {

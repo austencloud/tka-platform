@@ -176,10 +176,6 @@ describe("formation-presets: new presets", () => {
     });
   });
 
-  // ---------------------------------------------------------------------
-  // v-shape scaling: generator now supports 5-8, used to cap at 4.
-  // Guards against a regression where counts > 4 silently drop extra slots.
-  // ---------------------------------------------------------------------
   describe("v-shape scaling 5-8", () => {
     it("produces exactly `count` slots for every count in 1..8", () => {
       for (let n = 1; n <= 8; n++) {

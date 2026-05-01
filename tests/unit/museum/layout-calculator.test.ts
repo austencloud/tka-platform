@@ -1,23 +1,6 @@
-/**
- * Tests for the museum layout calculator.
- *
- * The calculator is a pure spatial algorithm — no Svelte, no Three.js, no DI.
- * Bugs here are silent: wrong slot counts, overlapping pavilions, or misplaced
- * performer platforms would break the 3D experience without any error thrown.
- *
- * Tests are organized around the three key behaviors:
- * 1. Correct pavilion selection for exhibit count ranges
- * 2. Correct slot generation on wall surfaces
- * 3. Correct spatial placement (within clearing, paired performer slots)
- */
-
 import { describe, it, expect } from "vitest";
 import { calculateMuseumLayout } from "$lib/features/museum/scenes/procedural/domain/layout-calculator";
 import type { ExhibitSlot, PavilionLayout } from "$lib/features/museum/scenes/procedural/domain/museum-types";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function wallSlotsIn(pavilion: PavilionLayout): ExhibitSlot[] {
   return pavilion.slots.filter((s) => s.type === "wall");
@@ -32,10 +15,6 @@ function distanceFromCenter(pos: { x: number; z: number }, center: { x: number; 
   const dz = pos.z - center.z;
   return Math.sqrt(dx * dx + dz * dz);
 }
-
-// ---------------------------------------------------------------------------
-// Pavilion selection by exhibit count
-// ---------------------------------------------------------------------------
 
 describe("calculateMuseumLayout — pavilion selection", () => {
   it("returns exactly 1 alcove pavilion for 1-4 exhibits", () => {
@@ -71,10 +50,6 @@ describe("calculateMuseumLayout — pavilion selection", () => {
     expect(layout50.pavilions.length).toBeGreaterThan(layout21.pavilions.length);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Slot generation on walls
-// ---------------------------------------------------------------------------
 
 describe("calculateMuseumLayout — slot generation", () => {
   it("generates at least one wall slot per pavilion", () => {
@@ -124,10 +99,6 @@ describe("calculateMuseumLayout — slot generation", () => {
     }
   });
 });
-
-// ---------------------------------------------------------------------------
-// Spatial placement
-// ---------------------------------------------------------------------------
 
 describe("calculateMuseumLayout — spatial placement", () => {
   it("pavilion positions are within the clearing radius from the clearing center", () => {

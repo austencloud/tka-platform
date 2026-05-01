@@ -1,12 +1,3 @@
-/**
- * StepDeriver Tests
- *
- * Rehydration of StepData from the compositional model (two SoloPropData +
- * StepPairingData[]) fails silently — wrong grid modes, wrong durations, and
- * off-by-one step numbers would all end up in the renderer without any error.
- * These tests pin the load-bearing paths.
- */
-
 import { describe, it, expect } from "vitest";
 import { StepDeriver } from "$lib/shared/foundation/services/implementations/StepDeriver";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -22,10 +13,6 @@ import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enum
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
 import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
 import type { StepPairingData } from "$lib/shared/foundation/domain/models/StepPairingData";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function makeStep(
   startLocation: GridLocation,
@@ -45,11 +32,6 @@ function makeStep(
   };
 }
 
-/**
- * Builds a minimal SoloPropData from a flat list of steps — just enough to
- * satisfy the interface. Tests don't exercise the hand-path fields here so
- * those are stubbed with safe defaults.
- */
 function makeSoloProp(
   steps: SoloPropStepData[],
   startLocation: GridLocation = GridLocation.NORTH,
@@ -90,16 +72,8 @@ function makePairing(overrides: Partial<StepPairingData> = {}): StepPairingData 
   };
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("StepDeriver", () => {
   const deriver = new StepDeriver();
-
-  // -------------------------------------------------------------------------
-  // deriveSteps — basic structure
-  // -------------------------------------------------------------------------
 
   describe("deriveSteps — basic structure", () => {
     it("returns one StepData per pairing", () => {
@@ -192,10 +166,6 @@ describe("StepDeriver", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // deriveSteps — duration authority
-  // -------------------------------------------------------------------------
-
   describe("deriveSteps — duration", () => {
     it("uses blue duration, ignoring red when they differ", () => {
       const blueStep = makeStep(GridLocation.NORTH, GridLocation.EAST, { duration: 3 });
@@ -221,10 +191,6 @@ describe("StepDeriver", () => {
       expect(step!.duration).toBe(2);
     });
   });
-
-  // -------------------------------------------------------------------------
-  // deriveSteps — motion rehydration
-  // -------------------------------------------------------------------------
 
   describe("deriveSteps — motion rehydration", () => {
     it("produces blue and red motions with correct colors", () => {
@@ -299,10 +265,6 @@ describe("StepDeriver", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // deriveSteps — grid mode derivation
-  // -------------------------------------------------------------------------
-
   describe("deriveSteps — grid mode derivation", () => {
     it("derives DIAMOND when all four locations are cardinal", () => {
       // N, E, S, W are all cardinal
@@ -371,16 +333,11 @@ describe("StepDeriver", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // deriveSteps — length mismatch guard
-  // -------------------------------------------------------------------------
-
   describe("deriveSteps — length mismatch guard", () => {
     it("throws when blue steps count does not match pairings count", () => {
       const blueStep = makeStep(GridLocation.NORTH, GridLocation.EAST);
       const redStep = makeStep(GridLocation.SOUTH, GridLocation.WEST);
 
-      // 2 blue steps vs 1 pairing
       const blue = makeSoloProp([blueStep, blueStep]);
       const red = makeSoloProp([redStep]);
       const pairings = [makePairing()];
@@ -388,10 +345,6 @@ describe("StepDeriver", () => {
       expect(() => deriver.deriveSteps(blue, red, pairings)).toThrow();
     });
   });
-
-  // -------------------------------------------------------------------------
-  // deriveStartPosition
-  // -------------------------------------------------------------------------
 
   describe("deriveStartPosition", () => {
     it("returns an object with isStartPosition true", () => {
@@ -464,14 +417,6 @@ describe("StepDeriver", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Float prefloat preservation — regression for the I-letter color bug
-  // where a TYPE1_HYBRID float lost its prefloatMotionType through the
-  // decompose/derive round-trip and rendered both turn glyphs in the same
-  // color (TurnColorInterpreter falls back to redMotion for both pro and
-  // anti slots when the float's actual type cannot be resolved).
-  // -------------------------------------------------------------------------
-
   describe("deriveSteps — float prefloat preservation", () => {
     it("preserves prefloatMotionType on a float blue motion", () => {
       const blueFloat = makeStep(GridLocation.SOUTH, GridLocation.EAST, {
@@ -514,7 +459,6 @@ describe("StepDeriver", () => {
 
       const steps = deriver.deriveSteps(blue, red, pairings);
 
-      // s→e is a counter-clockwise handpath. Pro spins with the path.
       expect(steps[0]!.motions.blue.prefloatRotationDirection).toBe(
         RotationDirection.COUNTER_CLOCKWISE
       );
@@ -539,7 +483,6 @@ describe("StepDeriver", () => {
 
       const steps = deriver.deriveSteps(blue, red, pairings);
 
-      // s→e ccw handpath; anti spins against it → cw.
       expect(steps[0]!.motions.blue.prefloatRotationDirection).toBe(
         RotationDirection.CLOCKWISE
       );

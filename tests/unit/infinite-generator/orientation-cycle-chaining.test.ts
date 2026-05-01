@@ -1,15 +1,3 @@
-/**
- * Orientation Cycle Chaining Verification
- *
- * Verifies that the OrientationCycleExtender correctly extends sequences
- * whose orientations don't return to start after one pass. This is the
- * core fix for the infinite generator orientation mismatch bug.
- *
- * Simulates what the infinite generator produces: LOOP sequences where
- * swapped/inverted types can end with different orientations than they started.
- * After extension, every sequence must end with the same orientations it started with.
- */
-
 import { describe, it, expect } from "vitest";
 import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
@@ -24,10 +12,6 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-
-// ============================================================================
-// HELPERS
-// ============================================================================
 
 function makeStep(
   stepNumber: number,
@@ -74,10 +58,6 @@ function assertOrientationsReturnToStart(
   expect(blueEnd, `${label}: blue end orientation`).toBe(blueStart);
   expect(redEnd, `${label}: red end orientation`).toBe(redStart);
 }
-
-// ============================================================================
-// TESTS
-// ============================================================================
 
 describe("OrientationCycleExtender for infinite generator chaining", () => {
   const detector = new OrientationCycleDetector(orientationCalculator);

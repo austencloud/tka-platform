@@ -1,17 +1,11 @@
 {
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    // ============================================================================
-    // STRICT TYPE CHECKING (2025 Best Practice: Always enable strict mode)
-    // ============================================================================
     "strict": true, // ✅ ENABLED: Full strict type checking including strictNullChecks
     "noUncheckedIndexedAccess": true, // 2026: Prevent undefined access errors
     "noImplicitOverride": true, // 2026: Explicit override declarations
     "exactOptionalPropertyTypes": false, // Disabled: Too pedantic for Svelte 5 (causes false positives with optional props)
 
-    // ============================================================================
-    // MODULE RESOLUTION (Optimized for bundler workflow)
-    // ============================================================================
     "moduleResolution": "Bundler", // 2026: Bundler mode for Vite/SvelteKit
     "module": "ESNext",
     "target": "ES2022",
@@ -19,44 +13,26 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true, // Performance: direct .ts/.tsx imports
 
-    // ============================================================================
-    // INTEROP & COMPATIBILITY
-    // ============================================================================
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true, // 2026: Required for Vite HMR
     "verbatimModuleSyntax": true, // 2026: Enforce import type for type-only imports
 
-    // ============================================================================
-    // EMIT CONFIGURATION (No emit for bundler-based projects)
-    // ============================================================================
     "noEmit": true,
     "sourceMap": true,
     "inlineSourceMap": false,
     "inlineSources": false,
 
-    // ============================================================================
-    // PERFORMANCE OPTIMIZATIONS
-    // ============================================================================
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo",
     "skipLibCheck": true, // Faster builds, skip type checking in node_modules
 
-    // ============================================================================
-    // JAVASCRIPT SUPPORT
-    // ============================================================================
     "allowJs": true,
     "checkJs": false,
 
-    // ============================================================================
-    // TYPE DEFINITIONS
-    // ============================================================================
     "types": ["vite/client", "web-bluetooth"],
 
-    // ============================================================================
-    // ADDITIONAL SAFETY (2025 Best Practices)
-    // ============================================================================
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true, // ⭐ ENABLED: Require explicit returns in all code paths
     "allowUnreachableCode": false, // Prevent dead code

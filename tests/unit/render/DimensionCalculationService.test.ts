@@ -1,15 +1,3 @@
-/**
- * DimensionCalculationService Tests
- *
- * HIGH VALUE TESTS (9/10) - Critical infrastructure that prevents:
- * - Memory crashes from invalid dimensions
- * - Broken UI from incorrect size calculations
- * - Export failures from dimension validation errors
- *
- * This service handles all dimension calculations for image rendering and export.
- * Wrong calculations = broken rendering, memory issues, or invalid exports.
- */
-
 import { beforeEach, describe, expect, it } from "vitest";
 import type { SequenceExportOptions } from "../../../src/lib/shared/render/domain/models/SequenceExportOptions";
 import { DimensionCalculator as DimensionCalculationService } from "../../../src/lib/shared/render/services/implementations/DimensionCalculator";
@@ -43,10 +31,6 @@ describe("DimensionCalculationService", () => {
       scale: 1.0,
     };
   });
-
-  // ============================================================================
-  // ADDITIONAL HEIGHTS CALCULATION (Core Desktop Compatibility)
-  // ============================================================================
 
   describe("determineAdditionalHeights - Desktop Compatibility", () => {
     it("should calculate heights for 0 beats (no word area)", () => {
@@ -181,10 +165,6 @@ describe("DimensionCalculationService", () => {
     });
   });
 
-  // ============================================================================
-  // SCALED SIZE CALCULATIONS
-  // ============================================================================
-
   describe("calculateScaledBeatSize", () => {
     it("should calculate scaled beat size correctly", () => {
       expect(service.calculateScaledBeatSize(144, 1.0)).toBe(144);
@@ -248,10 +228,6 @@ describe("DimensionCalculationService", () => {
     });
   });
 
-  // ============================================================================
-  // DIMENSION VALIDATION (Prevents Crashes)
-  // ============================================================================
-
   describe("validateDimensions", () => {
     it("should validate correct dimensions", () => {
       expect(service.validateDimensions(0, 1.0, baseOptions)).toBe(true);
@@ -290,10 +266,6 @@ describe("DimensionCalculationService", () => {
     });
   });
 
-  // ============================================================================
-  // HELPER CALCULATIONS
-  // ============================================================================
-
   describe("calculateTotalAdditionalHeight", () => {
     it("should sum top and bottom heights", () => {
       const total = service.calculateTotalAdditionalHeight(baseOptions, 3, 1.0);
@@ -320,10 +292,6 @@ describe("DimensionCalculationService", () => {
       expect(DimensionCalculationService.getBaseMargin()).toBe(50);
     });
   });
-
-  // ============================================================================
-  // WORD AREA DIMENSIONS
-  // ============================================================================
 
   describe("calculateWordAreaDimensions", () => {
     it("should calculate word area for 0 beats (no area)", () => {
@@ -371,10 +339,6 @@ describe("DimensionCalculationService", () => {
     });
   });
 
-  // ============================================================================
-  // USER INFO AREA DIMENSIONS
-  // ============================================================================
-
   describe("calculateUserInfoAreaDimensions", () => {
     it("should calculate user info area for 0 beats", () => {
       const result = service.calculateUserInfoAreaDimensions(0, 1.0, 1000);
@@ -415,10 +379,6 @@ describe("DimensionCalculationService", () => {
     });
   });
 
-  // ============================================================================
-  // DIFFICULTY BADGE CALCULATIONS
-  // ============================================================================
-
   describe("calculateDifficultyBadgeArea", () => {
     it("should calculate badge area from additional height", () => {
       const result = service.calculateDifficultyBadgeArea(300);
@@ -443,10 +403,6 @@ describe("DimensionCalculationService", () => {
       expect(result.inset).toBe(12); // floor(100 / 8)
     });
   });
-
-  // ============================================================================
-  // TEXT SCALING FACTORS (Desktop FontMarginHelper)
-  // ============================================================================
 
   describe("getTextScalingFactors", () => {
     it("should return small scaling for 0-1 beats", () => {
@@ -481,10 +437,6 @@ describe("DimensionCalculationService", () => {
       expect(factors10.marginScale).toBe(1.0);
     });
   });
-
-  // ============================================================================
-  // MEMORY USAGE VALIDATION (Prevents Crashes)
-  // ============================================================================
 
   describe("estimateMemoryUsage", () => {
     it("should calculate memory usage for standard dimensions", () => {
@@ -553,10 +505,6 @@ describe("DimensionCalculationService", () => {
       expect(result.estimatedMB).toBeCloseTo(15.26, 1);
     });
   });
-
-  // ============================================================================
-  // INTEGRATION TESTS (Real-World Scenarios)
-  // ============================================================================
 
   describe("Real-World Export Scenarios", () => {
     it("should handle typical 16-beat sequence export", () => {
@@ -628,10 +576,6 @@ describe("DimensionCalculationService", () => {
       expect(result.estimatedMB).toBeGreaterThan(1000); // Over 1GB
     });
   });
-
-  // ============================================================================
-  // EDGE CASES AND ERROR HANDLING
-  // ============================================================================
 
   describe("Edge Cases", () => {
     it("should handle zero beat count", () => {

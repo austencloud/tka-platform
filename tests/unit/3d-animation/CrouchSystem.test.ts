@@ -1,19 +1,6 @@
-/**
- * CrouchSystem tests
- *
- * Verifies the three layers that make crouching work:
- * 1. State machine: CROUCHING state reports isMoving when there's movement input
- * 2. Animation clip prep: crouch clip keeps Hips Y position (body actually drops)
- * 3. Blend weights: crouch-walk produces non-zero walk + crouch weights
- */
-
 import { describe, it, expect } from "vitest";
 import { AnimationStateMachine } from "$lib/shared/3d/services/implementations/AnimationStateMachine";
 import { LocomotionState } from "$lib/shared/3d/services/contracts/IAnimationStateMachine";
-
-// ---------------------------------------------------------------------------
-// 1. State machine: isMoving during crouch-walk
-// ---------------------------------------------------------------------------
 
 describe("AnimationStateMachine crouch transitions", () => {
   function createInput(overrides: Record<string, unknown> = {}) {
@@ -45,9 +32,7 @@ describe("AnimationStateMachine crouch transitions", () => {
 
   it("reports isMoving=true when crouching WITH movement input", () => {
     const sm = new AnimationStateMachine();
-    // Enter crouch first
     sm.update(createInput({ isCrouching: true }), 1 / 60);
-    // Now crouch + move
     const output = sm.update(
       createInput({ isCrouching: true, hasMovementInput: true, horizontalSpeed: 1.4 }),
       1 / 60,
@@ -58,9 +43,7 @@ describe("AnimationStateMachine crouch transitions", () => {
 
   it("transitions from WALKING to CROUCHING when Ctrl is pressed", () => {
     const sm = new AnimationStateMachine();
-    // Start walking
     sm.update(createInput({ hasMovementInput: true, horizontalSpeed: 3.5 }), 1 / 60);
-    // Hold Ctrl while moving
     const output = sm.update(
       createInput({ isCrouching: true, hasMovementInput: true, horizontalSpeed: 1.4 }),
       1 / 60,
@@ -71,9 +54,7 @@ describe("AnimationStateMachine crouch transitions", () => {
 
   it("returns to WALKING when Ctrl is released while moving", () => {
     const sm = new AnimationStateMachine();
-    // Enter crouch-walk
     sm.update(createInput({ isCrouching: true, hasMovementInput: true }), 1 / 60);
-    // Release Ctrl but keep moving
     const output = sm.update(
       createInput({ isCrouching: false, hasMovementInput: true, horizontalSpeed: 3.5 }),
       1 / 60,
@@ -89,14 +70,7 @@ describe("AnimationStateMachine crouch transitions", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// 2. Clip preparation: Hips position track retention
-// ---------------------------------------------------------------------------
-
 describe("prepareClip Hips position mode selection", () => {
-  // Mirrors the hipsMode logic in prepareClip().
-  // Crouch uses "pose" mode: keeps Hips position but scales cm→m (÷100).
-  // Without this, the body can't drop — bone rotations alone produce a broken pose.
   function getHipsMode(
     key: string,
     enableRootMotion: boolean,
@@ -129,12 +103,7 @@ describe("prepareClip Hips position mode selection", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// 3. Blend weights: crouch-walk drives non-zero walk weights
-// ---------------------------------------------------------------------------
-
 describe("Crouch-walk blend weights", () => {
-  // Mirrors the logic from LocomotionAnimator.applyStateWeights
   function computeWeights(
     state: LocomotionState,
     targetDirWeights: Record<string, number>,

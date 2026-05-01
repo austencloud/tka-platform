@@ -1,12 +1,3 @@
-/**
- * Reversal Pattern Transformation Tests
- *
- * The reversal transform is silent-bug-prone: a wrong symbol mapping or
- * off-by-one in the modulo wrap would produce sequences that look plausible
- * but have the wrong motion types. These tests pin the exact behavior of
- * each function before any downstream code depends on them.
- */
-
 import { describe, it, expect } from "vitest";
 import { createRequire } from "module";
 
@@ -17,10 +8,6 @@ const {
   applyReversalPattern,
   REVERSAL_PATTERNS,
 } = require("../../scripts/apply-reversal-pattern.cjs");
-
-// ---------------------------------------------------------------------------
-// applyReversalToMotion
-// ---------------------------------------------------------------------------
 
 describe("applyReversalToMotion", () => {
   it("flips pro to anti when reversed", () => {
@@ -55,10 +42,6 @@ describe("applyReversalToMotion", () => {
     expect(applyReversalToMotion("dash", false)).toBe("dash");
   });
 });
-
-// ---------------------------------------------------------------------------
-// getReversalFlagsForBeat
-// ---------------------------------------------------------------------------
 
 describe("getReversalFlagsForBeat", () => {
   it("P symbol → both hands reversed", () => {
@@ -109,10 +92,6 @@ describe("getReversalFlagsForBeat", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// applyReversalPattern — integration
-// ---------------------------------------------------------------------------
-
 function makeSteps(count: number, blueMotion = "pro", redMotion = "pro") {
   return Array.from({ length: count }, (_, i) => ({
     stepNumber: i,
@@ -150,10 +129,6 @@ describe("applyReversalPattern", () => {
 
   it("alternating pattern (RBRB) — red flips on even beats, blue on odd", () => {
     // Pattern: R B R B R B R B
-    // beat 0: R → red reversed, blue not
-    // beat 1: B → blue reversed, red not
-    // beat 2: R → red reversed, blue not
-    // beat 3: B → blue reversed, red not
     const steps = makeSteps(4, "pro", "pro");
     applyReversalPattern(steps, "alternating");
 
@@ -211,10 +186,6 @@ describe("applyReversalPattern", () => {
     expect(result).toBe(steps);
   });
 });
-
-// ---------------------------------------------------------------------------
-// REVERSAL_PATTERNS data integrity
-// ---------------------------------------------------------------------------
 
 describe("REVERSAL_PATTERNS", () => {
   it("contains all 15 expected patterns", () => {

@@ -1,18 +1,3 @@
-/**
- * SequenceContentHasher Tests
- *
- * HIGH VALUE: The content hash is the identity of a sequence variation.
- * If the hash is wrong, the library will silently duplicate or merge
- * sequences that shouldn't be merged.
- *
- * These tests verify:
- * 1. Determinism — same input always produces the same hash
- * 2. Content-sensitivity — motion changes change the hash
- * 3. Metadata-insensitivity — name/tags/thumbnails don't change the hash
- * 4. Order-preservation — step order matters
- * 5. Grid-mode-sensitivity — DIAMOND vs BOX are different variations
- */
-
 import { describe, it, expect } from "vitest";
 import { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
 import {
@@ -27,10 +12,6 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function makeStep(overrides: Partial<StepData> = {}): StepData {
   const base: StepData = {
@@ -72,10 +53,6 @@ function makeStep(overrides: Partial<StepData> = {}): StepData {
   };
   return base;
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("SequenceContentHasher", () => {
   const hasher = new SequenceContentHasher();

@@ -11,10 +11,6 @@ import { defineConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { visualizer } from "rollup-plugin-visualizer";
 
-// ============================================================================
-// CUSTOM PLUGINS
-// ============================================================================
-
 /**
  * Serves PNG files from desktop directory
  * 2025: Added error handling and proper caching
@@ -591,14 +587,7 @@ const packageJson = JSON.parse(
   fs.readFileSync(path.resolve(dirname, "package.json"), "utf-8")
 );
 
-// ============================================================================
-// VITE 6.0 CONFIGURATION (2025 - Optimized for SvelteKit 2)
-// ============================================================================
-
 export default defineConfig({
-  // ============================================================================
-  // ENVIRONMENT & DEFINES
-  // ============================================================================
   define: {
     __DEFINES__: JSON.stringify({}),
     __APP_VERSION__: JSON.stringify(packageJson.version),
@@ -638,10 +627,8 @@ export default defineConfig({
         injectCss: true,
       },
     }),
-    // ============================================================================
     // PWA CONFIGURATION (Google Play Store / Installable Web App)
     // Enabled by default for TKA Composer. Set DISABLE_PWA=true for landing page builds.
-    // ============================================================================
     process.env.DISABLE_PWA !== "true" &&
       SvelteKitPWA({
       registerType: "autoUpdate",

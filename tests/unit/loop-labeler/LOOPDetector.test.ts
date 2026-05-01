@@ -1,30 +1,7 @@
-/**
- * LOOPDetector — transformationIntervals rotation slice size.
- *
- * The detector owns the decision about whether a rotated LOOP rotates every
- * half (180°, "halved") or every quarter (90°, "quartered"). The
- * slice-aware icon strip ("fa-rotate" vs "fa-arrows-spin") reads this field
- * directly, so any regression here silently breaks the icon picker. These
- * tests lock the halved/quartered output for each path.
- */
-
 import { describe, it, expect } from "vitest";
 import { loopDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
 import type { SequenceEntry, RawStepData } from "$lib/features/loop-labeler/domain/models/sequence-models";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-
-// ============================================================================
-// TEST FIXTURES
-// ============================================================================
-//
-// We build SequenceEntry objects with just enough data for the detector's
-// rotation-recognition logic to fire. Every beat includes both hands'
-// start/end locations and motion types because the rotation comparer
-// reads all four. Locations use lowercase compass bearings (n/s/e/w).
-//
-// The detector's isCircular check compares the start position's endPos (beat
-// 0) with the last beat's endPos. We line those up so circularity passes
-// without needing real loopability analysis.
 
 interface MotionAttrs {
   startLoc: string;
@@ -164,10 +141,6 @@ function quarteredFixture(): SequenceEntry {
   ]);
 }
 
-// ============================================================================
-// TESTS
-// ============================================================================
-
 describe("LOOPDetector.detectLOOP transformationIntervals", () => {
   it("marks a 180° rotation LOOP as halved in transformationIntervals.rotation", () => {
     const result = loopDetector.detectLOOP(halvedFixture());
@@ -205,14 +178,6 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     expect(result.isCircular).toBe(true);
     expect(result.isFreeform).toBe(false);
   });
-
-  // ==========================================================================
-  // ORIENTATION PASS (Phase 3)
-  // ==========================================================================
-  //
-  // These tests lock the orientation detection behavior. The detector runs a
-  // location pass AND an orientation pass; the resulting period is max of the
-  // two, and `componentsDetailed` carries per-component domain annotations.
 
   it("detects a period-4 orientation rotation (per-pass 90° delta)", () => {
     // 2-beat sequence where blue + red both advance by one quarter turn per
@@ -410,15 +375,6 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     // No rotation fired, so rotation interval should be absent.
     expect(result.transformationIntervals.rotation).toBeUndefined();
   });
-
-  // ==========================================================================
-  // COMPOUND PRIMITIVE EXTRACTION (rotated + swapped + inverted)
-  // ==========================================================================
-  //
-  // EΨDΨDΨEΨ-style sequences: 8 beats where the halved comparison produces
-  // rotated_180_swapped_inverted. Quartered detection is rejected because
-  // the ABBA motion-type pattern fails the quarteredMotionsConsistent guard.
-  // All 3 primitives (rotated, swapped, inverted) must surface and period = 2.
 
   it("detects all 3 primitives (rotated, swapped, inverted) for an ABBA rotated+swapped+inverted sequence with period 2", () => {
     // 8-beat fixture where:

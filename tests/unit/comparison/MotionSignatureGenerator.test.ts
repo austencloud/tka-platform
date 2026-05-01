@@ -1,15 +1,3 @@
-/**
- * MotionSignatureGenerator Tests
- *
- * HIGH VALUE TESTS (8/10) - Core comparison logic that prevents:
- * - False equivalences (saying different motions are the same)
- * - Missed equivalences (saying equivalent motions are different)
- * - Wrong similarity scores
- *
- * This service generates rotation-invariant signatures for motions.
- * Bugs here cascade into all sequence comparison features.
- */
-
 import { beforeEach, describe, expect, it } from "vitest";
 import { MotionSignatureGenerator } from "../../../src/lib/shared/comparison/services/implementations/MotionSignatureGenerator";
 import { createMotionData } from "../../../src/lib/shared/pictograph/shared/domain/models/MotionData";
@@ -29,10 +17,6 @@ describe("MotionSignatureGenerator", () => {
   beforeEach(() => {
     generator = new MotionSignatureGenerator();
   });
-
-  // ============================================================================
-  // SIGNATURE GENERATION
-  // ============================================================================
 
   describe("generateSignature", () => {
     it("should generate signature with correct motion type", () => {
@@ -138,10 +122,6 @@ describe("MotionSignatureGenerator", () => {
       expect(signature.locationDelta.direction).toBe(HandPath.STATIC);
     });
   });
-
-  // ============================================================================
-  // SIGNATURE MATCHING
-  // ============================================================================
 
   describe("signaturesMatch", () => {
     it("should return true for identical signatures", () => {
@@ -266,10 +246,6 @@ describe("MotionSignatureGenerator", () => {
     });
   });
 
-  // ============================================================================
-  // SIMILARITY SCORING
-  // ============================================================================
-
   describe("compareSignatures", () => {
     it("should return similarity 1.0 for identical signatures", () => {
       const motion = createMotionData({
@@ -367,10 +343,6 @@ describe("MotionSignatureGenerator", () => {
       expect(result.similarity).toBeLessThan(0.5);
     });
   });
-
-  // ============================================================================
-  // HASHING
-  // ============================================================================
 
   describe("hashSignature", () => {
     it("should generate same hash for identical signatures", () => {

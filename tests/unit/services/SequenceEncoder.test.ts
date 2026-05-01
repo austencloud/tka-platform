@@ -1,14 +1,3 @@
-/**
- * SequenceEncoder Tests
- *
- * Tests encode/decode round-trip fidelity for self-contained sequence URLs.
- * These are "silent bug" tests: if motion data gets corrupted during
- * encoding or decoding, the pictographs render incorrectly without any
- * visible error. The URL looks fine but produces wrong sequences.
- *
- * HIGH VALUE: Every shared URL depends on this encoding being lossless.
- */
-
 import { describe, expect, it, beforeEach } from "vitest";
 import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 import {
@@ -27,10 +16,6 @@ import {
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-
-// ============================================================================
-// HELPERS
-// ============================================================================
 
 function makeStep(
   stepNumber: number,
@@ -61,7 +46,6 @@ function makeStartPosition(
   return makeStep(0, blue, red);
 }
 
-/** Build a minimal but realistic sequence for testing */
 function buildTestSequence(steps: StepData[]): SequenceData {
   const startPos = steps.find((s) => s.stepNumber === 0);
   const actualSteps = steps.filter((s) => s.stepNumber > 0);
@@ -83,20 +67,12 @@ function buildTestSequence(steps: StepData[]): SequenceData {
   });
 }
 
-// ============================================================================
-// TESTS
-// ============================================================================
-
 describe("SequenceEncoder", () => {
   let encoder: SequenceEncoder;
 
   beforeEach(() => {
     encoder = new SequenceEncoder();
   });
-
-  // ==========================================================================
-  // ROUND-TRIP FIDELITY
-  // ==========================================================================
 
   describe("encode/decode round-trip", () => {
     it("preserves all motion fields through uncompressed round-trip", () => {
@@ -151,10 +127,8 @@ describe("SequenceEncoder", () => {
       const encoded = encoder.encode(seq);
       const decoded = encoder.decode(encoded);
 
-      // Verify step count
       expect(decoded.steps).toHaveLength(1);
 
-      // Verify blue motion
       const blueMotion = decoded.steps[0].motions.blue!;
       expect(blueMotion.motionType).toBe(MotionType.PRO);
       expect(blueMotion.rotationDirection).toBe(RotationDirection.CLOCKWISE);
@@ -165,7 +139,6 @@ describe("SequenceEncoder", () => {
       expect(blueMotion.turns).toBe(2);
       expect(blueMotion.propType).toBe(PropType.STAFF);
 
-      // Verify red motion
       const redMotion = decoded.steps[0].motions.red!;
       expect(redMotion.motionType).toBe(MotionType.ANTI);
       expect(redMotion.rotationDirection).toBe(
@@ -324,12 +297,10 @@ describe("SequenceEncoder", () => {
 
       expect(decoded.steps).toHaveLength(3);
 
-      // Verify each step retained its motion type
       expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
       expect(decoded.steps[1].motions.blue!.motionType).toBe(MotionType.ANTI);
       expect(decoded.steps[2].motions.blue!.motionType).toBe(MotionType.STATIC);
 
-      // Verify locations chain correctly
       expect(decoded.steps[0].motions.blue!.startLocation).toBe(
         GridLocation.NORTH
       );
@@ -403,7 +374,6 @@ describe("SequenceEncoder", () => {
         GridLocation.NORTHWEST,
       ];
 
-      // Test each location as a start location
       for (const loc of locations) {
         const step = makeStep(
           1,
@@ -504,7 +474,6 @@ describe("SequenceEncoder", () => {
     });
 
     it("preserves all prop types through round-trip", () => {
-      // Test a representative selection of prop types
       const propTypes = [
         PropType.STAFF,
         PropType.CLUB,
@@ -561,10 +530,6 @@ describe("SequenceEncoder", () => {
     });
   });
 
-  // ==========================================================================
-  // ROUTE ID PARSING
-  // ==========================================================================
-
   describe("parseSequenceRouteId", () => {
     it("detects compressed encoded sequences (z: prefix)", () => {
       const result = encoder.parseSequenceRouteId("z:CoCkBEjA2oBh");
@@ -606,10 +571,6 @@ describe("SequenceEncoder", () => {
       expect(result.legacyId).toBeNull();
     });
   });
-
-  // ==========================================================================
-  // generateSequenceRoutePath
-  // ==========================================================================
 
   describe("generateSequenceRoutePath", () => {
     it("generates a path starting with /sequence/", () => {
@@ -693,14 +654,12 @@ describe("SequenceEncoder", () => {
 
       const path = encoder.generateSequenceRoutePath(seq);
 
-      // Extract the ID portion (everything after /sequence/)
       const id = path.replace("/sequence/", "");
       const parsed = encoder.parseSequenceRouteId(id);
 
       expect(parsed.encoded).not.toBeNull();
       expect(parsed.legacyId).toBeNull();
 
-      // Decode and verify motion data survived
       const decoded = encoder.decodeWithCompression(parsed.encoded!);
       expect(decoded.steps).toHaveLength(1);
       expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
@@ -712,10 +671,6 @@ describe("SequenceEncoder", () => {
       );
     });
   });
-
-  // ==========================================================================
-  // EDGE CASES
-  // ==========================================================================
 
   describe("edge cases", () => {
     it("throws on empty input", () => {
@@ -743,7 +698,6 @@ describe("SequenceEncoder", () => {
       const encoded = encoder.encode(seq);
       const decoded = encoder.decode(encoded);
 
-      // Should have start position but no steps
       expect(decoded.steps).toHaveLength(0);
       expect(decoded.startPosition).toBeDefined();
     });
@@ -793,7 +747,6 @@ describe("SequenceEncoder", () => {
       const { encoded: compressedStr } = encoder.encodeWithCompression(seq);
       const compressed = encoder.decodeWithCompression(compressedStr);
 
-      // Both should produce identical motion data
       const uBlue = uncompressed.steps[0].motions.blue!;
       const cBlue = compressed.steps[0].motions.blue!;
 

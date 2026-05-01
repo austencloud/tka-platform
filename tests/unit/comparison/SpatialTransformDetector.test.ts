@@ -1,14 +1,3 @@
-/**
- * SpatialTransformDetector Tests
- *
- * HIGH VALUE TESTS (8/10) - Critical transform detection that prevents:
- * - Missing equivalences when sequences are spatially rotated
- * - Wrong rotation amounts reported
- * - Incorrect grid mode toggle detection
- *
- * This service detects spatial rotations (0-315° in 45° increments).
- */
-
 import { beforeEach, describe, expect, it } from "vitest";
 import { SpatialTransformDetector } from "../../../src/lib/shared/comparison/services/implementations/SpatialTransformDetector";
 import { GridLocation } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -19,10 +8,6 @@ describe("SpatialTransformDetector", () => {
   beforeEach(() => {
     detector = new SpatialTransformDetector();
   });
-
-  // ============================================================================
-  // LOCATION ROTATION
-  // ============================================================================
 
   describe("rotateLocation", () => {
     it("should not change location for 0 steps", () => {
@@ -76,10 +61,6 @@ describe("SpatialTransformDetector", () => {
     });
   });
 
-  // ============================================================================
-  // ANGULAR DISTANCE
-  // ============================================================================
-
   describe("getAngularDistance", () => {
     it("should return 0 for same location", () => {
       expect(detector.getAngularDistance(GridLocation.NORTH, GridLocation.NORTH)).toBe(0);
@@ -111,10 +92,6 @@ describe("SpatialTransformDetector", () => {
       expect(detector.getAngularDistance(GridLocation.NORTH, GridLocation.NORTHWEST)).toBe(1);
     });
   });
-
-  // ============================================================================
-  // GET ALL TRANSFORMS
-  // ============================================================================
 
   describe("getAllTransforms", () => {
     it("should return 8 transforms (0° to 315°)", () => {

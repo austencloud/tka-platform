@@ -1,12 +1,3 @@
-/**
- * HandPathDataBuilder Tests
- *
- * These tests cover two things: parsing the hand-path ID string into typed
- * GridLocation arrays, and converting a trace into PictographData beats.
- * Bugs here are silent — a wrong motion type or handPath direction would
- * render the wrong arrow on the card without throwing.
- */
-
 import { describe, it, expect } from "vitest";
 import { HandPathDataBuilder } from "$lib/features/choreo-card/services/implementations/HandPathDataBuilder";
 import {
@@ -20,19 +11,11 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
 // Standard 9-location trace (8 beats) used across multiple tests.
 // Blue: n→e→e→s→s→w→w→n→n  (clockwise around the diamond, back to start)
 // Red:  s→w→w→n→n→e→e→s→s  (same motion starting from south)
 const STANDARD_ID =
   "n→e→e→s→s→w→w→n→n|s→w→w→n→n→e→e→s→s";
-
-// ============================================================================
-// PARSE HAND PATH ID
-// ============================================================================
 
 describe("HandPathDataBuilder.parseHandPathId", () => {
   const builder = new HandPathDataBuilder();
@@ -101,10 +84,6 @@ describe("HandPathDataBuilder.parseHandPathId", () => {
     expect(() => builder.parseHandPathId("n→e→s")).toThrow();
   });
 });
-
-// ============================================================================
-// BUILD FROM TRACE
-// ============================================================================
 
 describe("HandPathDataBuilder.buildFromTrace", () => {
   const builder = new HandPathDataBuilder();
@@ -288,10 +267,6 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
     }
   });
 });
-
-// ============================================================================
-// BUILD FROM HAND PATH ID (integration)
-// ============================================================================
 
 describe("HandPathDataBuilder.buildFromHandPathId", () => {
   const builder = new HandPathDataBuilder();

@@ -1,16 +1,3 @@
-/**
- * CandidateGenerator tests
- *
- * Covers the three things the generator is supposed to guarantee:
- *   1. Diverse generation returns exactly 6 distinct candidates.
- *   2. Prior-label mode puts the prior at candidate 0 with zero evals
- *      spent and a matching stance (not a re-optimized version).
- *   3. Refinement mode returns 6 candidates all within a tight
- *      neighborhood of the picked stance.
- *   4. Dedup + backfill keeps the output count stable even if seeds
- *      descend into the same basin.
- */
-
 import { describe, it, expect } from "vitest";
 import { CandidateGenerator } from "$lib/features/lab/tabs/collision-lab/services/implementations/CandidateGenerator";
 import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceOptimizer";
@@ -29,10 +16,6 @@ import type {
 } from "$lib/features/lab/tabs/collision-lab/domain/types";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 import { Vector3 } from "three";
-
-// ----------------------------------------------------------------------
-// Fixtures
-// ----------------------------------------------------------------------
 
 const BOUNDS: OptimizerBounds = {
   footOffsetX: { min: STANCE_BOUNDS.footOffset.min, max: STANCE_BOUNDS.footOffset.max },
@@ -54,12 +37,6 @@ function makeSetup() {
   return { simulator, optimizer, generator };
 }
 
-/**
- * Minimal pose + optimizer input with one prop on the wall plane at
- * the N (north) grid point and the other on the floor plane also at N.
- * Cross-plane, real-world pose — uses synthetic positions so the test
- * doesn't depend on the grid-mapper wiring.
- */
 function crossPlanePose(): { pose: PoseDefinition; input: OptimizerInput } {
   const pose: PoseDefinition = {
     id: "test-wNi-fNi",
@@ -82,10 +59,6 @@ function crossPlanePose(): { pose: PoseDefinition; input: OptimizerInput } {
   };
   return { pose, input };
 }
-
-// ----------------------------------------------------------------------
-// Tests
-// ----------------------------------------------------------------------
 
 describe("CandidateGenerator.generateDiverse", () => {
   it("returns exactly 6 candidates when no prior label exists", () => {
@@ -129,8 +102,6 @@ describe("CandidateGenerator.generateDiverse", () => {
 
     const set = generator.generateDiverse(pose, input, BOUNDS);
 
-    // For every pair, at least one axis should differ by more than its
-    // dedup tolerance (15° yaw, 5 cm foot Euclidean, 5° pitch).
     for (let i = 0; i < set.candidates.length; i++) {
       for (let j = i + 1; j < set.candidates.length; j++) {
         const a = set.candidates[i]!.stance;
@@ -196,8 +167,6 @@ describe("CandidateGenerator.generateDiverse", () => {
     expect(set.candidates.length).toBe(6);
     expect(set.candidates[0]!.stance).toEqual(prior);
     expect(set.candidates[0]!.label).toBe("Previously saved");
-    // Remaining 5 are fresh seeds — their stances should not collide
-    // with the prior (different enough to be worth showing).
   });
 });
 
@@ -230,11 +199,6 @@ describe("CandidateGenerator.generateRefinements", () => {
 
     const set = generator.generateRefinements(pose, input, BOUNDS, picked, []);
 
-    // A "small neighborhood" is fuzzy because the optimizer may push a
-    // perturbation back toward a nearby basin. We allow up to 25° yaw,
-    // 15 cm foot offset, and any pitch — these are generous bounds that
-    // still catch the case where a refinement lands in a completely
-    // different yaw region (which would be a bug).
     for (const c of set.candidates) {
       const dYaw = Math.abs(wrapAngle(c.stance.rootYawRad - picked.rootYawRad));
       const dFoot = Math.hypot(
@@ -279,15 +243,11 @@ describe("CandidateGenerator.generateRefinements", () => {
     );
 
     expect(set.history.length).toBe(priorStances.length + set.candidates.length);
-    // First entries match the previous history exactly.
     expect(set.history[0]).toEqual(priorStances[0]);
     expect(set.history[1]).toEqual(priorStances[1]);
   });
 });
 
-// ----------------------------------------------------------------------
-// Local helper matching the generator's wrap convention.
-// ----------------------------------------------------------------------
 function wrapAngle(angle: number): number {
   let a = angle;
   while (a > Math.PI) a -= 2 * Math.PI;

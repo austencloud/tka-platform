@@ -1,12 +1,3 @@
-/**
- * SequenceDecomposer Tests
- *
- * Decomposing a SequenceData into its compositional parts (two SoloPropData +
- * StepPairingData[]) is the inverse of what StepDeriver does. If either
- * direction loses information, round-trip verification of rendered sequences
- * will silently fail. The round-trip test is the load-bearing case.
- */
-
 import { describe, it, expect } from "vitest";
 import { SequenceDecomposer } from "$lib/shared/foundation/services/implementations/SequenceDecomposer";
 import { SoloPropFactory } from "$lib/shared/foundation/services/implementations/SoloPropFactory";
@@ -29,10 +20,6 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-
-// ---------------------------------------------------------------------------
-// Test infrastructure
-// ---------------------------------------------------------------------------
 
 function makeMotion(
   startLocation: GridLocation,
@@ -177,18 +164,10 @@ function createTestSequence() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Service setup
-// ---------------------------------------------------------------------------
-
 const hasher = new ContentHasher();
 const handPathFactory = new HandPathFactory(hasher);
 const soloPropFactory = new SoloPropFactory(handPathFactory, hasher);
 const decomposer = new SequenceDecomposer(soloPropFactory);
-
-// ---------------------------------------------------------------------------
-// extractBlueSoloProp
-// ---------------------------------------------------------------------------
 
 describe("SequenceDecomposer — extractBlueSoloProp", () => {
   it("returns a SoloPropData with one step per sequence step", () => {
@@ -252,10 +231,6 @@ describe("SequenceDecomposer — extractBlueSoloProp", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// extractRedSoloProp
-// ---------------------------------------------------------------------------
-
 describe("SequenceDecomposer — extractRedSoloProp", () => {
   it("returns a SoloPropData with one step per sequence step", () => {
     const sequence = createTestSequence();
@@ -284,10 +259,6 @@ describe("SequenceDecomposer — extractRedSoloProp", () => {
     expect(red.steps[1]?.endLocation).toBe(GridLocation.NORTH);
   });
 });
-
-// ---------------------------------------------------------------------------
-// extractStepPairings
-// ---------------------------------------------------------------------------
 
 describe("SequenceDecomposer — extractStepPairings", () => {
   it("returns one pairing per step", () => {
@@ -331,16 +302,6 @@ describe("SequenceDecomposer — extractStepPairings", () => {
     expect(pairings[0]?.letter).toBeNull();
   });
 });
-
-// ---------------------------------------------------------------------------
-// Round-trip: decompose → StepDeriver.deriveSteps → verify
-//
-// This is the load-bearing test. It proves that decomposing a SequenceData
-// and then re-deriving steps from the compositional parts yields StepData
-// that is domain-equivalent to the original. Rendering fields (propType,
-// arrowLocation, placement data) will differ — that's expected — but all
-// motion geometry and pairing metadata must be preserved exactly.
-// ---------------------------------------------------------------------------
 
 describe("SequenceDecomposer — round-trip", () => {
   it("decompose then deriveSteps produces domain-equivalent steps", () => {

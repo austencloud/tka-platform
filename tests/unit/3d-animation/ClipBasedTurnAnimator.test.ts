@@ -3,11 +3,6 @@ import { Quaternion, Vector3, Euler } from "three";
 import { ClipBasedTurnAnimator } from "$lib/shared/3d/services/implementations/ClipBasedTurnAnimator";
 import type { BakedTurnClip } from "$lib/shared/3d/services/implementations/ClipBasedTurnAnimator";
 
-// ---------------------------------------------------------------------------
-// Synthetic clip builder
-// Creates a clip where the Hips bone rotates linearly from 0 to angleDeg
-// around the Z axis (Mixamo GLB convention: Z = yaw).
-// ---------------------------------------------------------------------------
 function buildSyntheticClip(
   clipName: string,
   angleDeg: number,
@@ -21,7 +16,6 @@ function buildSyntheticClip(
   for (let i = 0; i < frameCount; i++) {
     const t = i / (frameCount - 1);
     const yaw = angleRad * t;
-    // Mixamo GLB: rotation.z = yaw
     const q = new Quaternion().setFromEuler(new Euler(0, 0, yaw));
     hipsFrames.push(q);
     hipsPositions.push(new Vector3(0, 0, 0));
@@ -64,15 +58,10 @@ function buildSyntheticClip(
   };
 }
 
-// Helper: extract yaw (Z euler) from a Quaternion
 function yawFromQuat(q: Quaternion): number {
   const e = new Euler().setFromQuaternion(q, "XYZ");
   return e.z;
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("ClipBasedTurnAnimator", () => {
   let animator: ClipBasedTurnAnimator;
@@ -86,10 +75,6 @@ describe("ClipBasedTurnAnimator", () => {
       buildSyntheticClip("turn-right-180", -180, 39),
     ]);
   });
-
-  // =========================================================================
-  // computeShortestAngle
-  // =========================================================================
 
   describe("computeShortestAngle", () => {
     it("returns positive value for a CCW (left) turn: 0 → π/2", () => {
@@ -106,7 +91,6 @@ describe("ClipBasedTurnAnimator", () => {
       const from = (170 * Math.PI) / 180;
       const to = (-170 * Math.PI) / 180;
       const angle = animator.computeShortestAngle(from, to);
-      // Shortest path is +20° CCW, not −340° CW
       expect(angle).toBeCloseTo((20 * Math.PI) / 180, 5);
     });
 
@@ -115,10 +99,6 @@ describe("ClipBasedTurnAnimator", () => {
       expect(angle).toBeCloseTo(0, 10);
     });
   });
-
-  // =========================================================================
-  // sample — clip selection
-  // =========================================================================
 
   describe("sample — clip selection", () => {
     it("selects turn-left-90 for +π/2 heading change", () => {
@@ -141,10 +121,6 @@ describe("ClipBasedTurnAnimator", () => {
       expect(result.clipName).toBe("turn-right-180");
     });
   });
-
-  // =========================================================================
-  // sample — phase interpolation
-  // =========================================================================
 
   describe("sample — phase interpolation", () => {
     it("phase 0 → yawDelta ≈ 0", () => {
@@ -175,10 +151,6 @@ describe("ClipBasedTurnAnimator", () => {
     });
   });
 
-  // =========================================================================
-  // sample — bone rotations
-  // =========================================================================
-
   describe("sample — bone rotations", () => {
     it("includes Hips rotation at sampled phase with correct Z euler", () => {
       const result = animator.sample({ fromHeading: 0, toHeading: Math.PI / 2, phase: 0.5 });
@@ -186,7 +158,6 @@ describe("ClipBasedTurnAnimator", () => {
       expect(hips).toBeDefined();
       if (hips) {
         const yaw = yawFromQuat(hips);
-        // At phase 0.5 we expect roughly half the total angle
         expect(yaw).toBeCloseTo(Math.PI / 4, 2);
       }
     });
@@ -200,13 +171,8 @@ describe("ClipBasedTurnAnimator", () => {
     });
   });
 
-  // =========================================================================
-  // sample — contact curves
-  // =========================================================================
-
   describe("sample — contact curves", () => {
     it("phase 0.25 → left foot planted, right foot not", () => {
-      // Our synthetic clip: left = 1 for t < 0.5, right = 1 for t >= 0.5
       const result = animator.sample({ fromHeading: 0, toHeading: Math.PI / 2, phase: 0.25 });
       expect(result.leftFootContact).toBeGreaterThan(0.5);
       expect(result.rightFootContact).toBeLessThan(0.5);
@@ -219,17 +185,12 @@ describe("ClipBasedTurnAnimator", () => {
     });
   });
 
-  // =========================================================================
-  // sample — linear fallback (unsupported angles)
-  // =========================================================================
-
   describe("sample — linear fallback", () => {
     it("45° change → returns linear yawDelta, empty clipName, empty boneRotations", () => {
       const angleDeg = 45;
       const angleRad = (angleDeg * Math.PI) / 180;
       const result = animator.sample({ fromHeading: 0, toHeading: angleRad, phase: 0.5 });
 
-      // yawDelta should be linear: phase * totalAngle
       expect(result.yawDelta).toBeCloseTo(angleRad * 0.5, 3);
       expect(result.clipName).toBe("");
       expect(result.boneRotations.size).toBe(0);
@@ -245,10 +206,6 @@ describe("ClipBasedTurnAnimator", () => {
       expect(result.boneRotations.size).toBe(0);
     });
   });
-
-  // =========================================================================
-  // isReady
-  // =========================================================================
 
   describe("isReady", () => {
     it("returns true after initializeFromData", () => {

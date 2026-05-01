@@ -1,15 +1,3 @@
-/**
- * GridPositionDeriver Tests
- *
- * HIGH VALUE TESTS (9/10) - Critical domain logic that prevents:
- * - Wrong positions shown in pictographs
- * - Incorrect hand location mappings
- * - Invalid position derivations
- *
- * This service maps between grid positions (alpha1, beta2, etc.) and hand location pairs.
- * Wrong mappings = wrong movements shown to users = catastrophic UX failure.
- */
-
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   GridLocation,
@@ -23,10 +11,6 @@ describe("GridPositionDeriver", () => {
   beforeEach(() => {
     service = new GridPositionDeriver();
   });
-
-  // ============================================================================
-  // ALPHA POSITIONS - Opposite/Inverted Directions (8 positions)
-  // ============================================================================
 
   describe("Alpha Positions - Bidirectional Mapping", () => {
     it("should map ALPHA1: SOUTH,NORTH ↔ alpha1", () => {
@@ -144,10 +128,6 @@ describe("GridPositionDeriver", () => {
     });
   });
 
-  // ============================================================================
-  // BETA POSITIONS - Same Direction (8 positions)
-  // ============================================================================
-
   describe("Beta Positions - Bidirectional Mapping", () => {
     it("should map BETA1: NORTH,NORTH ↔ beta1", () => {
       const [blue, red] = service.getGridLocationsFromPosition(
@@ -261,10 +241,6 @@ describe("GridPositionDeriver", () => {
       expect(position).toBe(GridPosition.BETA8);
     });
   });
-
-  // ============================================================================
-  // GAMMA POSITIONS - Mixed/Varied Combinations (16 positions)
-  // ============================================================================
 
   describe("Gamma Positions (1-8) - Bidirectional Mapping", () => {
     it("should map GAMMA1: WEST,NORTH ↔ gamma1", () => {
@@ -494,10 +470,6 @@ describe("GridPositionDeriver", () => {
     });
   });
 
-  // ============================================================================
-  // ZETA POSITIONS - 135° Obtuse Angle (16 positions, skewed mode)
-  // ============================================================================
-
   describe("Zeta Positions (1-8) - 135° CCW offset", () => {
     it("should map ZETA1: SOUTHWEST,NORTH ↔ zeta1", () => {
       const [blue, red] = service.getGridLocationsFromPosition(
@@ -725,10 +697,6 @@ describe("GridPositionDeriver", () => {
       expect(position).toBe(GridPosition.ZETA16);
     });
   });
-
-  // ============================================================================
-  // ETA POSITIONS - 45° Acute Angle (16 positions, skewed mode)
-  // ============================================================================
 
   describe("Eta Positions (1-8) - 45° CCW offset", () => {
     it("should map ETA1: NORTHWEST,NORTH ↔ eta1", () => {
@@ -958,10 +926,6 @@ describe("GridPositionDeriver", () => {
     });
   });
 
-  // ============================================================================
-  // ERROR HANDLING - Invalid Inputs
-  // ============================================================================
-
   describe("Error Handling", () => {
     it("should throw error for invalid position in getGridLocationsFromPosition", () => {
       const invalidPosition = "invalid_position" as GridPosition;
@@ -990,10 +954,6 @@ describe("GridPositionDeriver", () => {
       ).toBe(GridPosition.ZETA10);
     });
   });
-
-  // ============================================================================
-  // COMPREHENSIVE COVERAGE - All 64 Positions
-  // ============================================================================
 
   describe("Complete Position Coverage", () => {
     it("should have exactly 64 total positions mapped", () => {
