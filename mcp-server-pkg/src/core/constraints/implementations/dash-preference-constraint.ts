@@ -140,9 +140,6 @@ export function preferDashes(): DashPreferenceConstraint {
   return new DashPreferenceConstraint("prefer");
 }
 
-// =============================================================================
-// DASH AVOIDANCE CONSTRAINT (Minimize Dashes)
-// =============================================================================
 
 export type DashAvoidanceMode = "minimize" | "avoid" | "forbid";
 

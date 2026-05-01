@@ -19,9 +19,6 @@ import type {
 
 export type ReversalMode = "every" | "minimize" | "count";
 
-/**
- * Check if a rotation direction change represents a reversal.
- */
 function isReversal(prev: string, current: string): boolean {
   if (
     prev === "no_rot" ||

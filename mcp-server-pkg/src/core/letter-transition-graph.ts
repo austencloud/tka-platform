@@ -23,7 +23,6 @@ export class LetterTransitionGraph {
   }
 
   /**
-   * Initialize the graph by loading letter mappings.
    * Returns a Promise for proper async handling.
    */
   async initializeAsync(): Promise<void> {
@@ -110,7 +109,6 @@ export function getLetterTransitionGraph(): LetterTransitionGraph {
 }
 
 /**
- * Ensure the transition graph is initialized before use.
  * Call this at MCP server startup.
  */
 export async function ensureTransitionGraphInitialized(): Promise<LetterTransitionGraph> {

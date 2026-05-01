@@ -12,6 +12,7 @@
 
 import { getLetterTransitionGraph } from "./letter-transition-graph.js";
 import { recalculateAllOrientations } from "./orientation-propagation.js";
+import { Period } from "@tka/sequence-engine/loop";
 
 interface MotionData {
   color: string;
@@ -97,7 +98,6 @@ export interface BridgeInfo {
 /**
  * Expand letters with bridge letters where direct transitions aren't possible.
  * Uses BFS via LetterTransitionGraph to find shortest bridge paths.
- *
  * @param letters - The letters to expand
  * @param bridgeSelections - Optional map of transition index to preferred bridge index
  * @returns Object with expanded letters and bridge info
@@ -178,7 +178,6 @@ function expandLettersWithBridges(
  * Build a valid sequence from a list of letters.
  * Uses random selection with backtracking if needed.
  * Automatically inserts bridge letters and recalculates orientations.
- *
  * @param letters - Array of letters to build sequence from
  * @param allPictographs - All available pictograph data
  * @param maxAttempts - Maximum attempts to find valid sequence
@@ -430,7 +429,6 @@ function pickRandom<T>(items: T[]): T | null {
  * 2. For the last letter, only pick variations that end at a target position
  * 3. If no variation of the last letter works, backtrack and try different
  *    variations of earlier letters
- *
  * @param letters - Array of letters to build sequence from
  * @param allPictographs - All available pictograph data
  * @param targetEndPositions - Valid end positions for LOOP compatibility
@@ -497,9 +495,6 @@ export function buildSequenceWithEndConstraint(
   };
 }
 
-/**
- * Attempt to build a sequence that ends at one of the target positions.
- */
 function attemptSequenceBuildWithEndConstraint(
   letters: string[],
   allPictographs: PictographData[],
@@ -732,8 +727,8 @@ function attemptSequenceBuildWithEndConstraint(
  * Parameters for LOOP-constrained sequence building
  */
 export interface LoopConstraint {
-  loopType: "rewound" | "rotated";
-  period: "halved" | "quartered";
+  loopType: string;
+  period: Period;
   /** If true, don't add bridge letters - just fail if not naturally compatible */
   noBridges?: boolean;
 }
@@ -744,10 +739,9 @@ export interface LoopConstraint {
  * For REWOUND: Any sequence works, so this just calls buildSequenceFromLetters.
  * For ROTATED: The end position must be at a rotation of the start position.
  *   If the natural sequence doesn't end at a valid position, a bridge letter is added.
- *
  * @param letters - Array of letters to build sequence from
  * @param allPictographs - All available pictograph data
- * @param loopConstraint - LOOP type and slice size
+ * @param loopConstraint - LOOP type and period
  * @param maxAttempts - Maximum attempts to find valid sequence
  */
 export function buildSequenceForLoop(
@@ -1037,20 +1031,14 @@ export function buildSequenceForLoop(
   return recalculateAllOrientations(result);
 }
 
-/**
- * Extract the position group from a position string (e.g., "alpha1" -> "alpha")
- */
 function extractPositionGroup(position: string): string {
   const match = position.match(/^([a-z]+)\d+$/);
   return match?.[1] || "";
 }
 
-/**
- * Compute valid end positions for a rotated LOOP
- */
 function computeValidEndPositionsForRotatedLoop(
   startPosition: string,
-  period: "halved" | "quartered"
+  period: Period
 ): string[] {
   // Extract position group and number (e.g., "alpha1" -> "alpha", 1)
   const match = startPosition.match(/^([a-z]+)(\d+)$/);
@@ -1074,7 +1062,7 @@ function computeValidEndPositionsForRotatedLoop(
   const normalizedNum = num - baseOffset;
   const validEndPositions: string[] = [];
 
-  if (period === "halved") {
+  if (period === Period.HALVED) {
     // 180° rotation: +4 positions (mod 8)
     const halfRotated = ((normalizedNum - 1 + 4) % groupSize) + 1 + baseOffset;
     validEndPositions.push(`${group}${halfRotated}`);
@@ -1091,9 +1079,6 @@ function computeValidEndPositionsForRotatedLoop(
   return validEndPositions;
 }
 
-/**
- * Attempt to build a sequence with a fixed first variation and target end positions
- */
 function attemptSequenceBuildForLoop(
   letters: string[],
   allPictographs: PictographData[],
@@ -1245,7 +1230,6 @@ function attemptSequenceBuildForLoop(
 }
 
 /**
- * Parse a word string into individual letters.
  * Handles Greek letters (α, β, γ, etc.) and dash suffixes (W-, Σ-, etc.).
  */
 export function parseWordToLetters(word: string): string[] {
@@ -1277,7 +1261,6 @@ export function parseWordToLetters(word: string): string[] {
  * Generate a random sequence of letters that naturally chain together.
  * Uses the transition graph to ensure each letter can follow the previous one
  * without needing bridge letters inserted.
- *
  * @param length - Number of letters in the sequence
  * @param excludeLetters - Letters to exclude from selection (e.g., Type 6 static letters)
  * @returns Array of letters that can chain together without bridges
@@ -1325,9 +1308,6 @@ export function generateChainableSequence(
   return result;
 }
 
-// =============================================================================
-// REVERSAL DETECTION
-// =============================================================================
 
 /**
  * Detect reversals for all steps in a sequence.
@@ -1335,7 +1315,6 @@ export function generateChainableSequence(
  *
  * For loop sequences, beat 1 wraps around — its previous context is the tail
  * of the sequence, since loops repeat continuously.
- *
  * @param steps - The sequence steps to analyze
  * @param isLoop - Whether this is a circular/loop sequence
  * @returns The same steps with blueReversal/redReversal flags set
@@ -1376,9 +1355,6 @@ export function detectReversals(steps: SequenceStep[], isLoop = false): Sequence
   });
 }
 
-/**
- * Get the last valid (non-static) rotation direction from previous steps.
- */
 function getLastValidRotationDirection(
   steps: SequenceStep[],
   color: "blue" | "red"
@@ -1395,9 +1371,6 @@ function getLastValidRotationDirection(
   return null;
 }
 
-/**
- * Get the rotation direction for a specific color from a step.
- */
 function getRotationDirection(step: SequenceStep, color: "blue" | "red"): string | null {
   const motion = color === "blue" ? step.blueMotion : step.redMotion;
   if (!motion) return null;
@@ -1411,7 +1384,6 @@ function getRotationDirection(step: SequenceStep, color: "blue" | "red"): string
 }
 
 /**
- * Check if there's a reversal between two rotation directions.
  * A reversal occurs when direction changes (cw -> ccw or ccw -> cw).
  */
 function isReversal(lastRotDir: string | null, currentRotDir: string | null): boolean {
@@ -1428,9 +1400,6 @@ function isReversal(lastRotDir: string | null, currentRotDir: string | null): bo
   return normalizedLast !== normalizedCurrent;
 }
 
-/**
- * Normalize rotation direction strings to "cw" or "ccw".
- */
 function normalizeRotationDirection(rotDir: string): string {
   const lower = rotDir.toLowerCase();
   if (lower === "cw" || lower === "clockwise") return "cw";

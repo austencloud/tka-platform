@@ -31,7 +31,6 @@ export interface ParseResult {
 
 /**
  * Parse a natural language constraint string into constraints.
- *
  * @param input Natural language constraint specification
  * @returns Parsed constraints with confidence and any warnings
  */
@@ -111,9 +110,6 @@ export function parseConstraints(input: string): ParseResult {
   };
 }
 
-/**
- * Parse constraints and organize into a ConstraintSet.
- */
 export function parseConstraintSet(input: string): {
   constraintSet: ConstraintSet;
   parseResult: ParseResult;
@@ -137,9 +133,6 @@ export function parseConstraintSet(input: string): {
   };
 }
 
-/**
- * Normalize input for parsing.
- */
 function normalizeInput(input: string): string {
   return input
     .toLowerCase()
@@ -149,18 +142,12 @@ function normalizeInput(input: string): string {
     .trim();
 }
 
-/**
- * Split input into individual constraint clauses.
- */
 function splitIntoClauses(input: string): string[] {
   // Split on comma, "and", "with", "plus"
   const separators = /[,]|\s+and\s+|\s+with\s+|\s+plus\s+/gi;
   return input.split(separators).map((c) => c.trim()).filter((c) => c.length > 0);
 }
 
-/**
- * Detect conflicting constraints.
- */
 function detectConflicts(constraints: IConstraint[]): string[] {
   const conflicts: string[] = [];
 
@@ -201,16 +188,10 @@ function detectConflicts(constraints: IConstraint[]): string[] {
   return conflicts;
 }
 
-/**
- * Get all available patterns (for debugging/documentation).
- */
 export function getAvailablePatterns(): ConstraintPattern[] {
   return [...CONSTRAINT_PATTERNS];
 }
 
-/**
- * Get all synonyms (for debugging/documentation).
- */
 export function getAvailableSynonyms(): Record<string, string[]> {
   return { ...SYNONYMS };
 }

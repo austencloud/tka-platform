@@ -35,9 +35,6 @@ const DATAFRAME_PATHS: Record<GridMode, string> = {
 
 const LETTER_MAPPINGS_PATH = path.resolve(ASSETS_ROOT, "data/learn/letter-mappings.json");
 
-/**
- * Node.js-specific data provider using synchronous file reads.
- */
 export class NodeDataProvider implements ISequenceDataProvider {
   private letterMappings: LetterMappingsJson | null = null;
   private variationCache: Map<string, LetterVariationData[]> = new Map();
@@ -131,9 +128,6 @@ export class NodeDataProvider implements ISequenceDataProvider {
     }
   }
 
-  /**
-   * Get all loaded variations (useful for sequence building).
-   */
   getAllVariations(): LetterVariationData[] {
     if (!this.allVariationsLoaded) {
       this.loadAllVariationsFromCsv();

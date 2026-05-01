@@ -88,7 +88,6 @@ export interface LetterStyle {
 
 /**
  * Render word header at the top of a canvas
- *
  * @param ctx Canvas 2D context to draw on
  * @param word The word to display (used if letterStyles not provided)
  * @param canvasWidth Width of the canvas
@@ -171,9 +170,6 @@ export function renderWordHeader(
   }
 }
 
-/**
- * Render word with styled letters (bridge/derived letters smaller and grayed out)
- */
 function renderStyledWord(
   ctx: CanvasRenderingContext2D,
   letterStyles: LetterStyle[],
@@ -221,7 +217,6 @@ function renderStyledWord(
 }
 
 /**
- * Render a colored level badge with gradient
  * Matches legacy desktop: Georgia Bold font, linear gradient
  * Colors: 1=light gray, 2=silver, 3=gold, 4=purple, 5=red
  */
@@ -261,7 +256,6 @@ function renderLevelBadge(
 }
 
 /**
- * Create linear gradient for level badge (top-left to bottom-right)
  * Matches legacy desktop DifficultyLevelGradients exactly
  */
 function createLevelBadgeGradient(
@@ -328,7 +322,6 @@ function createLevelBadgeGradient(
  * - Username (bottom-left) - Georgia Bold
  * - Notes (bottom-center) - Georgia Normal
  * - Date (bottom-right) - Georgia Normal
- *
  * @param ctx Canvas 2D context to draw on
  * @param userInfo User information to display
  * @param canvasWidth Width of the canvas
@@ -406,7 +399,6 @@ export function renderUserInfo(
 }
 
 /**
- * Get a contextual caption based on the word content.
  *
  * Humor Profile (derived from user preference quiz, Jan 2026):
  * - Primary: DEADPAN (flat, understated observations)
@@ -557,10 +549,8 @@ const LOOP_COMPONENT_COLORS: Record<LOOPComponent, string> = {
   [LOOPComponent.REWOUND]: "#00bcd4",  // Teal
 };
 
-// ============================================================================
 // Font Awesome SVG icon paths for LOOP components
 // Embedded from @fortawesome/fontawesome-free/svgs/solid/
-// ============================================================================
 
 const LOOP_ICON_SVG_PATHS: Record<LOOPComponent, { d: string; viewBox: [number, number] }> = {
   // rotate.svg
@@ -595,9 +585,6 @@ const LOOP_ICON_SVG_PATHS: Record<LOOPComponent, { d: string; viewBox: [number, 
   },
 };
 
-// ============================================================================
-// SVG Path Parser — converts SVG path "d" strings to canvas drawing commands
-// ============================================================================
 
 interface PathCmd { cmd: string; args: number[] }
 
@@ -619,7 +606,6 @@ function parseSvgPathData(d: string): PathCmd[] {
 }
 
 /**
- * Execute parsed SVG path commands onto a canvas context.
  * Assumes canvas is already transformed (translate + scale) to map
  * viewBox coordinates to screen coordinates.
  */
@@ -726,7 +712,6 @@ function executeSvgPathOnCanvas(
   }
 }
 
-/** Convert SVG arc to canvas bezier curves */
 function svgArcToCanvas(
   ctx: CanvasRenderingContext2D,
   x1: number, y1: number, x2: number, y2: number,
@@ -775,7 +760,6 @@ function svgArcToCanvas(
 }
 
 /**
- * Draw a LOOP component icon using the actual Font Awesome SVG path data.
  * Uses canvas transforms to scale from viewBox to target size.
  */
 function drawLOOPIcon(
@@ -826,7 +810,6 @@ function drawLOOPIcon(
  * - Each active component rendered as a colored badge with icon
  * - Badges arranged in a horizontal row
  * - Right-aligned in the header
- *
  * @param ctx Canvas 2D context
  * @param activeComponents Array of active LOOP components
  * @param rightEdge Right edge to align to
@@ -872,7 +855,6 @@ export function renderLOOPGlyph(
 }
 
 /**
- * Calculate header height based on step size
  * Header = 1/3 of step size for balanced proportions
  */
 export function calculateHeaderHeight(stepSize: number): number {
@@ -880,7 +862,6 @@ export function calculateHeaderHeight(stepSize: number): number {
 }
 
 /**
- * Calculate footer height based on step size
  * Footer = 1/7 of step size for balanced proportions
  */
 export function calculateFooterHeight(stepSize: number): number {

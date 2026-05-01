@@ -168,9 +168,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   adminNewUserSignup: true,
 };
 
-/**
- * Map notification type to preference key
- */
 export function getPreferenceKeyForType(
   type: NotificationType
 ): keyof NotificationPreferences | null {

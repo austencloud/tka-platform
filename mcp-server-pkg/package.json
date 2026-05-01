@@ -1,6 +1,6 @@
 {
   "name": "@austencloud/tka-domain-mcp",
-  "version": "2.0.2",
+  "version": "2.3.0",
   "description": "MCP server for The Kinetic Alphabet domain - pictograph rendering, sequence generation, and educational tools",
   "type": "module",
   "main": "dist/index.js",
@@ -14,18 +14,22 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "build": "node build.mjs",
     "start": "node dist/index.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run typecheck && npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@resvg/resvg-js": "^2.6.0",
-    "@tka/render-core": "file:../packages/render-core",
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@tka/render-core": "file:../packages/render-core",
+    "@tka/sequence-engine": "file:../packages/sequence-engine",
+    "@tka/tka-types": "file:../packages/tka-types",
     "@types/node": "^20.0.0",
+    "esbuild": "^0.27.0",
     "typescript": "^5.0.0"
   },
   "keywords": [

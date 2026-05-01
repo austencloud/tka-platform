@@ -9,7 +9,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ensureDataLoaded, saveAndOpenImage } from "../shared/server-context.js";
 import { buildSequenceFromLetters, parseWordToLetters } from "../core/sequence-builder.js";
-import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
+import { renderSequenceToImage } from "../core/sequence-renderer.js";
 import { simplifyRepeatedWord } from "../core/word-simplifier.js";
 import { allocateTurns } from "../core/turn-allocator.js";
 import { recalculateOrientationsWithOverrides } from "../core/orientation-propagation.js";
@@ -17,19 +17,23 @@ import {
   LOOPType,
   Period,
   LOOP_TYPE_LABELS,
-  SUPPORTED_LOOP_TYPES,
+  ALL_LOOP_TYPES,
   getLOOPOptionsForPositionPair,
   executeLOOP,
   findBridgeLettersForLoop,
   isLOOPValidForPositionPair,
   detectLOOPFromSteps,
   isSequenceCircular,
+  loopTypeSchema,
+  periodSchema,
+  loopComponentsSchema,
+  decomposeLoopType,
+  componentStringToEnum,
 } from "../core/loop/index.js";
 
 const orientationEnum = z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]);
 
 /**
- * Auto-bridge helper: If the sequence ends at an incompatible position for the
  * requested LOOP type, automatically find and add a bridge letter to make it compatible.
  *
  * Returns the (possibly extended) word and updated letters array.
@@ -79,10 +83,10 @@ export function registerLoopTools(server: McpServer): void {
     {
       startPosition: z.string().describe("Start position of the sequence (e.g., alpha1, beta3, gamma5)"),
       endPosition: z.string().describe("End position of the sequence (e.g., alpha5, beta7, gamma13)"),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
+      period: periodSchema.optional().default("halved").describe("LOOP period: halved (2x, default) or quartered (4x)"),
     },
     async ({ startPosition, endPosition, period = "halved" }) => {
-      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
+      const slice = period as Period;
       const result = getLOOPOptionsForPositionPair(startPosition, endPosition, slice);
 
       const output = {
@@ -99,7 +103,7 @@ export function registerLoopTools(server: McpServer): void {
           name: opt.name,
           reason: opt.reason || "Position pair not valid for this LOOP type",
         })),
-        supportedTypes: SUPPORTED_LOOP_TYPES.map((t) => ({
+        supportedTypes: ALL_LOOP_TYPES.map((t) => ({
           loopType: t,
           name: LOOP_TYPE_LABELS[t],
         })),
@@ -180,11 +184,11 @@ export function registerLoopTools(server: McpServer): void {
   // Tool: generate_loop_sequence
   server.tool(
     "generate_loop_sequence",
-    "Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence with all transformed steps. Currently supports REWOUND and ROTATED.",
+    "Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence data with all transformed steps as JSON. For visual output, use generate_loop_image or view_loop_sequence instead.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
+      loopType: loopTypeSchema.describe("LOOP type to apply"),
+      period: periodSchema.optional().default("halved").describe("LOOP period: halved (2x, default) or quartered (4x)"),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
@@ -217,9 +221,8 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
-      // Determine LOOP type enum
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
+      const loopTypeValue = loopType as LOOPType;
+      const slice = period as Period;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
       // The bridge letter is determined by the end position, but rebuilding may land on a different position
@@ -239,7 +242,7 @@ export function registerLoopTools(server: McpServer): void {
           letters,
           baseResult.startPosition,
           baseResult.endPosition,
-          loopTypeEnum,
+          loopTypeValue,
           slice,
           allPictographs
         );
@@ -248,30 +251,24 @@ export function registerLoopTools(server: McpServer): void {
         let finalResult = baseResult;
 
         if (bridgeResult.bridgeAdded) {
-          // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
           finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
 
           if (!finalResult.isValid) continue;
 
-          // Verify the rebuilt sequence still ends at a compatible position
           const positionPair = `${finalResult.startPosition},${finalResult.endPosition}`;
-          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
-            // The rebuild landed on a different position - retry
+          if (!isLOOPValidForPositionPair(loopTypeValue, positionPair, slice)) {
             continue;
           }
           bridgeAdded = bridgeResult.bridgeAdded;
         } else {
-          // No bridge added - verify the base result is LOOP-compatible
           const positionPair = `${baseResult.startPosition},${baseResult.endPosition}`;
-          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
-            // Position not compatible and no bridge available - retry with different random variations
+          if (!isLOOPValidForPositionPair(loopTypeValue, positionPair, slice)) {
             continue;
           }
         }
 
-        // Try to execute the LOOP
-        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeValue, slice, allPictographs);
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -288,14 +285,12 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
-      // Apply orientation overrides if specified
       if (blueStartOrientation || redStartOrientation) {
         loopResult.steps = recalculateOrientationsWithOverrides(
           loopResult.steps, blueStartOrientation, redStartOrientation
         );
       }
 
-      // Format output
       const output = {
         word: loopResult.word,
         loopWord: loopResult.loopWord,
@@ -346,8 +341,8 @@ export function registerLoopTools(server: McpServer): void {
     "Generate a choreo card image for a LOOP sequence. Displays the complete circular sequence as a composite image.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply'),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size'),
+      loopType: loopTypeSchema.describe("LOOP type to apply"),
+      period: periodSchema.optional().default("halved").describe("LOOP period"),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
@@ -355,7 +350,7 @@ export function registerLoopTools(server: McpServer): void {
       showWord: z.boolean().optional().default(true).describe("Show word header"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
-      loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
+      loopComponents: loopComponentsSchema,
       level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
       turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
       userName: z.string().optional().describe("Username for footer"),
@@ -391,29 +386,24 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
-      // Execute the LOOP transformation (pass pictograph data for letter derivation)
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
+      const loopTypeValue = loopType as LOOPType;
+      const slice = period as Period;
 
-      // Retry loop: keep generating until we get a LOOP-compatible sequence
-      // The bridge letter is determined by the end position, but rebuilding may land on a different position
       let loopResult;
       let bridgeAddedFinal: string | null = null;
 
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
-        // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
           baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
           if (!baseResult.isValid) continue;
         }
 
-        // Check if this base result is LOOP-compatible or can be bridged
         const bridgeResult = autoBridgeForLoop(
           baseResult.word,
           letters,
           baseResult.startPosition,
           baseResult.endPosition,
-          loopTypeEnum,
+          loopTypeValue,
           slice,
           allPictographs
         );
@@ -422,30 +412,24 @@ export function registerLoopTools(server: McpServer): void {
         let finalResult = baseResult;
 
         if (bridgeResult.bridgeAdded) {
-          // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
           finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
 
           if (!finalResult.isValid) continue;
 
-          // Verify the rebuilt sequence still ends at a compatible position
           const positionPair = `${finalResult.startPosition},${finalResult.endPosition}`;
-          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
-            // The rebuild landed on a different position - retry
+          if (!isLOOPValidForPositionPair(loopTypeValue, positionPair, slice)) {
             continue;
           }
           bridgeAddedFinal = bridgeResult.bridgeAdded;
         } else {
-          // No bridge added - verify the base result is LOOP-compatible
           const positionPair = `${baseResult.startPosition},${baseResult.endPosition}`;
-          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
-            // Position not compatible and no bridge available - retry with different random variations
+          if (!isLOOPValidForPositionPair(loopTypeValue, positionPair, slice)) {
             continue;
           }
         }
 
-        // Try to execute the LOOP
-        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeValue, slice, allPictographs);
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -473,28 +457,8 @@ export function registerLoopTools(server: McpServer): void {
         // Parse birthday string to Date if provided
         const birthdayDate = birthday ? new Date(birthday) : undefined;
 
-        // Auto-populate loopComponents from loopType if not explicitly provided
-        const effectiveLoopComponents = loopComponents ?? (loopType === "rewound" ? ["rewound"] : ["rotated"]);
-
-        // Parse LOOP components for pie chart glyph
-        const parsedLoopComponents = effectiveLoopComponents.map((c) => {
-          switch (c) {
-            case "rotated":
-              return LOOPComponent.ROTATED;
-            case "mirrored":
-              return LOOPComponent.MIRRORED;
-            case "flipped":
-              return LOOPComponent.FLIPPED;
-            case "swapped":
-              return LOOPComponent.SWAPPED;
-            case "inverted":
-              return LOOPComponent.INVERTED;
-            case "rewound":
-              return LOOPComponent.REWOUND;
-            default:
-              return LOOPComponent.ROTATED;
-          }
-        });
+        const effectiveLoopComponents = loopComponents ?? decomposeLoopType(loopType);
+        const parsedLoopComponents = effectiveLoopComponents.map(componentStringToEnum);
 
         // Allocate turns for each step
         const stepCount = loopResult.steps.length - 1;
@@ -532,7 +496,7 @@ export function registerLoopTools(server: McpServer): void {
           content: [
             {
               type: "text" as const,
-              text: `## LOOP Sequence: ${loopResult.loopWord}\n\n**Original word:** ${word}\n**LOOP type:** ${loopType}\n**Slice size:** ${period}\n**Beats:** ${stepCount}`,
+              text: `## LOOP Sequence: ${loopResult.loopWord}\n\n**Original word:** ${word}\n**LOOP type:** ${loopType}\n**Period:** ${period}\n**Beats:** ${stepCount}`,
             },
             {
               type: "image" as const,
@@ -560,8 +524,8 @@ export function registerLoopTools(server: McpServer): void {
     "Generate a LOOP sequence choreo card and open it in the system image viewer. Returns only confirmation text - NO image data returned. Use this when the USER needs to see the LOOP sequence but Claude doesn't need to analyze it. Saves ~30-100k tokens compared to generate_loop_image.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
-      period: z.enum(["halved", "quartered"]).optional().default("halved").describe("Slice size"),
+      loopType: loopTypeSchema.describe("LOOP type to apply"),
+      period: periodSchema.optional().default("halved").describe("LOOP period"),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
@@ -569,7 +533,7 @@ export function registerLoopTools(server: McpServer): void {
       showWord: z.boolean().optional().default(true).describe("Show word header"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
-      loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
+      loopComponents: loopComponentsSchema,
       level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
       turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
       userName: z.string().optional().describe("Username for footer"),
@@ -605,29 +569,24 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
-      // Execute the LOOP transformation
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-      const slice = period === "quartered" ? Period.QUARTERED : Period.HALVED;
+      const loopTypeValue = loopType as LOOPType;
+      const slice = period as Period;
 
-      // Retry loop: keep generating until we get a LOOP-compatible sequence
-      // The bridge letter is determined by the end position, but rebuilding may land on a different position
       let loopResult;
       let bridgeAdded: string | null = null;
 
       for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
-        // Regenerate base sequence each attempt (randomness may produce different end positions)
         if (loopAttempt > 0) {
           baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
           if (!baseResult.isValid) continue;
         }
 
-        // Check if this base result is LOOP-compatible or can be bridged
         const bridgeResult = autoBridgeForLoop(
           baseResult.word,
           letters,
           baseResult.startPosition,
           baseResult.endPosition,
-          loopTypeEnum,
+          loopTypeValue,
           slice,
           allPictographs
         );
@@ -636,30 +595,24 @@ export function registerLoopTools(server: McpServer): void {
         let finalResult = baseResult;
 
         if (bridgeResult.bridgeAdded) {
-          // Need to add a bridge letter
           finalLetters = bridgeResult.letters;
           finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
 
           if (!finalResult.isValid) continue;
 
-          // Verify the rebuilt sequence still ends at a compatible position
           const positionPair = `${finalResult.startPosition},${finalResult.endPosition}`;
-          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
-            // The rebuild landed on a different position - retry
+          if (!isLOOPValidForPositionPair(loopTypeValue, positionPair, slice)) {
             continue;
           }
           bridgeAdded = bridgeResult.bridgeAdded;
         } else {
-          // No bridge added - verify the base result is LOOP-compatible
           const positionPair = `${baseResult.startPosition},${baseResult.endPosition}`;
-          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
-            // Position not compatible and no bridge available - retry with different random variations
+          if (!isLOOPValidForPositionPair(loopTypeValue, positionPair, slice)) {
             continue;
           }
         }
 
-        // Try to execute the LOOP
-        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeValue, slice, allPictographs);
 
         if (loopResult.success) {
           baseResult = finalResult;
@@ -687,28 +640,8 @@ export function registerLoopTools(server: McpServer): void {
         // Parse birthday string to Date if provided
         const birthdayDate = birthday ? new Date(birthday) : undefined;
 
-        // Auto-populate loopComponents from loopType if not explicitly provided
-        const effectiveLoopComponents = loopComponents ?? (loopType === "rewound" ? ["rewound"] : ["rotated"]);
-
-        // Parse LOOP components for pie chart glyph
-        const parsedLoopComponents = effectiveLoopComponents.map((c) => {
-          switch (c) {
-            case "rotated":
-              return LOOPComponent.ROTATED;
-            case "mirrored":
-              return LOOPComponent.MIRRORED;
-            case "flipped":
-              return LOOPComponent.FLIPPED;
-            case "swapped":
-              return LOOPComponent.SWAPPED;
-            case "inverted":
-              return LOOPComponent.INVERTED;
-            case "rewound":
-              return LOOPComponent.REWOUND;
-            default:
-              return LOOPComponent.ROTATED;
-          }
-        });
+        const effectiveLoopComponents = loopComponents ?? decomposeLoopType(loopType);
+        const parsedLoopComponents = effectiveLoopComponents.map(componentStringToEnum);
 
         // Allocate turns for each step
         const stepCount = loopResult.steps.length - 1;
@@ -735,16 +668,19 @@ export function registerLoopTools(server: McpServer): void {
           seedWord: loopResult.seedWord,
         });
 
-        // Save to temp and open in system viewer
         saveAndOpenImage(pngBuffer, `loop-${word}`);
 
-        // Return only confirmation text - NO image data
-        const bridgeNote = bridgeAdded ? `\nBridge added: ${bridgeAdded} (for LOOP compatibility)` : "";
+        const bridgeNote = bridgeAdded ? `\nBridge added: ${bridgeAdded}` : "";
         return {
           content: [
             {
+              type: "image" as const,
+              data: pngBuffer.toString("base64"),
+              mimeType: "image/png",
+            },
+            {
               type: "text" as const,
-              text: `Opened LOOP sequence "${loopResult.loopWord}" in system viewer.\n${stepCount} beats, ${layout} layout, ${cellSize}px cells\nLOOP type: ${loopType}\nSeed word: ${loopResult.seedWord}\nDerived beats: ${loopResult.derivedBeatIndices.join(", ")}${bridgeNote}`,
+              text: `${loopType} LOOP "${loopResult.loopWord}" — ${stepCount} beats\nSeed: ${loopResult.seedWord}${bridgeNote}`,
             },
           ],
         };

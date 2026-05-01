@@ -152,31 +152,19 @@ export const PRESETS: PresetDefinition[] = [
   },
 ];
 
-/**
- * Get a preset by name.
- */
 export function getPreset(name: PresetName): PresetDefinition | null {
   return PRESETS.find((p) => p.name === name) ?? null;
 }
 
-/**
- * Get the constraint set for a preset.
- */
 export function getPresetConstraintSet(name: PresetName): ConstraintSet | null {
   const preset = getPreset(name);
   return preset?.constraintSet ?? null;
 }
 
-/**
- * List all available preset names.
- */
 export function listPresetNames(): PresetName[] {
   return PRESETS.map((p) => p.name);
 }
 
-/**
- * List all presets with descriptions.
- */
 export function listPresets(): Array<{ name: PresetName; description: string }> {
   return PRESETS.map((p) => ({ name: p.name, description: p.description }));
 }

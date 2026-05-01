@@ -317,13 +317,18 @@ export function registerPictographTools(server: McpServer): void {
         const renderer = getStandaloneRenderer();
         const pngBuffer = await renderer.renderToPng(pictographInput, visibility);
 
-        const tempPath = saveAndOpenImage(pngBuffer, letter);
+        saveAndOpenImage(pngBuffer, letter);
 
         return {
           content: [
             {
+              type: "image" as const,
+              data: pngBuffer.toString("base64"),
+              mimeType: "image/png",
+            },
+            {
               type: "text" as const,
-              text: `Opened ${letter} (variation ${variation}) in system viewer.\nPosition: ${csvRow.startPosition} → ${csvRow.endPosition}\nFile: ${tempPath}`,
+              text: `${letter} (variation ${variation}) — ${csvRow.startPosition} → ${csvRow.endPosition}`,
             },
           ],
         };

@@ -10,7 +10,7 @@ import type {
 	PresetConfig,
 	CreatePresetInput,
 } from "./types.js";
-import { normalizePresetConfig } from "./types.js";
+import { normalizePresetConfig, Period } from "./types.js";
 import {
 	addPreset as storageAddPreset,
 	updatePreset as storageUpdatePreset,
@@ -21,9 +21,6 @@ import {
 	saveUserPresets,
 } from "./storage.js";
 
-/**
- * Error thrown when preset validation fails.
- */
 export class PresetValidationError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -31,9 +28,6 @@ export class PresetValidationError extends Error {
 	}
 }
 
-/**
- * Error thrown when preset is not found.
- */
 export class PresetNotFoundError extends Error {
 	constructor(idOrName: string) {
 		super(`Preset not found: ${idOrName}`);
@@ -41,9 +35,6 @@ export class PresetNotFoundError extends Error {
 	}
 }
 
-/**
- * Creates a new preset.
- */
 export function createPreset(input: CreatePresetInput): UserSequencePreset {
 	// Validate name
 	if (!input.name || input.name.trim().length === 0) {
@@ -77,9 +68,6 @@ export function createPreset(input: CreatePresetInput): UserSequencePreset {
 	return preset;
 }
 
-/**
- * Updates an existing preset.
- */
 export function updatePreset(
 	idOrName: string,
 	updates: Partial<CreatePresetInput>
@@ -127,9 +115,6 @@ export function updatePreset(
 	return result;
 }
 
-/**
- * Deletes a preset by ID or name.
- */
 export function deletePreset(idOrName: string): void {
 	const existing = storageGetPreset(idOrName);
 	if (!existing) {
@@ -142,9 +127,6 @@ export function deletePreset(idOrName: string): void {
 	}
 }
 
-/**
- * Gets a preset by ID or name.
- */
 export function getPreset(idOrName: string): UserSequencePreset {
 	const preset = storageGetPreset(idOrName);
 	if (!preset) {
@@ -153,9 +135,6 @@ export function getPreset(idOrName: string): UserSequencePreset {
 	return preset;
 }
 
-/**
- * Lists all presets.
- */
 export function listPresets(): UserSequencePreset[] {
 	return storageListPresets();
 }
@@ -211,7 +190,6 @@ export function formatPresetSummary(preset: UserSequencePreset): string {
 }
 
 /**
- * Seeds default presets for Austen.
  * Only adds presets that don't already exist.
  */
 export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
@@ -223,7 +201,7 @@ export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
 			icon: "🎯",
 			config: {
 				loopType: "rotated",
-				period: "quartered",
+				period: Period.QUARTERED,
 				wordLength: 4,
 				constraintPreset: "smooth",
 				turnIntensity: 1,
@@ -237,7 +215,7 @@ export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
 			icon: "🪞",
 			config: {
 				loopType: "rotated",
-				period: "halved",
+				period: Period.HALVED,
 				loopComponents: ["mirrored", "inverted"],
 				constraintPreset: "smooth",
 				turnIntensity: 1,

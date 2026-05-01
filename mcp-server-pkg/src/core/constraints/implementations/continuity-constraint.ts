@@ -20,9 +20,6 @@ import type {
 
 export type ContinuityMode = "maximize" | "enforce" | "allow";
 
-/**
- * Check if a rotation direction change represents a reversal.
- */
 function isReversal(prev: string, current: string): boolean {
   // Static or no rotation doesn't count as reversal
   if (
@@ -42,7 +39,6 @@ function isReversal(prev: string, current: string): boolean {
 }
 
 /**
- * Calculate continuity score between two consecutive steps.
  * Returns 1 if continuous, 0 if reversal, 0.5 if one is static.
  */
 function calculateContinuityScore(

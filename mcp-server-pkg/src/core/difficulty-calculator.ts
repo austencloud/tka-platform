@@ -20,7 +20,6 @@ const NON_RADIAL_ORIENTATIONS = ["clock", "counter"];
 
 /**
  * Calculate difficulty level from sequence steps
- *
  * @param steps Array of sequence steps
  * @returns Level 1, 2, or 3
  */
@@ -60,17 +59,11 @@ export function calculateDifficultyLevel(steps: SequenceStep[]): number {
   }
 }
 
-/**
- * Check if an orientation is non-radial
- */
 function isNonRadialOrientation(orientation: string | undefined): boolean {
   if (!orientation) return false;
   return NON_RADIAL_ORIENTATIONS.includes(orientation.toLowerCase());
 }
 
-/**
- * Convert numeric level to difficulty string
- */
 export function levelToString(level: number): string {
   switch (level) {
     case 1:

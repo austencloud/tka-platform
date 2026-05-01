@@ -8,9 +8,6 @@
 import { GridLocation, GridMode, MotionType } from "./enums.js";
 import { getLayer2PointCoordinates, type Coordinates } from "@tka/render-core";
 
-// ============================================================================
-// ARROW ROTATION MAPS
-// ============================================================================
 
 /**
  * PRO rotation maps - exact values from ProAntiRotationMaps.ts
@@ -168,9 +165,6 @@ export const dashNoRotationMap: Record<string, number> = {
 export const floatClockwiseMap = proClockwiseMap;
 export const floatCounterClockwiseMap = proCounterClockwiseMap;
 
-// ============================================================================
-// ARROW LOCATION CALCULATION
-// ============================================================================
 
 /**
  * Direction pairs mapping for shift arrows (PRO/ANTI/FLOAT)
@@ -205,9 +199,6 @@ const shiftDirectionPairs: Record<string, GridLocation> = {
   [createLocationPairKey([GridLocation.SOUTH, GridLocation.NORTHEAST])]: GridLocation.EAST,
 };
 
-/**
- * Calculate arrow location based on motion type and start/end locations
- */
 export function calculateArrowLocation(
   motionType: MotionType | string,
   startLocation: GridLocation | string,
@@ -247,13 +238,7 @@ export function calculateArrowLocation(
   }
 }
 
-// ============================================================================
-// ARROW ROTATION CALCULATION
-// ============================================================================
 
-/**
- * Select rotation map based on motion type and rotation direction
- */
 function selectRotationMap(
   motionType: MotionType,
   rotationDirection: string,
@@ -286,9 +271,6 @@ function selectRotationMap(
   }
 }
 
-/**
- * Calculate arrow rotation angle
- */
 export function calculateArrowRotation(
   motionType: MotionType | string,
   location: GridLocation | string,
@@ -325,13 +307,7 @@ export function calculateArrowRotation(
   return rotationMap[normalizedLocation] ?? 0;
 }
 
-// ============================================================================
-// ARROW POSITION CALCULATION
-// ============================================================================
 
-/**
- * Calculate arrow position (uses layer2 points for proper spacing)
- */
 export function calculateArrowPosition(
   location: GridLocation | string,
   gridMode: GridMode
@@ -339,9 +315,6 @@ export function calculateArrowPosition(
   return getLayer2PointCoordinates(location, gridMode);
 }
 
-// ============================================================================
-// COMPLETE ARROW PLACEMENT
-// ============================================================================
 
 export interface ArrowPlacement {
   x: number;
@@ -350,9 +323,6 @@ export interface ArrowPlacement {
   location: GridLocation;
 }
 
-/**
- * Calculate complete arrow placement (location, position, rotation)
- */
 export function calculateArrowPlacement(
   motionType: MotionType | string,
   startLocation: GridLocation | string,

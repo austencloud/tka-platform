@@ -16,9 +16,6 @@ import type {
   ConstraintScore,
 } from "../types.js";
 
-/**
- * Scores a single variation against all constraints in a set.
- */
 export function scoreVariation(
   candidate: PictographData,
   variationIndex: number,
@@ -71,9 +68,6 @@ export function scoreVariation(
   };
 }
 
-/**
- * Scores multiple variations and returns them sorted by score (best first).
- */
 export function scoreAndRankVariations(
   candidates: PictographData[],
   context: Omit<ConstraintContext, "candidate">,
@@ -113,9 +107,6 @@ export function scoreAndRankVariations(
   return scores.sort((a, b) => b.totalScore - a.totalScore);
 }
 
-/**
- * Evaluate a single constraint and return its score.
- */
 function evaluateConstraint(
   constraint: IConstraint,
   context: ConstraintContext
@@ -133,7 +124,6 @@ function evaluateConstraint(
 }
 
 /**
- * Filter variations that could satisfy all hard constraints.
  * Quick pre-filter before full scoring.
  */
 export function filterViableVariations(
@@ -156,7 +146,6 @@ export function filterViableVariations(
 }
 
 /**
- * Calculate the aggregate score for a complete sequence.
  * Includes any sequence-level constraints.
  */
 export function calculateSequenceScore(

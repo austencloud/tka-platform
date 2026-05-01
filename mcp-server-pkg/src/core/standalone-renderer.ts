@@ -30,15 +30,11 @@ import {
   calculateBetaOffset,
   type BetaOffsetInput,
   type BetaMotionInput,
-  // Orientation
   calculateOrientations,
   type OrientationInput,
-  // Dash location
   calculateDashLocation,
   type DashLocationInput,
-  // Reversal indicators
   calculateReversalPositions,
-  // Colors
   BLUE_COLOR_DARK,
   BLUE_COLOR_LIGHT,
   RED_COLOR_DARK,
@@ -51,9 +47,6 @@ import { calculateArrowAdjustment, type PictographAdjustmentInput, type MotionAd
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// ============================================================================
-// CONSTANTS (matching Canvas2DDirectRenderer.ts exactly)
-// ============================================================================
 
 const VIEWBOX_SIZE = 950;
 const CENTER = VIEWBOX_SIZE / 2; // 475
@@ -153,9 +146,6 @@ const VTG_TO_ELEMENTAL: Record<VTGMode, ElementalType> = {
   QO: "moon",   // Quarter Opp
 };
 
-// ============================================================================
-// INTERFACES
-// ============================================================================
 
 export interface MotionInput {
   motionType: string;
@@ -198,9 +188,6 @@ export interface RenderVisibilityOptions {
   redPropType?: string | null;
 }
 
-// ============================================================================
-// RENDERER CLASS
-// ============================================================================
 
 export class StandaloneRenderer {
   private assetsRoot: string;
@@ -217,7 +204,6 @@ export class StandaloneRenderer {
   }
 
   /**
-   * Ensure orientations are calculated for a motion.
    * If startOrientation is not provided, defaults to IN.
    * If endOrientation is not provided, calculates it from motion parameters.
    */
@@ -238,9 +224,6 @@ export class StandaloneRenderer {
     };
   }
 
-  /**
-   * Preprocess pictograph input to ensure all orientations are calculated.
-   */
   private preprocessInput(input: PictographInput): PictographInput {
     return {
       ...input,
@@ -249,25 +232,16 @@ export class StandaloneRenderer {
     };
   }
 
-  /**
-   * Render a pictograph to PNG buffer
-   */
   async renderToPng(input: PictographInput, options: RenderVisibilityOptions = {}): Promise<Buffer> {
     const svg = await this.renderToSvg(input, options);
     return this.svgToPng(svg, options.size || 950);
   }
 
-  /**
-   * Render to base64-encoded PNG
-   */
   async renderToBase64(input: PictographInput, options: RenderVisibilityOptions = {}): Promise<string> {
     const png = await this.renderToPng(input, options);
     return png.toString("base64");
   }
 
-  /**
-   * Render a pictograph to SVG string
-   */
   async renderToSvg(rawInput: PictographInput, options: RenderVisibilityOptions = {}): Promise<string> {
     // Preprocess input to ensure orientations are calculated
     const input = this.preprocessInput(rawInput);
@@ -365,9 +339,6 @@ ${svgParts.join("\n")}
 </svg>`;
   }
 
-  // ==========================================================================
-  // GRID RENDERING
-  // ==========================================================================
 
   private renderGrid(darkMode: boolean): string {
     const gridPath = join(this.assetsRoot, "images/grid/diamond_grid.svg");
@@ -411,12 +382,8 @@ ${svgParts.join("\n")}
     }
   }
 
-  // ==========================================================================
-  // PROP RENDERING (USING CORRECT PLACEMENT)
-  // ==========================================================================
 
   /**
-   * Calculate beta offset when both props end at the same location.
    * Uses comprehensive direction maps that depend on location, orientation, and color.
    */
   private calculateBetaOffsetForProp(
@@ -545,9 +512,6 @@ ${svgParts.join("\n")}
     }
   }
 
-  // ==========================================================================
-  // ARROW RENDERING (USING CORRECT PLACEMENT + ADJUSTMENTS)
-  // ==========================================================================
 
   private renderArrow(pictograph: PictographInput, motion: MotionInput, gridMode: GridMode, darkMode: boolean): string {
     const motionType = motion.motionType.toLowerCase();
@@ -772,13 +736,7 @@ ${svgParts.join("\n")}
     );
   }
 
-  // ==========================================================================
-  // GLYPH RENDERING
-  // ==========================================================================
 
-  /**
-   * Render turn numbers next to the TKA letter glyph
-   */
   private renderTurnNumbers(
     blueTurns: number | "fl" | undefined,
     redTurns: number | "fl" | undefined,
@@ -812,9 +770,6 @@ ${svgParts.join("\n")}
     return parts.join("\n");
   }
 
-  /**
-   * Render a single turn number SVG
-   */
   private renderSingleTurnNumber(
     turns: number | "fl",
     x: number,
@@ -880,9 +835,6 @@ ${svgParts.join("\n")}
     }
   }
 
-  /**
-   * Render letter with turn numbers as a combined group
-   */
   private renderLetterWithTurns(
     letter: string,
     blueTurns: number | "fl" | undefined,
@@ -986,7 +938,6 @@ ${turnNumbersSvg}
   }
 
   /**
-   * Render elemental glyph (top-right corner)
    * Only shows for Type1 letters (A-V)
    */
   private renderElementalGlyph(letter: string, startPosition: string, darkMode: boolean): string {
@@ -1198,12 +1149,8 @@ ${turnNumbersSvg}
     }
   }
 
-  // ==========================================================================
-  // REVERSAL INDICATOR RENDERING
-  // ==========================================================================
 
   /**
-   * Render reversal indicators on the left edge of the pictograph.
    * Uses the shared core calculateReversalPositions for consistent positioning
    * across both browser and MCP renderers.
    *
@@ -1229,9 +1176,6 @@ ${turnNumbersSvg}
     return `<g class="reversal-indicators">${circles.join("\n")}</g>`;
   }
 
-  // ==========================================================================
-  // HELPERS
-  // ==========================================================================
 
   private parseGridMode(gridMode?: string): GridMode {
     if (!gridMode) return GridMode.DIAMOND;

@@ -8,7 +8,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { exec } from "child_process";
+import { exec, spawn } from "child_process";
 import { tmpdir } from "os";
 import { calculateOrientations } from "@tka/render-core";
 import type { MotionData, PictographData, GridMode } from "../types/pictograph.js";
@@ -16,9 +16,6 @@ import type { MotionData, PictographData, GridMode } from "../types/pictograph.j
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ============================================================================
-// USER PREFERENCES
-// ============================================================================
 
 /**
  * User preferences for pictograph rendering.
@@ -77,40 +74,46 @@ export function updatePreferences(partial: Partial<UserPreferences>): void {
   currentPreferences = { ...currentPreferences, ...partial };
 }
 
-// ============================================================================
-// IMAGE UTILITIES
-// ============================================================================
 
-/**
- * Open an image file with the system's default image viewer.
- */
 export function openImageFile(filePath: string): void {
   const platform = process.platform;
-  let command: string;
 
-  if (platform === "win32") {
-    command = `start "" "${filePath}"`;
-  } else if (platform === "darwin") {
-    command = `open "${filePath}"`;
-  } else {
-    command = `xdg-open "${filePath}"`;
-  }
-
-  exec(command, (error) => {
-    if (error) {
-      console.error(`[MCP] Failed to open image: ${error.message}`);
+  try {
+    if (platform === "win32") {
+      const child = spawn("cmd", ["/c", "start", '""', filePath], {
+        detached: true,
+        stdio: "ignore",
+        shell: false,
+      });
+      child.unref();
+    } else if (platform === "darwin") {
+      const child = spawn("open", [filePath], {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+    } else {
+      const child = spawn("xdg-open", [filePath], {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
     }
-  });
+  } catch (err) {
+    console.error(`[MCP] Failed to open image: ${err}`);
+  }
 }
 
-/**
- * Save PNG buffer to a temp file and open it immediately.
- */
 export function saveAndOpenImage(pngBuffer: Buffer, label: string): string {
-  const tempDir = tmpdir();
+  const userHome = process.env.USERPROFILE || process.env.HOME || tmpdir();
+  const mcpTempDir = path.join(userHome, "AppData", "Local", "Temp", "tka-mcp");
+  if (!fs.existsSync(mcpTempDir)) {
+    fs.mkdirSync(mcpTempDir, { recursive: true });
+  }
+
   const timestamp = Date.now();
   const fileName = `tka-${label}-${timestamp}.png`;
-  const filePath = path.join(tempDir, fileName);
+  const filePath = path.join(mcpTempDir, fileName);
 
   fs.writeFileSync(filePath, pngBuffer);
   openImageFile(filePath);
@@ -118,9 +121,6 @@ export function saveAndOpenImage(pngBuffer: Buffer, label: string): string {
   return filePath;
 }
 
-// ============================================================================
-// PICTOGRAPH DATA LOADING
-// ============================================================================
 
 // Resolve paths relative to the package root
 // When compiled, __dirname is dist/src/shared
@@ -243,9 +243,6 @@ export function getAllPictographs(): PictographData[] {
   return ensureDataLoaded(defaultGridMode);
 }
 
-// ============================================================================
-// LETTER TYPE DEFINITIONS
-// ============================================================================
 
 export const TKA_LETTER_TYPES = {
   type1: {
@@ -287,9 +284,6 @@ for (const [typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
   }
 }
 
-// ============================================================================
-// KNOWLEDGE BASE
-// ============================================================================
 
 export interface GlossaryEntry {
   definition: string;
@@ -337,9 +331,6 @@ export function getLetterTypes(): Record<string, LetterTypeInfo> {
   return letterTypes;
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
 
 export function generateRandomWord(length: number, excludeLetters?: string[]): string {
   const allPictographs = ensureDataLoaded();

@@ -71,9 +71,6 @@ export function canonicalize(term: string): string {
   return REVERSE_LOOKUP.get(normalized) ?? term;
 }
 
-/**
- * Check if a term matches a canonical concept.
- */
 export function matchesConcept(term: string, concept: string): boolean {
   const canonicalTerm = canonicalize(term);
   const canonicalConcept = canonicalize(concept);
@@ -81,7 +78,6 @@ export function matchesConcept(term: string, concept: string): boolean {
 }
 
 /**
- * Find all terms in text that match a concept.
  * Uses word boundary matching to avoid partial matches (e.g., "low" in "flow").
  */
 export function findMatchingTerms(text: string, concept: string): string[] {
@@ -105,16 +101,10 @@ export function findMatchingTerms(text: string, concept: string): string[] {
   return matches;
 }
 
-/**
- * Escape special regex characters in a string.
- */
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/**
- * Check if text contains any form of a concept.
- */
 export function containsConcept(text: string, concept: string): boolean {
   return findMatchingTerms(text, concept).length > 0;
 }

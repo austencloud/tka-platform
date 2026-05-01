@@ -26,9 +26,6 @@ const inDist = __dirname.includes("dist");
 const PACKAGE_ROOT = inDist ? join(__dirname, "../../..") : join(__dirname, "../..");
 const ASSETS_ROOT = join(PACKAGE_ROOT, "assets");
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface MotionAdjustmentInput {
   letter: string;
@@ -53,12 +50,8 @@ type TurnsTupleKey = string; // e.g., "(1, 1)", "(fl, 0.5)"
 type AdjustmentKey = string; // "blue", "red", "pro", "anti", "float"
 type PlacementData = Record<string, Record<TurnsTupleKey, Record<AdjustmentKey, [number, number]>>>;
 
-// ============================================================================
-// ORI KEY CALCULATION
-// ============================================================================
 
 /**
- * Calculate orientation key based on motion end orientations.
  * - from_layer1: both motions have radial orientation (IN/OUT)
  * - from_layer2: both motions have non-radial orientation (CLOCK/COUNTER)
  * - from_layer3_blue1_red2: blue radial, red non-radial
@@ -75,13 +68,7 @@ export function calculateOriKey(blueEndOri: string, redEndOri: string): string {
   return "from_layer1";
 }
 
-// ============================================================================
-// SPECIAL PLACEMENT LOOKUP
-// ============================================================================
 
-/**
- * Load special placement data for a letter.
- */
 function loadSpecialPlacement(gridMode: GridMode, oriKey: string, letter: string): PlacementData | null {
   const gridModeStr = gridMode === GridMode.BOX ? "box" : gridMode === GridMode.SKEWED ? "skewed" : "diamond";
   const placementPath = join(
@@ -105,9 +92,6 @@ function loadSpecialPlacement(gridMode: GridMode, oriKey: string, letter: string
   }
 }
 
-/**
- * Format turns tuple key: "(blueTurns, redTurns)"
- */
 function formatTurnsTuple(blueTurns?: number | "fl", redTurns?: number | "fl"): string {
   const blue = blueTurns === "fl" ? "fl" : (blueTurns ?? 0);
   const red = redTurns === "fl" ? "fl" : (redTurns ?? 0);
@@ -115,7 +99,6 @@ function formatTurnsTuple(blueTurns?: number | "fl", redTurns?: number | "fl"): 
 }
 
 /**
- * Look up base adjustment from special placement data.
  * Tries color key first, then motion type key.
  */
 function lookupBaseAdjustment(
@@ -145,12 +128,8 @@ function lookupBaseAdjustment(
   return null;
 }
 
-// ============================================================================
-// QUADRANT INDEX CALCULATION
-// ============================================================================
 
 /**
- * Calculate quadrant index for tuple selection.
  * Index order: NE=0, SE=1, SW=2, NW=3 (for diamond shift) or N=0, E=1, S=2, W=3 (for box shift)
  */
 function calculateQuadrantIndex(
@@ -204,14 +183,10 @@ function calculateQuadrantIndex(
   }
 }
 
-// ============================================================================
-// DIRECTIONAL TUPLE GENERATION
-// ============================================================================
 
 type Tuple = [number, number];
 
 /**
- * Generate directional tuples from base adjustment.
  * Returns 4 tuples for indices 0-3 (NE, SE, SW, NW or N, E, S, W).
  */
 function generateDirectionalTuples(
@@ -437,7 +412,6 @@ function generateDirectionalTuples(
     ];
   };
 
-  // Dispatch by motion type and grid
   if (mt === "dash") {
     return gridIsDiamond ? dashDiamond() : dashBox();
   } else if (mt === "static") {
@@ -448,15 +422,11 @@ function generateDirectionalTuples(
   }
 }
 
-// ============================================================================
-// DEFAULT PLACEMENT JSON LOADING
-// ============================================================================
 
 // Cache for loaded default placement data
 const defaultPlacementCache: Record<string, Record<string, Record<string, [number, number]>>> = {};
 
 /**
- * Load default placement data from JSON files.
  * Files are at: static/data/arrow_placement/{gridMode}/default/default_{gridMode}_{motionType}_placements.json
  */
 function loadDefaultPlacementData(gridMode: GridMode, motionType: string): Record<string, Record<string, [number, number]>> | null {
@@ -489,9 +459,6 @@ function loadDefaultPlacementData(gridMode: GridMode, motionType: string): Recor
   }
 }
 
-/**
- * Determine position type (alpha, beta, gamma) from end position string.
- */
 function getPositionType(endPosition?: string): string {
   if (!endPosition) return "alpha";
   const lower = endPosition.toLowerCase();
@@ -502,7 +469,6 @@ function getPositionType(endPosition?: string): string {
 }
 
 /**
- * Determine the layer type based on end orientation.
  * layer1 = radial (IN/OUT), layer2 = non-radial (CLOCK/COUNTER)
  */
 function getLayerType(endOrientation?: string): string {
@@ -514,7 +480,6 @@ function getLayerType(endOrientation?: string): string {
 }
 
 /**
- * Generate the placement key for default lookup.
  * Format: {motionType}_to_{layer}_{positionType}
  */
 function generatePlacementKey(
@@ -527,9 +492,6 @@ function generatePlacementKey(
   return `${motionType}_to_${layerType}_${posType}`;
 }
 
-/**
- * Get default adjustment from JSON data.
- */
 function getDefaultAdjustment(
   motionType: string,
   turns: number | "fl" | undefined,
@@ -562,9 +524,6 @@ function getDefaultAdjustment(
   return [0, 0];
 }
 
-// ============================================================================
-// MAIN ADJUSTMENT FUNCTION
-// ============================================================================
 
 /**
  * Calculate arrow adjustment for a motion.
@@ -573,7 +532,6 @@ function getDefaultAdjustment(
  * 1. Get base adjustment from motion type + turns (ALWAYS applied)
  * 2. Process through directional tuples based on location/quadrant
  * 3. Optionally add special placement overrides if they exist
- *
  * @param pictograph - Full pictograph data (needed for both motions' turns)
  * @param motion - The specific motion to get adjustment for
  * @param arrowLocation - Calculated arrow location (NE, SE, etc.)
@@ -584,7 +542,6 @@ export function calculateArrowAdjustment(
   motion: MotionAdjustmentInput,
   arrowLocation: GridLocation
 ): [number, number] {
-  // 1. Try to get special placement override first
   const blueEndOri = pictograph.blueMotion.endOrientation || "in";
   const redEndOri = pictograph.redMotion.endOrientation || "in";
   const oriKey = calculateOriKey(blueEndOri, redEndOri);
@@ -612,7 +569,6 @@ export function calculateArrowAdjustment(
     }
   }
 
-  // 2. If no special placement, use default adjustment from JSON files
   if (!hasSpecialPlacement) {
     const defaultAdj = getDefaultAdjustment(
       motion.motionType,
@@ -625,7 +581,6 @@ export function calculateArrowAdjustment(
     baseY = defaultAdj[1];
   }
 
-  // 3. Generate directional tuples from the adjustment values
   const tuples = generateDirectionalTuples(
     motion.motionType,
     motion.rotationDirection,
@@ -635,7 +590,6 @@ export function calculateArrowAdjustment(
     baseY
   );
 
-  // 4. Calculate quadrant index and select tuple
   const motionTypeEnum = motion.motionType.toLowerCase() as MotionType;
   const quadrantIndex = calculateQuadrantIndex(arrowLocation, motionTypeEnum, pictograph.gridMode);
   const selectedTuple = tuples[quadrantIndex] || [0, 0];

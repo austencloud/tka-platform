@@ -12,16 +12,33 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { ensureDataLoaded, saveAndOpenImage, generateRandomWord } from "../shared/server-context.js";
+import { ensureDataLoaded, saveAndOpenImage } from "../shared/server-context.js";
 import {
   buildSequenceFromLetters,
   parseWordToLetters,
+  generateChainableSequence,
   type SequenceResult,
   type BridgeSelections,
 } from "../core/sequence-builder.js";
-import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
+import { renderSequenceToImage } from "../core/sequence-renderer.js";
 import { allocateTurns } from "../core/turn-allocator.js";
-import { detectLOOPFromSteps, type LOOPComponentId } from "../core/loop/index.js";
+import { simplifyRepeatedWord } from "../core/word-simplifier.js";
+import { recalculateOrientationsWithOverrides } from "../core/orientation-propagation.js";
+import {
+  LOOPType,
+  Period,
+  detectLOOPFromSteps,
+  executeLOOP,
+  isLOOPValidForPositionPair,
+  loopTypeSchema,
+  periodSchema,
+  loopComponentsSchema,
+  decomposeLoopType,
+  componentStringToEnum,
+  autoBridgeForLoop,
+  LOOPComponent,
+  type LOOPComponentId,
+} from "../core/loop/index.js";
 import {
   parseConstraintSet,
   parseConstraints,
@@ -38,10 +55,6 @@ import {
 } from "../core/constraints/index.js";
 import type { PictographData } from "../types/pictograph.js";
 
-/**
- * Build sequence from constraints or legacy mode.
- * Shared by generate_sequence_image and view_sequence.
- */
 function buildSequenceWithConstraints(
   letters: string[],
   allPictographs: PictographData[],
@@ -109,25 +122,11 @@ function resolveConstraintSet(
   return emptyConstraintSet();
 }
 
-/**
- * Convert detected LOOP component IDs to renderer enum values.
- */
 function convertLOOPComponentsToEnum(components: LOOPComponentId[]): LOOPComponent[] {
-  return components.map(c => {
-    switch (c) {
-      case "rotated": return LOOPComponent.ROTATED;
-      case "mirrored": return LOOPComponent.MIRRORED;
-      case "flipped": return LOOPComponent.FLIPPED;
-      case "swapped": return LOOPComponent.SWAPPED;
-      case "inverted": return LOOPComponent.INVERTED;
-      case "rewound": return LOOPComponent.REWOUND;
-      default: return LOOPComponent.ROTATED;
-    }
-  });
+  return components.map(componentStringToEnum);
 }
 
 export function registerSequenceTools(server: McpServer): void {
-  // Tool: parse_constraints
   server.tool(
     "parse_constraints",
     "Parse a natural language constraint string without generating a sequence. Useful for understanding how constraints will be interpreted.",
@@ -163,7 +162,6 @@ export function registerSequenceTools(server: McpServer): void {
     }
   );
 
-  // Tool: analyze_word_feasibility
   server.tool(
     "analyze_word_feasibility",
     "Analyze whether specific constraints are achievable for a word BEFORE attempting generation. Returns detailed feasibility report including which transitions block certain constraints and suggests alternatives.",
@@ -290,7 +288,6 @@ export function registerSequenceTools(server: McpServer): void {
     }
   );
 
-  // Tool: get_sequence_data
   server.tool(
     "get_sequence_data",
     "Get sequence data without rendering an image. Use when Claude needs to analyze step data, check positions, or verify generation before showing to user. For showing sequences to users, use generate_sequence instead.",
@@ -306,7 +303,6 @@ export function registerSequenceTools(server: McpServer): void {
     async ({ word, gridMode = "diamond", maxAttempts = 500, bridgeSelections, constraints, constraintPreset, compact = false }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
-      // Parse word to individual letters
       const letters = parseWordToLetters(word.toUpperCase());
 
       if (letters.length === 0) {
@@ -318,28 +314,23 @@ export function registerSequenceTools(server: McpServer): void {
         };
       }
 
-      // Determine which constraint set to use
       let constraintSet = emptyConstraintSet();
       let parseResult: ReturnType<typeof parseConstraints> | undefined;
 
       if (constraintPreset) {
-        // Use preset
         const presetConstraints = getPresetConstraintSet(constraintPreset as PresetName);
         if (presetConstraints) {
           constraintSet = presetConstraints;
         }
       } else if (constraints) {
-        // Parse natural language constraints
         const parsed = parseConstraintSet(constraints);
         constraintSet = parsed.constraintSet;
         parseResult = parsed.parseResult;
       }
 
-      // Check if we should use constrained or legacy builder
       const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
 
       if (useConstrainedBuilder) {
-        // Run feasibility analysis to generate warnings
         let feasibilityWarnings: string[] = [];
         if (letters.length >= 2) {
           const matrix = getTransitionMatrix(allPictographs, gridMode);
@@ -388,7 +379,6 @@ export function registerSequenceTools(server: McpServer): void {
           }
         }
 
-        // Use the new constrained builder with beam search
         const result = buildConstrainedSequence({
           letters,
           allPictographs,
@@ -407,7 +397,6 @@ export function registerSequenceTools(server: McpServer): void {
           };
         }
 
-        // Build response with constraint report
         const response: Record<string, unknown> = {
           word: result.word,
           steps: result.steps.map((step, i) => ({
@@ -430,7 +419,6 @@ export function registerSequenceTools(server: McpServer): void {
           },
         };
 
-        // Include parse info if constraints were parsed from text
         if (parseResult) {
           (response.constraintReport as Record<string, unknown>).parseConfidence = parseResult.confidence;
           if (parseResult.unrecognized.length > 0) {
@@ -441,12 +429,10 @@ export function registerSequenceTools(server: McpServer): void {
           }
         }
 
-        // Include feasibility warnings if constraints can't be fully satisfied
         if (feasibilityWarnings.length > 0) {
           (response.constraintReport as Record<string, unknown>).feasibilityWarnings = feasibilityWarnings;
         }
 
-        // Include bridge information if bridges were used
         if (result.bridges && result.bridges.length > 0) {
           response.bridges = result.bridges.map(b => ({
             transitionIndex: b.transitionIndex,
@@ -459,7 +445,6 @@ export function registerSequenceTools(server: McpServer): void {
           }));
         }
 
-        // Compact mode - summary only
         if (compact) {
           const score = result.constraintReport.score;
           const satisfiedConstraints = result.constraintReport.details
@@ -485,7 +470,6 @@ export function registerSequenceTools(server: McpServer): void {
         };
       }
 
-      // Fall back to legacy builder for unconstrained generation
       const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
         ? Object.fromEntries(
             Object.entries(bridgeSelections).map(([k, v]) => [parseInt(k, 10), v])
@@ -532,12 +516,11 @@ export function registerSequenceTools(server: McpServer): void {
     }
   );
 
-  // Tool: generate_sequence (primary tool for sequence generation)
   server.tool(
     "generate_sequence",
-    "Generate a TKA sequence and open it in the system image viewer. This is the PRIMARY tool for sequence generation - use it by default. Returns minimal text confirmation (~50 tokens). For analyzing step data without showing to user, use get_sequence_data instead.",
+    "Generate a TKA sequence. If no word or length given, defaults to Austen's preferred config: rotated LOOP, quartered period (16 beats), 4 random letters, level 2, turn intensity 1, smooth constraints. Supports all 15 LOOP types. Returns image inline.",
     {
-      word: z.string().describe('The sequence word, e.g., "ABC"'),
+      word: z.string().optional().describe('The sequence word, e.g., "ABC". Optional if length is provided.'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
@@ -551,25 +534,51 @@ export function registerSequenceTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
       bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index.'),
-      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
-      turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3)."),
-      loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph."),
+      level: z.number().min(1).max(3).optional().default(2).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
+      turnIntensity: z.number().min(0).max(3).optional().default(1).describe("Maximum turn intensity (0-3). Default 1."),
+      loopComponents: loopComponentsSchema,
       constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions"'),
       constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset'),
       showReversals: z.boolean().optional().default(true).describe("Show reversal indicators (colored dots on left edge when prop direction changes from previous step). Defaults to true."),
+      loopType: loopTypeSchema.optional().describe("LOOP transformation to apply. When set, the seed word is generated first, then the LOOP transformation doubles/quadruples it into a circular sequence."),
+      period: periodSchema.optional().default("quartered").describe("LOOP period: quartered (4x, default) or halved (2x). Only used when loopType is set."),
+      blueStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for blue prop (default: "in")'),
+      redStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for red prop (default: "in")'),
+      length: z.number().min(1).max(20).optional().describe("Generate a random word of this length instead of specifying a word. Ignored if word is provided."),
     },
-    async ({ word, gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, maxAttempts = 500, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset, showReversals = true }) => {
-      // GUARDRAIL: Require tagline only for creative word requests.
-      // Skip enforcement when constraints, loopComponents, or constraintPreset suggest
-      // the user just wants a sequence generated, not a creative tagline session.
-      const isCreativeWordRequest = !loopComponents && !constraintPreset && !constraints;
+    async (input) => {
+      const { word, gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, maxAttempts = 500, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 2, turnIntensity = 1, loopComponents, constraints, showReversals = true, period = "quartered", blueStartOrientation, redStartOrientation, length } = input;
+
+      let effectiveLoopType = input.loopType;
+      let effectiveConstraintPreset = input.constraintPreset;
+
+      let resolvedWord = word;
+      const nothingSpecified = !word && !length;
+      if (!resolvedWord && length) {
+        const chainedLetters = generateChainableSequence(length);
+        resolvedWord = chainedLetters.join("");
+      }
+      if (!resolvedWord) {
+        const chainedLetters = generateChainableSequence(4);
+        resolvedWord = chainedLetters.join("");
+      }
+
+      if (nothingSpecified && !effectiveLoopType) {
+        effectiveLoopType = "rotated";
+      }
+      if (nothingSpecified && !effectiveConstraintPreset && !constraints) {
+        effectiveConstraintPreset = "smooth";
+      }
+
+      // Tagline guardrail — only fires when user explicitly provided a named word (not random)
+      const isCreativeWordRequest = !!word && !nothingSpecified && !effectiveLoopType && !loopComponents && !effectiveConstraintPreset && !constraints;
       if (isCreativeWordRequest && !notes) {
         return {
           content: [
             {
               type: "text" as const,
               text: [
-                `BLOCKED: No tagline (notes) provided for "${word}".`,
+                `BLOCKED: No tagline (notes) provided for "${resolvedWord}".`,
                 ``,
                 `You MUST present 4 tagline options to the user BEFORE generating.`,
                 ``,
@@ -588,15 +597,124 @@ export function registerSequenceTools(server: McpServer): void {
       }
 
       const allPictographs = ensureDataLoaded(gridMode);
-      const letters = parseWordToLetters(word.toUpperCase());
+      let letters = parseWordToLetters(resolvedWord.toUpperCase());
 
       if (letters.length === 0) {
         return {
           content: [
-            { type: "text" as const, text: `Cannot generate sequence image: no valid letters in "${word}"` },
+            { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${resolvedWord}"` },
           ],
           isError: true,
         };
+      }
+
+      if (effectiveLoopType) {
+        const loopTypeValue = effectiveLoopType as LOOPType;
+        const slice = period as Period;
+
+        let loopResult;
+        let bridgeAdded: string | null = null;
+        let baseResult;
+
+        // Phase 1: try without bridging — exhaust all retries first
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          baseResult = buildSequenceFromLetters(letters, allPictographs, attempt === 0 ? maxAttempts : 1);
+          if (!baseResult.isValid) continue;
+
+          const pp = `${baseResult.startPosition},${baseResult.endPosition}`;
+          if (!isLOOPValidForPositionPair(loopTypeValue, pp, slice)) continue;
+
+          loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeValue, slice, allPictographs);
+          if (loopResult.success) break;
+        }
+
+        // Phase 2: bridge only as last resort
+        if (!loopResult || !loopResult.success) {
+          loopResult = undefined;
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            baseResult = buildSequenceFromLetters(letters, allPictographs, attempt === 0 ? maxAttempts : 1);
+            if (!baseResult.isValid) continue;
+
+            const bridgeResult = autoBridgeForLoop(
+              baseResult.word, letters,
+              baseResult.startPosition, baseResult.endPosition,
+              loopTypeValue, slice, allPictographs
+            );
+
+            if (!bridgeResult.bridgeAdded) continue;
+
+            const finalResult = buildSequenceFromLetters(bridgeResult.letters, allPictographs, 1);
+            if (!finalResult.isValid) continue;
+
+            const pp = `${finalResult.startPosition},${finalResult.endPosition}`;
+            if (!isLOOPValidForPositionPair(loopTypeValue, pp, slice)) continue;
+
+            loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeValue, slice, allPictographs);
+            if (loopResult.success) {
+              baseResult = finalResult;
+              bridgeAdded = bridgeResult.bridgeAdded;
+              break;
+            }
+          }
+        }
+
+        if (!loopResult || !loopResult.success) {
+          return {
+            content: [
+              { type: "text" as const, text: `Failed to generate ${effectiveLoopType} LOOP: no compatible position found after ${maxAttempts} attempts` },
+            ],
+            isError: true,
+          };
+        }
+
+        if (blueStartOrientation || redStartOrientation) {
+          loopResult.steps = recalculateOrientationsWithOverrides(
+            loopResult.steps, blueStartOrientation, redStartOrientation
+          );
+        }
+
+        try {
+          const birthdayDate = birthday ? new Date(birthday) : undefined;
+          const effectiveComponents = loopComponents ?? decomposeLoopType(effectiveLoopType);
+          const parsedComponents = effectiveComponents.map(componentStringToEnum);
+          const stepCount = loopResult.steps.length - 1;
+          const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
+          const headerWord = simplifyRepeatedWord(loopResult.loopWord);
+
+          const pngBuffer = await renderSequenceToImage(loopResult.steps, headerWord, {
+            layout, cellSize, showStepNumbers, showWord, darkMode,
+            padding: 8, showDifficulty: true,
+            userName, notes, birthday: birthdayDate,
+            level, turnAllocation,
+            loopComponents: parsedComponents,
+            derivedBeatIndices: loopResult.derivedBeatIndices,
+            seedWord: loopResult.seedWord,
+            showReversals,
+          });
+
+          const tempPath = saveAndOpenImage(pngBuffer, `loop-${resolvedWord}`);
+          const bridgeNote = bridgeAdded ? `\nBridge added: ${bridgeAdded}` : "";
+
+          return {
+            content: [
+              {
+                type: "image" as const,
+                data: pngBuffer.toString("base64"),
+                mimeType: "image/png",
+              },
+              {
+                type: "text" as const,
+                text: `${effectiveLoopType} LOOP "${headerWord}"\n${stepCount} beats, ${period} period\nSeed: ${loopResult.seedWord} → Full: ${loopResult.loopWord}${bridgeNote}`,
+              },
+            ],
+          };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            content: [{ type: "text" as const, text: `Failed to render LOOP image: ${msg}` }],
+            isError: true,
+          };
+        }
       }
 
       const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
@@ -605,17 +723,15 @@ export function registerSequenceTools(server: McpServer): void {
           )
         : undefined;
 
-      const constraintSet = resolveConstraintSet(constraintPreset, constraints);
+      const constraintSet = resolveConstraintSet(effectiveConstraintPreset, constraints);
 
-      // Inline feasibility check when constraints are specified
       let feasibilityWarnings: string[] = [];
       const hasConstraints = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
 
       if (hasConstraints && letters.length >= 2) {
         const matrix = getTransitionMatrix(allPictographs, gridMode);
-        const feasibility = analyzeWordFeasibility(word, letters, matrix);
+        const feasibility = analyzeWordFeasibility(resolvedWord, letters, matrix);
 
-        // Check specific constraint types against feasibility
         const hasContinuityConstraint = constraintSet.soft.some(c => c.type === "continuity");
         const hasHandPathContinuityConstraint = constraintSet.soft.some(
           c => c.type === "handPath" && c.description.includes("continuous")
@@ -646,10 +762,16 @@ export function registerSequenceTools(server: McpServer): void {
       if (!result || !result.isValid) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate sequence for "${word}": ${error || result?.error || "unknown error"}` },
+            { type: "text" as const, text: `Failed to generate sequence for "${resolvedWord}": ${error || result?.error || "unknown error"}` },
           ],
           isError: true,
         };
+      }
+
+      if (blueStartOrientation || redStartOrientation) {
+        result.steps = recalculateOrientationsWithOverrides(
+          result.steps, blueStartOrientation, redStartOrientation
+        );
       }
 
       try {
@@ -657,69 +779,50 @@ export function registerSequenceTools(server: McpServer): void {
         const stepCount = result.steps.length - 1;
         const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
-        // Determine LOOP components: use explicit or auto-detect
         let finalLoopComponents: LOOPComponent[] | undefined;
         let loopDetectionInfo = "";
 
         if (loopComponents && loopComponents.length > 0) {
-          // Use explicitly provided LOOP components
-          finalLoopComponents = loopComponents.map(c => {
-            switch (c) {
-              case "rotated": return LOOPComponent.ROTATED;
-              case "mirrored": return LOOPComponent.MIRRORED;
-              case "swapped": return LOOPComponent.SWAPPED;
-              case "inverted": return LOOPComponent.INVERTED;
-              default: return LOOPComponent.ROTATED;
-            }
-          });
+          finalLoopComponents = loopComponents.map(componentStringToEnum);
           loopDetectionInfo = `LOOP: ${loopComponents.join(", ")}`;
         } else {
-          // Auto-detect LOOP pattern from sequence steps
-          const loopResult = detectLOOPFromSteps(result.steps);
-          if (loopResult.isCircular && loopResult.components.length > 0) {
-            finalLoopComponents = convertLOOPComponentsToEnum(loopResult.components);
-            loopDetectionInfo = `LOOP detected: ${loopResult.components.join(" + ")}`;
-          } else if (loopResult.isCircular) {
+          const loopDetection = detectLOOPFromSteps(result.steps);
+          if (loopDetection.isCircular && loopDetection.components.length > 0) {
+            finalLoopComponents = convertLOOPComponentsToEnum(loopDetection.components);
+            loopDetectionInfo = `LOOP detected: ${loopDetection.components.join(" + ")}`;
+          } else if (loopDetection.isCircular) {
             loopDetectionInfo = "Circular (freeform)";
           }
         }
 
-        // Use displayWord (if provided) as the seedWord to override the header display
         const pngBuffer = await renderSequenceToImage(result.steps, result.word, {
-          layout,
-          cellSize,
-          showStepNumbers,
-          showWord,
-          darkMode,
-          padding: 8,
-          showDifficulty,
-          userName,
-          notes,
-          birthday: birthdayDate,
-          level,
-          turnAllocation,
+          layout, cellSize, showStepNumbers, showWord, darkMode,
+          padding: 8, showDifficulty,
+          userName, notes, birthday: birthdayDate,
+          level, turnAllocation,
           loopComponents: finalLoopComponents,
           showReversals,
           seedWord: displayWord?.toUpperCase(),
         });
 
-        // Save to temp and open in system viewer
-        // Use displayWord for filename if provided (cleaner temp file names)
-        const tempPath = saveAndOpenImage(pngBuffer, `seq-${displayWord ?? word}`);
+        const tempPath = saveAndOpenImage(pngBuffer, `seq-${displayWord ?? resolvedWord}`);
 
         const loopLine = loopDetectionInfo ? `\n${loopDetectionInfo}` : "";
         const warningsLine = feasibilityWarnings.length > 0
           ? `\nConstraint notes: ${feasibilityWarnings.join("; ")}`
           : "";
 
-        // Return ONLY minimal text - NO image data (saves 30-100k tokens)
-        // Show displayWord in message if it differs from word
-        const headerWord = displayWord ?? word;
+        const headerWord = displayWord ?? resolvedWord;
         return {
           content: [
             {
+              type: "image" as const,
+              data: pngBuffer.toString("base64"),
+              mimeType: "image/png",
+            },
+            {
               type: "text" as const,
-              text: `Opened sequence "${headerWord}" in system viewer.\n${result.steps.length - 1} beats, ${layout} layout, ${cellSize}px cells${loopLine}${warningsLine}\nFile: ${tempPath}`,
+              text: `"${headerWord}" — ${result.steps.length - 1} beats, ${layout} layout${loopLine}${warningsLine}`,
             },
           ],
         };

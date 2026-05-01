@@ -53,9 +53,6 @@ export const WIP_LIMITS = {
 
 // ── Utility functions ──────────────────────────────────────────────
 
-/**
- * Normalize various timestamp formats to milliseconds
- */
 function normalizeTimestamp(
   value: Date | number | null | undefined
 ): number | null {
@@ -65,9 +62,6 @@ function normalizeTimestamp(
   return null;
 }
 
-/**
- * Check if a claim is stale (abandonable by another agent)
- */
 export function checkClaimStaleness(
   claimedAt: Date | number | null | undefined,
   lastActivity?: Date | number | null
@@ -121,9 +115,6 @@ export function checkClaimStaleness(
   };
 }
 
-/**
- * Check if a claim is approaching staleness (for warnings)
- */
 export function isApproachingStale(
   lastActivity: Date | number | null | undefined
 ): boolean {
@@ -134,9 +125,6 @@ export function isApproachingStale(
   return activityAge > STALE_THRESHOLDS.WARNING_THRESHOLD_MS;
 }
 
-/**
- * Format milliseconds as human-readable duration
- */
 export function formatDuration(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   if (minutes < 60) return `${minutes}m`;

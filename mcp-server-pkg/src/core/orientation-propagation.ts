@@ -21,7 +21,6 @@ const propagator = new OrientationPropagator(calculator);
 /**
  * Propagate orientations for a single color through all steps.
  * Each beat's start orientation = previous beat's end orientation.
- *
  * @param steps - The sequence steps (including start position at index 0)
  * @param color - Which motion color to propagate ("blue" or "red")
  * @param initialOrientation - The starting orientation (from step 0's end orientation)
@@ -77,7 +76,6 @@ export function propagateOrientationsForColor(
 /**
  * Recalculate all prop orientations through the entire sequence.
  * Uses the start position (step 0) orientations as the baseline.
- *
  * @param result - The sequence result to fix orientations on
  * @returns Updated sequence result with corrected orientations
  */
@@ -110,7 +108,6 @@ export function recalculateAllOrientations(result: SequenceResult): SequenceResu
 }
 
 /**
- * Recalculate orientations with explicit overrides for the start position.
  * Updates step 0's orientations and re-propagates through the entire sequence.
  */
 export function recalculateOrientationsWithOverrides(

@@ -118,7 +118,6 @@ const DEFAULT_OPTIONS: SequenceRenderOptions = {
 };
 
 /**
- * Get start orientation based on difficulty level.
  * - Level 1-2: "in" (radial)
  * - Level 3: "clock" (non-radial)
  */
@@ -127,7 +126,6 @@ function getStartOrientationForLevel(level: number): string {
 }
 
 /**
- * Render a sequence as a composite image.
  * Returns a PNG buffer.
  */
 export async function renderSequenceToImage(
@@ -325,7 +323,6 @@ export async function renderSequenceToImage(
  * Row 1: [start] [1] [2] [3] ...
  * Row 2:    -    [4] [5] [6] ...  (empty cell in column 0)
  * Row 3:    -    [7] [8] [9] ...
- *
  * @param stepIndex - Index in the steps array (0 = start position)
  * @param totalColumns - Total columns in the grid
  * @returns { row, col } position
@@ -395,7 +392,6 @@ function calculateLayout(
 }
 
 /**
- * Draw step number overlaid on pictograph (top-left corner)
  * Matches app's StepNumberRenderer style
  */
 function drawOverlaidStepNumber(
@@ -447,7 +443,6 @@ function drawOverlaidStepNumber(
 }
 
 /**
- * Draw cell borders only between occupied cells
  * Matches app's smart grid border logic
  */
 function drawSmartCellBorders(

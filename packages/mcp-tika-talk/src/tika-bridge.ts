@@ -52,13 +52,10 @@ import { TikaCapabilityLookup } from "../../../src/lib/features/tika/services/im
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface TikaBridge {
-  /** Execute a single tool by name and return filtered output */
   executeTool(name: string, args: Record<string, unknown>): Promise<unknown>;
   /** Build Vercel AI SDK tool definitions (same as +server.ts) */
   createTools(): ReturnType<typeof buildTools>;
-  /** Build system prompt for a given level */
   buildPrompt(level?: number): string;
-  /** Get a language model by key */
   getModel(key?: string): LanguageModel;
   /** Run full LLM round-trip and return diagnostics */
   ask(message: string, options?: AskOptions): Promise<AskResult>;
@@ -744,7 +741,6 @@ function buildTools(container: TikaServerContainer) {
 /** Regex to detect JSON objects leaked into response text */
 const JSON_LEAK_PATTERN = /\{[\s\S]*?"(?:type|explanation|contextData|inlinePictograph|startPosition|endPosition|blueMotion|redMotion)"[\s\S]*?\}/;
 
-/** Count inline content markers in tool results */
 function countInlineContent(steps: Array<{ toolResults: Array<{ output: unknown }> }>): number {
   let count = 0;
   for (const step of steps) {

@@ -250,9 +250,6 @@ export class WebSocketBridge {
     }
   }
 
-  /**
-   * Call a method on the game client
-   */
   async call<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T> {
     const client = this.getActiveClient();
     if (!client) {
@@ -298,9 +295,6 @@ export class WebSocketBridge {
     };
   }
 
-  /**
-   * Broadcast event to all connected (and authenticated) clients
-   */
   broadcast(event: string, data: unknown): void {
     const msg: BridgeEvent = { type: "event", event, data };
     const payload = JSON.stringify(msg);
@@ -312,9 +306,6 @@ export class WebSocketBridge {
     }
   }
 
-  /**
-   * Check if any authenticated game client is connected
-   */
   isConnected(): boolean {
     for (const [ws, state] of this.clientStates) {
       if (ws.readyState === WebSocket.OPEN && state.authenticated) {
@@ -337,9 +328,6 @@ export class WebSocketBridge {
     return count;
   }
 
-  /**
-   * Get an active authenticated client for sending requests
-   */
   private getActiveClient(): WebSocket | null {
     for (const [ws, state] of this.clientStates) {
       if (ws.readyState === WebSocket.OPEN && state.authenticated) {

@@ -53,9 +53,6 @@ export class SubscriptionManager {
     }
   }
 
-  /**
-   * Get available event types
-   */
   getEventTypes(): string[] {
     return [...EVENT_TYPES];
   }

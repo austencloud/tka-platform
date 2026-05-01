@@ -37,9 +37,6 @@ export const DEFAULT_BEAM_CONFIG: BeamSearchConfig = {
   allowPartial: true,
 };
 
-/**
- * Creates an initial search state from a starting position.
- */
 export function createInitialState(
   startPictograph: PictographData,
   variationIndex: number
@@ -95,9 +92,6 @@ export function extendState(
   };
 }
 
-/**
- * Prune the beam to keep only the top N states by score.
- */
 export function pruneBeam(
   states: SearchState[],
   beamWidth: number
@@ -111,24 +105,15 @@ export function pruneBeam(
   return sorted.slice(0, beamWidth);
 }
 
-/**
- * Check if a state is viable (all hard constraints satisfied so far).
- */
 export function isStateViable(state: SearchState): boolean {
   // All step scores must have hard constraints satisfied
   return state.stepScores.every((s) => s.hardConstraintsSatisfied);
 }
 
-/**
- * Get all viable states from a beam.
- */
 export function getViableStates(states: SearchState[]): SearchState[] {
   return states.filter(isStateViable);
 }
 
-/**
- * Find the best complete state (if any).
- */
 export function getBestState(
   states: SearchState[],
   minScore: number
@@ -150,7 +135,6 @@ export function getBestState(
 }
 
 /**
- * Calculate the total number of reversals in a sequence.
  * Used for reporting.
  */
 export function countReversals(state: SearchState): number {
@@ -185,9 +169,6 @@ function isDirectionChange(prev: string, curr: string): boolean {
   );
 }
 
-/**
- * Calculate continuity percentage for a sequence.
- */
 export function calculateContinuityPercentage(state: SearchState): number {
   if (state.steps.length <= 1) {
     return 100;

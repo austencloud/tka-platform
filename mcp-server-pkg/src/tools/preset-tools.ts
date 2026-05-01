@@ -7,17 +7,15 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { ensureDataLoaded, saveAndOpenImage, generateRandomWord } from "../shared/server-context.js";
+import { ensureDataLoaded, saveAndOpenImage } from "../shared/server-context.js";
 import type { GridMode } from "../types/pictograph.js";
 import {
   buildSequenceFromLetters,
-  buildSequenceForLoop,
   parseWordToLetters,
   generateChainableSequence,
   type SequenceStep,
-  type LoopConstraint,
 } from "../core/sequence-builder.js";
-import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
+import { renderSequenceToImage } from "../core/sequence-renderer.js";
 import { allocateTurns } from "../core/turn-allocator.js";
 import {
   parseConstraintSet,
@@ -30,6 +28,14 @@ import {
   LOOPType,
   Period,
   executeLOOP,
+  loopTypeSchema,
+  periodSchema,
+  loopComponentsSchema,
+  decomposeLoopType,
+  componentStringToEnum,
+  autoBridgeForLoop,
+  isLOOPValidForPositionPair,
+  LOOPComponent,
 } from "../core/loop/index.js";
 import {
   createPreset,
@@ -85,9 +91,9 @@ export function registerPresetTools(server: McpServer): void {
       name: z.string().describe("Preset name (e.g., 'Comfy 16')"),
       description: z.string().optional().describe("Description of the preset"),
       icon: z.string().optional().describe("Emoji icon for the preset"),
-      loopType: z.enum(["rewound", "rotated"]).optional().describe("LOOP type"),
-      period: z.enum(["halved", "quartered"]).optional().describe("Slice size for LOOP"),
-      loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP transformation components"),
+      loopType: loopTypeSchema.optional(),
+      period: periodSchema.optional().describe("LOOP period"),
+      loopComponents: loopComponentsSchema,
       wordLength: z.number().min(1).max(20).optional().describe("Default word length"),
       level: z.number().min(1).max(3).optional().describe("Difficulty level (1-3)"),
       turnIntensity: z.number().min(0).max(3).optional().describe("Turn intensity (0-3)"),
@@ -251,16 +257,9 @@ export function registerPresetTools(server: McpServer): void {
         let letters: string[] = [];
 
         if (!userSpecifiedWord) {
-          // For LOOP presets, use chainable sequence to avoid adding extra bridge letters
-          // For non-LOOP presets, use regular random word generation
           const targetLength = config.wordLength || 4;
-          if (config.loopType) {
-            letters = generateChainableSequence(targetLength);
-            word = letters.join("");
-          } else {
-            word = generateRandomWord(targetLength);
-            letters = parseWordToLetters(word);
-          }
+          letters = generateChainableSequence(targetLength);
+          word = letters.join("");
         } else {
           letters = parseWordToLetters(word);
         }
@@ -293,54 +292,107 @@ export function registerPresetTools(server: McpServer): void {
         let loopDebugEnd = "";
 
         if (config.loopType) {
-          // LOOP-aware sequence building
-          // noBridges: only skip bridges when we generated the word (chainable sequence)
-          // If user specified a word, allow bridges - beat count will vary
-          const loopConstraint: LoopConstraint = {
-            loopType: config.loopType as "rewound" | "rotated",
-            period: (config.period || "halved") as "halved" | "quartered",
-            noBridges: !userSpecifiedWord,
-          };
+          const loopTypeValue = config.loopType as LOOPType;
+          const slice = config.period as Period;
+          const maxAttempts = 500;
+          let loopResult;
+          let baseResult;
 
-          // Try multiple random words if needed (when no specific word provided)
-          // Use 100 attempts to give enough chances to find LOOP-compatible sequences
-          const maxWordAttempts = userSpecifiedWord ? 1 : 100;
-          let lastError = "";
-
-          for (let wordAttempt = 0; wordAttempt < maxWordAttempts; wordAttempt++) {
-            // Generate a new chainable sequence on retry (if no word provided)
-            if (wordAttempt > 0 && !userSpecifiedWord) {
+          // Phase 1: try without bridging
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            if (attempt > 0 && !userSpecifiedWord) {
               const targetLength = config.wordLength || 4;
               letters = generateChainableSequence(targetLength);
               word = letters.join("");
             }
 
-            const result = buildSequenceForLoop(letters, allPictographs, loopConstraint, 100);
-            if (result.isValid) {
-              steps = result.steps;
-              sequenceWord = result.word;
-              loopDebugWord = result.word;
-              loopDebugStart = result.startPosition;
-              loopDebugEnd = result.endPosition;
-              break;
-            }
+            baseResult = buildSequenceFromLetters(letters, allPictographs, attempt === 0 ? 100 : 1);
+            if (!baseResult.isValid) continue;
 
-            lastError = result.error || "Unknown error";
+            const pp = `${baseResult.startPosition},${baseResult.endPosition}`;
+            if (!isLOOPValidForPositionPair(loopTypeValue, pp, slice)) continue;
 
-            if (wordAttempt === maxWordAttempts - 1) {
-              return {
-                content: [{ type: "text" as const, text: `Failed to generate LOOP-compatible sequence after ${maxWordAttempts} word attempts. Last error: ${lastError}` }],
-                isError: true,
-              };
+            loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeValue, slice, allPictographs);
+            if (loopResult.success) break;
+          }
+
+          // Phase 2: bridge only as last resort
+          if (!loopResult || !loopResult.success) {
+            loopResult = undefined;
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+              if (attempt > 0 && !userSpecifiedWord) {
+                const targetLength = config.wordLength || 4;
+                letters = generateChainableSequence(targetLength);
+                word = letters.join("");
+              }
+
+              baseResult = buildSequenceFromLetters(letters, allPictographs, attempt === 0 ? 100 : 1);
+              if (!baseResult.isValid) continue;
+
+              const bridgeResult = autoBridgeForLoop(
+                baseResult.word, letters,
+                baseResult.startPosition, baseResult.endPosition,
+                loopTypeValue, slice, allPictographs
+              );
+
+              if (!bridgeResult.bridgeAdded) continue;
+
+              const finalResult = buildSequenceFromLetters(bridgeResult.letters, allPictographs, 1);
+              if (!finalResult.isValid) continue;
+
+              const pp = `${finalResult.startPosition},${finalResult.endPosition}`;
+              if (!isLOOPValidForPositionPair(loopTypeValue, pp, slice)) continue;
+
+              loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeValue, slice, allPictographs);
+              if (loopResult.success) {
+                baseResult = finalResult;
+                break;
+              }
             }
           }
 
-          if (!steps || steps.length === 0) {
+          if (!loopResult || !loopResult.success) {
             return {
-              content: [{ type: "text" as const, text: `Failed to generate LOOP-compatible sequence: ${lastError}` }],
+              content: [{ type: "text" as const, text: `Failed to generate ${config.loopType} LOOP after ${maxAttempts} attempts` }],
               isError: true,
             };
           }
+
+          steps = loopResult.steps;
+          sequenceWord = loopResult.loopWord;
+          loopDebugWord = loopResult.seedWord;
+          loopDebugStart = baseResult!.startPosition;
+          loopDebugEnd = baseResult!.endPosition;
+
+          // Render directly and return — skip the second executeLOOP call below
+          const effectiveComponents = config.loopComponents
+            ? config.loopComponents.map(componentStringToEnum)
+            : decomposeLoopType(config.loopType).map(componentStringToEnum);
+          const stepCount = loopResult.steps.length - 1;
+          const turnAllocation = allocateTurns(stepCount, level as 1 | 2 | 3);
+
+          const pngBuffer = await renderSequenceToImage(loopResult.steps, loopResult.loopWord, {
+            layout, cellSize,
+            showStepNumbers: true, showWord: true, darkMode,
+            turnAllocation,
+            loopComponents: effectiveComponents,
+            derivedBeatIndices: loopResult.derivedBeatIndices,
+            seedWord: loopResult.seedWord,
+            showDifficulty: true,
+            level: level as 1 | 2 | 3,
+          });
+
+          saveAndOpenImage(pngBuffer, loopResult.loopWord);
+
+          return {
+            content: [
+              { type: "image" as const, data: pngBuffer.toString("base64"), mimeType: "image/png" },
+              {
+                type: "text" as const,
+                text: `${config.loopType} LOOP from preset "${p.name}" — ${loopResult.loopWord}, ${stepCount} beats`,
+              },
+            ],
+          };
         } else if (config.constraintPreset || config.constraints) {
           // Constraint-based building (no LOOP)
           let constraintSet = emptyConstraintSet();
@@ -393,74 +445,6 @@ export function registerPresetTools(server: McpServer): void {
           sequenceWord = result.word;
         }
 
-        // If LOOP type is specified, apply transformation
-        if (config.loopType) {
-          const loopTypeEnum = config.loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
-          const period = config.period === "quartered" ? Period.QUARTERED : Period.HALVED;
-
-          // Debug: check positions before calling executeLOOP
-          const debugStartPos = steps[0]?.startPosition || "???";
-          const debugEndPos = steps[steps.length - 1]?.endPosition || "???";
-
-          const loopResult = executeLOOP(steps, sequenceWord, loopTypeEnum, period, allPictographs);
-
-          if (!loopResult.success) {
-            return {
-              content: [{ type: "text" as const, text: `LOOP ERROR: ${loopResult.error} ||| DEBUG word=${sequenceWord} steps=${steps.length} debugStart=${debugStartPos} debugEnd=${debugEndPos} ||| BUILDER word=${loopDebugWord} start=${loopDebugStart} end=${loopDebugEnd}` }],
-              isError: true,
-            };
-          }
-
-          // Render LOOP image
-          const parsedLoopComponents = config.loopType === "rewound" ? undefined : config.loopComponents?.map((c) => {
-            switch (c) {
-              case "rotated": return LOOPComponent.ROTATED;
-              case "mirrored": return LOOPComponent.MIRRORED;
-              case "swapped": return LOOPComponent.SWAPPED;
-              case "inverted": return LOOPComponent.INVERTED;
-              default: return LOOPComponent.ROTATED;
-            }
-          });
-
-          const stepCount = loopResult.steps.length - 1;
-          const turnAllocation = allocateTurns(stepCount, level as 1 | 2 | 3);
-
-          const pngBuffer = await renderSequenceToImage(loopResult.steps, loopResult.loopWord, {
-            layout,
-            cellSize,
-            showStepNumbers: true,
-            showWord: true,
-            darkMode,
-            turnAllocation,
-            loopComponents: parsedLoopComponents,
-            showDifficulty: true,
-            level: level as 1 | 2 | 3,
-          });
-
-          const tempPath = saveAndOpenImage(pngBuffer, loopResult.loopWord);
-
-          const textContent = {
-            type: "text" as const,
-            text: `Generated LOOP sequence from preset "${p.name}":\n- Word: ${loopResult.loopWord}\n- Beats: ${loopResult.steps.length}\n- Type: ${config.loopType} (${config.period || "halved"})\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
-          };
-
-          // Only include base64 image if explicitly requested (saves 30-100k tokens)
-          if (input.includeImage) {
-            return {
-              content: [
-                textContent,
-                {
-                  type: "image" as const,
-                  data: pngBuffer.toString("base64"),
-                  mimeType: "image/png",
-                },
-              ],
-            };
-          }
-
-          return { content: [textContent] };
-        }
-
         // Non-LOOP sequence
         const stepCount = steps.length - 1;
         const turnAllocation = allocateTurns(stepCount, level as 1 | 2 | 3);
@@ -476,28 +460,21 @@ export function registerPresetTools(server: McpServer): void {
           level: level as 1 | 2 | 3,
         });
 
-        const tempPath = saveAndOpenImage(pngBuffer, sequenceWord);
+        saveAndOpenImage(pngBuffer, sequenceWord);
 
-        const textContent = {
-          type: "text" as const,
-          text: `Generated sequence from preset "${p.name}":\n- Word: ${sequenceWord}\n- Beats: ${steps.length}\n- Level: ${level}\n\nImage opened in system viewer: ${tempPath}`,
+        return {
+          content: [
+            {
+              type: "image" as const,
+              data: pngBuffer.toString("base64"),
+              mimeType: "image/png",
+            },
+            {
+              type: "text" as const,
+              text: `Preset "${p.name}" — ${sequenceWord}, ${steps.length} beats, level ${level}`,
+            },
+          ],
         };
-
-        // Only include base64 image if explicitly requested (saves 30-100k tokens)
-        if (input.includeImage) {
-          return {
-            content: [
-              textContent,
-              {
-                type: "image" as const,
-                data: pngBuffer.toString("base64"),
-                mimeType: "image/png",
-              },
-            ],
-          };
-        }
-
-        return { content: [textContent] };
       } catch (error) {
         const message =
           error instanceof PresetNotFoundError

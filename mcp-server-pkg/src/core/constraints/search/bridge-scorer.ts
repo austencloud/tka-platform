@@ -15,9 +15,6 @@
 import type { ConstraintSet, IVariationConstraint, PictographData } from "../types.js";
 import type { HandTarget } from "../implementations/per-hand-dash-constraint.js";
 
-/**
- * Count dash motions in a pictograph variation.
- */
 function countDashMotions(pictograph: PictographData): number {
   let count = 0;
   if (pictograph.blueMotion.motionType === "dash") count++;
@@ -25,9 +22,6 @@ function countDashMotions(pictograph: PictographData): number {
   return count;
 }
 
-/**
- * Count shift motions (pro/anti) in a pictograph variation.
- */
 function countShiftMotions(pictograph: PictographData): number {
   let count = 0;
   const blueType = pictograph.blueMotion.motionType;
@@ -38,7 +32,6 @@ function countShiftMotions(pictograph: PictographData): number {
 }
 
 /**
- * Get the dash score for a pictograph based on its actual motions.
  * - 2 dashes = 1.0
  * - 1 dash = 0.75
  * - 0 dashes = 0.25
@@ -51,7 +44,6 @@ export function getDashScoreFromPictograph(pictograph: PictographData): number {
 }
 
 /**
- * Get the shift score for a pictograph based on its actual motions.
  * (Inverse of dash - for "minimize dashes" constraint)
  * - 2 shifts, 0 dashes = 1.0
  * - 1 shift, 0 dashes = 0.9
@@ -73,7 +65,6 @@ export function getShiftScoreFromPictograph(pictograph: PictographData): number 
 }
 
 /**
- * Get the dash score for a specific hand in a pictograph.
  * Used for per-hand constraints like "blue hand maximize dashes".
  */
 export function getPerHandDashScore(
@@ -99,7 +90,6 @@ export function getPerHandDashScore(
 }
 
 /**
- * Combined per-hand scoring when both hands have constraints.
  * Returns average of both hand scores.
  */
 export function getCombinedPerHandDashScore(
@@ -121,7 +111,6 @@ export function getCombinedPerHandDashScore(
 }
 
 /**
- * Check if a letter contains dash motions (requires pictograph data).
  * Falls back to checking letter name patterns if no pictograph provided.
  */
 export function isDashLetter(letter: string, pictographs?: PictographData[]): boolean {
@@ -134,7 +123,6 @@ export function isDashLetter(letter: string, pictographs?: PictographData[]): bo
 }
 
 /**
- * Get the dash score for a letter by examining its pictograph data.
  * Returns the score of the first variation (most variations of the same
  * letter have the same motion types).
  */
@@ -153,7 +141,6 @@ export function getDashScore(letter: string, pictographs?: PictographData[]): nu
 
 /**
  * Score and rank bridge letter options based on constraints.
- *
  * @param bridgeOptions - Array of valid bridge letters
  * @param constraintSet - Constraints to score against
  * @param allPictographs - All pictograph data (for detailed scoring)
@@ -223,7 +210,6 @@ export function scoreBridgeOptions(
 
 /**
  * Select the best bridge letter based on constraints.
- *
  * @param bridgeOptions - Array of valid bridge letters
  * @param constraintSet - Constraints to optimize for
  * @param allPictographs - Optional pictograph data for detailed scoring
@@ -248,7 +234,6 @@ export function selectBestBridge(
 }
 
 /**
- * Check for per-hand dash constraints in the constraint set.
  * Returns an object with the mode for each hand (or null if no constraint).
  */
 function checkForPerHandDashConstraints(constraintSet: ConstraintSet): {
@@ -293,9 +278,6 @@ function checkForPerHandDashConstraints(constraintSet: ConstraintSet): {
   return result;
 }
 
-/**
- * Check if the constraint set includes dash preference (maximize dashes).
- */
 function checkForDashPreference(constraintSet: ConstraintSet): boolean {
   const allConstraints = [...constraintSet.hard, ...constraintSet.soft];
 
@@ -316,9 +298,6 @@ function checkForDashPreference(constraintSet: ConstraintSet): boolean {
   return false;
 }
 
-/**
- * Check if the constraint set includes dash avoidance (minimize dashes).
- */
 function checkForDashAvoidance(constraintSet: ConstraintSet): boolean {
   const allConstraints = [...constraintSet.hard, ...constraintSet.soft];
 
@@ -340,9 +319,6 @@ function checkForDashAvoidance(constraintSet: ConstraintSet): boolean {
   return false;
 }
 
-/**
- * Score a pictograph variation against constraints.
- */
 function scoreAgainstConstraints(
   variation: PictographData,
   constraintSet: ConstraintSet
@@ -381,7 +357,6 @@ function scoreAgainstConstraints(
 
 /**
  * Generate optimal bridge selections for a sequence based on constraints.
- *
  * @param bridgeInfos - Array of bridge info from findAllBridgeOptions
  * @param constraintSet - Constraints to optimize for
  * @param allPictographs - Pictograph data for detailed scoring

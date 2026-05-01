@@ -13,7 +13,10 @@
     "noEmit": false,
     "rootDir": ".",
     "paths": {
-      "@tka/render-core": ["../packages/render-core/dist/index.d.ts"]
+      "@tka/render-core": ["../packages/render-core/dist/index.d.ts"],
+      "@tka/sequence-engine": ["../packages/sequence-engine/dist/index.d.ts"],
+      "@tka/sequence-engine/loop": ["../packages/sequence-engine/dist/loop/index.d.ts"],
+      "@tka/tka-types": ["../packages/tka-types/dist/index.d.ts"]
     }
   },
   "include": ["index.ts", "src/**/*.ts", "vendor/sequence-engine/**/*.ts"],

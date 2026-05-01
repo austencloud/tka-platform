@@ -11,9 +11,6 @@
  * - "HELLO" → "HELLO" (no pattern, returns original)
  */
 
-/**
- * Check if a string can be formed by repeating a pattern
- */
 function canFormByRepeating(s: string, pattern: string): boolean {
   const patternLen = pattern.length;
   if (s.length % patternLen !== 0) {

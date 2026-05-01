@@ -17,9 +17,6 @@ const PACKAGE_ROOT = isCompiled
 const DATA_DIR = path.resolve(PACKAGE_ROOT, "data");
 const PRESETS_FILE = path.join(DATA_DIR, "user-presets.json");
 
-/**
- * Default presets file structure when no file exists.
- */
 function createEmptyPresetsFile(): UserPresetsFile {
 	return {
 		version: 1,
@@ -29,7 +26,6 @@ function createEmptyPresetsFile(): UserPresetsFile {
 }
 
 /**
- * Loads user presets from the JSON file.
  * Returns empty structure if file doesn't exist.
  */
 export function loadUserPresets(): UserPresetsFile {
@@ -55,7 +51,6 @@ export function loadUserPresets(): UserPresetsFile {
 }
 
 /**
- * Saves user presets to the JSON file using atomic write.
  * Writes to a temp file first, then renames to prevent corruption.
  */
 export function saveUserPresets(data: UserPresetsFile): void {
@@ -77,18 +72,12 @@ export function saveUserPresets(data: UserPresetsFile): void {
 	fs.renameSync(tempFile, PRESETS_FILE);
 }
 
-/**
- * Adds a preset to storage.
- */
 export function addPreset(preset: UserSequencePreset): void {
 	const data = loadUserPresets();
 	data.presets.push(preset);
 	saveUserPresets(data);
 }
 
-/**
- * Updates a preset by ID.
- */
 export function updatePreset(
 	id: string,
 	updates: Partial<Omit<UserSequencePreset, "id" | "createdAt">>
@@ -114,9 +103,6 @@ export function updatePreset(
 	return updated;
 }
 
-/**
- * Deletes a preset by ID.
- */
 export function deletePreset(id: string): boolean {
 	const data = loadUserPresets();
 	const index = data.presets.findIndex((p) => p.id === id);
@@ -131,9 +117,6 @@ export function deletePreset(id: string): boolean {
 	return true;
 }
 
-/**
- * Gets a preset by ID or name.
- */
 export function getPreset(idOrName: string): UserSequencePreset | null {
 	const data = loadUserPresets();
 
@@ -146,16 +129,10 @@ export function getPreset(idOrName: string): UserSequencePreset | null {
 	return preset || null;
 }
 
-/**
- * Lists all presets.
- */
 export function listPresets(): UserSequencePreset[] {
 	return loadUserPresets().presets;
 }
 
-/**
- * Gets the file path for diagnostics.
- */
 export function getPresetsFilePath(): string {
 	return PRESETS_FILE;
 }

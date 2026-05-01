@@ -1,13 +1,13 @@
 /**
  * User Sequence Presets - Type Definitions
  *
- * Presets capture the full configuration space for sequence generation:
- * LOOP type, slice size, constraints, turn intensity, level, and more.
+ * Types derive from @tka/sequence-engine — never hardcode loop type lists here.
  */
 
-// Simple string types to avoid dependency on other modules
-export type LoopType = "rewound" | "rotated";
-export type Period = "halved" | "quartered";
+import { LOOPType, ALL_LOOP_TYPES, Period } from "@tka/sequence-engine/loop";
+
+export type LoopType = `${LOOPType}`;
+export { Period };
 export type GridMode = "diamond" | "box" | "skewed";
 
 /**
@@ -18,7 +18,7 @@ export interface PresetConfig {
 	// LOOP settings
 	loopType?: LoopType;
 	period?: Period;
-	loopComponents?: Array<"rotated" | "mirrored" | "swapped" | "inverted">;
+	loopComponents?: Array<"rotated" | "mirrored" | "flipped" | "swapped" | "inverted" | "rewound">;
 
 	// Word length (derived from LOOP config or explicit)
 	wordLength?: number;
@@ -91,11 +91,11 @@ export interface CreatePresetInput {
  * Type guard to validate preset config values.
  */
 export function isValidLoopType(value: string): value is LoopType {
-	return ["rewound", "rotated"].includes(value);
+	return (ALL_LOOP_TYPES as readonly string[]).includes(value);
 }
 
 export function isValidPeriod(value: string): value is Period {
-	return ["halved", "quartered"].includes(value);
+	return (Object.values(Period) as string[]).includes(value);
 }
 
 export function isValidGridMode(value: string): value is GridMode {
@@ -108,8 +108,8 @@ export function isValidLevel(value: number): value is 1 | 2 | 3 {
 
 export function isValidLoopComponent(
 	value: string
-): value is "rotated" | "mirrored" | "swapped" | "inverted" {
-	return ["rotated", "mirrored", "swapped", "inverted"].includes(value);
+): value is "rotated" | "mirrored" | "flipped" | "swapped" | "inverted" | "rewound" {
+	return ["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"].includes(value);
 }
 
 /**
