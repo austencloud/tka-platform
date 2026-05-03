@@ -10,10 +10,9 @@ import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { Point } from "fabric";
 import { createGridPointData } from "../../../../grid/utils/grid-coordinate-utils";
-import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
 
 
-export class ArrowGridCoordinator implements IArrowGridCoordinator {
+export class ArrowGridCoordinator {
   // Scene dimensions from grid module
   private readonly SCENE_SIZE = 950;
   private readonly CENTER_X = 475.0;

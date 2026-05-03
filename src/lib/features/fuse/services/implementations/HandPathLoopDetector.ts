@@ -1,9 +1,7 @@
-import type { IHandPathLoopDetector } from "../contracts/IHandPathLoopDetector";
-
 const DIAMOND_POINTS = new Set(["n", "e", "s", "w"]);
 const BOX_POINTS = new Set(["ne", "se", "sw", "nw"]);
 
-export class HandPathLoopDetector implements IHandPathLoopDetector {
+export class HandPathLoopDetector {
 	isLoop(locations: string[], gridMode: "diamond" | "box"): boolean {
 		if (locations.length < 2) return false;
 

@@ -46,7 +46,7 @@ interface RandomWalkState {
 export class RandomSequenceGenerator implements IRandomSequenceGenerator {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
-    private startPositionValidator: IStartPositionValidator,
+    private startPositionValidator: StartPositionValidator,
     private orientationContinuityValidator: IOrientationContinuityValidator,
     private orientationCalculator: IOrientationCalculator,
     private sequenceExtender: ISequenceExtender,

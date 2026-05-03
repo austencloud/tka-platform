@@ -9,7 +9,6 @@ import type { BroadcastSequence, BroadcastStepData } from "../../domain/models/b
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { IBroadcastSequenceConverter } from "../contracts/IBroadcastSequenceConverter";
 import type { GridPosition, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
@@ -20,7 +19,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
-export class BroadcastSequenceConverter implements IBroadcastSequenceConverter {
+export class BroadcastSequenceConverter {
   convertBeat(beat: BroadcastStepData, index: number): StepData {
     const gridMode = GridMode.DIAMOND; // Default for broadcast sequences
 

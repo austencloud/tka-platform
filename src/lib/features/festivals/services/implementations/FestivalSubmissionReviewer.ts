@@ -22,11 +22,10 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { FestivalSubmission } from "../../domain/models/festival";
-import type { IFestivalSubmissionReviewer } from "../contracts/IFestivalSubmissionReviewer";
-import type { IFestivalRepository } from "../contracts/IFestivalRepository";
+import type { FestivalRepository } from "./FestivalRepository";
 
-export class FestivalSubmissionReviewer implements IFestivalSubmissionReviewer {
-  constructor(private readonly festivalRepository: IFestivalRepository) {}
+export class FestivalSubmissionReviewer {
+  constructor(private readonly festivalRepository: FestivalRepository) {}
 
   async getPending(): Promise<FestivalSubmission[]> {
     const db = await getFirestoreInstance();

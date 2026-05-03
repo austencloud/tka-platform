@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IContributorLoader } from './services/contracts/IContributorLoader';
 import { ContributorLoader } from './services/implementations/ContributorLoader';
 
-let instance: IContributorLoader | null = null;
+let instance: ContributorLoader | null = null;
 
-export function getContributorLoader(): IContributorLoader {
+export function getContributorLoader(): ContributorLoader {
 	if (!browser) throw new Error('getContributorLoader() is browser-only');
 	return instance ??= new ContributorLoader();
 }

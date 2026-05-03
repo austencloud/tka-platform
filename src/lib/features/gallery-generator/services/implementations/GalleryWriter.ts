@@ -5,10 +5,9 @@
  * Supports prop-specific subfolders: /gallery/{propType}/{sequence}.webp
  */
 
-import type { IGalleryWriter } from "../contracts/IGalleryWriter";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-export class GalleryWriter implements IGalleryWriter {
+export class GalleryWriter {
   /**
    * Write image to gallery, optionally in a prop-specific subfolder
    * @param word - The sequence word/name

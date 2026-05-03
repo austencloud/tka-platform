@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ITranscriptionClient } from './services/contracts/ITranscriptionClient';
 import { TranscriptionClient } from './services/implementations/TranscriptionClient';
 
-let instance: ITranscriptionClient | null = null;
+let instance: TranscriptionClient | null = null;
 
-export function getTranscriptionClient(): ITranscriptionClient {
+export function getTranscriptionClient(): TranscriptionClient {
 	if (!browser) throw new Error('getTranscriptionClient() is browser-only');
 	return instance ??= new TranscriptionClient();
 }

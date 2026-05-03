@@ -29,7 +29,7 @@ import type { IOrientationCycleExtender } from "$lib/features/create/generate/ci
 import type { GeneratedSequenceInfo, GenerationSettings } from "../../domain/models/spinner-models";
 import type { EndState } from "../contracts/IEndlessSpinnerOrchestrator";
 import type { IInfiniteSequenceGenerator } from "../contracts/IInfiniteSequenceGenerator";
-import type { ISpinnerMetricsRepository } from "../contracts/ISpinnerMetricsRepository";
+import type { SpinnerMetricsRepository } from "./SpinnerMetricsRepository";
 
 /**
  * LOOP types that compose rotation + mirroring.
@@ -89,7 +89,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
 
   constructor(
     private generationOrchestrator: IGenerationOrchestrator,
-    private metricsRepository: ISpinnerMetricsRepository,
+    private metricsRepository: SpinnerMetricsRepository,
     private cycleExtender: IOrientationCycleExtender
   ) {
     // Start at a random position in the rotation for variety

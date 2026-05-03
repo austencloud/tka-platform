@@ -12,7 +12,7 @@ import type {
 } from "../contracts/IScreenshotUploadOrchestrator";
 import type { IScreenshotUploader } from "../contracts/IScreenshotUploader";
 import type { IScreenshotOrchestrator } from "../contracts/IScreenshotOrchestrator";
-import type { IScreenshotLoader } from "../contracts/IScreenshotLoader";
+import type { ScreenshotLoader } from "./ScreenshotLoader";
 
 /** How recently a screenshot must have been uploaded to count as a duplicate (ms) */
 const DEDUP_WINDOW_MS = 60_000;
@@ -23,7 +23,7 @@ export class ScreenshotUploadOrchestrator
   constructor(
     private readonly uploader: IScreenshotUploader,
     private readonly orchestrator: IScreenshotOrchestrator,
-    private readonly loader: IScreenshotLoader
+    private readonly loader: ScreenshotLoader
   ) {}
 
   async uploadCaptures(

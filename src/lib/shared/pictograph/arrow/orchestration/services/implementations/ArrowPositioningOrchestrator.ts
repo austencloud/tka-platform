@@ -12,8 +12,8 @@ import type { IArrowPositioningOrchestrator } from "../../../positioning/service
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { IArrowRotationCalculator } from "../../../positioning/calculation/services/contracts/IArrowRotationCalculator";
-import type { IArrowDataProcessor } from "../contracts/IArrowDataProcessor";
-import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
+import type { ArrowDataProcessor } from "./ArrowDataProcessor";
+import type { ArrowGridCoordinator } from "./ArrowGridCoordinator";
 import type { GridMode } from "../../../../grid/domain/enums/grid-enums";
 
 export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrator {
@@ -21,8 +21,8 @@ export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrat
     private locationCalculator: IArrowLocationCalculator,
     private rotationCalculator: IArrowRotationCalculator,
     private adjustmentCalculator: IArrowAdjustmentCalculator,
-    private coordinateSystem: IArrowGridCoordinator,
-    private dataProcessor: IArrowDataProcessor
+    private coordinateSystem: ArrowGridCoordinator,
+    private dataProcessor: ArrowDataProcessor
   ) {}
 
   async calculateArrowPoint(

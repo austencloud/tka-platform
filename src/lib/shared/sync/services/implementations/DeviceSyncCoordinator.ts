@@ -1,6 +1,5 @@
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 import type { IDeviceSyncCoordinator } from '../contracts/IDeviceSyncCoordinator';
-import type { HybridLogicalClock } from './HybridLogicalClock';
 import type { IPlaybackPositionCalculator } from '../contracts/IPlaybackPositionCalculator';
 import type { IStateMerger } from '../contracts/IStateMerger';
 import type { ISequenceLocalCache } from '../contracts/ISequenceLocalCache';

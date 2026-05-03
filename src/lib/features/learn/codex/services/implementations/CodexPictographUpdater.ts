@@ -24,9 +24,7 @@ import {
   SWAPPED_POSITION_MAP,
 } from "../../../../create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { CodexTransformationOperation } from "../../domain/types/codex-types";
-import type { ICodexPictographUpdater } from "../contracts/ICodexPictographUpdater";
-
-export class CodexPictographUpdater implements ICodexPictographUpdater {
+export class CodexPictographUpdater {
   /**
    * Rotate all pictographs 45° clockwise
    * - Rotates all locations by 45°

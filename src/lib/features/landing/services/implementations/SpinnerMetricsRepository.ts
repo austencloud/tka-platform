@@ -18,11 +18,9 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { SpinnerMetrics } from "../../domain/models/spinner-models";
-import type { ISpinnerMetricsRepository } from "../contracts/ISpinnerMetricsRepository";
-
 const METRICS_PATH = "appMetrics/spinner";
 
-export class SpinnerMetricsRepository implements ISpinnerMetricsRepository {
+export class SpinnerMetricsRepository {
   private cachedMetrics: SpinnerMetrics | null = null;
   private unsubscribe: Unsubscribe | null = null;
 

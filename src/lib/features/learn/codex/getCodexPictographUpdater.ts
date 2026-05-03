@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ICodexPictographUpdater } from './services/contracts/ICodexPictographUpdater';
 import { CodexPictographUpdater } from './services/implementations/CodexPictographUpdater';
 
-let instance: ICodexPictographUpdater | null = null;
+let instance: CodexPictographUpdater | null = null;
 
-export function getCodexPictographUpdater(): ICodexPictographUpdater {
+export function getCodexPictographUpdater(): CodexPictographUpdater {
 	if (!browser) throw new Error('getCodexPictographUpdater() is browser-only');
 	return instance ??= new CodexPictographUpdater();
 }

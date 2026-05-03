@@ -5,7 +5,6 @@
  * Supports real-time subscriptions, module filtering, and tag-based queries.
  */
 
-import type { IScreenshotLoader } from "../contracts/IScreenshotLoader";
 import type { ScreenshotMetadata } from "../contracts/IScreenshotUploader";
 import {
   getFirestoreInstance,
@@ -13,7 +12,7 @@ import {
   getAuthSync,
 } from "$lib/shared/auth/firebase";
 
-export class ScreenshotLoader implements IScreenshotLoader {
+export class ScreenshotLoader {
   private getUserId(): string {
     const auth = getAuthSync();
     const uid = auth.currentUser?.uid;

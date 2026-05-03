@@ -9,9 +9,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IPropTypeApplier } from "../contracts/IPropTypeApplier";
-
-export class PropTypeApplier implements IPropTypeApplier {
+export class PropTypeApplier {
   applyToSequence(sequence: SequenceData, propType: PropType): SequenceData {
     return {
       ...sequence,

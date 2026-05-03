@@ -1,7 +1,6 @@
-import type { IVideoCuratorLoader } from './services/contracts/IVideoCuratorLoader';
 import { VideoCuratorLoader } from './services/implementations/VideoCuratorLoader';
 
-let instance: IVideoCuratorLoader | null = null;
-export function getVideoCuratorLoader(): IVideoCuratorLoader {
+let instance: VideoCuratorLoader | null = null;
+export function getVideoCuratorLoader(): VideoCuratorLoader {
   return instance ??= new VideoCuratorLoader();
 }

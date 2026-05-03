@@ -1,7 +1,6 @@
 /**
  * Loads video curator data from Firestore
  */
-import type { IVideoCuratorLoader } from "../contracts/IVideoCuratorLoader";
 import type { ShowcaseVideo, VideoCategory, UserProfile } from "../../types";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 
@@ -16,7 +15,7 @@ const DEFAULT_QUICK_PERFORMERS: UserProfile[] = [
   { id: "40ovmSoxdRNouOIeQrhDFSwkDEX2", displayName: "Sky Guys Quest" },
 ];
 
-export class VideoCuratorLoader implements IVideoCuratorLoader {
+export class VideoCuratorLoader {
   async loadVideos(): Promise<ShowcaseVideo[]> {
     const { collection, getDocs, orderBy, query } = await import("firebase/firestore");
     const db = await getFirestoreInstance();

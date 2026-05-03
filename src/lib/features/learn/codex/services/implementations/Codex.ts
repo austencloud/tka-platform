@@ -10,7 +10,7 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contra
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { IQuizRepoManager } from "../../../quiz/services/contracts/IQuizRepository";
-import type { ICodexPictographUpdater } from "../contracts/ICodexPictographUpdater";
+import type { CodexPictographUpdater } from "./CodexPictographUpdater";
 import type { ICodex } from "../contracts/ICodex";
 import type { CodexLetterMappingRepo } from "./CodexLetterMappingRepo";
 
@@ -20,7 +20,7 @@ export class Codex implements ICodex {
   constructor(
     private letterMappingRepo: CodexLetterMappingRepo,
     private lessonRepo: IQuizRepoManager,
-    private operationsService: ICodexPictographUpdater,
+    private operationsService: CodexPictographUpdater,
     private LetterQueryHandler: ILetterQueryHandler
   ) {}
 
