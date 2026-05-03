@@ -4,10 +4,10 @@ import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { StepPairingData } from "../../domain/models/StepPairingData";
 import { createSequenceData, type SequenceData } from "../../domain/models/SequenceData";
 
-export class SequenceComposer implements ISequenceComposer {
+export class SequenceComposer {
   constructor(
-    private readonly stepDeriver: IStepDeriver,
-    private readonly hasher: IContentHasher
+    private readonly stepDeriver: StepDeriver,
+    private readonly hasher: ContentHasher
   ) {}
 
   combine(

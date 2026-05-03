@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IReportQuerier } from './services/contracts/IReportQuerier';
 import { ReportQuerier } from './services/implementations/ReportQuerier';
 
-let instance: IReportQuerier | null = null;
+let instance: ReportQuerier | null = null;
 
-export function getReportQuerier(): IReportQuerier {
+export function getReportQuerier(): ReportQuerier {
 	if (!browser) throw new Error('getReportQuerier() is browser-only');
 	return instance ??= new ReportQuerier();
 }

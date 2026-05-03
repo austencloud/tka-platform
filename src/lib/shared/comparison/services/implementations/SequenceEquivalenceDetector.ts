@@ -20,16 +20,16 @@ import type {
   MotionSignature,
 } from "$lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector";
 import type { ISequenceCanonicalizer } from "../contracts/ISequenceCanonicalizer";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
-import type { ISpatialTransformDetector } from "../contracts/ISpatialTransformDetector";
+import type { StepSignatureGenerator } from "./StepSignatureGenerator";
+import type { SpatialTransformDetector } from "./SpatialTransformDetector";
 import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector {
   constructor(
     private readonly sequenceCanonicalizer: ISequenceCanonicalizer,
-    private readonly stepSignatureGenerator: IStepSignatureGenerator,
-    private readonly spatialTransformDetector: ISpatialTransformDetector,
+    private readonly stepSignatureGenerator: StepSignatureGenerator,
+    private readonly spatialTransformDetector: SpatialTransformDetector,
     private readonly wordCyclicEquivalenceDetector: IWordCyclicEquivalenceDetector
   ) {}
 

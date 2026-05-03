@@ -27,13 +27,12 @@ import type {
   UserChallengeProgress,
   XPEventMetadata,
 } from "../../domain/models/achievement-models";
-import type { IDailyChallengeManager } from "../contracts/IDailyChallengeManager";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("DailyChallengeManager");
 
-export class DailyChallengeManager implements IDailyChallengeManager {
+export class DailyChallengeManager {
   private _initialized = false;
   private _achievementService: IAchievementManager | null = null;
 

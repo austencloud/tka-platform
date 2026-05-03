@@ -15,13 +15,13 @@ import type {
   TypeFilter,
 } from "../../domain/option-picker-types";
 import type { IPositionAnalyzer } from "../contracts/IPositionAnalyzer";
-import type { IReversalChecker } from "../contracts/IReversalChecker";
+import type { ReversalChecker } from "./ReversalChecker";
 import type { IOptionFilter } from "../contracts/IOptionFilter";
 import { LetterType } from "../../../../../../shared/foundation/domain/models/LetterType";
 
 export class OptionFilter implements IOptionFilter {
   constructor(
-    private ReversalChecker: IReversalChecker,
+    private ReversalChecker: ReversalChecker,
     private positionAnalyzer: IPositionAnalyzer
   ) {}
 

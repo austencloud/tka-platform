@@ -1,5 +1,4 @@
 import DOMPurify from "dompurify";
-import type { ISvgSanitizer } from "../contracts/ISvgSanitizer";
 
 /**
  * Only these CSS properties are allowed in style attributes.
@@ -26,7 +25,7 @@ const SAFE_STYLE_PROPERTIES = new Set([
  * properties (fill, stroke, opacity, color, etc.) are kept. Properties
  * like expression(), url(), and -moz-binding are stripped.
  */
-export class SvgSanitizer implements ISvgSanitizer {
+export class SvgSanitizer {
   sanitize(svgMarkup: string): string {
     // Sanitize style attribute values to only allow safe CSS properties.
     // This runs before DOMPurify's main sanitization pass.

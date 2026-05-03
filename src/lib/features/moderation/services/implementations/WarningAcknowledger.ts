@@ -7,11 +7,10 @@
 import { doc, updateDoc } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import { authState } from '$lib/shared/auth/state/authState.svelte';
-import type { IWarningAcknowledger } from '../contracts/IWarningAcknowledger';
 
 const USERS_COLLECTION = 'users';
 
-export class WarningAcknowledger implements IWarningAcknowledger {
+export class WarningAcknowledger {
   /**
    * Acknowledge and clear the current user's active warning.
    */

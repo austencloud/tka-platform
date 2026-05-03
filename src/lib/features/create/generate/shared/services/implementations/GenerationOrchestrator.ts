@@ -19,8 +19,6 @@ import {
   PropContinuity,
 } from "../../domain/models/generate-models";
 import type { IGenerationOrchestrator } from "../contracts/IGenerationOrchestrator";
-import type { BrowserVariationProvider } from "./BrowserVariationProvider";
-import type { BuildResultTransformer } from "./BuildResultTransformer";
 import type { SequenceMetadataManager } from "./SequenceMetadataManager";
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";

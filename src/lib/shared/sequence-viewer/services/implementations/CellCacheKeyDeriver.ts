@@ -47,11 +47,10 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import type { PreviewCellRenderOptions } from "../contracts/IPreviewCellRenderer";
-import type { ICellCacheKeyDeriver } from "../contracts/ICellCacheKeyDeriver";
 import type { IPictographKeyHasher } from "$lib/shared/render/services/contracts/IPictographKeyHasher";
 import { pictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 
-export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
+export class CellCacheKeyDeriver {
   constructor(private readonly keyHasher: IPictographKeyHasher) {}
 
   deriveCacheKey(

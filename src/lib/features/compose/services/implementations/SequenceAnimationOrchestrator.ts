@@ -18,7 +18,7 @@ import type {
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { IAnimationStateManager } from "../contracts/IAnimationStateManager";
 import type { IStepCalculator } from "../contracts/IStepCalculator";
-import type { IPropInterpolator } from "../contracts/IPropInterpolator";
+import type { PropInterpolator } from "./PropInterpolator";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
@@ -58,7 +58,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   constructor(
     private readonly animationStateService: IAnimationStateManager,
     private readonly stepCalculationService: IStepCalculator,
-    private readonly propInterpolationService: IPropInterpolator
+    private readonly propInterpolationService: PropInterpolator
   ) {}
 
   setVisibilityManager(vm: AnimationVisibilityStateManager): void {

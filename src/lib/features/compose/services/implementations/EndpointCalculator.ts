@@ -13,7 +13,7 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IAngleCalculator } from "../contracts/IAngleCalculator";
+import type { AngleCalculator } from "./AngleCalculator";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
 import { PI } from "../../shared/domain/math-constants.js";
 
@@ -22,7 +22,7 @@ import { PI } from "../../shared/domain/math-constants.js";
 
 export class EndpointCalculator {
   constructor(
-    private angleCalculator: IAngleCalculator,
+    private angleCalculator: AngleCalculator,
     private motionCalculator: IMotionCalculator
   ) {}
 

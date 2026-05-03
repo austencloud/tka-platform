@@ -19,7 +19,7 @@ import {
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/IFileDownloader";
 import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
-import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
+import type { CanvasRenderer } from "./CanvasRenderer";
 import type {
   VideoExportFormat,
   VideoExportOrchestratorOptions,
@@ -50,7 +50,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
   constructor(
     private readonly VideoExporter: IVideoExporter,
-    private readonly canvasRenderer: ICanvasRenderer,
+    private readonly canvasRenderer: CanvasRenderer,
     private readonly fileDownloadService: IFileDownloader,
     private readonly compositeRenderer: ICompositeVideoRenderer,
     private readonly glyphPrerenderer: IExportGlyphPrerenderer,

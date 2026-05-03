@@ -35,10 +35,9 @@ import {
   getWeeklyChallengeId,
   getCurrentWeekNumber,
 } from "../../domain/models/challenge-models";
-import type { IWeeklyChallengeManager } from "../contracts/IWeeklyChallengeManager";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
 
-export class WeeklyChallengeManager implements IWeeklyChallengeManager {
+export class WeeklyChallengeManager {
   private _initialized = false;
   private _achievementService: IAchievementManager | null = null;
 

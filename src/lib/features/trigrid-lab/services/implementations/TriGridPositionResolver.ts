@@ -7,10 +7,9 @@
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { TriGridMode, TriGridPositionInfo } from "../../domain/trigrid-types";
-import type { ITriGridPositionResolver } from "../contracts/ITriGridPositionResolver";
 import { resolveTriGridPosition } from "../../domain/trigrid-positions";
 
-export class TriGridPositionResolver implements ITriGridPositionResolver {
+export class TriGridPositionResolver {
   resolvePosition(
     blueLocation: GridLocation,
     redLocation: GridLocation,

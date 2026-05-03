@@ -1,6 +1,5 @@
-import type { ISoloPropFactory } from "../contracts/ISoloPropFactory";
-import type { IHandPathFactory } from "../contracts/IHandPathFactory";
-import type { IContentHasher } from "../contracts/IContentHasher";
+import type { HandPathFactory } from "./HandPathFactory";
+import type { ContentHasher } from "./ContentHasher";
 import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -18,10 +17,10 @@ function extractHandPathLocations(
   return locations;
 }
 
-export class SoloPropFactory implements ISoloPropFactory {
+export class SoloPropFactory {
   constructor(
-    private readonly handPathFactory: IHandPathFactory,
-    private readonly hasher: IContentHasher
+    private readonly handPathFactory: HandPathFactory,
+    private readonly hasher: ContentHasher
   ) {}
 
   create(

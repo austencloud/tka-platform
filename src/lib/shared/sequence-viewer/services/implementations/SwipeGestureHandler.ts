@@ -1,6 +1,4 @@
-import type { ISwipeGestureHandler } from "../contracts/ISwipeGestureHandler";
-
-export class SwipeGestureHandler implements ISwipeGestureHandler {
+export class SwipeGestureHandler {
   private _swipeY = 0;
   private _swipeStartY = 0;
   private _isSwiping = false;

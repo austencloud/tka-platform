@@ -7,8 +7,7 @@
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import { authState } from '$lib/shared/auth/state/authState.svelte';
-import type { IReportResolver } from '../contracts/IReportResolver';
-import type { IReportQuerier } from '../contracts/IReportQuerier';
+import type { ReportQuerier } from './ReportQuerier';
 import type { ResolveReportInput, UserReport } from '../../domain/models/report-models';
 import { REPORT_CATEGORIES } from '../../domain/models/report-models';
 import { notificationTriggerService } from '$lib/features/feedback/services/implementations/NotificationTrigger';
@@ -16,8 +15,8 @@ import { notificationTriggerService } from '$lib/features/feedback/services/impl
 const REPORTS_COLLECTION = 'userReports';
 const USERS_COLLECTION = 'users';
 
-export class ReportResolver implements IReportResolver {
-	constructor(private reportQuerier: IReportQuerier) {}
+export class ReportResolver {
+	constructor(private reportQuerier: ReportQuerier) {}
 
 	/**
 	 * Mark a report as "reviewing" (admin is looking at it).

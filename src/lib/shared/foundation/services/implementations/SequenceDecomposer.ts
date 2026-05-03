@@ -1,5 +1,4 @@
-import type { ISequenceDecomposer } from "../contracts/ISequenceDecomposer";
-import type { ISoloPropFactory } from "../contracts/ISoloPropFactory";
+import type { SoloPropFactory } from "./SoloPropFactory";
 import type { SequenceData } from "../../domain/models/SequenceData";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
@@ -71,8 +70,8 @@ function makePlaceholderStep(
   };
 }
 
-export class SequenceDecomposer implements ISequenceDecomposer {
-  constructor(private readonly soloPropFactory: ISoloPropFactory) {}
+export class SequenceDecomposer {
+  constructor(private readonly soloPropFactory: SoloPropFactory) {}
 
   extractBlueSoloProp(sequence: SequenceData): SoloPropData {
     return this.extractSoloProp(sequence, "blue");

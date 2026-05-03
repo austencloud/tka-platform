@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { IDailyChallengeManager } from './services/contracts/IDailyChallengeManager';
 import { DailyChallengeManager } from './services/implementations/DailyChallengeManager';
 import { getAchievementManager } from './getAchievementManager';
 
-let instance: IDailyChallengeManager | null = null;
+let instance: DailyChallengeManager | null = null;
 
-export function getDailyChallengeManager(): IDailyChallengeManager {
+export function getDailyChallengeManager(): DailyChallengeManager {
 	if (!browser) throw new Error('getDailyChallengeManager() is browser-only');
 	return instance ??= new DailyChallengeManager(getAchievementManager());
 }

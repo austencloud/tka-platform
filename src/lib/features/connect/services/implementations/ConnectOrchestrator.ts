@@ -8,9 +8,9 @@
 
 import type { IConnectOrchestrator } from '../contracts/IConnectOrchestrator';
 import type { IPresenceTracker } from '../contracts/IPresenceTracker';
-import type { ISessionManager } from '../contracts/ISessionManager';
-import type { IInviteHandler } from '../contracts/IInviteHandler';
-import type { IFriendshipManager } from '../contracts/IFriendshipManager';
+import type { SessionManager } from './SessionManager';
+import type { InviteHandler } from './InviteHandler';
+import type { FriendshipManager } from './FriendshipManager';
 import type { ILanSyncCoordinator } from '$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator';
 import type {
 	SyncSession,
@@ -29,9 +29,9 @@ export class ConnectOrchestrator implements IConnectOrchestrator {
 
 	constructor(
 		private presenceTracker: IPresenceTracker,
-		private sessionManager: ISessionManager,
-		private inviteHandler: IInviteHandler,
-		private friendshipManager: IFriendshipManager,
+		private sessionManager: SessionManager,
+		private inviteHandler: InviteHandler,
+		private friendshipManager: FriendshipManager,
 		private lanSyncCoordinator: ILanSyncCoordinator
 	) {}
 

@@ -1,9 +1,7 @@
 /**
  * MusicPlayer - Implementation for music playback in Write tab
  */
-import type { IMusicPlayer } from "../contracts/IMusicPlayer";
-
-export class MusicPlayer implements IMusicPlayer {
+export class MusicPlayer {
   private audioContext: AudioContext | null = null;
   private currentAudio: HTMLAudioElement | null = null;
   private initialized = false;

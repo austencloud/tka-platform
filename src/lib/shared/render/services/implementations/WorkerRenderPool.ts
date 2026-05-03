@@ -1,4 +1,3 @@
-import type { IWorkerRenderPool } from "../contracts/IWorkerRenderPool";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { LayerRenderOptions, LayerVisibility } from "../contracts/ILayerCompositor";
 import type {
@@ -20,7 +19,7 @@ interface WorkerEntry {
   pendingCount: number;
 }
 
-export class WorkerRenderPool implements IWorkerRenderPool {
+export class WorkerRenderPool {
   private workers: WorkerEntry[] = [];
   private pendingRenders = new Map<number, PendingRender>();
   private nextRequestId = 0;

@@ -1,7 +1,6 @@
-import type { IVideoTrailsExporter } from './services/contracts/IVideoTrailsExporter';
 import { VideoTrailsExporter } from './services/implementations/VideoTrailsExporter';
 
-let instance: IVideoTrailsExporter | null = null;
-export function getVideoTrailsExporter(): IVideoTrailsExporter {
+let instance: VideoTrailsExporter | null = null;
+export function getVideoTrailsExporter(): VideoTrailsExporter {
   return instance ??= new VideoTrailsExporter();
 }

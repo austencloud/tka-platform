@@ -19,7 +19,6 @@ import {
 } from 'firebase/firestore';
 import type { Timestamp, DocumentData, DocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { IReportQuerier } from '../contracts/IReportQuerier';
 import type {
 	ReportFilters,
 	ReportStatus,
@@ -49,7 +48,7 @@ interface FirestoreReportData extends DocumentData {
 	resolvedBy?: string;
 }
 
-export class ReportQuerier implements IReportQuerier {
+export class ReportQuerier {
 	/**
 	 * Get a single report by ID.
 	 */

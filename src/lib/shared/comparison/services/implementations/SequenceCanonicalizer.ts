@@ -11,13 +11,13 @@ import type {
   ISequenceCanonicalizer,
   CanonicalSequence,
 } from "../contracts/ISequenceCanonicalizer";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
+import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
 import type { SequenceSignature, StepSignature } from "../../domain/models/signatures";
 
 export class SequenceCanonicalizer implements ISequenceCanonicalizer {
   constructor(
-    private readonly stepSignatureGenerator: IStepSignatureGenerator,
+    private readonly stepSignatureGenerator: StepSignatureGenerator,
     private readonly wordCyclicEquivalenceDetector: IWordCyclicEquivalenceDetector
   ) {}
 

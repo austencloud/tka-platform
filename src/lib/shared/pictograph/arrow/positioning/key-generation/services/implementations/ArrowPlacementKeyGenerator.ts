@@ -8,10 +8,7 @@
 import { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { IArrowPlacementKeyGenerator } from "../contracts/IArrowPlacementKeyGenerator";
-
-
-export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
+export class ArrowPlacementKeyGenerator {
   // Letter condition mappings from desktop
   private readonly dashLetterConditions = {
     TYPE3: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],

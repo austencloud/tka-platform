@@ -1,7 +1,6 @@
-import type { IVideoTrailsExporter } from "../contracts/IVideoTrailsExporter";
 import type { ExportConfig, ExportState } from "../../domain/types";
 
-export class VideoTrailsExporter implements IVideoTrailsExporter {
+export class VideoTrailsExporter {
   private cancelled = false;
 
   async export(

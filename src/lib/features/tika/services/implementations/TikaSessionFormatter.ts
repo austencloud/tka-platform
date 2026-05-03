@@ -6,9 +6,8 @@
  */
 
 import type { TikaSession } from '../../domain/models/tika-conversation-models';
-import type { ITikaSessionFormatter } from '../contracts/ITikaSessionFormatter';
 
-export class TikaSessionFormatter implements ITikaSessionFormatter {
+export class TikaSessionFormatter {
 	formatForAIReview(session: TikaSession): string {
 		const lines: string[] = [
 			'# Tika Conversation for Review',

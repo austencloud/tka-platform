@@ -18,7 +18,7 @@ import type {
   QuickSimilarityResult,
   SimilarityOptions,
 } from "../contracts/ISimilarityCalculator";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
+import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { ISequenceAligner } from "../contracts/ISequenceAligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -33,7 +33,7 @@ const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
 
 export class SimilarityCalculator implements ISimilarityCalculator {
   constructor(
-    private readonly stepSignatureGenerator: IStepSignatureGenerator,
+    private readonly stepSignatureGenerator: StepSignatureGenerator,
     private readonly sequenceAligner: ISequenceAligner
   ) {}
 

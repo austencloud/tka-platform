@@ -1,9 +1,7 @@
-import type { IPlaybackTimeCalculator } from "../contracts/IPlaybackTimeCalculator";
-
 /**
  * Utility for converting between playback steps and time.
  */
-export class PlaybackTimeCalculator implements IPlaybackTimeCalculator {
+export class PlaybackTimeCalculator {
   stepToTimeMs(step: number, bpm: number): number {
     const msPerBeat = 60000 / bpm;
     return Math.round(step * msPerBeat);

@@ -15,13 +15,12 @@ import {
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import { authState } from '$lib/shared/auth/state/authState.svelte';
-import type { IReportSubmitter } from '../contracts/IReportSubmitter';
 import type { CreateReportInput, UserReport } from '../../domain/models/report-models';
 
 const REPORTS_COLLECTION = 'userReports';
 const RECENT_REPORT_HOURS = 24; // Prevent duplicate reports within 24 hours
 
-export class ReportSubmitter implements IReportSubmitter {
+export class ReportSubmitter {
 	/**
 	 * Submit a new report about a user.
 	 */

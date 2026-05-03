@@ -7,9 +7,7 @@
 
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
-import type { IShiftLocationCalculator } from "../contracts/IShiftLocationCalculator";
-
-export class ShiftLocationCalculator implements IShiftLocationCalculator {
+export class ShiftLocationCalculator {
   calculateLocation(motion: MotionData): GridLocation {
     const startLocation = motion.startLocation;
     const endLocation = motion.endLocation;

@@ -7,9 +7,7 @@
 
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { IStaticLocationCalculator } from "../contracts/IStaticLocationCalculator";
-
-export class StaticLocationCalculator implements IStaticLocationCalculator {
+export class StaticLocationCalculator {
   calculateLocation(motion: MotionData): GridLocation {
     // Static motions typically stay at their original location
     const startLocation = motion.startLocation;

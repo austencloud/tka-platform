@@ -15,9 +15,9 @@
  * Extracted from ArrowRenderer to improve modularity and reusability.
  */
 
-import type { ArrowPathResolver } from "./ArrowPathResolver";
-import type { ArrowSvgParser } from "./ArrowSvgParser";
-import type { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
+import type { ArrowPathResolver as ArrowPathResolverType } from "./ArrowPathResolver";
+import type { ArrowSvgParser as ArrowSvgParserType } from "./ArrowSvgParser";
+import type { ArrowSvgColorTransformer as ArrowSvgColorTransformerType } from "./ArrowSvgColorTransformer";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 import type { ArrowSvgData } from "../../../../shared/domain/models/svg-models";
 import type {

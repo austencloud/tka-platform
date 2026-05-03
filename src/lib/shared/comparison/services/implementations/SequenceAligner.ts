@@ -17,8 +17,8 @@ import type {
   CircularAlignmentResult,
   AlignmentOptions,
 } from "../contracts/ISequenceAligner";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
-import type { ISpatialTransformDetector } from "../contracts/ISpatialTransformDetector";
+import type { StepSignatureGenerator } from "./StepSignatureGenerator";
+import type { SpatialTransformDetector } from "./SpatialTransformDetector";
 import type { SpatialTransform } from "../../domain/models/signatures";
 
 const DEFAULT_OPTIONS: Required<AlignmentOptions> = {
@@ -30,8 +30,8 @@ const DEFAULT_OPTIONS: Required<AlignmentOptions> = {
 
 export class SequenceAligner implements ISequenceAligner {
   constructor(
-    private readonly beatSignatureGenerator: IStepSignatureGenerator,
-    private readonly spatialTransformDetector: ISpatialTransformDetector
+    private readonly beatSignatureGenerator: StepSignatureGenerator,
+    private readonly spatialTransformDetector: SpatialTransformDetector
   ) {}
 
   alignGlobal(

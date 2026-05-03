@@ -11,7 +11,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
-import type { IAnimationLoop } from "../contracts/IAnimationLoop";
+import type { AnimationLoop } from "./AnimationLoop";
 import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
@@ -52,7 +52,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
   constructor(
     private readonly animationEngine: ISequenceAnimationOrchestrator,
-    private readonly loopService: IAnimationLoop,
+    private readonly loopService: AnimationLoop,
     private readonly loopabilityChecker: ISequenceLoopabilityChecker
   ) {}
 

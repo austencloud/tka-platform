@@ -7,7 +7,6 @@
  *   Z = north-south (0 = north edge, depth = south edge)
  */
 
-import type { IRoomGeometryBuilder } from "../contracts/IRoomGeometryBuilder";
 import type {
 	RoomDefinition,
 	SolvedRoom,
@@ -30,7 +29,7 @@ function snap3(v: Vec3): Vec3 {
 	return [snapToGrid(v[0]), snapToGrid(v[1]), snapToGrid(v[2])];
 }
 
-export class RoomGeometryBuilder implements IRoomGeometryBuilder {
+export class RoomGeometryBuilder {
 	build(def: RoomDefinition): SolvedRoom {
 		const W = snapToGrid(def.width);
 		const D = snapToGrid(def.depth);

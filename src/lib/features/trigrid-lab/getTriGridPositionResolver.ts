@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ITriGridPositionResolver } from './services/contracts/ITriGridPositionResolver';
 import { TriGridPositionResolver } from './services/implementations/TriGridPositionResolver';
 
-let instance: ITriGridPositionResolver | null = null;
+let instance: TriGridPositionResolver | null = null;
 
-export function getTriGridPositionResolver(): ITriGridPositionResolver {
+export function getTriGridPositionResolver(): TriGridPositionResolver {
 	if (!browser) throw new Error('getTriGridPositionResolver() is browser-only');
 	return instance ??= new TriGridPositionResolver();
 }

@@ -11,7 +11,6 @@
 
 import type { VoiceSession, VoiceSessionEvent } from "$lib/shared/voice-control/domain/voice-session-types";
 import type { VoiceCommandCategory } from "$lib/shared/voice-control/domain/voice-command-types";
-import type { ITierPromotionEngine } from "../contracts/ITierPromotionEngine";
 import type { PromotionCandidate, PromotionEvidence } from "../../domain/promotion-types";
 
 /** Minimum T2 hits before generating a promotion candidate */
@@ -40,7 +39,7 @@ const CATEGORY_TO_INTERPRETER: Record<VoiceCommandCategory, string> = {
 const INTERPRETER_BASE_PATH =
   "src/lib/shared/voice-control/services/implementations/interpreters/";
 
-export class TierPromotionEngine implements ITierPromotionEngine {
+export class TierPromotionEngine {
   findPromotionCandidates(sessions: VoiceSession[]): PromotionCandidate[] {
     const t2Events = this.collectT2Events(sessions);
     const groups = this.groupByTranscriptAndCommand(t2Events);

@@ -22,7 +22,6 @@ import { auth, getFirestoreInstance } from "../../../auth/firebase";
 import { db } from "../../../persistence/database/TKADatabase";
 import { getUserNotificationsPath } from "../../data/firestore-collections";
 import type { AchievementNotification } from "../../domain/models/achievement-models";
-import type { IGamificationNotifier } from "../contracts/IGamificationNotifier";
 import { getMilestoneForLevel } from "../../domain/constants/xp-constants";
 import {
   addNotification,
@@ -30,7 +29,7 @@ import {
 } from "../../state/notification-state.svelte";
 import { addXPToast } from "../../state/xp-toast-state.svelte";
 
-export class GamificationNotifier implements IGamificationNotifier {
+export class GamificationNotifier {
   // ============================================================================
   // SHOW NOTIFICATIONS
   // ============================================================================
