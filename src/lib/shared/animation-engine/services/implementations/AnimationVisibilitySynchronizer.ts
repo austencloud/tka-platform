@@ -7,7 +7,6 @@
 
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type {
-  IAnimationVisibilitySynchronizer,
   AnimationVisibilityState,
   VisibilityStateCallback,
 } from "../contracts/IAnimationVisibilitySynchronizer";

@@ -1,9 +1,7 @@
 /**
- * Animation Visibility Sync Service Interface
+ * Animation Visibility Sync Types
  *
- * Provides a clean interface for components to subscribe to all
- * animation visibility settings at once, eliminating repetitive
- * individual state variable syncing.
+ * Co-exported types for the animation visibility system.
  */
 
 import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
@@ -30,23 +28,3 @@ export interface AnimationVisibilityState {
  */
 export type VisibilityStateCallback = (state: AnimationVisibilityState) => void;
 
-/**
- * Service for syncing animation visibility state
- */
-export interface IAnimationVisibilitySynchronizer {
-  /**
-   * Get current visibility state
-   */
-  getState(): AnimationVisibilityState;
-
-  /**
-   * Subscribe to visibility changes
-   * @returns Unsubscribe function
-   */
-  subscribe(callback: VisibilityStateCallback): () => void;
-
-  /**
-   * Clean up resources
-   */
-  dispose(): void;
-}

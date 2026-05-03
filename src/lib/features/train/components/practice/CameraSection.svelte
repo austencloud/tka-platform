@@ -14,7 +14,6 @@
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getPositionDetector } from "$lib/features/train/getPositionDetector";
-  import type { IPositionDetector } from "../../services/contracts/IPositionDetector";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

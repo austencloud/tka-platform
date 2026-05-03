@@ -9,7 +9,6 @@
 
 import {
   DEFAULT_CANVAS_SIZE,
-  type ICanvasResizer,
   type ResizableRenderer,
   type CanvasResizeState,
 } from "../contracts/ICanvasResizer";

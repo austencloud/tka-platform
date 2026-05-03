@@ -30,7 +30,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
    * What does NOT belong here (extract to services/managers):
    * - Business logic → move to services
    * - Complex effect logic → move to Manager files in state/managers/
-   * - Handlers > 10 lines → move to ICreateModuleHandlers
+   * - Handlers > 10 lines → move to CreateModuleHandlers
    * - State mutation logic → move to state operations
    *
    * See: docs/architecture/create-module-composition-root.md

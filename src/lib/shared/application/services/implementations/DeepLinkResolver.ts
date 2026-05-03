@@ -8,7 +8,6 @@
  */
 
 import type {
-  IDeepLinkResolver,
   DeepLinkResult,
 } from "../contracts/IDeepLinkResolver";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";

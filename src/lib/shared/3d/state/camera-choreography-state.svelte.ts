@@ -22,7 +22,6 @@ import {
 } from "../services/implementations/CameraChoreographer";
 
 import type {
-  ICameraChoreographer,
   PerformerPositionProvider,
 } from "../services/contracts/ICameraChoreographer";
 
@@ -31,7 +30,7 @@ import type {
  */
 export function createCameraChoreographyState() {
   // Internal choreographer instance
-  const choreographer: ICameraChoreographer = createCameraChoreographer();
+  const choreographer = createCameraChoreographer();
 
   // Reactive state
   let isEnabled = $state(false);

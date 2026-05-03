@@ -18,9 +18,9 @@
   import { onMount, onDestroy, untrack } from "svelte";
   import { T, useTask } from "@threlte/core";
   import { Vector3, Quaternion, Euler } from "three";
-  import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
-  import type { IIKSolver } from "../services/contracts/IIKSolver";
-  import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
+  import type { AvatarSkeletonBuilder } from "../services/implementations/AvatarSkeletonBuilder";
+  import type { IKSolver } from "../services/implementations/IKSolver";
+  import type { AvatarAnimator } from "../services/implementations/AvatarAnimator";
   import type { PropState3D } from "../domain/models/PropState3D";
   import { cmToUnits } from "../config/avatar-proportions";
   import {
@@ -38,12 +38,12 @@
   import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-  import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
-  import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
+  import type { LocomotionAnimator } from "../services/implementations/LocomotionAnimator";
+  import type { AnimationStateMachine } from "../services/implementations/AnimationStateMachine";
   import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
-  import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
+  import type { RootMotionExtractor } from "../services/implementations/RootMotionExtractor";
   import type { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
-  import type { IFootPlanter } from "../services/contracts/IFootPlanter";
+  import type { FootPlanter } from "../services/implementations/FootPlanter";
   import type { HingeConstrainedLegIKSolver } from "../services/implementations/HingeConstrainedLegIKSolver";
   import type { ContactCurveCache } from "../services/implementations/ContactCurveCache";
   import type { ClipBasedTurnAnimator } from "../services/implementations/ClipBasedTurnAnimator";
@@ -185,13 +185,13 @@
   let currentLocomotionState: LocomotionState = LocomotionState.IDLE;
 
   // Services (manually instantiated to ensure shared skeleton instance)
-  let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
-  let ikSolver: IIKSolver | null = $state(null);
-  let animationService: IAvatarAnimator | null = $state(null);
-  let locomotionAnimator: ILocomotionAnimator | null = $state(null);
-  let stateMachine: IAnimationStateMachine | null = null;
-  let rootMotionExtractor: IRootMotionExtractor | null = null;
-  let footPlanter: IFootPlanter | null = null;
+  let skeletonService: AvatarSkeletonBuilder | null = $state(null);
+  let ikSolver: IKSolver | null = $state(null);
+  let animationService: AvatarAnimator | null = $state(null);
+  let locomotionAnimator: LocomotionAnimator | null = $state(null);
+  let stateMachine: AnimationStateMachine | null = null;
+  let rootMotionExtractor: RootMotionExtractor | null = null;
+  let footPlanter: FootPlanter | null = null;
   let legIKSolver: HingeConstrainedLegIKSolver | null = null;
   let contactCurveCache: ContactCurveCache | null = null;
   let turnAnimator: ClipBasedTurnAnimator | null = null;

@@ -8,7 +8,6 @@ Features frame processing loop for pose estimation and overlay support.
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { CameraManager } from "../services/implementations/CameraManager";
-  import type { ICameraManager } from "../services/contracts/ICameraManager";
   import type { Snippet } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -31,7 +30,7 @@ Features frame processing loop for pose estimation and overlay support.
 
   let videoContainer: HTMLDivElement;
   let videoElement: HTMLVideoElement | null = $state(null);
-  let cameraService: ICameraManager | null = $state(null);
+  let cameraService: CameraManager | null = $state(null);
   let isInitializing = $state(true);
   let errorMessage = $state<string | null>(null);
   let isActive = $state(false);

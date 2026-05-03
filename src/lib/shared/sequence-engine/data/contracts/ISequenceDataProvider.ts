@@ -1,36 +1,8 @@
 /**
- * Sequence Data Provider Interface
+ * Sequence Data Provider Types
  *
- * Platform-agnostic interface for accessing letter and motion data.
- * Implementations differ between Node.js (MCP) and browser contexts.
+ * Co-exported types for the sequence data provider system.
  */
-
-import type { LetterMappingsJson } from "../../domain/models/SequenceEngineTypes.js";
-
-/**
- * Interface for loading sequence-related data.
- * Allows the sequence engine to work in both Node.js and browser contexts.
- */
-export interface ISequenceDataProvider {
-  /**
-   * Load letter mappings data.
-   * Contains position transitions and categories for all letters.
-   */
-  loadLetterMappings(): Promise<LetterMappingsJson>;
-
-  /**
-   * Load pictograph variations for a specific letter.
-   *
-   * @param letter - The letter to load variations for (e.g., "D", "Σ")
-   * @returns Array of variation data objects
-   */
-  loadLetterVariations(letter: string): Promise<LetterVariationData[]>;
-
-  /**
-   * Check if the data provider has been initialized.
-   */
-  isInitialized(): boolean;
-}
 
 /**
  * Data for a single letter variation (one row in the CSV).

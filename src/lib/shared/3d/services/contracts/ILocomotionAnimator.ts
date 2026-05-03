@@ -8,8 +8,7 @@
  * overrides arm bones when props are held.
  */
 
-import type { Object3D, AnimationClip, Bone } from "three";
-import type { LocomotionState } from "./IAnimationStateMachine";
+// Unused Three.js and LocomotionState imports removed (were only used by retired interface).
 
 /**
  * Locomotion state from the avatar movement system
@@ -74,58 +73,4 @@ export interface LocomotionConfig {
   stripLegBones?: boolean;
 }
 
-export interface ILocomotionAnimator {
-  /**
-   * Initialize with the avatar's root object.
-   * Must be called after the GLTF model is loaded.
-   */
-  initialize(root: Object3D): void;
-
-  /**
-   * Load all locomotion animation clips (idle + 4 directional walks).
-   * Clips are retargeted to match the avatar's bone naming convention
-   * and play on ALL bones (full body, not leg-filtered).
-   */
-  loadAnimations(urls: AnimationUrls): Promise<void>;
-
-  /**
-   * Update locomotion state from the movement system.
-   * Triggers idle/walk crossfade and directional weight blending.
-   */
-  setLocomotion(input: LocomotionInput): void;
-
-  /**
-   * Update animation each frame. Call from useTask/requestAnimationFrame loop.
-   * @param delta Time since last frame in seconds
-   */
-  update(delta: number): void;
-
-  /**
-   * Check if the animator is ready (initialized + at least one animation loaded)
-   */
-  isReady(): boolean;
-
-  /**
-   * Configure animation behavior
-   */
-  configure(config: LocomotionConfig): void;
-
-  /**
-   * Set which locomotion state is active (drives clip selection beyond idle/walk).
-   * When called, takes priority over the idle↔walk logic in setLocomotion().
-   * If never called, LocomotionAnimator works exactly as before (backward compatible).
-   */
-  setActiveState?(state: LocomotionState): void;
-
-  /**
-   * Get the Hips bone from the loaded skeleton. Used by
-   * RootMotionExtractor to read position deltas each frame.
-   * Returns null if the model isn't loaded yet.
-   */
-  getHipsBone?(): Bone | null;
-
-  /**
-   * Clean up all resources (mixer, actions, clips)
-   */
-  dispose(): void;
-}
+// ILocomotionAnimator interface retired — LocomotionAnimator class is the contract now.

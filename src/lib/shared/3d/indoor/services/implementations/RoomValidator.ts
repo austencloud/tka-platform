@@ -7,7 +7,16 @@
  * This validator catches those problems before they become runtime mysteries.
  */
 
-import type { ValidationIssue, ValidationResult } from "../contracts/IRoomValidator";
+export interface ValidationIssue {
+	severity: "error" | "warning";
+	message: string;
+	location?: [number, number, number];
+}
+
+export interface ValidationResult {
+	passed: boolean;
+	issues: ValidationIssue[];
+}
 import type { RoomDefinition, SolvedRoom } from "../../domain/room-types";
 import { snapToGrid } from "../../domain/room-types";
 

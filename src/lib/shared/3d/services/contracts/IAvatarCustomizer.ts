@@ -5,8 +5,6 @@
  * skin tone, proportions, and accessories.
  */
 
-import type { Material } from "three";
-
 /**
  * Body type preset
  */
@@ -75,76 +73,4 @@ export interface ProportionPreset {
   proportions: BodyProportions;
 }
 
-export interface IAvatarCustomizer {
-  /**
-   * Get the current customization state
-   */
-  getState(): AvatarCustomization;
-
-  /**
-   * Set the body type
-   */
-  setBodyType(type: BodyType): void;
-
-  /**
-   * Set the skin tone
-   * @param color Hex color string
-   */
-  setSkinTone(color: string): void;
-
-  /**
-   * Set custom proportions
-   */
-  setProportions(proportions: Partial<BodyProportions>): void;
-
-  /**
-   * Apply a proportion preset
-   */
-  applyPreset(presetId: string): void;
-
-  /**
-   * Get available proportion presets
-   */
-  getPresets(): ProportionPreset[];
-
-  /**
-   * Get skin tone presets
-   */
-  getSkinTonePresets(): SkinTonePreset[];
-
-  /**
-   * Toggle avatar visibility
-   */
-  setVisible(visible: boolean): void;
-
-  /**
-   * Get the skin material for applying to meshes
-   */
-  getSkinMaterial(): Material;
-
-  /**
-   * Get clothing/body material
-   */
-  getBodyMaterial(): Material;
-
-  /**
-   * Create custom proportions from height and body type
-   * Uses anthropometric ratios to derive all measurements
-   */
-  deriveProportions(heightCm: number, bodyType: BodyType): BodyProportions;
-
-  /**
-   * Subscribe to customization changes
-   */
-  onChange(callback: (state: AvatarCustomization) => void): () => void;
-
-  /**
-   * Save current customization to persistence
-   */
-  save(): void;
-
-  /**
-   * Load customization from persistence
-   */
-  load(): AvatarCustomization;
-}
+// IAvatarCustomizer interface retired — AvatarCustomizer class is the contract now.

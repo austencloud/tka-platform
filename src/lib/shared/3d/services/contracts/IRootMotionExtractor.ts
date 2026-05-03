@@ -15,8 +15,6 @@
  *   PhysicsProvider.movePlayer()   -- applies delta with collision
  */
 
-import type { Bone } from "three";
-
 export interface RootMotionDelta {
   /** Local-space lateral displacement this frame (left/right) */
   x: number;
@@ -33,36 +31,4 @@ export interface RootMotionDelta {
   yawDelta: number;
 }
 
-export interface IRootMotionExtractor {
-  /**
-   * Initialize with the Hips bone reference.
-   * Must be called after the GLTF model is loaded.
-   */
-  initialize(hipsBone: Bone): void;
-
-  /**
-   * Read the Hips XZ delta since last frame, then zero out the
-   * Hips XZ position so the mesh stays centered.
-   *
-   * Call this AFTER AnimationMixer.update() each frame.
-   * Returns { x: 0, z: 0 } if not initialized or no movement.
-   */
-  extract(): RootMotionDelta;
-
-  /**
-   * Reset the previous position tracker. Call this when:
-   * - Animation loops (prevents delta spike at loop boundary)
-   * - State changes (prevents carryover between clips)
-   */
-  reset(): void;
-
-  /**
-   * Whether the extractor is initialized with a valid Hips bone.
-   */
-  isReady(): boolean;
-
-  /**
-   * Clean up references.
-   */
-  dispose(): void;
-}
+// IRootMotionExtractor interface retired — RootMotionExtractor class is the contract now.

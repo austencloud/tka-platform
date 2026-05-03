@@ -5,7 +5,7 @@
  * Wraps the existing ILetterQueryHandler and fetches letter mappings.
  */
 
-import type { ISequenceDataProvider, LetterVariationData } from "../contracts/ISequenceDataProvider";
+import type { LetterVariationData } from "../contracts/ISequenceDataProvider";
 import type { LetterMappingsJson } from "../../domain/models/SequenceEngineTypes";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -16,7 +16,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
  * Browser-specific data provider.
  * Uses fetch for letter mappings and ILetterQueryHandler for variations.
  */
-export class BrowserDataProvider implements ISequenceDataProvider {
+export class BrowserDataProvider {
   private letterMappings: LetterMappingsJson | null = null;
   private initialized = false;
 

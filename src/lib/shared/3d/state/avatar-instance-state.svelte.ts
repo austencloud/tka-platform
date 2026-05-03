@@ -12,10 +12,8 @@ import { PlaneMode } from "../domain/enums/PlaneMode";
 import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "../domain/constants/plane-mode-configs";
 import { createPlaybackState } from "./playback-state.svelte";
 import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
-import type {
-  ISequenceConverter,
-  StepMotionConfigs,
-} from "../services/contracts/ISequenceConverter";
+import type { SequenceConverter } from "../services/implementations/SequenceConverter";
+import type { StepMotionConfigs } from "../services/contracts/ISequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
 import { SCALE } from "$lib/shared/3d/scale/scale-constants";
@@ -115,7 +113,7 @@ export interface AvatarInstanceConfig {
  */
 export interface AvatarInstanceDeps {
   propInterpolator: PropStateInterpolator;
-  sequenceConverter: ISequenceConverter;
+  sequenceConverter: SequenceConverter;
 }
 
 /**

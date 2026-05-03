@@ -6,7 +6,7 @@
  * 2. Circular rotation (different starting beat in circular sequences)
  * 3. Combined transforms
  *
- * This implementation fulfills the existing ISequenceEquivalenceDetector contract.
+ * Detects when two sequences are equivalent despite transforms.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

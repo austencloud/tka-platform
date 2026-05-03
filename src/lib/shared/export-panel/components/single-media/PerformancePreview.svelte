@@ -5,7 +5,7 @@
   Displays camera feed or uploaded video with record/upload toggle.
 
   Features:
-  - Live camera preview using ICameraManager
+  - Live camera preview using CameraManager
   - Video recording using VideoRecorder
   - File upload with video preview
   - Record/Upload mode toggle
@@ -18,7 +18,7 @@
   import { browser } from "$app/environment";
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
   import { getCameraManager } from "$lib/features/train/getCameraManager";
-  import type { ICameraManager } from "$lib/features/train/services/contracts/ICameraManager";
+  import type { CameraManager } from "$lib/features/train/services/implementations/CameraManager";
   import { getVideoRecorder } from "$lib/shared/video-record/services/implementations/VideoRecorder";
   import type {
     RecordingProgress,
@@ -29,7 +29,7 @@
   const hubState = getExportPanelState();
 
   // Services
-  let cameraService = $state<ICameraManager | null>(null);
+  let cameraService = $state<CameraManager | null>(null);
   const recordService = getVideoRecorder();
 
   // Camera state

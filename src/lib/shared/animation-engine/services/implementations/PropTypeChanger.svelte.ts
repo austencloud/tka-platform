@@ -7,10 +7,12 @@
  */
 
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-import type {
-  IPropTypeChanger,
-  PropTypeChangerState,
-} from "../contracts/IPropTypeChanger";
+export interface PropTypeChangerState {
+  bluePropType: string;
+  redPropType: string;
+  legacyPropType: string;
+  textureReloadSignal: number;
+}
 
 export class PropTypeChanger {
   // Reactive state - owned by service

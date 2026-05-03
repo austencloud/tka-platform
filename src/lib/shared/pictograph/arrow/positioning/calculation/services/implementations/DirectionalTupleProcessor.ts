@@ -14,10 +14,7 @@
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
-import type { IDirectionalTupleCalculator } from "../contracts/IDirectionalTupleGenerator";
-import type { IDirectionalTupleProcessor } from "../contracts/IDirectionalTupleGenerator";
-
-export class DirectionalTupleCalculator implements IDirectionalTupleCalculator {
+export class DirectionalTupleCalculator {
   /**
    * Calculator for directional tuples used in arrow positioning.
    */
@@ -326,13 +323,13 @@ export class QuadrantIndexCalculator {
   }
 }
 
-export class DirectionalTupleProcessor implements IDirectionalTupleProcessor {
+export class DirectionalTupleProcessor {
   /**
    * Processor for applying directional tuple adjustments to arrow positioning.
    */
 
   constructor(
-    private DirectionalTupleGenerator: IDirectionalTupleCalculator,
+    private DirectionalTupleGenerator: DirectionalTupleCalculator,
     private quadrantIndexService: QuadrantIndexCalculator
   ) {}
 

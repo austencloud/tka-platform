@@ -7,7 +7,7 @@
  * Platform-agnostic: uses ISequenceDataProvider for data loading.
  */
 import type { ITransitionGraph } from "../contracts/ITransitionGraph.js";
-import type { ISequenceDataProvider } from "../../data/contracts/ISequenceDataProvider.js";
+import type { BrowserDataProvider } from "../../data/implementations/BrowserDataProvider.js";
 import type { PositionGroup, LetterPositionInfo } from "../../domain/models/SequenceEngineTypes.js";
 /**
  * Transition graph for letter sequence building.
@@ -19,7 +19,7 @@ export declare class TransitionGraph implements ITransitionGraph {
     private lettersByStartGroup;
     private lettersByEndGroup;
     private initialized;
-    constructor(dataProvider: ISequenceDataProvider);
+    constructor(dataProvider: BrowserDataProvider);
     initialize(): Promise<void>;
     private buildGraph;
     private positionToGroup;

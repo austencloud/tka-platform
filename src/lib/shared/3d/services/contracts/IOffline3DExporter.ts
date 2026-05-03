@@ -1,4 +1,3 @@
-import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 import type { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
 
 export interface Offline3DExportOptions {
@@ -78,12 +77,4 @@ export interface Offline3DExportDependencies {
   setExportCurrentStep: (step: number | null) => void;
 }
 
-export interface IOffline3DExporter {
-  exportOffline(
-    deps: Offline3DExportDependencies,
-    onProgress: (progress: VideoExportProgress) => void,
-    options: Offline3DExportOptions
-  ): Promise<Blob>;
-
-  cancel(): void;
-}
+// IOffline3DExporter interface retired — Offline3DExporter class is the contract now.

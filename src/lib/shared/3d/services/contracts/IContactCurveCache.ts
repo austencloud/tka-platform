@@ -26,20 +26,4 @@ export interface ContactSample {
   hasCurve: boolean;
 }
 
-export interface IContactCurveCache {
-  /** Register a contact curve for a clip. Overwrites if already present. */
-  register(data: ContactCurveData): void;
-
-  /**
-   * Sample the contact state for a clip at a given phase (0-1).
-   * Out-of-range phases are clamped. Returns zero-contact with
-   * hasCurve=false if no curve is registered for the clip.
-   */
-  getContactAt(clipName: string, phase: number): ContactSample;
-
-  /** Check whether a clip has a registered curve. */
-  has(clipName: string): boolean;
-
-  /** Remove a clip's curve from the cache. */
-  unregister(clipName: string): void;
-}
+// IContactCurveCache interface retired — ContactCurveCache class is the contract now.

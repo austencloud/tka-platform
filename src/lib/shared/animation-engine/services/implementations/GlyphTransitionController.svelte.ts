@@ -8,7 +8,6 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
-  IGlyphTransitionController,
   GlyphTransitionState,
 } from "../contracts/IGlyphTransitionController";
 

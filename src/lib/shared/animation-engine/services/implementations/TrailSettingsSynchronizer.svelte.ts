@@ -11,11 +11,12 @@ import type { TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode as TrailModeEnum } from "../../domain/types/TrailTypes";
 import type { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
 import { saveTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
-import type {
-  ITrailSettingsSynchronizer,
-  RenderTriggerCallback,
-  TrailSettingsSyncState,
-} from "../contracts/ITrailSettingsSynchronizer";
+export type RenderTriggerCallback = () => void;
+
+export interface TrailSettingsSyncState {
+  syncedSettings: TrailSettings | null;
+  renderSignal: number;
+}
 
 export class TrailSettingsSynchronizer {
   // Reactive state - owned by service

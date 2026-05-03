@@ -9,7 +9,7 @@ import type {
 } from "../contracts/types";
 import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
-import type { IOffline3DExporter } from "$lib/shared/3d/services/contracts/IOffline3DExporter";
+import type { Offline3DExporter } from "$lib/shared/3d/services/implementations/Offline3DExporter";
 import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
@@ -28,7 +28,7 @@ export class SequenceModalExporter {
 
   private _videoExportOrchestrator: VideoExportOrchestrator | null = null;
   private _sequenceRenderer: SequenceRenderer | null = null;
-  private _activeExporter: IOffline3DExporter | null = null;
+  private _activeExporter: Offline3DExporter | null = null;
 
   private get videoExportOrchestrator(): VideoExportOrchestrator | null {
     if (!this._videoExportOrchestrator) {
@@ -124,7 +124,7 @@ export class SequenceModalExporter {
     deps: Video3DExportDependencies,
     callbacks: ExportCallbacks
   ): Promise<void> {
-    const exporter = getOffline3DExporter() as IOffline3DExporter;
+    const exporter = getOffline3DExporter() as Offline3DExporter;
     if (!exporter) {
       this._error = "3D export services not ready.";
       return;

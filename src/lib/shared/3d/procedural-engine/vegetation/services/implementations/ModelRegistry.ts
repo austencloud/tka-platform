@@ -13,7 +13,20 @@ import {
   type Material,
 } from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import type { CachedModel, ModelInfo } from "../contracts/IModelRegistry";
+
+export interface CachedModel {
+  geometry: BufferGeometry;
+  material: Material;
+  baseScale: number;
+  yOffset: number;
+}
+
+export interface ModelInfo {
+  id: string;
+  category: VegetationCategory;
+  biomes: ManifestBiome[];
+  path: string;
+}
 import type {
   VegetationCategory,
   ManifestBiome,

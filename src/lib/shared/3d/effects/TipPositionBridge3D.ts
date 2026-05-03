@@ -1,8 +1,15 @@
 import { Vector3, Quaternion, Euler } from "three";
 import type { PropTipPositions3D, TipPositionData3D } from "./types";
-import type {
-	PropState3DLike,
-} from "./contracts/ITipPositionBridge3D";
+/**
+ * Minimal prop state needed to compute tip positions.
+ */
+export interface PropState3DLike {
+	worldPosition: { x: number; y: number; z: number };
+	worldRotation: { x: number; y: number; z: number; w: number };
+	staffRotationAngle: number;
+	plane: string;
+	centerPathAngle: number;
+}
 
 interface TipHistory {
 	prevPosition: Vector3;

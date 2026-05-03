@@ -1,7 +1,7 @@
 /**
  * PostHog Activity Logger Implementation
  *
- * Implements IActivityLogger using PostHog for event tracking.
+ * PostHog activity logger implementation.
  * Drop-in replacement for the Firestore-based ActivityLogger.
  *
  * PostHog handles:
@@ -14,7 +14,6 @@
 import { browser } from "$app/environment";
 import { captureEvent } from "../posthog";
 import type {
-  IActivityLogger,
   ActivityQueryOptions,
 } from "../contracts/IActivityLogger";
 import type {

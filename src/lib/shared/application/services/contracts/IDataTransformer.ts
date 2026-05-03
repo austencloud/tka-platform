@@ -1,8 +1,7 @@
 /**
- * Data Transformation Service Contract
+ * Data Transformation Types
  *
- * Handles all data transformation and derivation logic for UI components.
- * This includes merging different data sources, filtering, and computing display values.
+ * Co-exported types for the data transformation system.
  */
 
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
@@ -25,40 +24,3 @@ export interface PictographDisplayData {
   motionsToRender: MotionRenderData[];
 }
 
-export interface IDataTransformer {
-  /**
-   * Transform pictograph data into display-ready format
-   */
-  transformPictographData(
-    pictographData?: PictographData | null
-  ): PictographDisplayData;
-
-  /**
-   * Get the effective pictograph data from multiple sources
-   */
-  getEffectivePictographData(
-    pictographData?: PictographData | null
-  ): PictographData | null;
-
-  /**
-   * Check if pictograph data is valid for rendering
-   */
-  hasValidPictographData(data: PictographData | null): boolean;
-
-  /**
-   * Extract display letter from pictograph data
-   */
-  getDisplayLetter(data: PictographData | null): string | null;
-
-  /**
-   * Get motions that should be rendered (visible motions only)
-   */
-  getMotionsToRender(data: PictographData | null): MotionRenderData[];
-
-  /**
-   * Filter motion data by visibility
-   */
-  filterVisibleMotions(
-    motions: Record<MotionColor, MotionData | null> | undefined
-  ): MotionRenderData[];
-}

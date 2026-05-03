@@ -191,7 +191,7 @@ import type { PictographWithReversals } from "../../../../shared/services/contra
 
   // Calculate optimal pictograph size and grid columns based on available space
   // CRITICAL: Considers BOTH width AND height constraints to prevent overflow
-  // Size calculation delegated to IGridFitCalculator service
+  // Size calculation delegated to GridFitCalculator service
   const optimalLayout = $derived(() => {
     const rawItemCount = displayedItems().length;
     const safeItemCount = Math.max(rawItemCount, 1);

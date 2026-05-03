@@ -13,7 +13,7 @@
 
 import { initFirestore } from "./lib/firestore-provider.js";
 import { loopDetector } from "../src/lib/features/loop-labeler/services/implementations/LOOPDetector";
-import type { SequenceEntry, RawStepData } from "../src/lib/features/loop-labeler/services/contracts/IStepDataConverter";
+import type { SequenceEntry, RawStepData } from "../src/lib/features/loop-labeler/domain/models/sequence-models";
 import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";

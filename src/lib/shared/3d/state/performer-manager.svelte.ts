@@ -18,20 +18,20 @@ import {
   MAX_PERFORMERS,
 } from "../domain/constants/performer-positions";
 import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
-import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
+import type { SequenceConverter } from "../services/implementations/SequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
 import type { FormationPreset } from "../domain/formation";
 import {
   createFormationManager,
 } from "../services/implementations/FormationManager";
-import type { IFormationManager } from "../services/contracts/IFormationManager";
+// FormationManager type inferred from createFormationManager return
 
 /**
  * Dependencies for performer manager
  */
 export interface PerformerManagerDeps {
   propInterpolator: PropStateInterpolator;
-  sequenceConverter: ISequenceConverter;
+  sequenceConverter: SequenceConverter;
   initialAvatarId: AvatarId;
   /**
    * Optional cap override. Defaults to the shared STAGE.MAX_PERFORMERS (4).
@@ -56,7 +56,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   // so the standalone viewer's 8-performer cap reaches the formation
   // engine - otherwise its internal clamp drops performers 5-8 from
   // slot calculations and they never move on preset apply.
-  const formationManager: IFormationManager = createFormationManager(1, maxPerformers);
+  const formationManager = createFormationManager(1, maxPerformers);
 
   // Derived: active performer state
   const activeState = $derived(performerStates[activePerformerIndex] ?? null);

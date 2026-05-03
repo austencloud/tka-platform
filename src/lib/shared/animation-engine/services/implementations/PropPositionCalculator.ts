@@ -12,7 +12,6 @@
 
 import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
 import type {
-  IPropPositionCalculator,
   PropEndpointConfig,
   PropEndpointResult,
   PropEndpointPair,

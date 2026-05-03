@@ -7,7 +7,6 @@
  */
 
 import type {
-  IViewer3DUndoManager,
   ViewerOperationType,
   ViewerSnapshot,
   ViewerUndoEntry,

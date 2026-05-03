@@ -1,13 +1,7 @@
 /**
- * IDeepLinkResolver - Resolves sequence IDs from URLs to full sequence data
+ * Deep Link Resolver Types
  *
- * Used by ModalUrlRestorer to fetch sequences from various sources
- * when a user navigates to a deep link URL.
- *
- * Resolution chain:
- * 1. SessionStorage cache (handles HMR and same-tab refresh)
- * 2. Local SequenceRepository (session sequences in IndexedDB)
- * 3. Firebase public sequences (for cross-user/cross-tab links)
+ * Co-exported types for the deep link resolution system.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -24,17 +18,3 @@ export interface DeepLinkResult {
   error: DeepLinkError;
 }
 
-export interface IDeepLinkResolver {
-  /**
-   * Resolve a sequence ID to full sequence data.
-   *
-   * Tries multiple sources in order:
-   * 1. Session cache (for HMR/refresh)
-   * 2. Local repository (IndexedDB)
-   * 3. Public sequences (Firebase)
-   *
-   * @param sequenceId - The sequence document ID from URL
-   * @returns Resolution result with sequence data and source
-   */
-  resolve(sequenceId: string): Promise<DeepLinkResult>;
-}

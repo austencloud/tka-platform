@@ -9,9 +9,9 @@
  * This is a plain TypeScript class - no Svelte reactivity needed.
  */
 
-import type { IFireTipTracker } from "../contracts/IFireTipTracker";
+import type { FireTipTracker } from "./FireTipTracker";
 
-import type { ILedTipTracker } from "../contracts/ILedTipTracker";
+import type { LedTipTracker } from "./LedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 
 import type { IAnimationRenderLoop } from "../contracts/IAnimationRenderLoop";
@@ -49,9 +49,9 @@ export class EffectRendererManager {
   // ── Renderer instances ──────────────────────────────────────────────
   fireRenderer: WebGLFireRenderer | null = null;
   charcoalRenderer: CharcoalSparkRenderer | null = null;
-  fireTipTracker: IFireTipTracker | null = null;
+  fireTipTracker: FireTipTracker | null = null;
   ledRenderer: WebGLLedRenderer | null = null;
-  ledTipTracker: ILedTipTracker | null = null;
+  ledTipTracker: LedTipTracker | null = null;
   trailOverlay: ITrailOverlayCanvas | null = null;
   zapRenderer: ZapOverlayRenderer | null = null;
   sparklesRenderer: SparklesOverlayRenderer | null = null;

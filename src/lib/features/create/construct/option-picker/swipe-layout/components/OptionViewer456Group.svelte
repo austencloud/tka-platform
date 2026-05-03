@@ -229,7 +229,7 @@ import { getAnimator } from "$lib/shared/application/getAnimator";
     }
   }
 
-  // Layout calculation now delegated to IAspectLayoutPlanner service
+  // Layout calculation delegated to AspectLayoutPlanner service
 
   // Smart layout organization based on context and available space
   const layoutSections = $derived(() => {

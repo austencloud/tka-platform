@@ -158,6 +158,5 @@ export interface RotationDirections {
   redRotationDirection: string;
 }
 
-// TurnAllocation is exported from services/contracts/ITurnAllocator.ts
-// Re-exporting here for backwards compatibility
+// Re-exporting TurnAllocation for backwards compatibility
 export type { TurnAllocation } from "../../services/contracts/types";

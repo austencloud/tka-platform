@@ -7,10 +7,12 @@
 
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import { MotionColor as MotionColorEnum } from "../../../pictograph/shared/domain/enums/pictograph-enums";
-import type {
-  ComponentLoadingState,
-  IComponentManager,
-} from "../contracts/IComponentManager";
+export interface ComponentLoadingState {
+  loadingStates: Record<string, boolean>;
+  isLoading: boolean;
+  loadingComponents: string[];
+  loadedComponents: string[];
+}
 
 export class ComponentManager {
   /**

@@ -11,12 +11,56 @@
 import { PerspectiveCamera, Vector3 as ThreeVector3 } from "three";
 import { CameraMode } from "../../types";
 import type { PhysicsProvider, Vector3 } from "../../types";
-import type {
-	MovementInput,
-	LookInput,
-	CameraState,
-	CameraMovementConfig,
-} from "../contracts/ICameraMovementController";
+
+/**
+ * Movement input state
+ */
+export interface MovementInput {
+	forward: boolean;
+	backward: boolean;
+	left: boolean;
+	right: boolean;
+	sprint: boolean;
+	crouch: boolean;
+	jump: boolean;
+}
+
+/**
+ * Look input (from mouse movement, touch, or gamepad)
+ */
+export interface LookInput {
+	deltaYaw: number;
+	deltaPitch: number;
+}
+
+/**
+ * Camera state for external consumers
+ */
+export interface CameraState {
+	mode: CameraMode;
+	yaw: number;
+	pitch: number;
+	isPointerLocked: boolean;
+	position: Vector3;
+}
+
+/**
+ * Configuration for camera movement controller
+ */
+export interface CameraMovementConfig {
+	destinationId: string;
+	moveSpeed?: number;
+	sprintMultiplier?: number;
+	crouchMultiplier?: number;
+	jumpForce?: number;
+	gravity?: number;
+	lookSensitivity?: number;
+	thirdPersonDistance?: number;
+	thirdPersonHeight?: number;
+	firstPersonHeight?: number;
+	orbitMinDistance?: number;
+	orbitMaxDistance?: number;
+}
 
 const DEFAULT_CONFIG: Required<Omit<CameraMovementConfig, "destinationId">> = {
 	moveSpeed: 5,

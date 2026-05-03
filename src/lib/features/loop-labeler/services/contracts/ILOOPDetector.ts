@@ -5,7 +5,7 @@ import type {
   TransformationIntervals,
 } from "../../domain/models/label-models";
 import type { ComponentId } from "../../domain/constants/loop-components";
-import type { PolyrhythmicLOOPResult } from "./IPolyrhythmicDetector";
+import type { PolyrhythmicLOOPResult } from "../implementations/PolyrhythmicDetector";
 import type { DetectedComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { StepPairRelationship } from "./types";
 import type { LayeredPathResult } from "./types";

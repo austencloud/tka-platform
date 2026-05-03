@@ -27,15 +27,59 @@
  * ```
  */
 
-import type {
-  IPerformerSynchronizer,
-  PerformerId,
-  OffsetRange,
-  PerformerSyncConfig,
-  PerformerSyncState,
-  SyncStateChangeCallback,
-  StepEventCallback,
-} from "../contracts/IPerformerSynchronizer";
+export type PerformerId = string;
+
+export interface OffsetRange {
+  min: number;
+  max: number;
+}
+
+export interface PerformerSyncConfig {
+  id: PerformerId;
+  stepOffset: number;
+  followsMaster: boolean;
+}
+
+export interface PerformerSyncState {
+  id: PerformerId;
+  currentStep: number;
+  stepProgress: number;
+  isSynced: boolean;
+}
+
+export type SyncStateChangeCallback = (states: PerformerSyncState[]) => void;
+
+export type StepEventCallback = (
+  performerId: PerformerId,
+  stepIndex: number
+) => void;
+
+export interface IPerformerSynchronizer {
+  readonly isSyncEnabled: boolean;
+  readonly masterId: PerformerId;
+  readonly performerCount: number;
+  readonly offsetRange: OffsetRange;
+  addPerformer(id: PerformerId, initialOffset?: number): void;
+  removePerformer(id: PerformerId): void;
+  getPerformerConfig(id: PerformerId): PerformerSyncConfig | null;
+  getAllPerformerConfigs(): PerformerSyncConfig[];
+  enableSync(): void;
+  disableSync(): void;
+  toggleSync(): void;
+  setMaster(id: PerformerId): void;
+  setPerformerOffset(id: PerformerId, offset: number): void;
+  incrementOffset(id: PerformerId): void;
+  decrementOffset(id: PerformerId): void;
+  resetAllOffsets(): void;
+  calculateFollowerBeat(performerId: PerformerId, masterStep: number, totalSteps: number): number;
+  getSyncStates(): PerformerSyncState[];
+  getSyncState(id: PerformerId): PerformerSyncState | null;
+  onMasterBeatChange(masterStep: number, totalSteps: number): void;
+  onMasterPlayStateChange(isPlaying: boolean): void;
+  onSyncStateChange(callback: SyncStateChangeCallback): () => void;
+  onStep(callback: StepEventCallback): () => void;
+  destroy(): void;
+}
 
 // ============================================================================
 // Default Configuration
@@ -406,6 +450,3 @@ export function createPerformerSynchronizer(
 
   return synchronizer;
 }
-
-// Re-export types for convenience
-export type { IPerformerSynchronizer };

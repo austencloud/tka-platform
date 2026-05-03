@@ -1,11 +1,9 @@
 import { Vector3 } from "three";
-import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
-import type {
-  BoneName,
-  IAvatarSkeletonBuilder,
-} from "../services/contracts/IAvatarSkeletonBuilder";
+import type { AvatarAnimator } from "../services/implementations/AvatarAnimator";
+import type { BoneName } from "../services/contracts/IAvatarSkeletonBuilder";
+import type { AvatarSkeletonBuilder } from "../services/implementations/AvatarSkeletonBuilder";
 
-type ToggleAnimator = IAvatarAnimator & {
+type ToggleAnimator = AvatarAnimator & {
   togglePoleVectors?: () => boolean;
   toggleClavicleRaise?: () => boolean;
   toggleSpineTwist?: () => boolean;
@@ -24,7 +22,7 @@ export interface AvatarDebugHandle {
 
 export function installAvatarDebugHooks(args: {
   animator: ToggleAnimator;
-  skeleton: IAvatarSkeletonBuilder;
+  skeleton: AvatarSkeletonBuilder;
 }): AvatarDebugHandle {
   const { animator, skeleton } = args;
   const w = window as typeof window & AvatarDebugHooks;

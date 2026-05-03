@@ -20,7 +20,6 @@
 
 import {
 	LocomotionState,
-	type IAnimationStateMachine,
 	type LocomotionStateInput,
 	type LocomotionStateOutput,
 	type AnimationStateMachineConfig,

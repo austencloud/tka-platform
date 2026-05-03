@@ -51,23 +51,4 @@ export interface TurnSample {
   clipName: string;
 }
 
-export interface ITurnAnimator {
-  /**
-   * Sample the turn pose at a given phase. Pure function: same input
-   * always returns same output. Consumers own the phase clock.
-   */
-  sample(request: TurnRequest): TurnSample;
-
-  /**
-   * Compute the shortest-path heading change in radians, normalized
-   * to [-π, π]. Consumers use this to check if a turn is large enough
-   * to schedule (e.g. skip changes below some epsilon).
-   */
-  computeShortestAngle(fromHeading: number, toHeading: number): number;
-
-  /** Whether all turn clips are loaded and baked. */
-  isReady(): boolean;
-
-  /** Dispose loaded clip data. */
-  dispose(): void;
-}
+// ITurnAnimator interface retired — ClipBasedTurnAnimator class is the contract now.

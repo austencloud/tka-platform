@@ -17,9 +17,11 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
 import type { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
 import type { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
-import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTipTracker";
+import type { FireTipTrackerConfig } from "../contracts/IFireTipTracker";
+import type { FireTipTracker } from "./FireTipTracker";
 import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer'
-import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
+import type { LedTipTrackerConfig } from "../contracts/ILedTipTracker";
+import type { LedTipTracker } from "./LedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import type { ZapOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/ZapOverlayRenderer'
 import type { SparklesOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SparklesOverlayRenderer'
@@ -112,9 +114,9 @@ export class AnimationRenderLoop {
   private frameBudgetMonitor: FrameBudgetMonitor | null = null;
   private fireRenderer: WebGLFireRenderer | null = null;
   private charcoalRenderer: CharcoalSparkRenderer | null = null;
-  private fireTipTracker: IFireTipTracker | null = null;
+  private fireTipTracker: FireTipTracker | null = null;
   private ledRenderer: WebGLLedRenderer | null = null;
-  private ledTipTracker: ILedTipTracker | null = null;
+  private ledTipTracker: LedTipTracker | null = null;
   private trailOverlay: ITrailOverlayCanvas | null = null;
   private zapRenderer: ZapOverlayRenderer | null = null;
   private sparklesRenderer: SparklesOverlayRenderer | null = null;

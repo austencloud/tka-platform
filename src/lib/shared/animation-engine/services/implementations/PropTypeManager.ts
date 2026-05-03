@@ -15,7 +15,7 @@ import type { TrailCapturer } from "$lib/features/compose/services/implementatio
 import type { IAnimationRenderLoop, RenderFrameParams } from "../contracts/IAnimationRenderLoop";
 import type { IAnimationPrecomputer } from "../contracts/IAnimationPrecomputer";
 import type { PropTypeChanger } from "./PropTypeChanger.svelte";
-import type { IFireTipTracker } from "../contracts/IFireTipTracker";
+import type { FireTipTracker } from "./FireTipTracker";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { TUNNEL_LAYER_COLORS } from "$lib/features/compose/compose/domain/types";
 
@@ -42,7 +42,7 @@ export class PropTypeManager {
   private renderLoopService: IAnimationRenderLoop | null = null;
   private precomputationService: IAnimationPrecomputer | null = null;
   private propTypeChangeService: PropTypeChanger | null = null;
-  private fireTipTracker: IFireTipTracker | null = null;
+  private fireTipTracker: FireTipTracker | null = null;
   private animationRenderer: AnimationRenderer | null = null;
   private lastTextureReloadSignal: number = 0;
 
@@ -56,7 +56,7 @@ export class PropTypeManager {
     renderLoopService: IAnimationRenderLoop | null;
     precomputationService: IAnimationPrecomputer | null;
     propTypeChangeService: PropTypeChanger | null;
-    fireTipTracker: IFireTipTracker | null;
+    fireTipTracker: FireTipTracker | null;
     animationRenderer: AnimationRenderer | null;
   }): void {
     this.settingsService = deps.settingsService;
@@ -75,7 +75,7 @@ export class PropTypeManager {
     precomputationService?: IAnimationPrecomputer | null;
     propTextureService?: IPropTextureLoader | null;
     trailCapturer?: TrailCapturer | null;
-    fireTipTracker?: IFireTipTracker | null;
+    fireTipTracker?: FireTipTracker | null;
     animationRenderer?: AnimationRenderer | null;
   }): void {
     if (refs.renderLoopService !== undefined) this.renderLoopService = refs.renderLoopService;

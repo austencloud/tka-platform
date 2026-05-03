@@ -42,24 +42,6 @@ export type MuseumModelRole =
   | "lamp"
   | "plant";
 
-export interface IMuseumModelLoader {
-  /**
-   * Load a model by its semantic role. Returns a cloned Group
-   * ready to be inserted into the scene.
-   */
-  load(role: MuseumModelRole): Promise<Group>;
-
-  /**
-   * Load a model from an arbitrary path (for one-offs or custom placements).
-   */
-  loadByPath(path: string, scale?: number, yOffset?: number): Promise<Group>;
-
-  /** Preload all role-mapped models so first placement is instant. */
-  preloadAll(): Promise<void>;
-
-  /** Dispose all cached geometry and materials. */
-  dispose(): void;
-}
 
 // === From IMuseumRoomSerializer ===
 

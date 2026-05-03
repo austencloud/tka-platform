@@ -6,7 +6,7 @@
  *
  * Dual-write strategy:
  * - localStorage: Instant reads/writes for responsive UI
- * - Firestore (via IUserKnowledgeProfilePersister): Durable, cross-device sync
+ * - Firestore (via UserKnowledgeProfilePersister): Durable, cross-device sync
  *
  * On initialization:
  * - Loads from localStorage first (instant)

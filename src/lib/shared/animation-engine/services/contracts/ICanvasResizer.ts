@@ -1,10 +1,7 @@
 /**
- * Canvas Resize Service Interface
+ * Canvas Resize Types
  *
- * Handles canvas resize logic for AnimatorCanvas.
- * Uses ResizeObserver when available, falls back to window resize.
- *
- * Uses reactive state ownership - service owns $state, component derives from it.
+ * Co-exported types and constants for the canvas resize system.
  */
 
 /**
@@ -31,50 +28,3 @@ export interface CanvasResizeState {
   isResizing: boolean;
 }
 
-/**
- * Service for managing canvas resizing
- */
-export interface ICanvasResizer {
-  /**
-   * Reactive state - read from component via $derived
-   */
-  readonly state: CanvasResizeState;
-
-  /**
-   * Initialize the service with container and renderer
-   */
-  initialize(container: HTMLDivElement, renderer: ResizableRenderer): void;
-
-  /**
-   * Set up resize observers and listeners
-   */
-  setup(): void;
-
-  /**
-   * Clean up resize observers and listeners
-   */
-  teardown(): void;
-
-  /**
-   * Manually trigger a resize
-   * @param currentSize - Current canvas size to compare against
-   */
-  resize(currentSize: number): Promise<number>;
-
-  /**
-   * Pause resize observation during CSS transitions to prevent canvas buffer clears.
-   * The canvas stays at its current buffer size; CSS scales it visually.
-   */
-  pauseObservation(): void;
-
-  /**
-   * Resume resize observation after transition completes.
-   * Performs one catch-up resize to match the new container dimensions.
-   */
-  resumeObservation(): void;
-
-  /**
-   * Clean up all resources
-   */
-  dispose(): void;
-}

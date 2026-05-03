@@ -52,35 +52,4 @@ export interface ViewerUndoEntry {
   timestamp: number;
 }
 
-export interface IViewer3DUndoManager {
-  readonly canUndo: boolean;
-  readonly canRedo: boolean;
-  readonly maxHistorySize: number;
-  readonly undoHistory: ReadonlyArray<ViewerUndoEntry>;
-  readonly redoHistory: ReadonlyArray<ViewerUndoEntry>;
-
-  /**
-   * Push a new entry with only beforeState populated. Returns the new entry's id
-   * so the caller can complete it with `completeEntry(id, afterState)` once the
-   * mutation lands.
-   */
-  pushSnapshot(type: ViewerOperationType, beforeState: ViewerSnapshot): string;
-
-  /**
-   * Fill in the afterState on an in-flight entry. Called immediately after the
-   * mutation completes.
-   */
-  completeEntry(id: string, afterState: ViewerSnapshot): void;
-
-  /** Pop the top undo entry onto the redo stack. Returns the entry or null. */
-  undo(): ViewerUndoEntry | null;
-
-  /** Pop the top redo entry back onto the undo stack. Returns the entry or null. */
-  redo(): ViewerUndoEntry | null;
-
-  /** Empty both stacks. */
-  clearHistory(): void;
-
-  /** Subscribe to any stack change. Returns an unsubscribe function. */
-  onChange(callback: () => void): () => void;
-}
+// IViewer3DUndoManager interface retired — Viewer3DUndoManager class is the contract now.

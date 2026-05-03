@@ -5,10 +5,49 @@
  */
 
 import { Plane } from "../../domain/enums/Plane";
-import type {
-  IScene3DPersister,
-  Scene3DPersistedState,
-} from "../contracts/IScene3DPersister";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { MotionConfig3D } from "../../domain/models/MotionData3D";
+import type { GridMode } from "../../domain/constants/grid-layout";
+
+export interface AvatarProportions {
+  height: number;
+  headHeight: number;
+  neckLength: number;
+  shoulderWidth: number;
+  torsoLength: number;
+  hipWidth: number;
+  upperArmLength: number;
+  forearmLength: number;
+  handLength: number;
+  inseam: number;
+  thighLength: number;
+  shinLength: number;
+}
+
+export interface Scene3DPersistedState {
+  visiblePlanes: string[];
+  showGrid: boolean;
+  showLabels: boolean;
+  gridMode: GridMode;
+  cameraPreset: "front" | "top" | "side" | "perspective";
+  cameraPosition: [number, number, number] | null;
+  cameraTarget: [number, number, number] | null;
+  activeTab: "blue" | "red";
+  panelOpen: boolean;
+  speed: number;
+  avatarId: string;
+  bodyType: "masculine" | "feminine" | "androgynous";
+  skinTone: string;
+  showFigure: boolean;
+  avatarProportions: AvatarProportions;
+  loop: boolean;
+  showBlue: boolean;
+  showRed: boolean;
+  blueConfig: MotionConfig3D;
+  redConfig: MotionConfig3D;
+  loadedSequence: SequenceData | null;
+  currentStepIndex: number;
+}
 
 const STORAGE_KEY = "tka-3d-animator-state";
 

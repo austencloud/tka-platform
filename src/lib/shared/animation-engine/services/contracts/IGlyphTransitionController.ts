@@ -1,10 +1,7 @@
 /**
- * Glyph Transition Service Interface
+ * Glyph Transition Types
  *
- * Manages cross-fade transitions between glyph states (letter, turns, beat number).
- * Handles the timing and state management for smooth visual transitions.
- *
- * Uses reactive state ownership - service owns $state, component derives from it.
+ * Co-exported types for the glyph transition system.
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -29,36 +26,3 @@ export interface GlyphTransitionState {
   isNewLetter: boolean;
 }
 
-/**
- * Service for managing glyph cross-fade transitions
- */
-export interface IGlyphTransitionController {
-  /**
-   * Reactive state - read from component via $derived
-   */
-  readonly state: GlyphTransitionState;
-
-  /**
-   * Update the target glyph values - triggers transition if changed
-   * @param letter - New letter (or null)
-   * @param turnsTuple - New turns tuple string
-   * @param stepNumber - New beat number
-   * @param musicalPosition - Musical position display string (e.g., "2, 3")
-   */
-  updateTarget(
-    letter: Letter | null,
-    turnsTuple: string,
-    stepNumber: number | null,
-    musicalPosition?: string | null
-  ): void;
-
-  /**
-   * Get the transition duration in milliseconds
-   */
-  getTransitionDuration(): number;
-
-  /**
-   * Clean up resources (cancel any pending timeouts)
-   */
-  dispose(): void;
-}

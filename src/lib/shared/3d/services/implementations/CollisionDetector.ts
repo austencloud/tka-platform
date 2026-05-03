@@ -20,7 +20,6 @@
 
 import { Vector3 } from "three";
 import type {
-  ICollisionDetector,
   BodySnapshot,
   CollisionEvent,
   CollisionZone,

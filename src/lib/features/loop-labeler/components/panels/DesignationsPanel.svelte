@@ -13,7 +13,7 @@
   } from "../../domain/models/label-models";
   import type { SectionDesignation } from "../../domain/models/section-models";
   import type { StepPairRelationship } from "../../domain/models/steppair-models";
-  import type { PolyrhythmicLOOPResult } from "../../services/contracts/IPolyrhythmicDetector";
+  import type { PolyrhythmicLOOPResult } from "../../services/implementations/PolyrhythmicDetector";
   import type {
     CompoundPattern,
     AxisAlternatingPattern,

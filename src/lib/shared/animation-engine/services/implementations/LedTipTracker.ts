@@ -10,7 +10,7 @@
  * - Velocity clamping for physics stability
  */
 
-import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
+import type { LedTipTrackerConfig } from "../contracts/ILedTipTracker";
 import type { LedTipData, LedOverlayConfig } from "../../domain/types/LedTypes";
 import { hexToLedColor, resolveHandColor } from "../../domain/types/LedTypes";
 import type { PropState } from "../../domain/PropState";

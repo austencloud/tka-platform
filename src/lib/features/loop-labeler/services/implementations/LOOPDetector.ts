@@ -7,9 +7,9 @@ import type {
 import type { TransformationIntervals } from "../../domain/models/label-models";
 import type { StepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
 import type {
-  IPolyrhythmicDetector,
+  PolyrhythmicDetector,
   PolyrhythmicLOOPResult,
-} from "../contracts/IPolyrhythmicDetector";
+} from "../implementations/PolyrhythmicDetector";
 import type {
   InternalStepPair,
   ExtractedStep,
@@ -93,7 +93,7 @@ export class LOOPDetector implements ILOOPDetector {
     private comparisonOrchestrator: StepComparisonOrchestrator,
     private analysisService: TransformationAnalyzer,
     private formattingService: CandidateFormatter,
-    private polyrhythmicService?: IPolyrhythmicDetector,
+    private polyrhythmicService?: PolyrhythmicDetector,
     private layeredPathService?: LayeredPathDetector
   ) {}
 

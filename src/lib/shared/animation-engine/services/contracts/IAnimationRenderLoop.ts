@@ -13,10 +13,10 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
 import type { WebGLFireRenderer } from "$lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer";
 import type { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer";
-import type { IFireTipTracker } from "./IFireTipTracker";
+import type { FireTipTracker } from "../implementations/FireTipTracker";
 import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
 import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer'
-import type { ILedTipTracker } from "./ILedTipTracker";
+import type { LedTipTracker } from "../implementations/LedTipTracker";
 import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
 import type { ZapOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/ZapOverlayRenderer'
 import type { SparklesOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SparklesOverlayRenderer'
@@ -52,11 +52,11 @@ export interface RenderLoopConfig {
   /** Optional charcoal overlay renderer (WebGL2 point-sprite particles) */
   charcoalRenderer?: CharcoalSparkRenderer | null;
   /** Optional fire/charcoal tip position/velocity tracker (shared by both) */
-  fireTipTracker?: IFireTipTracker | null;
+  fireTipTracker?: FireTipTracker | null;
   /** Optional LED overlay renderer (WebGL layer on top of fire) */
   ledRenderer?: WebGLLedRenderer | null;
   /** Optional LED tip position/color tracker */
-  ledTipTracker?: ILedTipTracker | null;
+  ledTipTracker?: LedTipTracker | null;
   /** Trail overlay canvas for persistent cross-sequence trails */
   trailOverlay?: ITrailOverlayCanvas | null;
   /** Optional zap (lightning) overlay renderer that draws procedural arcs between prop tips */

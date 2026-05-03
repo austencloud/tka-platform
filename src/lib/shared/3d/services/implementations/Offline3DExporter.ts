@@ -38,7 +38,6 @@ import { Vector2 } from "three";
 import type { BackgroundVideoEncoder } from "$lib/features/compose/services/implementations/BackgroundVideoEncoder";
 import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
 import type {
-  IOffline3DExporter,
   Offline3DExportDependencies,
   Offline3DExportOptions,
 } from "../contracts/IOffline3DExporter";

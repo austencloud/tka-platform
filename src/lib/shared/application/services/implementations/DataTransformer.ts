@@ -9,7 +9,6 @@ import type { PictographData } from "../../../pictograph/shared/domain/models/Pi
 import type { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../pictograph/shared/domain/models/MotionData";
 import type {
-  IDataTransformer,
   MotionRenderData,
   PictographDisplayData,
 } from "../contracts/IDataTransformer";

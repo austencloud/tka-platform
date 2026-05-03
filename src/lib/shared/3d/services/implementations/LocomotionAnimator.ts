@@ -16,7 +16,6 @@ import type { AnimationAction, Object3D, Bone } from "three";
 import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
-  ILocomotionAnimator,
   LocomotionInput,
   AnimationUrls,
   LocomotionConfig,

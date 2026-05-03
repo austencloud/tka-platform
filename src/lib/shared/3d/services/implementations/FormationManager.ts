@@ -24,7 +24,6 @@ import {
 } from "../../config/formation-presets";
 
 import type {
-  IFormationManager,
   PerformerFormationState,
   FormationChangeCallback,
   TransitionUpdateCallback,
@@ -50,7 +49,7 @@ function easeInOutCubic(t: number): number {
 export function createFormationManager(
   initialPerformerCount: number = 1,
   maxPerformers: number = 4
-): IFormationManager {
+) {
   // Internal state using Svelte 5 runes would be ideal,
   // but for now we use plain mutable state since this is a service
   let performerCount = Math.max(1, Math.min(maxPerformers, initialPerformerCount));
@@ -167,7 +166,7 @@ export function createFormationManager(
   }
 
   // Return the manager interface
-  const manager: IFormationManager = {
+  const manager = {
     get currentFormation() {
       return currentFormation;
     },

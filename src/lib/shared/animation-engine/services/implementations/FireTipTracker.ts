@@ -12,7 +12,6 @@ import type { PropState } from "../../domain/PropState";
 import type { PropTipData, RenderedPropTransform } from "../../domain/types/FireTypes";
 import { getTipPoints, type TipPoint } from "../../domain/types/PropTipPoints";
 import type {
-	IFireTipTracker,
 	FireTipTrackerConfig,
 	FireTipUpdateResult,
 } from "../contracts/IFireTipTracker";

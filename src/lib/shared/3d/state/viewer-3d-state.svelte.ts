@@ -11,9 +11,9 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
-import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
+import type { SequenceConverter } from "../services/implementations/SequenceConverter";
+import type { Viewer3DUndoManager } from "../services/implementations/Viewer3DUndoManager";
 import type {
-  IViewer3DUndoManager,
   PerformerSnapshot,
   ViewerSnapshot,
 } from "../services/contracts/IViewer3DUndoManager";
@@ -250,8 +250,8 @@ function migrateLegacyPlanesIfNeeded(): void {
 
 export function createViewer3DState(deps: {
   propInterpolator: PropStateInterpolator;
-  sequenceConverter: ISequenceConverter;
-  viewer3DUndoManager: IViewer3DUndoManager;
+  sequenceConverter: SequenceConverter;
+  viewer3DUndoManager: Viewer3DUndoManager;
 }) {
   const _webgl2Available = isWebGL2Available();
   const _persistedMode = _webgl2Available ? loadPersistedMode() : "2d";

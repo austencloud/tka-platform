@@ -41,7 +41,7 @@ import type { UserDocumentManager } from '$lib/shared/auth/services/implementati
 import { auth } from "../firebase";
 // Preview state for admin "View As" feature
 import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
-import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
+
 import type { FCMTokenManager } from "$lib/shared/push/services/implementations/FCMTokenManager";
 import type { UsernameValidator } from '$lib/shared/auth/services/implementations/UsernameValidator'
 import { doc, getDoc, setDoc } from "firebase/firestore";

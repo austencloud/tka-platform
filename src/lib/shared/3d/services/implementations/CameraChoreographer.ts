@@ -23,7 +23,6 @@ import {
 } from "../../domain/camera-choreography";
 
 import type {
-  ICameraChoreographer,
   PerformerPositionProvider,
   CameraStateChangeCallback,
   KeyframeEventCallback,
@@ -32,7 +31,7 @@ import type {
 /**
  * Create a CameraChoreographer instance
  */
-export function createCameraChoreographer(): ICameraChoreographer {
+export function createCameraChoreographer() {
   // Internal state
   let choreography: CameraChoreography | null = null;
   let currentState: CameraState = createDefaultCameraState();
@@ -233,7 +232,7 @@ export function createCameraChoreographer(): ICameraChoreographer {
   }
 
   // Return the choreographer interface
-  const choreographer: ICameraChoreographer = {
+  const choreographer = {
     // Choreography Management
     loadChoreography(newChoreography: CameraChoreography): void {
       choreography = {

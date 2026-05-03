@@ -31,7 +31,7 @@ import {
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
-import type { IPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/contracts/IPublicSequenceHashMatcher";
+import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/implementations/PublicSequenceHashMatcher";
 import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "../contracts/types";
 
 const SHORTCODES_COLLECTION = "shortcodes";
@@ -71,7 +71,7 @@ export class ShortCodeManager {
   constructor(
     private readonly browseLoader: PublicSequencesLoader,
     private readonly sequenceEncoder: SequenceEncoder,
-    private readonly hashMatcher?: IPublicSequenceHashMatcher
+    private readonly hashMatcher?: PublicSequenceHashMatcher
   ) {}
 
   /**

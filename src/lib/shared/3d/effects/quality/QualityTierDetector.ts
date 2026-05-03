@@ -1,8 +1,11 @@
 import { QualityTier, TIER_CONFIGS } from "../types";
 import type { QualityTierConfig } from "../types";
-import type {
-  GPUCapabilities,
-} from "./contracts/IQualityTierDetector";
+export interface GPUCapabilities {
+  maxTextureUnits: number;
+  floatTextures: boolean;
+  hardwareConcurrency: number;
+  isWebGPU: boolean;
+}
 
 const STORAGE_KEY = "tka-3d-quality-tier-override";
 

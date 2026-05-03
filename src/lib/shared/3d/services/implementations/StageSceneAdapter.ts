@@ -42,17 +42,43 @@ import type { TimelineState } from "$lib/features/compose/timeline/state/timelin
 import type {
   TimelineTrack,
   TimelineClip,
-  TimeSeconds,
 } from "$lib/features/compose/timeline/domain/timeline-types";
 import type { FormationPreset } from "../../domain/formation";
-import type {
-  ISceneOrchestrator,
-  ActivePerformerClip,
-  OrchestratedCameraState,
-  PlayheadChangeCallback,
-  PlayStateChangeCallback,
-  FormationCueCallback,
-} from "../contracts/ISceneOrchestrator";
+
+export type TimeSeconds = number;
+
+export interface ActivePerformerClip {
+  clipId: string;
+  progress: number;
+  stepIndex: number;
+  stepProgress: number;
+  sequenceId: string;
+}
+
+export interface OrchestratedCameraState {
+  position: { x: number; y: number; z: number };
+  target: { x: number; y: number; z: number };
+}
+
+export type PlayheadChangeCallback = (position: TimeSeconds) => void;
+export type PlayStateChangeCallback = (isPlaying: boolean) => void;
+export type FormationCueCallback = (preset: FormationPreset) => void;
+
+export interface ISceneOrchestrator {
+  readonly playheadPosition: TimeSeconds;
+  readonly isPlaying: boolean;
+  readonly bpm: number;
+  readonly performerTrackCount: number;
+  getActivePerformerClip(performerIndex: number): ActivePerformerClip | null;
+  getAllActivePerformerClips(): Map<number, ActivePerformerClip | null>;
+  getActiveFormation(): FormationPreset;
+  hasFormationTrack(): boolean;
+  getCameraState(): OrchestratedCameraState | null;
+  hasCameraTrack(): boolean;
+  onPlayheadChange(callback: PlayheadChangeCallback): () => void;
+  onPlayStateChange(callback: PlayStateChangeCallback): () => void;
+  onFormationCue(callback: FormationCueCallback): () => void;
+}
 
 // ============================================================================
 // Internal Types
@@ -433,6 +459,3 @@ export function createStageSceneAdapter(
     onFormationCue,
   };
 }
-
-// Re-export interface for convenience
-export type { ISceneOrchestrator };

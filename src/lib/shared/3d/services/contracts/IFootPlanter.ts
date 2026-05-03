@@ -15,9 +15,6 @@
  */
 
 import type { LocomotionState } from "./IAnimationStateMachine";
-import type { IAvatarSkeletonBuilder } from "./IAvatarSkeletonBuilder";
-import type { ILegIKSolver } from "./ILegIKSolver";
-import type { IContactCurveCache } from "./IContactCurveCache";
 
 /**
  * Per-frame input from the movement system.
@@ -59,35 +56,4 @@ export interface FootPlanterConfig {
   footHeightOffset?: number;
 }
 
-export interface IFootPlanter {
-  /**
-   * Initialize with skeleton, leg IK solver, and contact curve cache references.
-   * Must be called after the GLTF model is loaded and leg chains are built.
-   */
-  initialize(
-    skeleton: IAvatarSkeletonBuilder,
-    legIKSolver: ILegIKSolver,
-    contactCurveCache: IContactCurveCache
-  ): void;
-
-  /**
-   * Run foot planting IK. Call each frame AFTER LocomotionAnimator.update()
-   * and BEFORE AvatarAnimator.update().
-   */
-  update(delta: number, input: FootPlanterInput): void;
-
-  /**
-   * Configure foot planting behavior.
-   */
-  configure(config: FootPlanterConfig): void;
-
-  /**
-   * Whether the foot planter is initialized and has valid leg chains.
-   */
-  isReady(): boolean;
-
-  /**
-   * Clean up resources.
-   */
-  dispose(): void;
-}
+// IFootPlanter interface retired — FootPlanter class is the contract now.

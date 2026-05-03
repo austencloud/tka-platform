@@ -15,9 +15,8 @@ import type {
   PreparedRenderData,
 } from "../../src/lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import type {
-  IPictographPreparer,
   PrepareOptions,
-} from "../../src/lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+} from "../../src/lib/shared/pictograph/shared/services/contracts/types";
 import type { IArrowLifecycleManager } from "../../src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowLifecycleManager";
 import type { IPropSvgLoader } from "../../src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader";
 import type { IPropPlacer } from "../../src/lib/shared/pictograph/prop/services/contracts/IPropPlacer";
@@ -37,7 +36,7 @@ const DEFAULT_NODE_SETTINGS = {
  * Node.js-compatible PictographPreparer
  * Does not depend on Svelte state management
  */
-export class NodePictographPreparer implements IPictographPreparer {
+export class NodePictographPreparer {
   private prepareCache = new Map<string, PreparedRenderData>();
   private pendingPrepares = new Map<string, Promise<PreparedRenderData>>();
   private cacheHits = 0;

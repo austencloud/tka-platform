@@ -1,8 +1,7 @@
 /**
- * Animation Service Contract
+ * Animation Service Types
  *
- * Handles UI animations and transitions including fold transitions,
- * fade effects, and animation settings management.
+ * Co-exported types for the UI animation system.
  */
 
 export interface FoldTransitionParams {
@@ -35,48 +34,3 @@ export interface TransitionResult {
   css?: (t: number) => string;
 }
 
-export interface IAnimator {
-  /**
-   * Create a fold transition effect
-   */
-  createFoldTransition(params?: FoldTransitionParams): TransitionResult;
-
-  /**
-   * Create a slide transition effect
-   */
-  createSlideTransition(params?: SlideTransitionParams): TransitionResult;
-
-  /**
-   * Create a basic fade transition
-   */
-  createFadeTransition(params?: FadeTransitionParams): TransitionResult;
-
-  /**
-   * Create a fade out transition
-   */
-  createFadeOutTransition(
-    params?: FadeTransitionParams & { settings?: AnimationSettings }
-  ): TransitionResult;
-
-  /**
-   * Create a fade in transition with delay
-   */
-  createFadeInTransition(
-    params?: FadeTransitionParams & {
-      outDuration?: number;
-      settings?: AnimationSettings;
-    }
-  ): TransitionResult;
-
-  /**
-   * Create a conditional fade that respects settings
-   */
-  createConditionalFade(
-    params?: FadeTransitionParams & { settings?: AnimationSettings }
-  ): TransitionResult;
-
-  /**
-   * Check if animations should be enabled based on user preferences
-   */
-  shouldAnimate(settings?: AnimationSettings): boolean;
-}

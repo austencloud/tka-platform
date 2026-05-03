@@ -77,23 +77,4 @@ export interface BodySnapshot {
   rightHand: Vector3;
 }
 
-export interface ICollisionDetector {
-  /**
-   * Run all collision checks for the current frame.
-   * Call after IK has been applied (bones are at final positions).
-   *
-   * Props are passed as line segments (tip-to-tip), not grip points,
-   * so the checks can catch shaft-through-body collisions where the
-   * grip is clear of the body but the staff shaft is not.
-   */
-  detect(
-    body: BodySnapshot,
-    blueProp: PropSegment | null,
-    redProp: PropSegment | null,
-    stepNumber: number,
-    beatProgress: number
-  ): CollisionEvent[];
-
-  /** Whether detection is enabled (toggle via console for perf) */
-  enabled: boolean;
-}
+// ICollisionDetector interface retired — CollisionDetector class is the contract now.

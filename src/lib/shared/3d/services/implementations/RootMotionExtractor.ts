@@ -17,7 +17,6 @@
 
 import type { Bone } from "three";
 import type {
-  IRootMotionExtractor,
   RootMotionDelta,
 } from "../contracts/IRootMotionExtractor";
 

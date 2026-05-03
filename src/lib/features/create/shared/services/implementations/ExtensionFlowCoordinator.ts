@@ -2,7 +2,7 @@
  * Extension Flow Coordinator
  *
  * Orchestrates the sequence extension workflow by coordinating
- * with ISequenceExtender for the actual operations.
+ * with SequenceExtender for the actual operations.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

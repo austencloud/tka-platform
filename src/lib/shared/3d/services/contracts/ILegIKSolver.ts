@@ -43,12 +43,4 @@ export interface LegIKInput {
   weight: number;
 }
 
-export interface ILegIKSolver {
-  /**
-   * Solve leg IK in place - modifies the bones in `input.chain`
-   * to satisfy the target within the hinge constraint.
-   *
-   * Stateless: same input produces same output, no internal memory.
-   */
-  solve(input: LegIKInput): void;
-}
+// ILegIKSolver interface retired — HingeConstrainedLegIKSolver class is the contract now.

@@ -6,11 +6,23 @@
  */
 
 import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
-import type {
-  IAnimationShortcutRegistrar,
-  AnimationShortcutHandlers,
-  AnimationShortcutDefinition,
-} from "../contracts/IAnimationShortcutRegistrar";
+export interface AnimationShortcutHandlers {
+  onPlaybackToggle: () => void;
+  onStepHalfBeatForward: () => void;
+  onStepHalfBeatBackward: () => void;
+  onStepFullBeatForward: () => void;
+  onStepFullBeatBackward: () => void;
+  onClose: () => void;
+  onToggleBlue?: () => void;
+  onToggleRed?: () => void;
+  onShowHelp: () => void;
+}
+
+export interface AnimationShortcutDefinition {
+  key: string;
+  label: string;
+  description: string;
+}
 
 export class AnimationShortcutRegistrar {
   readonly shortcuts: readonly AnimationShortcutDefinition[] = [

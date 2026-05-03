@@ -103,7 +103,7 @@ export class PixelRenderer extends EraRendererBase {
 	}
 
 	// --------------------------------------------------------------------------
-	// IEraRenderer - primary entry point
+	// Primary entry point
 	// --------------------------------------------------------------------------
 
 	async render(

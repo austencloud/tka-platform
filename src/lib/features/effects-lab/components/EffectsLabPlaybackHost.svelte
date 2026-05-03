@@ -40,7 +40,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
-  import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
+  import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
   import { getEffectDescriptor } from "../domain/EffectDescriptor";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -90,7 +90,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   // ─── Shared playback state ────────────────────────────────────────────
   let sequenceService: SequenceRepository | null = null;
   let playbackController: AnimationPlaybackController | null = null;
-  let chainingOrchestrator = $state<ISequenceChainingOrchestrator | null>(null);
+  let chainingOrchestrator = $state<SequenceChainingOrchestrator | null>(null);
   let servicesReady = $state(false);
   let loading = $state(false);
   let error = $state<string | null>(null);

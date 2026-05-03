@@ -28,7 +28,13 @@
  */
 
 import { Vector3, Quaternion, Euler } from "three";
-import type { SpineTwistResult } from "../contracts/ISpineTwister";
+export interface SpineTwistResult {
+  spine1: Quaternion;
+  spine2: Quaternion;
+  neck: Quaternion;
+  head: Quaternion;
+  hips: Quaternion;
+}
 
 /** Maximum total upper-body yaw (turning left/right) in radians (~60 degrees). */
 const MAX_YAW = (60 * Math.PI) / 180;

@@ -8,7 +8,7 @@
  */
 
 import type { ITransitionGraph } from "../contracts/ITransitionGraph.js";
-import type { ISequenceDataProvider } from "../../data/contracts/ISequenceDataProvider.js";
+import type { BrowserDataProvider } from "../../data/implementations/BrowserDataProvider.js";
 import type {
   PositionGroup,
   LetterPositionInfo,
@@ -26,7 +26,7 @@ export class TransitionGraph implements ITransitionGraph {
   private lettersByEndGroup: Map<PositionGroup, string[]> = new Map();
   private initialized = false;
 
-  constructor(private readonly dataProvider: ISequenceDataProvider) {
+  constructor(private readonly dataProvider: BrowserDataProvider) {
     // Initialize maps for each position group
     const groups: PositionGroup[] = ["alpha", "beta", "gamma"];
     for (const group of groups) {

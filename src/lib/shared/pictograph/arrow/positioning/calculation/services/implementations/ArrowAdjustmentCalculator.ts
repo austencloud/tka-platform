@@ -18,7 +18,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { AttributeKeyGenerator } from "../../../key-generation/services/implementations/AttributeKeyGenerator";
 import type { DefaultPlacer } from "../../../placement/services/implementations/DefaultPlacer";
-import type { IDirectionalTupleProcessor } from "../contracts/IDirectionalTupleGenerator";
+import type { DirectionalTupleProcessor } from "./DirectionalTupleProcessor";
 import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
 import type { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
 import type { SpecialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
@@ -48,7 +48,7 @@ export class ArrowAdjustmentCalculator {
     private placementKeyService: ArrowPlacementKeyGenerator,
     private turnsTupleService: TurnsTupleKeyGenerator,
     private attributeKeyService: AttributeKeyGenerator,
-    private tupleProcessor: IDirectionalTupleProcessor
+    private tupleProcessor: DirectionalTupleProcessor
   ) {}
 
   async calculateAdjustment(

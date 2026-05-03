@@ -1,5 +1,4 @@
 import type {
-  IContactCurveCache,
   ContactCurveData,
   ContactSample,
 } from "../contracts/IContactCurveCache";

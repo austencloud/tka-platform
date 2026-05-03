@@ -39,7 +39,7 @@ function deriveLoopMinOverride(
 }
 
 /**
- * Implementation of ICardConfigurator
+ * CardConfigurator
  * Builds card descriptor arrays with conditional rendering and responsive grid layouts
  *
  * Grid is 6 columns. Cards auto-wrap to new rows when a row fills up.

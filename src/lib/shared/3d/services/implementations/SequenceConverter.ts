@@ -19,7 +19,6 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
-  ISequenceConverter,
   StepMotionConfigs,
 } from "../contracts/ISequenceConverter";
 import type { PlaneModeConfig } from "../../domain/constants/plane-mode-configs";

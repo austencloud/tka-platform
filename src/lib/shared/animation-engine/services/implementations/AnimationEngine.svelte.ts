@@ -45,7 +45,6 @@ import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTyp
 import { CanvasResizer } from "./CanvasResizer.svelte";
 import {
   DEFAULT_CANVAS_SIZE,
-  type ICanvasResizer,
 } from "../contracts/ICanvasResizer";
 import { PropTextureLoader } from "./PropTextureLoader.svelte";
 import {
@@ -64,7 +63,6 @@ import { FrameBudgetMonitor } from "./FrameBudgetMonitor";
 import { DeviceTierDetector } from "./DeviceTierDetector";
 import { AnimationVisibilitySynchronizer } from "./AnimationVisibilitySynchronizer";
 import { GlyphTransitionController } from "./GlyphTransitionController.svelte";
-import type { IGlyphTransitionController } from "../contracts/IGlyphTransitionController";
 import { SequenceCache } from "./SequenceCache.svelte";
 import { TrailSettingsSynchronizer } from "./TrailSettingsSynchronizer.svelte";
 import { PropTypeChanger } from "./PropTypeChanger.svelte";
@@ -242,13 +240,13 @@ export class AnimationEngine {
   private turnsTupleGenerator: TurnsTupleGenerator | null = null;
   private animationRenderer: AnimationRenderer | null = null;
 
-  private canvasResizerService: ICanvasResizer | null = null;
+  private canvasResizerService: CanvasResizer | null = null;
   private propTextureService: IPropTextureLoader | null = null;
   private glyphTextureService: IGlyphTextureLoader | null = null;
   private precomputationService: IAnimationPrecomputer | null = null;
   private renderLoopService: IAnimationRenderLoop | null = null;
   private visibilitySyncService: AnimationVisibilitySynchronizer | null = null;
-  private glyphTransitionService: IGlyphTransitionController | null = null;
+  private glyphTransitionService: GlyphTransitionController | null = null;
   private sequenceCacheService: SequenceCache | null = null;
   private trailSettingsSyncService: TrailSettingsSynchronizer | null = null;
   private propTypeChangeService: PropTypeChanger | null = null;

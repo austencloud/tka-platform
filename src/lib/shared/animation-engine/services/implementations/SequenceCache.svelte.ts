@@ -8,10 +8,11 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  ISequenceCache,
-  SequenceCacheState,
-} from "../contracts/ISequenceCache";
+export interface SequenceCacheState {
+  sequenceId: string | null;
+  clearSignal: number;
+  preRenderClearSignal: number;
+}
 
 export class SequenceCache {
   // Reactive state - owned by service

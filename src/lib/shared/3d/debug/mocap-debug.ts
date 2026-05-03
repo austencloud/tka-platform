@@ -1,5 +1,5 @@
 import type { AnimationMixer, Object3D } from "three";
-import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
+import type { AvatarSkeletonBuilder } from "../services/implementations/AvatarSkeletonBuilder";
 
 interface MocapDebugHooks {
   __playMocap?: (url?: string) => Promise<string>;
@@ -18,7 +18,7 @@ export interface MocapDebugHandle {
  * in sync with the render loop.
  */
 export function installMocapDebugHooks(args: {
-  getSkeletonService: () => IAvatarSkeletonBuilder | null;
+  getSkeletonService: () => AvatarSkeletonBuilder | null;
 }): MocapDebugHandle {
   const { getSkeletonService } = args;
   const w = window as typeof window & MocapDebugHooks;

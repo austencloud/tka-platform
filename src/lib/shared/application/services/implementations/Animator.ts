@@ -10,7 +10,6 @@ import type {
   AnimationSettings,
   FadeTransitionParams,
   FoldTransitionParams,
-  IAnimator,
   SlideTransitionParams,
   TransitionResult,
 } from "../contracts/IAnimator";

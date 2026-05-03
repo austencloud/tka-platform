@@ -15,12 +15,26 @@
 import type { AnimationAction, Object3D, KeyframeTrack } from "three";
 import { AnimationMixer, AnimationClip, LoopRepeat } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import type {
-  ILegAnimator,
-  LocomotionInput,
-  LegAnimatorConfig,
-  DirectionalAnimationUrls,
-} from "../contracts/ILegAnimator";
+
+export interface LocomotionInput {
+  isMoving: boolean;
+  speed: number;
+  facingAngle?: number;
+  moveDirection?: { x: number; z: number };
+}
+
+export interface DirectionalAnimationUrls {
+  forward: string;
+  backward: string;
+  strafeLeft: string;
+  strafeRight: string;
+}
+
+export interface LegAnimatorConfig {
+  baseSpeed?: number;
+  blendTime?: number;
+  useRootMotion?: boolean;
+}
 
 /**
  * Core bone names for leg animation (standard humanoid names).

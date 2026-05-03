@@ -70,18 +70,4 @@ export interface AnimationStateMachineConfig {
 	verticalThreshold?: number;
 }
 
-// ── Interface ──
-
-export interface IAnimationStateMachine {
-	/** Update state from this frame's physics signals. Returns output for LocomotionAnimator. */
-	update(input: LocomotionStateInput, delta: number): LocomotionStateOutput;
-
-	/** Current locomotion state */
-	getState(): LocomotionState;
-
-	/** Reset to idle (e.g. after teleport) */
-	reset(): void;
-
-	/** Clean up */
-	dispose(): void;
-}
+// Interface retired — AnimationStateMachine class is the contract now.

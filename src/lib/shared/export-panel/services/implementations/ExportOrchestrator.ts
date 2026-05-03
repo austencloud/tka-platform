@@ -7,11 +7,9 @@
  * Domain: Export Panel - Export Orchestration
  */
 
-import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
-import type {
-  IVideoExportOrchestrator,
-  VideoExportProgress,
-} from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+import type { Sharer } from "$lib/shared/share/services/implementations/Sharer";
+import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ExportSettings } from "../../domain/models/ExportSettings";
 import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "../contracts/types";
@@ -23,14 +21,14 @@ import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-
 
 export class ExportOrchestrator {
   private exporting = false;
-  private videoOrchestrator: IVideoExportOrchestrator | null = null;
+  private videoOrchestrator: VideoExportOrchestrator | null = null;
 
-  constructor(private readonly sharer: ISharer) {}
+  constructor(private readonly sharer: Sharer) {}
 
   /**
    * Set the video export orchestrator (lazy-loaded from compose module)
    */
-  setVideoOrchestrator(orchestrator: IVideoExportOrchestrator): void {
+  setVideoOrchestrator(orchestrator: VideoExportOrchestrator): void {
     this.videoOrchestrator = orchestrator;
   }
 
