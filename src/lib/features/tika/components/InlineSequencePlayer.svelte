@@ -14,8 +14,8 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
-  import type { IWordSequenceGenerator } from "$lib/features/create/spell/services/contracts/IWordSequenceGenerator";
+  import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
+  import type { WordSequenceGenerator } from "$lib/features/create/spell/services/implementations/WordSequenceGenerator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { InlineSequencePlayer } from "../types";
 
@@ -28,8 +28,8 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
   // Services (resolved from DI container)
   let controller = $state<IAnimationPlaybackController | null>(null);
-  let motionLoader = $state<ISequenceMotionLoader | null>(null);
-  let sequenceGenerator = $state<IWordSequenceGenerator | null>(null);
+  let motionLoader = $state<SequenceMotionLoader | null>(null);
+  let sequenceGenerator = $state<WordSequenceGenerator | null>(null);
 
   // State
   const animState = createAnimationPanelState();

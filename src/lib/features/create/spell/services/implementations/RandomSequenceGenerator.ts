@@ -18,9 +18,9 @@ import type {
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionValidator } from "./StartPositionValidator";
 import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
-import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
+import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 import type { LOOPEndPositionResolver } from "./LOOPEndPositionResolver";
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
@@ -48,9 +48,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     private letterQueryHandler: ILetterQueryHandler,
     private startPositionValidator: StartPositionValidator,
     private orientationContinuityValidator: IOrientationContinuityValidator,
-    private orientationCalculator: IOrientationCalculator,
+    private orientationCalculator: OrientationCalculator,
     private sequenceExtender: ISequenceExtender,
-    private stepConverter: IStepConverter,
+    private stepConverter: StepConverter,
     private reversalDetector: IReversalDetector,
     private loopEndPositionResolver: LOOPEndPositionResolver
   ) {}

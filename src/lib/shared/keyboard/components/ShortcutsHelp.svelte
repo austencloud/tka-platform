@@ -8,7 +8,7 @@
    */
 
   import { onMount } from "svelte";
-  import type { IKeyboardShortcutManager } from "../services/contracts/IKeyboardShortcutManager";
+  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import type {
     ShortcutRegistrationOptions,
@@ -17,7 +17,7 @@
   import { getKeyboardShortcutManager } from "../getKeyboardShortcutManager";
 
   // Service
-  let shortcutService: IKeyboardShortcutManager | null = null;
+  let shortcutService: KeyboardShortcutManager | null = null;
 
   // Shortcuts grouped by scope
   let shortcutsByScope = $state<
@@ -326,7 +326,6 @@
     overflow-y: auto;
     padding: 1.25rem;
   }
-
 
   .shortcuts-help__grid {
     display: grid;

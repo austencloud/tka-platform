@@ -2,7 +2,6 @@ import type {
 	ContentModerationResult,
 	FlaggedTerm
 } from '../../domain/models/content-moderation-models';
-import type { IContentModerator } from '../contracts/IContentModerator';
 import {
 	EXACT_MATCH_TERMS,
 	LEET_MAPPINGS,
@@ -19,7 +18,7 @@ import {
  * 2. L33tspeak normalization (F*CK -> fuck)
  * 3. Regex patterns for variations (fuuuuck, fu-ck, etc.)
  */
-export class ContentModerator implements IContentModerator {
+export class ContentModerator {
 	private readonly exactTerms: Set<string>;
 
 	constructor() {

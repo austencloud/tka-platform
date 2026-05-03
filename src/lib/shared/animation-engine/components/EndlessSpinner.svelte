@@ -10,7 +10,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type {
     IEndlessSpinnerOrchestrator,
     EndState,
@@ -73,7 +73,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   // Animation state
   const animationState = createAnimationPanelState();
   let playbackController: IAnimationPlaybackController | null = null;
-  let startPositionDeriver: IStartPositionDeriver | null = null;
+  let startPositionDeriver: StartPositionDeriver | null = null;
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
 
   let isReady = $state(false);

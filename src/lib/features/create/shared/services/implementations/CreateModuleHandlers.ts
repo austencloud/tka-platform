@@ -12,14 +12,14 @@ import type {
   ICreateModuleHandlers,
   ClearSequenceParams,
 } from "../contracts/ICreateModuleHandlers";
-import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrchestrator";
-import type { IStepOperator } from "../contracts/IStepOperator";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
+import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import { executeClearSequenceWorkflow } from "../../utils/clearSequenceWorkflow";
 
 export class CreateModuleHandlers implements ICreateModuleHandlers {
   constructor(
-    private CreateModuleOrchestrator: ICreateModuleOrchestrator,
-    private StepOperator: IStepOperator
+    private CreateModuleOrchestrator: CreateModuleOrchestrator,
+    private StepOperator: StepOperator
   ) {}
 
   /**

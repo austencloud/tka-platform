@@ -6,7 +6,7 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { LetterSource } from "../../domain/models/spell-models";
-import type { ISpellServiceLoader } from "../contracts/ISpellServiceLoader";
+import type { SpellServiceLoader } from "../implementations/SpellServiceLoader";
 import type {
   IVariationExplorationOrchestrator,
   WordParseResult,
@@ -24,7 +24,7 @@ const DASH_LETTERS: Set<string> = new Set([
 ]);
 
 export class VariationExplorationOrchestrator implements IVariationExplorationOrchestrator {
-  constructor(private serviceLoader: ISpellServiceLoader) {}
+  constructor(private serviceLoader: SpellServiceLoader) {}
 
   async parseWord(word: string, options?: WordParseOptions): Promise<WordParseResult> {
     try {

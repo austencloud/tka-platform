@@ -9,13 +9,12 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceDataProvider } from "../contracts/ISequenceDataProvider";
-import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { cellPreWarmer } from "./CellPreWarmer";
 
-export class SequenceDataProvider implements ISequenceDataProvider {
+export class SequenceDataProvider {
   /** In-flight prefetch promises keyed by sequence identifier */
   private prefetchCache = new Map<string, Promise<SequenceData>>();
 
@@ -23,8 +22,8 @@ export class SequenceDataProvider implements ISequenceDataProvider {
   private hydrationResults = new Map<string, SequenceData>();
 
   constructor(
-    private readonly localRepository: ISequenceRepository,
-    private readonly publicLoader: IBrowseLoader
+    private readonly localRepository: SequenceRepository,
+    private readonly publicLoader: PublicSequencesLoader
   ) {}
 
   /**

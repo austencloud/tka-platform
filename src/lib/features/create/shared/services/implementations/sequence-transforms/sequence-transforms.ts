@@ -28,8 +28,8 @@ import {
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 import {
   mirrorBeat,
@@ -90,7 +90,7 @@ export function duplicateSequence(
  */
 export async function mirrorSequence(
   sequence: SequenceData,
-  positionDeriver: IGridPositionDeriver,
+  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
@@ -127,7 +127,7 @@ export async function mirrorSequence(
  */
 export async function flipSequence(
   sequence: SequenceData,
-  positionDeriver: IGridPositionDeriver,
+  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
@@ -165,7 +165,7 @@ export async function flipSequence(
 export async function rotateSequence(
   sequence: SequenceData,
   rotationAmount: number,
-  positionDeriver: IGridPositionDeriver,
+  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
@@ -240,7 +240,7 @@ export function colorSwapSequence(sequence: SequenceData): SequenceData {
 export async function invertSequence(
   sequence: SequenceData,
   motionQueryHandler: IMotionQueryHandler,
-  orientationCalculator: IOrientationCalculator,
+  orientationCalculator: OrientationCalculator,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
   if (sequence.steps.length === 0) return sequence;

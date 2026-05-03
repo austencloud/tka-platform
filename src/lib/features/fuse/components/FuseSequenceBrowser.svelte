@@ -8,7 +8,7 @@
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+	import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 	import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
@@ -57,7 +57,7 @@
 	let loading = $state(true);
 	let poolIndex = $state(0);
 
-	const browseLoader: IBrowseLoader = getBrowseLoader();
+	const browseLoader: PublicSequencesLoader = getBrowseLoader();
 
 	async function loadPool() {
 		loading = true;

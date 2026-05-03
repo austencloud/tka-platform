@@ -13,7 +13,7 @@
 import { getHandPathSaveOrchestrator } from "$lib/features/library/getHandPathSaveOrchestrator";
   import { getBuilderContext } from "../context/builder-context";
   import { getHandPathFactory } from "$lib/shared/foundation/getHandPathFactory";
-  import type { IHandPathSaveOrchestrator } from "$lib/features/library/services/contracts/IHandPathSaveOrchestrator";
+  import type { HandPathSaveOrchestrator } from "$lib/features/library/services/implementations/HandPathSaveOrchestrator";
   import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 
   const builder = getBuilderContext();

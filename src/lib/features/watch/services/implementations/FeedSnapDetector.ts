@@ -7,14 +7,12 @@
  * Calculates card index from scrollTop / viewportHeight.
  */
 
-import type { IFeedSnapDetector } from "../contracts/IFeedSnapDetector";
-
 type SnapCallback = (index: number) => void;
 
 /** Time after last scroll event to consider scroll "ended" (fallback only) */
 const SCROLL_END_TIMEOUT_MS = 100; // Reduced for snappier feel
 
-export class FeedSnapDetector implements IFeedSnapDetector {
+export class FeedSnapDetector {
 	private container: HTMLElement | null = null;
 	private getItemCount: (() => number) | null = null;
 	private scrollEndTimer: number | null = null;

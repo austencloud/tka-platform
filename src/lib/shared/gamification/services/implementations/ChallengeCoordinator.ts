@@ -25,8 +25,8 @@ import type {
 import type { DailyChallengeManager } from "./DailyChallengeManager";
 import type { WeeklyChallengeManager } from "./WeeklyChallengeManager";
 import type { ISkillProgressionTracker } from "../contracts/ISkillProgressionTracker";
-import type { IAchievementManager } from "../contracts/IAchievementManager";
-import type { IStreakTracker } from "../contracts/IStreakTracker";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+import type { StreakTracker } from '$lib/shared/gamification/services/implementations/StreakTracker'
 import type { SkillProgressActionType } from "../contracts/ISkillProgressionTracker";
 
 export class ChallengeCoordinator {
@@ -36,8 +36,8 @@ export class ChallengeCoordinator {
     private _dailyChallengeService: DailyChallengeManager,
     private _weeklyChallengeService: WeeklyChallengeManager,
     private _skillProgressionService: ISkillProgressionTracker,
-    private _achievementService: IAchievementManager,
-    private _streakService: IStreakTracker
+    private _achievementService: AchievementManager,
+    private _streakService: StreakTracker
   ) {}
 
   // ============================================================================

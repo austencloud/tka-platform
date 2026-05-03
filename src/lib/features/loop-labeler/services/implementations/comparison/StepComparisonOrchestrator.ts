@@ -1,7 +1,6 @@
-import type { IStepComparisonOrchestrator } from "../../contracts/IStepComparisonOrchestrator";
-import type { IRotationComparer } from "../../contracts/IRotationComparer";
-import type { IReflectionComparer } from "../../contracts/IReflectionComparer";
-import type { ISwapInvertComparer } from "../../contracts/ISwapInvertComparer";
+import type { RotationComparer } from "./RotationComparer";
+import type { ReflectionComparer } from "./ReflectionComparer";
+import type { SwapInvertComparer } from "./SwapInvertComparer";
 import type { ICandidateFormatter } from "../../contracts/ICandidateFormatter";
 import type {
   ExtractedStep,
@@ -16,11 +15,11 @@ import {
 /**
  * Orchestrator that combines comparison services and manages beat pair generation.
  */
-export class StepComparisonOrchestrator implements IStepComparisonOrchestrator {
+export class StepComparisonOrchestrator {
   constructor(
-    private rotationService: IRotationComparer,
-    private reflectionService: IReflectionComparer,
-    private swapInvertService: ISwapInvertComparer,
+    private rotationService: RotationComparer,
+    private reflectionService: ReflectionComparer,
+    private swapInvertService: SwapInvertComparer,
     private formattingService: ICandidateFormatter
   ) {}
 

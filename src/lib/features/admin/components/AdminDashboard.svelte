@@ -7,7 +7,7 @@
 
   import { onMount } from "svelte";
   import { getAdminChallengeManager } from "$lib/features/admin/getAdminChallengeManager";
-  import type { IAdminChallengeManager } from "../services/contracts/IAdminChallengeManager";
+  import type { AdminChallengeManager } from '../services/implementations/AdminChallengeManager';
   import DailyChallengeScheduler from "./DailyChallengeScheduler.svelte";
   import TrainChallengeManager from "./TrainChallengeManager.svelte";
   import UsersDashboard from "./UsersDashboard.svelte";
@@ -63,7 +63,7 @@
   });
 
   // Services
-  let adminChallengeService = $state<IAdminChallengeManager | null>(null);
+  let adminChallengeService = $state<AdminChallengeManager | null>(null);
 
   // State
   let isLoading = $state(true);

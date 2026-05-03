@@ -15,8 +15,8 @@
  * inside the factory. This matches the state-management rule.
  */
 
-import type { IPoseEnumerator } from "../services/contracts/IPoseEnumerator";
-import type { IPoseLabelRepository } from "../services/contracts/IPoseLabelRepository";
+import type { DiamondPoseEnumerator } from "../services/implementations/DiamondPoseEnumerator";
+import type { LocalPoseLabelRepository } from "../services/implementations/LocalPoseLabelRepository";
 import type {
   IStanceOptimizer,
   OptimizerBounds,
@@ -24,7 +24,7 @@ import type {
   OptimizerResult,
 } from "../services/contracts/IStanceOptimizer";
 import type { SimPropTarget, SimResult } from "../services/contracts/IStanceSimulator";
-import type { ICandidateGenerator } from "../services/contracts/ICandidateGenerator";
+import type { CandidateGenerator } from "../services/implementations/CandidateGenerator";
 import { REACH_FEASIBILITY_TOLERANCE } from "../services/implementations/StanceSimulator";
 import type {
   PoseDefinition,
@@ -260,10 +260,10 @@ function reachabilityFromSimResult(
 }
 
 export async function createCollisionLabState(
-  poseEnumerator: IPoseEnumerator,
-  labelRepo: IPoseLabelRepository,
+  poseEnumerator: DiamondPoseEnumerator,
+  labelRepo: LocalPoseLabelRepository,
   optimizer: IStanceOptimizer | null = null,
-  candidateGenerator: ICandidateGenerator | null = null
+  candidateGenerator: CandidateGenerator | null = null
 ) {
   const allPoses: PoseDefinition[] = poseEnumerator.enumerateDiamondInOut();
   const initialLabels = await labelRepo.loadAll();

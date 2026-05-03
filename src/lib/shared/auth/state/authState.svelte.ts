@@ -13,7 +13,7 @@
  *
  * Extracted responsibilities (now services):
  * - Profile picture management → IProfilePictureManager
- * - User document CRUD → IUserDocumentManager
+ * - User document CRUD → UserDocumentManager
  *
  * Preview mode integration:
  * - getEffectiveUserId/Role/Admin check userPreviewState for admin preview mode
@@ -37,13 +37,13 @@ import { getPresenceTracker } from "../../presence/getPresenceTracker";
 
 // Service imports
 import type { IProfilePictureManager } from "../services/contracts/IProfilePictureManager";
-import type { IUserDocumentManager } from "../services/contracts/IUserDocumentManager";
+import type { UserDocumentManager } from '$lib/shared/auth/services/implementations/UserDocumentManager'
 import { auth } from "../firebase";
 // Preview state for admin "View As" feature
 import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
-import type { IFCMTokenManager } from "../../push/services/contracts/IFCMTokenManager";
-import type { IUsernameValidator } from "../services/contracts/IUsernameValidator";
+import type { FCMTokenManager } from "$lib/shared/push/services/implementations/FCMTokenManager";
+import type { UsernameValidator } from '$lib/shared/auth/services/implementations/UsernameValidator'
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../firebase";
 import { featureFlagService } from "../services/PostHogFeatureFlagService.svelte";

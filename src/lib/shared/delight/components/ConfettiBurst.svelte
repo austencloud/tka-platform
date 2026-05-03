@@ -9,10 +9,10 @@
 <script lang="ts">
 	import { Confetti } from 'svelte-confetti';
 	import { onMount, onDestroy } from 'svelte';
-	import type { IDelightOrchestrator } from '../services/contracts/IDelightOrchestrator';
+	import type { DelightOrchestrator } from '$lib/shared/delight/services/implementations/DelightOrchestrator'
 
 	interface Props {
-		orchestrator?: IDelightOrchestrator | null;
+		orchestrator?: DelightOrchestrator | null;
 	}
 
 	let { orchestrator = null }: Props = $props();

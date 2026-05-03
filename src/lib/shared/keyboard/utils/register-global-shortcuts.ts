@@ -6,7 +6,7 @@
  * Domain: Keyboard Shortcuts - Registration
  */
 
-import type { IKeyboardShortcutManager } from "../services/contracts/IKeyboardShortcutManager";
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import {
   handleModuleChange,
@@ -38,7 +38,7 @@ import {
 } from "../../pictograph/prop/domain/PropTypeDisplayRegistry";
 
 export function registerGlobalShortcuts(
-  service: IKeyboardShortcutManager,
+  service: KeyboardShortcutManager,
   state: ReturnType<typeof createKeyboardShortcutState>
 ) {
   // Get accessible modules

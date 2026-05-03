@@ -18,11 +18,10 @@
  * 10. NavigationSubInterpreter - go to module/tab (catch-all)
  */
 
-import type { ICommandInterpreter } from "../contracts/ICommandInterpreter";
 import type { ISubInterpreter } from "../contracts/ISubInterpreter";
 import type { VoiceCommand, CommandContext } from "../../domain/voice-command-types";
 
-export class CommandInterpreter implements ICommandInterpreter {
+export class CommandInterpreter {
   private chain: ISubInterpreter[] = [];
 
   /**

@@ -14,7 +14,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { onMount } from "svelte";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-  import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
+  import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
@@ -31,7 +31,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
 
   // Services
   let userService: IUserRepository;
-  let collectionService: ICollectionManager;
+  let collectionService: CollectionManager;
   let libraryService: ILibraryRepository;
   let hapticService: IHapticFeedback;
 

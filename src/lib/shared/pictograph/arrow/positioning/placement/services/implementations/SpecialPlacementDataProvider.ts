@@ -6,7 +6,7 @@
  */
 
 import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
-import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
+import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache'
 
 export class SpecialPlacementDataProvider {
   // Structure: [gridMode][oriKey][letter] -> Record<string, unknown>
@@ -29,7 +29,7 @@ export class SpecialPlacementDataProvider {
    * Create SpecialPlacementDataProvider with injectable JSON cache
    * @param jsonCache JSON cache implementation (defaults to browser fetch-based cache)
    */
-  constructor(private readonly jsonCacheImpl: IJsonCache = jsonCache) {}
+  constructor(private readonly jsonCacheImpl: SimpleJsonCache = jsonCache) {}
 
   /**
    * Load the manifest file that tells us which placement files exist

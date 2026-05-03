@@ -1,8 +1,6 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "$lib/shared/auth/firebase";
-import type { IMerchCheckoutCreator } from "../contracts/IMerchCheckoutCreator";
-
-export class MerchCheckoutCreator implements IMerchCheckoutCreator {
+export class MerchCheckoutCreator {
   async createCheckoutSession(productId: string): Promise<string> {
     const functions = getFunctions(app);
     const createCheckout = httpsCallable<{ productId: string }, { url: string }>(

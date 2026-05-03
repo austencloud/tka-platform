@@ -8,7 +8,6 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Point, TriGridMode, TriGridArcData } from "../../domain/trigrid-types";
-import type { ITriGridCalculator } from "../contracts/ITriGridCalculator";
 import {
   getAllHandPoints,
   getAllOuterMarkers,
@@ -22,7 +21,7 @@ import {
   TRIGRID_BETA_OFFSET_DISTANCE,
 } from "../../domain/trigrid-constants";
 
-export class TriGridCalculator implements ITriGridCalculator {
+export class TriGridCalculator {
   getHandPoints(mode: TriGridMode): Map<GridLocation, Point> {
     return getAllHandPoints(mode);
   }

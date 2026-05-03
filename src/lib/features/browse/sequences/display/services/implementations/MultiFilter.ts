@@ -9,9 +9,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { ActiveFilter } from "../../../../shared/domain/models/multi-filter-models";
-import type { IBrowseFilter } from "../contracts/IBrowseFilter";
+import type { BrowseFilter } from "$lib/features/browse/sequences/display/services/implementations/BrowseFilter";
 export class MultiFilter {
-  constructor(private readonly browseFilter: IBrowseFilter) {}
+  constructor(private readonly browseFilter: BrowseFilter) {}
 
   applyFilters(
     sequences: SequenceData[],

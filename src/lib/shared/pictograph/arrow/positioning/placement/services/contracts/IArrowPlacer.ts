@@ -32,7 +32,7 @@ export interface IArrowPlacer {
   ensureGridModeLoaded(gridMode: GridMode): Promise<void>;
 }
 
-export interface ISpecialPlacer {
+export interface SpecialPlacer {
   getSpecialAdjustment(
     motionData: MotionData,
     pictographData: PictographData,
@@ -47,7 +47,7 @@ export interface ISpecialPlacer {
   ): Promise<boolean>;
 }
 
-export interface IDefaultPlacer {
+export interface DefaultPlacer {
   getDefaultAdjustment(
     placementKey: string,
     turns: number | string,

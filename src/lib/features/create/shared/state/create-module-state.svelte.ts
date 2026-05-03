@@ -10,11 +10,11 @@ import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import { createCreateModulePersistenceController } from "./create-module/persistence-controller.svelte";
 import { createNavigationController } from "./create-module/navigation-controller.svelte";
 import { createOptionHistoryManager } from "./create-module/option-history-manager.svelte";
-import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
-import type { ISequencePersister } from "../services/contracts/ISequencePersister";
-import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceStatsCalculator";
-import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
-import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -41,11 +41,11 @@ import type {
  * @returns Unified state object with all Create module state and methods
  */
 export function createCreateModuleState(
-  sequenceService: ISequenceRepository,
-  SequencePersister?: ISequencePersister,
-  sequenceStatisticsService?: ISequenceStatsCalculator,
-  SequenceTransformer?: ISequenceTransformer,
-  sequenceValidationService?: ISequenceValidator
+  sequenceService: SequenceRepository,
+  SequencePersister?: SequencePersister,
+  sequenceStatisticsService?: SequenceStatsCalculator,
+  SequenceTransformer?: SequenceTransformer,
+  sequenceValidationService?: SequenceValidator
 ) {
   // Create sequence state (shared/legacy - kept for backwards compatibility)
   const ReversalDetector: IReversalDetector | undefined = getReversalDetector();

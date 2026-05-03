@@ -11,10 +11,10 @@
 
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "./TurnsTupleGenerator";
 import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
 import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
-import type { IGridModeDeriver } from "../../../../../grid/services/contracts/IGridModeDeriver.ts";
+import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
 const STORAGE_KEY = "tka_rotation_overrides";
 
 interface RotationOverrideData {
@@ -67,9 +67,9 @@ export class RotationOverrideManager implements IRotationOverrideManager {
   private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
 
   constructor(
-    private readonly tupleGenerator: ITurnsTupleGenerator,
+    private readonly tupleGenerator: TurnsTupleGenerator,
     private readonly rotationKeyGenerator: IRotationAngleOverrideKeyGenerator,
-    private readonly gridModeService: IGridModeDeriver
+    private readonly gridModeService: GridModeDeriver
   ) {
     this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
   }

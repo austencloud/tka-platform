@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { ICodexLetterMappingRepo } from './services/contracts/ICodexLetterMappingRepo';
 import { CodexLetterMappingRepo } from './services/implementations/CodexLetterMappingRepo';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 
-let instance: ICodexLetterMappingRepo | null = null;
+let instance: CodexLetterMappingRepo | null = null;
 
-export function getCodexLetterMappingRepo(): ICodexLetterMappingRepo {
+export function getCodexLetterMappingRepo(): CodexLetterMappingRepo {
 	if (!browser) throw new Error('getCodexLetterMappingRepo() is browser-only');
 	if (!instance) {
 		instance = new CodexLetterMappingRepo();

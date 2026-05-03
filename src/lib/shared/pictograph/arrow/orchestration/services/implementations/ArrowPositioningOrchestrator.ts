@@ -5,22 +5,21 @@
  * Coordinates with other services to compute final arrow positions.
  */
 
-import type { IArrowAdjustmentCalculator } from "../../../positioning/calculation/services/contracts/IArrowAdjustmentCalculator";
-import type { IArrowLocationCalculator } from "../../../positioning/calculation/services/contracts/IArrowLocationCalculator";
+import type { ArrowAdjustmentCalculator } from "../../../positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import type { ArrowLocationCalculator } from "../../../positioning/calculation/services/implementations/ArrowLocationCalculator";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
-import type { IArrowPositioningOrchestrator } from "../../../positioning/services/contracts/IArrowPositioningOrchestrator";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { IArrowRotationCalculator } from "../../../positioning/calculation/services/contracts/IArrowRotationCalculator";
+import type { ArrowRotationCalculator } from "../../../positioning/calculation/services/implementations/ArrowRotationCalculator";
 import type { ArrowDataProcessor } from "./ArrowDataProcessor";
 import type { ArrowGridCoordinator } from "./ArrowGridCoordinator";
 import type { GridMode } from "../../../../grid/domain/enums/grid-enums";
 
-export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrator {
+export class ArrowPositioningOrchestrator {
   constructor(
-    private locationCalculator: IArrowLocationCalculator,
-    private rotationCalculator: IArrowRotationCalculator,
-    private adjustmentCalculator: IArrowAdjustmentCalculator,
+    private locationCalculator: ArrowLocationCalculator,
+    private rotationCalculator: ArrowRotationCalculator,
+    private adjustmentCalculator: ArrowAdjustmentCalculator,
     private coordinateSystem: ArrowGridCoordinator,
     private dataProcessor: ArrowDataProcessor
   ) {}

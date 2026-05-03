@@ -10,7 +10,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TrailSettings } from "../../domain/types/TrailTypes";
-import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
@@ -74,7 +74,7 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
     preRenderedFramesReady: false,
   });
 
-  private orchestrator: ISequenceAnimationOrchestrator | null = null;
+  private orchestrator: SequenceAnimationOrchestrator | null = null;
   private TrailCapturer: ITrailCapturer | null = null;
   private renderer: IAnimationRenderer | null = null;
   private propDimensions: PropDimensions = { width: 100, height: 100 };

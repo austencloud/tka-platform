@@ -26,11 +26,10 @@ import {
 } from "../../../shared/domain/models/MotionData";
 import type { StepData } from "../../../../../features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../../features/create/shared/domain/models/StartPositionData";
-import type { IOrientationCalculator } from "../contracts/IOrientationCalculator";
 import { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../domain/enums/PropType";
 
-export class OrientationCalculator implements IOrientationCalculator {
+export class OrientationCalculator {
   /**
    * Calculate end orientation by delegating to the canonical calculator.
    * Extracts fields from MotionData enums and passes as strings.

@@ -1,6 +1,6 @@
 /**
  * Utility functions for creating start position variations
- * Used as a fallback when IStartPositionManager is not available
+ * Used as a fallback when StartPositionManager is not available
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";

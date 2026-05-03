@@ -1,8 +1,8 @@
-import type { IHandPathNamer } from './services/contracts/IHandPathNamer';
+
 import { HandPathNamer } from './services/implementations/HandPathNamer';
 
-let instance: IHandPathNamer | null = null;
+let instance: HandPathNamer | null = null;
 
-export function getHandPathNamer(): IHandPathNamer {
+export function getHandPathNamer(): HandPathNamer {
 	return instance ??= new HandPathNamer();
 }

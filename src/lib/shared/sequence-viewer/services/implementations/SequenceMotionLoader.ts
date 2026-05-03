@@ -2,15 +2,14 @@
  * SequenceMotionLoader
  *
  * Ensures sequence data has motion information for animation playback.
- * Delegates to IBrowseLoader for gallery-based sequence loading.
+ * Delegates to PublicSequencesLoader for gallery-based sequence loading.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-import type { ISequenceMotionLoader } from "../contracts/ISequenceMotionLoader";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 
-export class SequenceMotionLoader implements ISequenceMotionLoader {
-  constructor(private readonly browseLoader: IBrowseLoader) {}
+export class SequenceMotionLoader {
+  constructor(private readonly browseLoader: PublicSequencesLoader) {}
 
   async ensureMotionData(seq: SequenceData): Promise<SequenceData | null> {
     // Check if sequence already has motion data

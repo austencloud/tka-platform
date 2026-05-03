@@ -15,7 +15,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
-  import type { ISequenceAnimationOrchestrator } from "../../../../services/contracts/ISequenceAnimationOrchestrator";
+  import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
   import { SequenceAnimationOrchestrator } from "../../../../services/implementations/SequenceAnimationOrchestrator";
   import { AnimationStateManager } from "../../../../services/implementations/AnimationStateManager";
   import { createAnimationPanelState } from "../../../../state/animation-panel-state.svelte";
@@ -49,8 +49,8 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   // Per-cell animation orchestrators (NOT shared singletons)
   // These must be $state so that derived values (additionalLayerProps) and
   // effects (sync step positions) re-evaluate after onMount populates them.
-  let primaryOrchestrator = $state<ISequenceAnimationOrchestrator | null>(null);
-  let additionalOrchestrators = $state<ISequenceAnimationOrchestrator[]>([]);
+  let primaryOrchestrator = $state<SequenceAnimationOrchestrator | null>(null);
+  let additionalOrchestrators = $state<SequenceAnimationOrchestrator[]>([]);
 
   // Animation states for primary and additional layers
   const primaryAnimationState = createAnimationPanelState();

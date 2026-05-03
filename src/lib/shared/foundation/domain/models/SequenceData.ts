@@ -71,7 +71,7 @@ export interface SequenceData {
   // NOTE: propType removed - prop type is a viewer preference, not sequence data
   // Each motion stores its own propType, and rendering uses viewer's settings
   /**
-   * @deprecated Use ICollectionManager.isFavorite(sequenceId) instead.
+   * @deprecated Use CollectionManager.isFavorite(sequenceId) instead.
    * Favorites are now stored as collection membership, not as a boolean flag.
    * This field is kept for backwards compatibility during migration.
    */

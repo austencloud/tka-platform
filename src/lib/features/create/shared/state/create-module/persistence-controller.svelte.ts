@@ -11,7 +11,7 @@
 
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
-import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { OptionHistoryManager } from "./option-history-manager.svelte";
 
@@ -27,7 +27,7 @@ type ConstructTabState =
 
 type PersistenceControllerDeps = {
   sequenceState: SequenceState;
-  SequencePersister?: ISequencePersister;
+  SequencePersister?: SequencePersister;
   optionHistoryManager: OptionHistoryManager;
   /** Function to get the sequence state for a specific tab (or fallback to shared) */
   getSequenceStateForTab?: (tab: BuildModeId) => SequenceState;

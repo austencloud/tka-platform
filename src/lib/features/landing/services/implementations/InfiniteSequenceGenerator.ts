@@ -24,11 +24,10 @@ import {
   Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
-import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
-import type { IOrientationCycleExtender } from "$lib/features/create/generate/circular/services/contracts/IOrientationCycleExtender";
+import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
+import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../../domain/models/spinner-models";
 import type { EndState } from "../contracts/IEndlessSpinnerOrchestrator";
-import type { IInfiniteSequenceGenerator } from "../contracts/IInfiniteSequenceGenerator";
 import type { SpinnerMetricsRepository } from "./SpinnerMetricsRepository";
 
 /**
@@ -83,14 +82,14 @@ const SLICE_OPTIONS: { slice: Period; weight: number }[] = [
   { slice: Period.HALVED, weight: 30 },    // 30% - 8 steps total
 ];
 
-export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
+export class InfiniteSequenceGenerator {
   private sessionCount = 0;
   private loopTypeIndex = 0;
 
   constructor(
-    private generationOrchestrator: IGenerationOrchestrator,
+    private generationOrchestrator: GenerationOrchestrator,
     private metricsRepository: SpinnerMetricsRepository,
-    private cycleExtender: IOrientationCycleExtender
+    private cycleExtender: OrientationCycleExtender
   ) {
     // Start at a random position in the rotation for variety
     this.loopTypeIndex = Math.floor(Math.random() * LOOP_TYPE_ROTATION.length);

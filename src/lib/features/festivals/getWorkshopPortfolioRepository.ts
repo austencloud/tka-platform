@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IWorkshopPortfolioRepository } from './services/contracts/IWorkshopPortfolioRepository';
 import { WorkshopPortfolioRepository } from './services/implementations/WorkshopPortfolioRepository';
 
-let instance: IWorkshopPortfolioRepository | null = null;
+let instance: WorkshopPortfolioRepository | null = null;
 
-export function getWorkshopPortfolioRepository(): IWorkshopPortfolioRepository {
+export function getWorkshopPortfolioRepository(): WorkshopPortfolioRepository {
 	if (!browser) throw new Error('getWorkshopPortfolioRepository() is browser-only');
 	return instance ??= new WorkshopPortfolioRepository();
 }

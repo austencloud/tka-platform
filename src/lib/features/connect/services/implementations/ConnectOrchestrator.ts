@@ -6,12 +6,11 @@
  * FriendshipManager, and LanSyncCoordinator.
  */
 
-import type { IConnectOrchestrator } from '../contracts/IConnectOrchestrator';
-import type { IPresenceTracker } from '../contracts/IPresenceTracker';
+import type { PresenceTracker } from '../implementations/PresenceTracker';
 import type { SessionManager } from './SessionManager';
 import type { InviteHandler } from './InviteHandler';
 import type { FriendshipManager } from './FriendshipManager';
-import type { ILanSyncCoordinator } from '$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator';
+import type { LanSyncCoordinator } from '$lib/shared/lan-sync/services/implementations/LanSyncCoordinator'
 import type {
 	SyncSession,
 	SessionParticipant,
@@ -21,18 +20,18 @@ import type {
 	UserSearchResult
 } from '../../domain/models/connect-models';
 
-export class ConnectOrchestrator implements IConnectOrchestrator {
+export class ConnectOrchestrator {
 	private _displayPreference: DisplayPreference = 'pictograph';
 	private _isSoloMode = false;
 
 	private unsubscribers: Array<() => void> = [];
 
 	constructor(
-		private presenceTracker: IPresenceTracker,
+		private presenceTracker: PresenceTracker,
 		private sessionManager: SessionManager,
 		private inviteHandler: InviteHandler,
 		private friendshipManager: FriendshipManager,
-		private lanSyncCoordinator: ILanSyncCoordinator
+		private lanSyncCoordinator: LanSyncCoordinator
 	) {}
 
 	// ==================== State Getters ====================

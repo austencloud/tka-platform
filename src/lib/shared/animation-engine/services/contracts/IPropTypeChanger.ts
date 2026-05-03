@@ -6,7 +6,7 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
 /**
  * Reactive state owned by the service
@@ -32,7 +32,7 @@ export interface IPropTypeChanger {
    * Check for prop type changes from settings
    * @param settingsService The settings service to read from
    */
-  checkForChanges(settingsService: ISettingsState | null): void;
+  checkForChanges(settingsService: SettingsState | null): void;
 
   /**
    * Override prop types directly (bypasses settings).

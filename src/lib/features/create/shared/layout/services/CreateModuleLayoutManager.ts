@@ -1,4 +1,4 @@
-import type { IViewportManager } from "$lib/shared/device/services/contracts/IViewportManager";
+import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
 /**
  * CreateModule Layout Service Implementation
  *
@@ -6,15 +6,15 @@ import type { IViewportManager } from "$lib/shared/device/services/contracts/IVi
  * Extracted from CreateModule.svelte to separate concerns and enable testing.
  */
 
-import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type { LayoutConfiguration } from "../../orchestration/types";
 import { LAYOUT_BREAKPOINTS } from "../models/LayoutState";
 import type { ICreateModuleLayoutManager } from "./ICreateModuleLayoutManager";
 
 export class CreateModuleLayoutManager implements ICreateModuleLayoutManager {
   constructor(
-    private deviceDetector: IDeviceDetector,
-    private viewportService: IViewportManager
+    private deviceDetector: DeviceDetector,
+    private viewportService: ViewportManager
   ) {}
 
   /**

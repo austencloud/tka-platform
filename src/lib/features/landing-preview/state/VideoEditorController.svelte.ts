@@ -18,7 +18,7 @@ import type {
   VideoStats,
 } from "../types";
 import type { IVideoCuratorPersister } from "../services/contracts/IVideoCuratorPersister";
-import type { ISequenceMatcher } from "../services/contracts/ISequenceMatcher";
+import type { SequenceMatcher } from "../services/implementations/SequenceMatcher";
 import type { IVideoCache } from "$lib/shared/video/services/contracts/IVideoCache";
 
 export type VideoEditorMode = "closed" | "browse" | "curate" | "link" | "rename";
@@ -50,7 +50,7 @@ export interface VideoEditorControllerOptions {
   categories: VideoCategory[];
   quickPerformers: UserProfile[];
   persister: IVideoCuratorPersister;
-  sequenceMatcher: ISequenceMatcher;
+  sequenceMatcher: SequenceMatcher;
   videoCache: IVideoCache;
   onVideosUpdate: (videos: ShowcaseVideo[]) => void;
 }

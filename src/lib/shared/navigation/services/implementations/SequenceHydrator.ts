@@ -21,16 +21,16 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { ILetterDeriver } from "../contracts/ILetterDeriver";
-import type { IPositionDeriver } from "../contracts/IPositionDeriver";
+import type { LetterDeriver } from '$lib/shared/navigation/services/implementations/LetterDeriver'
+import type { PositionDeriver } from '$lib/shared/navigation/services/implementations/PositionDeriver'
 import type { ILOOPDetector } from "$lib/features/create/generate/circular/services/contracts/ILOOPDetector";
-import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "../../../pictograph/grid/services/implementations/GridModeDeriver";
 
 export interface SequenceHydratorDeps {
-  letterDeriver: ILetterDeriver | null;
-  positionDeriver: IPositionDeriver | null;
+  letterDeriver: LetterDeriver | null;
+  positionDeriver: PositionDeriver | null;
   loopDetector: ILOOPDetector | null;
-  gridModeDeriver: IGridModeDeriver | null;
+  gridModeDeriver: GridModeDeriver | null;
 }
 
 export async function hydrateSequence(

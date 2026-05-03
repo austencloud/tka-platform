@@ -7,7 +7,7 @@
 
 import { getFavoriteConfigRepository } from "../getFavoriteConfigRepository";
 import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
-import type { IFavoriteConfigRepository } from "../services/contracts/IFavoriteConfigRepository";
+import type { FavoriteConfigRepository } from "$lib/features/create/generate/services/implementations/FavoriteConfigRepository";
 import type { FavoriteConfig, CommunityFavorite } from "../domain/models/favorite-config";
 import type { UIGenerationConfig } from "./generate-config.svelte";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";

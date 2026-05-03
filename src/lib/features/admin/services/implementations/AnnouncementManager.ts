@@ -18,10 +18,9 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import type { IAnnouncementManager } from "../contracts/IAnnouncementManager";
 import type { Announcement } from "../../domain/models/announcement-models";
 
-export class AnnouncementManager implements IAnnouncementManager {
+export class AnnouncementManager {
   private readonly ANNOUNCEMENTS_COLLECTION = "announcements";
 
   /**

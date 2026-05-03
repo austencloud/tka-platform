@@ -15,7 +15,7 @@ Card-based architecture with integrated Generate button:
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { createDeviceState } from "../state/generate-device.svelte";
@@ -201,7 +201,6 @@ Card-based architecture with integrated Generate button:
       setGeneratorVoiceRef(null);
     };
   });
-
 
 </script>
 

@@ -8,7 +8,7 @@
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 /**
@@ -59,6 +59,6 @@ export interface IOrientationContinuityValidator {
   validateTransition(
     lastStep: StepData,
     nextPictograph: PictographData,
-    orientationCalculator: IOrientationCalculator
+    orientationCalculator: OrientationCalculator
   ): TransitionValidationResult;
 }

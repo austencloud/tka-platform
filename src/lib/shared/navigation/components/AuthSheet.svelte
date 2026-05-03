@@ -15,7 +15,7 @@ import type { IHapticFeedback } from "../../application/services/contracts/IHapt
   import EmailAuthTabs from "../../auth/components/EmailAuthTabs.svelte";
   import SocialAuthCompact from "../../auth/components/SocialAuthCompact.svelte";
   import { authState } from "../../auth/state/authState.svelte";
-  import type { IAuthenticator } from "../../auth/services/contracts/IAuthenticator";
+  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
 
   // Props
   let { isOpen = false, onClose } = $props<{
@@ -25,7 +25,7 @@ import type { IHapticFeedback } from "../../application/services/contracts/IHapt
 
   // Services
   let hapticService: IHapticFeedback | null = null;
-  let authService: IAuthenticator | null = null;
+  let authService: Authenticator | null = null;
 
   // Track auth mode to update UI accordingly
   let authMode = $state<"signin" | "signup">("signin");

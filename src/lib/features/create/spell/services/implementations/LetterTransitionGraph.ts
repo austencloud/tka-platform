@@ -10,7 +10,7 @@ import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid
 import { TransitionGraph } from "$lib/shared/sequence-engine/services/implementations/TransitionGraph";
 import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/implementations/BrowserDataProvider";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
+
 import type {
   LetterPositionInfo,
   LetterCategory,
@@ -20,7 +20,7 @@ import type { PositionGroup } from "$lib/shared/sequence-engine/domain/models/Se
 /**
  * Browser-specific transition graph using the shared engine.
  */
-export class LetterTransitionGraph implements ILetterTransitionGraph {
+export class LetterTransitionGraph {
   private sharedGraph: TransitionGraph | null = null;
   private letterQueryHandler: ILetterQueryHandler | null = null;
   private initialized = false;

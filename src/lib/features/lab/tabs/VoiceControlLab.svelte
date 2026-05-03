@@ -15,14 +15,14 @@ import { getCommandInterpreter } from "$lib/shared/voice-control/getCommandInter
 import { getVoiceSessionRecorder } from "$lib/shared/voice-control/getVoiceSessionRecorder";
 import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetector";
   import { onMount } from "svelte";
-  import type { IWakeWordDetector } from "$lib/shared/voice-control/services/contracts/IWakeWordDetector";
-  import type { ICommandInterpreter } from "$lib/shared/voice-control/services/contracts/ICommandInterpreter";
+  import type { WakeWordDetector } from "$lib/shared/voice-control/services/implementations/WakeWordDetector";
+  import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
   import type { ICommandDispatcher } from "$lib/shared/voice-control/services/contracts/ICommandDispatcher";
   import type { IVoiceSessionRecorder } from "$lib/shared/voice-control/services/contracts/IVoiceSessionRecorder";
-  import type { IVoiceSessionFormatter } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter";
-  import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
+  import type { VoiceSessionFormatter } from "$lib/features/voice-sessions/services/implementations/VoiceSessionFormatter";
+  import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
   import type { IVoiceSessionAnalyzer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionAnalyzer";
-  import type { IVoiceSessionReplayer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionReplayer";
+  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
   import type { VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -30,14 +30,14 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import SavedSessionList from "$lib/features/voice-sessions/components/SavedSessionList.svelte";
   import SessionAnalysisPanel from "$lib/features/voice-sessions/components/SessionAnalysisPanel.svelte";
 
-  let detector: IWakeWordDetector | null = null;
-  let interpreter: ICommandInterpreter | null = null;
+  let detector: WakeWordDetector | null = null;
+  let interpreter: CommandInterpreter | null = null;
   let dispatcher: ICommandDispatcher | null = null;
   let sessionRecorder: IVoiceSessionRecorder | null = null;
-  let sessionFormatter = $state<IVoiceSessionFormatter | null>(null);
-  let sessionRepository = $state<IVoiceSessionRepository | null>(null);
+  let sessionFormatter = $state<VoiceSessionFormatter | null>(null);
+  let sessionRepository = $state<VoiceSessionRepository | null>(null);
   let sessionAnalyzer = $state<IVoiceSessionAnalyzer | null>(null);
-  let sessionReplayer = $state<IVoiceSessionReplayer | null>(null);
+  let sessionReplayer = $state<VoiceSessionReplayer | null>(null);
 
   let supported = $state(false);
   let listening = $state(false);

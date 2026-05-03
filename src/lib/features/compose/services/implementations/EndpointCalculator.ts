@@ -14,7 +14,7 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { AngleCalculator } from "./AngleCalculator";
-import type { IMotionCalculator } from "../contracts/IMotionCalculator";
+import type { MotionCalculator } from "../implementations/MotionCalculator";
 import { PI } from "../../shared/domain/math-constants.js";
 
 // ✅ ELIMINATED: StepEndpoints and StepDefinition - pointless reshuffling!
@@ -23,7 +23,7 @@ import { PI } from "../../shared/domain/math-constants.js";
 export class EndpointCalculator {
   constructor(
     private angleCalculator: AngleCalculator,
-    private motionCalculator: IMotionCalculator
+    private motionCalculator: MotionCalculator
   ) {}
 
   /**

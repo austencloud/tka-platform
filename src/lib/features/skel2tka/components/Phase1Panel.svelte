@@ -18,8 +18,8 @@
   import type { PhaseVerdict, UserCorrection } from "../domain/verification-models";
   import type { TrainingPair, VerifiedStepPosition, VideoReference } from "../domain/training-models";
   import type { IOverlayRenderer } from "../services/contracts/IOverlayRenderer";
-  import type { ISanityChecker } from "../services/contracts/ISanityChecker";
-  import type { ITrainingDataPersister } from "../services/contracts/ITrainingDataPersister";
+  import type { SanityChecker } from "../services/implementations/SanityChecker";
+  import type { TrainingDataPersister } from "../services/implementations/TrainingDataPersister";
   import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";
   import { getVideoFrameExtractor } from "$lib/features/skel2tka/getVideoFrameExtractor";
   import { getVideoHandAnalyzer } from "$lib/features/skel2tka/getVideoHandAnalyzer";
@@ -59,8 +59,8 @@
   const handAnalyzer = getVideoHandAnalyzer();
   const beatDetector = getStepBoundaryDetector();
   const overlayRenderer = getPhase1OverlayRenderer() as IOverlayRenderer;
-  const sanityChecker = getSanityChecker() as ISanityChecker;
-  const trainingPersister = getTrainingDataPersister() as ITrainingDataPersister;
+  const sanityChecker = getSanityChecker() as SanityChecker;
+  const trainingPersister = getTrainingDataPersister() as TrainingDataPersister;
 
   function onProgress(current: number, total: number, label?: string) {
     progressCurrent = current;

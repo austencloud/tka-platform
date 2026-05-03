@@ -15,7 +15,7 @@ import type { StartPositionData } from "../../../domain/models/StartPositionData
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   createMotionData,
@@ -47,7 +47,7 @@ export function updateRotationDirection(
   rotationDirection: string,
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler | null,
-  gridModeDeriver: IGridModeDeriver | null
+  gridModeDeriver: GridModeDeriver | null
 ): void {
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
@@ -221,7 +221,7 @@ async function recalculateLetterAsync(
   stepToCheck: StepData | StartPositionData,
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler,
-  gridModeDeriver: IGridModeDeriver
+  gridModeDeriver: GridModeDeriver
 ): Promise<void> {
   const blueMotion = stepToCheck.motions?.[MotionColor.BLUE];
   const redMotion = stepToCheck.motions?.[MotionColor.RED];
@@ -286,7 +286,7 @@ export async function recalculateLetterForBeat(
   stepNumber: number,
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler | null,
-  gridModeDeriver: IGridModeDeriver | null
+  gridModeDeriver: GridModeDeriver | null
 ): Promise<void> {
   if (!motionQueryHandler || !gridModeDeriver) {
     return;

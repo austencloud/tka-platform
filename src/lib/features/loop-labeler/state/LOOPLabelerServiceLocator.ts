@@ -11,13 +11,13 @@ import { getLoopLabelerNavigator } from "$lib/features/loop-labeler/getNavigator
 import { loopDetector as loopDetectorInstance } from "../services/implementations/LOOPDetector";
 import type { ISequenceLoader } from "../services/contracts/ISequenceLoader";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
-import type { INavigator } from "../services/contracts/INavigator";
+import type { Navigator } from "../services/implementations/Navigator";
 import type { ILOOPDetector } from "../services/contracts/ILOOPDetector";
 
 export class LOOPLabelerServiceLocator {
   private cachedSequenceLoader: ISequenceLoader | null = null;
   private cachedLabelsRepository: ILOOPLabelsFirebaseRepository | null = null;
-  private cachedNavigator: INavigator | null = null;
+  private cachedNavigator: Navigator | null = null;
   private cachedDetector: ILOOPDetector | null = null;
 
   get sequenceLoader(): ISequenceLoader | null {
@@ -40,9 +40,9 @@ export class LOOPLabelerServiceLocator {
     return this.cachedLabelsRepository;
   }
 
-  get navigator(): INavigator | null {
+  get navigator(): Navigator | null {
     if (!this.cachedNavigator) {
-      this.cachedNavigator = getLoopLabelerNavigator() as INavigator | null;
+      this.cachedNavigator = getLoopLabelerNavigator() as Navigator | null;
     }
     return this.cachedNavigator;
   }

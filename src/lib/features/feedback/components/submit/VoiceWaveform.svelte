@@ -1,10 +1,10 @@
 <!-- VoiceWaveform - Real-time audio frequency bar visualization -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import type { IAudioAnalyzer } from "../../services/contracts/IAudioAnalyzer";
+	import type { AudioAnalyzer } from "../../services/implementations/AudioAnalyzer";
 
 	const { analyzer } = $props<{
-		analyzer: IAudioAnalyzer;
+		analyzer: AudioAnalyzer;
 	}>();
 
 	let canvas: HTMLCanvasElement | undefined = $state();

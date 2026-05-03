@@ -12,8 +12,6 @@ import type {
   TrainingPair,
   TrainingDataStats,
 } from "../../domain/training-models";
-import type { ITrainingDataPersister } from "../contracts/ITrainingDataPersister";
-
 const DB_NAME = "skel2tka-training";
 const DB_VERSION = 1;
 
@@ -56,7 +54,7 @@ function promisifyTransaction(transaction: IDBTransaction): Promise<void> {
   });
 }
 
-export class TrainingDataPersister implements ITrainingDataPersister {
+export class TrainingDataPersister {
   private db: IDBDatabase | null = null;
   private initPromise: Promise<void> | null = null;
 

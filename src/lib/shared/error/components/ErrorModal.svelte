@@ -10,7 +10,7 @@
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { getCurrentError, dismissError } from "../state/error-state.svelte";
-  import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+  import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let userComment = $state("");

@@ -18,11 +18,10 @@
 
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
+export class SequenceLoopabilityChecker {
   /**
    * Check if a sequence can loop seamlessly - position AND orientation must match.
    *

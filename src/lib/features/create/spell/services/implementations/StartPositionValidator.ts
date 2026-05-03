@@ -5,7 +5,7 @@
  * Start positions must have startPosition === endPosition (no movement).
  */
 
-import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
+import type { LetterTransitionGraph } from "../implementations/LetterTransitionGraph";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -15,7 +15,7 @@ import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
 
 export class StartPositionValidator {
   constructor(
-    private readonly letterTransitionGraph: ILetterTransitionGraph,
+    private readonly letterTransitionGraph: LetterTransitionGraph,
     private readonly letterQueryHandler: ILetterQueryHandler
   ) {}
 

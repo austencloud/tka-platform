@@ -22,7 +22,6 @@ import { MirroredSwappedInvertedLOOPExecutor } from './services/implementations/
 import { MirroredRotatedInvertedSwappedLOOPExecutor } from './services/implementations/MirroredRotatedInvertedSwappedLOOPExecutor';
 import { RewoundLOOPExecutor } from './services/implementations/RewoundLOOPExecutor';
 import { LOOPExecutorSelector } from './services/implementations/LOOPExecutorSelector';
-import type { ILOOPExecutorSelector } from './services/contracts/ILOOPExecutorSelector';
 
 // Basic executors (orientationCalculator only)
 let _strictMirrored: StrictMirroredLOOPExecutor | null = null;
@@ -50,7 +49,7 @@ let _mirroredRotatedInvertedSwapped: MirroredRotatedInvertedSwappedLOOPExecutor 
 let _rewound: RewoundLOOPExecutor | null = null;
 
 // Selector
-let _selector: ILOOPExecutorSelector | null = null;
+let _selector: LOOPExecutorSelector | null = null;
 
 function _check() {
 	if (!browser) throw new Error('LOOP executors are browser-only');
@@ -122,7 +121,7 @@ export function getMirroredRotatedInvertedSwappedLOOPExecutor() {
 }
 
 // The selector - needs all 15 executors
-export function getLOOPExecutorSelector(): ILOOPExecutorSelector {
+export function getLOOPExecutorSelector(): LOOPExecutorSelector {
 	_check();
 	return _selector ??= new LOOPExecutorSelector(
 		getStrictRotatedLOOPExecutor(),

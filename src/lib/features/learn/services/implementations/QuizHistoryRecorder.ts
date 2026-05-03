@@ -24,7 +24,6 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { getUserQuizHistoryPath } from "../../data/firestore-paths";
 import type { QuizAttempt, ConceptMastery } from "../../domain/quiz-history-types";
-import type { IQuizHistoryRecorder } from "../contracts/IQuizHistoryRecorder";
 
 /** Minimum attempts required before considering a concept "mastered" */
 const MASTERY_MIN_ATTEMPTS = 3;
@@ -35,7 +34,7 @@ const MASTERY_SCORE_THRESHOLD = 80;
 /** Number of recent scores used for trend detection */
 const TREND_WINDOW = 3;
 
-export class QuizHistoryRecorder implements IQuizHistoryRecorder {
+export class QuizHistoryRecorder {
   /**
    * Get the Firestore collection reference for a user's quiz history.
    */

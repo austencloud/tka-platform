@@ -13,14 +13,14 @@ import { getPlaneCoordinateMapper } from "$lib/shared/3d/getPlaneCoordinateMappe
   import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
-  import type { IPlaneCoordinateMapper } from "$lib/shared/3d/services/contracts/IPlaneCoordinateMapper";
+  import type { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   // ── DI services ──────────────────────────────────────────────────────
-  const mapper = getPlaneCoordinateMapper() as IPlaneCoordinateMapper;
+  const mapper = getPlaneCoordinateMapper() as PlaneCoordinateMapper;
 
   // ── State ────────────────────────────────────────────────────────────
 

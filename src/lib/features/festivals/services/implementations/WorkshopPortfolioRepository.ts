@@ -15,9 +15,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { TeachingPortfolio } from "../../domain/models/teaching-portfolio";
-import type { IWorkshopPortfolioRepository } from "../contracts/IWorkshopPortfolioRepository";
 
-export class WorkshopPortfolioRepository implements IWorkshopPortfolioRepository {
+export class WorkshopPortfolioRepository {
   async get(userId: string): Promise<TeachingPortfolio | null> {
     const db = await getFirestoreInstance();
     const ref = doc(db, "userProfiles", userId, "workshopPortfolio", "data");

@@ -28,7 +28,7 @@
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+  import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
   import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
   import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import HowTkaAnimationCard from "./HowTkaAnimationCard.svelte";

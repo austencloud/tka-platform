@@ -10,7 +10,7 @@
   import BuilderTurnBar from "./components/BuilderTurnBar.svelte";
   import StepStrip from "./components/StepStrip.svelte";
   import AssembleIdlePanel from "./components/AssembleIdlePanel.svelte";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
   const builderState = createAssembleState();
 
@@ -29,9 +29,9 @@
   });
 
   // Load last-used grid preferences from settings
-  let settingsState: ISettingsState | null = null;
+  let settingsState: SettingsState | null = null;
   try {
-    settingsState = settingsService as ISettingsState;
+    settingsState = settingsService as SettingsState;
     const saved = settingsState.currentSettings;
     if (saved.preferredGridMode) {
       builderState.setGridMode(saved.preferredGridMode);

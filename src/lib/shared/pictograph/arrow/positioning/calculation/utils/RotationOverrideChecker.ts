@@ -1,7 +1,7 @@
 import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { ISpecialPlacer } from "../../placement/services/contracts/IArrowPlacer";
+import type { SpecialPlacer } from "../../placement/services/implementations/SpecialPlacer";
 import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
 import { RotationMapSelector } from "./RotationMapSelector";
 import { normalizeRotationDirection } from "./RotationDirectionUtils";
@@ -29,7 +29,7 @@ export class RotationOverrideChecker {
     location: GridLocation,
     pictographData: PictographData,
     isRadial: boolean,
-    SpecialPlacer: ISpecialPlacer,
+    SpecialPlacer: SpecialPlacer,
     rotationOverrideKeyGenerator: IRotationAngleOverrideKeyGenerator
   ): Promise<number | null> {
     try {

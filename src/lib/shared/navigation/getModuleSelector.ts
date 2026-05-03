@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IModuleSelector } from './services/contracts/IModuleSelector';
+
 import { ModuleSelector } from './services/ModuleSelector';
 
-let instance: IModuleSelector | null = null;
+let instance: ModuleSelector | null = null;
 
-export function getModuleSelector(): IModuleSelector {
+export function getModuleSelector(): ModuleSelector {
 	if (!browser) throw new Error('getModuleSelector() is browser-only');
 	return instance ??= new ModuleSelector();
 }

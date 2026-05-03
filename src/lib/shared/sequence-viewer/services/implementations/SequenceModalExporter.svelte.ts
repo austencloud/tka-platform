@@ -10,7 +10,7 @@ import type {
 } from "../contracts/ISequenceModalExporter";
 import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 import type { IOffline3DExporter } from "$lib/shared/3d/services/contracts/IOffline3DExporter";
-import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
+import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
@@ -27,7 +27,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
   private _previewBlobUrl = $state<string | null>(null);
 
   private _videoExportOrchestrator: IVideoExportOrchestrator | null = null;
-  private _sequenceRenderer: ISequenceRenderer | null = null;
+  private _sequenceRenderer: SequenceRenderer | null = null;
   private _activeExporter: IOffline3DExporter | null = null;
 
   private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
@@ -37,7 +37,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     return this._videoExportOrchestrator;
   }
 
-  private get sequenceRenderer(): ISequenceRenderer | null {
+  private get sequenceRenderer(): SequenceRenderer | null {
     if (!this._sequenceRenderer) {
       this._sequenceRenderer = getSequenceRenderer();
     }

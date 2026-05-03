@@ -1,8 +1,7 @@
-import type { IAnimationPlaybackControllerFactory } from './services/contracts/IAnimationPlaybackControllerFactory';
 import { AnimationPlaybackControllerFactory } from './services/implementations/AnimationPlaybackControllerFactory';
 import { getSequenceLoopabilityChecker } from './getSequenceLoopabilityChecker';
 
-let instance: IAnimationPlaybackControllerFactory | null = null;
-export function getAnimationPlaybackControllerFactory(): IAnimationPlaybackControllerFactory {
+let instance: AnimationPlaybackControllerFactory | null = null;
+export function getAnimationPlaybackControllerFactory(): AnimationPlaybackControllerFactory {
   return instance ??= new AnimationPlaybackControllerFactory(getSequenceLoopabilityChecker());
 }

@@ -1,4 +1,4 @@
-import type { IViewportManager } from "$lib/shared/device/services/contracts/IViewportManager";
+import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
 /**
  * CreateModule Orchestration Types
  *
@@ -6,14 +6,14 @@ import type { IViewportManager } from "$lib/shared/device/services/contracts/IVi
  * These types define the contracts between different layers of the system.
  */
 
-import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-import type { IStartPositionManager } from "../../construct/start-position-picker/services/contracts/IStartPositionManager";
-import type { ICreateModuleOrchestrator } from "../services/contracts/ICreateModuleOrchestrator";
-import type { ISequencePersister } from "../services/contracts/ISequencePersister";
-import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
-import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceStatsCalculator";
-import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
-import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import type { StartPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
 import type { createCreateModuleState } from "../state/create-module-state.svelte";
 import type { createConstructTabState } from "../state/construct-tab-state.svelte";
 
@@ -21,15 +21,15 @@ import type { createConstructTabState } from "../state/construct-tab-state.svelt
  * Collection of all services required by CreateModule
  */
 export interface CreateModuleOrchestrators {
-  sequenceService: ISequenceRepository;
-  SequencePersister: ISequencePersister;
-  StartPositionManager: IStartPositionManager;
-  CreateModuleOrchestrator: ICreateModuleOrchestrator;
-  deviceDetector: IDeviceDetector;
-  viewportService: IViewportManager;
-  sequenceStatisticsService: ISequenceStatsCalculator;
-  SequenceTransformer: ISequenceTransformer;
-  sequenceValidationService: ISequenceValidator;
+  sequenceService: SequenceRepository;
+  SequencePersister: SequencePersister;
+  StartPositionManager: StartPositionManager;
+  CreateModuleOrchestrator: CreateModuleOrchestrator;
+  deviceDetector: DeviceDetector;
+  viewportService: ViewportManager;
+  sequenceStatisticsService: SequenceStatsCalculator;
+  SequenceTransformer: SequenceTransformer;
+  sequenceValidationService: SequenceValidator;
 }
 
 /**

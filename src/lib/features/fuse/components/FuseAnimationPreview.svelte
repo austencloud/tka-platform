@@ -12,7 +12,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
+	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
 
@@ -35,7 +35,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	} = $props();
 
 	let controller = $state<IAnimationPlaybackController | null>(null);
-	let motionLoader = $state<ISequenceMotionLoader | null>(null);
+	let motionLoader = $state<SequenceMotionLoader | null>(null);
 	const animState = createAnimationPanelState();
 	let initialized = $state(false);
 	let totalSteps = $state(0);

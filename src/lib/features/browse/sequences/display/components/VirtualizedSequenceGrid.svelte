@@ -9,7 +9,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   } from "@tanstack/svelte-virtual";
   import type { Readable } from "svelte/store";
   import { onMount, onDestroy, untrack } from "svelte";
-  import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
@@ -41,7 +41,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     onGridReady,
   } = $props<{
     sequences: SequenceData[];
-    thumbnailService: IBrowseThumbnailProvider | null;
+    thumbnailService: BrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     pinchColumnOverride?: number;
     onGridReady?: (api: VirtualGridApi) => void;

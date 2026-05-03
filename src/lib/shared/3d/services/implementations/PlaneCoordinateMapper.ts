@@ -5,7 +5,6 @@
  */
 
 import type { Vector3, Quaternion } from "three";
-import type { IPlaneCoordinateMapper } from "../contracts/IPlaneCoordinateMapper";
 import type { Plane } from "../../domain/enums/Plane";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
@@ -16,7 +15,7 @@ import {
 } from "../../domain/constants/plane-transforms";
 import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
 
-export class PlaneCoordinateMapper implements IPlaneCoordinateMapper {
+export class PlaneCoordinateMapper {
   /**
    * Convert a path angle on a plane to a 3D world position.
    */

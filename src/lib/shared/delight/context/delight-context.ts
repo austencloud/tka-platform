@@ -6,7 +6,7 @@
  */
 
 import { getContext, setContext } from 'svelte';
-import type { IDelightOrchestrator } from '../services/contracts/IDelightOrchestrator';
+import type { DelightOrchestrator } from '$lib/shared/delight/services/implementations/DelightOrchestrator'
 
 const DELIGHT_CONTEXT_KEY = Symbol('delight-orchestrator');
 
@@ -14,7 +14,7 @@ const DELIGHT_CONTEXT_KEY = Symbol('delight-orchestrator');
  * Set the delight orchestrator in context.
  * Call this in the parent component that provides the delight system.
  */
-export function setDelightOrchestrator(orchestrator: IDelightOrchestrator): void {
+export function setDelightOrchestrator(orchestrator: DelightOrchestrator): void {
 	setContext(DELIGHT_CONTEXT_KEY, orchestrator);
 }
 
@@ -22,6 +22,6 @@ export function setDelightOrchestrator(orchestrator: IDelightOrchestrator): void
  * Get the delight orchestrator from context.
  * Returns null if not provided (component is outside delight provider).
  */
-export function getDelightOrchestrator(): IDelightOrchestrator | null {
-	return getContext<IDelightOrchestrator | null>(DELIGHT_CONTEXT_KEY) ?? null;
+export function getDelightOrchestrator(): DelightOrchestrator | null {
+	return getContext<DelightOrchestrator | null>(DELIGHT_CONTEXT_KEY) ?? null;
 }

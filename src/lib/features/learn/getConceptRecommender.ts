@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IConceptRecommender } from './services/contracts/IConceptRecommender';
 import { ConceptRecommender } from './services/implementations/ConceptRecommender';
 
-let instance: IConceptRecommender | null = null;
+let instance: ConceptRecommender | null = null;
 
-export function getConceptRecommender(): IConceptRecommender {
+export function getConceptRecommender(): ConceptRecommender {
 	if (!browser) throw new Error('getConceptRecommender() is browser-only');
 	return instance ??= new ConceptRecommender();
 }

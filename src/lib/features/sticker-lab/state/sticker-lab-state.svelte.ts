@@ -11,7 +11,6 @@ import {
 } from "../domain/sticker-types";
 import { MAX_COPIES_PER_STICKER } from "../domain/sticker-constants";
 import { LocalStickerSheetRepository } from "../services/implementations/LocalStickerSheetRepository";
-import type { IStickerSheetRepository } from "../services/contracts/IStickerSheetRepository";
 
 export interface StickerLabState {
   readonly sheet: StickerSheet;
@@ -25,7 +24,7 @@ export interface StickerLabState {
 }
 
 export function createStickerLabState(
-  repository: IStickerSheetRepository = new LocalStickerSheetRepository()
+  repository: LocalStickerSheetRepository = new LocalStickerSheetRepository()
 ): StickerLabState {
   let sheet = $state<StickerSheet>(repository.load() ?? createDefaultStickerSheet());
 

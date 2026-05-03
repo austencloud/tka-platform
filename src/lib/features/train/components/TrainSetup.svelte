@@ -8,7 +8,7 @@
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -19,7 +19,7 @@
   let { onSequenceSelected }: Props = $props();
 
   // Services - resolved lazily
-  let loaderService = $state<IBrowseLoader | null>(null);
+  let loaderService = $state<PublicSequencesLoader | null>(null);
 
   // State
   let showBrowser = $state(false);

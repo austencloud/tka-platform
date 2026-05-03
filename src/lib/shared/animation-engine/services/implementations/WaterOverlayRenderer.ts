@@ -11,7 +11,6 @@
  * pixels. The pool is cleared on dispose() or explicit clear().
  */
 
-import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
 import type { Water2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Water2DRenderer,
@@ -19,7 +18,7 @@ import {
 } from "$lib/shared/effects/renderers/Water2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class WaterOverlayRenderer implements IWaterOverlayRenderer {
+export class WaterOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Water2DRenderer();

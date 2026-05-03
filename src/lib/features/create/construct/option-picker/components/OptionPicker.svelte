@@ -20,15 +20,15 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import { optionGridFitCalculator } from "../services/implementations/OptionGridFitCalculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
-  import type { IOptionLoader } from "../services/contracts/IOptionLoader";
-  import type { IOptionFilter } from "../services/contracts/IOptionFilter";
-  import type { IOptionSorter } from "../services/contracts/IOptionSorter";
-  import type { IOptionOrganizer } from "../services/contracts/IOptionOrganizer";
+  import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/implementations/OptionLoader";
+  import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/implementations/OptionFilter";
+  import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/implementations/OptionSorter";
+  import type { OptionOrganizer } from "$lib/features/create/construct/option-picker/services/implementations/OptionOrganizer";
   import type { IOptionGridFitCalculator } from "../services/contracts/IGridFitCalculator";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import type { IPictographPreparer } from "../services/PictographPreparer";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IDarkModeProvider } from "$lib/shared/animation-engine/services/contracts/IDarkModeProvider";
+  import type { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
   import OptionPickerContent from "./OptionPickerContent.svelte";
 
   // Props
@@ -78,11 +78,11 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   let preparer: IPictographPreparer | null = null;
   let hapticService = $state<IHapticFeedback | null>(null);
   let sizerService = $state<IOptionGridFitCalculator | null>(null);
-  let organizerService = $state<IOptionOrganizer | null>(null);
+  let organizerService = $state<OptionOrganizer | null>(null);
 
   // Dark Mode tracking - needed to re-prepare props when theme changes
   let darkMode = $state(false);
-  let darkModeProvider: IDarkModeProvider | null = null;
+  let darkModeProvider: DarkModeProvider | null = null;
 
   // Brief debounce to prevent double-tap during option loading
   const SELECTION_DEBOUNCE_MS = 300;

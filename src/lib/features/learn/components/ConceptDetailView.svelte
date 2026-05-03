@@ -11,7 +11,7 @@ Supports two navigation modes:
   import { onMount } from "svelte";
   import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { IConceptProgressTracker } from "../services/contracts/IConceptProgressTracker";
+  import type { ConceptProgressTracker } from "../services/implementations/ConceptProgressTracker";
   import GridConceptExperience from "./interactive/GridConceptExperience.svelte";
   import Type1ConceptExperience from "./interactive/letters/type1/Type1ConceptExperience.svelte";
   import MotionsConceptExperience from "./interactive/motions/MotionsConceptExperience.svelte";

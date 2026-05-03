@@ -8,7 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
@@ -32,7 +32,7 @@
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
-  let browseLoader: IBrowseLoader;
+  let browseLoader: PublicSequencesLoader;
   let isExporting = $state(false);
   let exportCurrent = $state(0);
   let exportTotal = $state(0);

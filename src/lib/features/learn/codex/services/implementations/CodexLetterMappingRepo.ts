@@ -12,9 +12,8 @@ import type {
   CodexLetterRow,
 } from "../../domain/models/codex-models";
 import { createLetterMapping } from "../../domain/models/codex-models";
-import type { ICodexLetterMappingRepo } from "../contracts/ICodexLetterMappingRepo";
 
-export class CodexLetterMappingRepo implements ICodexLetterMappingRepo {
+export class CodexLetterMappingRepo {
   private configuration: CodexConfig | null = null;
   private initialized = false;
 

@@ -9,16 +9,15 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { IPersistenceService } from "$lib/shared/persistence/services/contracts/IPersistenceService";
+import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
-import type { ISequencePersister } from "../contracts/ISequencePersister";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
-export class SequencePersister implements ISequencePersister {
-  constructor(private persistenceService: IPersistenceService) {}
+export class SequencePersister {
+  constructor(private persistenceService: DexiePersistenceService) {}
 
   /**
    * Get the current active mode from navigation state
@@ -59,7 +58,7 @@ export class SequencePersister implements ISequencePersister {
         "❌ SequencePersister: Failed to save current state:",
         error
       );
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't save your sequence",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -107,7 +106,7 @@ export class SequencePersister implements ISequencePersister {
         "❌ SequencePersister: Failed to load current state:",
         error
       );
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load your sequence",
         technicalDetails: error instanceof Error ? error.message : String(error),

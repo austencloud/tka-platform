@@ -12,7 +12,7 @@
   import type { DeviceCategory } from "../../services/contracts/IScreenshotOrchestrator";
   import type { ScreenshotMetadata } from "../../services/contracts/IScreenshotUploader";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IScreenshotTagController } from "../../services/contracts/IScreenshotTagController";
+  import type { ScreenshotTagController } from "../../services/implementations/ScreenshotTagController";
   import type { GalleryItem } from "../../services/contracts/IGalleryItemAdapter";
   import { getScreenshotOrchestrator } from "../../getScreenshotOrchestrator";
   import { getScreenshotUploadOrchestrator } from "../../getScreenshotUploadOrchestrator";
@@ -34,7 +34,7 @@
   import { createGalleryCaptureState } from "./state/gallery-capture-state.svelte";
 
   let hapticService: IHapticFeedback | null = $state(null);
-  let tagController: IScreenshotTagController | null = $state(null);
+  let tagController: ScreenshotTagController | null = $state(null);
   const adapter = new GalleryItemAdapter();
 
   // ─── State domains ──────────────────────────────────────────────────────────

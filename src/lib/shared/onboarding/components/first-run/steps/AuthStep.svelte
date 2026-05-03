@@ -9,7 +9,7 @@
   import { fly, fade } from "svelte/transition";
   import SocialAuthCompact from "$lib/shared/auth/components/SocialAuthCompact.svelte";
   import EmailAuthTabs from "$lib/shared/auth/components/EmailAuthTabs.svelte";
-  import type { IAuthenticator } from "$lib/shared/auth/services/contracts/IAuthenticator";
+  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { onMount } from "svelte";
 
@@ -22,7 +22,7 @@
 
   let authMode = $state<"signin" | "signup">("signup");
   let showEmailAuth = $state(false);
-  let authService: IAuthenticator | null = null;
+  let authService: Authenticator | null = null;
 
   // Watch for authentication to complete
   const isAuthenticated = $derived(authState.isAuthenticated);

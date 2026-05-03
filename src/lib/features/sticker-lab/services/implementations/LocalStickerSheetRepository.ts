@@ -3,8 +3,6 @@ import {
   STORAGE_KEY_ACTIVE_SHEET,
   STORAGE_SCHEMA_VERSION,
 } from "../../domain/sticker-constants";
-import type { IStickerSheetRepository } from "../contracts/IStickerSheetRepository";
-
 /** v1 stored payload shape (before MandalaPrimitiveRef). */
 interface StoredPayloadV1 {
   version: 1;
@@ -31,7 +29,7 @@ interface StoredPayload {
   sheet: StickerSheet;
 }
 
-export class LocalStickerSheetRepository implements IStickerSheetRepository {
+export class LocalStickerSheetRepository {
   constructor(private readonly storage: Storage = globalThis.localStorage) {}
 
   load(): StickerSheet | null {

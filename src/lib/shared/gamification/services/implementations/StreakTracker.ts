@@ -10,9 +10,8 @@ import { db } from "../../../persistence/database/TKADatabase";
 import { getUserStreakPath } from "../../data/firestore-collections";
 import { toast } from "../../../toast/state/toast-state.svelte";
 import type { UserStreak } from "../../domain/models/achievement-models";
-import type { IStreakTracker } from "../contracts/IStreakTracker";
 
-export class StreakTracker implements IStreakTracker {
+export class StreakTracker {
   private _initialized = false;
 
   // ============================================================================

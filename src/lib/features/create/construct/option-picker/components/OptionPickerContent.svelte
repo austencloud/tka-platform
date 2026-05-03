@@ -6,7 +6,7 @@ Uses organizer and sizer services for section grouping and sizing.
 -->
 <script lang="ts">
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { IOptionOrganizer } from "../services/contracts/IOptionOrganizer";
+  import type { OptionOrganizer } from "$lib/features/create/construct/option-picker/services/implementations/OptionOrganizer";
   import type { IOptionGridFitCalculator } from "../services/contracts/IGridFitCalculator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   // CSS animations used instead of Svelte transitions to avoid carousel dimension issues
@@ -20,7 +20,7 @@ Uses organizer and sizer services for section grouping and sizing.
 
   interface Props {
     options: PreparedPictographData[];
-    organizerService: IOptionOrganizer | null;
+    organizerService: OptionOrganizer | null;
     sizerService: IOptionGridFitCalculator | null;
     onSelect: (option: PreparedPictographData) => void;
     // Filter props

@@ -11,7 +11,6 @@
  * frame keeps behavior deterministic when playback is paused or seeks.
  */
 
-import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
 import type { Bloom2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Bloom2DRenderer,
@@ -19,7 +18,7 @@ import {
 } from "$lib/shared/effects/renderers/Bloom2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class BloomOverlayRenderer implements IBloomOverlayRenderer {
+export class BloomOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Bloom2DRenderer();

@@ -5,10 +5,9 @@
  * Handles date/time formatting, module/tab label resolution.
  */
 
-import type { IFeedbackFormatter } from "../contracts/IFeedbackFormatter";
 import { MODULE_DEFINITIONS } from "$lib/shared/navigation/state/navigation-state.svelte";
 
-export class FeedbackFormatter implements IFeedbackFormatter {
+export class FeedbackFormatter {
   /**
    * Format date as "Jan 15, 2024 at 3:45 PM"
    */

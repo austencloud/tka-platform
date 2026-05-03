@@ -1,8 +1,8 @@
 import type { World } from "miniplex";
 import type { VillageEntity } from "../../domain/village-types";
 import type { VillageConfig } from "../VillageConfig";
-import type { IPersonalityGenerator } from "../../services/contracts/IPersonalityGenerator";
-import type { ILineageTracker } from "../../services/contracts/ILineageTracker";
+import type { PersonalityGenerator } from "../../services/implementations/PersonalityGenerator";
+import type { LineageTracker } from "../../services/implementations/LineageTracker";
 import type { VillageEventEmitter } from "../VillageEventEmitter";
 import { createAvatarEntity } from "../VillageWorld";
 import {
@@ -19,8 +19,8 @@ export class PopulationSystem {
 
 	constructor(
 		private config: VillageConfig,
-		private personalityGenerator: IPersonalityGenerator,
-		private lineageTracker: ILineageTracker,
+		private personalityGenerator: PersonalityGenerator,
+		private lineageTracker: LineageTracker,
 		private emitter: VillageEventEmitter,
 	) {}
 

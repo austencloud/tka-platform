@@ -1,7 +1,7 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IBetaDetector } from "$lib/shared/pictograph/prop/services/contracts/IBetaDetector";
+import type { BetaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
 import type {
   ISequenceAnalyzer,
   CircularityAnalysis,
@@ -29,7 +29,7 @@ import {
  * - Intermediate pictographs are irrelevant - only start/end positions matter
  */
 export class SequenceAnalyzer implements ISequenceAnalyzer {
-  constructor(private readonly BetaDetector: IBetaDetector) {}
+  constructor(private readonly BetaDetector: BetaDetector) {}
 
   /**
    * Analyze a sequence for circular properties

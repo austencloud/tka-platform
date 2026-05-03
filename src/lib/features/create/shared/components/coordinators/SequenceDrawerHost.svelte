@@ -50,11 +50,11 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
     IVideoExportOrchestrator,
     VideoExportProgress,
   } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-  import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
-  import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
+  import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+  import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
-  import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
+  import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import {
     createAnimationPanelState,
     type PlaybackMode,
@@ -75,13 +75,13 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   let exportOrchestrator: IExportOrchestrator | null = null;
   let platformService: IPlatformDetector | null = null;
   let sheetRouterService: ISheetRouter | null = null;
-  let sequenceService: ISequenceRepository | null = null;
+  let sequenceService: SequenceRepository | null = null;
 
   // Animation services (lazy-loaded when Animation format selected)
   let playbackController: IAnimationPlaybackController | null = null;
   let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
-  let loopabilityChecker: ISequenceLoopabilityChecker | null = null;
-  let layoutService: IResponsiveLayoutManager | null = null;
+  let loopabilityChecker: SequenceLoopabilityChecker | null = null;
+  let layoutService: ResponsiveLayoutManager | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 
   // Animation state - owned by this coordinator (unidirectional flow)

@@ -12,10 +12,10 @@ import type {
   IPositionAnalyzer,
   RotationRelation,
 } from "../contracts/IPositionAnalyzer";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 export class PositionAnalyzer implements IPositionAnalyzer {
-  constructor(private positionMapper: IGridPositionDeriver) {}
+  constructor(private positionMapper: GridPositionDeriver) {}
 
   /**
    * Get the position group (Alpha, Beta, Gamma) from a GridPosition

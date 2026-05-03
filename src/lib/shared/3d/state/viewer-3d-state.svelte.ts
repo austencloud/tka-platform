@@ -10,7 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
+import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
 import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
 import type {
   IViewer3DUndoManager,
@@ -249,7 +249,7 @@ function migrateLegacyPlanesIfNeeded(): void {
 // ============================================
 
 export function createViewer3DState(deps: {
-  propInterpolator: IPropStateInterpolator;
+  propInterpolator: PropStateInterpolator;
   sequenceConverter: ISequenceConverter;
   viewer3DUndoManager: IViewer3DUndoManager;
 }) {

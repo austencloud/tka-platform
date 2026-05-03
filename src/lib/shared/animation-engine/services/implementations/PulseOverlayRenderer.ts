@@ -1,4 +1,3 @@
-import type { IPulseOverlayRenderer } from "../contracts/IPulseOverlayRenderer";
 import type { Pulse2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Pulse2DRenderer,
@@ -6,7 +5,7 @@ import {
 } from "$lib/shared/effects/renderers/Pulse2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class PulseOverlayRenderer implements IPulseOverlayRenderer {
+export class PulseOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Pulse2DRenderer();

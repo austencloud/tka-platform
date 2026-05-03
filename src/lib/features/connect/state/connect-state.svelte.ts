@@ -5,7 +5,7 @@
  * Bridges services with Svelte's reactivity system.
  */
 
-import type { IConnectOrchestrator } from '../services/contracts/IConnectOrchestrator';
+import type { ConnectOrchestrator } from '../services/implementations/ConnectOrchestrator';
 import type {
 	SyncSession,
 	SessionParticipant,
@@ -44,7 +44,7 @@ class ConnectState {
 	private _currentUserId = $state<string | null>(null);
 
 	// Orchestrator reference
-	private orchestrator: IConnectOrchestrator | null = null;
+	private orchestrator: ConnectOrchestrator | null = null;
 	private unsubscribers: Array<() => void> = [];
 
 	// ==================== Getters ====================
@@ -139,7 +139,7 @@ class ConnectState {
 	/**
 	 * Initialize with orchestrator instance.
 	 */
-	async initialize(orchestrator: IConnectOrchestrator): Promise<void> {
+	async initialize(orchestrator: ConnectOrchestrator): Promise<void> {
 		if (this._isInitialized) {
 			return;
 		}

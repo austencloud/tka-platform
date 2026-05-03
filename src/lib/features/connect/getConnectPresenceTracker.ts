@@ -1,7 +1,6 @@
-import type { IPresenceTracker } from './services/contracts/IPresenceTracker';
 import { PresenceTracker } from './services/implementations/PresenceTracker';
 
-let instance: IPresenceTracker | null = null;
-export function getConnectPresenceTracker(): IPresenceTracker {
+let instance: PresenceTracker | null = null;
+export function getConnectPresenceTracker(): PresenceTracker {
   return instance ??= new PresenceTracker();
 }

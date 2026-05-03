@@ -12,7 +12,7 @@ import type {
 } from "../contracts/IBrowseEventHandler";
 import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
 import { browseScrollState } from "../../state/BrowseScrollState.svelte";
-import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
@@ -27,7 +27,7 @@ export class BrowseEventHandler implements IBrowseEventHandler {
 
   constructor(
     private sheetRouterService: ISheetRouter | null,
-    private loaderService: IBrowseLoader | null
+    private loaderService: PublicSequencesLoader | null
   ) {}
 
   /**

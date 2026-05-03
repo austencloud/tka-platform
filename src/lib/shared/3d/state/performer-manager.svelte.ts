@@ -17,7 +17,7 @@ import {
   getDefaultPositions,
   MAX_PERFORMERS,
 } from "../domain/constants/performer-positions";
-import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
+import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
 import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
 import type { FormationPreset } from "../domain/formation";
@@ -30,7 +30,7 @@ import type { IFormationManager } from "../services/contracts/IFormationManager"
  * Dependencies for performer manager
  */
 export interface PerformerManagerDeps {
-  propInterpolator: IPropStateInterpolator;
+  propInterpolator: PropStateInterpolator;
   sequenceConverter: ISequenceConverter;
   initialAvatarId: AvatarId;
   /**

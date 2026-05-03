@@ -7,12 +7,11 @@
  * hand-crafted paths and those automatically decomposed from sequences.
  */
 
-import type { IHandPathSaveOrchestrator } from "../contracts/IHandPathSaveOrchestrator";
 import type { IHandPathRepository } from "$lib/shared/foundation/services/contracts/IHandPathRepository";
 import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
 
-export class HandPathSaveOrchestrator implements IHandPathSaveOrchestrator {
+export class HandPathSaveOrchestrator {
   constructor(
     private readonly handPathRepository: IHandPathRepository
   ) {}

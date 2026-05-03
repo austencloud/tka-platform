@@ -27,16 +27,16 @@ import type {
   UserChallengeProgress,
   XPEventMetadata,
 } from "../../domain/models/achievement-models";
-import type { IAchievementManager } from "../contracts/IAchievementManager";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("DailyChallengeManager");
 
 export class DailyChallengeManager {
   private _initialized = false;
-  private _achievementService: IAchievementManager | null = null;
+  private _achievementService: AchievementManager | null = null;
 
-  constructor(achievementService: IAchievementManager) {
+  constructor(achievementService: AchievementManager) {
     this._achievementService = achievementService;
   }
 

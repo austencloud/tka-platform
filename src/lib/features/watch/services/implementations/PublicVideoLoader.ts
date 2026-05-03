@@ -5,13 +5,12 @@
  * Wraps CollaborativeVideoManager for the Feed tab.
  */
 
-import type { IPublicVideoLoader } from "../contracts/IPublicVideoLoader";
 import type { PublicVideoQuery, PublicVideoPage } from "../../types";
 import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
 
 const DEFAULT_PAGE_SIZE = 20;
 
-export class PublicVideoLoader implements IPublicVideoLoader {
+export class PublicVideoLoader {
   constructor(
     private collaborativeVideoManager: ICollaborativeVideoManager
   ) {}

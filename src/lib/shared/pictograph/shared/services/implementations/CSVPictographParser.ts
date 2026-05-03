@@ -6,7 +6,7 @@ import { createMotionData } from "../../domain/models/MotionData";
 import type { PictographData } from "../../domain/models/PictographData";
 import { createPictographData } from "../../domain/factories/createPictographData";
 import type { IEnumMapper } from "../../../../foundation/services/contracts/data/IEnumMapper";
-import type { IOrientationCalculator } from "../../../prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type {
   CSVRow,
   ICSVPictographParser,
@@ -48,7 +48,7 @@ function mapSkewDir(value: string | undefined): SkewDirection | null {
 export class CSVPictographParser implements ICSVPictographParser {
   constructor(
     private readonly enumMapper: IEnumMapper,
-    private readonly orientationService: IOrientationCalculator
+    private readonly orientationService: OrientationCalculator
   ) {}
 
   parseCSVRowToPictograph(row: CSVRow, gridMode: GridMode): PictographData {

@@ -7,10 +7,9 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
-import type { IBrowseSorter } from "../contracts/IBrowseSorter";
 import { sortSequencesByKineticAlphabet } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
 
-export class BrowseSorter implements IBrowseSorter {
+export class BrowseSorter {
   sortSequences(
     sequences: SequenceData[],
     sortMethod: BrowseSortMethod

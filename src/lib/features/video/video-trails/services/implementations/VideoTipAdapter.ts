@@ -1,4 +1,3 @@
-import type { IVideoTipAdapter } from "../contracts/IVideoTipAdapter";
 import type { DetectedEndpoint } from "../../domain/types";
 import type { PropTipData } from "$lib/shared/animation-engine/domain/types/FireTypes";
 import type { LedTipData, LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
@@ -16,7 +15,7 @@ interface PreviousPosition {
 // Prevents division by near-zero when two frames arrive at nearly the same time.
 const MIN_DT_SECONDS = 0.001;
 
-export class VideoTipAdapter implements IVideoTipAdapter {
+export class VideoTipAdapter {
   // Keyed by "propIndex-tipIndex" so each tip is tracked independently.
   private previousPositions = new Map<string, PreviousPosition>();
 

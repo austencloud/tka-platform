@@ -9,7 +9,7 @@
  * No skeleton loaders. No Firestore wait.
  */
 
-import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { IGalleryOfflineCache } from "$lib/shared/offline/services/contracts/IGalleryOfflineCache";
 import {
   onLibraryMutated,
@@ -27,7 +27,7 @@ export class GalleryPrefetcher {
   private eventCleanups: (() => void)[] = [];
 
   constructor(
-    private readonly loader: IBrowseLoader,
+    private readonly loader: PublicSequencesLoader,
     private readonly offlineCache: IGalleryOfflineCache
   ) {}
 

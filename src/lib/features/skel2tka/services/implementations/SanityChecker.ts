@@ -13,9 +13,6 @@
 
 import type { Phase1Result } from "../../domain/models";
 import type {
-  ISanityChecker,
-} from "../contracts/ISanityChecker";
-import type {
   SanityCheckReport,
   SanityCheckResult,
   SanityCheckSeverity,
@@ -30,7 +27,7 @@ const THRESHOLDS = {
   MAX_BEAT_DURATION_SEC: 10.0,
 };
 
-export class SanityChecker implements ISanityChecker {
+export class SanityChecker {
   checkPhase1(result: Phase1Result): SanityCheckReport {
     const checks: SanityCheckResult[] = [
       this.checkHandDetectionRate(result, "blue"),

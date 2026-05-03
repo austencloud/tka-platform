@@ -12,7 +12,7 @@
  * - Backward compatibility (keeps both old and new fields during transition)
  */
 
-import type { ITagManager } from "../contracts/ITagManager";
+import type { TagManager } from "../implementations/TagManager";
 import type { SequenceTag } from "../../domain/models/SequenceTag";
 import { createSequenceTag } from "../../domain/models/SequenceTag";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
@@ -45,7 +45,7 @@ export interface TagMigrationResult {
  */
 export async function migrateSequenceTags(
   sequence: LibrarySequence | (SequenceData & Partial<LibrarySequence>),
-  tagService: ITagManager
+  tagService: TagManager
 ): Promise<TagMigrationResult> {
   // Case 1: Already migrated (has sequenceTags)
   if (
@@ -118,7 +118,7 @@ export async function migrateSequenceTags(
  */
 export async function batchMigrateSequenceTags(
   sequences: (LibrarySequence | (SequenceData & Partial<LibrarySequence>))[],
-  tagService: ITagManager,
+  tagService: TagManager,
   onProgress?: (completed: number, total: number) => void
 ): Promise<TagMigrationResult[]> {
   const results: TagMigrationResult[] = [];

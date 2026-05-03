@@ -1,6 +1,5 @@
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IDeckLoader } from "../contracts/IDeckLoader";
 import type { Deck } from "../../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -57,7 +56,7 @@ function hydrateSteps(
 
 const DECK_CACHE_KEY = "deckLoader.cachedDecks";
 
-export class DeckLoader implements IDeckLoader {
+export class DeckLoader {
   getCachedDecks(): Deck[] | null {
     try {
       const raw = localStorage.getItem(DECK_CACHE_KEY);

@@ -16,7 +16,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IStartPositionManager } from "../../../construct/start-position-picker/services/contracts/IStartPositionManager";
+import type { StartPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
 import { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
 import { createConstructTabState } from "$lib/features/create/shared/state/construct-tab-state.svelte";
 // ARCHIVED: createAssemblerTabState import removed (Feb 2026)
@@ -24,18 +24,18 @@ import { createGeneratorTabState } from "$lib/features/create/shared/state/gener
 // REMOVED: createSpellTabState - Spell mode unified into Generate tab (Feb 2026)
 import { createAssembleTabState } from "$lib/features/create/shared/state/assemble-tab-state.svelte";
 import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-import type { IStepOperator } from "../contracts/IStepOperator";
+import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import type { ICreateModuleEffectCoordinator } from "../contracts/ICreateModuleEffectCoordinator";
 import type { ICreateModuleHandlers } from "../contracts/ICreateModuleHandlers";
-import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrchestrator";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
 import type { IDeepLinkSequenceHandler } from "../contracts/IDeepLinkSequenceHandler";
 import type { INavigationSyncer } from "../contracts/INavigationSyncer";
-import type { IResponsiveLayoutManager } from "../contracts/IResponsiveLayoutManager";
-import type { ISequencePersister } from "../contracts/ISequencePersister";
-import type { ISequenceRepository } from "../contracts/ISequenceRepository";
-import type { ISequenceStatsCalculator } from "../contracts/ISequenceStatsCalculator";
-import type { ISequenceTransformer } from "../contracts/ISequenceTransformer";
-import type { ISequenceValidator } from "../contracts/ISequenceValidator";
+import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
 import type {
   CreateModuleInitializationResult,
   ICreateModuleInitializer,
@@ -56,13 +56,13 @@ import {
 export class CreateModuleInitializer implements ICreateModuleInitializer {
   constructor(
     // Core services
-    private readonly sequenceService: ISequenceRepository,
-    private readonly SequencePersister: ISequencePersister,
-    private readonly StartPositionManager: IStartPositionManager,
-    private readonly CreateModuleOrchestrator: ICreateModuleOrchestrator,
-    private readonly layoutService: IResponsiveLayoutManager,
+    private readonly sequenceService: SequenceRepository,
+    private readonly SequencePersister: SequencePersister,
+    private readonly StartPositionManager: StartPositionManager,
+    private readonly CreateModuleOrchestrator: CreateModuleOrchestrator,
+    private readonly layoutService: ResponsiveLayoutManager,
     private readonly NavigationSyncer: INavigationSyncer,
-    private readonly StepOperator: IStepOperator,
+    private readonly StepOperator: StepOperator,
     private readonly deepLinkService: IDeepLinkSequenceHandler,
     private readonly navigationDeepLinker: IDeepLinker,
 
@@ -73,9 +73,9 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     private readonly panelPersistenceService: IPanelPersister,
 
     // Sequence operation services
-    private readonly sequenceStatisticsService: ISequenceStatsCalculator,
-    private readonly SequenceTransformer: ISequenceTransformer,
-    private readonly sequenceValidationService: ISequenceValidator
+    private readonly sequenceStatisticsService: SequenceStatsCalculator,
+    private readonly SequenceTransformer: SequenceTransformer,
+    private readonly sequenceValidationService: SequenceValidator
   ) {}
 
   async initialize(): Promise<CreateModuleInitializationResult> {

@@ -1,8 +1,7 @@
-import type { IStripPatternEngine } from './services/contracts/IStripPatternEngine';
 import { StripPatternEngine } from './services/implementations/StripPatternEngine';
 import { getImagePatternLoader } from './getImagePatternLoader';
 
-let instance: IStripPatternEngine | null = null;
-export function getStripPatternEngine(): IStripPatternEngine {
+let instance: StripPatternEngine | null = null;
+export function getStripPatternEngine(): StripPatternEngine {
   return instance ??= new StripPatternEngine(getImagePatternLoader());
 }

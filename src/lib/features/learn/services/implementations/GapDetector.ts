@@ -18,16 +18,16 @@ import type {
   MisconceptionPattern,
 } from "../contracts/IGapDetector";
 import type { LetterToConceptMapper } from "./LetterToConceptMapper";
-import type { IQuizHistoryRecorder } from "../contracts/IQuizHistoryRecorder";
 import {
   tkaKnowledgeGraph,
 } from "$lib/features/tika/knowledge/semantic-graph";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { QuizHistoryRecorder } from "./QuizHistoryRecorder";
 
 export class GapDetector implements IGapDetector {
   constructor(
     private readonly mapper: LetterToConceptMapper,
-    private readonly historyRecorder: IQuizHistoryRecorder
+    private readonly historyRecorder: QuizHistoryRecorder
   ) {}
 
   detectSingleError(event: QuizAnswerEvent): DetectedGap | null {

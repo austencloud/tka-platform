@@ -1,6 +1,6 @@
-import type { IVideoTrailsRepository } from "../services/contracts/IVideoTrailsRepository";
-import type { IDetectionCorrector } from "../services/contracts/IDetectionCorrector";
-import type { IVideoTipAdapter } from "../services/contracts/IVideoTipAdapter";
+import type { VideoTrailsRepository } from "../services/implementations/VideoTrailsRepository";
+import type { DetectionCorrector } from "../services/implementations/DetectionCorrector";
+import type { VideoTipAdapter } from "../services/implementations/VideoTipAdapter";
 import type {
   VideoTrailsView,
   VideoSource,
@@ -14,9 +14,9 @@ import type {
 import { DEFAULT_DETECTION_CONFIG, DEFAULT_EFFECT_CONFIG } from "../domain/types";
 
 export function createVideoTrailsState(
-  repository: IVideoTrailsRepository,
-  corrector: IDetectionCorrector,
-  tipAdapter: IVideoTipAdapter,
+  repository: VideoTrailsRepository,
+  corrector: DetectionCorrector,
+  tipAdapter: VideoTipAdapter,
 ) {
   const ACTIVE_VIEW_KEY = "video-trails-active-view";
   const storedView = (typeof sessionStorage !== "undefined"

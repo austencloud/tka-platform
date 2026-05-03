@@ -12,10 +12,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { ISequenceContentHasher } from "../contracts/ISequenceContentHasher";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-export class SequenceContentHasher implements ISequenceContentHasher {
+export class SequenceContentHasher {
   async computeHash(sequence: SequenceData): Promise<string> {
     const content = this.extractContent(sequence);
     const json = JSON.stringify(content);

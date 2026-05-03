@@ -5,7 +5,7 @@ import type {
   ModularPattern,
 } from "../contracts/ILOOPDetector";
 import type { TransformationIntervals } from "../../domain/models/label-models";
-import type { IStepComparisonOrchestrator } from "../contracts/IStepComparisonOrchestrator";
+import type { StepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
 import type { ITransformationAnalyzer } from "../contracts/ITransformationAnalyzer";
 import type { ICandidateFormatter } from "../contracts/ICandidateFormatter";
 import type {
@@ -96,7 +96,7 @@ function mergeComponents(
 
 export class LOOPDetector implements ILOOPDetector {
   constructor(
-    private comparisonOrchestrator: IStepComparisonOrchestrator,
+    private comparisonOrchestrator: StepComparisonOrchestrator,
     private analysisService: ITransformationAnalyzer,
     private formattingService: ICandidateFormatter,
     private polyrhythmicService?: IPolyrhythmicDetector,

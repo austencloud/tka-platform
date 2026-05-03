@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
-  import type { IAnnouncementManager } from "../services/contracts/IAnnouncementManager";
+  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
   import type { Announcement } from "../domain/models/announcement-models";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -22,7 +22,7 @@
   let { announcement, onDismiss }: Props = $props();
 
   // Services (resolved lazily to avoid module initialization errors)
-  let announcementService: IAnnouncementManager | null = null;
+  let announcementService: AnnouncementManager | null = null;
 
   onMount(() => {
     announcementService = getAnnouncementManager();

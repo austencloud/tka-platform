@@ -5,7 +5,7 @@
  * DI service holds logic, this factory adds Svelte 5 reactivity.
  */
 
-import type { IOfflineCacheOrchestrator } from "../services/contracts/IOfflineCacheOrchestrator";
+import type { OfflineCacheOrchestrator } from "../services/implementations/OfflineCacheOrchestrator";
 import type {
   OfflineCachePhase,
   OfflineCacheProgress,
@@ -23,7 +23,7 @@ export interface OfflineCacheState {
   clearOfflineCache(): Promise<void>;
 }
 
-export function createOfflineCacheState(orchestrator: IOfflineCacheOrchestrator): OfflineCacheState {
+export function createOfflineCacheState(orchestrator: OfflineCacheOrchestrator): OfflineCacheState {
   let phase = $state<OfflineCachePhase>("idle");
   let progress = $state<OfflineCacheProgress>({ cached: 0, total: 0, currentTask: "" });
   let isOfflineReady = $state(false);

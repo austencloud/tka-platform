@@ -18,7 +18,6 @@
  * and committed labels.
  */
 
-import type { IPoseEnumerator } from "../contracts/IPoseEnumerator";
 import type {
   PoseDefinition,
   DiamondPosition,
@@ -49,7 +48,7 @@ function handCode(h: HandState): string {
   return `${PLANE_CODE[h.plane]}${h.position}${h.orientation[0]}`;
 }
 
-export class DiamondPoseEnumerator implements IPoseEnumerator {
+export class DiamondPoseEnumerator {
   enumerateDiamondInOut(): PoseDefinition[] {
     const poses: PoseDefinition[] = [];
     for (const bluePlane of PLANES) {

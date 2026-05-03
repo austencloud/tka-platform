@@ -1,7 +1,6 @@
 /**
  * Searches for sequences with fuzzy matching, name search, smart ranking, and VTG aliases
  */
-import type { ISequenceMatcher } from "../contracts/ISequenceMatcher";
 import type { MatchedSequence } from "../../types";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 
@@ -40,7 +39,7 @@ interface ScoredMatch {
   matchType: "exact" | "starts" | "contains" | "name" | "fuzzy";
 }
 
-export class SequenceMatcher implements ISequenceMatcher {
+export class SequenceMatcher {
   private cachedSequences: MatchedSequence[] | null = null;
   private cacheTimestamp = 0;
   private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes

@@ -11,7 +11,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "../../../../shared/domain/models/StepData";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartPositionData } from "../../../../shared/domain/models/StartPositionData";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface OrientationCycleResult {
@@ -22,7 +22,7 @@ export interface OrientationCycleResult {
 }
 
 export class OrientationCycleDetector {
-  constructor(private readonly orientationCalculator: IOrientationCalculator) {}
+  constructor(private readonly orientationCalculator: OrientationCalculator) {}
 
   detectOrientationCycle(sequence: SequenceData): OrientationCycleResult {
     const steps = sequence.steps;

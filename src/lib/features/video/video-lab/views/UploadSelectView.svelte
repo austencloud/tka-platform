@@ -10,7 +10,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-  import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+  import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
   import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";

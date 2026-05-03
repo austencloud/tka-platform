@@ -8,8 +8,8 @@
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { VoiceSession, VoiceSessionEvent, ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";
-  import type { IVoiceSessionFormatter } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter";
-  import type { IVoiceSessionReplayer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionReplayer";
+  import type { VoiceSessionFormatter } from "$lib/features/voice-sessions/services/implementations/VoiceSessionFormatter";
+  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
   import type { ReplayResult, ReplayDiffType } from "$lib/features/voice-sessions/domain/replay-types";
 
   let {
@@ -20,8 +20,8 @@
     onDelete,
   }: {
     session: VoiceSession;
-    formatter: IVoiceSessionFormatter;
-    replayer?: IVoiceSessionReplayer | null;
+    formatter: VoiceSessionFormatter;
+    replayer?: VoiceSessionReplayer | null;
     onClose: () => void;
     onDelete: () => void;
   } = $props();

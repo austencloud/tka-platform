@@ -15,16 +15,16 @@
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
-import type { IStepOperator } from "./IStepOperator";
+import type { StepOperator } from "../implementations/StepOperator";
 import type { ICreateModuleEffectCoordinator } from "./ICreateModuleEffectCoordinator";
 import type { ICreateModuleHandlers } from "./ICreateModuleHandlers";
 import type { IDeepLinkSequenceHandler } from "./IDeepLinkSequenceHandler";
 import type { INavigationSyncer } from "./INavigationSyncer";
-import type { IResponsiveLayoutManager } from "./IResponsiveLayoutManager";
-import type { ISequenceRepository } from "./ISequenceRepository";
-import type { ISequencePersister } from "./ISequencePersister";
-import type { ICreateModuleOrchestrator } from "./ICreateModuleOrchestrator";
-import type { IStartPositionManager } from "../../../construct/start-position-picker/services/contracts/IStartPositionManager";
+import type { ResponsiveLayoutManager } from "../implementations/ResponsiveLayoutManager";
+import type { SequenceRepository } from "../implementations/SequenceRepository";
+import type { SequencePersister } from "../implementations/SequencePersister";
+import type { CreateModuleOrchestrator } from "../implementations/CreateModuleOrchestrator";
+import type { StartPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IPanelPersister } from "./IPanelPersister";
 import type { ICreateModuleState } from "../../types/create-module-types";
@@ -47,13 +47,13 @@ export interface CreateModuleInitializationResult {
   assembleTabState: AssembleTabState;
 
   // Core services
-  sequenceService: ISequenceRepository;
-  SequencePersister: ISequencePersister;
-  StartPositionManager: IStartPositionManager;
-  CreateModuleOrchestrator: ICreateModuleOrchestrator;
-  layoutService: IResponsiveLayoutManager;
+  sequenceService: SequenceRepository;
+  SequencePersister: SequencePersister;
+  StartPositionManager: StartPositionManager;
+  CreateModuleOrchestrator: CreateModuleOrchestrator;
+  layoutService: ResponsiveLayoutManager;
   NavigationSyncer: INavigationSyncer;
-  StepOperator: IStepOperator;
+  StepOperator: StepOperator;
 
   // UI coordination services
   handlers: ICreateModuleHandlers;

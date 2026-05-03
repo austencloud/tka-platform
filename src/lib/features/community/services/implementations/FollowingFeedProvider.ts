@@ -10,7 +10,7 @@ import { getUserRepository } from "$lib/shared/community/getUserRepository";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
-import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
+import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
 import type {
   IFollowingFeedProvider,
   FollowingFeedItem,
@@ -24,7 +24,7 @@ import { getCollectionManager } from "$lib/features/library/getCollectionManager
 export class FollowingFeedProvider implements IFollowingFeedProvider {
   private userService: IUserRepository | null = null;
   private activityLogService: IActivityLogger | null = null;
-  private collectionService: ICollectionManager | null = null;
+  private collectionService: CollectionManager | null = null;
 
   private getServices(): boolean {
     if (!this.userService) {

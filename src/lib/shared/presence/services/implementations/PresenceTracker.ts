@@ -21,7 +21,6 @@ import { doc, getDoc } from "firebase/firestore";
 import posthog from "posthog-js";
 import { database, auth, getFirestoreInstance } from "../../../auth/firebase";
 import { BREAKPOINTS } from "../../../device/domain/constants/device-constants";
-import type { IPresenceTracker } from "../contracts/IPresenceTracker";
 import type {
   UserPresence,
   UserPresenceWithId,
@@ -31,7 +30,7 @@ import type {
 import { computeActivityStatus } from "../../domain/models/presence-models";
 import { ActivityTracker } from "../../utils/activity-tracker";
 
-export class PresenceTracker implements IPresenceTracker {
+export class PresenceTracker {
   private currentPresence: UserPresence | null = null;
   private initialized = false;
   private presenceRef: ReturnType<typeof ref> | null = null;

@@ -1,7 +1,7 @@
 import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IHandPathNamer } from "$lib/shared/foundation/services/contracts/IHandPathNamer";
-import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
+import type { HandPathNamer } from '$lib/shared/foundation/services/implementations/HandPathNamer'
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 
 export type HandSide = "blue" | "red";
 
@@ -28,8 +28,8 @@ export interface ExplorerState {
 }
 
 export function createExplorerState(
-  sequenceRepository: ISequenceRepository,
-  handPathNamer: IHandPathNamer
+  sequenceRepository: SequenceRepository,
+  handPathNamer: HandPathNamer
 ): ExplorerState {
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);

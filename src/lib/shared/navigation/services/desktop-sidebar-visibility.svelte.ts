@@ -3,8 +3,8 @@
  * Determines when the desktop navigation sidebar should be visible
  */
 
-import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
-import type { IViewportManager } from "../../device/services/contracts/IViewportManager";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
 import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
 import {
   desktopSidebarState,
@@ -15,8 +15,8 @@ import {
  * Hook to manage desktop sidebar visibility based on device and viewport
  */
 export function useDesktopSidebarVisibility(
-  deviceDetector: IDeviceDetector,
-  viewportService: IViewportManager
+  deviceDetector: DeviceDetector,
+  viewportService: ViewportManager
 ) {
   // Subscribe to viewport changes
   const unsubscribe = viewportService.onViewportChange(() => {

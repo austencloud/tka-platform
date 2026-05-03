@@ -6,7 +6,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { onMount, onDestroy } from "svelte";
   // NOTE: animate-css-grid disabled - causes layout chaos with async thumbnail loading
   // import { wrapGrid } from "animate-css-grid";
-  import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -44,7 +44,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     sequences?: SequenceData[];
     sections?: SequenceData[];
     viewMode?: "grid" | "list";
-    thumbnailService: IBrowseThumbnailProvider | null;
+    thumbnailService: BrowseThumbnailProvider | null;
     showSections?: boolean;
     onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. */

@@ -1,10 +1,10 @@
-import type { ISequenceHydrator } from './services/contracts/ISequenceHydrator';
+
 import { SequenceHydrator } from './services/implementations/SequenceHydrator';
 import { getStepDeriver } from './getStepDeriver';
 import { getSequenceDecomposer } from './getSequenceDecomposer';
 
-let instance: ISequenceHydrator | null = null;
+let instance: SequenceHydrator | null = null;
 
-export function getSequenceHydrator(): ISequenceHydrator {
+export function getSequenceHydrator(): SequenceHydrator {
 	return instance ??= new SequenceHydrator(getStepDeriver(), getSequenceDecomposer());
 }

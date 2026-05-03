@@ -6,7 +6,7 @@
  */
 
 import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-import type { IPropStateInterpolator } from "$lib/shared/3d/services/contracts/IPropStateInterpolator";
+import type { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
 import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -20,7 +20,7 @@ import type {
 } from "../domain/village-types";
 
 export interface RendererDeps {
-	propInterpolator: IPropStateInterpolator;
+	propInterpolator: PropStateInterpolator;
 	sequenceConverter: ISequenceConverter;
 }
 

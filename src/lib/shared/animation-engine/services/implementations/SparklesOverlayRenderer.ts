@@ -11,7 +11,6 @@
  * to fade in/out unpredictably. The renderer holds particle pool state across frames.
  */
 
-import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
 import type { Sparkles2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Sparkles2DRenderer,
@@ -19,7 +18,7 @@ import {
 } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class SparklesOverlayRenderer implements ISparklesOverlayRenderer {
+export class SparklesOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Sparkles2DRenderer();

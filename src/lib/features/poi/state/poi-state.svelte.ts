@@ -1,6 +1,6 @@
-import type { IStripPatternEngine } from "../services/contracts/IStripPatternEngine";
-import type { IPoiDeviceManager } from "../services/contracts/IPoiDeviceManager";
-import type { IPoiImageLibrary } from "../services/contracts/IPoiImageLibrary";
+import type { StripPatternEngine } from "../services/implementations/StripPatternEngine";
+import type { PoiDeviceManager } from "../services/implementations/PoiDeviceManager";
+import type { PoiImageLibrary } from "../services/implementations/PoiImageLibrary";
 import type { StripPattern, PatternParams, RGBColor } from "../domain/StripPattern";
 import type { PoiDeviceInfo } from "../domain/DeviceTypes";
 import type { IPatternPreset } from "../domain/PatternPreset";
@@ -247,9 +247,9 @@ async function dataUrlToImageData(dataUrl: string): Promise<ImageData> {
 }
 
 export function createPoiState(
-  patternEngine: IStripPatternEngine,
-  deviceManager: IPoiDeviceManager,
-  imageLibrary: IPoiImageLibrary,
+  patternEngine: StripPatternEngine,
+  deviceManager: PoiDeviceManager,
+  imageLibrary: PoiImageLibrary,
 ) {
   const saved = loadSettings();
 

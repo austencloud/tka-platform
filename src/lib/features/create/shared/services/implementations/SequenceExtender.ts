@@ -15,15 +15,15 @@ import type {
   ExtensionType,
   CircularizationOption,
 } from "../contracts/ISequenceExtender";
-import type { ILOOPExecutorSelector } from "$lib/features/create/generate/circular/services/contracts/ILOOPExecutorSelector";
+import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
 import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { ILOOPValidator } from "../contracts/ILOOPValidator";
 import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
 import type { BridgeFinder } from "./BridgeFinder";
-import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { recalculateAllOrientations } from "./sequence-transforms/orientation-propagation";
 import {
@@ -38,16 +38,16 @@ import {
 
 export class SequenceExtender implements ISequenceExtender {
   constructor(
-    private loopExecutorSelector: ILOOPExecutorSelector,
+    private loopExecutorSelector: LOOPExecutorSelector,
     private reversalDetector: IReversalDetector,
     private letterQueryHandler: ILetterQueryHandler,
-    private stepConverter: IStepConverter,
-    private orientationCalculator: IOrientationCalculator,
+    private stepConverter: StepConverter,
+    private orientationCalculator: OrientationCalculator,
     private loopValidator: ILOOPValidator,
     private sequenceAnalyzer: ISequenceAnalyzer,
     private bridgeFinder: BridgeFinder,
     private motionQueryHandler: IMotionQueryHandler,
-    private gridModeDeriver: IGridModeDeriver
+    private gridModeDeriver: GridModeDeriver
   ) {}
 
   /**

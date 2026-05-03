@@ -1,8 +1,8 @@
-import type { IFrameBudgetMonitor } from './services/contracts/IFrameBudgetMonitor';
+
 import { FrameBudgetMonitor } from './services/implementations/FrameBudgetMonitor';
 import { getDeviceTierDetector } from './getDeviceTierDetector';
 
-let instance: IFrameBudgetMonitor | null = null;
-export function getFrameBudgetMonitor(): IFrameBudgetMonitor {
+let instance: FrameBudgetMonitor | null = null;
+export function getFrameBudgetMonitor(): FrameBudgetMonitor {
   return instance ??= new FrameBudgetMonitor(getDeviceTierDetector().detect());
 }

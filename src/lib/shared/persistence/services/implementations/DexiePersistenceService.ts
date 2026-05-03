@@ -11,9 +11,9 @@ import { db } from "../../database/TKADatabase";
 import { UserWorkType } from "../../domain/enums/UserWorkType";
 import type { UserProject } from "../../domain/models/UserProject";
 import type { UserWorkData } from "../../domain/models/UserWorkData";
-import type { IPersistenceService } from "../contracts/IPersistenceService";
 
-export class DexiePersistenceService implements IPersistenceService {
+
+export class DexiePersistenceService {
   async initialize(): Promise<void> {
     try {
       await db.open();

@@ -13,7 +13,7 @@
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { getPresentationResolver } from "../getPresentationResolver";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
-import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ResolvedPresentation, ViewingContext } from "../services/contracts/IPresentationResolver";
 
@@ -61,7 +61,7 @@ export function createPropContextResolver(deps: PropContextResolverDeps) {
   function syncPropsToOrchestrator(blueProp: PropType, redProp: PropType, animationServicesReady: boolean) {
     if (blueProp && redProp && animationServicesReady) {
       try {
-        const orchestrator = getSequenceAnimationOrchestrator() as ISequenceAnimationOrchestrator;
+        const orchestrator = getSequenceAnimationOrchestrator() as SequenceAnimationOrchestrator;
         orchestrator.updatePropTypes(blueProp, redProp);
       } catch {
         // Animation services not ready yet - will pick up correct props on init

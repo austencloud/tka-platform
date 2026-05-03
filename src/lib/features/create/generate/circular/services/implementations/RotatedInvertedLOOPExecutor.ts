@@ -19,7 +19,7 @@
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import {
   MotionType,
   MotionColor,
@@ -29,8 +29,8 @@ import type {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { ILOOPParameterProvider } from "$lib/features/create/generate/shared/services/contracts/ILOOPParameterProvider";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
 import {
   getHandRotationDirection,
   getLocationMapForHandRotation,
@@ -41,9 +41,9 @@ import { Period } from "../../domain/models/circular-models";
 
 export class RotatedInvertedLOOPExecutor {
   constructor(
-    private OrientationCalculator: IOrientationCalculator,
-    private gridPositionDeriver: IGridPositionDeriver,
-    private loopParams: ILOOPParameterProvider
+    private OrientationCalculator: OrientationCalculator,
+    private gridPositionDeriver: GridPositionDeriver,
+    private loopParams: LOOPParameterProvider
   ) {}
 
   /**

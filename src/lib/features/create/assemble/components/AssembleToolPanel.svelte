@@ -12,7 +12,7 @@
   import InteractiveGrid from "$lib/features/assemble-lab/components/InteractiveGrid.svelte";
   import BuilderTurnBar from "$lib/features/assemble-lab/components/BuilderTurnBar.svelte";
   import AssembleIdlePanel from "$lib/features/assemble-lab/components/AssembleIdlePanel.svelte";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
@@ -72,10 +72,10 @@
 
   // Load last-used grid preferences from settings.
   // Wrapped in $effect.pre so tabState is read reactively (avoids state_referenced_locally).
-  let settingsState: ISettingsState | null = null;
+  let settingsState: SettingsState | null = null;
   $effect.pre(() => {
     try {
-      settingsState = settingsService as ISettingsState;
+      settingsState = settingsService as SettingsState;
       const saved = settingsState.currentSettings;
       if (saved.preferredGridMode) {
         props.tabState.assembleBuilderState.setGridMode(saved.preferredGridMode);

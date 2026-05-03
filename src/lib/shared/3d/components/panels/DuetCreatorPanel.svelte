@@ -11,8 +11,8 @@ import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-  import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { DuetPersister } from "../../services/implementations/DuetPersister";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
     DuetPositioning,
@@ -45,8 +45,8 @@ import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
   let activeSelector = $state<"avatar1" | "avatar2" | null>(null);
 
   // Services
-  let browseLoader: IBrowseLoader | null = null;
-  let duetPersister: IDuetPersister | null = null;
+  let browseLoader: PublicSequencesLoader | null = null;
+  let duetPersister: DuetPersister | null = null;
 
   // Derived
   const filteredSequences = $derived(

@@ -1,9 +1,8 @@
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-import type { IDeviceSyncCoordinator } from '../contracts/IDeviceSyncCoordinator';
 import type { IPlaybackPositionCalculator } from '../contracts/IPlaybackPositionCalculator';
 import type { IStateMerger } from '../contracts/IStateMerger';
 import type { ISequenceLocalCache } from '../contracts/ISequenceLocalCache';
-import type { IPeerConnectionManager } from '$lib/shared/lan-sync/services/contracts/IPeerConnectionManager';
+import type { PeerConnectionManager } from '$lib/shared/lan-sync/services/implementations/PeerConnectionManager'
 import type { IAdaptiveHeartbeat } from '../contracts/IAdaptiveHeartbeat';
 import type { IMessageBatcher, MessagePriority } from '../contracts/IMessageBatcher';
 import type { IMobileConnectionAdapter } from '../contracts/IMobileConnectionAdapter';
@@ -52,7 +51,7 @@ export interface MobileOptimizations {
 	connectionAdapter?: IMobileConnectionAdapter;
 }
 
-export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
+export class DeviceSyncCoordinator {
 	private readonly hlc: HybridLogicalClock;
 	private readonly positionCalculator: IPlaybackPositionCalculator;
 	private readonly stateMerger: IStateMerger;
@@ -91,7 +90,7 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 	}
 
 	constructor(
-		private readonly peerManager: IPeerConnectionManager,
+		private readonly peerManager: PeerConnectionManager,
 		config: Partial<SyncConfig> = {},
 		sequenceCache?: ISequenceLocalCache,
 		mobileOptimizations?: MobileOptimizations

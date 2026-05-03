@@ -26,8 +26,8 @@ import type {
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { ILOOPParameterProvider } from "$lib/features/create/generate/shared/services/contracts/ILOOPParameterProvider";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
 import {
   MIRRORED_INVERTED_VALIDATION_SET,
   VERTICAL_MIRROR_LOCATION_MAP,
@@ -37,8 +37,8 @@ import type { Period } from "../../domain/models/circular-models";
 
 export class MirroredInvertedLOOPExecutor {
   constructor(
-    private OrientationCalculator: IOrientationCalculator,
-    private loopParams: ILOOPParameterProvider
+    private OrientationCalculator: OrientationCalculator,
+    private loopParams: LOOPParameterProvider
   ) {}
 
   /**

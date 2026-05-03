@@ -1,4 +1,3 @@
-import type { INavigationViewportManager } from "./contracts/IViewportManager";
 import { ViewportMode } from "../domain/enums/ViewportMode";
 import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
 import type {
@@ -7,7 +6,7 @@ import type {
   ViewportDimensions,
 } from "../domain/models/ViewportState";
 
-export class NavigationViewportManager implements INavigationViewportManager {
+export class NavigationViewportManager {
   private viewportState: ViewportState = {
     width: 0,
     height: 0,

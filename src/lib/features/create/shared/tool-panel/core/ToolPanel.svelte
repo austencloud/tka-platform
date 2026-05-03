@@ -19,7 +19,7 @@
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
@@ -62,7 +62,7 @@
 
   // Services
   let hapticService: IHapticFeedback;
-  let deviceDetector: IDeviceDetector | null = null;
+  let deviceDetector: DeviceDetector | null = null;
   let navigationLayout = $state<"top" | "bottom" | "right">("top");
 
   // Animation panel visibility state (for panel show/hide/collapse)

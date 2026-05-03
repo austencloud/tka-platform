@@ -26,7 +26,6 @@
  * and 256×256 rgba16float ping-pong textures. Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
-import type { IFireOverlayRenderer } from "../../contracts/IFireOverlayRenderer";
 import { FireFrameCache } from "./FireFrameCache";
 import type {
   FireFrameInput,
@@ -114,7 +113,7 @@ interface ShaderProgram {
   uniforms: Map<string, WebGLUniformLocation>;
 }
 
-export class WebGLFireRenderer implements IFireOverlayRenderer {
+export class WebGLFireRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private gl: WebGL2RenderingContext | null = null;
   private initialized = false;

@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IBrowseSorter } from './services/contracts/IBrowseSorter';
+
 import { BrowseSorter } from './services/implementations/BrowseSorter';
 
-let instance: IBrowseSorter | null = null;
+let instance: BrowseSorter | null = null;
 
-export function getBrowseSorter(): IBrowseSorter {
+export function getBrowseSorter(): BrowseSorter {
 	if (!browser) throw new Error('getBrowseSorter() is browser-only');
 	return instance ??= new BrowseSorter();
 }

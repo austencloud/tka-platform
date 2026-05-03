@@ -12,13 +12,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
-import type { ILetterDeriver } from "../contracts/ILetterDeriver";
+import type { GridModeDeriver } from "../../../pictograph/grid/services/implementations/GridModeDeriver";
 
-export class LetterDeriver implements ILetterDeriver {
+export class LetterDeriver {
   constructor(
     private motionQueryHandler: IMotionQueryHandler | null,
-    private gridModeDeriver: IGridModeDeriver | null
+    private gridModeDeriver: GridModeDeriver | null
   ) {}
 
   async deriveLettersForSequence(

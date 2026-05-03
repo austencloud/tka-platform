@@ -17,7 +17,7 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { tryGetCreateModuleContext } from "../context/create-module-context";
   import { responsiveLayoutManager } from "../services/implementations/ResponsiveLayoutManager";
-  import type { IResponsiveLayoutManager } from "../services/contracts/IResponsiveLayoutManager";
+  import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import type { Snippet } from "svelte";
 
   let {
@@ -60,7 +60,7 @@
   // Fallback layout detection for when CreateModuleContext isn't available
   // (e.g., when AnimationSheetCoordinator is used in Browse module)
   let fallbackIsSideBySide = $state(false);
-  let layoutService: IResponsiveLayoutManager | null = null;
+  let layoutService: ResponsiveLayoutManager | null = null;
 
   onMount(() => {
     if (!createModuleContext && browser) {

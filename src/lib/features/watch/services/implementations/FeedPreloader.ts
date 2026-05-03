@@ -6,15 +6,13 @@
  * - Scrolling up: preload 5 behind, 1 ahead
  */
 
-import type { IFeedPreloader } from "../contracts/IFeedPreloader";
-
 /** Number of items to preload in scroll direction */
 const AHEAD_COUNT = 5;
 
 /** Number of items to keep loaded behind */
 const BEHIND_COUNT = 1;
 
-export class FeedPreloader implements IFeedPreloader {
+export class FeedPreloader {
 	private currentRange: { start: number; end: number } = { start: 0, end: 0 };
 	private preloadingUrls = new Set<string>();
 	private abortController: AbortController | null = null;

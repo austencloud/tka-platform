@@ -1,14 +1,13 @@
 import { browser } from '$app/environment';
-import type { IEffectPointOverrideProvider } from './services/contracts/IEffectPointOverrideProvider';
 import { TipPointOverrideProvider } from './services/implementations/TipPointOverrideProvider';
 import { getEffectPointsPersister } from './getEffectPointsPersister';
 import { getFireDefaultsLoader } from '$lib/shared/animation-engine/getFireDefaultsLoader';
 import { setTipPointOverrideProvider } from '$lib/shared/animation-engine/domain/types/PropTipPoints';
 import { setTrailPointOverrideProvider } from '$lib/shared/animation-engine/domain/types/TrailPointTypes';
 
-let instance: IEffectPointOverrideProvider | null = null;
+let instance: TipPointOverrideProvider | null = null;
 
-export function getTipPointOverrideProvider(): IEffectPointOverrideProvider {
+export function getTipPointOverrideProvider(): TipPointOverrideProvider {
 	if (!browser) throw new Error('getTipPointOverrideProvider() is browser-only');
 	if (!instance) {
 		const persister = getEffectPointsPersister();

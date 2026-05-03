@@ -8,7 +8,7 @@ import type { CSVRow } from "../../../../foundation/services/contracts/data/ICSV
 import type { ParsedCsvRow } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
 import type { ICSVLoader } from "../../../../foundation/services/contracts/data/ICSVLoader";
 import type { IMotionQueryHandler } from "../../../../foundation/services/contracts/data/data-contracts";
-import type { IOrientationCalculator } from "../../../prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { Orientation } from "../../domain/enums/pictograph-enums";
 
 interface ICSVParser {
@@ -23,7 +23,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
     private csvLoader: ICSVLoader,
     private CSVParser: ICSVParser,
     private csvPictographParser: ICSVPictographParser,
-    private OrientationCalculator: IOrientationCalculator
+    private OrientationCalculator: OrientationCalculator
   ) {}
 
   private async ensureInitialized(): Promise<void> {

@@ -1,7 +1,6 @@
-import type { IVideoTipAdapter } from './services/contracts/IVideoTipAdapter';
 import { VideoTipAdapter } from './services/implementations/VideoTipAdapter';
 
-let instance: IVideoTipAdapter | null = null;
-export function getVideoTipAdapter(): IVideoTipAdapter {
+let instance: VideoTipAdapter | null = null;
+export function getVideoTipAdapter(): VideoTipAdapter {
   return instance ??= new VideoTipAdapter();
 }

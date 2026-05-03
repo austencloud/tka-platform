@@ -9,11 +9,10 @@
  * ensure identical image dimensions and beat positioning.
  */
 
-import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
 
 import { getLayoutCalculator } from "$lib/shared/render/getLayoutCalculator";
 
-export class LayoutCalculator implements ILayoutCalculator {
+export class LayoutCalculator {
   // Base constants matching desktop application
   private static readonly BASE_BEAT_SIZE = 144; // Match desktop beat.width()
 

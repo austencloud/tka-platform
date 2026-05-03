@@ -6,8 +6,7 @@
  * Now also manages Firebase RTDB broadcasting for discovery.
  */
 
-import type { ILanSyncCoordinator } from '../contracts/ILanSyncCoordinator';
-import type { IPeerConnectionManager } from '../contracts/IPeerConnectionManager';
+import type { PeerConnectionManager } from '$lib/shared/lan-sync/services/implementations/PeerConnectionManager'
 import type { SyncRoomBroadcaster } from './SyncRoomBroadcaster';
 import type {
 	SyncedPlaybackState,
@@ -20,7 +19,7 @@ import {
 	DEFAULT_LAN_SYNC_CONFIG
 } from '../../domain/models/lan-sync-models';
 
-export class LanSyncCoordinator implements ILanSyncCoordinator {
+export class LanSyncCoordinator {
 	private _playbackState: SyncedPlaybackState = createInitialPlaybackState();
 	private config: LanSyncConfig;
 
@@ -46,7 +45,7 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 	private static readonly STEP_BROADCAST_INTERVAL_MS = 50; // ~20 updates/sec max
 
 	constructor(
-		private peerManager: IPeerConnectionManager,
+		private peerManager: PeerConnectionManager,
 		private broadcaster: SyncRoomBroadcaster,
 		config: Partial<LanSyncConfig> = {}
 	) {

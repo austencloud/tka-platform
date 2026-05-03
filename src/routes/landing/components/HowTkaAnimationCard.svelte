@@ -14,8 +14,8 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IAnimationPlaybackControllerFactory } from "$lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import type { AnimationPlaybackControllerFactory } from "$lib/features/compose/services/implementations/AnimationPlaybackControllerFactory";
+  import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import {
@@ -39,7 +39,7 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
   // Animation engine state
   const animationState = createAnimationPanelState();
   let playbackController: IAnimationPlaybackController | null = null;
-  let startPositionDeriver: IStartPositionDeriver | null = null;
+  let startPositionDeriver: StartPositionDeriver | null = null;
   let animationReady = $state(false);
   let animationError = $state(false);
   // Dynamically imported - null until the card scrolls into view
@@ -131,7 +131,7 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
       visibilityManager.setDarkMode(true);
       visibilityManager.setActiveEffect("none");
 
-      const factory = getAnimationPlaybackControllerFactory() as IAnimationPlaybackControllerFactory;
+      const factory = getAnimationPlaybackControllerFactory() as AnimationPlaybackControllerFactory;
       playbackController = factory.create();
       startPositionDeriver = startPositionDeriverInstance;
 

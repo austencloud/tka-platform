@@ -13,8 +13,8 @@ import type { PropState } from "../../shared/domain/types/PropState";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { AnimationLoop } from "./AnimationLoop";
 import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
-import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
-import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
+import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -51,9 +51,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   private loopCompleteCallback: (() => void) | null = null;
 
   constructor(
-    private readonly animationEngine: ISequenceAnimationOrchestrator,
+    private readonly animationEngine: SequenceAnimationOrchestrator,
     private readonly loopService: AnimationLoop,
-    private readonly loopabilityChecker: ISequenceLoopabilityChecker
+    private readonly loopabilityChecker: SequenceLoopabilityChecker
   ) {}
 
   /**

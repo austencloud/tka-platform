@@ -1,7 +1,6 @@
-import type { IDetectionCorrector } from "../contracts/IDetectionCorrector";
 import type { DetectedEndpoint, EndpointCorrection, TrainingPair } from "../../domain/types";
 
-export class DetectionCorrector implements IDetectionCorrector {
+export class DetectionCorrector {
   applyCorrections(
     frameIndex: number,
     detected: DetectedEndpoint[],

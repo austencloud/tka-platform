@@ -12,10 +12,9 @@ import {
   QuizQuestionFormat,
   QuizType,
 } from "../../domain/enums/quiz-enums";
-import type { IQuizRepoManager } from "../contracts/IQuizRepository";
 import type { CodexLetterMappingRepo } from "../../../codex/services/implementations/CodexLetterMappingRepo";
 
-export class QuizRepoManager implements IQuizRepoManager {
+export class QuizRepoManager {
   private configurations: Map<string, QuizConfig> = new Map();
   private initialized = false;
 

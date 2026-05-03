@@ -14,7 +14,7 @@
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { authState } from "../state/authState.svelte";
-import type { IAuthenticator } from "../services/contracts/IAuthenticator";
+import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import {
@@ -36,7 +36,7 @@ import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   } = $props();
 
   // Services
-  let authService = $state<IAuthenticator | null>(null);
+  let authService = $state<Authenticator | null>(null);
   let hapticService = $state<IHapticFeedback | null>(null);
   let linkingState = $state<EmailLinkingState | null>(null);
 

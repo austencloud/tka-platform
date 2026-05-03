@@ -6,7 +6,7 @@
  * instead of "generate-all → filter" for 10x-100x performance improvement.
  */
 
-import type { IVariationConstraintBuilder } from "../contracts/IVariationConstraintBuilder";
+
 import type { LetterTypeClassifier } from "./LetterTypeClassifier";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
@@ -14,7 +14,7 @@ import type {
   VariationConstraints,
 } from "../../domain/models/spell-models";
 
-export class VariationConstraintBuilder implements IVariationConstraintBuilder {
+export class VariationConstraintBuilder {
   constructor(private readonly letterTypeClassifier: LetterTypeClassifier) {}
 
   buildConstraints(

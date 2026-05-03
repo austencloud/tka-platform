@@ -1,4 +1,3 @@
-import type { IVideoTrailsRepository } from "../contracts/IVideoTrailsRepository";
 import type { VideoTrailsProject } from "../../domain/types";
 
 const DB_NAME = "tka-video-trails";
@@ -6,7 +5,7 @@ const DB_VERSION = 1;
 const STORE_NAME = "projects";
 const INDEX_KEY = "video-trails-project-index";
 
-export class VideoTrailsRepository implements IVideoTrailsRepository {
+export class VideoTrailsRepository {
   private dbPromise: Promise<IDBDatabase> | null = null;
 
   private openDb(): Promise<IDBDatabase> {

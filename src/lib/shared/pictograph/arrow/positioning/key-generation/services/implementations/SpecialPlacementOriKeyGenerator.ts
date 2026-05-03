@@ -1,4 +1,3 @@
-import type { ISpecialPlacementOriKeyGenerator } from "../contracts/ISpecialPlacementOriKeyGenerator";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 
@@ -7,7 +6,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
  * SpecialPlacementOriKeyGenerator
  * Generates ori_key matching SpecialPlacer's internal logic.
  */
-export class SpecialPlacementOriKeyGenerator implements ISpecialPlacementOriKeyGenerator {
+export class SpecialPlacementOriKeyGenerator {
   /**
    * Generate an orientation key based on start orientations of both hands.
    * The folder names use "from" - the orientation the motion comes FROM.

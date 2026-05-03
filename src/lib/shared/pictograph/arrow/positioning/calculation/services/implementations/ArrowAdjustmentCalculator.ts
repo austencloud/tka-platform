@@ -12,18 +12,17 @@
  */
 
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
-import type { IArrowAdjustmentCalculator } from "../../services/contracts/IArrowAdjustmentCalculator";
 import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import type { ArrowPlacementKeyGenerator } from "../../../key-generation/services/implementations/ArrowPlacementKeyGenerator";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { IAttributeKeyGenerator } from "../../../key-generation/services/contracts/IAttributeKeyGenerator";
-import type { IDefaultPlacer } from "../../../placement/services/contracts/IDefaultPlacer";
+import type { AttributeKeyGenerator } from "../../../key-generation/services/implementations/AttributeKeyGenerator";
+import type { DefaultPlacer } from "../../../placement/services/implementations/DefaultPlacer";
 import type { IDirectionalTupleProcessor } from "../contracts/IDirectionalTupleGenerator";
-import type { IGridModeDeriver } from "../../../../../grid/services/contracts/IGridModeDeriver";
-import type { ISpecialPlacementOriKeyGenerator } from "../../../key-generation/services/contracts/ISpecialPlacementOriKeyGenerator";
-import type { ISpecialPlacer } from "../../../placement/services/contracts/ISpecialPlacer";
-import type { ITurnsTupleKeyGenerator } from "../../../key-generation/services/contracts/ITurnsTupleKeyGenerator";
+import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+import type { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
+import type { SpecialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
+import type { TurnsTupleKeyGenerator } from "../../../key-generation/services/implementations/TurnsTupleKeyGenerator";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
 import { getPropGeometryRepository } from "../../../prop-geometry/services/prop-geometry-singleton";
@@ -35,20 +34,20 @@ import type {
 } from "../../domain/PipelineDiagnostics";
 import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
 
-export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
+export class ArrowAdjustmentCalculator {
   /**
    * Consolidated service combining lookup and calculation logic.
    * Eliminates the pure delegation layer while maintaining identical behavior.
    */
 
   constructor(
-    private gridModeService: IGridModeDeriver,
-    private SpecialPlacer: ISpecialPlacer,
-    private DefaultPlacer: IDefaultPlacer,
-    private orientationKeyService: ISpecialPlacementOriKeyGenerator,
+    private gridModeService: GridModeDeriver,
+    private SpecialPlacer: SpecialPlacer,
+    private DefaultPlacer: DefaultPlacer,
+    private orientationKeyService: SpecialPlacementOriKeyGenerator,
     private placementKeyService: ArrowPlacementKeyGenerator,
-    private turnsTupleService: ITurnsTupleKeyGenerator,
-    private attributeKeyService: IAttributeKeyGenerator,
+    private turnsTupleService: TurnsTupleKeyGenerator,
+    private attributeKeyService: AttributeKeyGenerator,
     private tupleProcessor: IDirectionalTupleProcessor
   ) {}
 

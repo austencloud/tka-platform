@@ -7,7 +7,7 @@
  */
 
 import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-import type { IKeyboardShortcutManager } from "../services/contracts/IKeyboardShortcutManager";
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/features/create/shared/state/create-module-state-ref.svelte";
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
@@ -52,7 +52,7 @@ async function applyPropPreset(presetIndex: number): Promise<void> {
 }
 
 export function registerCreateShortcuts(
-  service: IKeyboardShortcutManager,
+  service: KeyboardShortcutManager,
   state: ReturnType<typeof createKeyboardShortcutState>
 ) {
   // ==================== Animation Control ====================

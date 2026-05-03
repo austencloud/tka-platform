@@ -12,11 +12,11 @@ import type {
   SequenceSection,
 } from "$lib/features/browse/shared/domain/models/browse-models";
 import { sortSequencesByKineticAlphabet } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
-import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
+import type { WordDeriver } from '$lib/shared/foundation/services/implementations/WordDeriver'
 
 export class BrowseSectionManager {
   constructor(
-    private wordDeriver: IWordDeriver
+    private wordDeriver: WordDeriver
   ) {}
   organizeSections(
     sequences: SequenceData[],

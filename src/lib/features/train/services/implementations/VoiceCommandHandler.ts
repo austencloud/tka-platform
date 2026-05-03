@@ -6,15 +6,13 @@
  */
 
 import { browser } from "$app/environment";
-import type { IVoiceCommandHandler } from "../contracts/IVoiceCommandHandler";
-
 // Augment Window interface for webkit prefixed SpeechRecognition
 interface WindowWithSpeechRecognition extends Window {
   SpeechRecognition?: new () => SpeechRecognition;
   webkitSpeechRecognition?: new () => SpeechRecognition;
 }
 
-export class VoiceCommandHandler implements IVoiceCommandHandler {
+export class VoiceCommandHandler {
   private recognition: SpeechRecognition | null = null;
   private listening = false;
   private currentKeyword = "";

@@ -2,7 +2,7 @@
  * Panel Coordination Types
  *
  * Standalone types file for panel coordination state.
- * Extracted to break circular dependency with ISequenceTransformer.
+ * Extracted to break circular dependency with SequenceTransformer.
  *
  * NOTE: This file should NOT import anything that could create cycles.
  * Keep it pure type definitions only.

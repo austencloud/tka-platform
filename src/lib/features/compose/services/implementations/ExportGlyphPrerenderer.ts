@@ -11,7 +11,7 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { ISvgImageConverter } from "$lib/shared/foundation/services/contracts/ISvgImageConverter";
+import type { SvgImageConverter } from '$lib/shared/foundation/services/implementations/SvgImageConverter'
 import type {
   GlyphAsset,
   IExportGlyphPrerenderer,
@@ -68,7 +68,7 @@ export class ExportGlyphPrerenderer implements IExportGlyphPrerenderer {
   private tupleGenerator = new TurnsTupleGenerator();
   private colorInterpreter = new TurnColorInterpreter();
 
-  constructor(private readonly svgImageConverter: ISvgImageConverter) {}
+  constructor(private readonly svgImageConverter: SvgImageConverter) {}
 
   async prerenderGlyphs(
     steps: readonly StepData[],

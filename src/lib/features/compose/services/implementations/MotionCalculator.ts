@@ -8,7 +8,6 @@
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PI } from "../../shared/domain/math-constants.js";
-import type { IMotionCalculator } from "../contracts/IMotionCalculator";
 import {
   mapOrientationToAngle,
   normalizeAnglePositive,
@@ -107,7 +106,7 @@ export function calculateFloatStaffAngle(startStaffAngle: number): number {
 // Service class (delegates to standalone functions)
 // ============================================================================
 
-export class MotionCalculator implements IMotionCalculator {
+export class MotionCalculator {
   constructor() {}
 
   /**

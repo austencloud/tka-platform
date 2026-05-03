@@ -7,13 +7,12 @@
  * so it appears in the hand path library too.
  */
 
-import type { ISoloPropSaveOrchestrator } from "../contracts/ISoloPropSaveOrchestrator";
 import type { ISoloPropRepository } from "$lib/shared/foundation/services/contracts/ISoloPropRepository";
 import type { IHandPathRepository } from "$lib/shared/foundation/services/contracts/IHandPathRepository";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
 import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
 
-export class SoloPropSaveOrchestrator implements ISoloPropSaveOrchestrator {
+export class SoloPropSaveOrchestrator {
   constructor(
     private readonly soloPropRepository: ISoloPropRepository,
     private readonly handPathRepository: IHandPathRepository

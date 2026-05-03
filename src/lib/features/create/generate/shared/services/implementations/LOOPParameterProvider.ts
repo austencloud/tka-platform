@@ -22,9 +22,8 @@ import {
   PropContinuity,
 } from "../../domain/models/generate-models";
 import type { PictographFilter } from "./PictographFilter";
-import type { ILOOPParameterProvider } from "../contracts/ILOOPParameterProvider";
 
-export class LOOPParameterProvider implements ILOOPParameterProvider {
+export class LOOPParameterProvider {
   constructor(private PictographFilter: PictographFilter) {}
 
   // ============================================================================

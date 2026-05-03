@@ -8,7 +8,7 @@ import type {
   HapticNotificationType,
   IHapticFeedback,
 } from "../contracts/IHapticFeedback";
-import type { IPlatformDetector } from "$lib/shared/platform/services/contracts/IPlatformDetector";
+import type { PlatformDetector } from "$lib/shared/platform/services/implementations/PlatformDetector";
 
 // Single short pulses for web Vibration API fallback (mobile browsers).
 // Kept minimal to avoid the "buzzy" feel of complex patterns.
@@ -31,10 +31,10 @@ export class HapticFeedback implements IHapticFeedback {
   private lastFeedbackTime: number = 0;
   private config: HapticFeedbackConfig = { ...DEFAULT_CONFIG };
   private effortMapper: EffortHapticMapper | null = null;
-  private nativePlatformDetector: IPlatformDetector | null;
+  private nativePlatformDetector: PlatformDetector | null;
   private hasVibrate: boolean = false;
 
-  constructor(nativePlatformDetector?: IPlatformDetector) {
+  constructor(nativePlatformDetector?: PlatformDetector) {
     this.nativePlatformDetector = nativePlatformDetector ?? null;
     if (browser) {
       // eslint-disable-next-line no-restricted-properties

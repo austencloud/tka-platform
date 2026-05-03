@@ -1,5 +1,4 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { ISequenceRenderer } from "../contracts/ISequenceRenderer";
 import { LayoutCalculator } from "./LayoutCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type {
@@ -8,7 +7,7 @@ import type {
 } from "../contracts/IImageComposer";
 import type { ImageFormatConverter } from "./ImageFormatConverter";
 
-export class SequenceRenderer implements ISequenceRenderer {
+export class SequenceRenderer {
   constructor(
     private compositionService: IImageComposer,
     private formatService: ImageFormatConverter

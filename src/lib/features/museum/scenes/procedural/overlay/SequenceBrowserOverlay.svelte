@@ -3,8 +3,8 @@
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-  import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
 
   interface Props {
     visible: boolean;
@@ -18,8 +18,8 @@
   let filteredSequences = $state<SequenceData[]>([]);
   let searchQuery = $state("");
   let isLoading = $state(false);
-  let browseLoader: IBrowseLoader | null = $state(null);
-  let thumbnailProvider: IBrowseThumbnailProvider | null = $state(null);
+  let browseLoader: PublicSequencesLoader | null = $state(null);
+  let thumbnailProvider: BrowseThumbnailProvider | null = $state(null);
   let searchInput: HTMLInputElement | null = $state(null);
 
   onMount(() => {

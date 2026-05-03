@@ -1,4 +1,3 @@
-import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
 import type { Frost2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Frost2DRenderer,
@@ -6,7 +5,7 @@ import {
 } from "$lib/shared/effects/renderers/Frost2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class FrostOverlayRenderer implements IFrostOverlayRenderer {
+export class FrostOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Frost2DRenderer();

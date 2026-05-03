@@ -1,12 +1,12 @@
 import { browser } from '$app/environment';
-import type { ILetterDeriver } from './services/contracts/ILetterDeriver';
+
 import { LetterDeriver } from './services/implementations/LetterDeriver';
 import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
 import { gridModeDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridModeDeriver';
 
-let instance: ILetterDeriver | null = null;
+let instance: LetterDeriver | null = null;
 
-export function getLetterDeriver(): ILetterDeriver {
+export function getLetterDeriver(): LetterDeriver {
 	if (!browser) throw new Error('getLetterDeriver() is browser-only');
 	return instance ??= new LetterDeriver(motionQueryHandler, gridModeDeriver);
 }

@@ -16,7 +16,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { AdminNotification } from "$lib/features/feedback/domain/models/notification-models";
 import { getPreferenceKeyForType } from "$lib/features/feedback/domain/models/notification-models";
-import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
+import type { NotificationPreferencesManager } from "$lib/features/feedback/services/implementations/NotificationPreferencesManager";
 
 import { getNotificationPreferencesManager } from "$lib/features/feedback/getNotificationPreferencesManager";
 

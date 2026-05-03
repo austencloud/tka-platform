@@ -17,7 +17,6 @@
  * the fire overlay renderer (different physics, shaders, visual output).
  */
 
-import type { ICharcoalRenderer } from "../../contracts/ICharcoalRenderer";
 import type {
 	FireFrameInput,
 	FireOverlayConfig,
@@ -145,7 +144,7 @@ interface ShaderProgram {
 // CharcoalSparkRenderer
 // ============================================================================
 
-export class CharcoalSparkRenderer implements ICharcoalRenderer {
+export class CharcoalSparkRenderer {
 	private canvas: HTMLCanvasElement | null = null;
 	private gl: WebGL2RenderingContext | null = null;
 	private initialized = false;

@@ -20,10 +20,10 @@ import {
   MotionColor,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
   SWAPPED_POSITION_MAP,
   SWAPPED_LOOP_VALIDATION_SET,
@@ -33,8 +33,8 @@ import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class StrictSwappedLOOPExecutor {
   constructor(
-    private OrientationCalculator: IOrientationCalculator,
-    private gridPositionDeriver: IGridPositionDeriver
+    private OrientationCalculator: OrientationCalculator,
+    private gridPositionDeriver: GridPositionDeriver
   ) {}
 
   executeLOOP(sequence: StepData[], period: Period): StepData[] {

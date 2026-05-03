@@ -1,8 +1,7 @@
-import type { ICandidateGenerator } from './services/contracts/ICandidateGenerator';
 import { CandidateGenerator } from './services/implementations/CandidateGenerator';
 import { getStanceOptimizer } from './getStanceOptimizer';
 
-let instance: ICandidateGenerator | null = null;
-export function getStanceCandidateGenerator(): ICandidateGenerator {
+let instance: CandidateGenerator | null = null;
+export function getStanceCandidateGenerator(): CandidateGenerator {
   return instance ??= new CandidateGenerator(getStanceOptimizer());
 }

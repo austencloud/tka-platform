@@ -2,12 +2,11 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { NotificationPreferences } from "../../domain/models/notification-models";
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "../../domain/models/notification-models";
-import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
 
 const USERS_COLLECTION = "users";
 const PREFERENCES_FIELD = "notificationPreferences";
 
-export class NotificationPreferencesManager implements INotificationPreferencesManager {
+export class NotificationPreferencesManager {
   /**
    * Get notification preferences for a user
    * Returns default preferences if none are set

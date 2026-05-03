@@ -1,6 +1,5 @@
 import { LOOPType } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
-import type { ILOOPExecutorSelector } from "../contracts/ILOOPExecutorSelector";
 
 /**
  * Service for selecting the appropriate LOOP executor based on LOOP type
@@ -9,7 +8,7 @@ import type { ILOOPExecutorSelector } from "../contracts/ILOOPExecutorSelector";
  * the correct executor instance from the ITI container based
  * on the requested LOOP type.
  */
-export class LOOPExecutorSelector implements ILOOPExecutorSelector {
+export class LOOPExecutorSelector {
   constructor(
     private readonly strictRotatedExecutor: ILOOPExecutor,
     private readonly strictMirroredExecutor: ILOOPExecutor,

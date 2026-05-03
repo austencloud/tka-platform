@@ -5,11 +5,11 @@
  */
 
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import type { IStepOperator } from "../../services/contracts/IStepOperator";
+import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import type { CreateModuleState } from "../create-module-state.svelte";
 
 export interface PropTypeSyncConfig {
-  getStepOperator: () => IStepOperator | null;
+  getStepOperator: () => StepOperator | null;
   getCreateModuleState: () => CreateModuleState | null;
   isServicesInitialized: () => boolean;
 }

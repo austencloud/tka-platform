@@ -5,8 +5,8 @@
  * Bridges the coordinator service with Svelte's reactivity system.
  */
 
-import type { ILanSyncCoordinator } from '../services/contracts/ILanSyncCoordinator';
-import type { ISyncRoomDiscovery } from '../services/contracts/ISyncRoomDiscovery';
+import type { LanSyncCoordinator } from '$lib/shared/lan-sync/services/implementations/LanSyncCoordinator'
+import type { SyncRoomDiscovery } from '$lib/shared/lan-sync/services/implementations/SyncRoomDiscovery'
 import type { SyncedPlaybackState, PeerConnectionState, SyncRoomWithId } from '../domain/models/lan-sync-models';
 import { createInitialConnectionState, createInitialPlaybackState } from '../domain/models/lan-sync-models';
 
@@ -18,8 +18,8 @@ class LanSyncState {
 	private _nearbyRooms = $state<SyncRoomWithId[]>([]);
 	private _dismissedRoomIds = $state<Set<string>>(new Set());
 	private _receivedSequence = $state<Record<string, unknown> | null>(null);
-	private _coordinator: ILanSyncCoordinator | null = null;
-	private _discovery: ISyncRoomDiscovery | null = null;
+	private _coordinator: LanSyncCoordinator | null = null;
+	private _discovery: SyncRoomDiscovery | null = null;
 	private unsubscribers: Array<() => void> = [];
 
 	/** Current connection state */
@@ -75,7 +75,7 @@ class LanSyncState {
 	}
 
 	/** Initialize with a coordinator instance */
-	initialize(coordinator: ILanSyncCoordinator): void {
+	initialize(coordinator: LanSyncCoordinator): void {
 		this.cleanup();
 		this._coordinator = coordinator;
 
@@ -205,7 +205,7 @@ class LanSyncState {
 	}
 
 	/** Initialize discovery service */
-	initializeDiscovery(discovery: ISyncRoomDiscovery): void {
+	initializeDiscovery(discovery: SyncRoomDiscovery): void {
 		if (this._discovery) {
 			// Already initialized
 			return;

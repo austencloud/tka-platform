@@ -2,17 +2,16 @@
  * FavoritesManager - Favorites Collection Operations
  *
  * Manages the Favorites system collection. Delegates to
- * ICollectionManager for the underlying collection membership.
+ * CollectionManager for the underlying collection membership.
  */
 
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
-import type { IFavoritesManager } from "../contracts/IFavoritesManager";
-import type { ICollectionManager } from "../contracts/ICollectionManager";
+import type { CollectionManager } from "./CollectionManager";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 
-export class FavoritesManager implements IFavoritesManager {
-  constructor(private collectionManager: ICollectionManager) {}
+export class FavoritesManager {
+  constructor(private collectionManager: CollectionManager) {}
 
   async toggleFavorite(sequenceId: string): Promise<boolean> {
     const favoritesCollection =

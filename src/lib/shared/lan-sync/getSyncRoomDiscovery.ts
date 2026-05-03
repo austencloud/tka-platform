@@ -1,7 +1,7 @@
-import type { ISyncRoomDiscovery } from './services/contracts/ISyncRoomDiscovery';
+
 import { SyncRoomDiscovery } from './services/implementations/SyncRoomDiscovery';
 
-let instance: ISyncRoomDiscovery | null = null;
-export function getSyncRoomDiscovery(): ISyncRoomDiscovery {
+let instance: SyncRoomDiscovery | null = null;
+export function getSyncRoomDiscovery(): SyncRoomDiscovery {
   return instance ??= new SyncRoomDiscovery();
 }

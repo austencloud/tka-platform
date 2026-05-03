@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IStepConverter } from './services/contracts/IStepConverter';
 import { StepConverter } from './services/implementations/StepConverter';
 
-let instance: IStepConverter | null = null;
+let instance: StepConverter | null = null;
 
-export function getStepConverter(): IStepConverter {
+export function getStepConverter(): StepConverter {
 	if (!browser) throw new Error('getStepConverter() is browser-only');
 	return instance ??= new StepConverter();
 }

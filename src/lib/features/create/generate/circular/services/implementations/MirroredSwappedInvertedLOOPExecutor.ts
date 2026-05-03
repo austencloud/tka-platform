@@ -32,8 +32,8 @@ import type {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { ILOOPParameterProvider } from "$lib/features/create/generate/shared/services/contracts/ILOOPParameterProvider";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
 import {
   INVERTED_LOOP_VALIDATION_SET,
   VERTICAL_MIRROR_LOCATION_MAP,
@@ -44,8 +44,8 @@ import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 
 export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   constructor(
-    private OrientationCalculator: IOrientationCalculator,
-    private loopParams: ILOOPParameterProvider
+    private OrientationCalculator: OrientationCalculator,
+    private loopParams: LOOPParameterProvider
   ) {}
 
   /**

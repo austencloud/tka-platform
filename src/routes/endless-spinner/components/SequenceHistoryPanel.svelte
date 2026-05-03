@@ -2,7 +2,7 @@
   import { fly } from "svelte/transition";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { GenerationSettings } from "$lib/features/landing/domain/models/spinner-models";
-  import type { ISequenceDataSerializer } from "$lib/features/landing/services/contracts/ISequenceDataSerializer";
+  import type { SequenceDataSerializer } from "../../services/implementations/SequenceDataSerializer";
 
   export interface SequenceHistoryEntry {
     sequence: SequenceData;
@@ -12,7 +12,7 @@
 
   interface Props {
     entries: SequenceHistoryEntry[];
-    serializer: ISequenceDataSerializer;
+    serializer: SequenceDataSerializer;
   }
 
   let { entries, serializer }: Props = $props();

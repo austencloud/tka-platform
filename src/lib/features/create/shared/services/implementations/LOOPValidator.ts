@@ -11,7 +11,7 @@ import type {
   ILOOPValidator,
   LOOPValidationResult,
 } from "../contracts/ILOOPValidator";
-import type { ILOOPExecutorSelector } from "$lib/features/create/generate/circular/services/contracts/ILOOPExecutorSelector";
+import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
 import {
   LOOPType,
   LOOP_TYPE_LABELS,
@@ -116,7 +116,7 @@ const ALL_LOOP_TYPES = [
 ];
 
 export class LOOPValidator implements ILOOPValidator {
-  constructor(private loopExecutorSelector: ILOOPExecutorSelector) {}
+  constructor(private loopExecutorSelector: LOOPExecutorSelector) {}
 
   /**
    * Get LOOP options filtered by validity for a position pair

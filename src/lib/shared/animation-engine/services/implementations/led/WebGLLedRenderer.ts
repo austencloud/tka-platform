@@ -21,7 +21,6 @@
  * Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
-import type { ILedOverlayRenderer } from "../../contracts/ILedOverlayRenderer";
 import type { LedFrameInput, LedOverlayConfig } from "../../../domain/types/LedTypes";
 import {
 	FULLSCREEN_VERT,
@@ -73,7 +72,7 @@ interface ShaderProgram {
 	uniforms: Map<string, WebGLUniformLocation>;
 }
 
-export class WebGLLedRenderer implements ILedOverlayRenderer {
+export class WebGLLedRenderer {
 	private canvas: HTMLCanvasElement | null = null;
 	private gl: WebGL2RenderingContext | null = null;
 	private initialized = false;

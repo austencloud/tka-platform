@@ -18,8 +18,8 @@ import { DEFAULT_PROP_DIMENSIONS } from "../contracts/IPropTextureLoader";
 import { DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
-import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
@@ -171,10 +171,10 @@ export class FrameParameterBuilder {
       prevHasCharcoalTips: boolean;
       trailsSuppressedUntilTextureLoad: boolean;
       effectsConfigState: EffectsConfigState | null;
-      settingsService: ISettingsState | null;
+      settingsService: SettingsState | null;
       effectRendererManager: EffectRendererManager;
       getVM: () => AnimationVisibilityStateManager;
-      orchestrator: ISequenceAnimationOrchestrator | null;
+      orchestrator: SequenceAnimationOrchestrator | null;
     }
   ): RenderFrameParams {
     const {

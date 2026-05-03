@@ -1,4 +1,3 @@
-import type { IHandPathNamer } from "../contracts/IHandPathNamer";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // Maps each GridLocation value to its compact abbreviation.
@@ -24,7 +23,7 @@ const ABBR_TO_LOCATION: Array<{ abbr: string; location: GridLocation }> = (
   .map(([location, abbr]) => ({ abbr, location }))
   .sort((a, b) => b.abbr.length - a.abbr.length);
 
-export class HandPathNamer implements IHandPathNamer {
+export class HandPathNamer {
   toName(locations: readonly GridLocation[]): string {
     return locations.map((loc) => LOCATION_TO_ABBR[loc] ?? loc).join("");
   }

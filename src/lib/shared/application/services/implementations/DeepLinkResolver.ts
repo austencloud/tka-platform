@@ -3,7 +3,7 @@
  *
  * Resolution chain:
  * 1. SessionStorage cache (handles HMR and same-tab refresh)
- * 2. Local ISequenceRepository (session sequences in IndexedDB)
+ * 2. Local SequenceRepository (session sequences in IndexedDB)
  * 3. Firebase public sequences (for cross-user/cross-tab links)
  */
 
@@ -11,14 +11,14 @@ import type {
   IDeepLinkResolver,
   DeepLinkResult,
 } from "../contracts/IDeepLinkResolver";
-import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import { getCachedSequence } from "../../state/ui/modal-url-state.svelte";
 
 export class DeepLinkResolver implements IDeepLinkResolver {
   constructor(
-    private sequenceRepository: ISequenceRepository,
-    private publicSequencesLoader: IBrowseLoader
+    private sequenceRepository: SequenceRepository,
+    private publicSequencesLoader: PublicSequencesLoader
   ) {}
 
   async resolve(sequenceId: string): Promise<DeepLinkResult> {

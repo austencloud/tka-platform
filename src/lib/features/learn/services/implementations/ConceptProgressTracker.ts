@@ -21,12 +21,11 @@ import type {
   ConceptStatus,
   LearningProgress,
 } from "../../domain/types";
-import type { IConceptProgressTracker } from "../contracts/IConceptProgressTracker";
 import type { IUserKnowledgeProfilePersister } from "../contracts/IUserKnowledgeProfilePersister";
 
 const STORAGE_KEY = "tka_learning_progress";
 
-export class ConceptProgressTracker implements IConceptProgressTracker {
+export class ConceptProgressTracker {
   private progress: LearningProgress;
   private subscribers: Set<(progress: LearningProgress) => void> = new Set();
   private persister: IUserKnowledgeProfilePersister | null;

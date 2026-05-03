@@ -9,10 +9,9 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceTransformer } from "../../contracts/ISequenceTransformer";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { IReversalDetector } from "../../contracts/IReversalDetector";
 import type { TargetHand } from "../../../state/panel-coordination-state.svelte";
 
@@ -29,12 +28,12 @@ import {
   deriveSequenceLetters,
 } from "./sequence-transforms";
 
-export class SequenceTransformer implements ISequenceTransformer {
+export class SequenceTransformer {
   constructor(
     private readonly motionQueryHandler: IMotionQueryHandler,
-    private readonly orientationCalculator: IOrientationCalculator,
+    private readonly orientationCalculator: OrientationCalculator,
     private readonly reversalDetector: IReversalDetector,
-    private readonly positionDeriver: IGridPositionDeriver
+    private readonly positionDeriver: GridPositionDeriver
   ) {}
 
   clearSequence(sequence: SequenceData): SequenceData {

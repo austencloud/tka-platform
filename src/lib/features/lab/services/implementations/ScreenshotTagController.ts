@@ -15,13 +15,12 @@ import {
   FirebaseTagPersistence,
   type FirebaseTagPersistenceConfig,
 } from "@austencloud/media-tagging-firebase";
-import type { IScreenshotTagController } from "../contracts/IScreenshotTagController";
 import {
   getFirestoreInstance,
   getAuthSync,
 } from "$lib/shared/auth/firebase";
 
-export class ScreenshotTagController implements IScreenshotTagController {
+export class ScreenshotTagController {
   private persistence: FirebaseTagPersistence | null = null;
 
   private getUserId(): string {

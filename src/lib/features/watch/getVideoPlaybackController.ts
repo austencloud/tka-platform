@@ -1,7 +1,6 @@
-import type { IVideoPlaybackController } from './services/contracts/IVideoPlaybackController';
 import { VideoPlaybackController } from './services/implementations/VideoPlaybackController';
 
-let instance: IVideoPlaybackController | null = null;
-export function getVideoPlaybackController(): IVideoPlaybackController {
+let instance: VideoPlaybackController | null = null;
+export function getVideoPlaybackController(): VideoPlaybackController {
   return instance ??= new VideoPlaybackController();
 }

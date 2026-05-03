@@ -24,7 +24,6 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import type { ICollectionManager } from "../contracts/ICollectionManager";
 import type {
   LibraryCollection,
   SystemCollectionType,
@@ -52,7 +51,7 @@ import {
 // Re-export so existing imports of CollectionError from this file still work
 export { CollectionError };
 
-export class CollectionManager implements ICollectionManager {
+export class CollectionManager {
   // ============================================================
   // SYSTEM COLLECTIONS
   // ============================================================
@@ -535,7 +534,7 @@ export class CollectionManager implements ICollectionManager {
 
   // ============================================================
   // FAVORITES - delegated to FavoritesManager
-  // These methods remain on ICollectionManager for backwards
+  // These methods remain on CollectionManager for backwards
   // compatibility but delegate to the favorites implementation.
   // ============================================================
 
@@ -572,7 +571,7 @@ export class CollectionManager implements ICollectionManager {
 
   // ============================================================
   // PUBLIC COLLECTIONS - delegated to PublicCollectionLoader
-  // These remain on ICollectionManager for interface compatibility.
+  // These remain on CollectionManager for interface compatibility.
   // New code should use PublicCollectionLoader directly.
   // ============================================================
 

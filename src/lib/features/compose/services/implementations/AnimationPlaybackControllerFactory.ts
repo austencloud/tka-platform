@@ -11,8 +11,7 @@
  */
 
 import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
-import type { IAnimationPlaybackControllerFactory } from "../contracts/IAnimationPlaybackControllerFactory";
-import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
+import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { AnimationLoop } from "./AnimationLoop";
 import { AnimationStateManager } from "./AnimationStateManager";
 import { AngleCalculator } from "./AngleCalculator";
@@ -24,10 +23,9 @@ import { SequenceAnimationOrchestrator } from "./SequenceAnimationOrchestrator";
 import { AnimationPlaybackController } from "./AnimationPlaybackController";
 
 export class AnimationPlaybackControllerFactory
-  implements IAnimationPlaybackControllerFactory
 {
   constructor(
-    private readonly loopabilityChecker: ISequenceLoopabilityChecker
+    private readonly loopabilityChecker: SequenceLoopabilityChecker
   ) {}
 
   create(): IAnimationPlaybackController {

@@ -12,9 +12,9 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import { quintOut } from "svelte/easing";
 
   import type { CardDescriptor } from "../shared/services/contracts/ICardConfigurator";
-  import type { ILOOPParameterProvider } from "../shared/services/contracts/ILOOPParameterProvider";
+  import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
   import type { ICardConfigurator } from "../shared/services/contracts/ICardConfigurator";
-  import type { IResponsiveTypographer } from "../shared/services/contracts/IResponsiveTypographer";
+  import type { ResponsiveTypographer } from "$lib/features/create/generate/shared/services/implementations/ResponsiveTypographer";
   import { ResponsiveTypographer } from "../shared/services/implementations/ResponsiveTypographer";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
@@ -85,9 +85,9 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   // Services - use $state to make them reactive
-  let typographyService = $state<IResponsiveTypographer | null>(null);
+  let typographyService = $state<ResponsiveTypographer | null>(null);
   let cardConfigService = $state<ICardConfigurator | null>(null);
-  let loopParamProvider = $state<ILOOPParameterProvider | null>(null);
+  let loopParamProvider = $state<LOOPParameterProvider | null>(null);
 
   // State
   let headerFontSize = $state("9px");

@@ -46,7 +46,7 @@ import {
   getExportDimensions,
   calculateBitrate,
 } from "$lib/features/compose/shared/domain/video-export-calculations";
-import type { ICanvasFrameCapturer } from "$lib/shared/video-export/services/contracts/ICanvasFrameCapturer";
+import type { CanvasFrameCapturer } from "$lib/shared/video-export/services/implementations/CanvasFrameCapturer";
 import type { ICameraKeyframeInterpolator } from "$lib/shared/video-export/services/contracts/ICameraKeyframeInterpolator";
 import { ExportDiagnostics } from "$lib/shared/video-export/domain/ExportDiagnostics";
 
@@ -65,7 +65,7 @@ export class Offline3DExporter implements IOffline3DExporter {
 
   constructor(
     private readonly backgroundEncoder: IBackgroundVideoEncoder,
-    private readonly capturer: ICanvasFrameCapturer,
+    private readonly capturer: CanvasFrameCapturer,
     private readonly cameraInterpolator: ICameraKeyframeInterpolator
   ) {}
 

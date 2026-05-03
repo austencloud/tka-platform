@@ -1,10 +1,9 @@
-import type { IResponsiveTypographer } from "../contracts/IResponsiveTypographer";
 
 /**
- * Implementation of IResponsiveTypographer
+ * Implementation of ResponsiveTypographer
  * Provides responsive typography calculations with smooth easing
  */
-export class ResponsiveTypographer implements IResponsiveTypographer {
+export class ResponsiveTypographer {
   /**
    * Calculate responsive font size with smooth easing curve
    * Applies a gentle easing function to reduce abrupt jumps at rounding thresholds

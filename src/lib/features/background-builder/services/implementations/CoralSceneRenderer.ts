@@ -7,7 +7,7 @@
  */
 
 import type { ICoralSceneRenderer, CoralSceneConfig } from "../contracts/ICoralSceneRenderer";
-import type { ICoralAssetLoader } from "../contracts/ICoralAssetLoader";
+import type { CoralAssetLoader } from "../implementations/CoralAssetLoader";
 import type {
   CoralDepthLayer,
   PlacedCoral,
@@ -56,14 +56,14 @@ function prefersReducedMotion(): boolean {
 // --------------------------------------------------------------------------
 
 export class CoralSceneRenderer implements ICoralSceneRenderer {
-  private readonly loader: ICoralAssetLoader;
+  private readonly loader: CoralAssetLoader;
   private placed: Map<CoralDepthLayer, PlacedCoral[]> = new Map();
   private ready = false;
   private elapsedTime = 0;
   private reducedMotion = false;
   private layerCounts: [number, number, number] = DEFAULT_LAYER_COUNTS;
 
-  constructor(loader: ICoralAssetLoader) {
+  constructor(loader: CoralAssetLoader) {
     this.loader = loader;
   }
 

@@ -13,7 +13,7 @@ import type {
 import type { TimeSeconds, TimelineClip } from "../../domain/timeline-types";
 import { getClipEndTime } from "../../domain/timeline-types";
 import { getTimelineState } from "../../state/timeline-state.svelte";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 export class TimelinePlayer implements ITimelinePlayer {
   private animationFrameId: number | null = null;
@@ -428,7 +428,7 @@ export class TimelinePlayer implements ITimelinePlayer {
     this.audioErrorShown = true;
 
     try {
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showWarning(
         "Audio playback failed. Try clicking anywhere on the page first (browser autoplay policy)."
       );

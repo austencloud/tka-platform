@@ -5,10 +5,10 @@
  * Extracts the rendering responsibility from PropAwareThumbnail.
  *
  * Handles:
- * - Loading full sequence data if needed (via IBrowseLoader)
- * - Deriving start position if missing (via IStartPositionDeriver)
+ * - Loading full sequence data if needed (via PublicSequencesLoader)
+ * - Deriving start position if missing (via StartPositionDeriver)
  * - Applying prop type overrides
- * - Rendering via ISequenceRenderer pipeline
+ * - Rendering via SequenceRenderer pipeline
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

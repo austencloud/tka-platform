@@ -1,4 +1,4 @@
-import type { ISequenceRenderer } from "../../../render/services/contracts/ISequenceRenderer";
+import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { ShareOptions } from "../../domain/models/ShareOptions";
 import type {
@@ -10,7 +10,7 @@ import { PreviewCache } from "./PreviewCache";
 export class Sharer implements ISharer {
   private previewCache = new PreviewCache();
 
-  constructor(private renderService: ISequenceRenderer) {}
+  constructor(private renderService: SequenceRenderer) {}
 
   async generatePreview(
     sequence: SequenceData,

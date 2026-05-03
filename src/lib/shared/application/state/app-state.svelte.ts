@@ -294,8 +294,8 @@ export function resetAppState(): void {
   resetMetrics();
 
   // Reset settings
-  // TODO: Implement resetToDefaults in ISettingsState interface
-  console.warn("resetToDefaults not implemented in ISettingsState");
+  // TODO: Implement resetToDefaults in SettingsState interface
+  console.warn("resetToDefaults not implemented in SettingsState");
 }
 
 // ============================================================================

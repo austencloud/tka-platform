@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IFavoriteConfigRepository } from './services/contracts/IFavoriteConfigRepository';
 import { FavoriteConfigRepository } from './services/implementations/FavoriteConfigRepository';
 
-let instance: IFavoriteConfigRepository | null = null;
+let instance: FavoriteConfigRepository | null = null;
 
-export function getFavoriteConfigRepository(): IFavoriteConfigRepository {
+export function getFavoriteConfigRepository(): FavoriteConfigRepository {
 	if (!browser) throw new Error('getFavoriteConfigRepository() is browser-only');
 	return instance ??= new FavoriteConfigRepository();
 }

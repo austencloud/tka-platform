@@ -7,9 +7,8 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceStatsCalculator } from "../contracts/ISequenceStatsCalculator";
 
-export class SequenceStatsCalculator implements ISequenceStatsCalculator {
+export class SequenceStatsCalculator {
   /**
    * Generate word from beat letters
    */

@@ -15,7 +15,7 @@
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
   import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
   import type { ISequenceDetailLoader } from "$lib/features/browse/sequences/display/services/contracts/ISequenceDetailLoader";
-  import type { IVideoCountManager } from "$lib/features/browse/sequences/display/services/contracts/IVideoCountManager";
+  import type { VideoCountManager } from "$lib/features/browse/sequences/display/services/implementations/VideoCountManager";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
@@ -124,7 +124,7 @@
   let hapticService: IHapticFeedback | null = null;
   let imageSharer = $state<ISequenceImageSharer | null>(null);
   let detailLoader: ISequenceDetailLoader | null = null;
-  let videoCountManager: IVideoCountManager | null = null;
+  let videoCountManager: VideoCountManager | null = null;
 
   // Share state
   let isShareCopying = $state(false);

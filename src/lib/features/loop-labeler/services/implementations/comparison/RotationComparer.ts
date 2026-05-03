@@ -1,4 +1,3 @@
-import type { IRotationComparer } from "../../contracts/IRotationComparer";
 import type {
   ColorData,
   TransformationCheckResult,
@@ -16,7 +15,7 @@ import {
 /**
  * Service for detecting rotation transformations between beat pairs.
  */
-export class RotationComparer implements IRotationComparer {
+export class RotationComparer {
   checkRotations(
     b1Blue: ColorData,
     b1Red: ColorData,

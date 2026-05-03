@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IFuseAssemblyAnimator } from './services/contracts/IFuseAssemblyAnimator';
 import { FuseAssemblyAnimator } from './services/implementations/FuseAssemblyAnimator';
 
-let instance: IFuseAssemblyAnimator | null = null;
+let instance: FuseAssemblyAnimator | null = null;
 
-export function getFuseAssemblyAnimator(): IFuseAssemblyAnimator {
+export function getFuseAssemblyAnimator(): FuseAssemblyAnimator {
 	if (!browser) throw new Error('getFuseAssemblyAnimator() is browser-only');
 	return instance ??= new FuseAssemblyAnimator();
 }

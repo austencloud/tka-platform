@@ -19,7 +19,6 @@ import {
 	PURPLE_FILL,
 } from "../../domain/mandala-constants";
 import type { MandalaPaths, MandalaRenderOptions } from "../../domain/mandala-types";
-import type { IMandalaRenderer } from "../contracts/IMandalaRenderer";
 
 // ─── Grid dot positions ──────────────────────────────────────────────────────
 // One dot at each cardinal/intercardinal direction at MANDALA_GRID_RADIUS from center.
@@ -52,7 +51,7 @@ function filledAttributes(strokeColor: string, fillColor: string, strokeWidth: n
 
 // ─── Public class ────────────────────────────────────────────────────────────
 
-export class MandalaRenderer implements IMandalaRenderer {
+export class MandalaRenderer {
 	/**
 	 * Render paths to an SVG string. The result is a self-contained SVG element
 	 * ready to embed in HTML or save as a file.

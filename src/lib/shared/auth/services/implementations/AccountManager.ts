@@ -8,7 +8,6 @@ import {
 import { doc, deleteDoc } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../firebase";
 import { nuclearCacheClear } from "../../utils/nuclearCacheClear";
-import type { IAccountManager } from "../contracts/IAccountManager";
 import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
 
 /**
@@ -16,7 +15,7 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
  * No server routes needed - all operations go through Firebase Auth
  * and Firestore client libraries, which work with adapter-static.
  */
-export class AccountManager implements IAccountManager {
+export class AccountManager {
   constructor(private haptics: IHapticFeedback) {}
 
   async changePassword(

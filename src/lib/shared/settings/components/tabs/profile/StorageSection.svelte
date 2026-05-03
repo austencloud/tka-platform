@@ -4,7 +4,7 @@
 import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCacheOrchestrator";
   import { onMount } from "svelte";
   import GlassCard from "./GlassCard.svelte";
-  import type { IOfflineCacheOrchestrator } from "$lib/shared/offline/services/contracts/IOfflineCacheOrchestrator";
+
   import type { OfflineCacheStats } from "$lib/shared/offline/domain/offline-cache-types";
 
   interface Props {
@@ -18,7 +18,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   let isDownloading = $state(false);
   let downloadError = $state<string | null>(null);
 
-  const orchestrator = getOfflineCacheOrchestrator() as IOfflineCacheOrchestrator;
+  const orchestrator = getOfflineCacheOrchestrator();
 
   onMount(() => {
     loadOfflineStats();

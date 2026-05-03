@@ -12,7 +12,6 @@
  * explicit clear().
  */
 
-import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
 import type { Petals2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Petals2DRenderer,
@@ -20,7 +19,7 @@ import {
 } from "$lib/shared/effects/renderers/Petals2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class PetalsOverlayRenderer implements IPetalsOverlayRenderer {
+export class PetalsOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Petals2DRenderer();

@@ -17,7 +17,7 @@ import type {
   SkillProgressActionType,
   SkillProgressMetadata,
 } from "../contracts/ISkillProgressionTracker";
-import type { IAchievementManager } from "../contracts/IAchievementManager";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import { calculateSkillStats } from "./skill-progression/SkillProgressionStats";
 import { getRecommendedSkills } from "./skill-progression/SkillProgressionRecommendations";
 import { findRelevantSkills } from "./skill-progression/SkillProgressionRelevantSkills";
@@ -49,10 +49,10 @@ import {
 
 export class SkillProgressionTracker implements ISkillProgressionTracker {
   private _initialized = false;
-  private _achievementService: IAchievementManager | null = null;
+  private _achievementService: AchievementManager | null = null;
   private _userProgressCache: Map<string, UserSkillProgress> = new Map();
 
-  constructor(achievementService: IAchievementManager) {
+  constructor(achievementService: AchievementManager) {
     this._achievementService = achievementService;
   }
 

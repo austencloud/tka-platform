@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IKeyboardNavigator } from './services/contracts/IKeyboardNavigator';
+
 import { KeyboardNavigator } from './services/KeyboardNavigator';
 
-let instance: IKeyboardNavigator | null = null;
+let instance: KeyboardNavigator | null = null;
 
-export function getKeyboardNavigator(): IKeyboardNavigator {
+export function getKeyboardNavigator(): KeyboardNavigator {
 	if (!browser) throw new Error('getKeyboardNavigator() is browser-only');
 	return instance ??= new KeyboardNavigator();
 }

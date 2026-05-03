@@ -1,4 +1,3 @@
-import type { IErrorHandler } from "../contracts/IErrorHandler";
 import type {
   ShowErrorOptions,
   ErrorContext,
@@ -18,7 +17,7 @@ import { showErrorToast } from "$lib/shared/error/state/error-toast-state.svelte
  * Centralized error handling for both internal logging and user-facing display.
  * Integrates with the error state for reactive UI updates.
  */
-export class ErrorHandler implements IErrorHandler {
+export class ErrorHandler {
   private errors: Array<{ error: Error; context?: string; timestamp: Date }> =
     [];
   private criticalErrors: Array<{

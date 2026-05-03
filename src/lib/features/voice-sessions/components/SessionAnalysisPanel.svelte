@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
+  import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
   import type { IVoiceSessionAnalyzer, SessionAnalysis } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionAnalyzer";
   import type { VoiceSession, ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";
 
@@ -15,7 +15,7 @@
     repository,
     analyzer,
   }: {
-    repository: IVoiceSessionRepository;
+    repository: VoiceSessionRepository;
     analyzer: IVoiceSessionAnalyzer;
   } = $props();
 

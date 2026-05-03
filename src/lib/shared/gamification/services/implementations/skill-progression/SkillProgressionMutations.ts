@@ -3,7 +3,7 @@ import type {
   UserSkillProgress,
 } from "../../../domain/models/challenge-models";
 import type { ISkillProgressionTracker } from "../../contracts/ISkillProgressionTracker";
-import type { IAchievementManager } from "../../contracts/IAchievementManager";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import { computeSkillProgressUpdate } from "./SkillProgressionUpdate";
 import {
   persistSkillProgressIncrement,
@@ -84,7 +84,7 @@ export async function updateSkillProgressForUser(params: {
   getSkillById: (skillId: string) => Promise<SkillProgression | null>;
   getUserProgress: (skillId: string) => Promise<UserSkillProgress | null>;
   startSkill: (skillId: string) => Promise<UserSkillProgress>;
-  achievementService: IAchievementManager | null;
+  achievementService: AchievementManager | null;
   log?: (message: string) => void;
 }): Promise<UpdateSkillProgressResult> {
   const {

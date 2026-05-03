@@ -24,8 +24,8 @@
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
-  import type { IQuizHistoryRecorder } from "$lib/features/learn/services/contracts/IQuizHistoryRecorder";
-  import type { IConceptRecommender } from "$lib/features/learn/services/contracts/IConceptRecommender";
+  import type { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
+  import type { ConceptRecommender } from "$lib/features/learn/services/implementations/ConceptRecommender";
   import type { IGapDetector } from "$lib/features/learn/services/contracts/IGapDetector";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
@@ -111,10 +111,10 @@
   const progressTracker: ConceptProgressTracker | null = browser
     ? (getConceptProgressTracker() as ConceptProgressTracker) ?? null
     : null;
-  const quizHistoryRecorder: IQuizHistoryRecorder | null = browser
+  const quizHistoryRecorder: QuizHistoryRecorder | null = browser
     ? getQuizHistoryRecorder() ?? null
     : null;
-  const conceptRecommender: IConceptRecommender | null = browser
+  const conceptRecommender: ConceptRecommender | null = browser
     ? getConceptRecommender() ?? null
     : null;
   const gapDetector: IGapDetector | null = browser

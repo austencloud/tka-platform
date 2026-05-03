@@ -11,7 +11,7 @@
 
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { IArrowPositioningOrchestrator } from "../../../positioning/services/contracts/IArrowPositioningOrchestrator";
+import type { ArrowPositioningOrchestrator } from "./ArrowPositioningOrchestrator";
 import type { IArrowSvgLoader } from "../../../rendering/services/contracts/IArrowSvgLoader";
 import type {
   ArrowAssets,
@@ -33,7 +33,7 @@ import type {
 export class ArrowLifecycleManager implements IArrowLifecycleManager {
   constructor(
     private svgLoader: IArrowSvgLoader,
-    private positioningOrchestrator: IArrowPositioningOrchestrator
+    private positioningOrchestrator: ArrowPositioningOrchestrator
   ) {}
 
   /**

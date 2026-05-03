@@ -8,12 +8,12 @@
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
 
 import type { IBuildConstructSectionCoordinator } from "../contracts/IConstructCoordinator";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
-import type { IOrientationCalculator } from "../../../../../shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
 import { orientationCalculator as orientationCalculatorDirect } from "../../../../../shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { StepData } from "../../domain/models/StepData";
@@ -23,7 +23,7 @@ import { getConstructCoordinator } from "$lib/features/create/shared/getConstruc
 
 export class CreateModuleEventHandler {
   private constructCoordinator: IBuildConstructSectionCoordinator | null = null;
-  private OrientationCalculator: IOrientationCalculator | null = null;
+  private OrientationCalculator: OrientationCalculator | null = null;
   private ReversalDetector: IReversalDetector | null = null;
   private initialized = false;
 
@@ -223,7 +223,7 @@ export class CreateModuleEventHandler {
       performance.mark("coordination-complete");
     } catch (error) {
       console.error("❌ Error handling option selection:", error);
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Something went wrong adding that beat",
         technicalDetails: error instanceof Error ? error.message : String(error),

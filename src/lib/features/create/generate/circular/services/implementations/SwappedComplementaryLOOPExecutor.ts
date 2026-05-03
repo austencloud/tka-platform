@@ -24,7 +24,7 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
   INVERTED_LOOP_VALIDATION_SET,
   getInvertedLetter,
@@ -32,7 +32,7 @@ import {
 import type { Period } from "../../domain/models/circular-models";
 
 export class SwappedInvertedLOOPExecutor {
-  constructor(private OrientationCalculator: IOrientationCalculator) {}
+  constructor(private OrientationCalculator: OrientationCalculator) {}
 
   /**
    * Execute the swapped-inverted LOOP

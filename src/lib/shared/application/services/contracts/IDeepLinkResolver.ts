@@ -6,7 +6,7 @@
  *
  * Resolution chain:
  * 1. SessionStorage cache (handles HMR and same-tab refresh)
- * 2. Local ISequenceRepository (session sequences in IndexedDB)
+ * 2. Local SequenceRepository (session sequences in IndexedDB)
  * 3. Firebase public sequences (for cross-user/cross-tab links)
  */
 

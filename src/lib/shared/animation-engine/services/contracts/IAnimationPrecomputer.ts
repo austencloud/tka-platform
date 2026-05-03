@@ -8,7 +8,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TrailSettings } from "../../domain/types/TrailTypes";
-import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type {
@@ -32,7 +32,7 @@ export interface PropDimensions {
  * Configuration for precomputation service
  */
 export interface PrecomputationServiceConfig {
-  orchestrator: ISequenceAnimationOrchestrator;
+  orchestrator: SequenceAnimationOrchestrator;
   TrailCapturer: ITrailCapturer | null;
   renderer: IAnimationRenderer | null;
   propDimensions: PropDimensions;

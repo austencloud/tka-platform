@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISwapInvertComparer } from './services/contracts/ISwapInvertComparer';
 import { SwapInvertComparer } from './services/implementations/comparison/SwapInvertComparer';
 
-let instance: ISwapInvertComparer | null = null;
+let instance: SwapInvertComparer | null = null;
 
-export function getSwapInvertComparer(): ISwapInvertComparer {
+export function getSwapInvertComparer(): SwapInvertComparer {
 	if (!browser) throw new Error('getSwapInvertComparer() is browser-only');
 	return instance ??= new SwapInvertComparer();
 }

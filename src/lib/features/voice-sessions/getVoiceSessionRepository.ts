@@ -1,7 +1,6 @@
-import type { IVoiceSessionRepository } from './services/contracts/IVoiceSessionRepository';
 import { VoiceSessionRepository } from './services/implementations/VoiceSessionRepository';
 
-let instance: IVoiceSessionRepository | null = null;
-export function getVoiceSessionRepository(): IVoiceSessionRepository {
+let instance: VoiceSessionRepository | null = null;
+export function getVoiceSessionRepository(): VoiceSessionRepository {
   return instance ??= new VoiceSessionRepository();
 }

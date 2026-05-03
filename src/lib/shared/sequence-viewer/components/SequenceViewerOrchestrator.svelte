@@ -167,9 +167,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
+  import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
+  import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/implementations/SequenceDataProvider";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -193,7 +193,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
-  import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
+  import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
@@ -246,7 +246,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   let lastLoadedSequenceId: string | null = null;
 
   let playbackControllerRef = $state<IAnimationPlaybackController | null>(null);
-  let sequenceDataProvider: ISequenceDataProvider | null = null;
+  let sequenceDataProvider: SequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
 
   const playback = createPlaybackController({ modalAnimationState, initialBpm: 60, initialStep: 0 });
@@ -458,7 +458,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     const seq = sequence;
     if (!seq) { isFavorite = false; return; }
 
-    const cm = getCollectionManager() as ICollectionManager;
+    const cm = getCollectionManager() as CollectionManager;
     cm.isFavorite(seq.id)
       .then((fav) => { if (sequence?.id === seq.id) isFavorite = fav; })
       .catch(() => {});
@@ -467,7 +467,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   function handleFavoriteToggle() {
     if (!sequence) return;
     isFavorite = !isFavorite;
-    const cm = getCollectionManager() as ICollectionManager;
+    const cm = getCollectionManager() as CollectionManager;
     cm.toggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
   }
 

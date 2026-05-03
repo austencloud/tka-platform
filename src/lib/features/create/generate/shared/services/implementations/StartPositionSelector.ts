@@ -7,21 +7,21 @@
  *
  * MIGRATION NOTE: Now returns StartPositionData instead of StepData with stepNumber===0
  */
-import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
+import type { ArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
 import type {
   GridMode,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { IStepConverter } from "../contracts/IStepConverter";
+import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
 import type { PictographFilter } from "./PictographFilter";
 export class StartPositionSelector {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
     private PictographFilter: PictographFilter,
-    private StepConverter: IStepConverter,
-    private arrowPositioningOrchestrator: IArrowPositioningOrchestrator
+    private StepConverter: StepConverter,
+    private arrowPositioningOrchestrator: ArrowPositioningOrchestrator
   ) {}
 
   /**

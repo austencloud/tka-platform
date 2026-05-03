@@ -1,4 +1,4 @@
-import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type {
   ILayoutDetector,
   LayoutConfig,
@@ -8,7 +8,7 @@ import type {
 type LocalLayoutConfig = LayoutConfig;
 
 export class LayoutDetector implements ILayoutDetector {
-  constructor(private deviceDetector: IDeviceDetector) {}
+  constructor(private deviceDetector: DeviceDetector) {}
 
   /**
    * SIMPLIFIED: Basic swipe detection logic

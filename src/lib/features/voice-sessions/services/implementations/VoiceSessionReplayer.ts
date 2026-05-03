@@ -2,7 +2,7 @@
  * Replay engine for voice command regression testing.
  *
  * Takes a recorded VoiceSession and re-runs each event's transcript
- * through the current ICommandInterpreter. Compares the current
+ * through the current CommandInterpreter. Compares the current
  * interpretation against what was originally recorded to detect
  * regressions, improvements, and changes.
  *
@@ -10,9 +10,8 @@
  */
 
 import type { VoiceSession, VoiceSessionEvent } from "$lib/shared/voice-control/domain/voice-session-types";
-import type { ICommandInterpreter } from "$lib/shared/voice-control/services/contracts/ICommandInterpreter";
+import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
 import type { VoiceCommand, CommandContext } from "$lib/shared/voice-control/domain/voice-command-types";
-import type { IVoiceSessionReplayer } from "../contracts/IVoiceSessionReplayer";
 import type {
   ReplayResult,
   ReplayEventComparison,
@@ -20,8 +19,8 @@ import type {
   ReplayDiffType,
 } from "../../domain/replay-types";
 
-export class VoiceSessionReplayer implements IVoiceSessionReplayer {
-  constructor(private readonly interpreter: ICommandInterpreter) {}
+export class VoiceSessionReplayer {
+  constructor(private readonly interpreter: CommandInterpreter) {}
 
   replaySession(session: VoiceSession): ReplayResult {
     const comparisons: ReplayEventComparison[] = session.events.map((event) =>

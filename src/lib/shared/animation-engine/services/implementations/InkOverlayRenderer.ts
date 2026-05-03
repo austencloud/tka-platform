@@ -12,7 +12,6 @@
  * explicit clear() (e.g. sequence boundary).
  */
 
-import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
 import type { Ink2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Ink2DRenderer,
@@ -20,7 +19,7 @@ import {
 } from "$lib/shared/effects/renderers/Ink2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class InkOverlayRenderer implements IInkOverlayRenderer {
+export class InkOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Ink2DRenderer();

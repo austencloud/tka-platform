@@ -1,8 +1,7 @@
 import { Capacitor } from "@capacitor/core";
-import type { IPlatformDetector } from "../contracts/IPlatformDetector";
 import { isDesktop } from "../../../desktop/isDesktop";
 
-export class PlatformDetector implements IPlatformDetector {
+export class PlatformDetector {
 	get isNative(): boolean {
 		return Capacitor.isNativePlatform();
 	}

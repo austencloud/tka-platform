@@ -9,7 +9,7 @@
   import { onMount, onDestroy } from "svelte";
   import { getPromoOrchestrator } from "$lib/features/promo-generator/getPromoOrchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { IPromoOrchestrator } from "../services/contracts/IPromoOrchestrator";
+  import type { PromoOrchestrator } from "../services/implementations/PromoOrchestrator";
   import type {
     PromoGeneratorState,
     AnimationPreset,
@@ -36,7 +36,7 @@
   // State
   let canvas: HTMLCanvasElement | null = $state(null);
   let canvasContainer: HTMLDivElement | null = $state(null);
-  let orchestrator: IPromoOrchestrator | null = $state(null);
+  let orchestrator: PromoOrchestrator | null = $state(null);
   let generatorState: PromoGeneratorState = $state({
     isReady: false,
     isExporting: false,

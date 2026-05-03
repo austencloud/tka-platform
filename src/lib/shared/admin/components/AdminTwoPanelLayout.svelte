@@ -25,7 +25,7 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { onMount } from "svelte";
   import type { Snippet } from "svelte";
-  import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
   import { ADMIN_SPACING } from "../styles/admin-theme";
@@ -74,7 +74,7 @@
 
   // Setup DeviceDetector listener
   onMount(() => {
-    let deviceDetector: IDeviceDetector | null = null;
+    let deviceDetector: DeviceDetector | null = null;
     let cleanup: (() => void) | undefined;
 
     try {

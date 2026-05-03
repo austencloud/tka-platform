@@ -9,15 +9,15 @@ import { Point } from "fabric";
 import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
-import type { IArrowLocationCalculator } from "../../../positioning/calculation/services/contracts/IArrowLocationCalculator";
-import type { IArrowQuadrantCalculator } from "../contracts/IArrowQuadrantCalculator";
+import type { ArrowLocationCalculator } from "../../../positioning/calculation/services/implementations/ArrowLocationCalculator";
+import type { ArrowQuadrantCalculator } from "./ArrowQuadrantCalculator";
 
 export class ArrowAdjustmentProcessor {
-  constructor(private quadrantCalculator: IArrowQuadrantCalculator) {}
+  constructor(private quadrantCalculator: ArrowQuadrantCalculator) {}
 
   getBasicAdjustment(
     motion: MotionData,
-    locationCalculator: IArrowLocationCalculator
+    locationCalculator: ArrowLocationCalculator
   ): Point {
     /**
      * Get basic adjustment for synchronous operations with directional tuple processing.

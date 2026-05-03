@@ -1,11 +1,10 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
-import type { IFeedbackSorter } from "../contracts/IFeedbackSorter";
 import type { IClaimStatusDeriver } from "../contracts/IClaimStatusDeriver";
 import { ClaimStatusDeriver } from "./ClaimStatusDeriver";
 import { SwimLaneDeriver } from "./SwimLaneDeriver";
 import type { SwimLane } from "../contracts/ISwimLaneDeriver";
 
-export class FeedbackSorter implements IFeedbackSorter {
+export class FeedbackSorter {
   private readonly PRIORITY_ORDER: Record<string, number> = {
     "": 0, // No priority - highest sort priority (appears first)
     high: 1,

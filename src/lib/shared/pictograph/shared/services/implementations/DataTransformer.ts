@@ -14,11 +14,10 @@ import type {
 import { createPictographData } from "../../domain/factories/createPictographData";
 import type { MotionData } from "../../domain/models/MotionData";
 import type { PictographData } from "../../domain/models/PictographData";
-import type { IDataTransformer } from "../contracts/IDataTransformer";
 
 // Interface moved to contracts/IDataTransformer.ts
 
-export class DataTransformer implements IDataTransformer {
+export class DataTransformer {
   /**
    * Convert step data to pictograph data
    */

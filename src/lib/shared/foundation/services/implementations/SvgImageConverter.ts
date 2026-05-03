@@ -1,6 +1,5 @@
-import type { ISvgImageConverter } from "../contracts/ISvgImageConverter";
 
-export class SvgImageConverter implements ISvgImageConverter {
+export class SvgImageConverter {
   private activeBlobUrls = new Set<string>();
 
   /**

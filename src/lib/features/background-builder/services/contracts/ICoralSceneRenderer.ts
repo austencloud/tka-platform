@@ -1,7 +1,7 @@
 /**
  * Contract for placing and rendering coral silhouettes along the ocean floor.
  *
- * The renderer loads assets via ICoralAssetLoader, distributes coral across
+ * The renderer loads assets via CoralAssetLoader, distributes coral across
  * the canvas bottom with depth layering, and animates a gentle sway.
  */
 

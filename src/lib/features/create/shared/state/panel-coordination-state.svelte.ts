@@ -41,7 +41,7 @@ function getCreateModuleStateRefLazy() {
 
 // Re-export TargetHand from standalone types file for backwards compatibility
 // The type is defined in domain/types/panel-types.ts to break circular dependency
-// with ISequenceTransformer which also needs this type
+// with SequenceTransformer which also needs this type
 export type { TargetHand } from "../domain/types/panel-types";
 
 // Import for local use

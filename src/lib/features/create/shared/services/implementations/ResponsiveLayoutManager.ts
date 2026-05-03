@@ -1,4 +1,4 @@
-import type { IViewportManager } from "$lib/shared/device/services/contracts/IViewportManager";
+import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
 /**
  * Responsive Layout Service Implementation
  *
@@ -8,19 +8,18 @@ import type { IViewportManager } from "$lib/shared/device/services/contracts/IVi
  * Domain: Create module - Sequence Construction Interface
  */
 
-import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
-import type { IResponsiveLayoutManager } from "../contracts/IResponsiveLayoutManager";
 import type { LayoutConfiguration } from "../../orchestration/types";
 
-export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
+export class ResponsiveLayoutManager {
   private layoutChangeCallbacks: Set<(config: LayoutConfiguration) => void> =
     new Set();
   private viewportUnsubscribe: (() => void) | null = null;
 
   constructor(
-    private deviceDetector: IDeviceDetector,
-    private viewportService: IViewportManager
+    private deviceDetector: DeviceDetector,
+    private viewportService: ViewportManager
   ) {}
 
   initialize(): void {

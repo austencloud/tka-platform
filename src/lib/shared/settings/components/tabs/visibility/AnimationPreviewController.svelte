@@ -12,7 +12,7 @@
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TurnPattern } from "$lib/features/create/shared/domain/models/TurnPatternData";
   import { Timestamp } from "firebase/firestore";
@@ -23,7 +23,7 @@
   const visibilityManager = getAnimationVisibilityManager();
 
   let playbackController: IAnimationPlaybackController | null = null;
-  let browseLoader: IBrowseLoader | null = null;
+  let browseLoader: PublicSequencesLoader | null = null;
 
   let loading = $state(true);
   let error = $state<string | null>(null);

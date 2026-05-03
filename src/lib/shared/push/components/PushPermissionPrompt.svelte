@@ -8,7 +8,7 @@
 <script lang="ts">
 
 import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
-  import type { IFCMTokenManager } from "../services/contracts/IFCMTokenManager";
+  import type { FCMTokenManager } from "$lib/shared/push/services/implementations/FCMTokenManager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {

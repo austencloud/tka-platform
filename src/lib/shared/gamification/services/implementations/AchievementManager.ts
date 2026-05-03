@@ -40,10 +40,9 @@ import type {
   XPGainEvent,
   XPEventMetadata,
 } from "../../domain/models/achievement-models";
-import type { IAchievementManager } from "../contracts/IAchievementManager";
 import type { GamificationNotifier } from "./GamificationNotifier";
 
-export class AchievementManager implements IAchievementManager {
+export class AchievementManager {
   private _initialized = false;
   private _notificationService: GamificationNotifier | null = null;
 

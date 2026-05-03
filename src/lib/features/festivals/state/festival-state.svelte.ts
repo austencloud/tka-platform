@@ -2,17 +2,17 @@ import type { Festival } from "../domain/models/festival";
 import type { UserFestivalTracker } from "../domain/models/festival-tracker";
 import type { TeachingPortfolio } from "../domain/models/teaching-portfolio";
 import type { IFestivalLoader, FestivalFilters } from "../services/contracts/IFestivalLoader";
-import type { IFestivalTrackerRepository } from "../services/contracts/IFestivalTrackerRepository";
-import type { IFestivalAttendanceRepository } from "../services/contracts/IFestivalAttendanceRepository";
-import type { IWorkshopPortfolioRepository } from "../services/contracts/IWorkshopPortfolioRepository";
+import type { FestivalTrackerRepository } from "../services/implementations/FestivalTrackerRepository";
+import type { FestivalAttendanceRepository } from "../services/implementations/FestivalAttendanceRepository";
+import type { WorkshopPortfolioRepository } from "../services/implementations/WorkshopPortfolioRepository";
 
 export type FestivalTab = "discover" | "map" | "calendar" | "portfolio";
 
 export function createFestivalState(
   loader: IFestivalLoader,
-  trackerRepo: IFestivalTrackerRepository,
-  attendanceRepo: IFestivalAttendanceRepository,
-  portfolioRepo: IWorkshopPortfolioRepository
+  trackerRepo: FestivalTrackerRepository,
+  attendanceRepo: FestivalAttendanceRepository,
+  portfolioRepo: WorkshopPortfolioRepository
 ) {
   let _festivals = $state<Festival[]>([]);
   let _trackers = $state<Map<string, UserFestivalTracker>>(new Map());

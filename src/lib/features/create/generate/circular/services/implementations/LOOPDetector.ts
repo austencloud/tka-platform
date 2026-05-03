@@ -21,8 +21,8 @@ import type {
   LOOPDetectionResult,
   CompoundPattern,
 } from "../contracts/ILOOPDetector";
-import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
-import type { ILOOPTypeResolver } from "../../../shared/services/contracts/ILOOPTypeResolver";
+import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import type { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import {
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
@@ -42,8 +42,8 @@ import {
 
 export class LOOPDetector implements ILOOPDetector {
   constructor(
-    private loopabilityChecker: ISequenceLoopabilityChecker,
-    private LOOPTypeResolver: ILOOPTypeResolver
+    private loopabilityChecker: SequenceLoopabilityChecker,
+    private LOOPTypeResolver: LOOPTypeResolver
   ) {}
 
   // ============ POSITION DERIVATION ============

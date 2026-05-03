@@ -10,7 +10,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { authState } from "../../../auth/state/authState.svelte";
-import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
+import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
@@ -18,7 +18,7 @@ import type { IAuthenticator } from "../../../auth/services/contracts/IAuthentic
   import ConfirmDialog from "../../../foundation/ui/ConfirmDialog.svelte";
 
   // Services
-  let authService = $state<IAuthenticator | null>(null);
+  let authService = $state<Authenticator | null>(null);
   let hapticService = $state<IHapticFeedback | null>(null);
 
   // UI State

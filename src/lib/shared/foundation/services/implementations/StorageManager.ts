@@ -1,6 +1,5 @@
-import type { IStorageManager } from "../contracts/IStorageManager";
 
-export class StorageManager implements IStorageManager {
+export class StorageManager {
   safeSessionStorageGet<T>(
     key: string,
     defaultValue: T | null = null

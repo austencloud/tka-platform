@@ -26,25 +26,25 @@ import { getTTSProvider } from "$lib/shared/voice-control/getTTSProvider";
 import { getVoiceSessionRecorder } from "$lib/shared/voice-control/getVoiceSessionRecorder";
 import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetector";
   import { onMount } from "svelte";
-  import type { IWakeWordDetector } from "../services/contracts/IWakeWordDetector";
-  import type { ICommandInterpreter } from "../services/contracts/ICommandInterpreter";
+  import type { WakeWordDetector } from "$lib/shared/voice-control/services/implementations/WakeWordDetector";
+  import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
   import type { ICommandDispatcher } from "../services/contracts/ICommandDispatcher";
-  import type { IIntentResolver } from "../services/contracts/IIntentResolver";
-  import type { ITTSProvider } from "../services/contracts/ITTSProvider";
+  import type { LLMIntentResolver } from "$lib/shared/voice-control/services/implementations/LLMIntentResolver";
+  import type { WebSpeechTTSProvider } from "$lib/shared/voice-control/services/implementations/WebSpeechTTSProvider";
   import type { IVoiceSessionRecorder } from "../services/contracts/IVoiceSessionRecorder";
-  import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
+  import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import { voiceControlState } from "../state/voice-control-state.svelte";
   import { classifyTier } from "../ai/tier-classifier";
   import type { VoiceCommand } from "../domain/voice-command-types";
 
-  let wakeWordDetector: IWakeWordDetector | null = null;
-  let commandInterpreter: ICommandInterpreter | null = null;
+  let wakeWordDetector: WakeWordDetector | null = null;
+  let commandInterpreter: CommandInterpreter | null = null;
   let commandDispatcher: ICommandDispatcher | null = null;
-  let intentResolver: IIntentResolver | null = null;
-  let ttsProvider: ITTSProvider | null = null;
+  let intentResolver: LLMIntentResolver | null = null;
+  let ttsProvider: WebSpeechTTSProvider | null = null;
   let sessionRecorder: IVoiceSessionRecorder | null = null;
-  let sessionRepository: IVoiceSessionRepository | null = null;
+  let sessionRepository: VoiceSessionRepository | null = null;
 
   function getContext() {
     return {

@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import type { IGenerationOrchestrator } from './services/contracts/IGenerationOrchestrator';
 import { GenerationOrchestrator } from './services/implementations/GenerationOrchestrator';
 import { BrowserVariationProvider } from './services/implementations/BrowserVariationProvider';
 import { BuildResultTransformer } from './services/implementations/BuildResultTransformer';
@@ -8,9 +7,9 @@ import { getReversalDetector } from '$lib/features/create/shared/getReversalDete
 import { getOrientationCycleDetector } from '$lib/features/create/generate/circular/getOrientationCycleDetector';
 import { getSequenceMetadataManager } from './getSequenceMetadataManager';
 
-let instance: IGenerationOrchestrator | null = null;
+let instance: GenerationOrchestrator | null = null;
 
-export function getGenerationOrchestrator(): IGenerationOrchestrator {
+export function getGenerationOrchestrator(): GenerationOrchestrator {
 	if (!browser) throw new Error('getGenerationOrchestrator() is browser-only');
 	if (!instance) {
 		const metadataManager = getSequenceMetadataManager();

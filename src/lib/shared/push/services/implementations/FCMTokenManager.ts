@@ -13,11 +13,10 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance, app } from "$lib/shared/auth/firebase";
 import { VAPID_KEY } from "../../config/vapid";
-import type { IFCMTokenManager } from "../contracts/IFCMTokenManager";
 
 const FCM_TOKENS_COLLECTION = "fcmTokens";
 
-export class FCMTokenManager implements IFCMTokenManager {
+export class FCMTokenManager {
 	private currentToken: string | null = null;
 
 	async registerToken(userId: string): Promise<string | null> {

@@ -1,4 +1,3 @@
-import type { IReflectionComparer } from "../../contracts/IReflectionComparer";
 import type {
   ColorData,
   TransformationCheckResult,
@@ -16,7 +15,7 @@ import {
 /**
  * Service for detecting reflection transformations (mirror and flip) between beat pairs.
  */
-export class ReflectionComparer implements IReflectionComparer {
+export class ReflectionComparer {
   checkReflections(
     b1Blue: ColorData,
     b1Red: ColorData,

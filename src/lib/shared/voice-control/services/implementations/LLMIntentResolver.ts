@@ -10,7 +10,6 @@
  * - Graceful degradation: network error = same behavior as today
  */
 
-import type { IIntentResolver } from "../contracts/IIntentResolver";
 import type { IntentResolution, VoiceCommandRequest, VoiceCommandResponse } from "../../domain/intent-resolution-types";
 import type { CommandContext, VoiceCommand } from "../../domain/voice-command-types";
 import { VALID_CATEGORIES } from "../../ai/action-catalog";
@@ -18,7 +17,7 @@ import { VALID_CATEGORIES } from "../../ai/action-catalog";
 const TIMEOUT_MS = 2000;
 const ENDPOINT = "/api/tika/voice-command";
 
-export class LLMIntentResolver implements IIntentResolver {
+export class LLMIntentResolver {
   async resolve(
     rawText: string,
     context: CommandContext,

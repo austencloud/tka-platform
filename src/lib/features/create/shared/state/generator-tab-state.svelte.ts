@@ -11,11 +11,11 @@
  * ✅ Each tab maintains its own independent sequence state
  */
 
-import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
-import type { ISequencePersister } from "../services/contracts/ISequencePersister";
-import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceStatsCalculator";
-import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
-import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
@@ -35,11 +35,11 @@ import { undoManager } from "../services/implementations/UndoManager";
  * @returns Reactive state object with getters and state mutations
  */
 export function createGeneratorTabState(
-  sequenceService?: ISequenceRepository,
-  SequencePersister?: ISequencePersister,
-  sequenceStatisticsService?: ISequenceStatsCalculator,
-  SequenceTransformer?: ISequenceTransformer,
-  sequenceValidationService?: ISequenceValidator
+  sequenceService?: SequenceRepository,
+  SequencePersister?: SequencePersister,
+  sequenceStatisticsService?: SequenceStatsCalculator,
+  SequenceTransformer?: SequenceTransformer,
+  sequenceValidationService?: SequenceValidator
 ) {
   // ============================================================================
   // REACTIVE STATE (Generator-specific)

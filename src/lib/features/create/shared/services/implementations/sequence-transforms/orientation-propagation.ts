@@ -14,7 +14,7 @@ import type {
 import {
   MotionColor
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 
 /**
  * Propagate orientations for a single color through all steps.
@@ -24,7 +24,7 @@ export function propagateOrientationsForColor(
   steps: StepData[],
   color: MotionColor,
   initialOrientation: Orientation,
-  orientationCalculator: IOrientationCalculator
+  orientationCalculator: OrientationCalculator
 ): StepData[] {
   const updatedSteps = [...steps];
   let previousEndOrientation: Orientation = initialOrientation;
@@ -72,7 +72,7 @@ export function propagateOrientationsForColor(
  */
 export function recalculateAllOrientations(
   sequence: SequenceData,
-  orientationCalculator: IOrientationCalculator
+  orientationCalculator: OrientationCalculator
 ): SequenceData {
   if (sequence.steps.length === 0 || !sequence.startPosition) {
     return sequence;

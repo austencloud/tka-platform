@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IImageModeHandLandmarker } from './services/contracts/IImageModeHandLandmarker';
 import { ImageModeHandLandmarker } from './services/implementations/ImageModeHandLandmarker';
 
-let instance: IImageModeHandLandmarker | null = null;
+let instance: ImageModeHandLandmarker | null = null;
 
-export function getImageModeHandLandmarker(): IImageModeHandLandmarker {
+export function getImageModeHandLandmarker(): ImageModeHandLandmarker {
 	if (!browser) throw new Error('getImageModeHandLandmarker() is browser-only');
 	return instance ??= new ImageModeHandLandmarker();
 }

@@ -1,5 +1,4 @@
 import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
-import type { ICanvasFrameCapturer } from "../contracts/ICanvasFrameCapturer";
 
 /**
  * Canvas Frame Capturer
@@ -18,7 +17,7 @@ import type { ICanvasFrameCapturer } from "../contracts/ICanvasFrameCapturer";
  * support has createImageBitmap without VideoFrame, and the worker's
  * WASM encoder can't consume an ImageBitmap without another readback.
  */
-export class CanvasFrameCapturer implements ICanvasFrameCapturer {
+export class CanvasFrameCapturer {
   readonly preferredKind: "video-frame" | "image-data";
 
   constructor() {

@@ -12,12 +12,11 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import type { IFavoriteConfigRepository } from "../contracts/IFavoriteConfigRepository";
 import type { FavoriteConfig, CommunityFavorite } from "../../domain/models/favorite-config";
 import type { UIGenerationConfig } from "../../state/generate-config.svelte";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 
-export class FavoriteConfigRepository implements IFavoriteConfigRepository {
+export class FavoriteConfigRepository {
   private readonly USERS_COLLECTION = "users";
 
   async getMyFavorite(userId: string): Promise<FavoriteConfig | null> {

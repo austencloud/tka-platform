@@ -14,25 +14,25 @@ import type { ITrailCapturer } from "$lib/features/compose/services/contracts/IT
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
-import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
-import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
-import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
+import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
+import type { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
+import type { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
 import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTipTracker";
-import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
+import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer'
 import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
-import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
-import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
-import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
-import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
-import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
-import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRenderer";
-import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
-import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
-import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
-import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
-import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
-import type { IPulseOverlayRenderer } from "../contracts/IPulseOverlayRenderer";
+import type { ZapOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/ZapOverlayRenderer'
+import type { SparklesOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SparklesOverlayRenderer'
+import type { EchoOverlayRenderer } from "./EchoOverlayRenderer";
+import type { BloomOverlayRenderer } from "./BloomOverlayRenderer";
+import type { WaterOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/WaterOverlayRenderer'
+import type { BubblesOverlayRenderer } from "./BubblesOverlayRenderer";
+import type { PetalsOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/PetalsOverlayRenderer'
+import type { SmokeOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SmokeOverlayRenderer'
+import type { InkOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/InkOverlayRenderer'
+import type { FrostOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/FrostOverlayRenderer'
+import type { SilkOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SilkOverlayRenderer'
+import type { PulseOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/PulseOverlayRenderer'
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
@@ -109,32 +109,32 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private renderer: IAnimationRenderer | null = null;
   private TrailCapturer: ITrailCapturer | null = null;
   private pathCache: AnimationPathCache | null = null;
-  private frameBudgetMonitor: IFrameBudgetMonitor | null = null;
-  private fireRenderer: IFireOverlayRenderer | null = null;
-  private charcoalRenderer: ICharcoalRenderer | null = null;
+  private frameBudgetMonitor: FrameBudgetMonitor | null = null;
+  private fireRenderer: WebGLFireRenderer | null = null;
+  private charcoalRenderer: CharcoalSparkRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
-  private ledRenderer: ILedOverlayRenderer | null = null;
+  private ledRenderer: WebGLLedRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private trailOverlay: ITrailOverlayCanvas | null = null;
-  private zapRenderer: IZapOverlayRenderer | null = null;
-  private sparklesRenderer: ISparklesOverlayRenderer | null = null;
-  private echoRenderer: IEchoOverlayRenderer | null = null;
-  private bloomRenderer: IBloomOverlayRenderer | null = null;
-  private waterRenderer: IWaterOverlayRenderer | null = null;
+  private zapRenderer: ZapOverlayRenderer | null = null;
+  private sparklesRenderer: SparklesOverlayRenderer | null = null;
+  private echoRenderer: EchoOverlayRenderer | null = null;
+  private bloomRenderer: BloomOverlayRenderer | null = null;
+  private waterRenderer: WaterOverlayRenderer | null = null;
   private lastWaterFrameTime: number = 0;
-  private bubblesRenderer: IBubblesOverlayRenderer | null = null;
+  private bubblesRenderer: BubblesOverlayRenderer | null = null;
   private lastBubblesFrameTime: number = 0;
-  private petalsRenderer: IPetalsOverlayRenderer | null = null;
+  private petalsRenderer: PetalsOverlayRenderer | null = null;
   private lastPetalsFrameTime: number = 0;
-  private smokeRenderer: ISmokeOverlayRenderer | null = null;
+  private smokeRenderer: SmokeOverlayRenderer | null = null;
   private lastSmokeFrameTime: number = 0;
-  private inkRenderer: IInkOverlayRenderer | null = null;
+  private inkRenderer: InkOverlayRenderer | null = null;
   private lastInkFrameTime: number = 0;
-  private frostRenderer: IFrostOverlayRenderer | null = null;
+  private frostRenderer: FrostOverlayRenderer | null = null;
   private lastFrostFrameTime: number = 0;
-  private silkRenderer: ISilkOverlayRenderer | null = null;
+  private silkRenderer: SilkOverlayRenderer | null = null;
   private lastSilkFrameTime: number = 0;
-  private pulseRenderer: IPulseOverlayRenderer | null = null;
+  private pulseRenderer: PulseOverlayRenderer | null = null;
   private lastPulseFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;

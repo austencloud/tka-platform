@@ -5,7 +5,7 @@
   import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import { browseScrollState } from "$lib/features/browse/shared/state/BrowseScrollState.svelte";
   import BrowseThumbnailSkeleton from "$lib/features/browse/sequences/display/components/BrowseThumbnailSkeleton.svelte";
-  import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { BrowseEngine } from "../engine/types";
   import BrowseToolbar from "./BrowseToolbar.svelte";
@@ -45,7 +45,7 @@
   const isEager = $derived(eagerOverride ?? (layout !== "fullpage"));
   const disableVirtualization = $derived(layout === "minimal");
 
-  let thumbnailService: IBrowseThumbnailProvider | null = $state(null);
+  let thumbnailService: BrowseThumbnailProvider | null = $state(null);
   let pinchController: PinchZoomGridController | null = null;
   let contentEl: HTMLElement | null = $state(null);
   let containerEl: HTMLElement | null = $state(null);

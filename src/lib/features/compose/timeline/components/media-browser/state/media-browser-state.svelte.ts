@@ -4,10 +4,10 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
-import type { IBrowseFilter } from "$lib/features/browse/sequences/display/services/contracts/IBrowseFilter";
-import type { IBrowseSorter } from "$lib/features/browse/sequences/display/services/contracts/IBrowseSorter";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
+import type { BrowseFilter } from "$lib/features/browse/sequences/display/services/implementations/BrowseFilter";
+import type { BrowseSorter } from "$lib/features/browse/sequences/display/services/implementations/BrowseSorter";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
@@ -26,10 +26,10 @@ export interface MediaFilter {
 
 export function createMediaBrowserState() {
   // Services
-  let loaderService = $state<IBrowseLoader | null>(null);
-  let thumbnailService = $state<IBrowseThumbnailProvider | null>(null);
-  let filterService = $state<IBrowseFilter | null>(null);
-  let sortService = $state<IBrowseSorter | null>(null);
+  let loaderService = $state<PublicSequencesLoader | null>(null);
+  let thumbnailService = $state<BrowseThumbnailProvider | null>(null);
+  let filterService = $state<BrowseFilter | null>(null);
+  let sortService = $state<BrowseSorter | null>(null);
   let servicesReady = $state(false);
 
   // Core state

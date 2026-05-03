@@ -10,14 +10,14 @@ import type {
   IConversationMemoryRetriever,
   ConversationMemorySummary,
 } from "../contracts/IConversationMemoryRetriever";
-import type { ITikaSessionRepository } from "../contracts/ITikaSessionRepository";
+import type { TikaSessionRepository } from "./TikaSessionRepository";
 import type { TikaSessionPreview } from "../../domain/models/tika-conversation-models";
 
 const MAX_MEMORY_CHARS = 500;
 const DEFAULT_MATCH_LIMIT = 3;
 
 export class ConversationMemoryRetriever implements IConversationMemoryRetriever {
-  constructor(private readonly sessionRepository: ITikaSessionRepository) {}
+  constructor(private readonly sessionRepository: TikaSessionRepository) {}
 
   async findRelevantSessions(
     query: string,

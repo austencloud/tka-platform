@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ITrainingDataPersister } from './services/contracts/ITrainingDataPersister';
 import { TrainingDataPersister } from './services/implementations/TrainingDataPersister';
 
-let instance: ITrainingDataPersister | null = null;
+let instance: TrainingDataPersister | null = null;
 
-export function getTrainingDataPersister(): ITrainingDataPersister {
+export function getTrainingDataPersister(): TrainingDataPersister {
 	if (!browser) throw new Error('getTrainingDataPersister() is browser-only');
 	return instance ??= new TrainingDataPersister();
 }

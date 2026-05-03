@@ -35,13 +35,13 @@ import {
   getWeeklyChallengeId,
   getCurrentWeekNumber,
 } from "../../domain/models/challenge-models";
-import type { IAchievementManager } from "../contracts/IAchievementManager";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 
 export class WeeklyChallengeManager {
   private _initialized = false;
-  private _achievementService: IAchievementManager | null = null;
+  private _achievementService: AchievementManager | null = null;
 
-  constructor(achievementService: IAchievementManager) {
+  constructor(achievementService: AchievementManager) {
     this._achievementService = achievementService;
   }
 

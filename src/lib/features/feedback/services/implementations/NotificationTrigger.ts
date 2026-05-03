@@ -61,7 +61,7 @@ import type {
   ModerationNotification,
 } from "../../domain/models/notification-models";
 import { getPreferenceKeyForType } from "../../domain/models/notification-models";
-import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
+import type { NotificationPreferencesManager } from "$lib/features/feedback/services/implementations/NotificationPreferencesManager";
 
 import { getNotificationPreferencesManager } from "$lib/features/feedback/getNotificationPreferencesManager";
 

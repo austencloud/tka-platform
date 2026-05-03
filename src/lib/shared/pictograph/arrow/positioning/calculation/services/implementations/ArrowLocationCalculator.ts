@@ -12,7 +12,6 @@
  * No UI dependencies, completely testable in isolation.
  */
 
-import type { IArrowLocationCalculator } from "../contracts/IArrowLocationCalculator";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
@@ -20,7 +19,7 @@ import type { MotionData } from "../../../../../shared/domain/models/MotionData"
 import { DashLocationCalculator, dashLocationCalculator } from "./DashLocationCalculator";
 
 
-export class ArrowLocationCalculator implements IArrowLocationCalculator {
+export class ArrowLocationCalculator {
   /**
    * Pure algorithmic service for calculating arrow locations.
    *
@@ -101,7 +100,7 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
 
   calculateLocation(
     motion: MotionData,
-    pictographData: PictographData
+    pictographData?: PictographData
   ): GridLocation {
     /**
      * Calculate arrow location based on motion type and data.
@@ -124,7 +123,7 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
       case MotionType.FLOAT:
         return this.calculateShiftLocation(motion);
       case MotionType.DASH:
-        return this.calculateDashLocation(motion, pictographData);
+        return this.calculateDashLocation(motion, pictographData!);
     }
   }
 

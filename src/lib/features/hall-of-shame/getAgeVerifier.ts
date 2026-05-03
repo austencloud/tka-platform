@@ -1,7 +1,6 @@
-import type { IAgeVerifier } from './services/contracts/IAgeVerifier';
 import { AgeVerifier } from './services/implementations/AgeVerifier';
 
-let instance: IAgeVerifier | null = null;
-export function getAgeVerifier(): IAgeVerifier {
+let instance: AgeVerifier | null = null;
+export function getAgeVerifier(): AgeVerifier {
   return instance ??= new AgeVerifier();
 }

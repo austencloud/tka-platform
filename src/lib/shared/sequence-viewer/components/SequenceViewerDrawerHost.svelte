@@ -30,7 +30,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
@@ -136,7 +136,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   onMount(() => {
     let deviceCleanup: (() => void) | undefined;
     try {
-      const deviceDetector: IDeviceDetector = getDeviceDetector();
+      const deviceDetector: DeviceDetector = getDeviceDetector();
       responsiveSettings = deviceDetector.getResponsiveSettings();
 
       deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {

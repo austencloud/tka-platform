@@ -5,7 +5,6 @@
  * Coordinates scene management, animations, and video export.
  */
 
-import type { IPromoOrchestrator } from "../contracts/IPromoOrchestrator";
 import type { PromoSceneManager } from "./PromoSceneManager";
 import type { ScreenshotInjector } from "./ScreenshotInjector";
 import type {
@@ -27,7 +26,7 @@ import type {
   ScreenshotContent,
 } from "../../domain/promo-models";
 
-export class PromoOrchestrator implements IPromoOrchestrator {
+export class PromoOrchestrator {
   private animationFrame: number | null = null;
   private subscribers: Set<(state: PromoGeneratorState) => void> = new Set();
 

@@ -17,7 +17,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
 // ===== Session-local Persistence (localStorage) =====
 const SESSION_STORAGE_KEY = "tka-start-end-session-options";
@@ -112,7 +112,7 @@ export function createStartEndOptionsState(
   initialOptions?: Partial<StartEndOptions>
 ) {
   // Get settings service for Firebase-synced blocked positions
-  let settingsState: ISettingsState | null = null;
+  let settingsState: SettingsState | null = null;
   try {
     settingsState = settingsService;
   } catch {

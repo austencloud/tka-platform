@@ -14,9 +14,8 @@ import type {
   OrganizedSection,
   SortMethod,
 } from "../../domain/option-picker-types";
-import type { IOptionOrganizer } from "../contracts/IOptionOrganizer";
 
-export class OptionOrganizer implements IOptionOrganizer {
+export class OptionOrganizer {
   /**
    * Organize pictographs by sort method into sections
    * OPTIMIZED: Single method eliminates code duplication from original service

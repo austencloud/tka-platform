@@ -13,7 +13,7 @@
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { IAnimationRenderer } from "../contracts/IAnimationRenderer";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -109,7 +109,7 @@ export class SequenceFramePreRenderer {
   private isDisposed = false;
 
   constructor(
-    private readonly orchestrator: ISequenceAnimationOrchestrator,
+    private readonly orchestrator: SequenceAnimationOrchestrator,
     private readonly renderer: IAnimationRenderer
   ) {}
 

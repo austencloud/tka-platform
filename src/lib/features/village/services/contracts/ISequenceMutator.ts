@@ -14,7 +14,7 @@ export interface MutationResult {
 
 /**
  * Phase 1: synchronous, operates on sequence IDs only.
- * Phase 2+ will accept full SequenceData and wire to ISequenceTransformer.
+ * Phase 2+ will accept full SequenceData and wire to SequenceTransformer.
  */
 export interface ISequenceMutator {
 	tryInventFrom(sourceSequenceId: string): MutationResult;

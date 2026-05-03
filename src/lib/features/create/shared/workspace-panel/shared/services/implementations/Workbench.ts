@@ -12,12 +12,12 @@ import { updateSequenceData } from "$lib/shared/foundation/domain/models/Sequenc
 import { createStepData } from "../../../../domain/factories/createStepData";
 import type { StepData } from "../../../../domain/models/StepData";
 import type { StartPositionData } from "../../../../domain/models/StartPositionData";
-import type { IPersistenceService } from "../../../../services/contracts/IPersister";
-import type { ISequenceRepository } from "../../../../services/contracts/ISequenceRepository";
+import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 export class Workbench {
   constructor(
-    private sequenceService: ISequenceRepository,
-    private persistenceService: IPersistenceService
+    private sequenceService: SequenceRepository,
+    private persistenceService: DexiePersistenceService
   ) {}
 
   // ============================================================================

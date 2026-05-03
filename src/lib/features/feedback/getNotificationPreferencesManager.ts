@@ -1,7 +1,6 @@
-import type { INotificationPreferencesManager } from '$lib/shared/push/services/contracts/INotificationPreferencesManager';
 import { NotificationPreferencesManager } from './services/implementations/NotificationPreferencesManager';
 
-let instance: INotificationPreferencesManager | null = null;
-export function getNotificationPreferencesManager(): INotificationPreferencesManager {
+let instance: NotificationPreferencesManager | null = null;
+export function getNotificationPreferencesManager(): NotificationPreferencesManager {
   return instance ??= new NotificationPreferencesManager();
 }

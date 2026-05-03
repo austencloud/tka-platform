@@ -20,7 +20,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
@@ -58,7 +58,7 @@ function shouldTransformHand(
 export async function mirrorBeat(
   step: StepData,
   gridMode: GridMode,
-  positionDeriver: IGridPositionDeriver,
+  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<StepData> {
@@ -108,7 +108,7 @@ export async function mirrorBeat(
 export async function flipBeat(
   step: StepData,
   gridMode: GridMode,
-  positionDeriver: IGridPositionDeriver,
+  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<StepData> {
@@ -156,7 +156,7 @@ export async function rotateBeat(
   step: StepData,
   rotationAmount: number,
   gridMode: GridMode,
-  positionDeriver: IGridPositionDeriver,
+  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<StepData> {

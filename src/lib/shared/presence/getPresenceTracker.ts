@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IPresenceTracker } from './services/contracts/IPresenceTracker';
 import { PresenceTracker } from './services/implementations/PresenceTracker';
 
-let instance: IPresenceTracker | null = null;
+let instance: PresenceTracker | null = null;
 
-export function getPresenceTracker(): IPresenceTracker {
+export function getPresenceTracker(): PresenceTracker {
 	if (!browser) throw new Error('getPresenceTracker() is browser-only');
 	return instance ??= new PresenceTracker();
 }

@@ -20,12 +20,11 @@ import {
 	getCountFromServer
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { IShameQueueManager } from '../contracts/IShameQueueManager';
 import type { HallOfShameEntry, ShameCategory } from '../../domain/models/hall-of-shame-models';
 
 const REPORT_THRESHOLD = 5;
 
-export class ShameQueueManager implements IShameQueueManager {
+export class ShameQueueManager {
 	private readonly COLLECTION = 'hallOfShame';
 	private readonly REPORTS_COLLECTION = 'hallOfShameReports';
 

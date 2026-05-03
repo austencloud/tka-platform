@@ -21,9 +21,8 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { AppSettings } from "../../domain/AppSettings";
-import type { ISettingsPersister } from "../contracts/ISettingsPersister";
 
-export class FirebaseSettingsPersister implements ISettingsPersister {
+export class FirebaseSettingsPersister {
   private unsubscribe: Unsubscribe | null = null;
 
   /**

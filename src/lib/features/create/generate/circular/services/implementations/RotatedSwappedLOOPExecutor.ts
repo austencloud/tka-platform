@@ -20,13 +20,13 @@ import {
   MotionColor,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type {
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
   getHandRotationDirection,
   getLocationMapForHandRotation,
@@ -38,8 +38,8 @@ import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class RotatedSwappedLOOPExecutor {
   constructor(
-    private OrientationCalculator: IOrientationCalculator,
-    private gridPositionDeriver: IGridPositionDeriver
+    private OrientationCalculator: OrientationCalculator,
+    private gridPositionDeriver: GridPositionDeriver
   ) {}
 
   /**

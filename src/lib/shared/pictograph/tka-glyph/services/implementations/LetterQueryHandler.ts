@@ -6,7 +6,7 @@
  */
 
 import type { CodexLetterMapping } from "../../../../../features/learn/codex/domain/models/codex-models";
-import type { ICodexLetterMappingRepo } from "../../../../../features/learn/codex/services/contracts/ICodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "$lib/features/learn/codex/services/implementations/CodexLetterMappingRepo";
 import type { MotionType } from "../../../shared/domain/enums/pictograph-enums";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
 import type { ParsedCsvRow } from "../../../../../features/create/generate/shared/domain/csv-handling/CsvModels";
@@ -49,14 +49,14 @@ export class LetterQueryHandler implements ILetterQueryHandler {
     private csvPictographParser: ICSVPictographParser,
     // OPTIONAL: Only needed for Codex-specific methods (getPictographByLetter, getAllCodexPictographs)
     // NOT needed for getAllPictographVariations (used by Generate)
-    private letterMappingRepo?: ICodexLetterMappingRepo
+    private letterMappingRepo?: CodexLetterMappingRepo
   ) {}
 
   /**
    * Set the letter mapping repository after construction.
    * Needed when the repo is created in a different container (learn module).
    */
-  setLetterMappingRepo(repo: ICodexLetterMappingRepo): void {
+  setLetterMappingRepo(repo: CodexLetterMappingRepo): void {
     this.letterMappingRepo = repo;
   }
 

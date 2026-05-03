@@ -5,7 +5,6 @@
  * Sorts by date, ensures content variety, and handles pagination.
  */
 
-import type { IFeedLoader } from "../contracts/IFeedLoader";
 import type {
 	FeedItem,
 	FeedPage,
@@ -13,18 +12,18 @@ import type {
 	FeedContentType,
 	FeedItemIntent,
 } from "../../domain/models/feed-models";
-import type { IPublicVideoLoader } from "../contracts/IPublicVideoLoader";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { PublicVideoLoader } from "./PublicVideoLoader";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 const DEFAULT_LIMIT = 15;
 const LOAD_BATCH_SIZE = 30;
 
-export class FeedLoader implements IFeedLoader {
+export class FeedLoader {
 	constructor(
-		private videoLoader: IPublicVideoLoader,
-		private sequenceLoader: IBrowseLoader
+		private videoLoader: PublicVideoLoader,
+		private sequenceLoader: PublicSequencesLoader
 	) {}
 
 	async loadFeedPage(query: FeedQuery): Promise<FeedPage> {

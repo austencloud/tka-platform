@@ -11,11 +11,11 @@
  * ✅ Each tab maintains its own independent sequence state
  */
 
-import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
-import type { ISequencePersister } from "$lib/features/create/shared/services/contracts/ISequencePersister";
-import type { ISequenceStatsCalculator } from "$lib/features/create/shared/services/contracts/ISequenceStatsCalculator";
-import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
-import type { ISequenceValidator } from "$lib/features/create/shared/services/contracts/ISequenceValidator";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
@@ -52,11 +52,11 @@ const INPUT_WORD_STORAGE_KEY = "spell-input-word";
  * @returns Reactive state object with getters and state mutations
  */
 export function createSpellTabState(
-  sequenceService?: ISequenceRepository,
-  SequencePersister?: ISequencePersister,
-  sequenceStatisticsService?: ISequenceStatsCalculator,
-  SequenceTransformer?: ISequenceTransformer,
-  sequenceValidationService?: ISequenceValidator
+  sequenceService?: SequenceRepository,
+  SequencePersister?: SequencePersister,
+  sequenceStatisticsService?: SequenceStatsCalculator,
+  SequenceTransformer?: SequenceTransformer,
+  sequenceValidationService?: SequenceValidator
 ) {
   // ============================================================================
   // REACTIVE STATE (Spell-specific)

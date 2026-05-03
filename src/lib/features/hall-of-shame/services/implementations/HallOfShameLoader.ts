@@ -20,8 +20,7 @@ import {
 	getCountFromServer
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { IAgeVerifier } from '../contracts/IAgeVerifier';
-import type { IHallOfShameLoader } from '../contracts/IHallOfShameLoader';
+import type { AgeVerifier } from "./AgeVerifier";
 import type {
 	HallOfShameEntry,
 	ShameLoadParams,
@@ -31,10 +30,10 @@ import type {
 	SHAME_CATEGORIES
 } from '../../domain/models/hall-of-shame-models';
 
-export class HallOfShameLoader implements IHallOfShameLoader {
+export class HallOfShameLoader {
 	private readonly COLLECTION = 'hallOfShame';
 
-	constructor(private readonly ageVerifier: IAgeVerifier) {}
+	constructor(private readonly ageVerifier: AgeVerifier) {}
 
 	async loadApproved(params: ShameLoadParams): Promise<PaginatedShameResult> {
 		try {

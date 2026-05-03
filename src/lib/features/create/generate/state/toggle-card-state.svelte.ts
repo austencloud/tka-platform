@@ -12,7 +12,7 @@
 import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
 import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
 import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
 
@@ -39,7 +39,7 @@ export function createToggleCardState<T>(props: {
   // Services
   let hapticService = $state<IHapticFeedback | null>(null);
   let rippleService = $state<IRippleEffect | null>(null);
-  let deviceDetector = $state<IDeviceDetector | null>(null);
+  let deviceDetector = $state<DeviceDetector | null>(null);
 
   // Reactive state
   let isLandscapeMobile = $state(false);

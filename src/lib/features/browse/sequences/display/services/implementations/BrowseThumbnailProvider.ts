@@ -6,9 +6,8 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IBrowseThumbnailProvider } from "../contracts/IBrowseThumbnailProvider";
 
-export class BrowseThumbnailProvider implements IBrowseThumbnailProvider {
+export class BrowseThumbnailProvider {
   private thumbnailCache = new Map<string, Promise<void>>();
   private metadataCache = new Map<string, { width: number; height: number }>();
   private baseUrl = "/gallery";

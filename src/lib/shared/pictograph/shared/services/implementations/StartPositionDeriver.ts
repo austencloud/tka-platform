@@ -1,5 +1,4 @@
-import type { IStartPositionDeriver } from "../contracts/IStartPositionDeriver";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -13,8 +12,8 @@ import {
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-export class StartPositionDeriver implements IStartPositionDeriver {
-  constructor(private gridPositionDeriver: IGridPositionDeriver) {}
+export class StartPositionDeriver {
+  constructor(private gridPositionDeriver: GridPositionDeriver) {}
 
   deriveFromFirstBeat(firstStep: StepData): StartPositionData {
     const blueMotion = firstStep.motions?.[MotionColor.BLUE];

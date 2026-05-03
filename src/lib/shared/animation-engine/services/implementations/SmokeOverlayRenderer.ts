@@ -12,7 +12,6 @@
  * explicit clear().
  */
 
-import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { Smoke2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Smoke2DRenderer,
@@ -20,7 +19,7 @@ import {
 } from "$lib/shared/effects/renderers/Smoke2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class SmokeOverlayRenderer implements ISmokeOverlayRenderer {
+export class SmokeOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Smoke2DRenderer();

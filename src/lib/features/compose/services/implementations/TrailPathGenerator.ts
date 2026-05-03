@@ -14,7 +14,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { PropState } from "../../shared/domain/types/PropState";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
@@ -78,7 +78,7 @@ export class TrailPathGenerator {
    * @returns Complete trail data for the entire sequence
    */
   generateTrailsForSequence(
-    orchestrator: ISequenceAnimationOrchestrator,
+    orchestrator: SequenceAnimationOrchestrator,
     sequence: SequenceData,
     config: TrailGenerationConfig
   ): GeneratedTrailData {

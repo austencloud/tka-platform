@@ -12,14 +12,14 @@ import type {
   SortMethod,
 } from "../domain/option-picker-types";
 import type { OptionPickerLayout } from "../domain/option-viewer-models";
-import type { IOptionFilter } from "../services/contracts/IOptionFilter";
-import type { IOptionLoader } from "../services/contracts/IOptionLoader";
-import type { IOptionSorter } from "../services/contracts/IOptionSorter";
+import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/implementations/OptionFilter";
+import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/implementations/OptionLoader";
+import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/implementations/OptionSorter";
 
 export interface OptionPickerStateConfig {
-  optionLoader: IOptionLoader;
-  filterService: IOptionFilter;
-  optionSorter: IOptionSorter;
+  optionLoader: OptionLoader;
+  filterService: OptionFilter;
+  optionSorter: OptionSorter;
 }
 
 export function createOptionPickerState(config: OptionPickerStateConfig) {

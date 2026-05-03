@@ -1,10 +1,10 @@
 import type { ExtractedStep } from "../../../domain/models/internal-step-models";
-import type { IStepComparisonOrchestrator } from "../../contracts/IStepComparisonOrchestrator";
+import type { StepComparisonOrchestrator } from "../comparison/StepComparisonOrchestrator";
 import type { ComparisonMatrix } from "./types";
 
 export function compareBeatPairs(
   steps: ExtractedStep[],
-  orchestrator: IStepComparisonOrchestrator
+  orchestrator: StepComparisonOrchestrator
 ): ComparisonMatrix {
   const halvedPairs = new Map<string, string[]>();
   const quarteredPairs = new Map<string, string[]>();

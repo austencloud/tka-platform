@@ -14,7 +14,6 @@
  * grid points are ~143 units apart.
  */
 
-import type { IArrowCollisionResolver } from "../contracts/IArrowCollisionResolver";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -59,7 +58,7 @@ const OUTWARD_OFFSETS: Record<GridLocation, OffsetVector> = {
 // IMPLEMENTATION
 // ============================================================================
 
-export class ArrowCollisionResolver implements IArrowCollisionResolver {
+export class ArrowCollisionResolver {
   /**
    * Returns a new steps array where any step with blue and red arrows ending
    * at the same location has those arrows pushed apart.

@@ -7,12 +7,12 @@
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
-  import type { IAnnouncementManager } from "../services/contracts/IAnnouncementManager";
+  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementModal from "./AnnouncementModal.svelte";
 
   // Services
-  let announcementService: IAnnouncementManager | null = null;
+  let announcementService: AnnouncementManager | null = null;
 
   // State
   let pendingAnnouncements = $state<Announcement[]>([]);

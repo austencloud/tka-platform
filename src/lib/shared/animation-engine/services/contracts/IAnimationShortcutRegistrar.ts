@@ -4,7 +4,7 @@
  * Registers and unregisters keyboard shortcuts for the animation viewer panel.
  */
 
-import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
 
 export interface AnimationShortcutHandlers {
   onPlaybackToggle: () => void;
@@ -30,7 +30,7 @@ export interface IAnimationShortcutRegistrar {
    * @returns Unregister function to clean up all shortcuts
    */
   register(
-    service: IKeyboardShortcutManager,
+    service: KeyboardShortcutManager,
     handlers: AnimationShortcutHandlers
   ): () => void;
 

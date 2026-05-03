@@ -17,7 +17,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import type { AdditionalLayerProps } from "../../../services/contracts/ITrailCapturer";
   import {
@@ -77,7 +77,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   // Services
   let primaryPlaybackController: IAnimationPlaybackController | null = null;
   let secondaryPlaybackController: IAnimationPlaybackController | null = null;
-  let settingsService: ISettingsState | null = null;
+  let settingsService: SettingsState | null = null;
 
   // Animation states (one for each sequence)
   const primaryAnimationState = createAnimationPanelState();

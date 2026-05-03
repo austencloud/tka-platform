@@ -3,7 +3,7 @@
   import VoiceInputButton from "./VoiceInputButton.svelte";
   import VoiceWaveform from "./VoiceWaveform.svelte";
   import ImageUpload from "./ImageUpload.svelte";
-  import type { IAudioAnalyzer } from "../../services/contracts/IAudioAnalyzer";
+  import type { AudioAnalyzer } from "../../services/implementations/AudioAnalyzer";
   import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
   import type { DraftSaveStatus } from "../../services/contracts/IFormDraftPersister";
   import type { StagedImageState } from "../../domain/models/feedback-models";
@@ -51,7 +51,7 @@
     /** Whether voice recording is active (shows waveform) */
     isVoiceRecording?: boolean;
     /** Audio analyzer for waveform visualization */
-    audioAnalyzer?: IAudioAnalyzer;
+    audioAnalyzer?: AudioAnalyzer;
     /** Voice recorder for capture button */
     voiceRecorder?: IVoiceRecorder;
     onInput: (value: string) => void;

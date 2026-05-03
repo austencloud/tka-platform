@@ -21,7 +21,7 @@ import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
-  import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
+  import type { FCMTokenManager } from "$lib/shared/push/services/implementations/FCMTokenManager";
   import {
     startForegroundMessageListener,
     stopForegroundMessageListener,

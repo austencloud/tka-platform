@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { ILetterTransitionGraph } from './services/contracts/ILetterTransitionGraph';
 import { LetterTransitionGraph } from './services/implementations/LetterTransitionGraph';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 
-let instance: ILetterTransitionGraph | null = null;
+let instance: LetterTransitionGraph | null = null;
 
-export function getLetterTransitionGraph(): ILetterTransitionGraph {
+export function getLetterTransitionGraph(): LetterTransitionGraph {
 	if (!browser) throw new Error('getLetterTransitionGraph() is browser-only');
 	if (!instance) {
 		instance = new LetterTransitionGraph();

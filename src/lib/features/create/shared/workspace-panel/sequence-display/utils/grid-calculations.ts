@@ -6,7 +6,7 @@
  * The component's $derived will call these with reactive values.
  */
 
-import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import { getMaxColumnsForBeatCount } from "../domain/models/step-frame-layouts";
 
 export interface GridLayout {
@@ -48,7 +48,7 @@ export function calculateGridLayout(
   stepCount: number,
   containerWidth: number,
   containerHeight: number,
-  _deviceDetector: IDeviceDetector | null,
+  _deviceDetector: DeviceDetector | null,
   config: GridSizingConfig = {}
 ): GridLayout {
   // Filter out undefined values from config to prevent overriding defaults with undefined

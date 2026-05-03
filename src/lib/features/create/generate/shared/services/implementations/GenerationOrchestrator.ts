@@ -18,7 +18,6 @@ import {
   GenerationMode,
   PropContinuity,
 } from "../../domain/models/generate-models";
-import type { IGenerationOrchestrator } from "../contracts/IGenerationOrchestrator";
 import type { SequenceMetadataManager } from "./SequenceMetadataManager";
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";
@@ -43,7 +42,7 @@ function ensureEngineTransitionGraph(): Promise<void> {
   engineTransitionGraphPromise = (async () => {
     const dataProvider = new BrowserDataProvider(globalLetterQueryHandler);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- app-local
-    // BrowserDataProvider structurally matches the engine's ISequenceDataProvider;
+    // BrowserDataProvider structurally matches the engine's SequenceDataProvider;
     // the nominal type mismatch comes from two separate type declarations that
     // will be reconciled when the app's shim is retired.
     const graph = new EngineTransitionGraph(dataProvider as any);
@@ -54,7 +53,7 @@ function ensureEngineTransitionGraph(): Promise<void> {
   return engineTransitionGraphPromise;
 }
 
-export class GenerationOrchestrator implements IGenerationOrchestrator {
+export class GenerationOrchestrator {
   constructor(
     private readonly variationProvider: BrowserVariationProvider,
     private readonly transformer: BuildResultTransformer,

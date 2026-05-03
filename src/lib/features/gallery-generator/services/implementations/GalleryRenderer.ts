@@ -9,9 +9,9 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/SequenceExportOptions";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -24,9 +24,9 @@ export interface RenderOptions {
 
 export class GalleryRenderer {
   constructor(
-    private renderService: ISequenceRenderer,
-    private loaderService: IBrowseLoader,
-    private startPositionDeriver: IStartPositionDeriver
+    private renderService: SequenceRenderer,
+    private loaderService: PublicSequencesLoader,
+    private startPositionDeriver: StartPositionDeriver
   ) {}
 
   async renderSequence(

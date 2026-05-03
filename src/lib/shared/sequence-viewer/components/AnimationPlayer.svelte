@@ -23,7 +23,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-	import type { ISequenceMotionLoader } from "../services/contracts/ISequenceMotionLoader";
+	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
@@ -80,7 +80,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
 	// Services (standalone mode only)
 	let controller = $state<IAnimationPlaybackController | null>(null);
-	let motionLoader = $state<ISequenceMotionLoader | null>(null);
+	let motionLoader = $state<SequenceMotionLoader | null>(null);
 
 	// State (standalone mode only)
 	const animState = createAnimationPanelState();

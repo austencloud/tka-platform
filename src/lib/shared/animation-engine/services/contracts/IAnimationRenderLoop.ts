@@ -10,26 +10,26 @@ import type { ITrailCapturer, AdditionalLayerProps } from "$lib/features/compose
 import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
-import type { IFrameBudgetMonitor } from "./IFrameBudgetMonitor";
-import type { IFireOverlayRenderer } from "./IFireOverlayRenderer";
-import type { ICharcoalRenderer } from "./ICharcoalRenderer";
+import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
+import type { WebGLFireRenderer } from "$lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer";
+import type { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer";
 import type { IFireTipTracker } from "./IFireTipTracker";
 import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
-import type { ILedOverlayRenderer } from "./ILedOverlayRenderer";
+import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer'
 import type { ILedTipTracker } from "./ILedTipTracker";
 import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
-import type { IZapOverlayRenderer } from "./IZapOverlayRenderer";
-import type { ISparklesOverlayRenderer } from "./ISparklesOverlayRenderer";
-import type { IEchoOverlayRenderer } from "./IEchoOverlayRenderer";
-import type { IBloomOverlayRenderer } from "./IBloomOverlayRenderer";
-import type { IWaterOverlayRenderer } from "./IWaterOverlayRenderer";
-import type { IBubblesOverlayRenderer } from "./IBubblesOverlayRenderer";
-import type { IPetalsOverlayRenderer } from "./IPetalsOverlayRenderer";
-import type { ISmokeOverlayRenderer } from "./ISmokeOverlayRenderer";
-import type { IInkOverlayRenderer } from "./IInkOverlayRenderer";
-import type { IFrostOverlayRenderer } from "./IFrostOverlayRenderer";
-import type { ISilkOverlayRenderer } from "./ISilkOverlayRenderer";
-import type { IPulseOverlayRenderer } from "./IPulseOverlayRenderer";
+import type { ZapOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/ZapOverlayRenderer'
+import type { SparklesOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SparklesOverlayRenderer'
+import type { EchoOverlayRenderer } from "$lib/shared/animation-engine/services/implementations/EchoOverlayRenderer";
+import type { BloomOverlayRenderer } from "$lib/shared/animation-engine/services/implementations/BloomOverlayRenderer";
+import type { WaterOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/WaterOverlayRenderer'
+import type { BubblesOverlayRenderer } from "$lib/shared/animation-engine/services/implementations/BubblesOverlayRenderer";
+import type { PetalsOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/PetalsOverlayRenderer'
+import type { SmokeOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SmokeOverlayRenderer'
+import type { InkOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/InkOverlayRenderer'
+import type { FrostOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/FrostOverlayRenderer'
+import type { SilkOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SilkOverlayRenderer'
+import type { PulseOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/PulseOverlayRenderer'
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -46,43 +46,43 @@ export interface RenderLoopConfig {
   TrailCapturer: ITrailCapturer | null;
   pathCache: AnimationPathCache | null;
   canvasSize: number;
-  frameBudgetMonitor?: IFrameBudgetMonitor | null;
+  frameBudgetMonitor?: FrameBudgetMonitor | null;
   /** Optional fire overlay renderer (WebGL fluid simulation on top of Canvas2D) */
-  fireRenderer?: IFireOverlayRenderer | null;
+  fireRenderer?: WebGLFireRenderer | null;
   /** Optional charcoal overlay renderer (WebGL2 point-sprite particles) */
-  charcoalRenderer?: ICharcoalRenderer | null;
+  charcoalRenderer?: CharcoalSparkRenderer | null;
   /** Optional fire/charcoal tip position/velocity tracker (shared by both) */
   fireTipTracker?: IFireTipTracker | null;
   /** Optional LED overlay renderer (WebGL layer on top of fire) */
-  ledRenderer?: ILedOverlayRenderer | null;
+  ledRenderer?: WebGLLedRenderer | null;
   /** Optional LED tip position/color tracker */
   ledTipTracker?: ILedTipTracker | null;
   /** Trail overlay canvas for persistent cross-sequence trails */
   trailOverlay?: ITrailOverlayCanvas | null;
   /** Optional zap (lightning) overlay renderer that draws procedural arcs between prop tips */
-  zapRenderer?: IZapOverlayRenderer | null;
+  zapRenderer?: ZapOverlayRenderer | null;
   /** Optional sparkles overlay renderer that draws particle sparkles around prop tips */
-  sparklesRenderer?: ISparklesOverlayRenderer | null;
+  sparklesRenderer?: SparklesOverlayRenderer | null;
   /** Optional echo overlay renderer that draws beat-onset phantoms of the staff */
-  echoRenderer?: IEchoOverlayRenderer | null;
+  echoRenderer?: EchoOverlayRenderer | null;
   /** Optional bloom overlay renderer that draws per-tip radial halos */
-  bloomRenderer?: IBloomOverlayRenderer | null;
+  bloomRenderer?: BloomOverlayRenderer | null;
   /** Optional water overlay renderer that spawns per-tip droplets */
-  waterRenderer?: IWaterOverlayRenderer | null;
+  waterRenderer?: WaterOverlayRenderer | null;
   /** Optional bubbles overlay renderer that spawns per-tip buoyant bubbles */
-  bubblesRenderer?: IBubblesOverlayRenderer | null;
+  bubblesRenderer?: BubblesOverlayRenderer | null;
   /** Optional petals overlay renderer that spawns per-tip falling petals */
-  petalsRenderer?: IPetalsOverlayRenderer | null;
+  petalsRenderer?: PetalsOverlayRenderer | null;
   /** Optional smoke overlay renderer that spawns per-tip curl-noise puffs */
-  smokeRenderer?: ISmokeOverlayRenderer | null;
+  smokeRenderer?: SmokeOverlayRenderer | null;
   /** Optional ink overlay renderer that draws per-tip calligraphic strokes */
-  inkRenderer?: IInkOverlayRenderer | null;
+  inkRenderer?: InkOverlayRenderer | null;
   /** Optional frost overlay renderer that spawns per-tip cold aura particles */
-  frostRenderer?: IFrostOverlayRenderer | null;
+  frostRenderer?: FrostOverlayRenderer | null;
   /** Optional silk overlay renderer that draws per-tip deformable ribbons */
-  silkRenderer?: ISilkOverlayRenderer | null;
+  silkRenderer?: SilkOverlayRenderer | null;
   /** Optional pulse overlay renderer that draws expanding wave rings from tip positions */
-  pulseRenderer?: IPulseOverlayRenderer | null;
+  pulseRenderer?: PulseOverlayRenderer | null;
   /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
   onEffectError?: (effectName: string, error: Error) => void;
 }

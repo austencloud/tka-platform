@@ -1,7 +1,6 @@
-import type { IDarkModeProvider } from './services/contracts/IDarkModeProvider';
 import { DarkModeProvider } from './services/implementations/DarkModeProvider';
 
-let instance: IDarkModeProvider | null = null;
-export function getDarkModeProvider(): IDarkModeProvider {
+let instance: DarkModeProvider | null = null;
+export function getDarkModeProvider(): DarkModeProvider {
   return instance ??= new DarkModeProvider();
 }

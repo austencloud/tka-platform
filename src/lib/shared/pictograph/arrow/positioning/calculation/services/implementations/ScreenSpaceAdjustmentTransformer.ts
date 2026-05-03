@@ -22,16 +22,15 @@
 import { Point } from "fabric";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
-import type { IScreenSpaceAdjustmentTransformer } from "../contracts/IScreenSpaceAdjustmentTransformer";
 import type { IDirectionalTupleCalculator } from "../contracts/IDirectionalTupleGenerator";
-import type { IArrowQuadrantCalculator } from "../../../../orchestration/services/contracts/IArrowQuadrantCalculator";
+import type { ArrowQuadrantCalculator } from "../../../../orchestration/services/implementations/ArrowQuadrantCalculator";
 
 export class ScreenSpaceAdjustmentTransformer
-  implements IScreenSpaceAdjustmentTransformer
+ 
 {
   constructor(
     private tupleCalculator: IDirectionalTupleCalculator,
-    private quadrantCalculator: IArrowQuadrantCalculator
+    private quadrantCalculator: ArrowQuadrantCalculator
   ) {}
 
   /**

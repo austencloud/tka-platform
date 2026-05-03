@@ -25,9 +25,8 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
-import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
-import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { PropState } from "../../domain/PropState";
 import { type TrailSettings } from "../../domain/types/TrailTypes";
 import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
@@ -61,7 +60,7 @@ import { AnimationPrecomputer } from "./AnimationPrecomputer.svelte";
 import type { IAnimationPrecomputer } from "../contracts/IAnimationPrecomputer";
 import { AnimationRenderLoop } from "./AnimationRenderLoop";
 import type { IAnimationRenderLoop } from "../contracts/IAnimationRenderLoop";
-import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
+
 import { FrameBudgetMonitor } from "./FrameBudgetMonitor";
 import { DeviceTierDetector } from "./DeviceTierDetector";
 import { AnimationVisibilitySynchronizer } from "./AnimationVisibilitySynchronizer";
@@ -238,10 +237,10 @@ export class AnimationEngine {
   // PRIVATE SERVICES
   // ============================================================================
   private svgGenerator: ISVGGenerator | null = null;
-  private settingsService: ISettingsState | null = null;
-  private orchestrator: ISequenceAnimationOrchestrator | null = null;
+  private settingsService: SettingsState | null = null;
+  private orchestrator: SequenceAnimationOrchestrator | null = null;
   private trailCapturer: ITrailCapturer | null = null;
-  private turnsTupleGenerator: ITurnsTupleGenerator | null = null;
+  private turnsTupleGenerator: TurnsTupleGenerator | null = null;
   private animationRenderer: IAnimationRenderer | null = null;
 
   private canvasResizerService: ICanvasResizer | null = null;
@@ -255,7 +254,7 @@ export class AnimationEngine {
   private trailSettingsSyncService: TrailSettingsSynchronizer | null = null;
   private propTypeChangeService: PropTypeChanger | null = null;
   private canvasInitializer = new AnimatorCanvasInitializer();
-  private frameBudgetMonitor: IFrameBudgetMonitor =
+  private frameBudgetMonitor: FrameBudgetMonitor =
     new FrameBudgetMonitor(new DeviceTierDetector().detect());
   private fireDefaultsLoader: FireDefaultsLoader | null = null;
 

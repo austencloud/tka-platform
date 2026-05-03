@@ -24,19 +24,19 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   import ExpandableField from "$lib/features/library/components/ExpandableField.svelte";
   import ContentAppealModal from "$lib/features/moderation/components/ContentAppealModal.svelte";
   import HallOfShameGate from "$lib/features/hall-of-shame/components/HallOfShameGate.svelte";
-  import type { IHallOfShameSubmitter } from "$lib/features/hall-of-shame/services/contracts/IHallOfShameSubmitter";
+  import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/implementations/HallOfShameSubmitter";
   import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
-  import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
+  import type { ContentModerator } from "$lib/features/moderation/services/implementations/ContentModerator";
   import { getContentModerator } from "$lib/features/moderation/getContentModerator";
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-  import type { ISequenceContentHasher } from "$lib/features/library/services/contracts/ISequenceContentHasher";
+  import type { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   interface Props {
@@ -89,7 +89,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   }
 
   // Get the content moderator
-  let contentModerator: IContentModerator | null = null;
+  let contentModerator: ContentModerator | null = null;
   try {
     contentModerator = getContentModerator();
   } catch (error) {
@@ -160,7 +160,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   let shameSubmitError = $state<string | null>(null);
 
   // Get the Hall of Shame submitter
-  let hallOfShameSubmitter: IHallOfShameSubmitter | null = null;
+  let hallOfShameSubmitter: HallOfShameSubmitter | null = null;
   try {
     hallOfShameSubmitter = getHallOfShameSubmitter();
   } catch (error) {
@@ -207,9 +207,9 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   // If the user already saved this exact sequence (same orientations, turns,
   // positions), we show "Already saved" instead of the save button.
   let isExactDuplicate = $state(false);
-  let contentHasher: ISequenceContentHasher | null = null;
+  let contentHasher: SequenceContentHasher | null = null;
   try {
-    contentHasher = getContentHasher() as unknown as ISequenceContentHasher;
+    contentHasher = getContentHasher() as unknown as SequenceContentHasher;
   } catch {
     // Hasher not available - duplicate check won't run, save still works
   }

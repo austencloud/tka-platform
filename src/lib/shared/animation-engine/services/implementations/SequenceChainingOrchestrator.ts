@@ -10,7 +10,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
-import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
+import type { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
 import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
 import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
@@ -35,7 +35,7 @@ export class SequenceChainingOrchestrator implements ISequenceChainingOrchestrat
 
   constructor(
     private readonly spinnerOrchestrator: IEndlessSpinnerOrchestrator,
-    private readonly infiniteGenerator: IInfiniteSequenceGenerator
+    private readonly infiniteGenerator: InfiniteSequenceGenerator
   ) {}
 
   get isChainingNow(): boolean {

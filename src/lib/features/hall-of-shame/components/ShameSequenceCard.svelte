@@ -10,7 +10,7 @@ import { getHallOfShameVoter } from "$lib/features/hall-of-shame/getHallOfShameV
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { HallOfShameEntry } from "../domain/models/hall-of-shame-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { IHallOfShameVoter } from "../services/contracts/IHallOfShameVoter";
+  import type { HallOfShameVoter } from "../services/implementations/HallOfShameVoter";
 
   interface Props {
     entry: HallOfShameEntry;
@@ -27,7 +27,7 @@ import { getHallOfShameVoter } from "$lib/features/hall-of-shame/getHallOfShameV
   const currentUser = $derived(authState.user);
 
   // Get voter service
-  let hallOfShameVoter: IHallOfShameVoter | null = null;
+  let hallOfShameVoter: HallOfShameVoter | null = null;
   try {
     hallOfShameVoter = getHallOfShameVoter();
   } catch (error) {

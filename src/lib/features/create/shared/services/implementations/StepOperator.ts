@@ -8,13 +8,12 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IStepOperator } from "../contracts/IStepOperator";
 import type {
   ICreateModuleState,
   BatchEditChanges,
 } from "../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { StepData } from "../../domain/models/StepData";
 
 // Import handlers
@@ -33,10 +32,10 @@ import {
 } from "./step-operations/ArrowAdjustmentHandler";
 import { updateStepDuration } from "./step-operations/DurationHandler";
 
-export class StepOperator implements IStepOperator {
+export class StepOperator {
   constructor(
     private motionQueryHandler: IMotionQueryHandler | null,
-    private gridModeDeriver: IGridModeDeriver | null
+    private gridModeDeriver: GridModeDeriver | null
   ) {}
 
   removeStep(stepIndex: number, createModuleState: ICreateModuleState): void {

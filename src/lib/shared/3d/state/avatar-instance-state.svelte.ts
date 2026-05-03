@@ -11,7 +11,7 @@ import { Plane } from "../domain/enums/Plane";
 import { PlaneMode } from "../domain/enums/PlaneMode";
 import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "../domain/constants/plane-mode-configs";
 import { createPlaybackState } from "./playback-state.svelte";
-import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
+import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
 import type {
   ISequenceConverter,
   StepMotionConfigs,
@@ -114,7 +114,7 @@ export interface AvatarInstanceConfig {
  * Dependencies for avatar instance state
  */
 export interface AvatarInstanceDeps {
-  propInterpolator: IPropStateInterpolator;
+  propInterpolator: PropStateInterpolator;
   sequenceConverter: ISequenceConverter;
 }
 

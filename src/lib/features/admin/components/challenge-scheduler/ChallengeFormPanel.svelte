@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
   import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
 
   interface Props {
@@ -21,7 +21,7 @@
   let { selectedDate, showPanel, onClose, onSchedule }: Props = $props();
 
   // Services - resolved synchronously via ITI
-  const thumbnailService: IBrowseThumbnailProvider | null = getBrowseThumbnailProvider() ?? null;
+  const thumbnailService: BrowseThumbnailProvider | null = getBrowseThumbnailProvider() ?? null;
 
   // Local form state
   let showSequenceBrowser = $state(false);

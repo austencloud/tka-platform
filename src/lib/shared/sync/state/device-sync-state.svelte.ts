@@ -5,22 +5,9 @@ import type {
 	ViewMode,
 	SyncConnectionStatus
 } from '../domain/sync-types';
+import type { DeviceSyncCoordinator } from '../services/implementations/DeviceSyncCoordinator';
 import { createInitialConnectionState } from '../domain/sync-types';
 
-export interface IDeviceSyncCoordinator {
-	onConnectionStateChange(callback: (state: SyncConnectionState) => void): () => void;
-	onRoomStateChange(callback: (state: SyncedRoomState | null) => void): () => void;
-	getCurrentStep(): number;
-	sync(sequence: SequenceData, displayName: string): Promise<string>;
-	joinRoom(roomCode: string, displayName: string): Promise<void>;
-	disconnect(): void;
-	play(): void;
-	pause(): void;
-	seek(step: number): void;
-	setSpeed(speed: number): void;
-	toggleLoop(): void;
-	destroy(): void;
-}
 
 class DeviceSyncState {
 	private _connectionState = $state<SyncConnectionState>(createInitialConnectionState());
@@ -28,7 +15,7 @@ class DeviceSyncState {
 	private _viewMode = $state<ViewMode>('animation');
 	private _currentStep = $state<number>(0);
 
-	private coordinator: IDeviceSyncCoordinator | null = null;
+	private coordinator: DeviceSyncCoordinator | null = null;
 	private unsubscribers: Array<() => void> = [];
 	private animationFrameId: number | null = null;
 
@@ -85,7 +72,7 @@ class DeviceSyncState {
 		return this._connectionState.quality;
 	}
 
-	initialize(coordinator: IDeviceSyncCoordinator): void {
+	initialize(coordinator: DeviceSyncCoordinator): void {
 		this.cleanup();
 		this.coordinator = coordinator;
 

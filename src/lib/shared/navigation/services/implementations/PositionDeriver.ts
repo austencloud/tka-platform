@@ -10,12 +10,11 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IPositionDeriver } from "../contracts/IPositionDeriver";
 
-export class PositionDeriver implements IPositionDeriver {
-  constructor(private gridPositionDeriver: IGridPositionDeriver | null) {}
+export class PositionDeriver {
+  constructor(private gridPositionDeriver: GridPositionDeriver | null) {}
 
   async derivePositionsForSequence(
     sequence: SequenceData

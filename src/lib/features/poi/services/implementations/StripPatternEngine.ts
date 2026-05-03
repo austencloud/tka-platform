@@ -1,4 +1,3 @@
-import type { IStripPatternEngine } from "../contracts/IStripPatternEngine";
 import type { ImagePatternLoader } from "./ImagePatternLoader";
 import type { StripPattern, PatternParams, StripFrame } from "../../domain/StripPattern";
 import type { IPatternPreset } from "../../domain/PatternPreset";
@@ -8,7 +7,7 @@ import { BUILT_IN_PRESETS } from "../../domain/PatternPreset";
  * Orchestrates pattern generation from presets and image loading.
  * Also handles brightness limiting for hardware upload.
  */
-export class StripPatternEngine implements IStripPatternEngine {
+export class StripPatternEngine {
   private presets: Map<string, IPatternPreset>;
 
   constructor(private imageLoader: ImagePatternLoader) {

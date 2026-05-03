@@ -10,14 +10,14 @@ import type {
   IBrowseDataSource,
   BrowseQueryResult,
 } from "../contracts/IBrowseDataSource";
-import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { ISoloPropRepository } from "$lib/shared/foundation/services/contracts/ISoloPropRepository";
 import type { IHandPathRepository } from "$lib/shared/foundation/services/contracts/IHandPathRepository";
 import type { BrowseViewMode } from "../../domain/BrowseViewMode";
 
 export class BrowseDataSource implements IBrowseDataSource {
   constructor(
-    private readonly browseLoader: IBrowseLoader,
+    private readonly browseLoader: PublicSequencesLoader,
     private readonly soloPropRepository: ISoloPropRepository,
     private readonly handPathRepository: IHandPathRepository
   ) {}

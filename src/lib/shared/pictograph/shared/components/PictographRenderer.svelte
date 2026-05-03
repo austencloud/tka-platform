@@ -36,9 +36,9 @@ Usage:
   import StepNumber from "./StepNumber.svelte";
   import DurationGlyph from "./DurationGlyph.svelte";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-  import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
+  import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-  import type { ITurnsTupleGenerator } from "../../arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
+  import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import { calculateVTGFromPictograph } from "../domain/utils/vtg-calculator";
 

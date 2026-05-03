@@ -1,10 +1,9 @@
 <script lang="ts">
 
-
 import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCacheOrchestrator";
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { getBrowseLoader } from "../../sequences/display/getBrowseLoader";
   import { getBrowseEventHandler } from "../getBrowseEventHandler";
   import { getThumbnailRenderOrchestrator } from "../../sequences/display/getThumbnailRenderOrchestrator";
@@ -17,7 +16,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
   import { createOfflineCacheState } from "$lib/shared/offline/state/offline-cache-state.svelte";
   import { setOfflineCacheContext } from "$lib/shared/offline/context/offline-cache-context";
-  import type { IOfflineCacheOrchestrator } from "$lib/shared/offline/services/contracts/IOfflineCacheOrchestrator";
+
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
   import type { IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
@@ -68,7 +67,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   let eventHandlerService: IBrowseEventHandler | null = null;
 
   // Offline cache: create reactive state, publish to context for descendants
-  const orchestrator = getOfflineCacheOrchestrator() as IOfflineCacheOrchestrator;
+  const orchestrator = getOfflineCacheOrchestrator();
   const offlineCacheState = createOfflineCacheState(orchestrator);
   setOfflineCacheContext(offlineCacheState);
 
@@ -95,7 +94,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   let previousTab = $state<BrowseModuleType | null>(null);
 
   // Services
-  let deviceDetector: IDeviceDetector | null = null;
+  let deviceDetector: DeviceDetector | null = null;
 
   // Reactive responsive settings from DeviceDetector
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
@@ -326,7 +325,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
     // On reconnect: clear PublicSequencesLoader's in-memory cache so the next
     // gallery load re-fetches from Firestore and repopulates the Dexie offline cache
-    // with fresh data. This cast is intentional - adding clearCache() to IBrowseLoader
+    // with fresh data. This cast is intentional - adding clearCache() to PublicSequencesLoader
     // is a larger interface change deferred to a later task.
     const unsubscribeReconnect = networkStatusState.onOnline(() => {
       const loader = getBrowseLoader() as unknown as { cachedSequences?: unknown };

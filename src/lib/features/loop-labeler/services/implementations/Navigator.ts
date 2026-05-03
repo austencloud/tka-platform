@@ -2,13 +2,12 @@ import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,
 } from "$app/navigation";
-import type { INavigator } from "../contracts/INavigator";
 import type { LabeledSequence } from "../contracts/ILOOPLabelsFirebaseRepository";
 
 /**
  * Service for navigation and utility functions
  */
-export class Navigator implements INavigator {
+export class Navigator {
   getNextIndex(currentIndex: number, totalSequences: number): number {
     if (currentIndex < totalSequences - 1) {
       return currentIndex + 1;

@@ -9,24 +9,11 @@
  * This is a plain TypeScript class - no Svelte reactivity needed.
  */
 
-import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
-import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
-import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
+
 import type { ILedTipTracker } from "../contracts/ILedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
-import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
-import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
-import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
-import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
-import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
-import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRenderer";
-import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
-import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
-import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
-import type { IFrostOverlayRenderer } from "../contracts/IFrostOverlayRenderer";
-import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
-import type { IPulseOverlayRenderer } from "../contracts/IPulseOverlayRenderer";
+
 import type { IAnimationRenderLoop } from "../contracts/IAnimationRenderLoop";
 import type { EffectType, TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
 import type { FireOverlayConfig } from "../../domain/types/FireTypes";
@@ -60,24 +47,24 @@ export type FrameParamsProvider = () => RenderFrameParams;
 
 export class EffectRendererManager {
   // ── Renderer instances ──────────────────────────────────────────────
-  fireRenderer: IFireOverlayRenderer | null = null;
-  charcoalRenderer: ICharcoalRenderer | null = null;
+  fireRenderer: WebGLFireRenderer | null = null;
+  charcoalRenderer: CharcoalSparkRenderer | null = null;
   fireTipTracker: IFireTipTracker | null = null;
-  ledRenderer: ILedOverlayRenderer | null = null;
+  ledRenderer: WebGLLedRenderer | null = null;
   ledTipTracker: ILedTipTracker | null = null;
   trailOverlay: ITrailOverlayCanvas | null = null;
-  zapRenderer: IZapOverlayRenderer | null = null;
-  sparklesRenderer: ISparklesOverlayRenderer | null = null;
-  echoRenderer: IEchoOverlayRenderer | null = null;
-  bloomRenderer: IBloomOverlayRenderer | null = null;
-  waterRenderer: IWaterOverlayRenderer | null = null;
-  bubblesRenderer: IBubblesOverlayRenderer | null = null;
-  petalsRenderer: IPetalsOverlayRenderer | null = null;
-  smokeRenderer: ISmokeOverlayRenderer | null = null;
-  inkRenderer: IInkOverlayRenderer | null = null;
-  frostRenderer: IFrostOverlayRenderer | null = null;
-  silkRenderer: ISilkOverlayRenderer | null = null;
-  pulseRenderer: IPulseOverlayRenderer | null = null;
+  zapRenderer: ZapOverlayRenderer | null = null;
+  sparklesRenderer: SparklesOverlayRenderer | null = null;
+  echoRenderer: EchoOverlayRenderer | null = null;
+  bloomRenderer: BloomOverlayRenderer | null = null;
+  waterRenderer: WaterOverlayRenderer | null = null;
+  bubblesRenderer: BubblesOverlayRenderer | null = null;
+  petalsRenderer: PetalsOverlayRenderer | null = null;
+  smokeRenderer: SmokeOverlayRenderer | null = null;
+  inkRenderer: InkOverlayRenderer | null = null;
+  frostRenderer: FrostOverlayRenderer | null = null;
+  silkRenderer: SilkOverlayRenderer | null = null;
+  pulseRenderer: PulseOverlayRenderer | null = null;
 
   // ── Configs ─────────────────────────────────────────────────────────
   fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };

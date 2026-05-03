@@ -81,7 +81,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
   import { createPanelHeightTracker } from "../state/managers/PanelHeightTracker.svelte";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
@@ -120,7 +120,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   let autosaver: Autosaver | null = $state(null);
 
   // Settings service for user preferences
-  let settingsService: ISettingsState | null = $state(null);
+  let settingsService: SettingsState | null = $state(null);
 
   // ============================================================================
   // COMPONENT STATE

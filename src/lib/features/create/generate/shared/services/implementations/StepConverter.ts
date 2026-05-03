@@ -23,26 +23,7 @@ import {
 import { createStepData } from "$lib/features/create/shared/domain/factories/createStepData";
 import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
 
-export interface IStepConverter {
-  /**
-   * Convert PictographData to StepData - creates proper domain object for steps
-   */
-  convertToStep(
-    pictograph: PictographData,
-    stepNumber: number,
-    gridMode: GridMode
-  ): StepData;
-
-  /**
-   * Convert PictographData to StartPositionData - creates proper domain object for start positions
-   */
-  convertToStartPosition(
-    pictograph: PictographData,
-    gridMode: GridMode
-  ): StartPositionData;
-}
-
-export class StepConverter implements IStepConverter {
+export class StepConverter {
   /**
    * Convert PictographData to StepData - creates proper domain object for steps
    *

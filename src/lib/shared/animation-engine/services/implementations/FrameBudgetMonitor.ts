@@ -9,7 +9,6 @@
  * Minimum 2 seconds between changes to prevent thrashing.
  */
 
-import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
 import type { QualityAdaptationConfig } from "../../domain/types/QualityTypes";
 import {
   QualityTier,
@@ -40,7 +39,7 @@ function deviceTierToQualityTier(deviceTier: DeviceTier): QualityTier {
   }
 }
 
-export class FrameBudgetMonitor implements IFrameBudgetMonitor {
+export class FrameBudgetMonitor {
   private config: QualityAdaptationConfig;
   private currentTier: QualityTier;
   private maxTier: QualityTier;

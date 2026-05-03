@@ -17,8 +17,8 @@ import type {
   IDeepLinkSequenceHandler,
 } from "../contracts/IDeepLinkSequenceHandler";
 import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
-import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
-import type { IPositionDeriver } from "$lib/shared/navigation/services/contracts/IPositionDeriver";
+import type { LetterDeriver } from '$lib/shared/navigation/services/implementations/LetterDeriver'
+import type { PositionDeriver } from '$lib/shared/navigation/services/implementations/PositionDeriver'
 
 const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
 
@@ -32,8 +32,8 @@ let pendingEditProcessedThisSession = false;
 export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
   constructor(
     private deepLinkService: IDeepLinker | null,
-    private LetterDeriver: ILetterDeriver | null,
-    private positionDeriverService: IPositionDeriver | null
+    private LetterDeriver: LetterDeriver | null,
+    private positionDeriverService: PositionDeriver | null
   ) {}
 
   hasDeepLink(): boolean {

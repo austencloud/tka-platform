@@ -1,7 +1,6 @@
-import type { IWakeWordDetector } from './services/contracts/IWakeWordDetector';
 import { WakeWordDetector } from './services/implementations/WakeWordDetector';
 
-let instance: IWakeWordDetector | null = null;
-export function getWakeWordDetector(): IWakeWordDetector {
+let instance: WakeWordDetector | null = null;
+export function getWakeWordDetector(): WakeWordDetector {
   return instance ??= new WakeWordDetector();
 }

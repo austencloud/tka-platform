@@ -13,13 +13,12 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IStartPositionManager } from "../contracts/IStartPositionManager";
 import { createPictographData } from "../../../../../../shared/pictograph/shared/domain/factories/createPictographData";
 import { createMotionData } from "../../../../../../shared/pictograph/shared/domain/models/MotionData";
-import type { IGridPositionDeriver } from "../../../../../../shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
-export class StartPositionManager implements IStartPositionManager {
-  constructor(private gridPositionDeriver: IGridPositionDeriver) {}
+export class StartPositionManager {
+  constructor(private gridPositionDeriver: GridPositionDeriver) {}
 
   async getStartPositions(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): Promise<PictographData[]> {
     return this.getDefaultStartPositions(gridMode, blueOrientation, redOrientation);

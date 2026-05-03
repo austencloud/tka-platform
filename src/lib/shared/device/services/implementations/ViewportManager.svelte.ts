@@ -1,4 +1,3 @@
-import type { IViewportManager } from "../contracts/IViewportManager";
 
 /**
  * Reactive Viewport Service
@@ -6,7 +5,7 @@ import type { IViewportManager } from "../contracts/IViewportManager";
  * Provides reactive viewport dimensions using browser APIs.
  * Automatically updates when window is resized.
  */
-export class ViewportManager implements IViewportManager {
+export class ViewportManager {
   private _width: number = 0;
   private _height: number = 0;
   private _isInitialized: boolean = false;

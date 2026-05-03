@@ -10,14 +10,13 @@ import type {
   BrowseNavigationConfig,
   BrowseNavigationItem,
 } from "../../domain/models/navigation-models";
-import type { INavigator } from "../contracts/INavigator";
 
 // Local type alias for NavigationSection
 type NavigationSection = BrowseNavigationConfig;
 
 // All interfaces now imported from domain and contracts
 
-export class Navigator implements INavigator {
+export class Navigator {
   generateNavigationSections(
     sequences: SequenceData[],
     favorites: string[]

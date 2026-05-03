@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ICreateModuleOrchestrator } from './services/contracts/ICreateModuleOrchestrator';
 import { CreateModuleOrchestrator } from './services/implementations/CreateModuleOrchestrator';
 
-let instance: ICreateModuleOrchestrator | null = null;
+let instance: CreateModuleOrchestrator | null = null;
 
-export function getCreateModuleOrchestrator(): ICreateModuleOrchestrator {
+export function getCreateModuleOrchestrator(): CreateModuleOrchestrator {
 	if (!browser) throw new Error('getCreateModuleOrchestrator() is browser-only');
 	return instance ??= new CreateModuleOrchestrator();
 }

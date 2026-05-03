@@ -7,7 +7,6 @@
 
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
 import { PropRotationStateTracker } from "./PropRotationStateTracker";
 
 
@@ -20,7 +19,7 @@ type LetterType =
   | "TYPE5"
   | "TYPE6";
 
-export class TurnsTupleGenerator implements ITurnsTupleGenerator {
+export class TurnsTupleGenerator {
   private propRotationService: PropRotationStateTracker;
 
   constructor() {

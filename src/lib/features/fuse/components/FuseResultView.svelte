@@ -15,7 +15,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
+	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
 	const { state: fuseState } = getFuseContext();
@@ -24,7 +24,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 
 	// Animation playback state
 	let controller = $state<IAnimationPlaybackController | null>(null);
-	let motionLoader = $state<ISequenceMotionLoader | null>(null);
+	let motionLoader = $state<SequenceMotionLoader | null>(null);
 	const animState = createAnimationPanelState();
 
 	let loading = $state(true);

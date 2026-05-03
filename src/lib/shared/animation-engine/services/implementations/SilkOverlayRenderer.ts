@@ -1,4 +1,3 @@
-import type { ISilkOverlayRenderer } from "../contracts/ISilkOverlayRenderer";
 import type { Silk2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Silk2DRenderer,
@@ -6,7 +5,7 @@ import {
 } from "$lib/shared/effects/renderers/Silk2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class SilkOverlayRenderer implements ISilkOverlayRenderer {
+export class SilkOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Silk2DRenderer();

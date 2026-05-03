@@ -5,7 +5,7 @@
    */
 
   import { onMount } from "svelte";
-  import type { IAdminChallengeManager } from "../services/contracts/IAdminChallengeManager";
+  import type { AdminChallengeManager } from '../services/implementations/AdminChallengeManager';
   import type {
     ChallengeScheduleEntry,
     ChallengeFormData,
@@ -19,7 +19,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
-    adminChallengeService: IAdminChallengeManager;
+    adminChallengeService: AdminChallengeManager;
   }
 
   let { adminChallengeService }: Props = $props();

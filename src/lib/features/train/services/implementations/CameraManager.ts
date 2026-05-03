@@ -1,6 +1,6 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { ICameraManager, CameraConfig } from "../contracts/ICameraManager";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 const DEFAULT_CONFIG: CameraConfig = {
   facingMode: "user",
@@ -102,7 +102,7 @@ export class CameraManager implements ICameraManager {
         }
       }
 
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message,
         technicalDetails: error instanceof Error ? error.message : String(error),

@@ -20,11 +20,10 @@ import {
 	getAuthSync,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
-import type { IPresenceTracker } from '../contracts/IPresenceTracker';
 import type { UserPresence, PresenceFirebaseData } from '../../domain/models/connect-models';
 import { PRESENCE_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
 
-export class PresenceTracker implements IPresenceTracker {
+export class PresenceTracker {
 	private _isTracking = false;
 	private _myPresence: UserPresence | null = null;
 	private myPresenceRef: DatabaseReference | null = null;

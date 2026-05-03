@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IApplicationInitializer } from './services/contracts/IApplicationInitializer';
+
 import { ApplicationInitializer } from './services/implementations/ApplicationInitializer';
 
-let instance: IApplicationInitializer | null = null;
+let instance: ApplicationInitializer | null = null;
 
-export function getApplicationInitializer(): IApplicationInitializer {
+export function getApplicationInitializer(): ApplicationInitializer {
 	if (!browser) throw new Error('getApplicationInitializer() is browser-only');
 	return instance ??= new ApplicationInitializer();
 }

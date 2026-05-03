@@ -5,7 +5,7 @@
  * Handles form validation, verification polling, and resend cooldown.
  */
 
-import type { IAuthenticator } from "../services/contracts/IAuthenticator";
+import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
 import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
 
 export type EmailLinkingStep = "form" | "verifying" | "success";
@@ -49,7 +49,7 @@ export interface EmailLinkingState {
 }
 
 export function createEmailLinkingState(
-  authService: IAuthenticator,
+  authService: Authenticator,
   hapticService: IHapticFeedback | null,
   initialEmail: string,
   onSuccess?: () => void,

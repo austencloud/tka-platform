@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
-  import type { IAuthenticator } from "$lib/shared/auth/services/contracts/IAuthenticator";
+  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import { desktopState } from "../../state/desktop-state.svelte";
   import RetroButton from "../primitives/RetroButton.svelte";
 

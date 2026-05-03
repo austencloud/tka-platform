@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { ICommandPalette } from './services/contracts/ICommandPalette';
+
 import { CommandPalette } from './services/implementations/CommandPalette';
 
-let instance: ICommandPalette | null = null;
+let instance: CommandPalette | null = null;
 
-export function getCommandPalette(): ICommandPalette {
+export function getCommandPalette(): CommandPalette {
 	if (!browser) throw new Error('getCommandPalette() is browser-only');
 	return instance ??= new CommandPalette();
 }

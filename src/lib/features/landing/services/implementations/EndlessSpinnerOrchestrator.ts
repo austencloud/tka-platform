@@ -9,12 +9,12 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
-import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
-import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type {
   IEndlessSpinnerOrchestrator,
   EndState,
@@ -308,12 +308,12 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
   };
 
   constructor(
-    private readonly browseLoader: IBrowseLoader,
-    private readonly generationOrchestrator: IGenerationOrchestrator,
-    private readonly sequenceTransformer: ISequenceTransformer,
-    private readonly startPositionDeriver: IStartPositionDeriver,
-    private readonly orientationCalculator: IOrientationCalculator,
-    private readonly gridPositionDeriver: IGridPositionDeriver
+    private readonly browseLoader: PublicSequencesLoader,
+    private readonly generationOrchestrator: GenerationOrchestrator,
+    private readonly sequenceTransformer: SequenceTransformer,
+    private readonly startPositionDeriver: StartPositionDeriver,
+    private readonly orientationCalculator: OrientationCalculator,
+    private readonly gridPositionDeriver: GridPositionDeriver
   ) {}
 
   async initialize(): Promise<void> {

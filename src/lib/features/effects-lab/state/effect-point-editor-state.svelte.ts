@@ -1,4 +1,4 @@
-import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
+import type { TipPointOverrideProvider } from "../services/implementations/TipPointOverrideProvider";
 import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
 import type { TipPoint } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
@@ -37,14 +37,14 @@ export class EffectPointEditorState {
 	trailConfig = $state<TrailPointConfig | null>(null);
 
 	private undoStack: UndoEntry[] = [];
-	private provider: IEffectPointOverrideProvider;
+	private provider: TipPointOverrideProvider;
 	private saveIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 	private actionFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 	private storageKey: string;
 	private unsubscribePersister: (() => void) | null = null;
 
 	constructor(
-		provider: IEffectPointOverrideProvider,
+		provider: TipPointOverrideProvider,
 		persister?: IEffectPointsPersister,
 	) {
 		this.storageKey = "effects-lab-selected-prop";

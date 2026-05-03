@@ -1,7 +1,6 @@
-import type { ITikaSessionRepository } from './services/contracts/ITikaSessionRepository';
 import { TikaSessionRepository } from './services/implementations/TikaSessionRepository';
 
-let instance: ITikaSessionRepository | null = null;
-export function getTikaSessionRepository(): ITikaSessionRepository {
+let instance: TikaSessionRepository | null = null;
+export function getTikaSessionRepository(): TikaSessionRepository {
   return instance ??= new TikaSessionRepository();
 }

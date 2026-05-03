@@ -1,8 +1,7 @@
-import type { IDuetPersister } from './services/contracts/IDuetPersister';
 import { DuetPersister } from './services/implementations/DuetPersister';
 import { getBrowseLoader } from '$lib/features/browse/sequences/display/getBrowseLoader';
 
-let instance: IDuetPersister | null = null;
-export function getDuetPersister(): IDuetPersister {
+let instance: DuetPersister | null = null;
+export function getDuetPersister(): DuetPersister {
   return instance ??= new DuetPersister(getBrowseLoader());
 }

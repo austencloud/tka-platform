@@ -12,7 +12,7 @@
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import ModuleList from "./ModuleList.svelte";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
-  import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import Drawer from "../../foundation/ui/Drawer.svelte";
   import AccountRow from "./account/AccountRow.svelte";
@@ -38,7 +38,7 @@
   }>();
 
   let hapticService: IHapticFeedback = null!;
-  let deviceDetector: IDeviceDetector | null = null;
+  let deviceDetector: DeviceDetector | null = null;
   let isOpen = $state(false);
 
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);

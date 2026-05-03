@@ -8,24 +8,24 @@
  */
 
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
-import type { IStartPositionManager } from "../../construct/start-position-picker/services/contracts/IStartPositionManager";
-import type { IStepOperator } from "../services/contracts/IStepOperator";
-import type { ICreateModuleOrchestrator } from "../services/contracts/ICreateModuleOrchestrator";
+import type { StartPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
+import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
 import type { INavigationSyncer } from "../services/contracts/INavigationSyncer";
-import type { IResponsiveLayoutManager } from "../services/contracts/IResponsiveLayoutManager";
-import type { ISequencePersister } from "../services/contracts/ISequencePersister";
-import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
+import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 
 /**
  * Container for all CreateModule services
  */
 export interface CreateModuleOrchestrators {
-  sequenceService: ISequenceRepository;
-  SequencePersister: ISequencePersister;
-  StartPositionManager: IStartPositionManager;
-  CreateModuleOrchestrator: ICreateModuleOrchestrator;
-  layoutService: IResponsiveLayoutManager;
+  sequenceService: SequenceRepository;
+  SequencePersister: SequencePersister;
+  StartPositionManager: StartPositionManager;
+  CreateModuleOrchestrator: CreateModuleOrchestrator;
+  layoutService: ResponsiveLayoutManager;
   NavigationSyncer: INavigationSyncer;
-  StepOperator: IStepOperator;
+  StepOperator: StepOperator;
   shareService: ISharer;
 }

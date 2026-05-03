@@ -18,7 +18,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { SequenceVisibility } from "../../domain/models/LibrarySequence";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
-import type { ITagManager } from "../contracts/ITagManager";
+import type { TagManager } from "./TagManager";
 import type { ILibraryRepository } from "../contracts/ILibraryRepository";
 import type { ArtifactExtractor } from "./ArtifactExtractor";
 import { TAG_COLORS } from "../../domain/models/Tag";
@@ -30,7 +30,7 @@ import type {
   SaveProgress,
   SaveResult,
 } from "../contracts/ILibrarySaveService";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { LibraryError } from "./LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
@@ -39,14 +39,14 @@ import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
   private readonly uploadService: IVideoUploader | null;
-  private readonly tagService: ITagManager | null;
+  private readonly tagService: TagManager | null;
   private readonly libraryRepository: ILibraryRepository;
   private readonly artifactExtractor: ArtifactExtractor | null;
 
   constructor(
     shareService: ISharer | null,
     uploadService: IVideoUploader | null,
-    tagService: ITagManager | null,
+    tagService: TagManager | null,
     libraryRepository: ILibraryRepository,
     artifactExtractor?: ArtifactExtractor | null
   ) {
@@ -252,7 +252,7 @@ export class LibrarySaveService implements ILibrarySaveService {
         "[LibrarySaveService] Failed to generate/upload thumbnail:",
         error
       );
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Sequence saved, but the thumbnail didn't generate",
         technicalDetails: error instanceof Error ? error.message : String(error),

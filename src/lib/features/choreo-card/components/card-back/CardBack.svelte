@@ -15,7 +15,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { ISequenceToEntryConverter } from "../../services/contracts/ISequenceToEntryConverter";
+  import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
   import type { ILOOPExplainer } from "../../services/contracts/ILOOPExplainer";
 import { onMount } from "svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
@@ -32,7 +32,7 @@ import { onMount } from "svelte";
   interface Props { sequence: SequenceData; }
   let { sequence }: Props = $props();
 
-  let converter: ISequenceToEntryConverter | null = $state(null);
+  let converter: SequenceToEntryConverter | null = $state(null);
   let explainer: ILOOPExplainer | null = $state(null);
   onMount(() => {
     converter = getSequenceToEntryConverter();

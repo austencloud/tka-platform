@@ -14,8 +14,8 @@ Provides quiz functionality for learning TKA notation:
   import type { ICodex } from "../../codex/services/contracts/ICodex";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
   import type { QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
-  import type { IQuizRepoManager } from "../services/contracts/IQuizRepository";
-  import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
+  import type { QuizRepoManager } from "../services/implementations/QuizRepoManager";
+  import type { QuizSessionManager } from "../services/implementations/QuizSessionManager";
   import type { DetectedGap } from "../../services/contracts/IGapDetector";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
   import { QuestionGenerator } from "../services/implementations/QuestionGenerator";

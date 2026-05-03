@@ -10,9 +10,8 @@
  * - Selects a natural English voice when available
  */
 
-import type { ITTSProvider } from "../contracts/ITTSProvider";
 
-export class WebSpeechTTSProvider implements ITTSProvider {
+export class WebSpeechTTSProvider {
   private synth: SpeechSynthesis | null = null;
   private preferredVoice: SpeechSynthesisVoice | null = null;
   private voiceLoaded = false;

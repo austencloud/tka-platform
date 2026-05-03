@@ -9,12 +9,11 @@ import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contra
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { IPositionAnalyzer } from "../contracts/IPositionAnalyzer";
-import type { IOptionLoader } from "../contracts/IOptionLoader";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
-export class OptionLoader implements IOptionLoader {
+export class OptionLoader {
   constructor(
-    private positionMapper: IGridPositionDeriver,
+    private positionMapper: GridPositionDeriver,
     private motionQueryHandler: IMotionQueryHandler,
     private positionAnalyzer: IPositionAnalyzer
   ) {}

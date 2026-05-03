@@ -20,15 +20,14 @@ import {
 	runTransaction
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { IAgeVerifier } from '../contracts/IAgeVerifier';
-import type { IHallOfShameVoter } from '../contracts/IHallOfShameVoter';
+import type { AgeVerifier } from "./AgeVerifier";
 import type { HallOfShameEntry, HallOfShameVote } from '../../domain/models/hall-of-shame-models';
 
-export class HallOfShameVoter implements IHallOfShameVoter {
+export class HallOfShameVoter {
 	private readonly ENTRIES_COLLECTION = 'hallOfShame';
 	private readonly VOTES_COLLECTION = 'hallOfShameVotes';
 
-	constructor(private readonly ageVerifier: IAgeVerifier) {}
+	constructor(private readonly ageVerifier: AgeVerifier) {}
 
 	async vote(sequenceId: string, voterId: string): Promise<void> {
 		// Verify age first

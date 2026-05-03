@@ -16,10 +16,9 @@ import type {
 } from "../../domain/option-picker-types";
 import type { IPositionAnalyzer } from "../contracts/IPositionAnalyzer";
 import type { ReversalChecker } from "./ReversalChecker";
-import type { IOptionFilter } from "../contracts/IOptionFilter";
 import { LetterType } from "../../../../../../shared/foundation/domain/models/LetterType";
 
-export class OptionFilter implements IOptionFilter {
+export class OptionFilter {
   constructor(
     private ReversalChecker: ReversalChecker,
     private positionAnalyzer: IPositionAnalyzer

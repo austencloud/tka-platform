@@ -21,12 +21,12 @@ import type {
 import type { HandLandmark } from "$lib/features/train/services/contracts/IHandLandmarker";
 import { QuadrantMapper } from "$lib/features/train/services/implementations/QuadrantMapper";
 import type { ExtractedFrame, HandTimeline, ProgressCallback } from "../../domain/models";
-import type { IImageModeHandLandmarker } from "../contracts/IImageModeHandLandmarker";
+import type { ImageModeHandLandmarker } from "./ImageModeHandLandmarker";
 
 export class VideoHandAnalyzer {
   private readonly _quadrantMapper = new QuadrantMapper();
 
-  constructor(private readonly _landmarker: IImageModeHandLandmarker) {}
+  constructor(private readonly _landmarker: ImageModeHandLandmarker) {}
 
   async analyze(
     frames: ExtractedFrame[],

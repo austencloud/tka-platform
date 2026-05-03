@@ -19,7 +19,6 @@ import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { IAnimationStateManager } from "../contracts/IAnimationStateManager";
 import type { IStepCalculator } from "../contracts/IStepCalculator";
 import type { PropInterpolator } from "./PropInterpolator";
-import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
 import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
@@ -38,7 +37,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
  * When currentStep < 1: We're at the start position (derived from steps[0])
  * When currentStep >= 1: We're at a motion beat (beat N uses this.steps[N-1])
  */
-export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestrator {
+export class SequenceAnimationOrchestrator {
   // Motion steps (beat 1 = steps[0], beat 2 = steps[1], etc.)
   // Start position is derived from steps[0].startLocation/startOrientation
   private steps: readonly StepData[] = [];

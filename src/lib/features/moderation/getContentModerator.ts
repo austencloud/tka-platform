@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IContentModerator } from './services/contracts/IContentModerator';
 import { ContentModerator } from './services/implementations/ContentModerator';
 
-let instance: IContentModerator | null = null;
+let instance: ContentModerator | null = null;
 
-export function getContentModerator(): IContentModerator {
+export function getContentModerator(): ContentModerator {
 	if (!browser) throw new Error('getContentModerator() is browser-only');
 	return instance ??= new ContentModerator();
 }

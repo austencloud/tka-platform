@@ -33,9 +33,9 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
     VideoExportFormat,
   } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import type { IVideoExporter } from "$lib/features/compose/services/contracts/IVideoExporter";
-  import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
+  import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
@@ -70,13 +70,13 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
   } = $props();
 
   // Services
-  let browseLoader: IBrowseLoader | null = null;
+  let browseLoader: PublicSequencesLoader | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
   let hapticService: IHapticFeedback | null = null;
   let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
   let VideoExporter: IVideoExporter | null = null;
   let sheetRouterService: ISheetRouter | null = null;
-  let loopabilityChecker: ISequenceLoopabilityChecker | null = null;
+  let loopabilityChecker: SequenceLoopabilityChecker | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 
   // State to track service readiness
@@ -401,7 +401,7 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
    */
   async function loadSequenceData(
     sequence: SequenceData | null,
-    loader: IBrowseLoader
+    loader: PublicSequencesLoader
   ): Promise<SequenceData | null> {
     if (!sequence) return null;
 

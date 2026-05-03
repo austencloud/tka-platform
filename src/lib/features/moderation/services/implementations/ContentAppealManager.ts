@@ -19,7 +19,6 @@ import {
 	Timestamp
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { IContentAppealManager } from '../contracts/IContentAppealManager';
 import type {
 	ContentAppeal,
 	CreateAppealData,
@@ -44,7 +43,7 @@ interface AppealDocument {
 	adminNotes?: string;
 }
 
-export class ContentAppealManager implements IContentAppealManager {
+export class ContentAppealManager {
 	async submitAppeal(userId: string, data: CreateAppealData): Promise<ContentAppeal> {
 		const firestore = await getFirestoreInstance();
 		const appealsRef = collection(firestore, APPEALS_COLLECTION);

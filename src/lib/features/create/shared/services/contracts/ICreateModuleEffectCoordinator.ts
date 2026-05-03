@@ -11,10 +11,10 @@ import type { NavigationState } from "$lib/shared/navigation/state/navigation-st
 import type { CreateModuleState } from "../../state/create-module-state.svelte";
 import type { ConstructTabState } from "../../state/construct-tab-state.svelte";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
-import type { IResponsiveLayoutManager } from "./IResponsiveLayoutManager";
+import type { ResponsiveLayoutManager } from "../implementations/ResponsiveLayoutManager";
 import type { INavigationSyncer } from "./INavigationSyncer";
 import type { IDeepLinkSequenceHandler } from "./IDeepLinkSequenceHandler";
-import type { IStepOperator } from "./IStepOperator";
+import type { StepOperator } from "../implementations/StepOperator";
 import type { Autosaver } from "../../services/Autosaver";
 import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
 
@@ -29,10 +29,10 @@ export interface CreateModuleEffectConfig {
   navigationState: NavigationState;
 
   // Services
-  layoutService: IResponsiveLayoutManager;
+  layoutService: ResponsiveLayoutManager;
   NavigationSyncer: INavigationSyncer;
   getDeepLinker: () => IDeepLinkSequenceHandler | null;
-  getStepOperator: () => IStepOperator | null;
+  getStepOperator: () => StepOperator | null;
   getAutosaver: () => Autosaver | null;
 
   // State flags

@@ -1,7 +1,7 @@
 /**
  * Generation Actions State - Reactive wrapper for generation orchestration
  *
- * Delegates complex generation logic to IGenerationOrchestrator.
+ * Delegates complex generation logic to GenerationOrchestrator.
  * Manages reactive state and workbench animation updates.
  */
 
@@ -13,9 +13,9 @@ import { clearPropPositionCache } from "$lib/shared/pictograph/prop/components/P
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import { GenerationMode } from "../shared/domain/models/generate-models";
-import type { IGenerationOrchestrator } from "../shared/services/contracts/IGenerationOrchestrator";
+import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 import { generationOrchestrator } from "../shared/services/implementations/GenerationOrchestrator";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { levelToDifficulty, type UIGenerationConfig } from "../shared/utils/config-mapper";
 import {
   getTemplateById,
@@ -25,7 +25,7 @@ import type { SpellModeState } from "./spell-mode-state.svelte";
 import type { UndoMetadata, UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import { UndoOperationType as UndoOp } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import type { IVariationExplorationOrchestrator } from "$lib/features/create/spell/services/contracts/IVariationExplorationOrchestrator";
-import type { ISpellServiceLoader } from "$lib/features/create/spell/services/contracts/ISpellServiceLoader";
+import type { SpellServiceLoader } from "$lib/features/create/spell/services/implementations/SpellServiceLoader";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import {
@@ -63,7 +63,7 @@ export function createGenerationActionsState(
   let lastGeneratedSequence = $state<SequenceData | null>(null);
   let lastGeneratedConfig = $state<UIGenerationConfig | null>(null);
   let generationError = $state<string | null>(null);
-  let orchestrationService: IGenerationOrchestrator | null = null;
+  let orchestrationService: GenerationOrchestrator | null = null;
 
   async function onGenerateClicked(options: GenerationOptions) {
     if (isGenerating) return;
@@ -211,7 +211,7 @@ export function createGenerationActionsState(
   // bridge-letter expansion, target-length padding). The actual sequence
   // generation goes through generationOrchestrator (same path as freeform + MCP).
   let spellOrchestrator: IVariationExplorationOrchestrator | null = null;
-  let spellServiceLoader: ISpellServiceLoader | null = null;
+  let spellServiceLoader: SpellServiceLoader | null = null;
 
   async function onSpellGenerate() {
     const spellState = getSpellState?.();
@@ -229,7 +229,7 @@ export function createGenerationActionsState(
         spellOrchestrator = getVariationExplorationOrchestrator() as IVariationExplorationOrchestrator;
       }
       if (!spellServiceLoader) {
-        spellServiceLoader = getSpellServiceLoader() as ISpellServiceLoader;
+        spellServiceLoader = getSpellServiceLoader() as SpellServiceLoader;
       }
 
       const config = getConfig?.();
@@ -262,7 +262,7 @@ export function createGenerationActionsState(
         const extraBridgesNeeded = Math.max(0, spellTarget - finalLetters.length);
 
         if (extraBridgesNeeded > 0) {
-          const graph = await (getSpellServiceLoader() as ISpellServiceLoader).getTransitionGraph();
+          const graph = await (getSpellServiceLoader() as SpellServiceLoader).getTransitionGraph();
           const preferDash = config.motionTypeFilter === "prefer-dash";
           const avoidDash = config.motionTypeFilter === "no-dash";
 

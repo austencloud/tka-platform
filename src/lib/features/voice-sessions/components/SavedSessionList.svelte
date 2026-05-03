@@ -7,9 +7,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
-  import type { IVoiceSessionFormatter } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter";
-  import type { IVoiceSessionReplayer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionReplayer";
+  import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
+  import type { VoiceSessionFormatter } from "$lib/features/voice-sessions/services/implementations/VoiceSessionFormatter";
+  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
   import type { VoiceSessionPreview, VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import SavedSessionItem from "./SavedSessionItem.svelte";
   import SessionDetailView from "./SessionDetailView.svelte";
@@ -20,9 +20,9 @@
     replayer = null,
     refreshTrigger = 0,
   }: {
-    repository: IVoiceSessionRepository;
-    formatter: IVoiceSessionFormatter;
-    replayer?: IVoiceSessionReplayer | null;
+    repository: VoiceSessionRepository;
+    formatter: VoiceSessionFormatter;
+    replayer?: VoiceSessionReplayer | null;
     refreshTrigger?: number;
   } = $props();
 

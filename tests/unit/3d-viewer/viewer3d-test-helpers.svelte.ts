@@ -1,5 +1,5 @@
 import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
-import type { IPropStateInterpolator } from "$lib/shared/3d/services/contracts/IPropStateInterpolator";
+import type { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
 import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
 import type { IViewer3DUndoManager } from "$lib/shared/3d/services/contracts/IViewer3DUndoManager";
 import { Viewer3DUndoManager } from "$lib/shared/3d/services/implementations/Viewer3DUndoManager";
@@ -17,7 +17,7 @@ export type ViewerState = ReturnType<typeof createViewer3DState>;
  * to use in unit tests.
  */
 export function createViewer3DStateForTest(deps: {
-  propInterpolator: IPropStateInterpolator;
+  propInterpolator: PropStateInterpolator;
   sequenceConverter: ISequenceConverter;
   viewer3DUndoManager?: IViewer3DUndoManager;
 }): { state: ViewerState; dispose: () => void } {

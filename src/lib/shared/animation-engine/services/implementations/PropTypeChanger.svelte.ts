@@ -6,7 +6,7 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type {
   IPropTypeChanger,
   PropTypeChangerState,
@@ -21,7 +21,7 @@ export class PropTypeChanger implements IPropTypeChanger {
     textureReloadSignal: 0,
   });
 
-  checkForChanges(settingsService: ISettingsState | null): void {
+  checkForChanges(settingsService: SettingsState | null): void {
     if (!settingsService) return;
 
     const settings = settingsService.currentSettings;

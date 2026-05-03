@@ -7,12 +7,11 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceEntry, RawStepData, RawMotionAttributes } from "$lib/features/loop-labeler/domain/models/sequence-models";
-import type { ISequenceToEntryConverter } from "../contracts/ISequenceToEntryConverter";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-export class SequenceToEntryConverter implements ISequenceToEntryConverter {
+export class SequenceToEntryConverter {
   convert(sequence: SequenceData): SequenceEntry {
     const rawSequence = this.convertStepsToRaw(sequence);
 

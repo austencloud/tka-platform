@@ -8,7 +8,7 @@
   import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount } from "svelte";
   import { getStepDataConverter } from "$lib/features/loop-labeler/getStepDataConverter";
-  import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+  import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
   import { loopDetector } from "../services/implementations/LOOPDetector";
   import type { IStepDataConverter } from "../services/contracts/IStepDataConverter";
   import type {
@@ -467,7 +467,7 @@
     if (!result.success) {
       console.error("Failed to delete sequence:", result.error);
       try {
-        const errorHandler = getErrorHandler() as IErrorHandler | undefined;
+        const errorHandler = getErrorHandler() as ErrorHandler | undefined;
         if (errorHandler) {
           errorHandler.showError(
             "Could not delete this sequence. Check your connection and try again.",

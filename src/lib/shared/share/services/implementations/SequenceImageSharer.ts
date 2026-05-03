@@ -6,12 +6,12 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
+import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import type { ISequenceImageSharer, ShareResult } from "../contracts/ISequenceImageSharer";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
 export class SequenceImageSharer implements ISequenceImageSharer {
-  constructor(private readonly renderer: ISequenceRenderer) {}
+  constructor(private readonly renderer: SequenceRenderer) {}
 
   async copyToClipboard(
     sequence: SequenceData,

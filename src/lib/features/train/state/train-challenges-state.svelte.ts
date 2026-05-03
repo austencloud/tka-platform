@@ -9,7 +9,7 @@ import type {
   TrainChallenge,
   UserTrainChallengeProgress,
 } from "../domain/models/TrainChallengeModels";
-import type { ITrainChallengeManager } from "../services/contracts/ITrainChallengeManager";
+import type { TrainChallengeManager } from "../services/implementations/TrainChallengeManager";
 
 interface ChallengesTabState {
   selectedChallengeId: string | null;
@@ -49,7 +49,7 @@ function createTrainChallengesState() {
    * Load challenges data if not already cached
    */
   async function loadChallenges(
-    service: ITrainChallengeManager
+    service: TrainChallengeManager
   ): Promise<void> {
     // If already loaded, skip
     if (isLoaded) return;
@@ -86,7 +86,7 @@ function createTrainChallengesState() {
    * Force reload challenges data (bypasses cache)
    */
   async function refreshChallenges(
-    service: ITrainChallengeManager
+    service: TrainChallengeManager
   ): Promise<void> {
     isLoaded = false;
     await loadChallenges(service);
@@ -188,10 +188,10 @@ export const trainChallengesState = {
   get isLoading() {
     return getChallengesState().isLoading;
   },
-  loadChallenges(service: ITrainChallengeManager) {
+  loadChallenges(service: TrainChallengeManager) {
     return getChallengesState().loadChallenges(service);
   },
-  refreshChallenges(service: ITrainChallengeManager) {
+  refreshChallenges(service: TrainChallengeManager) {
     return getChallengesState().refreshChallenges(service);
   },
   updateProgress(challengeId: string, progress: UserTrainChallengeProgress) {

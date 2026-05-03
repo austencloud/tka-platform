@@ -1,7 +1,6 @@
-import type { ICompositionThumbnailResolver } from './services/contracts/ICompositionThumbnailResolver';
 import { CompositionThumbnailResolver } from './services/implementations/CompositionThumbnailResolver';
 
-let instance: ICompositionThumbnailResolver | null = null;
-export function getCompositionThumbnailResolver(): ICompositionThumbnailResolver {
+let instance: CompositionThumbnailResolver | null = null;
+export function getCompositionThumbnailResolver(): CompositionThumbnailResolver {
   return instance ??= new CompositionThumbnailResolver();
 }

@@ -6,7 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getTrainChallengeManager } from "$lib/features/train/getTrainChallengeManager";
-  import type { ITrainChallengeManager } from "$lib/features/train/services/contracts/ITrainChallengeManager";
+  import type { TrainChallengeManager as TrainChallengeManagerService } from "$lib/features/train/services/implementations/TrainChallengeManager";
   import type { TrainChallenge, TrainChallengeRequirementType } from "$lib/features/train/domain/models/TrainChallengeModels";
   import type { ChallengeDifficulty } from "$lib/shared/gamification/domain/models/achievement-models";
   import { PracticeMode } from "$lib/features/train/domain/enums/TrainEnums";
@@ -19,7 +19,7 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Services (resolved lazily to avoid module initialization errors)
-  let challengeService: ITrainChallengeManager | null = null;
+  let challengeService: TrainChallengeManagerService | null = null;
 
   // State
   let challenges = $state<TrainChallenge[]>([]);

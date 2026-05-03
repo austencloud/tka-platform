@@ -7,7 +7,7 @@
  */
 
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
-import type { IGridModeDeriver } from "../../../grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
 import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
@@ -24,7 +24,7 @@ interface PropPlacerSettings {
 import { createPropPlacementFromPosition } from "../../domain/factories/createPropPlacementData";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
-import type { IBetaDetector } from "../contracts/IBetaDetector";
+import type { BetaDetector } from "./BetaDetector";
 import type {
   IPropPlacer,
   PropPlacementVisibility,
@@ -39,8 +39,8 @@ import {
 
 export class PropPlacer implements IPropPlacer {
   constructor(
-    private gridModeService: IGridModeDeriver,
-    private BetaDetector: IBetaDetector,
+    private gridModeService: GridModeDeriver,
+    private BetaDetector: BetaDetector,
     private settings?: PropPlacerSettings
   ) {}
 

@@ -26,10 +26,6 @@ import type {
   VoiceSessionPreview,
   VoiceSessionStats,
 } from "$lib/shared/voice-control/domain/voice-session-types";
-import type {
-  IVoiceSessionRepository,
-  VoiceSessionQueryOptions,
-} from "../contracts/IVoiceSessionRepository";
 import {
   getUserVoiceSessionsPath,
   getUserVoiceSessionPath,
@@ -46,7 +42,12 @@ export class VoiceSessionError extends Error {
   }
 }
 
-export class VoiceSessionRepository implements IVoiceSessionRepository {
+export interface VoiceSessionQueryOptions {
+  limit?: number;
+  sortDirection?: "asc" | "desc";
+}
+
+export class VoiceSessionRepository {
   private getUserId(): string {
     const userId = authState.effectiveUserId;
     if (!userId) {

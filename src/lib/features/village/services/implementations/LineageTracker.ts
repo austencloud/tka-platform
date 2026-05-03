@@ -1,7 +1,6 @@
-import type { ILineageTracker } from "../contracts/ILineageTracker";
 import type { PopulationStats, VillageEntity } from "../../domain/village-types";
 
-export class LineageTracker implements ILineageTracker {
+export class LineageTracker {
 	private everKnownSequences = new Set<string>();
 	private sequenceTransmissions = new Map<string, string[]>();
 

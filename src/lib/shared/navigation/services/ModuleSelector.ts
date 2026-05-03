@@ -4,9 +4,8 @@ import type {
   ModuleSelectionContext,
   ModuleSelectionResult,
 } from "../domain/models/ModuleSelection";
-import type { IModuleSelector } from "./contracts/IModuleSelector";
 
-export class ModuleSelector implements IModuleSelector {
+export class ModuleSelector {
   private selectionState: ModuleSelectionState = {
     isSelecting: false,
     lastSelected: null,

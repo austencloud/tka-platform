@@ -1,13 +1,13 @@
 import type { AppSettings } from "../../../settings/domain/AppSettings";
-import type { ISettingsState } from "../../../settings/services/contracts/ISettingsState";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { browser } from "$app/environment";
 
 const debug = createComponentLogger("VisibilityManager");
 
-let settingsServiceInstance: ISettingsState | null = null;
+let settingsServiceInstance: SettingsState | null = null;
 
-async function getSettingsService(): Promise<ISettingsState | null> {
+async function getSettingsService(): Promise<SettingsState | null> {
   if (!browser) return null;
   if (!settingsServiceInstance) {
     const { settingsService } =

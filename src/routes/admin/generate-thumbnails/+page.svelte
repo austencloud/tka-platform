@@ -27,7 +27,7 @@
     type SequenceData,
   } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
-  import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
+  import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 
   // Legacy data types from meta.json files
   interface LegacyMotionAttributes {
@@ -256,7 +256,7 @@
   let isGenerating = $state(false);
   let isPaused = $state(false);
   let errorMessage = $state<string | null>(null);
-  let renderService: ISequenceRenderer | null = $state(null);
+  let renderService: SequenceRenderer | null = $state(null);
 
   // Progress tracking
   let currentSequenceIndex = $state(0);

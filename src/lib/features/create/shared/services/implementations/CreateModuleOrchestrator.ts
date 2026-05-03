@@ -9,16 +9,15 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-// import type { IStartPositionManager } from "../../tool-panel/construct/start-position-picker/services/contracts";
-import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrchestrator";
+// import type { StartPositionManager } from "../../tool-panel/construct/start-position-picker/services/contracts";
 // IStartPositionSelectionService removed - using unified service
 import { constructTabEventService } from "./CreateModuleEventHandler";
 
-export class CreateModuleOrchestrator implements ICreateModuleOrchestrator {
+export class CreateModuleOrchestrator {
   private currentTab: string = "construct"; // Default tab
   private tabStates: Map<string, unknown> = new Map();
 
-  constructor() {} // Start position selection now handled by unified service // private readonly StartPositionManager: IStartPositionManager // @inject(TYPES.IStartPositionManager)
+  constructor() {} // Start position selection now handled by unified service // private readonly StartPositionManager: StartPositionManager // @inject(TYPES.StartPositionManager)
 
   /**
    * Orchestrates the complete start position selection workflow

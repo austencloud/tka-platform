@@ -14,7 +14,7 @@ import type { IImageComposer } from "$lib/shared/render/services/contracts/IImag
 import type { IPrintCardRenderer, PrintRenderOptions } from "../contracts/IPrintCardRenderer";
 import type { ICardBackDomRenderer } from "../contracts/ICardBackDomRenderer";
 import type { IInfoCardCanvasRenderer } from "../contracts/IInfoCardCanvasRenderer";
-import type { ISequenceToEntryConverter } from "../contracts/ISequenceToEntryConverter";
+import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
 import type { ILOOPExplainer } from "../contracts/ILOOPExplainer";
 
 
@@ -36,7 +36,7 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     private readonly imageComposer: IImageComposer,
     private readonly cardBackDomRenderer: ICardBackDomRenderer,
     private readonly infoCardRenderer: IInfoCardCanvasRenderer,
-    private readonly sequenceToEntryConverter: ISequenceToEntryConverter,
+    private readonly sequenceToEntryConverter: SequenceToEntryConverter,
     private readonly loopExplainer: ILOOPExplainer,
     private readonly theme: string = "nightSky"
   ) {}

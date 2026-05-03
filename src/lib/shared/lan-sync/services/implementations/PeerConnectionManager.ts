@@ -5,14 +5,13 @@
  * Handles room creation, joining, and message passing.
  */
 
-import type { IPeerConnectionManager } from '../contracts/IPeerConnectionManager';
 import type { SyncMessage, PeerConnectionState } from '../../domain/models/lan-sync-models';
 import { generateRoomCode, createInitialConnectionState } from '../../domain/models/lan-sync-models';
 
 type Peer = import('peerjs').default;
 type DataConnection = import('peerjs').DataConnection;
 
-export class PeerConnectionManager implements IPeerConnectionManager {
+export class PeerConnectionManager {
 	private peer: Peer | null = null;
 	private connections: Map<string, DataConnection> = new Map();
 	private _connectionState: PeerConnectionState = createInitialConnectionState();

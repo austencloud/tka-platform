@@ -9,8 +9,8 @@
   import { DETECTOR_REGISTRY } from "../domain/types";
   import type { ExportConfig, ExportState } from "../domain/types";
   import type { IEndpointDetector } from "../services/contracts/IEndpointDetector";
-  import type { IEffectConfigMapper } from "../services/contracts/IEffectConfigMapper";
-  import type { IVideoTipAdapter } from "../services/contracts/IVideoTipAdapter";
+  import type { EffectConfigMapper } from "../services/implementations/EffectConfigMapper";
+  import type { VideoTipAdapter } from "../services/implementations/VideoTipAdapter";
   import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { FireFrameInput } from "$lib/shared/animation-engine/domain/types/FireTypes";
   import type { LedFrameInput } from "$lib/shared/animation-engine/domain/types/LedTypes";
@@ -26,8 +26,8 @@
 
   const { state: trailsState } = getVideoTrailsContext();
 
-  const configMapper = getEffectConfigMapper() as IEffectConfigMapper;
-  const tipAdapter = getVideoTipAdapter() as IVideoTipAdapter;
+  const configMapper = getEffectConfigMapper() as EffectConfigMapper;
+  const tipAdapter = getVideoTipAdapter() as VideoTipAdapter;
 
   let canvasStack: EffectCanvasStack | undefined = $state(undefined);
 

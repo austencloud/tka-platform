@@ -21,7 +21,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IStepOperator } from "../../services/contracts/IStepOperator";
+  import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
   import {
     MotionColor,
     RotationDirection,
@@ -45,7 +45,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
 
   // Services
   const hapticService: IHapticFeedback = getHapticFeedback();
-  const StepOperator: IStepOperator = getStepOperator();
+  const StepOperator: StepOperator = getStepOperator();
 
   // Only show panel if the current tab supports it AND panel state says it's open
   const currentTab = $derived(navigationState.activeTab);

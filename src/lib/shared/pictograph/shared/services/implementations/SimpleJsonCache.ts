@@ -5,9 +5,8 @@
  * No complex error hierarchies, just basic caching.
  */
 
-import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
 
-export class SimpleJsonCache implements IJsonCache {
+export class SimpleJsonCache {
   private cache = new Map<string, unknown>();
   private loadingPromises = new Map<string, Promise<unknown>>();
 

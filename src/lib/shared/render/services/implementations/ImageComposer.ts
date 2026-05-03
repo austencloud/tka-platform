@@ -27,10 +27,10 @@ import type {
   CompositionProgressCallback,
   IImageComposer,
 } from "../contracts/IImageComposer";
-import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
+import type { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
 import type { TextRenderer } from "./TextRenderer";
 import type { IPictographBlobCache } from "../contracts/IPictographBlobCache";
-import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
+import type { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import type { StepNumberRenderer } from "./StepNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
@@ -64,11 +64,11 @@ export class ImageComposer implements IImageComposer {
   private useCompositionalCaching = true;
 
   constructor(
-    private readonly layoutService: ILayoutCalculator,
+    private readonly layoutService: LayoutCalculator,
     private readonly TextRenderer: TextRenderer,
     private readonly DimensionCalculator: IDimensionCalculator,
     private readonly blobCache: IPictographBlobCache,
-    private readonly keyHasher: IPictographKeyHasher,
+    private readonly keyHasher: PictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
     private readonly stepNumberRenderer: StepNumberRenderer,
     private readonly canvas2DRenderer: Canvas2DDirectRenderer,

@@ -8,19 +8,19 @@
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
-import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
-import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
+import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
 /**
  * Core animator services bundle
  */
 export interface AnimatorServices {
   svgGenerator: ISVGGenerator;
-  settingsService: ISettingsState;
-  orchestrator: ISequenceAnimationOrchestrator;
+  settingsService: SettingsState;
+  orchestrator: SequenceAnimationOrchestrator;
   TrailCapturer: ITrailCapturer;
-  turnsTupleGenerator: ITurnsTupleGenerator;
+  turnsTupleGenerator: TurnsTupleGenerator;
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
-import type { IGridModeDeriver } from "../../../../../grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { GlobalAdjustmentKey } from "../../domain/GlobalArrowAdjustment";
@@ -14,7 +14,7 @@ import type {
   IGlobalAdjustmentKeyGenerator,
   KeyGeneratorPropOptions,
 } from "../contracts/IGlobalAdjustmentKeyGenerator";
-import type { ITurnsTupleGenerator } from "../../../placement/services/contracts/ITurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "../../../placement/services/implementations/TurnsTupleGenerator";
 import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
 
 export class GlobalAdjustmentKeyGenerator
@@ -23,8 +23,8 @@ export class GlobalAdjustmentKeyGenerator
   private readonly oriKeyGenerator: SpecialPlacementOriKeyGenerator;
 
   constructor(
-    private readonly gridModeDeriver: IGridModeDeriver,
-    private readonly turnsTupleGenerator: ITurnsTupleGenerator
+    private readonly gridModeDeriver: GridModeDeriver,
+    private readonly turnsTupleGenerator: TurnsTupleGenerator
   ) {
     this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
   }

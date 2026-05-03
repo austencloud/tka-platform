@@ -1,7 +1,7 @@
-import type { IPeerConnectionManager } from './services/contracts/IPeerConnectionManager';
+
 import { PeerConnectionManager } from './services/implementations/PeerConnectionManager';
 
-let instance: IPeerConnectionManager | null = null;
-export function getPeerConnectionManager(): IPeerConnectionManager {
+let instance: PeerConnectionManager | null = null;
+export function getPeerConnectionManager(): PeerConnectionManager {
   return instance ??= new PeerConnectionManager();
 }

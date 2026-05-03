@@ -9,7 +9,7 @@
  * Domain: Retro SCRIBE App
  */
 
-import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
+import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 import type { GenerationOptions } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import {
   DifficultyLevel,

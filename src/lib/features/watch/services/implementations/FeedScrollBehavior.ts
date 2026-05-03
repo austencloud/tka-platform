@@ -7,7 +7,6 @@
  * - Uses 30px threshold for snappier response
  */
 
-import type { IFeedScrollBehavior } from "../contracts/IFeedScrollBehavior";
 import type { FeedScrollState } from "../../state/feed-scroll-state.svelte";
 
 /** Minimum scroll delta to trigger direction detection */
@@ -16,7 +15,7 @@ const SCROLL_THRESHOLD = 30;
 /** Scroll distance needed to hide header when scrolling down */
 const HIDE_DISTANCE = 50;
 
-export class FeedScrollBehavior implements IFeedScrollBehavior {
+export class FeedScrollBehavior {
 	private state: FeedScrollState;
 
 	constructor(scrollState: FeedScrollState) {

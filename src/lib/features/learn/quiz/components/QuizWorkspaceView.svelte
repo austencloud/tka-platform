@@ -14,7 +14,7 @@
   import type { QuizLayoutMode } from "../domain/enums/quiz-enums";
   import type { QuizResults, QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
   import { QuizConfigurator } from "../services/implementations/QuizConfigurator";
-  import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
+  import type { QuizSessionManager } from "../services/implementations/QuizSessionManager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Props

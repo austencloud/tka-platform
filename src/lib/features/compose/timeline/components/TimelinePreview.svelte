@@ -19,9 +19,9 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import type { TimelineClip } from "../domain/timeline-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { ISequenceAnimationOrchestrator } from "../../services/contracts/ISequenceAnimationOrchestrator";
+  import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
   import type { PropState } from "../../shared/domain/types/PropState";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 
   interface Props {
@@ -54,10 +54,10 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
   }
 
   // Animation orchestrator for calculating prop states
-  let animationOrchestrator = $state<ISequenceAnimationOrchestrator | null>(
+  let animationOrchestrator = $state<SequenceAnimationOrchestrator | null>(
     null
   );
-  let startPositionDeriver = $state<IStartPositionDeriver | null>(null);
+  let startPositionDeriver = $state<StartPositionDeriver | null>(null);
   let initialized = $state(false);
   let loading = $state(true);
   let error = $state<string | null>(null);

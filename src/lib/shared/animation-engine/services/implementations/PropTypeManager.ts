@@ -9,7 +9,7 @@
  */
 
 import { animationSettings as animationSettingsState } from "../../state/animation-settings-state.svelte";
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { IPropTextureLoader } from "../contracts/IPropTextureLoader";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { IAnimationRenderLoop, RenderFrameParams } from "../contracts/IAnimationRenderLoop";
@@ -36,7 +36,7 @@ export class PropTypeManager {
   additionalLayerTexturesLoading: boolean[] = [];
 
   // ── Dependencies (injected) ─────────────────────────────────────────
-  private settingsService: ISettingsState | null = null;
+  private settingsService: SettingsState | null = null;
   private propTextureService: IPropTextureLoader | null = null;
   private trailCapturer: ITrailCapturer | null = null;
   private renderLoopService: IAnimationRenderLoop | null = null;
@@ -50,7 +50,7 @@ export class PropTypeManager {
    * Wire dependencies after construction. Called from AnimationEngine.
    */
   wire(deps: {
-    settingsService: ISettingsState | null;
+    settingsService: SettingsState | null;
     propTextureService: IPropTextureLoader | null;
     trailCapturer: ITrailCapturer | null;
     renderLoopService: IAnimationRenderLoop | null;

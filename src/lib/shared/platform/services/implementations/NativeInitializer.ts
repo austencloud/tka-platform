@@ -1,7 +1,7 @@
-import type { IPlatformDetector } from "../contracts/IPlatformDetector";
+import type { PlatformDetector } from "./PlatformDetector";
 
 export class NativeInitializer {
-	constructor(private readonly platformDetector: IPlatformDetector) {}
+	constructor(private readonly platformDetector: PlatformDetector) {}
 
 	async initialize(): Promise<void> {
 		if (!this.platformDetector.isNative) return;

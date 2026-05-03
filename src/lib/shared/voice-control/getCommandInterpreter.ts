@@ -1,4 +1,3 @@
-import type { ICommandInterpreter } from './services/contracts/ICommandInterpreter';
 import { CommandInterpreter } from './services/implementations/CommandInterpreter';
 import { SystemSubInterpreter } from './services/implementations/interpreters/SystemSubInterpreter';
 import { GeneratorSubInterpreter } from './services/implementations/interpreters/GeneratorSubInterpreter';
@@ -11,8 +10,8 @@ import { SearchSubInterpreter } from './services/implementations/interpreters/Se
 import { UISubInterpreter } from './services/implementations/interpreters/UISubInterpreter';
 import { NavigationSubInterpreter } from './services/implementations/interpreters/NavigationSubInterpreter';
 
-let instance: ICommandInterpreter | null = null;
-export function getCommandInterpreter(): ICommandInterpreter {
+let instance: CommandInterpreter | null = null;
+export function getCommandInterpreter(): CommandInterpreter {
   if (!instance) {
     const interpreter = new CommandInterpreter();
     interpreter.addInterpreter(new SystemSubInterpreter());

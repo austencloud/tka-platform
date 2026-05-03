@@ -7,10 +7,9 @@
  * 3. Type-safe access to Dark Mode state
  */
 
-import type { IDarkModeProvider } from "../contracts/IDarkModeProvider";
 import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
-export class DarkModeProvider implements IDarkModeProvider {
+export class DarkModeProvider {
   private manager = getAnimationVisibilityManager();
   private subscribers = new Map<(darkMode: boolean) => void, () => void>();
 

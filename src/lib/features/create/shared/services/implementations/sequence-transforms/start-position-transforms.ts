@@ -15,8 +15,8 @@ import { createStartPositionData } from "../../../domain/factories/createStartPo
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
@@ -52,7 +52,7 @@ function deriveLetterFromGridPosition(
  */
 function deriveGridPositionFromMotions(
   startPos: StartPositionData,
-  positionDeriver: IGridPositionDeriver
+  positionDeriver: GridPositionDeriver
 ): GridPosition | null {
   const blueMotion = startPos.motions[MotionColor.BLUE];
   const redMotion = startPos.motions[MotionColor.RED];
@@ -74,7 +74,7 @@ function deriveGridPositionFromMotions(
 export function mirrorStartPosition(
   startPos: StartPositionData,
   targetHand: TargetHand = "both",
-  positionDeriver?: IGridPositionDeriver
+  positionDeriver?: GridPositionDeriver
 ): StartPositionData {
   const mirroredMotions = { ...startPos.motions };
   const blueMotion = startPos.motions[MotionColor.BLUE];
@@ -122,7 +122,7 @@ export function mirrorStartPosition(
 export function flipStartPosition(
   startPos: StartPositionData,
   targetHand: TargetHand = "both",
-  positionDeriver?: IGridPositionDeriver
+  positionDeriver?: GridPositionDeriver
 ): StartPositionData {
   const flippedMotions = { ...startPos.motions };
   const blueMotion = startPos.motions[MotionColor.BLUE];
@@ -170,7 +170,7 @@ export function flipStartPosition(
 export function rotateStartPosition(
   startPos: StartPositionData,
   rotationAmount: number,
-  positionDeriver: IGridPositionDeriver,
+  positionDeriver: GridPositionDeriver,
   targetHand: TargetHand = "both"
 ): StartPositionData {
   const rotatedMotions = { ...startPos.motions };
@@ -253,9 +253,9 @@ export function colorSwapStartPosition(
  */
 export function invertStartPosition(
   startPos: StartPositionData,
-  orientationCalculator: IOrientationCalculator,
+  orientationCalculator: OrientationCalculator,
   targetHand: TargetHand = "both",
-  positionDeriver?: IGridPositionDeriver
+  positionDeriver?: GridPositionDeriver
 ): StartPositionData {
   const invertedMotions = { ...startPos.motions };
   const startBlueMotion = startPos.motions[MotionColor.BLUE];

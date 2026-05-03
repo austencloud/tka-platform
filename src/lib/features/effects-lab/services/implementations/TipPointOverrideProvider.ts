@@ -1,5 +1,4 @@
 import { PROP_TIP_POINTS, type PropTipConfig } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
-import type { IEffectPointOverrideProvider } from "../contracts/IEffectPointOverrideProvider";
 import type { IEffectPointsPersister, EffectPoint } from "../contracts/IEffectPointsPersister";
 import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
@@ -19,7 +18,7 @@ function deepCopy<T>(value: T): T {
  * 1. Points from EffectPointsPersister (Firebase-backed)
  * 2. Admin-published defaults
  */
-export class TipPointOverrideProvider implements IEffectPointOverrideProvider {
+export class TipPointOverrideProvider {
   private publishedDefaults: Map<string, PropTipConfig>;
 
   constructor(private readonly persister: IEffectPointsPersister) {

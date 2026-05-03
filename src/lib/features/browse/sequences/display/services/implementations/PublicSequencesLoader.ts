@@ -22,15 +22,14 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IBrowseLoader } from "../contracts/IBrowseLoader";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
-import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import type { IGalleryOfflineCache } from "$lib/shared/offline/services/contracts/IGalleryOfflineCache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
-export class PublicSequencesLoader implements IBrowseLoader {
+export class PublicSequencesLoader {
   private cachedSequences: SequenceData[] | null = null;
   private loadPromise: Promise<SequenceData[]> | null = null;
   // Map from word/name OR sequence ID to sourceRef for efficient full data lookup.
@@ -63,7 +62,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
       this.cachedSequences = await this.loadPromise;
       return this.cachedSequences;
     } catch (error) {
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load the gallery",
         technicalDetails: error instanceof Error ? error.message : String(error),

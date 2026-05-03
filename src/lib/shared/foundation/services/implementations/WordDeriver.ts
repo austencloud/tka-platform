@@ -1,8 +1,7 @@
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "../../domain/models/SequenceData";
-import type { IWordDeriver } from "../contracts/IWordDeriver";
 
-export class WordDeriver implements IWordDeriver {
+export class WordDeriver {
   deriveFromBeats(steps: readonly StepData[]): string {
     if (!steps || steps.length === 0) return "";
 

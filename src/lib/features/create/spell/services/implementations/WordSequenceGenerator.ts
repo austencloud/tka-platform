@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Word Sequence Generator Implementation
  *
  * Converts typed words into valid TKA sequences with bridge letters.
@@ -8,15 +8,15 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IWordSequenceGenerator } from "../contracts/IWordSequenceGenerator";
-import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
+
+import type { LetterTransitionGraph } from "../implementations/LetterTransitionGraph";
 import type { StartPositionValidator } from "./StartPositionValidator";
 import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
 import type {
@@ -33,12 +33,12 @@ import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/mod
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 
-export class WordSequenceGenerator implements IWordSequenceGenerator {
+export class WordSequenceGenerator {
   constructor(
-    private transitionGraph: ILetterTransitionGraph,
+    private transitionGraph: LetterTransitionGraph,
     private letterQueryHandler: ILetterQueryHandler,
-    private stepConverter: IStepConverter,
-    private orientationCalculator: IOrientationCalculator,
+    private stepConverter: StepConverter,
+    private orientationCalculator: OrientationCalculator,
     private sequenceExtender: ISequenceExtender,
     private startPositionValidator: StartPositionValidator,
     private orientationContinuityValidator: IOrientationContinuityValidator,

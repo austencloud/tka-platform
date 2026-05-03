@@ -30,7 +30,7 @@ import type {
 	FriendFirebaseData
 } from '../../domain/models/connect-models';
 import { FRIEND_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
-import type { IPresenceTracker } from '../contracts/IPresenceTracker';
+import type { PresenceTracker } from '../implementations/PresenceTracker';
 
 export class FriendshipManager {
 	private _friends: Friend[] = [];
@@ -42,7 +42,7 @@ export class FriendshipManager {
 	// Callbacks
 	private friendsChangeCallbacks: Set<(friends: Friend[]) => void> = new Set();
 
-	constructor(private presenceTracker: IPresenceTracker) {}
+	constructor(private presenceTracker: PresenceTracker) {}
 
 	get friends(): Friend[] {
 		return this._friends;

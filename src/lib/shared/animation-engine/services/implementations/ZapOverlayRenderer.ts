@@ -13,12 +13,11 @@
  * arcs every few frames inside the renderer to produce the flicker.
  */
 
-import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
 import type { Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import { Zap2DRenderer, type ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class ZapOverlayRenderer implements IZapOverlayRenderer {
+export class ZapOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Zap2DRenderer();

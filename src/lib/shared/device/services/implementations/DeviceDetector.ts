@@ -5,21 +5,20 @@ import type {
   ResponsiveSettings,
 } from "../../domain/models/device-models";
 import { BREAKPOINTS, LANDSCAPE_THRESHOLDS } from "../../domain/constants/device-constants";
-import type { IDeviceDetector } from "../contracts/IDeviceDetector";
-import type { IViewportManager } from "../contracts/IViewportManager";
+import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
 /**
  * Device Detector Implementation
  *
  * Detects device capabilities and characteristics using browser APIs.
  */
-export class DeviceDetector implements IDeviceDetector {
+export class DeviceDetector {
   private logger = createComponentLogger("DeviceDetector");
   private capabilitiesCallbacks: ((caps: DeviceCapabilities) => void)[] = [];
   private _cachedDeviceType: DeviceType | null = null;
   private _lastViewportWidth: number = 0;
   private _lastViewportHeight: number = 0;
 
-  constructor(private viewportService: IViewportManager) {
+  constructor(private viewportService: ViewportManager) {
     // Subscribe to viewport changes to make device detection reactive
     this.viewportService.onViewportChange(() => {
       // Clear cached device type to force recalculation

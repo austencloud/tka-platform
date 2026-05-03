@@ -1,6 +1,5 @@
-import type { IKeyboardNavigator } from "./contracts/IKeyboardNavigator";
 
-export class KeyboardNavigator implements IKeyboardNavigator {
+export class KeyboardNavigator {
   private focusedIndex: number = -1;
   private enabled: boolean = false;
   private focusSubscriptions = new Set<(index: number) => void>();

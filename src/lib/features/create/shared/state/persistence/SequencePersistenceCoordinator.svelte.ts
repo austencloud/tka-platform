@@ -11,7 +11,7 @@
 
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
@@ -28,7 +28,7 @@ export interface SequencePersistenceStateData {
 }
 
 export function createSequencePersistenceCoordinator(
-  persistenceService: ISequencePersister | null,
+  persistenceService: SequencePersister | null,
   applyReversalDetection?: (sequence: SequenceData) => SequenceData,
   /**
    * IMPORTANT: Tab ID for persistence isolation.

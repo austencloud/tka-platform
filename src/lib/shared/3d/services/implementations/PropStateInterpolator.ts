@@ -16,17 +16,16 @@ import {
   calculatePropQuaternion,
   GRID_RADIUS_3D,
 } from "../../domain/constants/plane-transforms";
-import type { IPropStateInterpolator } from "../contracts/IPropStateInterpolator";
 import type { AngleMathCalculator } from "./AngleMathCalculator";
 import type { OrientationMapper } from "./OrientationMapper";
-import type { IMotionCalculator } from "../contracts/IMotionCalculator";
+import type { MotionCalculator } from "./MotionCalculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
-export class PropStateInterpolator implements IPropStateInterpolator {
+export class PropStateInterpolator {
   constructor(
     private angleMath: AngleMathCalculator,
     private orientationService: OrientationMapper,
-    private motionCalculator: IMotionCalculator
+    private motionCalculator: MotionCalculator
   ) {}
 
   /**

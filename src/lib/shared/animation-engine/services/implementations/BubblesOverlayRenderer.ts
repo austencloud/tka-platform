@@ -12,7 +12,6 @@
  * explicit clear().
  */
 
-import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRenderer";
 import type { Bubbles2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Bubbles2DRenderer,
@@ -20,7 +19,7 @@ import {
 } from "$lib/shared/effects/renderers/Bubbles2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class BubblesOverlayRenderer implements IBubblesOverlayRenderer {
+export class BubblesOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Bubbles2DRenderer();

@@ -11,13 +11,13 @@ import type {
   SequenceType,
   TransformOperation,
 } from "../contracts/ITunnelModeSequenceManager";
-import type { ISequenceRepository } from "../../../create/shared/services/contracts/ISequenceRepository";
-import type { ISequenceTransformer } from "../../../create/shared/services/contracts/ISequenceTransformer";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 
 export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
   constructor(
-    private readonly sequenceService: ISequenceRepository,
-    private readonly transformationService: ISequenceTransformer
+    private readonly sequenceService: SequenceRepository,
+    private readonly transformationService: SequenceTransformer
   ) {}
 
   /**

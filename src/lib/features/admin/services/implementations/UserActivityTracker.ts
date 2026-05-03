@@ -15,7 +15,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IPresenceTracker } from "$lib/shared/presence/services/contracts/IPresenceTracker";
+import type { PresenceTracker } from "$lib/shared/presence/services/implementations/PresenceTracker";
 import type {
   IUserActivityTracker,
   UserWithActivity,
@@ -30,7 +30,7 @@ import type {
 import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
 
 export class UserActivityTracker implements IUserActivityTracker {
-  constructor(private presenceService: IPresenceTracker) {}
+  constructor(private presenceService: PresenceTracker) {}
 
   async getAllUsersWithPresence(): Promise<UserWithActivity[]> {
     try {

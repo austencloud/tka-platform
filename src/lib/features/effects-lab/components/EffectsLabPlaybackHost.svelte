@@ -16,7 +16,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
+  import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
@@ -89,7 +89,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   const persisted = loadPersistedState();
 
   // ─── Shared playback state ────────────────────────────────────────────
-  let sequenceService: ISequenceRepository | null = null;
+  let sequenceService: SequenceRepository | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
   let chainingOrchestrator = $state<ISequenceChainingOrchestrator | null>(null);
   let servicesReady = $state(false);

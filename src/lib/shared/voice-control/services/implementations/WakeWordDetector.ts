@@ -17,7 +17,6 @@
  * the mic is hot without looking at the screen.
  */
 
-import type { IWakeWordDetector } from "../contracts/IWakeWordDetector";
 import type { WakeWordEvent, WakeWordState } from "../../domain/voice-command-types";
 
 /** Normalized forms of the wake phrase that speech recognition might produce */
@@ -62,7 +61,7 @@ function getSpeechRecognitionCtor(): (new () => SpeechRecognition) | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export class WakeWordDetector implements IWakeWordDetector {
+export class WakeWordDetector {
   private recognition: SpeechRecognition | null = null;
   private listening = false;
   private commandMode = false;

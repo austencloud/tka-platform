@@ -15,25 +15,24 @@
  */
 
 import type { Point as FabricPoint } from "fabric";
-import type { IGridModeDeriver } from "../../../../../grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
-import type { ISpecialPlacer } from "../contracts/ISpecialPlacer";
 import type { SpecialPlacementDataProvider } from "./SpecialPlacementDataProvider";
-import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "./TurnsTupleGenerator";
 import type { SpecialPlacementLookup } from "./SpecialPlacementLookup";
 import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
 
-export class SpecialPlacer implements ISpecialPlacer {
+export class SpecialPlacer {
   private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
 
   constructor(
     private readonly dataService: SpecialPlacementDataProvider,
-    private readonly tupleGenerator: ITurnsTupleGenerator,
+    private readonly tupleGenerator: TurnsTupleGenerator,
     private readonly lookupService: SpecialPlacementLookup,
-    private readonly gridModeService: IGridModeDeriver
+    private readonly gridModeService: GridModeDeriver
   ) {
     this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
   }
@@ -400,7 +399,7 @@ export class SpecialPlacer implements ISpecialPlacer {
   /**
    * Get grid mode service
    */
-  private getGridModeService(): IGridModeDeriver {
+  private getGridModeService(): GridModeDeriver {
     return this.gridModeService;
   }
 }

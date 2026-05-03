@@ -12,8 +12,8 @@
   import { getKeyboardShortcutManager } from "../getKeyboardShortcutManager";
   import { getCommandPalette } from "../getCommandPalette";
 
-  import type { IKeyboardShortcutManager } from "../services/contracts/IKeyboardShortcutManager";
-  import type { ICommandPalette } from "../services/contracts/ICommandPalette";
+  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
+  import type { CommandPalette } from '$lib/shared/keyboard/services/implementations/CommandPalette'
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import { getActiveModule } from "../../application/state/ui/ui-state.svelte";
   import { registerGlobalShortcuts } from "../utils/register-global-shortcuts";
@@ -22,8 +22,8 @@
   import { register3DViewerShortcuts } from "../utils/register-3d-viewer-shortcuts";
 
   // Services
-  let shortcutManager: IKeyboardShortcutManager | null = null;
-  let commandPalette: ICommandPalette | null = null;
+  let shortcutManager: KeyboardShortcutManager | null = null;
+  let commandPalette: CommandPalette | null = null;
 
   onMount(() => {
     // Initialize services asynchronously

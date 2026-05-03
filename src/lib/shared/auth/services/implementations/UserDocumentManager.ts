@@ -8,9 +8,8 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { getFirestoreInstance } from "../../firebase";
-import type { IUserDocumentManager } from "../contracts/IUserDocumentManager";
 import type { IProfilePictureManager } from "../contracts/IProfilePictureManager";
-import type { IUsernameValidator } from "../contracts/IUsernameValidator";
+import type { UsernameValidator } from '$lib/shared/auth/services/implementations/UsernameValidator'
 import { formatUsername } from "../../domain/models/UsernameValidation";
 
 import { getAttributionPersister } from "$lib/shared/attribution/getAttributionPersister";
@@ -45,10 +44,10 @@ function capitalizeName(name: string): string {
     .join(" ");
 }
 
-export class UserDocumentManager implements IUserDocumentManager {
+export class UserDocumentManager {
   constructor(
     private readonly profilePictureService: IProfilePictureManager,
-    private readonly usernameValidator: IUsernameValidator
+    private readonly usernameValidator: UsernameValidator
   ) {}
 
   /**

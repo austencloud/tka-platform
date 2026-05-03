@@ -25,13 +25,13 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencePath, getPublicSequencesPath } from "../../data/firestore-paths";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
-import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
-import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { ContentModerator } from "$lib/features/moderation/services/implementations/ContentModerator";
+import type { ContentAppealManager } from "$lib/features/moderation/services/implementations/ContentAppealManager";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -62,9 +62,9 @@ export class PublicIndexSyncer {
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
 
   constructor(
-    private readonly contentModerator?: IContentModerator,
-    private readonly contentAppealManager?: IContentAppealManager,
-    private readonly browseLoader?: IBrowseLoader
+    private readonly contentModerator?: ContentModerator,
+    private readonly contentAppealManager?: ContentAppealManager,
+    private readonly browseLoader?: PublicSequencesLoader
   ) {}
 
   /**
@@ -244,7 +244,7 @@ export class PublicIndexSyncer {
       );
       // Don't show a generic error modal for moderation failures - those have their own UI
       if (!(error instanceof ContentModerationError)) {
-        const errorHandler = getErrorHandler() as IErrorHandler;
+        const errorHandler = getErrorHandler() as ErrorHandler;
         errorHandler.showUserError({
           message: "Couldn't publish your sequence",
           technicalDetails: error instanceof Error ? error.message : String(error),
@@ -277,7 +277,7 @@ export class PublicIndexSyncer {
         "[PublicIndexSyncer] Failed to remove from public index:",
         error
       );
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't unpublish your sequence",
         technicalDetails: error instanceof Error ? error.message : String(error),

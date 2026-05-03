@@ -5,10 +5,9 @@
  * Reduces Firestore reads by caching counts.
  */
 
-import type { IVideoCountManager } from "../contracts/IVideoCountManager";
 import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
 
-export class VideoCountManager implements IVideoCountManager {
+export class VideoCountManager {
   // Cache video counts to avoid repeated Firestore queries
   private countCache = new Map<string, number>();
   // In-flight requests to prevent duplicate fetches

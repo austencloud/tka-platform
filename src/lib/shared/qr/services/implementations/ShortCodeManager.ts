@@ -29,7 +29,7 @@ import {
   type SequenceData,
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 import type { IPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/contracts/IPublicSequenceHashMatcher";
 import type {
@@ -74,7 +74,7 @@ export class ShortCodeManager implements IShortCodeManager {
   private readonly inflightByKey = new Map<string, Promise<CreateShortCodeResult>>();
 
   constructor(
-    private readonly browseLoader: IBrowseLoader,
+    private readonly browseLoader: PublicSequencesLoader,
     private readonly sequenceEncoder: ISequenceEncoder,
     private readonly hashMatcher?: IPublicSequenceHashMatcher
   ) {}

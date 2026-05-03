@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IQuizSessionManager } from './services/contracts/IQuizSessionManager';
 import { QuizSessionManager } from './services/implementations/QuizSessionManager';
 
-let instance: IQuizSessionManager | null = null;
+let instance: QuizSessionManager | null = null;
 
-export function getQuizSessionManager(): IQuizSessionManager {
+export function getQuizSessionManager(): QuizSessionManager {
 	if (!browser) throw new Error('getQuizSessionManager() is browser-only');
 	return instance ??= new QuizSessionManager();
 }

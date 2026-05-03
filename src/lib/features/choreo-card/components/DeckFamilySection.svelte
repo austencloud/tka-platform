@@ -16,7 +16,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHandPathDataBuilder } from "../services/contracts/IHandPathDataBuilder";
-  import type { IArrowCollisionResolver } from "../services/contracts/IArrowCollisionResolver";
+  import type { ArrowCollisionResolver } from "../services/implementations/ArrowCollisionResolver";
   import ChoreoCard from "./ChoreoCard.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
 
@@ -54,7 +54,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
 
   // Resolve DI services once - these are cheap singletons.
   const handPathBuilder = getHandPathDataBuilder() as IHandPathDataBuilder;
-  const collisionResolver = getArrowCollisionResolver() as IArrowCollisionResolver;
+  const collisionResolver = getArrowCollisionResolver() as ArrowCollisionResolver;
 
   /**
    * Converts PictographData[] (from HandPathDataBuilder) into StepData[].

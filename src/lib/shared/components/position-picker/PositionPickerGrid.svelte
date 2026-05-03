@@ -1,6 +1,6 @@
 <!--
 PositionPickerGrid.svelte - Compact 4x4 grid of all 16 start position variations
-Uses IStartPositionManager to load variations and displays actual pictographs
+Uses StartPositionManager to load variations and displays actual pictographs
 50px minimum touch targets for accessibility
 -->
 <script lang="ts">

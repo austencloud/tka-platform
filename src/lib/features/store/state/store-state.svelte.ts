@@ -1,10 +1,10 @@
-import type { IProductLoader } from "../services/contracts/IProductLoader";
-import type { IMerchCheckoutCreator } from "../services/contracts/IMerchCheckoutCreator";
+import type { ProductLoader } from "../services/implementations/ProductLoader";
+import type { MerchCheckoutCreator } from "../services/implementations/MerchCheckoutCreator";
 import type { Product } from "../domain/models/Product";
 
 export function createStoreState(
-  productLoader: IProductLoader,
-  checkoutCreator: IMerchCheckoutCreator
+  productLoader: ProductLoader,
+  checkoutCreator: MerchCheckoutCreator
 ) {
   let products = $state<Product[]>([]);
   let selectedProduct = $state<Product | null>(null);

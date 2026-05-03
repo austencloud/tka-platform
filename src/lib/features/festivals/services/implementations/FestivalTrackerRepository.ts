@@ -18,9 +18,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { UserFestivalTracker } from "../../domain/models/festival-tracker";
-import type { IFestivalTrackerRepository } from "../contracts/IFestivalTrackerRepository";
 
-export class FestivalTrackerRepository implements IFestivalTrackerRepository {
+export class FestivalTrackerRepository {
   async get(userId: string, festivalId: string): Promise<UserFestivalTracker | null> {
     const db = await getFirestoreInstance();
     const ref = doc(db, "userFestivalTracking", userId, "tracked", festivalId);

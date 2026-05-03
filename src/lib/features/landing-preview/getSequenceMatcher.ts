@@ -1,7 +1,6 @@
-import type { ISequenceMatcher } from './services/contracts/ISequenceMatcher';
 import { SequenceMatcher } from './services/implementations/SequenceMatcher';
 
-let instance: ISequenceMatcher | null = null;
-export function getSequenceMatcher(): ISequenceMatcher {
+let instance: SequenceMatcher | null = null;
+export function getSequenceMatcher(): SequenceMatcher {
   return instance ??= new SequenceMatcher();
 }

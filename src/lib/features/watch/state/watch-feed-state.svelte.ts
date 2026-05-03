@@ -7,7 +7,7 @@
  */
 
 import type { FeedItem } from "../domain/models/feed-models";
-import type { IFeedLoader } from "../services/contracts/IFeedLoader";
+import type { FeedLoader } from "../services/implementations/FeedLoader";
 
 import { getFeedLoader } from "$lib/features/watch/getFeedLoader";
 
@@ -24,9 +24,9 @@ export function createWatchFeedState() {
 	let nextCursor = $state<string | null>(null);
 
 	// Get feed loader from DI container (may not be available immediately)
-	let feedLoader: IFeedLoader | null = null;
+	let feedLoader: FeedLoader | null = null;
 
-	function getFeedLoader(): IFeedLoader | null {
+	function getFeedLoader(): FeedLoader | null {
 		if (!feedLoader) {
 			try {
 				feedLoader = getFeedLoader() ?? null;

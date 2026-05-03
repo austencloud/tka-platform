@@ -8,7 +8,7 @@ import type { PictographData } from "../../../../pictograph/shared/domain/models
 import type { MotionData } from "../../../../pictograph/shared/domain/models/MotionData";
 import type { GridMode } from "../../../../pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "../../../domain/models/Letter";
-import type { ICodexLetterMappingRepo } from "../../../../../features/learn/codex/services/contracts/ICodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "../../../../../features/learn/codex/services/implementations/CodexLetterMappingRepo";
 
 // ============================================================================
 // DATA CONTRACTS - MOVED TO DOMAIN
@@ -60,7 +60,7 @@ export interface ILetterQueryHandler {
    * Set the letter mapping repository after construction.
    * Needed when the repo is created in a different container (learn module).
    */
-  setLetterMappingRepo?(repo: ICodexLetterMappingRepo): void;
+  setLetterMappingRepo?(repo: CodexLetterMappingRepo): void;
 }
 
 export interface IMotionQueryHandler {

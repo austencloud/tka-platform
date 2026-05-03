@@ -32,16 +32,16 @@ import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
-import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
-import type { ITagManager } from "../contracts/ITagManager";
-import type { IOrientationCycleDetector } from "../../../create/generate/circular/services/contracts/IOrientationCycleDetector";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+import type { TagManager } from "./TagManager";
+import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import type { PublicIndexSyncer } from "./PublicIndexSyncer";
 import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
-import type { ISequenceContentHasher } from "../contracts/ISequenceContentHasher";
+import type { SequenceContentHasher } from "./SequenceContentHasher";
 import { migrateSequenceTags } from "../migrations/tag-migration";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import type {
   ILibraryRepository,
   LibraryStats,
@@ -111,12 +111,12 @@ export class LibraryRepository implements ILibraryRepository {
   private localSequenceCache = new Map<string, LibrarySequence>();
 
   constructor(
-    private achievementService: IAchievementManager,
-    private tagService: ITagManager,
-    private orientationCycleDetector: IOrientationCycleDetector,
+    private achievementService: AchievementManager,
+    private tagService: TagManager,
+    private orientationCycleDetector: OrientationCycleDetector,
     private publicIndexSyncer: PublicIndexSyncer,
     private conflictResolver?: IConflictResolver,
-    private contentHasher?: ISequenceContentHasher
+    private contentHasher?: SequenceContentHasher
   ) {}
 
   /**
@@ -132,7 +132,7 @@ export class LibraryRepository implements ILibraryRepository {
     severity: "error" | "warning" = "error"
   ): void {
     try {
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message,
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -814,7 +814,7 @@ export class LibraryRepository implements ILibraryRepository {
     // Without this, sequences saved after f0f9928ae (which stopped persisting
     // steps to Firestore) would have empty steps arrays, causing the browse
     // gallery to miscalculate aspect ratios and show black bars.
-    let hydrator: ISequenceHydrator | null = null;
+    let hydrator: SequenceHydrator | null = null;
     try {
       hydrator = getSequenceHydrator();
     } catch {
@@ -952,7 +952,7 @@ export class LibraryRepository implements ILibraryRepository {
           q,
           (snapshot) => {
             const sequences: LibrarySequence[] = [];
-            let snapshotHydrator: ISequenceHydrator | null = null;
+            let snapshotHydrator: SequenceHydrator | null = null;
             try {
               snapshotHydrator = getSequenceHydrator();
             } catch {

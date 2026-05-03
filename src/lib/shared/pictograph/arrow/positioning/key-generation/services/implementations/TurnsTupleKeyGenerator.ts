@@ -1,12 +1,11 @@
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { ITurnsTupleKeyGenerator } from "../contracts/ITurnsTupleKeyGenerator";
 
 
 /**
  * TurnsTupleKeyGenerator
  * Generates turns tuple array matching advanced lookup expectations.
  */
-export class TurnsTupleKeyGenerator implements ITurnsTupleKeyGenerator {
+export class TurnsTupleKeyGenerator {
   generateTurnsTuple(pictographData: PictographData): number[] {
     try {
       const blueTurns = this.getTurns(pictographData.motions.blue?.turns);

@@ -13,11 +13,10 @@ import {
 	deleteDoc
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '../../firebase';
-import type { IUsernameValidator } from '../contracts/IUsernameValidator';
 import type { UsernameValidationResult } from '../../domain/models/UsernameValidation';
 import { validateUsernameFormat, formatUsername } from '../../domain/models/UsernameValidation';
 
-export class UsernameValidator implements IUsernameValidator {
+export class UsernameValidator {
 	private readonly USERNAMES_COLLECTION = 'usernames';
 	private readonly USERS_COLLECTION = 'users';
 

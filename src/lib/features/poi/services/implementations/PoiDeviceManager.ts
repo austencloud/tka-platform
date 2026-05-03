@@ -1,4 +1,3 @@
-import type { IPoiDeviceManager } from "../contracts/IPoiDeviceManager";
 import type { IPoiDeviceAdapter, IPoiConnection } from "../contracts/IPoiDeviceAdapter";
 import type { PoiDeviceInfo } from "../../domain/DeviceTypes";
 import type { StripPattern } from "../../domain/StripPattern";
@@ -7,7 +6,7 @@ import type { StripPattern } from "../../domain/StripPattern";
  * Aggregates multiple device adapters (BLE, USB Serial) and manages
  * connections + pattern uploads across all connected poi.
  */
-export class PoiDeviceManager implements IPoiDeviceManager {
+export class PoiDeviceManager {
   private _adapters: IPoiDeviceAdapter[];
   private _connections: Map<string, IPoiConnection> = new Map();
   private _deviceToAdapter: Map<string, IPoiDeviceAdapter> = new Map();

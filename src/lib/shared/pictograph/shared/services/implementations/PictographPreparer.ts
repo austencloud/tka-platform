@@ -11,7 +11,7 @@ import type {
 import type { IArrowLifecycleManager } from "../../../arrow/orchestration/services/contracts/IArrowLifecycleManager";
 import type { IPropSvgLoader } from "../../../prop/services/contracts/IPropSvgLoader";
 import type { IPropPlacer } from "../../../prop/services/contracts/IPropPlacer";
-import type { IGridModeDeriver } from "../../../grid/services/contracts/IGridModeDeriver";
+import type { GridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
 import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
@@ -29,7 +29,7 @@ export class PictographPreparer implements IPictographPreparer {
     private arrowManager: IArrowLifecycleManager,
     private propLoader: IPropSvgLoader,
     private propPlacer: IPropPlacer,
-    private gridModeDeriver: IGridModeDeriver
+    private gridModeDeriver: GridModeDeriver
   ) {}
 
   async prepareBatch(

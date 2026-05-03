@@ -9,7 +9,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IQuizRepoManager } from "../../../quiz/services/contracts/IQuizRepository";
+import type { QuizRepoManager } from "../../../quiz/services/implementations/QuizRepoManager";
 import type { CodexPictographUpdater } from "./CodexPictographUpdater";
 import type { ICodex } from "../contracts/ICodex";
 import type { CodexLetterMappingRepo } from "./CodexLetterMappingRepo";
@@ -19,7 +19,7 @@ export class Codex implements ICodex {
 
   constructor(
     private letterMappingRepo: CodexLetterMappingRepo,
-    private lessonRepo: IQuizRepoManager,
+    private lessonRepo: QuizRepoManager,
     private operationsService: CodexPictographUpdater,
     private LetterQueryHandler: ILetterQueryHandler
   ) {}

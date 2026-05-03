@@ -70,7 +70,7 @@ import { getLetterImagePath, isDashLetter } from "../../../pictograph/tka-glyph/
 import { Letter, getLetterType } from "../../../foundation/domain/models/Letter";
 import { LetterType } from "../../../foundation/domain/models/LetterType";
 import type { IPictographPreparer } from "../../../pictograph/shared/services/contracts/IPictographPreparer";
-import type { ITurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
@@ -163,7 +163,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
   // Global preparer function that can be set at app initialization
   private static globalPreparerGetter?: () => IPictographPreparer | undefined;
-  private static globalTurnsTupleGeneratorGetter?: () => ITurnsTupleGenerator | undefined;
+  private static globalTurnsTupleGeneratorGetter?: () => TurnsTupleGenerator | undefined;
 
   /**
    * Set a global preparer getter function
@@ -177,7 +177,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
    * Set a global turns tuple generator getter function
    * Called once at app initialization to wire up DI container
    */
-  static setGlobalTurnsTupleGeneratorGetter(getter: () => ITurnsTupleGenerator | undefined) {
+  static setGlobalTurnsTupleGeneratorGetter(getter: () => TurnsTupleGenerator | undefined) {
     Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter = getter;
   }
 

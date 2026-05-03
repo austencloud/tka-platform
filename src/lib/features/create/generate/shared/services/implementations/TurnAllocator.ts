@@ -8,10 +8,10 @@ import type {
   ITurnAllocator,
   TurnAllocation,
 } from "../contracts/ITurnAllocator";
-import type { ILOOPParameterProvider } from "../contracts/ILOOPParameterProvider";
+import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
 
 export class TurnAllocator implements ITurnAllocator {
-  constructor(private loopParams: ILOOPParameterProvider) {}
+  constructor(private loopParams: LOOPParameterProvider) {}
 
   /**
    * Allocate turns for the sequence

@@ -8,7 +8,7 @@
 <script lang="ts">
   import { getHandPathNamer } from "$lib/shared/foundation/getHandPathNamer";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
-  import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
+  import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import { createExplorerState } from "./state/explorer-state.svelte";
   import { setExplorerContext } from "./context/explorer-context";
   import HandPathCard from "./components/HandPathCard.svelte";

@@ -7,10 +7,10 @@
  * Domain: Create module - Responsive Layout Management
  */
 
-import type { IResponsiveLayoutManager } from "../../services/contracts/IResponsiveLayoutManager";
+import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
 
 export interface LayoutManagerConfig {
-  layoutService: IResponsiveLayoutManager;
+  layoutService: ResponsiveLayoutManager;
   onLayoutChange: (shouldUseSideBySideLayout: boolean) => void;
 }
 

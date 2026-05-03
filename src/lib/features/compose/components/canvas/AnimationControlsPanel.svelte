@@ -19,7 +19,7 @@
     animationSettings,
     TrailMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // Subcomponents
   import CompactMobileRow from "../controls/CompactMobileRow.svelte";
@@ -134,7 +134,7 @@
   }
 
   // Settings service for prop types
-  let settingsService: ISettingsState | null = $state(null);
+  let settingsService: SettingsState | null = $state(null);
 
   // Viewport detection
   let viewportHeight = $state(0);

@@ -50,11 +50,11 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
   import LandingPage from "../../auth/components/LandingPage.svelte";
   import AuthDrawer from "../../auth/components/AuthDrawer.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
-  import type { IAuthenticator } from "../../auth/services/contracts/IAuthenticator";
+  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
-  import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
+  import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import { ThemeService } from "../../theme/services/ThemeService";
-  import type { IApplicationInitializer } from "../services/contracts/IApplicationInitializer";
+  import type { ApplicationInitializer } from '$lib/shared/application/services/implementations/ApplicationInitializer'
   import {
     getSettings,
     restoreApplicationState,
@@ -68,7 +68,7 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
     setInitializationState,
     initializeAppState,
   } from "../state/initialization-state.svelte";
-  import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import BackgroundHost from "../../background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import PwaMigrationBanner from "../../pwa/components/PwaMigrationBanner.svelte";
@@ -88,11 +88,11 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
   import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
   // Get DI container from context
 // Services - resolved lazily
-  let initService: IApplicationInitializer | null = $state(null);
-  let settingsService: ISettingsState | null = $state(null);
-  let deviceService: IDeviceDetector | null = $state(null);
+  let initService: ApplicationInitializer | null = $state(null);
+  let settingsService: SettingsState | null = $state(null);
+  let deviceService: DeviceDetector | null = $state(null);
   let sheetRouterService: ISheetRouter | null = $state(null);
-  let authService: IAuthenticator | null = $state(null);
+  let authService: Authenticator | null = $state(null);
   let servicesResolved = $state(false);
 
   // App state
@@ -707,7 +707,6 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
     z-index: 900;
     background: rgb(18, 18, 28);
   }
-
 
   /* Wizard exit animation - fades out + slight scale down */
   .wizard-exit-wrapper {

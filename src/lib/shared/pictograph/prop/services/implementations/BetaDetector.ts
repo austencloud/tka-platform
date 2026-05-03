@@ -5,13 +5,12 @@
  * Migrated from utils/betaDetection.ts to proper service architecture.
  */
 
-import type { IGridPositionDeriver } from "../../../grid/services/contracts/IGridPositionDeriver";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { GridPosition } from "../../../grid/domain/enums/grid-enums";
-import type { IBetaDetector } from "../contracts/IBetaDetector";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
 
-export class BetaDetector implements IBetaDetector {
-  constructor(private positionMapper: IGridPositionDeriver) {}
+export class BetaDetector {
+  constructor(private positionMapper: GridPositionDeriver) {}
 
   /**
    * Check if a grid position is a beta position

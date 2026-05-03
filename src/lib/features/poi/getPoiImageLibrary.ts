@@ -1,7 +1,6 @@
-import type { IPoiImageLibrary } from './services/contracts/IPoiImageLibrary';
 import { PoiImageLibrary } from './services/implementations/PoiImageLibrary';
 
-let instance: IPoiImageLibrary | null = null;
-export function getPoiImageLibrary(): IPoiImageLibrary {
+let instance: PoiImageLibrary | null = null;
+export function getPoiImageLibrary(): PoiImageLibrary {
   return instance ??= new PoiImageLibrary();
 }

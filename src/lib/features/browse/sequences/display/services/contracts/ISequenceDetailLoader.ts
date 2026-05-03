@@ -2,7 +2,7 @@
  * ISequenceDetailLoader - Load full sequence data for detail views
  *
  * Handles lazy-loading of complete sequence data (including steps)
- * when viewing sequence details. Wraps the underlying IBrowseLoader
+ * when viewing sequence details. Wraps the underlying PublicSequencesLoader
  * with additional caching and state management.
  */
 

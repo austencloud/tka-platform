@@ -14,9 +14,8 @@ import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { AppSettings, PropPreset } from "../domain/AppSettings";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
-import type { ISettingsPersister } from "../services/contracts/ISettingsPersister";
+import type { FirebaseSettingsPersister } from "../services/implementations/FirebaseSettingsPersister";
 import { auth } from "../../auth/firebase";
-import type { ISettingsState } from "../services/contracts/ISettingsState";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
@@ -78,8 +77,8 @@ function getCustomBackgroundOptions(
   };
 }
 
-class SettingsState implements ISettingsState {
-  private firebasePersistence: ISettingsPersister | null = null;
+class SettingsState {
+  private firebasePersistence: FirebaseSettingsPersister | null = null;
   private unsubscribeFirebaseSync: (() => void) | null = null;
   private syncInitialized = false;
   private isSavingToFirebase = false;

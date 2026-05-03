@@ -19,9 +19,9 @@ import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
   import type { FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IFeedSnapDetector } from "../../services/contracts/IFeedSnapDetector";
-  import type { IFeedPreloader } from "../../services/contracts/IFeedPreloader";
-  import type { IFeedScrollBehavior } from "../../services/contracts/IFeedScrollBehavior";
+  import type { FeedSnapDetector } from "../../services/implementations/FeedSnapDetector";
+  import type { FeedPreloader } from "../../services/implementations/FeedPreloader";
+  import type { FeedScrollBehavior } from "../../services/implementations/FeedScrollBehavior";
   import { feedScrollState } from "../../state/feed-scroll-state.svelte";
   import FeedCard from "./FeedCard.svelte";
   import FeedLoadingState from "./FeedLoadingState.svelte";
@@ -60,9 +60,9 @@ import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
 
   // Services
   let hapticService: IHapticFeedback | undefined;
-  let snapDetector: IFeedSnapDetector | undefined;
-  let preloader: IFeedPreloader | undefined;
-  let scrollBehavior: IFeedScrollBehavior | undefined;
+  let snapDetector: FeedSnapDetector | undefined;
+  let preloader: FeedPreloader | undefined;
+  let scrollBehavior: FeedScrollBehavior | undefined;
 
   // Card refs for entry animations
   let cardRefs = new Map<string, { triggerEntryAnimation: () => void }>();

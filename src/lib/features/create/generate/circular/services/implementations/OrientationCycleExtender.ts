@@ -5,17 +5,16 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "../../../../shared/domain/models/StepData";
-import type { IOrientationCycleDetector } from "../contracts/IOrientationCycleDetector";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import type { IOrientationCycleExtender } from "../contracts/IOrientationCycleExtender";
+import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
   updateSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 
-export class OrientationCycleExtender implements IOrientationCycleExtender {
+export class OrientationCycleExtender {
   constructor(
-    private readonly cycleDetector: IOrientationCycleDetector,
-    private readonly orientationCalculator: IOrientationCalculator
+    private readonly cycleDetector: OrientationCycleDetector,
+    private readonly orientationCalculator: OrientationCalculator
   ) {}
 
   extendIfNeeded(sequence: SequenceData): SequenceData {

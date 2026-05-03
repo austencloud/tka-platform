@@ -5,16 +5,16 @@
  * Extracted from PropAwareThumbnail's renderThumbnailWithProps().
  *
  * Handles:
- * - Loading full sequence data if needed (via IBrowseLoader)
- * - Deriving start position if missing (via IStartPositionDeriver)
+ * - Loading full sequence data if needed (via PublicSequencesLoader)
+ * - Deriving start position if missing (via StartPositionDeriver)
  * - Applying prop type overrides
- * - Rendering via ISequenceRenderer pipeline
+ * - Rendering via SequenceRenderer pipeline
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
-import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
-import type { IBrowseLoader } from "../contracts/IBrowseLoader";
+import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type {
   IThumbnailRenderer,
   RenderOptions,
@@ -49,9 +49,9 @@ const WORDCARD_DEFAULTS: CompositionDefaults = {
 
 export class ThumbnailRenderer implements IThumbnailRenderer {
   constructor(
-    private sequenceRenderer: ISequenceRenderer,
-    private startPositionDeriver: IStartPositionDeriver,
-    private browseLoader: IBrowseLoader | null,
+    private sequenceRenderer: SequenceRenderer,
+    private startPositionDeriver: StartPositionDeriver,
+    private browseLoader: PublicSequencesLoader | null,
     private loopDetector: ILOOPDetector
   ) {}
 
@@ -95,7 +95,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       fullSequence.dateAdded ??
       undefined;
 
-    // Render via ISequenceRenderer (pass through progress callback)
+    // Render via SequenceRenderer (pass through progress callback)
     // Explicitly pass loopType in options so it doesn't rely on sequence fallback
     const blob = await this.sequenceRenderer.renderSequenceToBlob(
       sequenceWithStartPos,
@@ -131,7 +131,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     // sequences share the same word (e.g. two "FJ" variations).
     if (!this.browseLoader) {
       throw new Error(
-        `Cannot render thumbnail for "${sequenceName}": sequence has no step data and IBrowseLoader is not available.`
+        `Cannot render thumbnail for "${sequenceName}": sequence has no step data and PublicSequencesLoader is not available.`
       );
     }
 

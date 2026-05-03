@@ -22,7 +22,7 @@
   import Toast from "$lib/shared/settings/components/Toast.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
@@ -53,7 +53,7 @@
   let toastMessage = $state("Settings saved");
 
   // Device detection for layout awareness
-  let deviceDetector: IDeviceDetector | null = null;
+  let deviceDetector: DeviceDetector | null = null;
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
 
   // Haptic feedback service

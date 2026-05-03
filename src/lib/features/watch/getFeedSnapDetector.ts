@@ -1,7 +1,6 @@
-import type { IFeedSnapDetector } from './services/contracts/IFeedSnapDetector';
 import { FeedSnapDetector } from './services/implementations/FeedSnapDetector';
 
-let instance: IFeedSnapDetector | null = null;
-export function getFeedSnapDetector(): IFeedSnapDetector {
+let instance: FeedSnapDetector | null = null;
+export function getFeedSnapDetector(): FeedSnapDetector {
   return instance ??= new FeedSnapDetector();
 }

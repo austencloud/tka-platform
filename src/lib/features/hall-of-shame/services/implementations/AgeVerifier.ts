@@ -8,9 +8,8 @@
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { IAgeVerifier } from '../contracts/IAgeVerifier';
 
-export class AgeVerifier implements IAgeVerifier {
+export class AgeVerifier {
 	private readonly USERS_COLLECTION = 'users';
 
 	// Local cache to avoid repeated Firestore reads

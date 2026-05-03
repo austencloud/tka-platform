@@ -12,7 +12,6 @@
 
 import { browser } from '$app/environment';
 import type { IHapticFeedback } from '$lib/shared/application/services/contracts/IHapticFeedback';
-import type { IDelightOrchestrator } from '../contracts/IDelightOrchestrator';
 import {
 	type AchievementType,
 	type DelightIntensity,
@@ -22,7 +21,7 @@ import {
 	INTENSITY_DEFAULTS
 } from '../../domain/delight-types';
 
-export class DelightOrchestrator implements IDelightOrchestrator {
+export class DelightOrchestrator {
 	private enabled: boolean = true;
 	private soundEnabled: boolean = true;
 	private reducedMotion: boolean = false;

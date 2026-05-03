@@ -23,13 +23,12 @@ import type {
   TrainChallengeScore,
 } from "../../domain/models/TrainChallengeModels";
 import { isChallengeAvailable } from "../../domain/models/TrainChallengeModels";
-import type { ITrainChallengeManager } from "../contracts/ITrainChallengeManager";
-import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 
-export class TrainChallengeManager implements ITrainChallengeManager {
-  private _achievementService: IAchievementManager | null = null;
+export class TrainChallengeManager {
+  private _achievementService: AchievementManager | null = null;
 
-  constructor(achievementService: IAchievementManager) {
+  constructor(achievementService: AchievementManager) {
     this._achievementService = achievementService;
   }
 

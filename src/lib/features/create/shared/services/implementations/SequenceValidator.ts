@@ -8,9 +8,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "../../domain/models/StepData";
 import type { ValidationResult } from "../../../../../shared/validation/ValidationResult";
-import type { ISequenceValidator } from "../contracts/ISequenceValidator";
 
-export class SequenceValidator implements ISequenceValidator {
+export class SequenceValidator {
   /**
    * Validate a complete sequence
    */

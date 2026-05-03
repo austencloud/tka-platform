@@ -5,7 +5,7 @@ import {
 } from "../../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { ISpecialPlacer } from "../../../placement/services/contracts/IArrowPlacer";
+import type { SpecialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
 import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
 import { dashNoRotationMap } from "../../config/DashRotationMaps";
 import { RotationMapSelector } from "../../utils/RotationMapSelector";
@@ -13,17 +13,7 @@ import { RotationOverrideChecker } from "../../utils/RotationOverrideChecker";
 import { isNoRotation } from "../../utils/RotationDirectionUtils";
 import type { IHandpathDirectionCalculator } from "../contracts/IHandpathDirectionCalculator";
 
-export interface IArrowRotationCalculator {
-  calculateRotation(
-    motion: MotionData,
-    location: GridLocation,
-    pictographData?: PictographData
-  ): Promise<number>;
-  getSupportedMotionTypes(): MotionType[];
-  validateMotionData(motion: MotionData): boolean;
-}
-
-export class ArrowRotationCalculator implements IArrowRotationCalculator {
+export class ArrowRotationCalculator {
   /**
    * Pure algorithmic service for calculating arrow rotation angles.
    *
@@ -44,7 +34,7 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
    */
 
   constructor(
-    private SpecialPlacer?: ISpecialPlacer,
+    private SpecialPlacer?: SpecialPlacer,
     private rotationOverrideKeyGenerator?: IRotationAngleOverrideKeyGenerator,
     private handpathDirectionCalculator?: IHandpathDirectionCalculator
   ) {}

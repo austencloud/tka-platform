@@ -8,14 +8,14 @@
 import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
 import { GridMode } from "../../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
-import type { ISettingsState } from "../../../../../shared/settings/services/contracts/ISettingsState";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import { Orientation } from "../../../../../shared/pictograph/shared/domain/enums/pictograph-enums";
 import { startPositionManager } from "../services/implementations/StartPositionManager";
 
 export function createSimplifiedStartPositionState() {
-  let settingsService: ISettingsState | null = null;
+  let settingsService: SettingsState | null = null;
 
-  function getSettingsServiceSync(): ISettingsState {
+  function getSettingsServiceSync(): SettingsState {
     if (!settingsService) {
       settingsService = settingsServiceSingleton;
     }

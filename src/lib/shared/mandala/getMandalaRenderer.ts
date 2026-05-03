@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IMandalaRenderer } from './services/contracts/IMandalaRenderer';
+
 import { MandalaRenderer } from './services/implementations/MandalaRenderer';
 
-let instance: IMandalaRenderer | null = null;
+let instance: MandalaRenderer | null = null;
 
-export function getMandalaRenderer(): IMandalaRenderer {
+export function getMandalaRenderer(): MandalaRenderer {
 	if (!browser) throw new Error('getMandalaRenderer() is browser-only');
 	return instance ??= new MandalaRenderer();
 }

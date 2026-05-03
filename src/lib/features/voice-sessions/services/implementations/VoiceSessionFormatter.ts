@@ -11,8 +11,6 @@ import type {
   VoiceSessionStats,
   ResolutionTier,
 } from "$lib/shared/voice-control/domain/voice-session-types";
-import type { IVoiceSessionFormatter } from "../contracts/IVoiceSessionFormatter";
-
 const TIER_LABELS: Record<ResolutionTier, string> = {
   tier1_regex: "Tier 1 (Regex)",
   tier2_llm: "Tier 2 (LLM)",
@@ -20,7 +18,7 @@ const TIER_LABELS: Record<ResolutionTier, string> = {
   unresolved: "Unresolved",
 };
 
-export class VoiceSessionFormatter implements IVoiceSessionFormatter {
+export class VoiceSessionFormatter {
   formatForAnalysis(session: VoiceSession): string {
     const lines: string[] = [];
 

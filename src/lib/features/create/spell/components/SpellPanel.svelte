@@ -17,9 +17,9 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
   import type { IRandomSequenceGenerator } from "../services/contracts/IRandomSequenceGenerator";
-  import type { ISpellServiceLoader } from "../services/contracts/ISpellServiceLoader";
+  import type { SpellServiceLoader } from "../services/implementations/SpellServiceLoader";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -85,10 +85,10 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
 
   // Lazy-resolved services
   let orchestrator: IVariationExplorationOrchestrator | null = null;
-  let serviceLoader: ISpellServiceLoader | null = null;
+  let serviceLoader: SpellServiceLoader | null = null;
   let randomGenerator: IRandomSequenceGenerator | null = null;
 
-  function getServiceLoader(): ISpellServiceLoader {
+  function getServiceLoader(): SpellServiceLoader {
     if (!serviceLoader) {
       serviceLoader = getSpellServiceLoaderGetter();
     }
@@ -122,7 +122,6 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
       spellState.setExpandedWord(persisted.expandedWord);
     }
   });
-
 
   function handleInputFocusChange(focused: boolean) {
     isInputFocused = focused;

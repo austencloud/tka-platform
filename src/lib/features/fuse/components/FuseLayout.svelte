@@ -15,7 +15,7 @@
 	import { getFuseAssemblyAnimator } from "../getFuseAssemblyAnimator";
 	import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
 	import { onMount } from "svelte";
-	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
+	import type { FuseAssemblyAnimator } from "../services/implementations/FuseAssemblyAnimator";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 	const { state: fuseState } = getFuseContext();
@@ -46,7 +46,7 @@
 	let rightPanelEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
 	let fuseTargetEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
 
-	let fuseAssemblyAnimator: IFuseAssemblyAnimator;
+	let fuseAssemblyAnimator: FuseAssemblyAnimator;
 	try {
 		fuseAssemblyAnimator = getFuseAssemblyAnimator();
 	} catch {

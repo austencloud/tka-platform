@@ -7,7 +7,6 @@
  * the last 150ms. Respects prefers-reduced-motion by resolving immediately.
  */
 
-import type { IFuseAssemblyAnimator } from "../contracts/IFuseAssemblyAnimator";
 
 const DURATION = 600;
 const EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
@@ -38,7 +37,7 @@ function cancelAllAnimations(elements: HTMLElement[]): void {
 	}
 }
 
-export class FuseAssemblyAnimator implements IFuseAssemblyAnimator {
+export class FuseAssemblyAnimator {
 	async animate(
 		leftEl: HTMLElement,
 		rightEl: HTMLElement,

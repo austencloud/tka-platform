@@ -19,7 +19,7 @@ Shows:
     getPreviousConcept,
   } from "../domain/concepts";
   import type { LearnConcept, ConceptCategory, LearningProgress } from "../domain/types";
-  import type { IConceptProgressTracker } from "../services/contracts/IConceptProgressTracker";
+  import type { ConceptProgressTracker } from "../services/implementations/ConceptProgressTracker";
   import { CAPABILITY_NUDGES } from "$lib/shared/subscription/domain/capability-nudges";
   import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
   import ProgressMiniMap from "./ProgressMiniMap.svelte";

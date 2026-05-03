@@ -5,7 +5,7 @@
   import VirtualizedSequenceGrid, {
     type VirtualGridApi,
   } from "$lib/features/browse/sequences/display/components/VirtualizedSequenceGrid.svelte";
-  import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
   import { getVariationGrouper } from "$lib/features/browse/sequences/display/getVariationGrouper";
   import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -16,7 +16,7 @@
 
   interface Props {
     engine: BrowseEngine;
-    thumbnailService: IBrowseThumbnailProvider | null;
+    thumbnailService: BrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     disableVirtualization?: boolean;
     eager?: boolean;

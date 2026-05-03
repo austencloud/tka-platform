@@ -1,17 +1,16 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { ISequenceViewer } from "../contracts/ISequenceViewer";
-import type { IPersistenceService } from "../../../persistence/services/contracts/IPersistenceService";
+import type { DexiePersistenceService } from "../../../persistence/services/implementations/DexiePersistenceService";
 import type { ISequenceEncoder } from "../../../navigation/services/contracts/ISequenceEncoder";
 import {
   updateSequenceData,
   removeStepFromSequence,
 } from "../../../foundation/domain/models/SequenceData";
 
-export class SequenceViewer implements ISequenceViewer {
+export class SequenceViewer {
   constructor(
-    private persistenceService: IPersistenceService,
+    private persistenceService: DexiePersistenceService,
     private SequenceEncoder: ISequenceEncoder
   ) {}
 

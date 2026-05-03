@@ -1,7 +1,6 @@
-import type { IVideoTrailsRepository } from './services/contracts/IVideoTrailsRepository';
 import { VideoTrailsRepository } from './services/implementations/VideoTrailsRepository';
 
-let instance: IVideoTrailsRepository | null = null;
-export function getVideoTrailsRepository(): IVideoTrailsRepository {
+let instance: VideoTrailsRepository | null = null;
+export function getVideoTrailsRepository(): VideoTrailsRepository {
   return instance ??= new VideoTrailsRepository();
 }

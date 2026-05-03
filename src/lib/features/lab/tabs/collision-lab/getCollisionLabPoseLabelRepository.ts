@@ -1,7 +1,6 @@
-import type { IPoseLabelRepository } from './services/contracts/IPoseLabelRepository';
 import { LocalPoseLabelRepository } from './services/implementations/LocalPoseLabelRepository';
 
-let instance: IPoseLabelRepository | null = null;
-export function getCollisionLabPoseLabelRepository(): IPoseLabelRepository {
+let instance: LocalPoseLabelRepository | null = null;
+export function getCollisionLabPoseLabelRepository(): LocalPoseLabelRepository {
   return instance ??= new LocalPoseLabelRepository();
 }

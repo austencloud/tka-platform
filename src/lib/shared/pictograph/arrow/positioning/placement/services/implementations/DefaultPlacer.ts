@@ -7,9 +7,8 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
  */
 
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
-import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
+import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache'
 import { ArrowPlacer } from "./ArrowPlacer";
-
 
 /**
  * Interface for Default Placement Service that mirrors Python implementation
@@ -38,14 +37,14 @@ export interface IDefaultPlacerJson {
   debugAvailableKeys(motionType: MotionType, gridMode: GridMode): Promise<void>;
 }
 
-export class DefaultPlacer implements IDefaultPlacerJson {
+export class DefaultPlacer {
   private placementDataService: ArrowPlacer;
 
   /**
    * Create DefaultPlacer with optional injectable JSON cache
    * @param jsonCacheImpl JSON cache implementation (defaults to browser fetch-based cache)
    */
-  constructor(jsonCacheImpl?: IJsonCache) {
+  constructor(jsonCacheImpl?: SimpleJsonCache) {
     this.placementDataService = new ArrowPlacer(jsonCacheImpl);
   }
 

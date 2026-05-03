@@ -1,6 +1,6 @@
-import type { IPersistenceService } from "../../persistence/services/contracts/IPersistenceService";
+import type { DexiePersistenceService } from "../../persistence/services/implementations/DexiePersistenceService";
 import { getPersistenceService as getPersistenceServiceSingleton } from "../../persistence/getPersistenceService";
-import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
+import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import { settingsService as settingsServiceSingleton } from "../../settings/state/SettingsState.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
@@ -10,13 +10,13 @@ import { getAnimationVisibilityManager } from "../../animation-engine/state/anim
 // Without this, every HMR update resets isInitialized to false, which triggers
 // the full initialization cascade (auth → Firestore → settings → theme).
 const hmrData = import.meta.hot?.data as
-  | { isInitialized?: boolean; settingsService?: ISettingsState | null; persistenceService?: IPersistenceService | null }
+  | { isInitialized?: boolean; settingsService?: SettingsState | null; persistenceService?: DexiePersistenceService | null }
   | undefined;
 
 // Make isInitialized reactive so components using getSettings() will re-evaluate
 let isInitialized = $state(hmrData?.isInitialized ?? false);
-let settingsService: ISettingsState | null = hmrData?.settingsService ?? null;
-let persistenceService: IPersistenceService | null = hmrData?.persistenceService ?? null;
+let settingsService: SettingsState | null = hmrData?.settingsService ?? null;
+let persistenceService: DexiePersistenceService | null = hmrData?.persistenceService ?? null;
 
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
@@ -54,7 +54,7 @@ export function clearAppServicesCache(): void {
   persistenceService = null;
 }
 
-export function getSettingsServiceSync(): ISettingsState {
+export function getSettingsServiceSync(): SettingsState {
   if (!settingsService) {
     throw new Error(
       "Settings service not initialized. Call initializeAppServices first."
@@ -63,7 +63,7 @@ export function getSettingsServiceSync(): ISettingsState {
   return settingsService;
 }
 
-export async function getSettingsService(): Promise<ISettingsState> {
+export async function getSettingsService(): Promise<SettingsState> {
   if (!settingsService) {
     settingsService = settingsServiceSingleton;
   }
@@ -73,7 +73,7 @@ export async function getSettingsService(): Promise<ISettingsState> {
   return settingsService;
 }
 
-export async function getPersistenceService(): Promise<IPersistenceService> {
+export async function getPersistenceService(): Promise<DexiePersistenceService> {
   if (!persistenceService) {
     persistenceService = getPersistenceServiceSingleton();
   }

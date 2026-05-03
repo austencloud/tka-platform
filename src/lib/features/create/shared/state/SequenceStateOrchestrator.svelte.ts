@@ -27,12 +27,12 @@ import { deepLinker } from "$lib/shared/navigation/services/implementations/Deep
 import type { TargetHand } from "./panel-coordination-state.svelte";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-import type { ISequencePersister } from "../services/contracts/ISequencePersister";
-import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
-import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceStatsCalculator";
-import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
-import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
 import { createSequenceAnimationState } from "./animation/SequenceAnimationState.svelte";
 import { createSequenceArrowState } from "./arrow/SequenceArrowState.svelte";
 import { createSequenceCoreState } from "./core/SequenceCoreState.svelte";
@@ -48,11 +48,11 @@ import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttribut
  * Clean service configuration - no more type gymnastics!
  */
 export interface SequenceStateServices {
-  sequenceService?: ISequenceRepository;
-  SequencePersister?: ISequencePersister;
-  sequenceStatisticsService?: ISequenceStatsCalculator;
-  SequenceTransformer?: ISequenceTransformer;
-  sequenceValidationService?: ISequenceValidator;
+  sequenceService?: SequenceRepository;
+  SequencePersister?: SequencePersister;
+  sequenceStatisticsService?: SequenceStatsCalculator;
+  SequenceTransformer?: SequenceTransformer;
+  sequenceValidationService?: SequenceValidator;
   ReversalDetector?: IReversalDetector;
   /**
    * IMPORTANT: Tab ID for persistence isolation.

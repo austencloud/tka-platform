@@ -18,7 +18,7 @@ import type {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
 import type { IDimensionCalculator } from "$lib/shared/render/services/contracts/IDimensionCalculator";
-import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
+import type { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
 
 export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   private sequence: SequenceData | null = null;
@@ -31,7 +31,7 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   constructor(
     private imageComposer: IImageComposer,
     private dimensionService: IDimensionCalculator,
-    private layoutCalculator: ILayoutCalculator
+    private layoutCalculator: LayoutCalculator
   ) {}
 
   async initialize(

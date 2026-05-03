@@ -10,7 +10,7 @@ Features:
 <script lang="ts">
 	import { getStreakTracker } from '$lib/shared/gamification/getStreakTracker';
 	import { onMount, onDestroy } from 'svelte';
-	import type { IStreakTracker } from '$lib/shared/gamification/services/contracts/IStreakTracker';
+	import type { StreakTracker } from '$lib/shared/gamification/services/implementations/StreakTracker'
 
 	let {
 		onStreakMilestone
@@ -18,7 +18,7 @@ Features:
 		onStreakMilestone?: (streak: number) => void;
 	}>();
 
-	let streakTracker = $state<IStreakTracker | null>(null);
+	let streakTracker = $state<StreakTracker | null>(null);
 	let currentStreak = $state(0);
 	let isActive = $state(false);
 	let isLoading = $state(true);

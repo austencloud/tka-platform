@@ -24,8 +24,8 @@ import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
     userPreviewState,
     getPreviewNotificationPreferences,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
-  import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
+  import type { FCMTokenManager } from "$lib/shared/push/services/implementations/FCMTokenManager";
+  import type { NotificationPreferencesManager } from "$lib/features/feedback/services/implementations/NotificationPreferencesManager";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

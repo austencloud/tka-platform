@@ -10,7 +10,7 @@ import { getConnectOrchestrator } from "$lib/features/connect/getConnectOrchestr
   import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount, onDestroy } from 'svelte';
 	import { connectState } from './state/connect-state.svelte';
-	import type { IErrorHandler } from '$lib/shared/application/services/contracts/IErrorHandler';
+	import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 	// Tab components
 	import NearbyTab from './components/tabs/NearbyTab.svelte';
@@ -58,7 +58,7 @@ import { getConnectOrchestrator } from "$lib/features/connect/getConnectOrchestr
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to initialize';
 			initError = message;
-			const errorHandler = getErrorHandler() as IErrorHandler;
+			const errorHandler = getErrorHandler() as ErrorHandler;
 			errorHandler.showError(message, error instanceof Error ? error : new Error(String(error)), {
 				module: 'connect',
 				action: 'initialize'

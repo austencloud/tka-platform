@@ -17,7 +17,7 @@ import { getVideoPlaybackController } from "$lib/features/watch/getVideoPlayback
   import type { FeedContentType, FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
-  import type { IVideoPlaybackController } from "../../services/contracts/IVideoPlaybackController";
+  import type { VideoPlaybackController } from "../../services/implementations/VideoPlaybackController";
 
   interface Props {
     item: FeedItem;
@@ -42,7 +42,7 @@ import { getVideoPlaybackController } from "$lib/features/watch/getVideoPlayback
   }: Props = $props();
 
   let videoRef = $state<HTMLVideoElement | null>(null);
-  let playbackController: IVideoPlaybackController | null = null;
+  let playbackController: VideoPlaybackController | null = null;
 
   // Derived sequence data for PropAwareThumbnail
   const sequenceForThumbnail = $derived.by(() => {

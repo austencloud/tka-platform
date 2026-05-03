@@ -5,13 +5,13 @@
  * Call this when your app starts up to ensure the database is ready.
  */
 
-import type { IPersistenceService } from "../contracts/IPersistenceService";
+import type { DexiePersistenceService } from "./DexiePersistenceService";
 
 export class PersistenceInitializationService {
   private isInitialized = false;
   private initializationError?: string;
 
-  constructor(private persistenceService: IPersistenceService) {}
+  constructor(private persistenceService: DexiePersistenceService) {}
 
   async initialize(): Promise<void> {
     try {

@@ -1,11 +1,10 @@
-import type { IApplicationInitializer } from "../contracts/IApplicationInitializer";
 
 /**
  * Application Initializer Implementation
  *
  * Handles application startup sequence and initialization.
  */
-export class ApplicationInitializer implements IApplicationInitializer {
+export class ApplicationInitializer {
   private initialized = false;
 
   constructor() {}

@@ -26,7 +26,6 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { UIMessage } from "ai";
-import type { ITikaSessionRepository } from "../contracts/ITikaSessionRepository";
 import {
   createTikaSession,
   sanitizeForFirestore,
@@ -57,7 +56,7 @@ export class TikaSessionError extends Error {
   }
 }
 
-export class TikaSessionRepository implements ITikaSessionRepository {
+export class TikaSessionRepository {
   private getUserId(): string {
     const userId = authState.effectiveUserId;
     if (!userId) {

@@ -5,10 +5,10 @@
  * Uses direct singleton imports.
  */
 
-import type { ISpellServiceLoader } from "../contracts/ISpellServiceLoader";
-import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
-import type { IWordSequenceGenerator } from "../contracts/IWordSequenceGenerator";
-import type { IVariationConstraintBuilder } from "../contracts/IVariationConstraintBuilder";
+
+import type { LetterTransitionGraph } from "../implementations/LetterTransitionGraph";
+import type { WordSequenceGenerator } from "../implementations/WordSequenceGenerator";
+import type { VariationConstraintBuilder } from "../implementations/VariationConstraintBuilder";
 import type { IRandomSequenceGenerator } from "../contracts/IRandomSequenceGenerator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 
@@ -20,12 +20,12 @@ import { randomSequenceGenerator as randomSequenceGeneratorSingleton } from "./R
 import { sequenceExtender as sequenceExtenderSingleton } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 
-export class SpellServiceLoader implements ISpellServiceLoader {
-  async getWordGenerator(): Promise<IWordSequenceGenerator> {
+export class SpellServiceLoader {
+  async getWordGenerator(): Promise<WordSequenceGenerator> {
     return wordSequenceGeneratorSingleton;
   }
 
-  async getTransitionGraph(): Promise<ILetterTransitionGraph> {
+  async getTransitionGraph(): Promise<LetterTransitionGraph> {
     if (!letterTransitionGraphSingleton.isInitialized()) {
       // Set the letter query handler before initialization (required by LetterTransitionGraph)
       letterTransitionGraphSingleton.setLetterQueryHandler(letterQueryHandler);
@@ -38,7 +38,7 @@ export class SpellServiceLoader implements ISpellServiceLoader {
     return sequenceExtenderSingleton;
   }
 
-  async getVariationConstraintBuilder(): Promise<IVariationConstraintBuilder> {
+  async getVariationConstraintBuilder(): Promise<VariationConstraintBuilder> {
     return variationConstraintBuilderSingleton;
   }
 

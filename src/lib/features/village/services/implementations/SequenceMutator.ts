@@ -15,7 +15,7 @@ const MUTATION_TYPES: MutationType[] = [
 
 /**
  * Phase 1: Lightweight synchronous mutator that generates novel sequence IDs.
- * Phase 2+ will wire to ISequenceTransformer for real structural transforms.
+ * Phase 2+ will wire to SequenceTransformer for real structural transforms.
  */
 export class SequenceMutator implements ISequenceMutator {
 	tryInventFrom(sourceSequenceId: string): MutationResult {

@@ -11,7 +11,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import { onMount } from "svelte";
   import Toast from "../components/Toast.svelte";
   import SequenceDisplay from "../sequence-display/components/SequenceDisplay.svelte";
-  import type { IStepOperator } from "../../services/contracts/IStepOperator";
+  import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
   import type { SequenceState } from "../../state/SequenceStateOrchestrator.svelte";
   import type { CreateModuleState } from "../../state/create-module-state.svelte";
   import type { IAnimationStateRef } from "../../types/create-module-types";
@@ -19,7 +19,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
 
   // Services
-  let StepOperator: IStepOperator | null = null;
+  let StepOperator: StepOperator | null = null;
 
   // Props
   let {

@@ -10,14 +10,13 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
-import type { IPersistenceService } from "../contracts/IPersister";
+import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
 import type { SequenceImporter } from "./SequenceImporter";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
-import type { ISequenceRepository } from "../contracts/ISequenceRepository";
 import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
 import type { SequenceDomainManager } from "./SequenceDomainManager";
 import {
@@ -33,10 +32,10 @@ import {
   getUserSequencesPath,
 } from "$lib/features/library/data/firestore-paths";
 
-export class SequenceRepository implements ISequenceRepository {
+export class SequenceRepository {
   constructor(
     private readonly sequenceDomainManager: SequenceDomainManager,
-    private readonly persistenceService: IPersistenceService,
+    private readonly persistenceService: DexiePersistenceService,
     private readonly reversalDetector: IReversalDetector,
     private readonly normalizationService: ISequenceNormalizer,
     private readonly sequenceImportService?: SequenceImporter

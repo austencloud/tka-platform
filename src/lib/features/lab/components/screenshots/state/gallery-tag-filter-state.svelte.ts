@@ -7,13 +7,13 @@
  */
 
 import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-import type { IScreenshotTagController } from "../../../services/contracts/IScreenshotTagController";
+import type { ScreenshotTagController } from "../../../services/implementations/ScreenshotTagController";
 import type { GalleryItem } from "../../../services/contracts/IGalleryItemAdapter";
 import type { MediaTag, TagColor } from "@austencloud/media-tagging-types";
 
 export interface GalleryTagFilterDeps {
   getHapticService: () => IHapticFeedback | null;
-  getTagController: () => IScreenshotTagController | null;
+  getTagController: () => ScreenshotTagController | null;
 }
 
 export function createGalleryTagFilterState(deps: GalleryTagFilterDeps) {

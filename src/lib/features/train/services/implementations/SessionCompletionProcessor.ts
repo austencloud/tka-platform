@@ -16,8 +16,8 @@ import type {
   ChallengeProgressResult,
 } from "../contracts/ISessionCompletionProcessor";
 import type { IPerformanceHistoryTracker } from "../contracts/IPerformanceHistoryTracker";
-import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
-import type { ITrainChallengeManager } from "../contracts/ITrainChallengeManager";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+import type { TrainChallengeManager } from "./TrainChallengeManager";
 import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
 import type { TrainChallenge } from "../../domain/models/TrainChallengeModels";
 import { PracticeMode } from "../../domain/enums/TrainEnums";
@@ -33,8 +33,8 @@ import { addNotification } from "$lib/shared/gamification/state/notification-sta
 export class SessionCompletionProcessor implements ISessionCompletionProcessor {
   constructor(
     private historyTracker: IPerformanceHistoryTracker,
-    private achievementManager: IAchievementManager,
-    private challengeManager: ITrainChallengeManager
+    private achievementManager: AchievementManager,
+    private challengeManager: TrainChallengeManager
   ) {}
 
   async processCompletion(

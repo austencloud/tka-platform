@@ -1,8 +1,7 @@
-import type { IHallOfShameSubmitter } from './services/contracts/IHallOfShameSubmitter';
 import { HallOfShameSubmitter } from './services/implementations/HallOfShameSubmitter';
 import { getAgeVerifier } from './getAgeVerifier';
 
-let instance: IHallOfShameSubmitter | null = null;
-export function getHallOfShameSubmitter(): IHallOfShameSubmitter {
+let instance: HallOfShameSubmitter | null = null;
+export function getHallOfShameSubmitter(): HallOfShameSubmitter {
   return instance ??= new HallOfShameSubmitter(getAgeVerifier());
 }

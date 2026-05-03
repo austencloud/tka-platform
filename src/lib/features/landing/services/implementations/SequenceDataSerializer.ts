@@ -1,10 +1,9 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { GenerationSettings } from "../../domain/models/spinner-models";
-import type { ISequenceDataSerializer } from "../contracts/ISequenceDataSerializer";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-export class SequenceDataSerializer implements ISequenceDataSerializer {
+export class SequenceDataSerializer {
   toCompactDebug(sequence: SequenceData, settings?: GenerationSettings | null): string {
     const sections: Record<string, unknown> = {};
 

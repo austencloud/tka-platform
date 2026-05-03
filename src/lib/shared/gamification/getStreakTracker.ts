@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IStreakTracker } from './services/contracts/IStreakTracker';
+
 import { StreakTracker } from './services/implementations/StreakTracker';
 
-let instance: IStreakTracker | null = null;
+let instance: StreakTracker | null = null;
 
-export function getStreakTracker(): IStreakTracker {
+export function getStreakTracker(): StreakTracker {
 	if (!browser) throw new Error('getStreakTracker() is browser-only');
 	return instance ??= new StreakTracker();
 }

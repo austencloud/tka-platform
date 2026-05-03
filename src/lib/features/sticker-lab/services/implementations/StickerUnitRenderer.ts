@@ -7,8 +7,6 @@ import {
   STICKER_BLEED_PX,
   STICKER_TILE_SIZE_PX,
 } from "../../domain/sticker-constants";
-import type { IStickerUnitRenderer } from "../contracts/IStickerUnitRenderer";
-
 const LIGHT_MODE_PALETTE: MandalaPalette = {
   blueStroke: "#1e40af",
   blueFill: "transparent",
@@ -24,7 +22,7 @@ const LIGHT_MODE_PALETTE: MandalaPalette = {
  */
 const STICKER_STROKE_WIDTH = 6;
 
-export class StickerUnitRenderer implements IStickerUnitRenderer {
+export class StickerUnitRenderer {
   private readonly mandalaRenderer: MandalaRenderer;
 
   constructor(mandalaRenderer?: MandalaRenderer) {

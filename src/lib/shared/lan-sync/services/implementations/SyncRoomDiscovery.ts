@@ -15,11 +15,10 @@ import {
 	getDatabaseInstance,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
-import type { ISyncRoomDiscovery } from '../contracts/ISyncRoomDiscovery';
 import type { SyncRoom, SyncRoomWithId } from '../../domain/models/lan-sync-models';
 import { localSyncSessionId } from '../../domain/models/lan-sync-models';
 
-export class SyncRoomDiscovery implements ISyncRoomDiscovery {
+export class SyncRoomDiscovery {
 	private _isBrowsing = false;
 	private _nearbyRooms: SyncRoomWithId[] = [];
 	private roomsRef: DatabaseReference | null = null;

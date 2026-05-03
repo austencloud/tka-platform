@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IReflectionComparer } from './services/contracts/IReflectionComparer';
 import { ReflectionComparer } from './services/implementations/comparison/ReflectionComparer';
 
-let instance: IReflectionComparer | null = null;
+let instance: ReflectionComparer | null = null;
 
-export function getReflectionComparer(): IReflectionComparer {
+export function getReflectionComparer(): ReflectionComparer {
 	if (!browser) throw new Error('getReflectionComparer() is browser-only');
 	return instance ??= new ReflectionComparer();
 }

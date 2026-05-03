@@ -11,7 +11,7 @@ import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/brow
   import { onMount, onDestroy } from "svelte";
 	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
-	import type { ICompositionThumbnailResolver } from "../services/contracts/ICompositionThumbnailResolver";
+	import type { CompositionThumbnailResolver } from "../services/implementations/CompositionThumbnailResolver";
 	import CompositionDetailActions from "./CompositionDetailActions.svelte";
 
 	const {

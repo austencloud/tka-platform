@@ -1,4 +1,3 @@
-import type { IAudioAnalyzer } from "../contracts/IAudioAnalyzer";
 
 const FFT_SIZE = 128; // 64 frequency bins (fftSize / 2)
 
@@ -9,7 +8,7 @@ const FFT_SIZE = 128; // 64 frequency bins (fftSize / 2)
  * (the same stream used by MediaRecorder for recording). This gives
  * accurate waveform visualization driven by actual microphone data.
  */
-export class AudioAnalyzer implements IAudioAnalyzer {
+export class AudioAnalyzer {
 	private audioContext: AudioContext | null = null;
 	private analyser: AnalyserNode | null = null;
 	private sourceNode: MediaStreamAudioSourceNode | null = null;

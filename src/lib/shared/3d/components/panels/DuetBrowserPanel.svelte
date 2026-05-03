@@ -10,7 +10,7 @@ import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
+  import type { DuetPersister } from "../../services/implementations/DuetPersister";
   import type {
     DuetSequence,
     DuetSequenceWithData,
@@ -39,7 +39,7 @@ import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
   let duets = $state<DuetSequence[]>([]);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
-  let duetPersister: IDuetPersister | null = null;
+  let duetPersister: DuetPersister | null = null;
 
   onMount(async () => {
     try {

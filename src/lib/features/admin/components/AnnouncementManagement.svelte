@@ -6,7 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
-  import type { IAnnouncementManager } from "../services/contracts/IAnnouncementManager";
+  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementForm from "./announcements/AnnouncementForm.svelte";
   import AnnouncementList from "./announcements/AnnouncementList.svelte";
@@ -14,7 +14,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
-  let announcementService: IAnnouncementManager | null = null;
+  let announcementService: AnnouncementManager | null = null;
 
   // State
   let announcements = $state<Announcement[]>([]);

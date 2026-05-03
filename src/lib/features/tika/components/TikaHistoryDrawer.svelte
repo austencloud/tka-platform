@@ -11,7 +11,7 @@
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import TikaHistoryItem from "./TikaHistoryItem.svelte";
   import type { TikaSessionPreview } from "../domain/models/tika-conversation-models";
-  import type { ITikaSessionRepository } from "../services/contracts/ITikaSessionRepository";
+  import type { TikaSessionRepository } from "../services/implementations/TikaSessionRepository";
 
   let {
     repository,
@@ -20,7 +20,7 @@
     onLoadSession,
     onClose,
   }: {
-    repository: ITikaSessionRepository;
+    repository: TikaSessionRepository;
     currentSessionId: string | null;
     onNewChat: () => void;
     onLoadSession: (sessionId: string) => void;

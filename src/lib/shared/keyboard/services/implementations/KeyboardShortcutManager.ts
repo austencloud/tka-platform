@@ -8,7 +8,6 @@
  */
 
 import type { ShortcutRegistry } from "./ShortcutRegistry";
-import type { IKeyboardShortcutManager } from "../contracts/IKeyboardShortcutManager";
 import type {
   ShortcutContext,
   ShortcutDefinition,
@@ -22,7 +21,7 @@ import { hasOpenDrawers, dismissTopDrawer } from "$lib/shared/foundation/ui/draw
 
 const debug = createComponentLogger("KeyboardShortcutManager");
 
-export class KeyboardShortcutManager implements IKeyboardShortcutManager {
+export class KeyboardShortcutManager {
   private currentContext: ShortcutContext = "global";
   private isInitialized = false;
   private keydownHandler: ((event: KeyboardEvent) => void) | null = null;

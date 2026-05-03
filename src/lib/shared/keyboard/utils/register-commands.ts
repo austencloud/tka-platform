@@ -6,7 +6,7 @@
  * Domain: Keyboard Shortcuts - Command Registration
  */
 
-import type { ICommandPalette } from "../services/contracts/ICommandPalette";
+import type { CommandPalette } from '$lib/shared/keyboard/services/implementations/CommandPalette'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import {
   handleModuleChange,
@@ -17,7 +17,7 @@ import type { ModuleId } from "../../navigation/domain/types";
 import { authState } from "../../auth/state/authState.svelte";
 
 export function registerCommandPaletteCommands(
-  service: ICommandPalette,
+  service: CommandPalette,
   state: ReturnType<typeof createKeyboardShortcutState>
 ) {
   // Get accessible modules

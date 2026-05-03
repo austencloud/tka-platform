@@ -1,7 +1,6 @@
-import type { IDetectionCorrector } from './services/contracts/IDetectionCorrector';
 import { DetectionCorrector } from './services/implementations/DetectionCorrector';
 
-let instance: IDetectionCorrector | null = null;
-export function getDetectionCorrector(): IDetectionCorrector {
+let instance: DetectionCorrector | null = null;
+export function getDetectionCorrector(): DetectionCorrector {
   return instance ??= new DetectionCorrector();
 }

@@ -15,7 +15,7 @@
 <script lang="ts">
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
-  import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
+  import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -28,7 +28,7 @@
   let previewDataUrl = $state<string | null>(null);
   let isLoading = $state(false);
   let previewError = $state<string | null>(null);
-  let renderService = $state<ISequenceRenderer | null>(null);
+  let renderService = $state<SequenceRenderer | null>(null);
   let renderVersion = $state(0); // Increment to trigger re-render
 
   // Local reactive copies of settings (for UI)
@@ -44,7 +44,7 @@
     try {
       renderService = getSequenceRenderer();
       if (!renderService) {
-        console.warn("⚠️ ISequenceRenderer not available in container");
+        console.warn("⚠️ SequenceRenderer not available in container");
       }
     } catch (error) {
       console.error("Failed to get sequenceRenderer from container:", error);

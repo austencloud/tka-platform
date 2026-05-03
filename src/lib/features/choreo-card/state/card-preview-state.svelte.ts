@@ -1,6 +1,6 @@
 import type { Deck } from "../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDeckLoader } from "../services/contracts/IDeckLoader";
+import type { DeckLoader } from "../services/implementations/DeckLoader";
 import type { PrintRenderOptions } from "../services/contracts/IPrintCardRenderer";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
 
@@ -40,7 +40,7 @@ function persist(key: string, value: string | null) {
 }
 
 export function createCardPreviewState(
-  deckLoader: IDeckLoader,
+  deckLoader: DeckLoader,
   allDecks: Deck[]
 ) {
   // ── Navigation ──────────────────────────────────────────────────────────────

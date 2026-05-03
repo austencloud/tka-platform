@@ -1,7 +1,6 @@
-import type { IShameQueueManager } from './services/contracts/IShameQueueManager';
 import { ShameQueueManager } from './services/implementations/ShameQueueManager';
 
-let instance: IShameQueueManager | null = null;
-export function getShameQueueManager(): IShameQueueManager {
+let instance: ShameQueueManager | null = null;
+export function getShameQueueManager(): ShameQueueManager {
   return instance ??= new ShameQueueManager();
 }

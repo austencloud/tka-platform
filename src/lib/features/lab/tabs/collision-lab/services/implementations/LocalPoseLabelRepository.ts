@@ -12,7 +12,6 @@
  * loader without touching the filesystem or Vite's import resolution.
  */
 
-import type { IPoseLabelRepository } from "../contracts/IPoseLabelRepository";
 import type {
   PoseLabel,
   PoseLabelsFile,
@@ -37,7 +36,7 @@ const defaultCanonicalLoader: CanonicalLoader = async () => {
   }
 };
 
-export class LocalPoseLabelRepository implements IPoseLabelRepository {
+export class LocalPoseLabelRepository {
   private canonicalLoader: CanonicalLoader = defaultCanonicalLoader;
 
   /** Test seam - replaces the canonical loader. */

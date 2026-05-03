@@ -25,8 +25,8 @@
   // Services
   import { getKeyboardShortcutManager } from "$lib/shared/keyboard/getKeyboardShortcutManager";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
-  import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
-  import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
+  import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
+  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
   import { animationShortcutRegistrar } from "../services/implementations/AnimationShortcutRegistrar";
 
   // Types
@@ -225,7 +225,7 @@
   // KEYBOARD SHORTCUTS
   // ============================================================================
 
-  let shortcutService: IKeyboardShortcutManager | null = null;
+  let shortcutService: KeyboardShortcutManager | null = null;
   let unregisterShortcuts: (() => void) | null = null;
 
   function setupKeyboardShortcuts() {
@@ -275,7 +275,7 @@
   // ============================================================================
 
   // Detect side-by-side layout internally if not provided via prop
-  let layoutService: IResponsiveLayoutManager | null = null;
+  let layoutService: ResponsiveLayoutManager | null = null;
   let detectedSideBySide = $state(false);
 
   onMount(() => {

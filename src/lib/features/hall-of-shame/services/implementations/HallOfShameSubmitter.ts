@@ -19,8 +19,7 @@ import {
 } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { IAgeVerifier } from '../contracts/IAgeVerifier';
-import type { IHallOfShameSubmitter } from '../contracts/IHallOfShameSubmitter';
+import type { AgeVerifier } from "./AgeVerifier";
 import type {
 	HallOfShameEntry,
 	ShameSubmissionParams,
@@ -29,11 +28,11 @@ import type {
 
 const DAILY_LIMIT = 3;
 
-export class HallOfShameSubmitter implements IHallOfShameSubmitter {
+export class HallOfShameSubmitter {
 	private readonly COLLECTION = 'hallOfShame';
 	private readonly RATE_LIMIT_COLLECTION = 'hallOfShameRateLimits';
 
-	constructor(private readonly ageVerifier: IAgeVerifier) {}
+	constructor(private readonly ageVerifier: AgeVerifier) {}
 
 	async submit(params: ShameSubmissionParams): Promise<string> {
 		const { userId, sourceSequenceId } = params;

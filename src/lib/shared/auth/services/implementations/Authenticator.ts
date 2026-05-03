@@ -33,9 +33,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../../firebase";
-import type { IAuthenticator } from "../contracts/IAuthenticator";
 
-export class Authenticator implements IAuthenticator {
+export class Authenticator {
   async signInWithGoogle(): Promise<void> {
     const { isDesktop } = await import("$lib/shared/desktop/isDesktop");
     if (isDesktop()) {

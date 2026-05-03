@@ -2,7 +2,6 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
-import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
@@ -40,7 +39,7 @@ interface PictographKeyInput {
   };
 }
 
-export class PictographKeyHasher implements IPictographKeyHasher {
+export class PictographKeyHasher {
   deriveKey(
     data: StepData | PictographData,
     visibility: PictographVisibilityOptions

@@ -33,7 +33,7 @@ import type {
   GridPosition,
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   VERTICAL_MIRROR_LOCATION_MAP,
@@ -43,7 +43,7 @@ import { Period } from "../../domain/models/circular-models";
 import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class StrictMirroredLOOPExecutor {
-  constructor(private OrientationCalculator: IOrientationCalculator) {}
+  constructor(private OrientationCalculator: OrientationCalculator) {}
 
   /**
    * Execute the strict mirrored LOOP.

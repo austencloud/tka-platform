@@ -11,8 +11,8 @@
     loadPreviewSection,
     isSectionLoaded,
   } from "../../../debug/state/user-preview-state.svelte";
-  import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
-  import type { IAccountManager } from "../../../auth/services/contracts/IAccountManager";
+  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
+  import type { AccountManager } from '$lib/shared/auth/services/implementations/AccountManager'
   import { onMount } from "svelte";
   import {
     createProfileSettingsState,
@@ -83,8 +83,8 @@
 
   // Services
   let hapticService = $state<IHapticFeedback | null>(null);
-  let authService = $state<IAuthenticator | null>(null);
-  let accountManager = $state<IAccountManager | null>(null);
+  let authService = $state<Authenticator | null>(null);
+  let accountManager = $state<AccountManager | null>(null);
 
   // Cache clearing state
   let clearingCache = $state(false);
@@ -691,7 +691,6 @@
   .email-unverified-note i {
     font-size: var(--font-size-sm);
   }
-
 
   /* ========================================
      ACCESSIBILITY

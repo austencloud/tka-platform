@@ -1,6 +1,6 @@
 import type { Deck } from "../../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDeckLoader } from "../contracts/IDeckLoader";
+import type { DeckLoader } from "./DeckLoader";
 import type {
   IVtgFamilyAggregator,
   FamilyRatioGroup,
@@ -8,7 +8,7 @@ import type {
 import { VTG_RATIO_TURNS_MAP } from "../../domain/elemental-theme";
 
 export class VtgFamilyAggregator implements IVtgFamilyAggregator {
-  constructor(private readonly deckLoader: IDeckLoader) {}
+  constructor(private readonly deckLoader: DeckLoader) {}
 
   async aggregateFamilySequences(
     familyId: string,

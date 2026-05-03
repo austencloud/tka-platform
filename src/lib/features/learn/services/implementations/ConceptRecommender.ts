@@ -16,7 +16,6 @@ import {
 } from "../../domain/concepts";
 import type { LearnConcept } from "../../domain/types";
 import type { ConceptMastery } from "../../domain/quiz-history-types";
-import type { IConceptRecommender } from "../contracts/IConceptRecommender";
 
 /** Below this average score, flag concept for review */
 const REVIEW_SCORE_THRESHOLD = 80;
@@ -30,7 +29,7 @@ const SKIP_EXPLANATION_THRESHOLD = 95;
 /** Minimum attempts before allowing explanation skip */
 const SKIP_EXPLANATION_MIN_ATTEMPTS = 5;
 
-export class ConceptRecommender implements IConceptRecommender {
+export class ConceptRecommender {
   getNextConcepts(
     completedIds: Set<string>,
     limit: number = 3

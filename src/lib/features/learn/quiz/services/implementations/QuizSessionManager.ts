@@ -12,10 +12,9 @@ import {
   type QuizSession,
   type QuizTimerState,
 } from "../../domain/models/quiz-models";
-import type { IQuizSessionManager } from "../contracts/IQuizSessionManager";
 import { QuizConfigurator } from "./QuizConfigurator";
 
-export class QuizSessionManager implements IQuizSessionManager {
+export class QuizSessionManager {
   private activeSessions: Map<string, QuizSession> = new Map();
   private timers: Map<string, NodeJS.Timeout> = new Map();
   private currentSessionId: string | null = null;

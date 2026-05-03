@@ -19,12 +19,12 @@ import { getReversalDetector } from "$lib/features/create/shared/getReversalDete
 
 const debug = createComponentLogger("ConstructTabState");
 import { createStartPositionData } from "../domain/factories/createStartPositionData";
-import type { ICreateModuleOrchestrator } from "../services/contracts/ICreateModuleOrchestrator";
-import type { ISequencePersister } from "../services/contracts/ISequencePersister";
-import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
-import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceStatsCalculator";
-import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
-import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
+import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
 import type { IReversalDetector } from "../services/contracts/IReversalDetector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
@@ -58,12 +58,12 @@ import { getFilterPersister } from "$lib/features/create/construct/option-picker
  * @returns Reactive state object with getters and state mutations
  */
 export function createConstructTabState(
-  CreateModuleOrchestrator: ICreateModuleOrchestrator,
-  sequenceService?: ISequenceRepository,
-  SequencePersister?: ISequencePersister,
-  sequenceStatisticsService?: ISequenceStatsCalculator,
-  SequenceTransformer?: ISequenceTransformer,
-  sequenceValidationService?: ISequenceValidator,
+  CreateModuleOrchestrator: CreateModuleOrchestrator,
+  sequenceService?: SequenceRepository,
+  SequencePersister?: SequencePersister,
+  sequenceStatisticsService?: SequenceStatsCalculator,
+  SequenceTransformer?: SequenceTransformer,
+  sequenceValidationService?: SequenceValidator,
   createModuleState?: CreateModuleStateMinimal | null
 ) {
   // ============================================================================

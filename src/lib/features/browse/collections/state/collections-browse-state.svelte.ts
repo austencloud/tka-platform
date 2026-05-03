@@ -9,7 +9,7 @@ import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/en
 import type { LibraryCollection } from "$lib/features/library/domain/models/Collection";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
 import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
+import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
 import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 
 /**
@@ -46,7 +46,7 @@ function createCollectionsBrowseState() {
    */
   async function loadCreatorLibraries(
     userService: IUserRepository,
-    collectionService: ICollectionManager,
+    collectionService: CollectionManager,
     libraryService: ILibraryRepository,
     currentUserId?: string
   ): Promise<void> {
@@ -123,7 +123,7 @@ function createCollectionsBrowseState() {
    */
   async function refresh(
     userService: IUserRepository,
-    collectionService: ICollectionManager,
+    collectionService: CollectionManager,
     libraryService: ILibraryRepository,
     currentUserId?: string
   ): Promise<void> {
@@ -242,7 +242,7 @@ export const collectionsBrowseState = {
   // Actions
   loadCreatorLibraries: (
     userService: IUserRepository,
-    collectionService: ICollectionManager,
+    collectionService: CollectionManager,
     libraryService: ILibraryRepository,
     currentUserId?: string
   ) =>
@@ -254,7 +254,7 @@ export const collectionsBrowseState = {
     ),
   refresh: (
     userService: IUserRepository,
-    collectionService: ICollectionManager,
+    collectionService: CollectionManager,
     libraryService: ILibraryRepository,
     currentUserId?: string
   ) =>

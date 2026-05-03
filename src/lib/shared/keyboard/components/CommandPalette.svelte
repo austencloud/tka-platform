@@ -9,13 +9,13 @@
 
   import { onMount } from "svelte";
   import { getCommandPalette } from "../getCommandPalette";
-  import type { ICommandPalette } from "../services/contracts/ICommandPalette";
+  import type { CommandPalette } from '$lib/shared/keyboard/services/implementations/CommandPalette'
   import { commandPaletteState } from "../state/command-palette-state.svelte";
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import type { CommandPaletteItem } from "../domain/types/keyboard-types";
 
   // Service
-  let paletteService: ICommandPalette | null = null;
+  let paletteService: CommandPalette | null = null;
 
   // Local state
   let inputElement = $state<HTMLInputElement | null>(null);

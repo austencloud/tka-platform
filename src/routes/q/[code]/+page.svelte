@@ -36,7 +36,7 @@
     calculateFrameTiming,
   } from "$lib/shared/qr-video/domain/qr-video-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import type {
     WorkerOutMessage,
     RenderRequest,
@@ -68,7 +68,7 @@
 
   const encoder = new SequenceEncoder();
 
-  const stubBrowseLoader: IBrowseLoader = {
+  const stubBrowseLoader: PublicSequencesLoader = {
     loadSequenceMetadata: async () => [],
     loadFullSequenceData: async () => null,
     removeFromCache: () => {},

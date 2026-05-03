@@ -7,10 +7,9 @@
  * Domain: Keyboard Shortcuts - Command Palette
  */
 
-import type { ICommandPalette } from "../contracts/ICommandPalette";
 import type { CommandPaletteItem } from "../../domain/types/keyboard-types";
 
-export class CommandPalette implements ICommandPalette {
+export class CommandPalette {
   private commands: Map<string, CommandPaletteItem> = new Map();
   private recentCommandIds: string[] = [];
   private readonly MAX_RECENT = 10;

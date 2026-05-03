@@ -8,7 +8,7 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getPlaybackState } from "./state/playback-state.svelte";
   import { getComposeModuleState } from "../../shared/state/compose-module-state.svelte";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { onMount } from "svelte";
   import PlaybackHeader from "./components/PlaybackHeader.svelte";
   import PlaybackControls from "./components/PlaybackControls.svelte";
@@ -28,7 +28,7 @@
   const moduleState = getComposeModuleState();
 
   // Device detection for mobile layout
-  let deviceDetector: IDeviceDetector | null = $state(null);
+  let deviceDetector: DeviceDetector | null = $state(null);
   let isMobile = $state(false);
 
   onMount(() => {

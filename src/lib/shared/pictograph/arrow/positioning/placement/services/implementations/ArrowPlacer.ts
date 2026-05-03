@@ -8,7 +8,7 @@
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
-import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
+import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache'
 import type {
   AllPlacementData,
   JsonPlacementData,
@@ -16,11 +16,10 @@ import type {
 import type { IArrowPlacer } from "../contracts/IArrowPlacer";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
-
 const debug = createComponentLogger("ArrowPlacer");
 
 export class ArrowPlacer implements IArrowPlacer {
-  private jsonCacheImpl: IJsonCache;
+  private jsonCacheImpl: SimpleJsonCache;
   private allPlacements: AllPlacementData = {
     [GridMode.DIAMOND]: {},
     [GridMode.BOX]: {},
@@ -57,7 +56,7 @@ export class ArrowPlacer implements IArrowPlacer {
    * Create ArrowPlacer with optional injectable JSON cache
    * @param jsonCacheImpl JSON cache implementation (defaults to browser fetch-based cache)
    */
-  constructor(jsonCacheImpl?: IJsonCache) {
+  constructor(jsonCacheImpl?: SimpleJsonCache) {
     this.jsonCacheImpl = jsonCacheImpl ?? jsonCache;
   }
 

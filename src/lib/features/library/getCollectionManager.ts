@@ -1,7 +1,6 @@
-import type { ICollectionManager } from './services/contracts/ICollectionManager';
 import { CollectionManager } from './services/implementations/CollectionManager';
 
-let instance: ICollectionManager | null = null;
-export function getCollectionManager(): ICollectionManager {
+let instance: CollectionManager | null = null;
+export function getCollectionManager(): CollectionManager {
   return instance ??= new CollectionManager();
 }

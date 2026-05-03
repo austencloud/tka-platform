@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISettingsPersister } from './services/contracts/ISettingsPersister';
 import { FirebaseSettingsPersister } from './services/implementations/FirebaseSettingsPersister';
 
-let instance: ISettingsPersister | null = null;
+let instance: FirebaseSettingsPersister | null = null;
 
-export function getSettingsPersister(): ISettingsPersister {
+export function getSettingsPersister(): FirebaseSettingsPersister {
 	if (!browser) throw new Error('getSettingsPersister() is browser-only');
 	return instance ??= new FirebaseSettingsPersister();
 }

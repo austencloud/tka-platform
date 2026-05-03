@@ -8,7 +8,6 @@
  * use a content hash as the stable document ID for dedup.
  */
 
-import type { IPoiImageLibrary } from "../contracts/IPoiImageLibrary";
 import type { PoiImageLibraryEntry } from "../../domain/PoiImageLibraryEntry";
 import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
 import {
@@ -16,7 +15,7 @@ import {
   getFirestoreInstance,
 } from "$lib/shared/auth/firebase";
 
-export class PoiImageLibrary implements IPoiImageLibrary {
+export class PoiImageLibrary {
   async upload(
     file: File,
     source: "upload-zone" | "timeline-drop",

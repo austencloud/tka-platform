@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import type { IWordSequenceGenerator } from './services/contracts/IWordSequenceGenerator';
 import { WordSequenceGenerator } from './services/implementations/WordSequenceGenerator';
 import { getLetterTransitionGraph } from './getLetterTransitionGraph';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
@@ -10,9 +9,9 @@ import { getStartPositionValidator } from './getStartPositionValidator';
 import { getOrientationContinuityValidator } from './getOrientationContinuityValidator';
 import { getReversalDetector } from '$lib/features/create/shared/getReversalDetector';
 
-let instance: IWordSequenceGenerator | null = null;
+let instance: WordSequenceGenerator | null = null;
 
-export function getWordSequenceGenerator(): IWordSequenceGenerator {
+export function getWordSequenceGenerator(): WordSequenceGenerator {
 	if (!browser) throw new Error('getWordSequenceGenerator() is browser-only');
 	return instance ??= new WordSequenceGenerator(
 		getLetterTransitionGraph(),

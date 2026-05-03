@@ -17,7 +17,7 @@ import {
   MotionColor,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
   INVERTED_LOOP_VALIDATION_SET,
   getInvertedLetter,
@@ -25,7 +25,7 @@ import {
 import { Period } from "../../domain/models/circular-models";
 
 export class StrictInvertedLOOPExecutor {
-  constructor(private OrientationCalculator: IOrientationCalculator) {}
+  constructor(private OrientationCalculator: OrientationCalculator) {}
 
   executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);

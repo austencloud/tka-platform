@@ -17,7 +17,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceDetailLoader } from "../services/contracts/ISequenceDetailLoader";
-  import type { IVideoCountManager } from "../services/contracts/IVideoCountManager";
+  import type { VideoCountManager } from "$lib/features/browse/sequences/display/services/implementations/VideoCountManager";
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
   import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
   import type { IClaudeCodeCopier } from "../services/contracts/IClaudeCodeCopier";
@@ -25,7 +25,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
   import type { IPresentationResolver, ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/IPresentationResolver";
-  import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
+  import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 
   import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
@@ -62,7 +62,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   // Services (resolved in onMount)
   let hapticService: IHapticFeedback | null = null;
   let detailLoader = $state<ISequenceDetailLoader | null>(null);
-  let videoCountManager = $state<IVideoCountManager | null>(null);
+  let videoCountManager = $state<VideoCountManager | null>(null);
   let imageSharer = $state<ISequenceImageSharer | null>(null);
   let claudeCopier = $state<IClaudeCodeCopier | null>(null);
 
@@ -70,7 +70,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   let isSaved = $state(true); // Default: assume saved (hide Save button while checking)
   let isFavorite = $state(false);
   let libraryRepo = $state<ILibraryRepository | null>(null);
-  let collectionManager = $state<ICollectionManager | null>(null);
+  let collectionManager = $state<CollectionManager | null>(null);
 
   // Content hash cache (avoids re-querying Firestore for same hash)
   const savedHashCache = new Map<string, boolean>();

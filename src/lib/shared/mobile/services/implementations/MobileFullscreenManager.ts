@@ -1,4 +1,3 @@
-import type { IMobileFullscreenManager } from "../contracts/IMobileFullscreenManager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("MobileFullscreenManager");
@@ -38,7 +37,7 @@ interface BeforeInstallPromptEvent extends Event {
  *
  * Provides comprehensive fullscreen management for mobile devices
  */
-export class MobileFullscreenManager implements IMobileFullscreenManager {
+export class MobileFullscreenManager {
   private fullscreenCallbacks: ((isFullscreen: boolean) => void)[] = [];
   private installCallbacks: ((canInstall: boolean) => void)[] = [];
   private deferredPrompt: BeforeInstallPromptEvent | null = null;

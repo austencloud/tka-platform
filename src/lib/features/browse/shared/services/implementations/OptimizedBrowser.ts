@@ -9,13 +9,13 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type {
   IOptimizedBrowser,
   PaginatedSequences,
   SequenceMetadata,
 } from "../contracts/IOptimizedBrowser";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 // API Response types
 interface PaginatedSequencesResponse {
@@ -35,7 +35,7 @@ export class OptimizedBrowser implements IOptimizedBrowser {
   private readonly DESKTOP_PAGE_SIZE = 40;
 
   constructor(
-    private deviceDetector: IDeviceDetector
+    private deviceDetector: DeviceDetector
   ) {}
 
   private get pageSize(): number {
@@ -70,7 +70,7 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error("Failed to load initial sequences:", error);
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load more results",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -120,7 +120,7 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error(`Failed to load page ${page}:`, error);
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load more results",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -205,7 +205,7 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error("Search failed:", error);
-      const errorHandler = getErrorHandler() as IErrorHandler;
+      const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load more results",
         technicalDetails: error instanceof Error ? error.message : String(error),

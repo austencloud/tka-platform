@@ -19,9 +19,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { FestivalAttendance } from "../../domain/models/festival";
-import type { IFestivalAttendanceRepository } from "../contracts/IFestivalAttendanceRepository";
 
-export class FestivalAttendanceRepository implements IFestivalAttendanceRepository {
+export class FestivalAttendanceRepository {
   async getCount(festivalId: string): Promise<number> {
     const db = await getFirestoreInstance();
     const ref = collection(db, "festivals", festivalId, "attendance");

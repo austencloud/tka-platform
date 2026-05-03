@@ -43,7 +43,7 @@
 
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { onMount, onDestroy } from "svelte";
-import type { IAuthenticator } from "../services/contracts/IAuthenticator";
+import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import { GOOGLE_CLIENT_ID } from "../config/google-oauth";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { isAutomatedBrowser } from "$lib/shared/environment/environment-features";
@@ -72,7 +72,7 @@ import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   }: Props = $props();
 
   let scriptLoaded = $state(false);
-  let authService: IAuthenticator | null = null;
+  let authService: Authenticator | null = null;
 
   function loadGoogleScript(): Promise<void> {
     return new Promise((resolve, reject) => {

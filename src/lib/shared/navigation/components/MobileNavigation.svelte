@@ -2,7 +2,7 @@
 <!-- Automatically adapts between bottom (portrait) and side (landscape) layouts -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
+import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { onMount } from "svelte";
   import type { Section } from "../domain/types";
@@ -36,7 +36,7 @@ import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDet
   }>();
 
   // Services
-  let deviceDetector: IDeviceDetector | null = null;
+  let deviceDetector: DeviceDetector | null = null;
 
   // Responsive settings from DeviceDetector (single source of truth)
   let responsiveSettings = $state<ResponsiveSettings | null>(null);

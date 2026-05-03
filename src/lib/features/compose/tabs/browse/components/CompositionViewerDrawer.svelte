@@ -13,7 +13,7 @@ import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/brow
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
 	import CompositionAnimatedPreview from "./CompositionAnimatedPreview.svelte";
 	import CompositionMiniPreview from "./CompositionMiniPreview.svelte";
-	import type { ICompositionThumbnailResolver } from "../services/contracts/ICompositionThumbnailResolver";
+	import type { CompositionThumbnailResolver } from "../services/implementations/CompositionThumbnailResolver";
 	import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 	let {

@@ -26,7 +26,7 @@ import type {
   ITikaInteractionTracker,
   TikaTopicInteraction,
 } from "../contracts/ITikaInteractionTracker";
-import type { IQuizHistoryRecorder } from "$lib/features/learn/services/contracts/IQuizHistoryRecorder";
+import type { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
 import {
   getUserTikaInteractionsPath,
   getUserTikaInteractionPath,
@@ -35,7 +35,7 @@ import {
 const DEFAULT_HISTORY_LIMIT = 20;
 
 export class TikaInteractionTracker implements ITikaInteractionTracker {
-  constructor(private readonly quizHistoryRecorder: IQuizHistoryRecorder) {}
+  constructor(private readonly quizHistoryRecorder: QuizHistoryRecorder) {}
 
   async recordTopicDiscussion(userId: string, topic: string): Promise<void> {
     const firestore = await getFirestoreInstance();

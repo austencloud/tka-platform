@@ -2,7 +2,7 @@
  * CandidateGenerator
  *
  * Produces visibly-distinct candidate stances for multiple-choice pose
- * labeling. See `ICandidateGenerator` for the contract.
+ * labeling. See `CandidateGenerator` for the contract.
  *
  * ## Why this exists
  *
@@ -35,7 +35,6 @@
  * Domain: Collision Lab - AI-assisted multiple-choice labeling
  */
 
-import type { ICandidateGenerator } from "../contracts/ICandidateGenerator";
 import type {
   IStanceOptimizer,
   OptimizerBounds,
@@ -80,7 +79,7 @@ interface SeedRecipe {
   stance: StancePose;
 }
 
-export class CandidateGenerator implements ICandidateGenerator {
+export class CandidateGenerator {
   constructor(private readonly optimizer: IStanceOptimizer) {}
 
   // ------------------------------------------------------------------

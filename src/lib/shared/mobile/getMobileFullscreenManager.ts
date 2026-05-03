@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IMobileFullscreenManager } from './services/contracts/IMobileFullscreenManager';
+
 import { MobileFullscreenManager } from './services/implementations/MobileFullscreenManager';
 
-let instance: IMobileFullscreenManager | null = null;
+let instance: MobileFullscreenManager | null = null;
 
-export function getMobileFullscreenManager(): IMobileFullscreenManager {
+export function getMobileFullscreenManager(): MobileFullscreenManager {
 	if (!browser) throw new Error('getMobileFullscreenManager() is browser-only');
 	return instance ??= new MobileFullscreenManager();
 }

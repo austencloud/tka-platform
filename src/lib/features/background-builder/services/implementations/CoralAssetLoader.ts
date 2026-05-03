@@ -6,7 +6,6 @@
  * and groups them by depth layer for the scene renderer.
  */
 
-import type { ICoralAssetLoader } from "../contracts/ICoralAssetLoader";
 import type {
   CoralAssetDefinition,
   CoralCategory,
@@ -114,7 +113,7 @@ function pickRandom<T>(arr: T[]): T {
 // Implementation
 // --------------------------------------------------------------------------
 
-export class CoralAssetLoader implements ICoralAssetLoader {
+export class CoralAssetLoader {
   private cache: Map<CoralDepthLayer, TintedCoralAsset[]> | null = null;
   private loading = false;
 

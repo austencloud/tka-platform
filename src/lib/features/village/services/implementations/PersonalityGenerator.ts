@@ -1,7 +1,6 @@
 import type { PersonalityComponent } from "../../domain/village-types";
-import type { IPersonalityGenerator } from "../contracts/IPersonalityGenerator";
 
-export class PersonalityGenerator implements IPersonalityGenerator {
+export class PersonalityGenerator {
 	generate(mean: number, stdDev: number): PersonalityComponent {
 		return {
 			learnSpeed: this.clampedNormal(mean, stdDev),

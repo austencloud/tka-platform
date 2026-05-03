@@ -11,7 +11,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import { onMount, onDestroy } from "svelte";
-  import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import { SequenceDifficultyCalculator } from "../../browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
@@ -19,7 +19,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   import ChoreoCardExport from "./ChoreoCardExport.svelte";
   import PageDisplay from "./PageDisplay.svelte";
   import type { Deck } from "../domain/models/Deck";
-  import type { IDeckLoader } from "../services/contracts/IDeckLoader";
+  import type { DeckLoader } from "../services/implementations/DeckLoader";
   import type { IThumbnailRenderOrchestrator } from "../../browse/sequences/display/services/contracts/IThumbnailRenderOrchestrator";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
@@ -33,7 +33,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   const levelCalculator = new SequenceDifficultyCalculator();
 
   // Services
-  let loaderService = $state<IBrowseLoader | null>(null);
+  let loaderService = $state<PublicSequencesLoader | null>(null);
 
   // Storage keys (migrated from wordCard.* to choreoCard.*)
   const STORAGE_KEY_LENGTH = "choreoCard.selectedLength";
@@ -380,7 +380,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
     url.hash = encodeNavHash(initialState);
     history.replaceState(initialState, "", url.toString());
 
-    const deckLoader = getDeckLoader() as IDeckLoader;
+    const deckLoader = getDeckLoader() as DeckLoader;
 
     // Serve cached decks instantly, refresh from Firebase in background
     if (decks.length === 0) {
@@ -470,7 +470,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   }
 
   async function loadDecks() {
-    const deckLoader = getDeckLoader() as IDeckLoader;
+    const deckLoader = getDeckLoader() as DeckLoader;
     try {
       isDeckLoading = true;
       deckErrorMessage = null;
@@ -496,7 +496,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   // Loads sequences for a deck without touching selectedDeckId or nav state.
   // Used both by handleSelectDeck and restoreNavState.
   async function handleSelectDeckSequences(deckId: string) {
-    const deckLoader = getDeckLoader() as IDeckLoader;
+    const deckLoader = getDeckLoader() as DeckLoader;
     const deck = decks.find((d) => d.id === deckId);
     if (!deck) return;
 
@@ -542,7 +542,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
     const deck = decks.find((d) => d.id === selectedDeckId);
     if (!deck || !selectedDeckId) return;
 
-    const deckLoader = getDeckLoader() as IDeckLoader;
+    const deckLoader = getDeckLoader() as DeckLoader;
     isDeckLoading = true;
     try {
       const seqIds = deck.families

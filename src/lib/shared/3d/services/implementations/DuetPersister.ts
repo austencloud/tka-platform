@@ -5,9 +5,8 @@
  * to full SequenceData using the browse loader.
  */
 
-import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDuetPersister } from "../contracts/IDuetPersister";
 import type {
   DuetSequence,
   DuetSequenceWithData,
@@ -24,10 +23,10 @@ interface StoredDuet extends Omit<DuetSequence, "createdAt"> {
   createdAt: string;
 }
 
-export class DuetPersister implements IDuetPersister {
+export class DuetPersister {
   private sequenceCache: Map<string, SequenceData> | null = null;
 
-  constructor(private browseLoader: IBrowseLoader) {}
+  constructor(private browseLoader: PublicSequencesLoader) {}
 
   /**
    * Save a new duet sequence

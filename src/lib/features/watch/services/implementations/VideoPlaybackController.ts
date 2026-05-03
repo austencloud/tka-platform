@@ -8,15 +8,13 @@
  * Only one video plays at a time, always starting muted.
  */
 
-import type { IVideoPlaybackController } from "../contracts/IVideoPlaybackController";
-
 /** Minimum visibility ratio to start playback (TikTok uses 75%) */
 const PLAY_THRESHOLD = 0.75;
 
 /** Visibility ratio below which to pause */
 const PAUSE_THRESHOLD = 0.25;
 
-export class VideoPlaybackController implements IVideoPlaybackController {
+export class VideoPlaybackController {
 	private observer: IntersectionObserver | null = null;
 	private videoElements = new Map<string, HTMLVideoElement>();
 	private _currentPlayingId: string | null = null;

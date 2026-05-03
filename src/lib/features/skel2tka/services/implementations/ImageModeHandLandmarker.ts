@@ -15,12 +15,10 @@
  */
 
 import type { HandLandmarkerResult } from "$lib/features/train/services/contracts/IHandLandmarker";
-import type { IImageModeHandLandmarker } from "../contracts/IImageModeHandLandmarker";
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MediaPipeHandLandmarker = any;
 
-export class ImageModeHandLandmarker implements IImageModeHandLandmarker {
+export class ImageModeHandLandmarker {
   private _handLandmarker: MediaPipeHandLandmarker = null;
   private _isInitialized = false;
 

@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { IAnnouncementManager } from "../../services/contracts/IAnnouncementManager";
+  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
   import type {
     Announcement,
     AnnouncementSeverity,
@@ -26,7 +26,7 @@
   let { announcement = null, onSave, onCancel }: Props = $props();
 
   // Services
-  let announcementService: IAnnouncementManager | null = null;
+  let announcementService: AnnouncementManager | null = null;
 
   onMount(() => {
     announcementService = getAnnouncementManager();

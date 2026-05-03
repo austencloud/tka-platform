@@ -13,7 +13,6 @@
  * (paused) or jumps (seek).
  */
 
-import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
 import type { Echo2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
   Echo2DRenderer,
@@ -21,7 +20,7 @@ import {
 } from "$lib/shared/effects/renderers/Echo2DRenderer";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
-export class EchoOverlayRenderer implements IEchoOverlayRenderer {
+export class EchoOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private renderer = new Echo2DRenderer();

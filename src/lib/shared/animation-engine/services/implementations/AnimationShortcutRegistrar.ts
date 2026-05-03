@@ -5,7 +5,7 @@
  * Shortcuts are only active when the animation panel is open.
  */
 
-import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
 import type {
   IAnimationShortcutRegistrar,
   AnimationShortcutHandlers,
@@ -26,7 +26,7 @@ export class AnimationShortcutRegistrar implements IAnimationShortcutRegistrar {
   ] as const;
 
   register(
-    service: IKeyboardShortcutManager,
+    service: KeyboardShortcutManager,
     handlers: AnimationShortcutHandlers
   ): () => void {
     const unregisterFns: (() => void)[] = [];

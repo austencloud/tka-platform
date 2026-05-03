@@ -16,14 +16,14 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IAnimationPlaybackControllerFactory } from "$lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import type { AnimationPlaybackControllerFactory } from "$lib/features/compose/services/implementations/AnimationPlaybackControllerFactory";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-  import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+  import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
@@ -104,9 +104,9 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   // ── Animation state ─────────────────────────────────────────────────────────
   const animationState = createAnimationPanelState();
   let playbackController: IAnimationPlaybackController | null = null;
-  let browseLoader: IBrowseLoader | null = null;
-  let startPositionDeriver: IStartPositionDeriver | null = null;
-  let gridPositionDeriver: IGridPositionDeriver | null = null;
+  let browseLoader: PublicSequencesLoader | null = null;
+  let startPositionDeriver: StartPositionDeriver | null = null;
+  let gridPositionDeriver: GridPositionDeriver | null = null;
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
   let servicesReady = $state(false);
   let animationReady = $state(false);
@@ -280,7 +280,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       visibilityManager.setActiveEffect("trails");
 
       browseLoader = getBrowseLoader();
-      const controllerFactory = getAnimationPlaybackControllerFactory() as IAnimationPlaybackControllerFactory;
+      const controllerFactory = getAnimationPlaybackControllerFactory() as AnimationPlaybackControllerFactory;
       playbackController = controllerFactory.create();
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;

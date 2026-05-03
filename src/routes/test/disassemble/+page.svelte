@@ -11,7 +11,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 
   const animationState = createAnimationPanelState();
   const propTypeApplier = new PropTypeApplier();
@@ -55,7 +55,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     try {
       visibilityManager.setDarkMode(true);
       playbackController = getAnimationPlaybackController();
-      const browseLoader: IBrowseLoader = getBrowseLoader();
+      const browseLoader: PublicSequencesLoader = getBrowseLoader();
 
       // Load sequence metadata, then pick one and load its full data
       const metadata = await browseLoader.loadSequenceMetadata();

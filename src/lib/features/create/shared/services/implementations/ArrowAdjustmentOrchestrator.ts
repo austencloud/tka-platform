@@ -16,11 +16,11 @@ import type {
   CascadingLookupResult,
 } from "../contracts/IArrowAdjustmentOrchestrator";
 import type { KeyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
-import type { IScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IScreenSpaceAdjustmentTransformer";
-import type { IArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowAdjustmentCalculator";
-import type { IArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowLocationCalculator";
-import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
-import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
+import type { ScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
+import type { ArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import type { ArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
+import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
 import { GlobalAdjustmentKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/global/services/implementations/GlobalAdjustmentKeyGenerator";
 import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
@@ -67,12 +67,12 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
 
   constructor(
     private keyboardAdjuster: KeyboardArrowAdjuster,
-    private screenSpaceTransformer: IScreenSpaceAdjustmentTransformer,
-    private arrowAdjustmentCalculator: IArrowAdjustmentCalculator,
-    private arrowLocationCalculator: IArrowLocationCalculator,
+    private screenSpaceTransformer: ScreenSpaceAdjustmentTransformer,
+    private arrowAdjustmentCalculator: ArrowAdjustmentCalculator,
+    private arrowLocationCalculator: ArrowLocationCalculator,
     private pictographPreparer: IPictographPreparer,
-    gridModeDeriver: IGridModeDeriver,
-    turnsTupleGenerator: ITurnsTupleGenerator
+    gridModeDeriver: GridModeDeriver,
+    turnsTupleGenerator: TurnsTupleGenerator
   ) {
     this.keyGenerator = new GlobalAdjustmentKeyGenerator(gridModeDeriver, turnsTupleGenerator);
   }

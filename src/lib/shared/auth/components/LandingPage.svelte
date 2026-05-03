@@ -25,7 +25,7 @@
   import AuthFooter from "./AuthFooter.svelte";
   import GoogleOneTap from "./GoogleOneTap.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
-import type { IAuthenticator } from "../services/contracts/IAuthenticator";
+import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import { settingsService } from "../../settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "../../settings/utils/background-theme-calculator";
@@ -33,7 +33,7 @@ import type { IAuthenticator } from "../services/contracts/IAuthenticator";
 
   let authMode = $state<"signin" | "signup">("signin");
   let showEmailAuth = $state(false);
-  let authService: IAuthenticator | null = null;
+  let authService: Authenticator | null = null;
 
   // Legal sheet state (lifted here so it renders outside backdrop-filter container)
   let sheetOpen = $state(false);

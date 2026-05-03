@@ -8,9 +8,8 @@
 
 import type { AnimationMode } from "../../../../shared/domain/AnimationMode";
 import type { CompositionBrowseItem } from "../../state/composition-browse-state.svelte";
-import type { ICompositionThumbnailResolver } from "../contracts/ICompositionThumbnailResolver";
 
-export class CompositionThumbnailResolver implements ICompositionThumbnailResolver {
+export class CompositionThumbnailResolver {
 	resolveThumbnail(composition: CompositionBrowseItem): string | null {
 		if (composition.thumbnailUrl) {
 			return composition.thumbnailUrl;

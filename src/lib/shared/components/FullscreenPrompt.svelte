@@ -12,16 +12,16 @@ the actual fullscreen state rather than inferring from viewport size.
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getMobileFullscreenManager } from "$lib/shared/mobile/getMobileFullscreenManager";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import type { IMobileFullscreenManager } from "$lib/shared/mobile/services/contracts/IMobileFullscreenManager";
+  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { MobileFullscreenManager } from '$lib/shared/mobile/services/implementations/MobileFullscreenManager'
   import { onMount } from "svelte";
 
   let showPrompt = $state(false);
   let isEmergencyMode = $state(false); // Track if we're in emergency mode
   let message = $state("");
 
-  let deviceDetector: IDeviceDetector | null = null;
-  let fullscreenService: IMobileFullscreenManager | null = null;
+  let deviceDetector: DeviceDetector | null = null;
+  let fullscreenService: MobileFullscreenManager | null = null;
 
   // Session-based dismissal (resets on page reload)
   const DISMISSAL_KEY = "tka-fullscreen-prompt-dismissed-session";

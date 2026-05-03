@@ -8,7 +8,7 @@
 
 import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueManager";
   import { onMount } from "svelte";
-  import type { IShameQueueManager } from "$lib/features/hall-of-shame/services/contracts/IShameQueueManager";
+  import type { ShameQueueManager } from "$lib/features/hall-of-shame/services/implementations/ShameQueueManager";
   import type {
     HallOfShameEntry,
     ShameCategory,
@@ -38,7 +38,7 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
   const currentUser = $derived(authState.user);
 
   // Get the queue manager service
-  let shameQueueManager: IShameQueueManager | null = null;
+  let shameQueueManager: ShameQueueManager | null = null;
   try {
     shameQueueManager = getShameQueueManager();
   } catch (error) {

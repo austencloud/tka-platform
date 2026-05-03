@@ -9,7 +9,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-import type { IBrowseFilter } from "../contracts/IBrowseFilter";
 import type {
   LOOPType} from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
@@ -28,7 +27,7 @@ const LENGTH_OPTIONS = ["3", "4", "5", "6", "7", "8+"];
 const DIFFICULTY_OPTIONS = ["beginner", "intermediate", "advanced"];
 const GRID_MODE_OPTIONS = [GridMode.DIAMOND, GridMode.BOX, GridMode.SKEWED];
 
-export class BrowseFilter implements IBrowseFilter {
+export class BrowseFilter {
   private difficultyCalculator = new SequenceDifficultyCalculator();
 
   applyFilter(

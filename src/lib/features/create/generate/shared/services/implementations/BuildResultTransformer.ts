@@ -27,7 +27,7 @@ import type { StartPositionData } from "$lib/features/create/shared/domain/model
 import type { GenerationOptions } from "../../domain/models/generate-models";
 import type { SequenceMetadataManager } from "./SequenceMetadataManager";
 import type { IReversalDetector } from "../../../../shared/services/contracts/IReversalDetector";
-import type { IOrientationCycleDetector } from "../../../circular/services/contracts/IOrientationCycleDetector";
+import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { PropContinuity } from "../../domain/models/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
@@ -49,7 +49,7 @@ export class BuildResultTransformer {
   constructor(
     private readonly metadataManager: SequenceMetadataManager,
     private readonly reversalDetector: IReversalDetector,
-    private readonly orientationCycleDetector: IOrientationCycleDetector
+    private readonly orientationCycleDetector: OrientationCycleDetector
   ) {}
 
   async convertToSequenceData(

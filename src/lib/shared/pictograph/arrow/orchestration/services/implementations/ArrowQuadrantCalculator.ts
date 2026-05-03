@@ -11,10 +11,8 @@ import {
 } from "../../../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { IArrowQuadrantCalculator } from "../contracts/IArrowQuadrantCalculator";
 
-
-export class ArrowQuadrantCalculator implements IArrowQuadrantCalculator {
+export class ArrowQuadrantCalculator {
   calculateQuadrantIndex(motion: MotionData, location: GridLocation): number {
     /**
      * Calculate quadrant index for the given motion and arrow location.

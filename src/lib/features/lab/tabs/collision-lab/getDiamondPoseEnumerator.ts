@@ -1,7 +1,6 @@
-import type { IPoseEnumerator } from './services/contracts/IPoseEnumerator';
 import { DiamondPoseEnumerator } from './services/implementations/DiamondPoseEnumerator';
 
-let instance: IPoseEnumerator | null = null;
-export function getDiamondPoseEnumerator(): IPoseEnumerator {
+let instance: DiamondPoseEnumerator | null = null;
+export function getDiamondPoseEnumerator(): DiamondPoseEnumerator {
   return instance ??= new DiamondPoseEnumerator();
 }

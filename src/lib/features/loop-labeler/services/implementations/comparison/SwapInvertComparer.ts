@@ -1,4 +1,3 @@
-import type { ISwapInvertComparer } from "../../contracts/ISwapInvertComparer";
 import type {
   ColorData,
   TransformationCheckResult,
@@ -11,7 +10,7 @@ import {
 /**
  * Service for detecting pure swap and invert transformations.
  */
-export class SwapInvertComparer implements ISwapInvertComparer {
+export class SwapInvertComparer {
   checkRepeated(
     b1Blue: ColorData,
     b1Red: ColorData,

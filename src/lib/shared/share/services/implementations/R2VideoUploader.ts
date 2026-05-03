@@ -7,7 +7,7 @@ import type {
 } from "../contracts/IVideoUploader";
 import type { R2Presigner } from "./R2Presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
-import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024;
 const PART_SIZE = 10 * 1024 * 1024;
@@ -186,7 +186,7 @@ export class R2VideoUploader implements IVideoUploader {
 
   private handleError(error: unknown, action: string, additionalData?: Record<string, unknown>): never {
     console.error(`R2VideoUploader: Failed to ${action}:`, error);
-    const errorHandler = getErrorHandler() as IErrorHandler;
+    const errorHandler = getErrorHandler() as ErrorHandler;
     errorHandler.showUserError({
       message: `Couldn't ${action.replace(/-/g, " ")}`,
       technicalDetails: error instanceof Error ? error.message : String(error),

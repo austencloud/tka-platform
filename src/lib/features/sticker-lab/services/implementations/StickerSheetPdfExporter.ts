@@ -12,7 +12,6 @@ import type {
   IStickerSheetPdfExporter,
   StickerMandalaLookup,
 } from "../contracts/IStickerSheetPdfExporter";
-import type { IStickerUnitRenderer } from "../contracts/IStickerUnitRenderer";
 
 const PDF_POINTS_PER_INCH = 72;
 
@@ -26,9 +25,9 @@ interface Placement {
 }
 
 export class StickerSheetPdfExporter implements IStickerSheetPdfExporter {
-  private readonly unitRenderer: IStickerUnitRenderer;
+  private readonly unitRenderer: StickerUnitRenderer;
 
-  constructor(unitRenderer: IStickerUnitRenderer = new StickerUnitRenderer()) {
+  constructor(unitRenderer: StickerUnitRenderer = new StickerUnitRenderer()) {
     this.unitRenderer = unitRenderer;
   }
 
