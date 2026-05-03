@@ -22,6 +22,12 @@ import {
   HORIZONTAL_MIRROR_POSITION_MAP,
 } from "../position-maps/strict-loop-position-maps.js";
 
+import {
+  LOOPComponent as CanonicalLOOPComponent,
+  type LOOPSpec,
+  allActiveComponents,
+} from "../loop-spec.js";
+
 
 /**
  * All valid grid positions (alpha, beta, gamma with variants)
@@ -386,6 +392,39 @@ export function isLOOPValidForPositionPair(
     default:
       return false;
   }
+}
+
+export function isLOOPValidForSpec(
+  spec: LOOPSpec,
+  positionPair: string,
+): boolean {
+  const active = allActiveComponents(spec);
+
+  for (const [comp, { period }] of active) {
+    switch (comp) {
+      case CanonicalLOOPComponent.ROTATED: {
+        const set = period === 4 ? QUARTERED_LOOPS : HALVED_LOOPS;
+        if (!set.has(positionPair)) return false;
+        break;
+      }
+      case CanonicalLOOPComponent.MIRRORED:
+        if (!MIRRORED_LOOP_VALIDATION_SET.has(positionPair)) return false;
+        break;
+      case CanonicalLOOPComponent.FLIPPED:
+        if (!FLIPPED_LOOP_VALIDATION_SET.has(positionPair)) return false;
+        break;
+      case CanonicalLOOPComponent.SWAPPED:
+        if (!SWAPPED_LOOP_VALIDATION_SET.has(positionPair)) return false;
+        break;
+      case CanonicalLOOPComponent.INVERTED:
+        if (!INVERTED_LOOP_VALIDATION_SET.has(positionPair)) return false;
+        break;
+      case CanonicalLOOPComponent.REWOUND:
+        break;
+    }
+  }
+
+  return true;
 }
 
 export function getLOOPOptionsForPositionPair(

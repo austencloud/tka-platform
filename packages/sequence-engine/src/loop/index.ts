@@ -48,6 +48,7 @@ export {
 // Validator
 export {
   isLOOPValidForPositionPair,
+  isLOOPValidForSpec,
   getLOOPOptionsForPositionPair,
   getExpectedEndPosition,
   getValidEndPositionsForLoop,
@@ -170,7 +171,7 @@ export { findLetterByMotions } from "./LetterLookup.js";
 
 // Targeting (end position selection for LOOP generation)
 export { RotatedEndPositionSelector, rotatedEndPositionSelector } from "./targeting/RotatedEndPositionSelector.js";
-export { LOOPEndPositionSelector, loopEndPositionSelector } from "./targeting/LOOPEndPositionSelector.js";
+export { LOOPEndPositionSelector, loopEndPositionSelector, determineEndPositionForSpec } from "./targeting/LOOPEndPositionSelector.js";
 export {
   PartialSequenceGenerator,
   partialSequenceGenerator,
