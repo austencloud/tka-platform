@@ -18,10 +18,22 @@
 import {
   SWAPPED_POSITION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,
+  VERTICAL_MIRROR_LOCATION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
+  HORIZONTAL_MIRROR_LOCATION_MAP,
 } from "../position-maps/strict-loop-position-maps.js";
+import {
+  HALF_POSITION_MAP,
+  QUARTER_POSITION_MAP_CW,
+} from "../position-maps/circular-position-maps.js";
 import { LOOPType, Period } from "../loop-types.js";
 import { RotatedEndPositionSelector, rotatedEndPositionSelector } from "./RotatedEndPositionSelector.js";
+import {
+  LOOPComponent as CanonicalLOOPComponent,
+  type LOOPSpec,
+  type PropLOOPSpec,
+} from "../loop-spec.js";
+import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js";
 
 export class LOOPEndPositionSelector {
   constructor(private readonly rotatedSelector: RotatedEndPositionSelector) {}
@@ -99,3 +111,49 @@ export class LOOPEndPositionSelector {
 }
 
 export const loopEndPositionSelector = new LOOPEndPositionSelector(rotatedEndPositionSelector);
+
+export function determineEndPositionForSpec(
+  spec: LOOPSpec,
+  startPosition: string,
+): string | null {
+  const [blueStart, redStart] =
+    gridPositionDeriver.getGridLocationsFromPosition(startPosition);
+
+  const blueEnd = determinePropEndLocation(spec.blue, blueStart);
+  const redEnd = determinePropEndLocation(spec.red, redStart);
+
+  if (blueEnd === null && redEnd === null) return null;
+
+  return gridPositionDeriver.getGridPositionFromLocations(
+    blueEnd ?? blueStart,
+    redEnd ?? redStart,
+  );
+}
+
+function determinePropEndLocation(
+  spec: PropLOOPSpec | undefined,
+  startLoc: string,
+): string | null {
+  if (!spec || spec.components.size === 0) return startLoc;
+
+  if (spec.components.has(CanonicalLOOPComponent.REWOUND)) return null;
+
+  if (spec.components.has(CanonicalLOOPComponent.ROTATED)) {
+    const period = spec.components.get(CanonicalLOOPComponent.ROTATED)!.period;
+    return rotateLocation(startLoc, period);
+  }
+  if (spec.components.has(CanonicalLOOPComponent.MIRRORED))
+    return VERTICAL_MIRROR_LOCATION_MAP[startLoc] ?? null;
+  if (spec.components.has(CanonicalLOOPComponent.FLIPPED))
+    return HORIZONTAL_MIRROR_LOCATION_MAP[startLoc] ?? null;
+  if (spec.components.has(CanonicalLOOPComponent.INVERTED)) return startLoc;
+  if (spec.components.has(CanonicalLOOPComponent.SWAPPED)) return startLoc;
+
+  return startLoc;
+}
+
+function rotateLocation(loc: string, period: number): string | null {
+  if (period === 2) return HALF_POSITION_MAP[loc] ?? null;
+  if (period === 4) return QUARTER_POSITION_MAP_CW[loc] ?? null;
+  return null;
+}
