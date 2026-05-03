@@ -17,6 +17,34 @@ export {
   type LOOPGenerationOptions,
 } from "./loop-types.js";
 
+// LOOPSpec compositional types
+export {
+  LOOPComponent,
+  RESERVED_ORIENTATION_PRIMITIVES,
+  type LOOPDomain,
+  type ComponentSpec,
+  type PropLOOPSpec,
+  type LOOPSpec,
+  type ComponentSpecWire,
+  type PropLOOPSpecWire,
+  type LOOPSpecWire,
+  loopSpecToWire,
+  loopSpecFromWire,
+  loopSpecPeriod,
+  PERIOD_HALVED,
+  PERIOD_QUARTERED,
+  PERIOD_OCTAVED,
+  singleComponent,
+  symmetricSpec,
+  allActiveComponents,
+  isEmptySpec,
+  specsAreEqual,
+  EMPTY_PROP_SPEC,
+  loopSpecFromLegacy,
+  validateLOOPSpec,
+  type LOOPSpecValidationError,
+} from "./loop-spec.js";
+
 // Validator
 export {
   isLOOPValidForPositionPair,
@@ -82,7 +110,6 @@ export {
   isSequenceCircular,
   LOOPDetectorClass,
   loopDetectorClass,
-  LOOPComponent,
   type LOOPComponentId,
   type LOOPDetectionResult,
   type RichLOOPDetectionResult,
