@@ -19,8 +19,8 @@
     },
     {
       "id": "preset-mirrored-inverted",
-      "name": "Mirrored/Inverted",
-      "description": "Soft spot combo - halved LOOP, can go level 3 with 1.5 turns",
+      "name": "Mirrored Inverted",
+      "description": "Halved LOOP combining mirrored and inverted transformations",
       "icon": "🪞",
       "config": {
         "loopType": "rotated",

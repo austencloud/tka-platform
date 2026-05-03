@@ -7,7 +7,6 @@ export const REVERSAL_TYPES: Record<string, ReversalType> = {
     description: "Hand returns to point it came from previously",
     propBehavior: "Prop continues direction without changing",
     rotationEffect: "Changes prospin to antispin and vice-versa (relative to center point)",
-    disruptionLevel: "Least disruptive reversal",
     notation: "No special notation required",
     transitions: {
       prospinToAntispin: true,
@@ -19,18 +18,16 @@ export const REVERSAL_TYPES: Record<string, ReversalType> = {
     propBehavior: "Prop changes rotation direction",
     rotationEffect: "Changes prospin to antispin and vice-versa",
     notation: "R/R added in corresponding color between pictographs",
-    intuitionLevel: "Less intuitive than hand reversal",
     transitions: {
       prospinToAntispin: true,
       antispinToProspin: true,
     },
   },
   fullReversal: {
-    description: "Both prop and hand retrace their paths - return to previous position as if going backwards in time",
+    description: "Both prop and hand retrace their paths to the previous position",
     propBehavior: "Prop reverses direction",
     handBehavior: "Hand returns to previous point",
     notation: "R/R indicates prop reversal component",
-    attentionMarker: "Draws attention that something unusual is happening",
     transitions: {
       prospinToProspin: true,
       antispinToAntispin: true,

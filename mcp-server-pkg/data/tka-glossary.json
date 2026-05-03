@@ -1031,7 +1031,7 @@
     "category": "motion"
   },
   "prop-reversal": {
-    "definition": "A reversal where the hand continues to the next grid point but the prop reverses its rotation direction. Switches prospin to antispin (or vice versa). Less intuitive than hand reversal. Indicated by a colored dot on the left edge of the pictograph in the corresponding hand's color.",
+    "definition": "A reversal where the hand continues to the next grid point but the prop reverses its rotation direction. Switches prospin to antispin (or vice versa). Indicated by a colored dot on the left edge of the pictograph in the corresponding hand's color.",
     "examples": [
       "Hand continues N to E, but prop switches from clockwise to counter-clockwise."
     ],
