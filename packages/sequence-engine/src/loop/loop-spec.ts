@@ -248,42 +248,51 @@ export function singleComponent(
 /**
  * Build a symmetric LOOPSpec where blue and red share identical specs.
  */
-export function symmetricSpec(propSpec: PropLOOPSpec): LOOPSpec {
-  return { blue: propSpec, red: propSpec };
+export function symmetricSpec(
+  components: ReadonlyMap<LOOPComponent, ComponentSpec>,
+): LOOPSpec {
+  const prop: PropLOOPSpec = { components };
+  return { blue: prop, red: prop };
 }
 
 /**
- * Build a PropLOOPSpec with all 6 user-facing components active at the given period.
- * Reserved orientation primitives are excluded.
+ * Merge all active components across both props, keeping the max period per component.
  */
-export function allActiveComponents(period: number): PropLOOPSpec {
-  const components = new Map<LOOPComponent, ComponentSpec>();
-  const userFacing = [
-    LOOPComponent.ROTATED,
-    LOOPComponent.MIRRORED,
-    LOOPComponent.FLIPPED,
-    LOOPComponent.SWAPPED,
-    LOOPComponent.INVERTED,
-    LOOPComponent.REWOUND,
-  ];
-  for (const component of userFacing) {
-    components.set(component, { period });
+export function allActiveComponents(
+  spec: LOOPSpec,
+): ReadonlyMap<LOOPComponent, ComponentSpec> {
+  const result = new Map<LOOPComponent, ComponentSpec>();
+  for (const prop of [spec.blue, spec.red]) {
+    if (!prop) continue;
+    for (const [comp, cSpec] of prop.components) {
+      const existing = result.get(comp);
+      if (!existing || existing.period < cSpec.period) {
+        result.set(comp, cSpec);
+      }
+    }
   }
-  return { components };
+  return result;
 }
 
 /**
- * Returns true if the PropLOOPSpec has no active components.
+ * Returns true if the LOOPSpec has no active components on either prop.
  */
-export function isEmptySpec(spec: PropLOOPSpec): boolean {
-  return spec.components.size === 0;
+export function isEmptySpec(spec: LOOPSpec): boolean {
+  const blueEmpty = !spec.blue || spec.blue.components.size === 0;
+  const redEmpty = !spec.red || spec.red.components.size === 0;
+  return blueEmpty && redEmpty;
 }
 
 /**
  * Returns true if two PropLOOPSpecs are structurally equal
  * (same components, same periods, same domains).
  */
-export function specsAreEqual(a: PropLOOPSpec, b: PropLOOPSpec): boolean {
+export function specsAreEqual(
+  a: PropLOOPSpec | undefined,
+  b: PropLOOPSpec | undefined,
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
   if (a.components.size !== b.components.size) return false;
   for (const [key, aSpec] of a.components) {
     const bSpec = b.components.get(key);
@@ -319,8 +328,7 @@ export function loopSpecFromLegacy(loopType: string, period: number): LOOPSpec {
   // REWOUND is a standalone type — not combined with positional transforms.
   if (loopType === "rewound") {
     components.set(LOOPComponent.REWOUND, { period });
-    const propSpec: PropLOOPSpec = { components };
-    return symmetricSpec(propSpec);
+    return symmetricSpec(components);
   }
 
   if (loopType.includes("rotated")) {
@@ -339,8 +347,7 @@ export function loopSpecFromLegacy(loopType: string, period: number): LOOPSpec {
     components.set(LOOPComponent.INVERTED, { period });
   }
 
-  const propSpec: PropLOOPSpec = { components };
-  return symmetricSpec(propSpec);
+  return symmetricSpec(components);
 }
 
 // ============================================================

@@ -1,12 +1,12 @@
 /**
  * Mirrored Rotated Inverted LOOP Executor
  *
- * Executes the mirrored-rotated-complementary LOOP (Linked Orbital Offset Pattern) by composing
+ * Executes the mirrored-rotated-inverted LOOP (Linked Orbital Offset Pattern) by composing
  * THREE LOOP operations sequentially:
  * 1. ROTATED: Apply strict rotation with user-selected slice size (halved or quartered)
- * 2. INVERTED MIRRORED: Apply vertical mirroring + complementary transformation
- *    - Letters are flipped (complementary effect)
- *    - Motion types are flipped (PRO ↔ ANTI) (complementary effect)
+ * 2. INVERTED MIRRORED: Apply vertical mirroring + inverted transformation
+ *    - Letters are flipped (inverted effect)
+ *    - Motion types are flipped (PRO ↔ ANTI) (inverted effect)
  *    - Locations are mirrored vertically (mirrored effect)
  *    - **Rotation directions STAY THE SAME** (both transformations flip rotation, so they CANCEL OUT)
  *
@@ -24,7 +24,7 @@
  *
  * IMPORTANT: Supports both halved and quartered slice sizes
  * IMPORTANT: End position for generation must match the rotation requirement
- * IMPORTANT: After rotation, sequence returns to home, which is valid for complementary mirror
+ * IMPORTANT: After rotation, sequence returns to home, which is valid for inverted mirror
  */
 
 import { Period } from "../../domain/models/circular-models";
@@ -40,7 +40,7 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
   ) {}
 
   /**
-   * Execute the mirrored-rotated-complementary LOOP by composing rotation + complementary mirroring
+   * Execute the mirrored-rotated-inverted LOOP by composing rotation + inverted mirroring
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
    * @param period - The slice size for rotation (halved or quartered)
@@ -71,7 +71,7 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
     );
 
     // Step 2: Apply MIRRORED_INVERTED to the rotated sequence
-    // This doubles the sequence using complementary mirroring:
+    // This doubles the sequence using inverted mirroring:
     // - Flips letters (A ↔ B)
     // - Flips motion types (PRO ↔ ANTI)
     // - Mirrors locations vertically
@@ -79,7 +79,7 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
     // For example: 8 steps → 16 steps final
     const finalSequence = this.mirroredInvertedExecutor.executeLOOP(
       rotatedSequence,
-      Period.HALVED // Not actually used by complementary executor, but passed for consistency
+      Period.HALVED // Not actually used by inverted executor, but passed for consistency
     );
 
     return finalSequence;

@@ -27,7 +27,7 @@ export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerat
     [LOOPComponent.SWAPPED]:
       "Exchanges which hand performs each movement. Your blue hand does what red was doing, and red does what blue was doing. The spatial positions stay the same.",
     [LOOPComponent.INVERTED]:
-      "Transforms each motion to its complement. Pro motions become anti, static becomes dash. Creates the 'opposite energy' version of your sequence.",
+      "Inverts each motion's rotation relative to its path. Pro becomes anti, and anti becomes pro. Base motion types (static, dash) remain unchanged.",
     [LOOPComponent.REWOUND]:
       "Reverses the sequence direction. The last beat becomes the first, playing backward to create a perfect loop back to the start position.",
   };
@@ -39,27 +39,27 @@ export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerat
   private readonly twoComponentDescriptions: Record<string, string> = {
     // Mirrored + Inverted
     inverted_mirrored:
-      "Mirrors your sequence left-to-right AND inverts the motion types. The reflection plays with opposite energy - pro becomes anti, creating a 'shadow version' of your flow.",
+      "Mirrors the sequence across the vertical axis and inverts motion types (Pro ↔ Anti). Rotation directions are preserved as the two flips cancel out.",
 
     // Mirrored + Rotated
     mirrored_rotated:
-      "Applies both mirror and 180° rotation. The sequence appears in the diagonally opposite corner as a reflection. Great for creating symmetrical diamond patterns.",
+      "Applies vertical mirroring and 180° rotation, resulting in a sequence that plays in the diagonally opposite quadrants.",
 
     // Mirrored + Swapped
     mirrored_swapped:
-      "Mirrors the sequence AND swaps which hand does what. Blue performs red's mirrored movements and vice versa. Creates an 'alternate universe' version of your flow.",
+      "Mirrors the sequence across the vertical axis and swaps hand roles (Blue ↔ Red). Each hand performs the other's mirrored movement.",
 
     // Rotated + Inverted
     inverted_rotated:
-      "Rotates 180° AND inverts motion types. The sequence plays in the opposite position with opposite energy. Creates a complete spatial and energetic reversal.",
+      "Applies 180° rotation and inverts motion types (Pro ↔ Anti).",
 
     // Rotated + Swapped
     rotated_swapped:
-      "Rotates 180° AND swaps hands. Blue does red's rotated movements. Particularly useful for creating balanced circular sequences that return to start.",
+      "Applies 180° rotation and swaps hand roles (Blue ↔ Red). Each hand performs the other's rotated movement.",
 
     // Swapped + Inverted
     inverted_swapped:
-      "Swaps hands AND inverts motion types. Each hand performs the other's movements with opposite energy. Creates interesting call-and-response patterns.",
+      "Swaps hand roles (Blue ↔ Red) and inverts motion types (Pro ↔ Anti). Each hand performs the other's inverted movement.",
   };
 
   /**
@@ -68,19 +68,19 @@ export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerat
   private readonly threeComponentDescriptions: Record<string, string> = {
     // Mirrored + Rotated + Inverted
     inverted_mirrored_rotated:
-      "The triple transformation: Mirror + Rotate + Invert. Your sequence appears in the opposite corner, reflected, with inverted energy. Maximum transformation while maintaining the core movement structure.",
+      "Applies vertical mirroring, 180° rotation, and inverts motion types (Pro ↔ Anti).",
 
     // Mirrored + Rotated + Swapped
     mirrored_rotated_swapped:
-      "Mirror + Rotate + Swap hands. The sequence plays diagonally opposite, reflected, with hands exchanged. Creates complex but balanced circular patterns.",
+      "Applies vertical mirroring, 180° rotation, and swaps hand roles (Blue ↔ Red).",
 
     // Mirrored + Swapped + Inverted
     inverted_mirrored_swapped:
-      "Mirror + Swap + Invert. Your reflection plays with swapped hands and opposite energy. Like watching your mirror image's shadow perform the sequence.",
+      "Applies vertical mirroring, swaps hand roles (Blue ↔ Red), and inverts motion types (Pro ↔ Anti).",
 
     // Rotated + Swapped + Inverted
     inverted_rotated_swapped:
-      "Rotate + Swap + Invert. The sequence rotates 180°, hands swap, and energy inverts. A complete transformation that still loops back naturally.",
+      "Applies 180° rotation, swaps hand roles (Blue ↔ Red), and inverts motion types (Pro ↔ Anti).",
   };
 
   /**

@@ -119,9 +119,8 @@ function singleComponentCopy(
         title: "Inverted LOOP",
         body:
           "Two halves. The second uses inverted motion types - pro becomes " +
-          "anti, static becomes dash. Same positions, opposite energy.",
+          "anti, and anti becomes pro. Same positions, opposite rotation.",
       };
-
     case LOOPComponent.REWOUND:
       return {
         title: "Rewound LOOP",
