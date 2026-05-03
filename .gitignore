@@ -28,6 +28,9 @@ flowtrails/
 .monolith-claims.json
 .release-changelog.json
 
+# Generated scan outputs
+collision-lab-scan.json
+
 # Extracted binary recon (keep scripts, not binaries)
 poi-recon/ignis-extracted/
 
@@ -312,3 +315,4 @@ src/lib/features/museum/audio/soundscape-candidates.generated.json
 
 # Tauri
 src-tauri/target/
+~/.tauri/
