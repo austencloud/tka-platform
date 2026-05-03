@@ -155,6 +155,10 @@ export { MirroredRotatedInvertedExecutor, mirroredRotatedInvertedExecutor } from
 export { MirroredSwappedInvertedExecutor, mirroredSwappedInvertedExecutor } from "./execution/MirroredSwappedInvertedExecutor.js";
 export { MirroredRotatedInvertedSwappedExecutor, mirroredRotatedInvertedSwappedExecutor } from "./execution/MirroredRotatedInvertedSwappedExecutor.js";
 
+// Spec-based execution
+export { executeLOOPSpec, executeSymmetricSpec } from "./execution/spec-executor.js";
+export { FusedExecutor, type FusedTransformFlags } from "./execution/FusedExecutor.js";
+
 // LOOP executor selector
 export { LOOPExecutorSelector, loopExecutorSelector } from "./execution/LOOPExecutorSelector.js";
 

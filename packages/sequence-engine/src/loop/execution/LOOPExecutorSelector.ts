@@ -6,7 +6,10 @@
  */
 
 import { LOOPType } from "../loop-types.js";
+import type { LOOPSpec } from "../loop-spec.js";
+import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
+import { executeLOOPSpec } from "./spec-executor.js";
 import { strictRotatedExecutor } from "./StrictRotatedExecutor.js";
 import { strictMirroredExecutor } from "./StrictMirroredExecutor.js";
 import { strictFlippedExecutor } from "./StrictFlippedExecutor.js";
@@ -55,6 +58,10 @@ export class LOOPExecutorSelector {
       );
     }
     return executor;
+  }
+
+  executeSpec(sequence: SequenceStep[], spec: LOOPSpec): SequenceStep[] {
+    return executeLOOPSpec(sequence, spec);
   }
 
   isSupported(loopType: LOOPType): boolean {
