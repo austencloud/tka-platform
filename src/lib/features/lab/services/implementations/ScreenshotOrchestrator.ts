@@ -5,15 +5,7 @@
  * into the app bundle. Keep in sync with tests/screenshots/devices.ts.
  */
 
-import type {
-  IScreenshotOrchestrator,
-  DeviceInfo,
-  ModuleGroup,
-  RouteNode,
-  CaptureRequest,
-  CaptureStartResult,
-  CaptureJobStatus,
-} from "../contracts/IScreenshotOrchestrator";
+import type { DeviceInfo, ModuleGroup, RouteNode, CaptureRequest, CaptureStartResult, CaptureJobStatus } from "../contracts/types";
 
 // Hardcoded device list - mirrors tests/screenshots/devices.ts
 const DEVICES: DeviceInfo[] = [
@@ -69,7 +61,7 @@ const MODULE_DISPLAY_NAMES: Record<string, string> = {
   feedback: "Feedback",
 };
 
-export class ScreenshotOrchestrator implements IScreenshotOrchestrator {
+export class ScreenshotOrchestrator {
   getDevices(): DeviceInfo[] {
     return DEVICES;
   }

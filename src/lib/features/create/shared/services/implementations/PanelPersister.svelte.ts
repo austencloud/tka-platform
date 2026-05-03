@@ -6,7 +6,7 @@
  */
 
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { IPanelPersister, PanelId } from "../contracts/IPanelPersister";
+import type { PanelId } from "../contracts/types";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
 
 /**
@@ -35,7 +35,7 @@ function isPanelSupportedForTab(panelId: PanelId, tab: string): boolean {
   return supportedTabs?.has(tab) ?? false;
 }
 
-export class PanelPersister implements IPanelPersister {
+export class PanelPersister {
   getCurrentOpenPanel(panelState: PanelCoordinationState): PanelId | null {
     if (panelState.isAnimationPanelOpen) return "animation";
     if (panelState.isVideoRecordPanelOpen) return "videoRecord";

@@ -10,7 +10,7 @@
     stepEditorTourState,
     type StepEditorTourStop,
   } from "../../state/step-editor-tour-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface StopInfo {
     id: StepEditorTourStop;
@@ -60,7 +60,7 @@
     STOP_INFO[stepEditorTourState.currentStopIndex] ?? STOP_INFO[0]!,
   );
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   try {
     hapticService = getHapticFeedback();
   } catch {

@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IConstructCoordinator } from './services/contracts/IConstructCoordinator';
+
 import { ConstructCoordinator } from './services/implementations/ConstructCoordinator';
 
-let instance: IConstructCoordinator | null = null;
+let instance: ConstructCoordinator | null = null;
 
-export function getConstructCoordinator(): IConstructCoordinator {
+export function getConstructCoordinator(): ConstructCoordinator {
 	if (!browser) throw new Error('getConstructCoordinator() is browser-only');
 	return instance ??= new ConstructCoordinator();
 }

@@ -3,7 +3,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { ActData, MusicPlayerState } from "../domain/types/write";
   import { onMount } from "svelte";
 
@@ -23,7 +23,7 @@
     onMusicLoadRequested,
   }: Props = $props();
 
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
   let nameInput = $state("");
   let descriptionInput = $state("");
   let isEditingName = $state(false);

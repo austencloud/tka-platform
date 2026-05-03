@@ -16,14 +16,12 @@ import type { SequencePersister } from "$lib/features/create/shared/services/imp
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import type { ReversalDetector } from "../../shared/services/implementations/ReversalDetector";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
-import type {
-  UndoOperationType,
-  UndoMetadata
-} from "$lib/features/create/shared/services/contracts/IUndoManager";
+import type { UndoMetadata } from "../../shared/services/contracts/types";
+import { UndoOperationType } from "../../shared/services/contracts/types";
 import { createUndoController } from "$lib/features/create/shared/state/create-module/undo-controller.svelte";
 import { undoManager } from "$lib/features/create/shared/services/implementations/UndoManager";
 import { browser } from "$app/environment";
@@ -112,7 +110,7 @@ export function createSpellTabState(
 
   // Spell tab has its own independent sequence state
   // IMPORTANT: Pass tabId="spell" to ensure persistence loads/saves only spell's data
-  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
+  const ReversalDetector: ReversalDetector | undefined = getReversalDetector();
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,

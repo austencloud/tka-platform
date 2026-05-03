@@ -9,7 +9,8 @@
 
   import { onMount } from "svelte";
   import { getConnectionManager } from "$lib/shared/community/getConnectionManager";
-  import type { IConnectionManager, ConnectionInfo } from "$lib/shared/community/services/contracts/IConnectionManager";
+  import type { ConnectionManager } from "$lib/shared/community/services/implementations/ConnectionManager";
+import type { ConnectionInfo } from "$lib/shared/community/services/contracts/types";
   import ConnectionNotes from "./ConnectionNotes.svelte";
   import ConnectionMutualStatus from "./ConnectionMutualStatus.svelte";
   import ConnectionSharedSequences from "./ConnectionSharedSequences.svelte";
@@ -29,7 +30,7 @@
   let isMobile = $state(false);
 
   // Service
-  let connectionManager: IConnectionManager;
+  let connectionManager: ConnectionManager;
 
   // Check screen size
   function checkMobile() {

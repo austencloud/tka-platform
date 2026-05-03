@@ -23,7 +23,7 @@ import type {
 
 const ZERO_DELTA: RootMotionDelta = { x: 0, forward: 0, yawDelta: 0 };
 
-export class RootMotionExtractor implements IRootMotionExtractor {
+export class RootMotionExtractor {
   private hipsBone: Bone | null = null;
 
   // Previous frame's Hips position (local space).

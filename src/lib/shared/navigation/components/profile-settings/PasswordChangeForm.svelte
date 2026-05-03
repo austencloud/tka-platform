@@ -7,7 +7,7 @@
   Extracted from AccountSettingsSection for single responsibility.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
   import { slide, fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -16,7 +16,7 @@
 
   interface Props {
     onChangePassword: () => Promise<void>;
-    hapticService: IHapticFeedback | null;
+    hapticService: HapticFeedback | null;
     showLabel?: boolean;
   }
 

@@ -14,7 +14,7 @@
 
 import { getOnboardingPersister } from "$lib/shared/onboarding/getOnboardingPersister";
 import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
-import type { IOnboardingPersister } from "$lib/shared/onboarding/services/contracts/IOnboardingPersister";
+import type { OnboardingPersister } from "$lib/shared/onboarding/services/implementations/OnboardingPersister";
 import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
 
 const STORAGE_KEY = "tka-last-seen-version";
@@ -22,9 +22,9 @@ const STORAGE_KEY = "tka-last-seen-version";
 export type WhatsNewMode = "auto" | "manual";
 
 // Lazy service resolution to avoid circular dependencies
-let _onboardingService: IOnboardingPersister | null = null;
+let _onboardingService: OnboardingPersister | null = null;
 
-function getOnboardingService(): IOnboardingPersister | null {
+function getOnboardingService(): OnboardingPersister | null {
   if (_onboardingService) return _onboardingService;
 
   try {

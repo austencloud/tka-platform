@@ -10,9 +10,9 @@
  * Extracted from SequenceViewerOrchestrator.
  */
 
-import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";
@@ -86,9 +86,9 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   async function handleExport(
     editingPane: 'animation' | 'image' | 'video-upload' | null,
     effectiveSequence: SequenceData | null,
-    playbackController: IAnimationPlaybackController | null,
+    playbackController: AnimationPlaybackController | null,
     modalAnimationState: AnimationPanelState,
-    hapticService: IHapticFeedback | null,
+    hapticService: HapticFeedback | null,
     isPlayingLocal: boolean,
     bpmLocal: number,
     imgShowStartPos: boolean,

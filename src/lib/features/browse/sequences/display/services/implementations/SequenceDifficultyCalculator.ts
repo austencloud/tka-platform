@@ -11,12 +11,9 @@ import {
   Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type {
-  DifficultyAnalysis,
-  ISequenceDifficultyCalculator,
-} from "../contracts/ISequenceDifficultyCalculator";
+import type { DifficultyAnalysis } from "../contracts/types";
 
-export class SequenceDifficultyCalculator implements ISequenceDifficultyCalculator {
+export class SequenceDifficultyCalculator {
   analyzeDifficulty(steps: StepData[]): DifficultyAnalysis {
     if (!steps || steps.length === 0) {
       return { level: 1, trigger: "none" };

@@ -9,7 +9,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { ISequenceFuser, FuseOptions } from "../contracts/ISequenceFuser";
+import type { FuseOptions } from "../contracts/types";
 
 const DEFAULT_MAX_BEATS = 64;
 
@@ -69,7 +69,7 @@ function buildMotionFromSoloPropStep(
 	});
 }
 
-export class SequenceFuser implements ISequenceFuser {
+export class SequenceFuser {
 	fuse(
 		blue: HandPathData | SoloPropData,
 		red: HandPathData | SoloPropData,

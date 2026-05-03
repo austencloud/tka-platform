@@ -6,10 +6,10 @@ import {
   remove,
   update,
 } from "firebase/database";
-import type { IMuseumPersister, MuseumMetadata } from "../contracts/IMuseumPersister";
+import type { MuseumMetadata } from "../contracts/types";
 import type { MuseumExhibit } from "../../domain/museum-types";
 
-export class MuseumPersister implements IMuseumPersister {
+export class MuseumPersister {
   private get db() {
     return getDatabase();
   }

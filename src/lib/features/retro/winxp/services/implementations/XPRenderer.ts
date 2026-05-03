@@ -15,9 +15,8 @@
  * color tinting, coordinate scaling, and element transforms.
  */
 
-import type { IEraRenderer } from "../../../shared/services/contracts/IEraRenderer";
 import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
-import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
@@ -66,13 +65,13 @@ const LETTER_VB_Y = 855;
 // XPRENDERER
 // ============================================================================
 
-export class XPRenderer extends EraRendererBase implements IEraRenderer {
-	constructor(preparer: IPictographPreparer) {
+export class XPRenderer extends EraRendererBase {
+	constructor(preparer: PictographPreparer) {
 		super(preparer);
 	}
 
 	// --------------------------------------------------------------------------
-	// IEraRenderer - primary entry point
+	// EraRenderer - primary entry point
 	// --------------------------------------------------------------------------
 
 	async render(

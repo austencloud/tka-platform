@@ -6,17 +6,16 @@
  * arrow adjustment pipeline without requiring DI reconstruction.
  */
 
-import type { IPropGeometryAdjustmentRepository } from "./contracts/IPropGeometryAdjustmentRepository";
 import { PropGeometryAdjustmentRepository } from "./implementations/PropGeometryAdjustmentRepository";
 import { PropGeometryAdjustmentPersister } from "./implementations/PropGeometryAdjustmentPersister";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("PropGeometrySingleton");
 
-let repositoryInstance: IPropGeometryAdjustmentRepository | null = null;
+let repositoryInstance: PropGeometryAdjustmentRepository | null = null;
 let initializationPromise: Promise<void> | null = null;
 
-export function getPropGeometryRepository(): IPropGeometryAdjustmentRepository | null {
+export function getPropGeometryRepository(): PropGeometryAdjustmentRepository | null {
   return repositoryInstance;
 }
 

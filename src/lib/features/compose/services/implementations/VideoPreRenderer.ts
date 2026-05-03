@@ -20,11 +20,10 @@
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
-  IVideoPreRenderer,
   VideoRenderProgress,
   VideoRenderResult,
   VideoRenderOptions,
-} from "../contracts/IVideoPreRenderer";
+} from "../contracts/types";
 import { Canvas2DAnimationRenderer } from "./Canvas2DAnimationRenderer";
 import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
@@ -39,7 +38,7 @@ const DB_NAME = "tka-video-cache";
 const STORE_NAME = "videos";
 const DB_VERSION = 1;
 
-export class VideoPreRenderer implements IVideoPreRenderer {
+export class VideoPreRenderer {
   private db: IDBDatabase | null = null;
   private isCurrentlyRendering = false;
   private cancelRequested = false;

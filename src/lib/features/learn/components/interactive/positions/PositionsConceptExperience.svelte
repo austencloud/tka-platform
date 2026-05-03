@@ -10,7 +10,7 @@ Supports keyboard navigation (arrow keys between phases) and accessibility featu
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { createPositionsExperienceState } from "./positions-experience-state.svelte";
   import PositionsDiscoveryPhase from "./DiscoveryVariantA.svelte";
   import ConstructionQuiz from "./ConstructionQuiz.svelte";

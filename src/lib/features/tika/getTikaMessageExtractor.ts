@@ -1,7 +1,6 @@
-import type { ITikaMessageExtractor } from './services/contracts/ITikaMessageExtractor';
 import { TikaMessageExtractor } from './services/implementations/TikaMessageExtractor';
 
-let instance: ITikaMessageExtractor | null = null;
-export function getTikaMessageExtractor(): ITikaMessageExtractor {
+let instance: TikaMessageExtractor | null = null;
+export function getTikaMessageExtractor(): TikaMessageExtractor {
   return instance ??= new TikaMessageExtractor();
 }

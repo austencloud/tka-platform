@@ -15,16 +15,15 @@
     TimedConfig,
   } from "../state/train-practice-state.svelte";
   import ResultsScreen from "./ResultsScreen.svelte";
-  import type { IPositionDetector } from "../services/contracts/IPositionDetector";
+  import type { MediaPipeDetector } from "../services/implementations/MediaPipeDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getSessionCompletionProcessor } from "$lib/features/train/getSessionCompletionProcessor";
   import { getPositionDetector } from "$lib/features/train/getPositionDetector";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type {
-    ISessionCompletionProcessor,
     XPBreakdown,
     ChallengeProgressResult,
-  } from "../services/contracts/ISessionCompletionProcessor";
+  } from "../services/contracts/types";
   import { getTrainPracticeState } from "../state/train-practice-state.svelte";
   import ModeSettingsSheet from "./practice/ModeSettingsSheet.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
@@ -66,7 +65,7 @@
   const trainState = createTrainState();
 
   // Services
-  let detectionService: IPositionDetector | null = $state(null);
+  let detectionService: MediaPipeDetector | null = $state(null);
   const hapticService = getHapticFeedback();
   let isDetectionReady = $state(false);
   const sessionCompletionProcessor = getSessionCompletionProcessor();

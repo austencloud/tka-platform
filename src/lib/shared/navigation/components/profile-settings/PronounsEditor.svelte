@@ -5,7 +5,7 @@
   Supports free-text input and common preset options.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/authState.svelte";
   import { toast } from "../../../toast/state/toast-state.svelte";
@@ -16,7 +16,7 @@
 
   interface Props {
     user: User;
-    hapticService: IHapticFeedback | null;
+    hapticService: HapticFeedback | null;
     onPronounsChanged?: (pronouns: string) => void;
   }
 

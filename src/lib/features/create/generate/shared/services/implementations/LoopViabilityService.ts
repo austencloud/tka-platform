@@ -2,11 +2,7 @@ import {
   LOOPType,
   ROTATED_LOOP_TYPES,
 } from "../../../circular/domain/models/circular-models";
-import type {
-  ILoopViabilityService,
-  LoopViabilityArgs,
-  LoopViabilityCheck,
-} from "../contracts/ILoopViabilityService";
+import type { LoopViabilityArgs, LoopViabilityCheck } from "../contracts/types";
 
 const VIABLE: LoopViabilityCheck = Object.freeze({ viable: true });
 
@@ -17,7 +13,7 @@ const VIABLE: LoopViabilityCheck = Object.freeze({ viable: true });
  */
 const HALF_TURN_LEVEL = 3;
 
-export class LoopViabilityService implements ILoopViabilityService {
+export class LoopViabilityService {
   check(args: LoopViabilityArgs): LoopViabilityCheck {
     const { loopType, period, level } = args;
 

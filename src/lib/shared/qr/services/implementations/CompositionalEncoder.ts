@@ -20,8 +20,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { LOOP_TYPE_TAGS, RECIPE_PREFIX } from "../contracts/ICompositionalEncoder";
-import type { ICompositionalEncoder } from "../contracts/ICompositionalEncoder";
+import { LOOP_TYPE_TAGS, RECIPE_PREFIX } from "../contracts/types";
 import {
   getLoopExecutor,
   getPeriodForTag,
@@ -29,7 +28,7 @@ import {
   enrichStepsWithGridPositions,
 } from "./compositional-utils";
 
-export class CompositionalEncoder implements ICompositionalEncoder {
+export class CompositionalEncoder {
   constructor(
     private readonly flatEncoder: { encode(seq: SequenceData): string },
     private readonly flatDecoder: { decode(encoded: string): SequenceData },

@@ -8,19 +8,15 @@
  */
 
 import { replaceState } from "$app/navigation";
-import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
-import type {
-  IExportUrlManager,
-  ExportUrlCallbacks,
-  ExportAnimationUrlState,
-} from "../contracts/IExportUrlManager";
+import type { SheetRouter } from "$lib/shared/navigation/services/implementations/SheetRouter";
+import type { ExportUrlCallbacks, ExportAnimationUrlState } from "../contracts/types";
 import { browser } from "$app/environment";
 
-export class ExportUrlManager implements IExportUrlManager {
+export class ExportUrlManager {
   private cleanupRouteListener: (() => void) | undefined;
   private callbacks: ExportUrlCallbacks | null = null;
 
-  constructor(private readonly sheetRouter: ISheetRouter | null) {}
+  constructor(private readonly sheetRouter: SheetRouter | null) {}
 
   initialize(callbacks: ExportUrlCallbacks): () => void {
     if (!this.sheetRouter) {

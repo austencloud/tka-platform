@@ -21,19 +21,19 @@ import type {
   ConceptStatus,
   LearningProgress,
 } from "../../domain/types";
-import type { IUserKnowledgeProfilePersister } from "../contracts/IUserKnowledgeProfilePersister";
+import type { UserKnowledgeProfilePersister } from "./UserKnowledgeProfilePersister";
 
 const STORAGE_KEY = "tka_learning_progress";
 
 export class ConceptProgressTracker {
   private progress: LearningProgress;
   private subscribers: Set<(progress: LearningProgress) => void> = new Set();
-  private persister: IUserKnowledgeProfilePersister | null;
+  private persister: UserKnowledgeProfilePersister | null;
   private userId: string | null = null;
   private firestoreUnsubscribe: (() => void) | null = null;
   private initialized = false;
 
-  constructor(persister?: IUserKnowledgeProfilePersister) {
+  constructor(persister?: UserKnowledgeProfilePersister) {
     this.persister = persister ?? null;
     this.progress = this.loadFromLocalStorage();
   }

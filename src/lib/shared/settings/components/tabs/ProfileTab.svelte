@@ -23,7 +23,7 @@
   import AccountSettingsSection from "../../../navigation/components/profile-settings/AccountSettingsSection.svelte";
   import DangerZone from "../../../navigation/components/profile-settings/DangerZone.svelte";
   import SubscriptionCard from "./profile/SubscriptionCard.svelte";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import GlassCard from "./profile/GlassCard.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import StorageSection from "./profile/StorageSection.svelte";
@@ -82,7 +82,7 @@
   }: Props = $props();
 
   // Services
-  let hapticService = $state<IHapticFeedback | null>(null);
+  let hapticService = $state<HapticFeedback | null>(null);
   let authService = $state<Authenticator | null>(null);
   let accountManager = $state<AccountManager | null>(null);
 

@@ -3,9 +3,9 @@
  */
 
 import { NightSkyBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
-import type { INightSkyLabController, NightSkyLayers } from "../contracts/INightSkyLabController";
+import type { NightSkyLayers } from "../contracts/types";
 
-export class NightSkyLabController implements INightSkyLabController {
+export class NightSkyLabController {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private system: NightSkyBackgroundSystem | null = null;

@@ -24,7 +24,7 @@
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
 
@@ -57,7 +57,7 @@
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   // Back header is no longer needed on mobile/tablet since back button is now in bottom nav
   // Desktop has sidebar with its own back button

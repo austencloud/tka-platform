@@ -9,11 +9,7 @@
  */
 
 import type { StepData } from "../../../../domain/models/StepData";
-import type {
-  IStepCellAnimationManager,
-  StepCellAnimationState,
-  StepCellAnimationConfig,
-} from "../contracts/IStepCellAnimationManager";
+import type { StepCellAnimationState, StepCellAnimationConfig } from "../contracts/types";
 
 /**
  * Creates a pictograph signature representing the fundamental structure
@@ -29,7 +25,7 @@ function getPictographSignature(stepData: StepData): string {
   return `${stepData.letter || "null"}-${motionStructure}`;
 }
 
-export class StepCellAnimationManager implements IStepCellAnimationManager {
+export class StepCellAnimationManager {
   // Animation state
   private hasAnimated = false;
   private animationName: string;
@@ -156,6 +152,6 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
  */
 export function createStepCellAnimationManager(
   config?: StepCellAnimationConfig
-): IStepCellAnimationManager {
+): StepCellAnimationManager {
   return new StepCellAnimationManager(config);
 }

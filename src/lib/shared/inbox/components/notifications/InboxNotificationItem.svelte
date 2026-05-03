@@ -13,7 +13,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/features/feedback/state/notification-action-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   interface Props {
@@ -38,7 +38,7 @@
   });
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();

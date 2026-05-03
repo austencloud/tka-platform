@@ -21,13 +21,13 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Festival } from "../../domain/models/festival";
-import type { FestivalFilters, IFestivalLoader } from "../contracts/IFestivalLoader";
+import type { FestivalFilters } from "../contracts/types";
 
 const DEFAULT_PAGE_SIZE = 200;
 
 // FestivalLoader has no constructor dependencies - it queries Firestore directly
 // via getFirestoreInstance() on each call.
-export class FestivalLoader implements IFestivalLoader {
+export class FestivalLoader {
   async loadFestivals(
     filters: FestivalFilters,
     _pageSize = DEFAULT_PAGE_SIZE,

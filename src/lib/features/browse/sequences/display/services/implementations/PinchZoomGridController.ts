@@ -1,3 +1,4 @@
+import type { PinchZoomState } from "../contracts/types";
 /**
  * Grid Zoom Controller
  *
@@ -9,7 +10,6 @@
  * No scale transforms - layout changes are handled by CSS grid + transitions.
  */
 
-import type { IPinchZoomGridController, PinchZoomState } from "../contracts/IPinchZoomGridController";
 
 /** Column count limits */
 const MIN_COLUMNS = 2;
@@ -29,7 +29,7 @@ const TRANSITION_DURATION_MS = 200;
 /** Scroll delta threshold to trigger column change (in pixels) */
 const SCROLL_THRESHOLD = 50;
 
-export class PinchZoomGridController implements IPinchZoomGridController {
+export class PinchZoomGridController {
 	private element: HTMLElement | null = null;
 	private pointerCache: PointerEvent[] = [];
 	private initialPinchDist = -1;

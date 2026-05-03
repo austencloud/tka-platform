@@ -1,7 +1,6 @@
-import type { INetworkStatusMonitor } from './services/contracts/INetworkStatusMonitor';
 import { NetworkStatusMonitor } from './services/implementations/NetworkStatusMonitor';
 
-let instance: INetworkStatusMonitor | null = null;
-export function getNetworkStatusMonitor(): INetworkStatusMonitor {
+let instance: NetworkStatusMonitor | null = null;
+export function getNetworkStatusMonitor(): NetworkStatusMonitor {
   return instance ??= new NetworkStatusMonitor();
 }

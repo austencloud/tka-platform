@@ -1,5 +1,5 @@
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
+import type { DimensionCalculator } from "./DimensionCalculator";
 import type { LOOPIconStripRenderer } from "./LOOPIconStripRenderer";
 import type {
   TextRenderOptions,
@@ -27,7 +27,7 @@ export class TextRenderer {
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
   constructor(
-    private dimensionService: IDimensionCalculator,
+    private dimensionService: DimensionCalculator,
     private loopIconStripRenderer?: LOOPIconStripRenderer
   ) {}
 

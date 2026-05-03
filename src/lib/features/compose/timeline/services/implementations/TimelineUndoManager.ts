@@ -5,19 +5,14 @@
  * timeline operations. Persists history to localStorage.
  */
 
-import type {
-  ITimelineUndoManager,
-  TimelineUndoOperationType,
-  TimelineUndoEntry,
-  TimelineProjectSnapshot,
-} from "../contracts/ITimelineUndoManager";
+import type { TimelineUndoOperationType, TimelineUndoEntry, TimelineProjectSnapshot } from "../contracts/types";
 import type { TimelineProject } from "../../domain/timeline-types";
 
 const STORAGE_KEY_UNDO = "timeline-undo-history";
 const STORAGE_KEY_REDO = "timeline-redo-history";
 const MAX_HISTORY_SIZE = 50;
 
-export class TimelineUndoManager implements ITimelineUndoManager {
+export class TimelineUndoManager {
   private undoStack: TimelineUndoEntry[] = [];
   private redoStack: TimelineUndoEntry[] = [];
   private pendingEntry: TimelineUndoEntry | null = null;

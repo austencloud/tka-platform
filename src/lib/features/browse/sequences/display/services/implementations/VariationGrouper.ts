@@ -6,9 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IVariationGrouper } from "../contracts/IVariationGrouper";
-
-export class VariationGrouper implements IVariationGrouper {
+export class VariationGrouper {
   // Cache for variation map to avoid recomputation
   private cachedMap: Map<string, SequenceData[]> | null = null;
   private cachedSequenceIds: Set<string> | null = null;

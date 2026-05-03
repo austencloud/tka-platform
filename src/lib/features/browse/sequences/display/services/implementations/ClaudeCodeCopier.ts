@@ -9,11 +9,11 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { IClaudeCodeCopier, CopyResult } from "../contracts/IClaudeCodeCopier";
-import type { ISequenceDetailLoader } from "../contracts/ISequenceDetailLoader";
+import type { CopyResult } from "../contracts/types";
+import type { SequenceDetailLoader } from "./SequenceDetailLoader";
 
-export class ClaudeCodeCopier implements IClaudeCodeCopier {
-  constructor(private readonly detailLoader: ISequenceDetailLoader) {}
+export class ClaudeCodeCopier {
+  constructor(private readonly detailLoader: SequenceDetailLoader) {}
 
   async copyForClaude(sequence: SequenceData): Promise<CopyResult> {
     try {

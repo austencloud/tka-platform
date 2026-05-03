@@ -9,7 +9,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "../../domain/models/StepData";
-import type { IBuildConstructSectionCoordinator as IConstructCoordinator } from "../contracts/IConstructCoordinator";
+
 
 // Note: This service will need to be updated to use the new DI pattern
 // For now, we'll comment out the direct import to avoid build errors
@@ -19,7 +19,7 @@ interface ComponentWithEventHandler {
   handleEvent?: (eventType: string, data: unknown) => void;
 }
 
-export class ConstructCoordinator implements IConstructCoordinator {
+export class ConstructCoordinator {
   private components: Record<string, ComponentWithEventHandler> = {};
   private isHandlingSequenceModification = false;
   private eventListenersSetup = false;

@@ -21,10 +21,7 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import type {
-	IEffectPointsPersister,
-	EffectPoint,
-} from "../contracts/IEffectPointsPersister";
+import type { EffectPoint } from "../contracts/types";
 import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 const LOG_PREFIX = "[EffectPointsPersister]";
@@ -36,7 +33,7 @@ function isPermissionError(error: unknown): boolean {
 	return error instanceof Error && error.message.includes("Missing or insufficient permissions");
 }
 
-export class EffectPointsPersister implements IEffectPointsPersister {
+export class EffectPointsPersister {
 	private points: Record<string, EffectPoint[]> = {};
 	private trailAssignments: Record<string, TrailPointConfig> = {};
 	private observers: Array<() => void> = [];

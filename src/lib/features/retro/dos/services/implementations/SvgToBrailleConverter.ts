@@ -15,7 +15,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { IDirectRenderer } from "$lib/shared/render/services/contracts/IDirectRenderer";
-import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 
 // ============================================================================
 // BRAILLE ENCODING
@@ -124,9 +124,9 @@ export interface BrailleConvertResult {
 
 export class SvgToBrailleConverter {
 	private renderer: IDirectRenderer;
-	private preparer: IPictographPreparer;
+	private preparer: PictographPreparer;
 
-	constructor(renderer: IDirectRenderer, preparer: IPictographPreparer) {
+	constructor(renderer: IDirectRenderer, preparer: PictographPreparer) {
 		this.renderer = renderer;
 		this.preparer = preparer;
 	}

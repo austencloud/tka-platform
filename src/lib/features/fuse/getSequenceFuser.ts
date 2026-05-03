@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { ISequenceFuser } from './services/contracts/ISequenceFuser';
+
 import { SequenceFuser } from './services/implementations/SequenceFuser';
 
-let instance: ISequenceFuser | null = null;
+let instance: SequenceFuser | null = null;
 
-export function getSequenceFuser(): ISequenceFuser {
+export function getSequenceFuser(): SequenceFuser {
 	if (!browser) throw new Error('getSequenceFuser() is browser-only');
 	return instance ??= new SequenceFuser();
 }

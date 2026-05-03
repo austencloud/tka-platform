@@ -3,14 +3,9 @@ import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,
 } from "$app/navigation";
-import type {
-  ISheetRouter,
-  SheetType,
-  RouteState,
-  AnimationPanelState,
-} from "../contracts/ISheetRouter";
+import type { SheetType, RouteState, AnimationPanelState } from "../contracts/types";
 
-export class SheetRouter implements ISheetRouter {
+export class SheetRouter {
   private parseRouteState(): RouteState {
     if (!browser) return {};
 

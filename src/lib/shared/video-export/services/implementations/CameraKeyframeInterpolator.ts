@@ -1,10 +1,7 @@
 import type { CameraKeyframe } from "$lib/shared/video-export/domain/CameraKeyframe";
-import type {
-  ICameraKeyframeInterpolator,
-  InterpolatedCamera,
-} from "../contracts/ICameraKeyframeInterpolator";
+import type { InterpolatedCamera } from "../contracts/types";
 
-export class CameraKeyframeInterpolator implements ICameraKeyframeInterpolator {
+export class CameraKeyframeInterpolator {
   interpolate(
     keyframes: readonly CameraKeyframe[],
     t: number

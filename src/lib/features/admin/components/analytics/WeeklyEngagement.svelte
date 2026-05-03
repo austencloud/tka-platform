@@ -9,10 +9,8 @@
    */
   import { onMount } from "svelte";
   import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
-  import type {
-    ISystemStateManager,
-    CachedUserMetadata,
-  } from "../../services/contracts/ISystemStateManager";
+  import type { CachedUserMetadata } from "../../services/contracts/types";
+  import type { SystemStateManager } from "../../services/implementations/SystemStateManager";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let isLoading = $state(true);

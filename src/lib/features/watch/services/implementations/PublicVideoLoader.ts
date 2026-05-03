@@ -6,13 +6,13 @@
  */
 
 import type { PublicVideoQuery, PublicVideoPage } from "../../types";
-import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
+import type { CollaborativeVideoManager } from "$lib/shared/video-collaboration/services/implementations/CollaborativeVideoManager";
 
 const DEFAULT_PAGE_SIZE = 20;
 
 export class PublicVideoLoader {
   constructor(
-    private collaborativeVideoManager: ICollaborativeVideoManager
+    private collaborativeVideoManager: CollaborativeVideoManager
   ) {}
 
   async loadPublicVideos(options?: PublicVideoQuery): Promise<PublicVideoPage> {

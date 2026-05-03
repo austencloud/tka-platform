@@ -8,20 +8,14 @@
  */
 
 import { Point } from "fabric";
-import type {
-  IArrowAdjustmentOrchestrator,
-  SelectedArrowContext,
-  ApplyMovementResult,
-  AdjustmentTargetKey,
-  CascadingLookupResult,
-} from "../contracts/IArrowAdjustmentOrchestrator";
+import type { SelectedArrowContext, ApplyMovementResult, AdjustmentTargetKey, CascadingLookupResult } from "../contracts/types";
 import type { KeyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
 import type { ScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
 import type { ArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
 import type { ArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
 import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { GlobalAdjustmentKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/global/services/implementations/GlobalAdjustmentKeyGenerator";
 import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
 import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
@@ -34,7 +28,7 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("ArrowAdjustmentOrchestrator");
 
-export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator {
+export class ArrowAdjustmentOrchestrator {
   private keyGenerator: GlobalAdjustmentKeyGenerator;
 
   /**
@@ -70,7 +64,7 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     private screenSpaceTransformer: ScreenSpaceAdjustmentTransformer,
     private arrowAdjustmentCalculator: ArrowAdjustmentCalculator,
     private arrowLocationCalculator: ArrowLocationCalculator,
-    private pictographPreparer: IPictographPreparer,
+    private pictographPreparer: PictographPreparer,
     gridModeDeriver: GridModeDeriver,
     turnsTupleGenerator: TurnsTupleGenerator
   ) {

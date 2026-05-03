@@ -5,17 +5,13 @@
  * Extracted from OptionViewer456Group.svelte's calculateOptimalLayout function.
  */
 
-import type {
-  IAspectLayoutPlanner,
-  LayoutRow,
-  TypeCount,
-} from "../contracts/IAspectLayoutPlanner";
+import type { LayoutRow, TypeCount } from "../contracts/types";
 
 // Aspect ratio thresholds
 const PORTRAIT_MAX = 0.6;
 const LANDSCAPE_MIN = 1.6;
 
-export class AspectLayoutPlanner implements IAspectLayoutPlanner {
+export class AspectLayoutPlanner {
   /**
    * Calculate optimal layout based on container aspect ratio.
    */

@@ -11,7 +11,7 @@ import {
   Orientation,
   RotationDirection,
 } from "../../../../shared/domain/enums/pictograph-enums";
-import type { IArrowSvgLoader } from "../contracts/IArrowSvgLoader";
+import type { ArrowSvgLoader } from "../implementations/ArrowSvgLoader";
 import type { ArrowPathResolver } from "./ArrowPathResolver";
 import type { ArrowSvgParser } from "./ArrowSvgParser";
 import type { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
@@ -27,7 +27,7 @@ export class ArrowRenderer {
     private pathResolver: ArrowPathResolver,
     private svgParser: ArrowSvgParser,
     private colorTransformer: ArrowSvgColorTransformer,
-    private svgLoader: IArrowSvgLoader
+    private svgLoader: ArrowSvgLoader
   ) {}
 
   /**

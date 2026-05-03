@@ -5,13 +5,13 @@
  * by delegating to the create module's global state ref and sequence state.
  */
 
-import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
 } from "../../../domain/voice-command-types";
 import { getCreateModuleRef } from "$lib/features/create/shared/state/create-module-state-ref.svelte";
+import type { IVoiceCommandHandler } from "../../contracts/types";
 
 export class CreateCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["create"];

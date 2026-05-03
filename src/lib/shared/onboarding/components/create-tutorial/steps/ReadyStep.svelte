@@ -11,7 +11,7 @@
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {
     onAdvance: () => void;
@@ -20,7 +20,7 @@
   const { onAdvance }: Props = $props();
 
   // Haptic
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   try {
     hapticService = getHapticFeedback();
   } catch {

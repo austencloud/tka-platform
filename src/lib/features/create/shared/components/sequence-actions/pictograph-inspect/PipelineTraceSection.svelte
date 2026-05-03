@@ -14,7 +14,8 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
     PipelineTier,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
   import type { StepData } from "../../../domain/models/StepData";
-  import type { IArrowAdjustmentOrchestrator, SelectedArrowContext } from "../../../services/contracts/IArrowAdjustmentOrchestrator";
+  import type { ArrowAdjustmentOrchestrator } from "../../../services/implementations/ArrowAdjustmentOrchestrator";
+import type { SelectedArrowContext } from "../../../services/contracts/types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import LayerTabBar from "../../arrow-adjustment/LayerTabBar.svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
@@ -41,7 +42,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
   let saveState = $state<"idle" | "saving" | "saved">("idle");
 
   // Services
-  let orchestrator: IArrowAdjustmentOrchestrator | null = null;
+  let orchestrator: ArrowAdjustmentOrchestrator | null = null;
 
   const selectedArrowContext = $derived.by((): SelectedArrowContext | null => {
     const motion = stepData.motions?.[color];

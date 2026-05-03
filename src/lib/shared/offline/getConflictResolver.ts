@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IConflictResolver } from './services/contracts/IConflictResolver';
+
 import { ConflictResolver } from './services/implementations/ConflictResolver';
 
-let instance: IConflictResolver | null = null;
+let instance: ConflictResolver | null = null;
 
-export function getConflictResolver(): IConflictResolver {
+export function getConflictResolver(): ConflictResolver {
 	if (!browser) throw new Error('getConflictResolver() is browser-only');
 	return instance ??= new ConflictResolver();
 }

@@ -52,7 +52,7 @@ function createStoredTip(): StoredTip {
 /** Viewbox size for coordinate calculations (matches PropPositionCalculator) */
 const VIEWBOX_SIZE = 950;
 
-export class FireTipTracker implements IFireTipTracker {
+export class FireTipTracker {
 	private positionCalculator = new PropPositionCalculator();
 
 	/**

@@ -11,7 +11,7 @@
 
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 import type { SequenceDataProvider } from './SequenceDataProvider';
-import type { ViewingContext } from '../contracts/IPresentationResolver';
+import type { ViewingContext } from "../contracts/types";
 import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './CellPreWarmer';
 import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttributionPromptTrigger";

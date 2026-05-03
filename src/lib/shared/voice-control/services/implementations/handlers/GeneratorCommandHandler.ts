@@ -1,4 +1,3 @@
-import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
   VoiceCommandCategory,
@@ -10,6 +9,7 @@ import {
 } from "$lib/features/create/generate/state/generator-voice-ref.svelte";
 import type { GeneratorHelpId } from "$lib/features/create/generate/domain/generator-help-content";
 import type { UIGenerationConfig } from "$lib/features/create/generate/shared/utils/config-mapper";
+import type { IVoiceCommandHandler } from "../../contracts/types";
 
 // Parameter metadata for validation
 interface NumericParamMeta {

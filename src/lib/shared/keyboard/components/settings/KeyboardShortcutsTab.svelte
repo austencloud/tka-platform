@@ -8,10 +8,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getShortcutCustomizer } from "../../getShortcutCustomizer";
-  import type {
-    IShortcutCustomizer,
-    ShortcutWithBinding,
-  } from "../../services/contracts/IShortcutCustomizer";
+  import type { ShortcutCustomizer } from "../../services/implementations/ShortcutCustomizer";
+import type { ShortcutWithBinding } from "../../services/contracts/types";
   import type {
     ShortcutContext,
     ShortcutConflict,
@@ -21,7 +19,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   // Services
-  let customizationService: IShortcutCustomizer | null = $state(null);
+  let customizationService: ShortcutCustomizer | null = $state(null);
 
   // State
   let searchQuery = $state("");

@@ -11,16 +11,13 @@ import type {
 import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type {
-  CircularizationOption,
-  OrientationAlignment,
-} from "../contracts/ISequenceExtender";
+import type { CircularizationOption, OrientationAlignment } from "../contracts/types";
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IPositionAnalyzer } from "$lib/features/create/construct/option-picker/services/contracts/IPositionAnalyzer";
-import type { ILOOPValidator } from "../contracts/ILOOPValidator";
-import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
+import type { PositionAnalyzer } from "../../../construct/option-picker/services/implementations/PositionAnalyzer";
+import type { LOOPValidator } from "./LOOPValidator";
+import type { SequenceAnalyzer } from "./SequenceAnalyzer";
 import type { OrientationAlignmentCalculator } from "./OrientationAlignmentCalculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
@@ -31,14 +28,14 @@ import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
-import type { LOOPOption } from "../contracts/ISequenceExtender";
+import type { LOOPOption } from "../contracts/types";
 
 export class BridgeFinder {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
-    private positionAnalyzer: IPositionAnalyzer,
-    private loopValidator: ILOOPValidator,
-    private sequenceAnalyzer: ISequenceAnalyzer,
+    private positionAnalyzer: PositionAnalyzer,
+    private loopValidator: LOOPValidator,
+    private sequenceAnalyzer: SequenceAnalyzer,
     private orientationCalculator: OrientationAlignmentCalculator
   ) {}
 

@@ -8,17 +8,12 @@
 
 import { browser } from "$app/environment";
 import { getPostHogInstance } from "$lib/shared/analytics/services/posthog";
-import type {
-  IPostHogAnalyticsProvider,
-  PostHogSummaryMetrics,
-  UserSegments,
-  PostHogDashboardLinks,
-} from "../contracts/IPostHogAnalyticsProvider";
+import type { PostHogSummaryMetrics, UserSegments, PostHogDashboardLinks } from "../contracts/types";
 
 // PostHog US cloud base URL
 const POSTHOG_APP_URL = "https://us.posthog.com";
 
-export class PostHogAnalyticsProvider implements IPostHogAnalyticsProvider {
+export class PostHogAnalyticsProvider {
   private cachedProjectId: string | null = null;
 
   /**

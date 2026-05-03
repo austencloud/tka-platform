@@ -6,12 +6,12 @@
  * Pure function, no Firestore, instant.
  */
 
-import type { ITikaCapabilityLookup, CapabilityMatch } from "../contracts/ITikaCapabilityLookup";
+import type { CapabilityMatch } from "../contracts/types";
 import { APP_CAPABILITIES, type AppCapability } from "../../knowledge/app-capabilities-manifest";
 
 const DEFAULT_LIMIT = 3;
 
-export class TikaCapabilityLookup implements ITikaCapabilityLookup {
+export class TikaCapabilityLookup {
   findCapabilities(query: string, limit: number = DEFAULT_LIMIT): CapabilityMatch[] {
     const queryTokens = tokenize(query);
     if (queryTokens.length === 0) return [];

@@ -9,7 +9,7 @@
 
 import type { TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode as TrailModeEnum } from "../../domain/types/TrailTypes";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
 import { saveTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
 import type {
   ITrailSettingsSynchronizer,
@@ -17,18 +17,18 @@ import type {
   TrailSettingsSyncState,
 } from "../contracts/ITrailSettingsSynchronizer";
 
-export class TrailSettingsSynchronizer implements ITrailSettingsSynchronizer {
+export class TrailSettingsSynchronizer {
   // Reactive state - owned by service
   state = $state<TrailSettingsSyncState>({
     syncedSettings: null,
     renderSignal: 0,
   });
 
-  private TrailCapturer: ITrailCapturer | null = null;
+  private TrailCapturer: TrailCapturer | null = null;
   private renderTrigger: RenderTriggerCallback | null = null;
 
   initialize(
-    TrailCapturer: ITrailCapturer | null,
+    TrailCapturer: TrailCapturer | null,
     renderTrigger: RenderTriggerCallback
   ): void {
     this.TrailCapturer = TrailCapturer;

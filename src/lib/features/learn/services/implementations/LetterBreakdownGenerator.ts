@@ -6,18 +6,13 @@
  * risk by pre-computing all domain content before TIKA receives it.
  */
 
-import type {
-  ILetterBreakdownGenerator,
-  LetterBreakdown,
-  LetterComparison,
-  ComparisonRelationship,
-} from "../contracts/ILetterBreakdownGenerator";
+import type { LetterBreakdown, LetterComparison, ComparisonRelationship } from "../contracts/types";
 import {
   LETTER_BREAKDOWN_TABLE,
   type LetterBreakdownEntry,
 } from "../domain/letter-breakdown-data";
 
-export class LetterBreakdownGenerator implements ILetterBreakdownGenerator {
+export class LetterBreakdownGenerator {
   getBreakdown(letter: string): LetterBreakdown | null {
     const entry = LETTER_BREAKDOWN_TABLE.get(letter);
     if (!entry) return null;

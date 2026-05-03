@@ -1,7 +1,4 @@
-import type {
-	IVoiceRecorder,
-	VoiceRecordingResult,
-} from "../contracts/IVoiceRecorder";
+import type { VoiceRecordingResult } from "../contracts/types";
 
 const MAX_DURATION_MS = 2 * 60 * 1000; // 2 minutes
 
@@ -22,7 +19,7 @@ const MIME_CANDIDATES = [
  * Tries webm/opus first (small files, fast upload), falls back to
  * mp4 for Safari. Automatically stops after MAX_DURATION_MS.
  */
-export class VoiceRecorder implements IVoiceRecorder {
+export class VoiceRecorder {
 	private recorder: MediaRecorder | null = null;
 	private stream: MediaStream | null = null;
 	private chunks: Blob[] = [];

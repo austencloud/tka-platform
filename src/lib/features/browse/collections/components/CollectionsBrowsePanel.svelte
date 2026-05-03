@@ -13,10 +13,10 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
-  import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
+  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
   import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/types";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
   import {
@@ -28,12 +28,13 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
+import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 
   // Services
-  let userService: IUserRepository;
+  let userService: UserRepository;
   let collectionService: CollectionManager;
-  let libraryService: ILibraryRepository;
-  let hapticService: IHapticFeedback;
+  let libraryService: LibraryRepository;
+  let hapticService: HapticFeedback;
 
   // Local search state (synced with global state)
   let searchQuery = $state("");

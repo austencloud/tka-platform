@@ -5,17 +5,16 @@
  * and suggests bridge letters to fix invalid sequences.
  */
 
-import type { ITikaPictographLoader } from "../contracts/ITikaPictographLoader";
+import type { TikaPictographLoader } from "./TikaPictographLoader";
 import type {
-  ITikaSequenceValidator,
   SequenceValidationResult,
   SequenceTransition,
   InvalidTransition,
-} from "../contracts/ITikaSequenceValidator";
+} from "../contracts/types";
 import { LETTER_TO_TYPE, LETTER_TYPES } from "@tka/domain";
 
-export class TikaSequenceValidator implements ITikaSequenceValidator {
-  constructor(private pictographLoader: ITikaPictographLoader) {}
+export class TikaSequenceValidator {
+  constructor(private pictographLoader: TikaPictographLoader) {}
 
   validateChaining(letters: string[]): SequenceValidationResult {
     const mappings = this.pictographLoader.getLetterPositionMappings();

@@ -12,7 +12,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import { fly, fade } from "svelte/transition";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { LetterDomainService } from "../../pictograph/tka-glyph/services/implementations/LetterDomainService";
 
@@ -41,7 +41,7 @@
   }: Props = $props();
 
   // State
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;

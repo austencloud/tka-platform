@@ -7,10 +7,10 @@
  * Domain: Retro Recycle Bin
  */
 
-import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 import { FileNameConverter } from "../services/implementations/FileNameConverter";
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 
 export interface RecycleBinItem {
 	id: string;
@@ -46,7 +46,7 @@ function toDate(timestamp: unknown): Date {
  * and format them as Recycle Bin items.
  */
 export async function getDeletedItems(): Promise<RecycleBinItem[]> {
-	const repo = getLibraryRepository() as ILibraryRepository;
+	const repo = getLibraryRepository() as LibraryRepository;
 	const deleted = await repo.getDeletedSequences();
 
 	// Sort by deletedAt descending (most recently deleted first)
@@ -77,7 +77,7 @@ export async function getDeletedItems(): Promise<RecycleBinItem[]> {
  * Restore a soft-deleted sequence back to the active library.
  */
 export async function restoreItem(id: string): Promise<void> {
-	const repo = getLibraryRepository() as ILibraryRepository;
+	const repo = getLibraryRepository() as LibraryRepository;
 	await repo.restoreSequence(id);
 }
 
@@ -85,7 +85,7 @@ export async function restoreItem(id: string): Promise<void> {
  * Permanently delete a single soft-deleted sequence. No recovery after this.
  */
 export async function purgeItem(id: string): Promise<void> {
-	const repo = getLibraryRepository() as ILibraryRepository;
+	const repo = getLibraryRepository() as LibraryRepository;
 	await repo.purgeSequence(id);
 }
 
@@ -93,6 +93,6 @@ export async function purgeItem(id: string): Promise<void> {
  * Permanently delete all soft-deleted sequences. No recovery after this.
  */
 export async function emptyBin(): Promise<void> {
-	const repo = getLibraryRepository() as ILibraryRepository;
+	const repo = getLibraryRepository() as LibraryRepository;
 	await repo.emptyRecycleBin();
 }

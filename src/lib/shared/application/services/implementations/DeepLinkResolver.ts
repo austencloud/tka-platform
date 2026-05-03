@@ -15,7 +15,7 @@ import type { SequenceRepository } from "$lib/features/create/shared/services/im
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import { getCachedSequence } from "../../state/ui/modal-url-state.svelte";
 
-export class DeepLinkResolver implements IDeepLinkResolver {
+export class DeepLinkResolver {
   constructor(
     private sequenceRepository: SequenceRepository,
     private publicSequencesLoader: PublicSequencesLoader

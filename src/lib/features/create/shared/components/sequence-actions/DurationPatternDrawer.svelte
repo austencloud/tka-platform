@@ -23,7 +23,7 @@ import { getDurationPatternManager } from "$lib/features/create/shared/getDurati
     templateToPattern,
     type DurationCategory,
   } from "../../domain/templates/duration-templates";
-  import type { IDurationPatternManager } from "../../services/contracts/IDurationPatternManager";
+  import type { DurationPatternManager } from "../../services/implementations/DurationPatternManager";
   import PatternItemCard from "./PatternItemCard.svelte";
   import DurationPreviewGrid from "./DurationPreviewGrid.svelte";
 

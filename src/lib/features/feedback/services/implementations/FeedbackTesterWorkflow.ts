@@ -16,22 +16,17 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
-import type {
-  AdminResponse,
-  TesterConfirmation,
-  TesterConfirmationStatus,
-  FeedbackStatus,
-} from "../../domain/models/feedback-models";
+import type { AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "../../domain/models/feedback-models";
 import type { FeedbackNotification } from "../../domain/models/notification-models";
 import { notificationTriggerService } from "./NotificationTrigger";
-import type { IFeedbackQueryService } from "../contracts/IFeedbackQueryService";
 import { feedbackQueryService } from "./FeedbackQuerier";
+import type { FeedbackQueryService } from "../implementations/FeedbackQuerier";
 
 const COLLECTION_NAME = "feedback";
 
 export class FeedbackTesterWorkflowService {
   constructor(
-    private readonly queryService: IFeedbackQueryService = feedbackQueryService
+    private readonly queryService: FeedbackQueryService = feedbackQueryService
   ) {}
 
   async sendAdminResponse(

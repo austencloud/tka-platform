@@ -7,21 +7,22 @@
 
 import { Vector3, Quaternion } from "three";
 import type {
-  IAvatarAnimator,
   HandPose,
   BodyPose,
   AnimationLayer,
   TransitionConfig,
   PositionOffset,
 } from "../contracts/IAvatarAnimator";
-import type { IIKSolver, IKTarget } from "../contracts/IIKSolver";
-import type { IAvatarSkeletonBuilder, BoneName } from "../contracts/IAvatarSkeletonBuilder";
+import type { IKTarget } from "../contracts/IKSolver";
+import type { IKSolver } from "./IKSolver";
+import type { BoneName } from "../contracts/AvatarSkeletonBuilder";
+import type { AvatarSkeletonBuilder } from "./AvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { ElbowPoleComputer } from "./ElbowPoleComputer";
 import type { ClavicleRaiser } from "./ClavicleRaiser";
-import type { ISpineTwister } from "../contracts/ISpineTwister";
+import type { SpineTwister } from "./SpineTwister";
 
-export class AvatarAnimator implements IAvatarAnimator {
+export class AvatarAnimator {
   private currentPose: BodyPose;
   private targetPose: BodyPose;
   private layers: Map<string, AnimationLayer> = new Map();
@@ -55,7 +56,7 @@ export class AvatarAnimator implements IAvatarAnimator {
   private leftShoulderRestY = 0;
   private rightShoulderRestY = 0;
   private shoulderRestCached = false;
-  private spineTwister: ISpineTwister | null;
+  private spineTwister: SpineTwister | null;
   private spineTwistQuats = {
     spine1: new Quaternion(),
     spine2: new Quaternion(),
@@ -86,11 +87,11 @@ export class AvatarAnimator implements IAvatarAnimator {
   private externalSpinePitchRad = 0;
 
   constructor(
-    private ikSolver: IIKSolver,
-    private skeleton: IAvatarSkeletonBuilder,
+    private ikSolver: IKSolver,
+    private skeleton: AvatarSkeletonBuilder,
     poleComputer?: ElbowPoleComputer,
     clavicleRaiser?: ClavicleRaiser,
-    spineTwister?: ISpineTwister
+    spineTwister?: SpineTwister
   ) {
     this.poleComputer = poleComputer ?? null;
     this.clavicleRaiser = clavicleRaiser ?? null;

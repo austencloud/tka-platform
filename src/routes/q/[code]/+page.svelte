@@ -37,11 +37,8 @@
   } from "$lib/shared/qr-video/domain/qr-video-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-  import type {
-    WorkerOutMessage,
-    RenderRequest,
-    PrecomputedFrame,
-  } from "$lib/shared/qr-video/domain/qr-video-types";
+  import type { WorkerOutMessage, RenderRequest, PrecomputedFrame } from "$lib/shared/qr-video/domain/qr-video-types";
+import {  } from "$lib/shared/qr-video/domain/qr-video-types";
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 

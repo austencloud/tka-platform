@@ -18,13 +18,10 @@
 import type { DiamondPoseEnumerator } from "../services/implementations/DiamondPoseEnumerator";
 import type { LocalPoseLabelRepository } from "../services/implementations/LocalPoseLabelRepository";
 import type {
-  IStanceOptimizer,
-  OptimizerBounds,
-  OptimizerInput,
-  OptimizerResult,
-} from "../services/contracts/IStanceOptimizer";
-import type { SimPropTarget, SimResult } from "../services/contracts/IStanceSimulator";
+  OptimizerBounds, OptimizerInput, OptimizerResult } from "../services/contracts/types";
+import type { SimPropTarget, SimResult } from "../services/contracts/types";
 import type { CandidateGenerator } from "../services/implementations/CandidateGenerator";
+import type { StanceOptimizer } from "../services/implementations/StanceOptimizer";
 import { REACH_FEASIBILITY_TOLERANCE } from "../services/implementations/StanceSimulator";
 import type {
   PoseDefinition,
@@ -45,7 +42,6 @@ import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-consta
 import { STAGE } from "$lib/shared/3d/scale/scale-constants";
 import { STANCE_BOUNDS } from "../domain/types";
 import { Vector3, Quaternion, Euler } from "three";
-
 type PlaneFilter = Plane | "all";
 type OrientationFilter = HandOrientation | "all";
 type StatusFilter = LabelStatus | "all" | "unlabeled-only";
@@ -262,7 +258,7 @@ function reachabilityFromSimResult(
 export async function createCollisionLabState(
   poseEnumerator: DiamondPoseEnumerator,
   labelRepo: LocalPoseLabelRepository,
-  optimizer: IStanceOptimizer | null = null,
+  optimizer: StanceOptimizer | null = null,
   candidateGenerator: CandidateGenerator | null = null
 ) {
   const allPoses: PoseDefinition[] = poseEnumerator.enumerateDiamondInOut();

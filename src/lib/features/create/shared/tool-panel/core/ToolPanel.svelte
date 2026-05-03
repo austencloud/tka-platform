@@ -20,7 +20,7 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import GeneratePanel from "../../../generate/components/GeneratePanel.svelte";
@@ -61,7 +61,7 @@
   });
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
   let deviceDetector: DeviceDetector | null = null;
   let navigationLayout = $state<"top" | "bottom" | "right">("top");
 

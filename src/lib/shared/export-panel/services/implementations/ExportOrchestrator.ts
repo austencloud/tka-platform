@@ -14,19 +14,14 @@ import type {
 } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ExportSettings } from "../../domain/models/ExportSettings";
-import type {
-  IExportOrchestrator,
-  ExportResult,
-  AnimationExportDependencies,
-  ExportUserInfo,
-} from "../contracts/IExportOrchestrator";
+import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "../contracts/types";
 import type { ShareOptions } from "$lib/shared/share/domain/models/ShareOptions";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/features/compose/shared/domain/constants/timing";
 import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
 
-export class ExportOrchestrator implements IExportOrchestrator {
+export class ExportOrchestrator {
   private exporting = false;
   private videoOrchestrator: IVideoExportOrchestrator | null = null;
 

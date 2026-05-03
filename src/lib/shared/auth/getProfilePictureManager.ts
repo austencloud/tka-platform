@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IProfilePictureManager } from './services/contracts/IProfilePictureManager';
 import { ProfilePictureManager } from './services/implementations/ProfilePictureManager';
 
-let instance: IProfilePictureManager | null = null;
+let instance: ProfilePictureManager | null = null;
 
-export function getProfilePictureManager(): IProfilePictureManager {
+export function getProfilePictureManager(): ProfilePictureManager {
 	if (!browser) throw new Error('getProfilePictureManager() is browser-only');
 	return instance ??= new ProfilePictureManager();
 }

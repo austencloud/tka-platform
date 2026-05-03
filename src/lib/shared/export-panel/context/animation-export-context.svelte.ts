@@ -11,7 +11,7 @@
 
 import { getContext, setContext } from "svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
 import type {
   PlaybackMode,
   StepPlaybackStepSize,

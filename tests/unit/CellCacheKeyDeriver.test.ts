@@ -14,7 +14,7 @@ vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
 import { CellCacheKeyDeriver } from "$lib/shared/sequence-viewer/services/implementations/CellCacheKeyDeriver";
 import { pictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/contracts/IPreviewCellRenderer";
+import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/contracts/types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { MotionType, MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

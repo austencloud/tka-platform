@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { ILetterBreakdownGenerator } from './services/contracts/ILetterBreakdownGenerator';
+
 import { LetterBreakdownGenerator } from './services/implementations/LetterBreakdownGenerator';
 
-let instance: ILetterBreakdownGenerator | null = null;
+let instance: LetterBreakdownGenerator | null = null;
 
-export function getLetterBreakdownGenerator(): ILetterBreakdownGenerator {
+export function getLetterBreakdownGenerator(): LetterBreakdownGenerator {
 	if (!browser) throw new Error('getLetterBreakdownGenerator() is browser-only');
 	return instance ??= new LetterBreakdownGenerator();
 }

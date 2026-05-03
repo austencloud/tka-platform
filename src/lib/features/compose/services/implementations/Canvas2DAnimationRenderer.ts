@@ -26,10 +26,7 @@
  * - Canvas2DVisibilityFadeManager: Props and trails visibility transitions
  */
 
-import type {
-  IAnimationRenderer,
-  RenderSceneParams,
-} from "../contracts/IAnimationRenderer";
+import type { RenderSceneParams } from "../contracts/types";
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
 import { Canvas2DApplicationManager } from "./canvas2d/Canvas2DApplicationManager";
 import { Canvas2DImageLoader } from "./canvas2d/Canvas2DImageLoader";
@@ -126,7 +123,7 @@ function getSphereLayout(propType: string): SphereLayout | null {
   return { ...base, material };
 }
 
-export class Canvas2DAnimationRenderer implements IAnimationRenderer {
+export class Canvas2DAnimationRenderer {
   // Specialized service managers
   private appManager: Canvas2DApplicationManager;
   private imageLoader: Canvas2DImageLoader;

@@ -1,18 +1,19 @@
 <!--
 	CompositionGrid.svelte
 
-	Adaptive grid layout for compositions. Uses ICompositionLayoutCalculator
+	Adaptive grid layout for compositions. Uses CompositionLayoutCalculator
 	to assign hero/medium/compact sizes. Responsive column count via ResizeObserver.
 -->
 <script lang="ts">
 
 import { getCompositionLayoutCalculator } from "$lib/features/compose/tabs/browse/getCompositionLayoutCalculator";
   import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
-	import type { CardSize } from "../services/contracts/ICompositionLayoutCalculator";
-	import type { ICompositionLayoutCalculator } from "../services/contracts/ICompositionLayoutCalculator";
+	import type { CardSize } from "../services/contracts/types";
+	import type { ICompositionLayoutCalculator } from "../services/contracts/types";
 	import CompositionCard from "./CompositionCard.svelte";
 	import CompositionHeroCard from "./CompositionHeroCard.svelte";
 	import { onMount } from "svelte";
+import type { CompositionLayoutCalculator } from "../services/implementations/CompositionLayoutCalculator";
 
 	const {
 		compositions,

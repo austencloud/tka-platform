@@ -7,7 +7,7 @@
     Point,
   } from "../../domain/models/mandala-element";
   import type { MandalaConfig } from "../../domain/models/mandala-config";
-  import type { IMandalaTransformer } from "../../services/contracts/IMandalaTransformer";
+  import type { MandalaTransformer } from "../../services/implementations/MandalaTransformer";
   import {
     CANVAS_SIZE,
     CANVAS_CENTER,
@@ -17,7 +17,7 @@
   import MandalaElementView from "./MandalaElementView.svelte";
 
   interface Props {
-    transformer?: IMandalaTransformer;
+    transformer?: MandalaTransformer;
     onElementSelect?: (id: string | null) => void;
     onElementMove?: (id: string, position: Point) => void;
     onCanvasClick?: (position: Point) => void;

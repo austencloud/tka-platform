@@ -6,13 +6,13 @@
  * prefers-reduced-motion by disabling sway when the user requests it.
  */
 
-import type { ICoralSceneRenderer, CoralSceneConfig } from "../contracts/ICoralSceneRenderer";
 import type { CoralAssetLoader } from "../implementations/CoralAssetLoader";
 import type {
   CoralDepthLayer,
   PlacedCoral,
   TintedCoralAsset,
 } from "../../domain/coral-types";
+import type { CoralSceneConfig } from "../contracts/types";
 
 // --------------------------------------------------------------------------
 // Constants
@@ -55,7 +55,7 @@ function prefersReducedMotion(): boolean {
 // Implementation
 // --------------------------------------------------------------------------
 
-export class CoralSceneRenderer implements ICoralSceneRenderer {
+export class CoralSceneRenderer {
   private readonly loader: CoralAssetLoader;
   private placed: Map<CoralDepthLayer, PlacedCoral[]> = new Map();
   private ready = false;

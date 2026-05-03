@@ -8,7 +8,7 @@ Follows Svelte 5 runes + microservices architecture.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
     import { onMount } from "svelte";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -30,7 +30,7 @@ Follows Svelte 5 runes + microservices architecture.
   }>();
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   onMount(async () => {
     hapticService = getHapticFeedback();

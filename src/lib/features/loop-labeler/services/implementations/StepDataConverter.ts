@@ -14,16 +14,12 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type {
-  IStepDataConverter,
-  RawStepData,
-  SequenceEntry,
-} from "../contracts/IStepDataConverter";
+import type { RawStepData, SequenceEntry } from "../contracts/types";
 
 /**
  * Service for converting raw sequence data to StepData for rendering
  */
-export class StepDataConverter implements IStepDataConverter {
+export class StepDataConverter {
   parseMotionType(value: string | undefined): MotionType {
     const str = String(value || "").toLowerCase();
     switch (str) {

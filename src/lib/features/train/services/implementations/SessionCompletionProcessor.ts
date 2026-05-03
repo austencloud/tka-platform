@@ -9,13 +9,12 @@
  */
 
 import type {
-  ISessionCompletionProcessor,
   SessionCompletionParams,
   SessionCompletionResult,
   XPBreakdown,
   ChallengeProgressResult,
-} from "../contracts/ISessionCompletionProcessor";
-import type { IPerformanceHistoryTracker } from "../contracts/IPerformanceHistoryTracker";
+} from "../contracts/types";
+import type { PerformanceHistoryTracker } from "./PerformanceHistoryTracker";
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import type { TrainChallengeManager } from "./TrainChallengeManager";
 import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
@@ -30,9 +29,9 @@ import {
 import { activeChallengeState } from "../../state/active-challenge-state.svelte";
 import { addNotification } from "$lib/shared/gamification/state/notification-state.svelte";
 
-export class SessionCompletionProcessor implements ISessionCompletionProcessor {
+export class SessionCompletionProcessor {
   constructor(
-    private historyTracker: IPerformanceHistoryTracker,
+    private historyTracker: PerformanceHistoryTracker,
     private achievementManager: AchievementManager,
     private challengeManager: TrainChallengeManager
   ) {}

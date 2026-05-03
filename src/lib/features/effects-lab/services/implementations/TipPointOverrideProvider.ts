@@ -1,5 +1,6 @@
 import { PROP_TIP_POINTS, type PropTipConfig } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
-import type { IEffectPointsPersister, EffectPoint } from "../contracts/IEffectPointsPersister";
+import type { EffectPoint } from "../contracts/types";
+import type { EffectPointsPersister } from "./EffectPointsPersister";
 import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 /** Deep-copy that works on Svelte 5 $state proxies (structuredClone cannot clone them). */
@@ -21,7 +22,7 @@ function deepCopy<T>(value: T): T {
 export class TipPointOverrideProvider {
   private publishedDefaults: Map<string, PropTipConfig>;
 
-  constructor(private readonly persister: IEffectPointsPersister) {
+  constructor(private readonly persister: EffectPointsPersister) {
     this.publishedDefaults = new Map();
   }
 

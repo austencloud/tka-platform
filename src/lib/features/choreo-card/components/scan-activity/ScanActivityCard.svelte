@@ -15,13 +15,26 @@
     entry,
     sequence,
     hot = false,
+    sparkline,
     onOpen,
   }: {
     entry: CodeEntry;
     sequence: SequenceData | null;
     hot?: boolean;
+    sparkline?: number[];
     onOpen: (code: string) => void;
   } = $props();
+
+  const sparklinePath = $derived.by(() => {
+    if (!sparkline || sparkline.every((v) => v === 0)) return "";
+    const max = Math.max(...sparkline, 1);
+    const w = 60;
+    const h = 16;
+    const step = w / (sparkline.length - 1);
+    return sparkline
+      .map((v, i) => `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`)
+      .join(" ");
+  });
 
   const timeAgo = $derived.by(() => {
     if (!entry.lastScannedAt) return "-";
@@ -82,6 +95,11 @@
     </div>
     <div class="footer-strip">
       <span class="loc">{entry.lastCity ?? "-"}</span>
+      {#if sparklinePath}
+        <svg class="sparkline" viewBox="0 0 60 16" aria-hidden="true">
+          <path d={sparklinePath} fill="none" stroke="var(--theme-accent, #34d399)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      {/if}
       <span class="ago">{timeAgo}</span>
     </div>
   </div>
@@ -166,6 +184,7 @@
     border-top: 1px solid var(--theme-stroke, #1a1f2e);
   }
   .loc { color: var(--theme-text-muted, #d0d5e0); }
+  .sparkline { width: 60px; height: 16px; flex-shrink: 0; opacity: 0.7; }
   .ago { color: var(--theme-accent, #34d399); font-weight: 600; }
   .ago.err { color: var(--semantic-error-text, #fca5a5); }
 

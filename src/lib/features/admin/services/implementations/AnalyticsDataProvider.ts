@@ -11,21 +11,10 @@
  */
 
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type {
-  IAnalyticsDataProvider,
-  SummaryMetrics,
-  UserActivityPoint,
-  ContentStatistics,
-  TopSequenceData,
-  EngagementMetrics,
-  AnalyticsTimeRange,
-  EventTypeBreakdown,
-  ModuleUsageData,
-  RecentActivityEvent,
-} from "../contracts/IAnalyticsDataProvider";
 import type { IUserMetricsAnalyzer } from "./UserMetricsAnalyzer";
 import type { IEventActivityAnalyzer } from "./EventActivityAnalyzer";
 import type { IContentQueryAnalyzer } from "./ContentQueryAnalyzer";
+import type { SummaryMetrics, UserActivityPoint, ContentStatistics, TopSequenceData, EngagementMetrics, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "../contracts/types";
 
 /**
  * Empty metrics for when Firebase is unavailable
@@ -41,7 +30,7 @@ const EMPTY_SUMMARY_METRICS: SummaryMetrics = {
   previousChallengesCompleted: 0,
 };
 
-export class AnalyticsDataProvider implements IAnalyticsDataProvider {
+export class AnalyticsDataProvider {
   constructor(
     private readonly userMetricsAnalyzer: IUserMetricsAnalyzer,
     private readonly eventActivityAnalyzer: IEventActivityAnalyzer,

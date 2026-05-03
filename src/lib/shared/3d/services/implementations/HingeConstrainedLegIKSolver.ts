@@ -1,7 +1,7 @@
 // src/lib/shared/3d/services/implementations/HingeConstrainedLegIKSolver.ts
 
 import { Vector3, Quaternion, Matrix4 } from "three";
-import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
+import type { LegIKInput } from "../contracts/ILegIKSolver";
 
 /**
  * HingeConstrainedLegIKSolver
@@ -23,7 +23,7 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
  *      the target.
  *   5. Optional slerp blend against original rotations for weight<1.
  */
-export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+export class HingeConstrainedLegIKSolver {
   private readonly tempHipWorld = new Vector3();
   private readonly tempCurrentFootDir = new Vector3();
   private readonly tempTargetDir = new Vector3();

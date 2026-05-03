@@ -18,24 +18,20 @@ import { getAnimationVisibilityManager } from "../../../animation-engine/state/a
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 import { cellCacheKeyDeriver } from "../../../sequence-viewer/services/implementations/CellCacheKeyDeriver";
-import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/contracts/IPreviewCellRenderer";
-
+import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/contracts/types";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
-import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
-import type {
-  CompositionProgressCallback,
-  IImageComposer,
-} from "../contracts/IImageComposer";
+import type { DimensionCalculator } from "./DimensionCalculator";
+import type { CompositionProgressCallback } from "../contracts/types";
 import type { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
 import type { TextRenderer } from "./TextRenderer";
-import type { IPictographBlobCache } from "../contracts/IPictographBlobCache";
+import type { PictographBlobCache } from "./PictographBlobCache";
 import type { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import type { StepNumberRenderer } from "./StepNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
-import type { ILayerCompositor } from "../contracts/ILayerCompositor";
-import type { IQRCodeGenerator } from "../../../qr/services/contracts/IQRCodeGenerator";
+import type { LayerCompositor } from "./LayerCompositor";
+import type { QRCodeGenerator } from "../../../qr/services/implementations/QRCodeGenerator";
 import {
   calculateHeaderHeight as sharedHeaderHeight,
   calculateFooterHeight as sharedFooterHeight,
@@ -46,7 +42,7 @@ const DECK_FOOTER_RATIO = 0.067;
 const DECK_HEADER_BG = "rgba(245, 245, 245, 0.98)";
 const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.1)";
 
-export class ImageComposer implements IImageComposer {
+export class ImageComposer {
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
   private layer1Hits = 0;
   private layer1Misses = 0;
@@ -64,17 +60,17 @@ export class ImageComposer implements IImageComposer {
   constructor(
     private readonly layoutService: LayoutCalculator,
     private readonly TextRenderer: TextRenderer,
-    private readonly DimensionCalculator: IDimensionCalculator,
-    private readonly blobCache: IPictographBlobCache,
+    private readonly DimensionCalculator: DimensionCalculator,
+    private readonly blobCache: PictographBlobCache,
     private readonly keyHasher: PictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
     private readonly stepNumberRenderer: StepNumberRenderer,
     private readonly canvas2DRenderer: Canvas2DDirectRenderer,
-    private readonly layerCompositor?: ILayerCompositor,
-    private qrCodeGenerator?: IQRCodeGenerator
+    private readonly layerCompositor?: LayerCompositor,
+    private qrCodeGenerator?: QRCodeGenerator
   ) {}
 
-  setQRCodeGenerator(generator: IQRCodeGenerator): void {
+  setQRCodeGenerator(generator: QRCodeGenerator): void {
     this.qrCodeGenerator = generator;
   }
 

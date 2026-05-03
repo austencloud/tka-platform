@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IFirstStepAnalyzer } from './services/contracts/IFirstStepAnalyzer';
+
 import { FirstStepAnalyzer } from './services/implementations/FirstStepAnalyzer';
 
-let instance: IFirstStepAnalyzer | null = null;
+let instance: FirstStepAnalyzer | null = null;
 
-export function getFirstStepAnalyzer(): IFirstStepAnalyzer {
+export function getFirstStepAnalyzer(): FirstStepAnalyzer {
 	if (!browser) throw new Error('getFirstStepAnalyzer() is browser-only');
 	return instance ??= new FirstStepAnalyzer();
 }

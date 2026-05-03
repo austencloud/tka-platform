@@ -24,14 +24,11 @@ import type {
   VideoVisibility,
   StepMap,
 } from "../../domain/CollaborativeVideo";
-import type {
-  ICollaborativeVideoManager,
-  UserVideoLibrary,
-} from "../contracts/ICollaborativeVideoManager";
+import type { UserVideoLibrary } from "../contracts/types";
 
 const VIDEOS_COLLECTION = "videos";
 
-export class CollaborativeVideoManager implements ICollaborativeVideoManager {
+export class CollaborativeVideoManager {
   private getUserId(): string {
     const user = getAuthSync().currentUser;
     if (!user) {

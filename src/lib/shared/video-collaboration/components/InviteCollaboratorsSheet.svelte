@@ -8,8 +8,8 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
-  import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";

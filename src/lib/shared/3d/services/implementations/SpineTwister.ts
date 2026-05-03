@@ -28,7 +28,7 @@
  */
 
 import { Vector3, Quaternion, Euler } from "three";
-import type { ISpineTwister, SpineTwistResult } from "../contracts/ISpineTwister";
+import type { SpineTwistResult } from "../contracts/ISpineTwister";
 
 /** Maximum total upper-body yaw (turning left/right) in radians (~60 degrees). */
 const MAX_YAW = (60 * Math.PI) / 180;
@@ -78,7 +78,7 @@ const IDEAL_WEIGHTS: Record<string, number> = {
   head: 0.25,
 };
 
-export class SpineTwister implements ISpineTwister {
+export class SpineTwister {
   computeSpineTwist(
     leftHandTarget: Vector3 | null,
     rightHandTarget: Vector3 | null,

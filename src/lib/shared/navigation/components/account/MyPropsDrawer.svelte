@@ -13,7 +13,7 @@
   import { PROP_FAMILIES } from "./PropFamilyGrid.svelte";
   import SelectionFooterBar from "./SelectionFooterBar.svelte";
   import FavoritePicker from "./FavoritePicker.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
   import { getBasePropType } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
@@ -47,7 +47,7 @@
 
   function triggerHaptic(type: "selection" | "success" = "selection") {
     try {
-      const haptic = getHapticFeedback() as IHapticFeedback;
+      const haptic = getHapticFeedback() as HapticFeedback;
       haptic?.trigger(type);
     } catch {
       // Not available

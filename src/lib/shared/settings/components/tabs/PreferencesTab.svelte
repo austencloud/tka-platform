@@ -11,7 +11,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { AppSettings } from "../../domain/AppSettings";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
@@ -22,7 +22,7 @@
   }>();
 
   // Services
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   // Entry animation
   let isVisible = $state(false);

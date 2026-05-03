@@ -13,20 +13,14 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type {
-  IThumbnailRenderOrchestrator,
-  ThumbnailRequest,
-  ThumbnailResult,
-} from "../contracts/IThumbnailRenderOrchestrator";
-import type {
-  IThumbnailKeyDeriver,
-  ThumbnailCacheKey,
-} from "../contracts/IThumbnailKeyDeriver";
-import type { IThumbnailRenderQueue } from "../contracts/IThumbnailRenderQueue";
-import type { IThumbnailRenderer } from "../contracts/IThumbnailRenderer";
-import type { ICloudThumbnailCache } from "../contracts/ICloudThumbnailCache";
-import type { IThumbnailLocalCache } from "../contracts/IThumbnailLocalCache";
-import type { IThumbnailMetricsCollector } from "../contracts/IThumbnailMetricsCollector";
+import type { ThumbnailRequest, ThumbnailResult } from "../contracts/types";
+import type { ThumbnailCacheKey } from "../contracts/types";
+import type { ThumbnailKeyDeriver } from "./ThumbnailKeyDeriver";
+import type { ThumbnailRenderQueue } from "./ThumbnailRenderQueue";
+import type { ThumbnailRenderer } from "./ThumbnailRenderer";
+import type { CloudThumbnailCache } from "./CloudThumbnailCache";
+import type { ThumbnailLocalCache } from "./ThumbnailLocalCache";
+import type { ThumbnailMetricsCollector } from "./ThumbnailMetricsCollector";
 
 // In-memory LRU cache of hash → blobUrl for instant revisits.
 // Survives component remounts within the same page session.
@@ -100,7 +94,7 @@ async function getStaticManifest(): Promise<Set<string>> {
   return staticManifestLoading;
 }
 
-export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator {
+export class ThumbnailRenderOrchestrator {
   private completedCount = 0;
   private memoryCache = new MemoryUrlCache();
 
@@ -111,12 +105,12 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
   private renderedGenerations = new Map<string, number>();
 
   constructor(
-    private keyDeriver: IThumbnailKeyDeriver,
-    private queue: IThumbnailRenderQueue,
-    private renderer: IThumbnailRenderer,
-    private cloudCache: ICloudThumbnailCache,
-    private localCache: IThumbnailLocalCache,
-    private metrics?: IThumbnailMetricsCollector
+    private keyDeriver: ThumbnailKeyDeriver,
+    private queue: ThumbnailRenderQueue,
+    private renderer: ThumbnailRenderer,
+    private cloudCache: CloudThumbnailCache,
+    private localCache: ThumbnailLocalCache,
+    private metrics?: ThumbnailMetricsCollector
   ) {}
 
   /**

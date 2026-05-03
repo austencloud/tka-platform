@@ -7,7 +7,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import type { LanguageModel } from "ai";
-import type { ITikaModelProvider, ModelConfig } from "../contracts/ITikaModelProvider";
+import type { ModelConfig } from "../contracts/types";
 
 const MODELS: Record<string, ModelConfig> = {
   "sonnet-4": { provider: "anthropic", modelId: "claude-sonnet-4-6" },
@@ -16,7 +16,7 @@ const MODELS: Record<string, ModelConfig> = {
   deepseek: { provider: "deepseek", modelId: "deepseek-chat" },
 };
 
-export class TikaModelProvider implements ITikaModelProvider {
+export class TikaModelProvider {
   constructor(
     private anthropicApiKey: string,
     private deepseekApiKey: string

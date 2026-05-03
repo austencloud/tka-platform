@@ -23,13 +23,9 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { getUserLearningProgressPath } from "../../data/firestore-paths";
 import type { LearningProgress, ConceptProgress } from "../../domain/types";
-import type {
-  IUserKnowledgeProfilePersister,
-  SerializedLearningProgress,
-} from "../contracts/IUserKnowledgeProfilePersister";
+import type { SerializedLearningProgress } from "../contracts/types";
 
 export class UserKnowledgeProfilePersister
-  implements IUserKnowledgeProfilePersister
 {
   private unsubscribe: Unsubscribe | null = null;
 

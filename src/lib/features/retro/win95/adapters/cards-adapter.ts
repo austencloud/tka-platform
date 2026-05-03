@@ -8,7 +8,6 @@
  * Domain: Retro CARDS App
  */
 
-import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import {
@@ -134,7 +133,7 @@ function librarySequenceToRetroCard(seq: LibrarySequence): RetroCard {
  * and format them as choreo cards for CARDS.EXE.
  */
 export async function loadCards(): Promise<RetroCard[]> {
-  const repo = getLibraryRepository() as ILibraryRepository;
+  const repo = getLibraryRepository();
 
   const sequences = await repo.getSequences({
     sortBy: "updatedAt",

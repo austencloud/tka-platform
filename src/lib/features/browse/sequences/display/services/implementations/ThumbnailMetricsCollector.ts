@@ -1,3 +1,4 @@
+import type { CacheLayer, ThumbnailRequestMetrics, ThumbnailMetricsSummary, TimingDistribution } from "../contracts/types";
 /**
  * ThumbnailMetricsCollector
  *
@@ -9,20 +10,13 @@
  * - Call getSummary() programmatically
  */
 
-import type {
-  IThumbnailMetricsCollector,
-  CacheLayer,
-  ThumbnailRequestMetrics,
-  ThumbnailMetricsSummary,
-  TimingDistribution,
-} from "../contracts/IThumbnailMetricsCollector";
 
 interface PendingRequest {
   startTime: number;
   isVisible: boolean;
 }
 
-export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
+export class ThumbnailMetricsCollector {
   private sessionStart = Date.now();
   private requestCounter = 0;
   private pendingRequests = new Map<string, PendingRequest>();

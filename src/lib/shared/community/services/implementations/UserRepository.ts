@@ -30,11 +30,7 @@ import type {
   Achievement,
   UserAchievement,
 } from "$lib/shared/gamification/domain/models/achievement-models";
-import type {
-  IUserRepository,
-  PaginatedUsersResult,
-  PaginatedQueryOptions,
-} from "../contracts/IUserRepository";
+import type { PaginatedUsersResult, PaginatedQueryOptions } from "../contracts/types";
 import type {
   EnhancedUserProfile,
   UserProfile,
@@ -86,7 +82,7 @@ interface FollowDocument {
   createdAt: Timestamp;
 }
 
-export class UserRepository implements IUserRepository {
+export class UserRepository {
   private readonly USERS_COLLECTION = "users";
 
   // ============================================================================

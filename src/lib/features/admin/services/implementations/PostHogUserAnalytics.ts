@@ -10,18 +10,11 @@
 
 import { browser } from "$app/environment";
 import { auth } from "$lib/shared/auth/firebase";
-import type {
-  IPostHogUserAnalytics,
-  UserEngagementSummary,
-  ModuleActivityBreakdown,
-  ContentMetrics,
-  PostHogSessionSummary,
-  TimePeriod,
-} from "../contracts/IPostHogUserAnalytics";
+import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "../contracts/types";
 
 const POSTHOG_PROJECT_ID = "299320";
 
-export class PostHogUserAnalytics implements IPostHogUserAnalytics {
+export class PostHogUserAnalytics {
   private available: boolean | null = null;
 
   isAvailable(): boolean {

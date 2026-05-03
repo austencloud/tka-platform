@@ -7,7 +7,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
   import { onMount } from "svelte";
   import CardHeader from "./shared/CardHeader.svelte";
-  import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
+  import type { GreekKeyMapper } from "$lib/shared/keyboard/services/implementations/GreekKeyMapper";
   import {
     uppercasePreservingGreek,
     insertAtCursor,
@@ -39,7 +39,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     onOpenOverlay?: () => void;
   }>();
 
-  let greekKeyMapper: IGreekKeyMapper | null = $state(null);
+  let greekKeyMapper: GreekKeyMapper | null = $state(null);
 
   onMount(() => {
     greekKeyMapper = getGreekKeyMapper();

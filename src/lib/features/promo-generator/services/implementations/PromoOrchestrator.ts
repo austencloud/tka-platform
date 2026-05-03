@@ -7,15 +7,10 @@
 
 import type { PromoSceneManager } from "./PromoSceneManager";
 import type { ScreenshotInjector } from "./ScreenshotInjector";
-import type {
-  IPromoAnimationController,
-  AnimationProgressCallback,
-} from "../contracts/IPromoAnimationController";
-import type {
-  IPromoVideoExporter,
-  ExportProgressCallback,
-  ExportResult,
-} from "../contracts/IPromoVideoExporter";
+import type { PromoAnimationController } from "../implementations/PromoAnimationController";
+import type { AnimationProgressCallback } from "../contracts/types";
+import type { PromoVideoExporter } from "../implementations/PromoVideoExporter";
+import type { ExportProgressCallback, ExportResult } from "../contracts/types";
 import type {
   DeviceType,
   EnvironmentType,
@@ -44,8 +39,8 @@ export class PromoOrchestrator {
   constructor(
     private readonly sceneManager: PromoSceneManager,
     private readonly screenshotInjector: ScreenshotInjector,
-    private readonly animationController: IPromoAnimationController,
-    private readonly videoExporter: IPromoVideoExporter
+    private readonly animationController: PromoAnimationController,
+    private readonly videoExporter: PromoVideoExporter
   ) {}
 
   async initialize(

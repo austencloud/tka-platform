@@ -1,7 +1,4 @@
-import type {
-  IMandalaTransformer,
-  TransformResult,
-} from "../contracts/IMandalaTransformer";
+import type { TransformResult } from "../contracts/types";
 import type {
   Point,
   MandalaElement,
@@ -15,7 +12,7 @@ import { CANVAS_CENTER } from "../../domain/constants/symmetry-constants";
  * Core symmetry transformation engine for the mandala generator.
  * Handles all geometric transformations: rotation, mirroring, and combined kaleidoscope effects.
  */
-export class MandalaTransformer implements IMandalaTransformer {
+export class MandalaTransformer {
   /**
    * Convert degrees to radians.
    */

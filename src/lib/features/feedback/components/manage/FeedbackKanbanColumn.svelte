@@ -1,12 +1,10 @@
 <!-- FeedbackKanbanColumn - A single status column in the Kanban board -->
 <script lang="ts">
-  import type {
-    FeedbackItem,
-    FeedbackStatus,
-  } from "../../domain/models/feedback-models";
+  import type { FeedbackItem, FeedbackStatus, } from "../../domain/models/feedback-models";
   import FeedbackKanbanCard from "./FeedbackKanbanCard.svelte";
-  import type { IClaimStatusDeriver } from "../../services/contracts/IClaimStatusDeriver";
+  import type { IClaimStatusDeriver } from "../../services/contracts/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+import type { ClaimStatusDeriver } from "../../services/implementations/ClaimStatusDeriver";
 
   const {
     status,
@@ -37,7 +35,7 @@
     selectedItemId: string | null;
     disableDrag?: boolean;
     wipStatus?: { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean };
-    claimStatusDeriver?: IClaimStatusDeriver;
+    claimStatusDeriver?: ClaimStatusDeriver;
     onDragStart: (item: FeedbackItem) => void;
     onDragEnd: () => void;
     onTouchDrag?: (item: FeedbackItem, x: number, y: number) => void;

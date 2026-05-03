@@ -1,3 +1,4 @@
+import type { QueueStats } from "../contracts/types";
 /**
  * ThumbnailRenderQueue
  *
@@ -12,7 +13,6 @@
  * - Supports cancellation
  */
 
-import type { IThumbnailRenderQueue, QueueStats } from "../contracts/IThumbnailRenderQueue";
 
 interface QueuedTask<T> {
   id: string;
@@ -29,7 +29,7 @@ const DEFAULT_MAX_CONCURRENT = 8;
 // If a render hangs (stalled fetch, infinite loop), reclaim the slot after this timeout
 const RENDER_TIMEOUT_MS = 15_000;
 
-export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
+export class ThumbnailRenderQueue {
   private queue: QueuedTask<unknown>[] = [];
   private activeCount = 0;
   private activeIds = new Set<string>();

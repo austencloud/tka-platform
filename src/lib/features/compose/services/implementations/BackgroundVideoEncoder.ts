@@ -12,17 +12,14 @@
  *   4. cancel()     - aborts immediately and terminates the worker
  */
 
-import type {
-  BackgroundExportConfig,
-  IBackgroundVideoEncoder,
-} from "../contracts/IBackgroundVideoEncoder";
+import type { BackgroundExportConfig } from "../contracts/types";
 import type {
   ExportWorkerMessage,
   ExportWorkerResponse,
 } from "../../workers/video-export.worker";
 import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
 
-export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
+export class BackgroundVideoEncoder {
   private worker: Worker | null = null;
   private totalFrames = 0;
 

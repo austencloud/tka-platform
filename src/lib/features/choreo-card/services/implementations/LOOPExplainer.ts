@@ -12,12 +12,7 @@
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type {
-  ILOOPExplainer,
-  LOOPExplanation,
-  SeedInfo,
-  SeedTransformation,
-} from "../contracts/ILOOPExplainer";
+import type { LOOPExplanation, SeedInfo, SeedTransformation } from "../contracts/types";
 import {
   HORIZONTAL_MIRROR_POSITION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,
@@ -48,7 +43,7 @@ const COMPONENT_DESCRIPTION_VERB: Record<string, string> = {
   rewound: "reverses",
 };
 
-export class LOOPExplainer implements ILOOPExplainer {
+export class LOOPExplainer {
   explain(
     sequence: SequenceData,
     loopComponents: Set<LOOPComponent>

@@ -1,13 +1,7 @@
 import { browser } from "$app/environment";
 import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/effort-types";
 import { EffortHapticMapper } from "$lib/features/effort-lab/services/implementations/EffortHapticMapper";
-import type {
-  HapticFeedbackConfig,
-  HapticFeedbackType,
-  HapticImpactStyle,
-  HapticNotificationType,
-  IHapticFeedback,
-} from "../contracts/IHapticFeedback";
+import type { HapticFeedbackConfig, HapticFeedbackType, HapticImpactStyle, HapticNotificationType } from "../contracts/types";
 import type { PlatformDetector } from "$lib/shared/platform/services/implementations/PlatformDetector";
 
 // Single short pulses for web Vibration API fallback (mobile browsers).
@@ -27,7 +21,7 @@ const DEFAULT_CONFIG: HapticFeedbackConfig = {
   customPatterns: {},
 };
 
-export class HapticFeedback implements IHapticFeedback {
+export class HapticFeedback {
   private lastFeedbackTime: number = 0;
   private config: HapticFeedbackConfig = { ...DEFAULT_CONFIG };
   private effortMapper: EffortHapticMapper | null = null;

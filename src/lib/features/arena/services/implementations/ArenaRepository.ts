@@ -8,14 +8,8 @@
  *   arenaSnapshots/{YYYY-MM-DD}  - Daily rank snapshots
  */
 
-import type {
-  ArenaRating,
-  ArenaVote,
-  ArenaLeaderboardEntry,
-  ArenaUserStats,
-  ArenaEntry,
-} from "../../domain/models/arena-models";
-import type { MatchupCandidate } from "../contracts/IMatchupSelector";
+import type { ArenaRating, ArenaVote, ArenaLeaderboardEntry, ArenaUserStats, ArenaEntry, } from "../../domain/models/arena-models";
+import type { MatchupCandidate } from "../contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";

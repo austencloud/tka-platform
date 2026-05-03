@@ -1,4 +1,4 @@
-import type { IRoomStreamingManager, StreamingUpdate } from "../contracts/IRoomStreamingManager";
+import type { StreamingUpdate } from "../contracts/types";
 import type { WingRegion } from "../../domain/museum-grid-types";
 import type { RoomEdge } from "../../domain/layout-types";
 
@@ -7,7 +7,7 @@ import type { RoomEdge } from "../../domain/layout-types";
  * Loads current room + adjacent rooms (connected by doors). Disposes rooms
  * that haven't been needed for a hysteresis period to avoid thrashing.
  */
-export class RoomStreamingManager implements IRoomStreamingManager {
+export class RoomStreamingManager {
   /** room → set of rooms connected by doors */
   private adjacency = new Map<string, Set<string>>();
   /** Currently loaded room IDs */

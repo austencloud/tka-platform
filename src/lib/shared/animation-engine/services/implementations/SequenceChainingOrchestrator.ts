@@ -7,20 +7,21 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+import type { EndState } from "$lib/features/landing/services/contracts/types";
 import type { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
-import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
+import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/types";
 
 import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
 
-export class SequenceChainingOrchestrator implements ISequenceChainingOrchestrator {
-  private playbackController: IAnimationPlaybackController | null = null;
+export class SequenceChainingOrchestrator {
+  private playbackController: AnimationPlaybackController | null = null;
   private animationState: AnimationPanelState | null = null;
   private readonly propTypeApplier = new PropTypeApplier();
 
@@ -34,7 +35,7 @@ export class SequenceChainingOrchestrator implements ISequenceChainingOrchestrat
   private errorCallback: ((message: string) => void) | null = null;
 
   constructor(
-    private readonly spinnerOrchestrator: IEndlessSpinnerOrchestrator,
+    private readonly spinnerOrchestrator: EndlessSpinnerOrchestrator,
     private readonly infiniteGenerator: InfiniteSequenceGenerator
   ) {}
 
@@ -47,7 +48,7 @@ export class SequenceChainingOrchestrator implements ISequenceChainingOrchestrat
   }
 
   async initialize(
-    playbackController: IAnimationPlaybackController,
+    playbackController: AnimationPlaybackController,
     animationState: AnimationPanelState
   ): Promise<void> {
     this.playbackController = playbackController;

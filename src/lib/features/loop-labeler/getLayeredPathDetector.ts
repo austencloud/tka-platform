@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ILayeredPathDetector } from './services/contracts/ILayeredPathDetector';
 import { LayeredPathDetector } from './services/implementations/LayeredPathDetector';
 
-let instance: ILayeredPathDetector | null = null;
+let instance: LayeredPathDetector | null = null;
 
-export function getLayeredPathDetector(): ILayeredPathDetector {
+export function getLayeredPathDetector(): LayeredPathDetector {
 	if (!browser) throw new Error('getLayeredPathDetector() is browser-only');
 	return instance ??= new LayeredPathDetector();
 }

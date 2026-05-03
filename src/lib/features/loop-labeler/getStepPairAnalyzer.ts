@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IStepPairAnalyzer } from './services/contracts/IStepPairAnalyzer';
 import { StepPairAnalyzer } from './services/implementations/StepPairAnalyzer';
 
-let instance: IStepPairAnalyzer | null = null;
+let instance: StepPairAnalyzer | null = null;
 
-export function getStepPairAnalyzer(): IStepPairAnalyzer {
+export function getStepPairAnalyzer(): StepPairAnalyzer {
 	if (!browser) throw new Error('getStepPairAnalyzer() is browser-only');
 	return instance ??= new StepPairAnalyzer();
 }

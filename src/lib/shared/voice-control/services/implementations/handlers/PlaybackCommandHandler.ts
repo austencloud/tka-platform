@@ -6,7 +6,6 @@
  * the animation visibility state manager for speed/BPM.
  */
 
-import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
   VoiceCommandCategory,
@@ -14,6 +13,7 @@ import type {
 } from "../../../domain/voice-command-types";
 import { getAnimationPlaybackRef } from "../../../../coordinators/animation-playback-ref.svelte";
 import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
+import type { IVoiceCommandHandler } from "../../contracts/types";
 
 export class PlaybackCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["playback"];

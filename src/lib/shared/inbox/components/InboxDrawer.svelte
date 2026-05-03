@@ -30,14 +30,14 @@
     handleModuleChange,
   } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   // Responsive placement
   let isMobile = $state(false);
   let placement = $derived(isMobile ? "bottom" : "right") as "bottom" | "right";
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   // Media query for responsive behavior
   let mediaQuery: MediaQueryList | null = null;

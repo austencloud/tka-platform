@@ -7,8 +7,6 @@
 
 import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
 import { getLOOPDesignator } from "$lib/features/loop-labeler/getLOOPDesignator";
-import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
-import type { ILOOPDesignator } from "../services/contracts/ILOOPDesignator";
 import type {
   LOOPDesignation,
   LabeledSequence,
@@ -17,6 +15,8 @@ import type {
 } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
 import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { LOOPLabelsFirebaseRepository } from "../services/implementations/LOOPLabelsFirebaseRepository";
+import type { LOOPDesignator } from "../services/implementations/LOOPDesignator";
 
 /**
  * Map component IDs to their corresponding interval keys
@@ -83,9 +83,9 @@ export function createWholeModeState(): WholeModeState {
 
   // Services
   const labelsService =
-    getLOOPLabelsFirebaseRepository() as ILOOPLabelsFirebaseRepository | null;
+    getLOOPLabelsFirebaseRepository() as LOOPLabelsFirebaseRepository | null;
   const designationService =
-    getLOOPDesignator() as ILOOPDesignator | null;
+    getLOOPDesignator() as LOOPDesignator | null;
 
   // Actions
   const actions = {

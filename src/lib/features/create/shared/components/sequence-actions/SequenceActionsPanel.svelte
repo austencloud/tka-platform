@@ -13,22 +13,16 @@ import { getSequenceTransferHandler } from "$lib/features/create/shared/getSeque
 import { getSubDrawerStatePersister } from "$lib/features/create/shared/getSubDrawerStatePersister";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type {
-    ExtensionAnalysis,
-    LOOPType,
-    CircularizationOption,
-  } from "../../services/contracts/ISequenceExtender";
-  import type { IExtensionFlowCoordinator } from "../../services/contracts/IExtensionFlowCoordinator";
-  import type {
-    ISubDrawerStatePersister,
-    SubDrawerType,
-  } from "../../services/contracts/ISubDrawerStatePersister";
-  import type { ISequenceTransferHandler } from "../../services/contracts/ISequenceTransferHandler";
-  import type { IFirstStepAnalyzer } from "../../services/contracts/IFirstStepAnalyzer";
-  import type { ISequenceJsonExporter } from "../../services/contracts/ISequenceJsonExporter";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { ExtensionAnalysis, LOOPType, CircularizationOption } from "../../services/contracts/types";
+  import type { ExtensionFlowCoordinator } from "../../services/implementations/ExtensionFlowCoordinator";
+  import type { SubDrawerStatePersister } from "../../services/implementations/SubDrawerStatePersister";
+import type { SubDrawerType } from "../../services/contracts/types";
+  import type { SequenceTransferHandler } from "../../services/implementations/SequenceTransferHandler";
+  import type { FirstStepAnalyzer } from "../../services/implementations/FirstStepAnalyzer";
+  import type { SequenceJsonExporter } from "../../services/implementations/SequenceJsonExporter";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import { UndoOperationType } from "../../services/contracts/IUndoManager";
+  import { UndoOperationType } from "../../services/contracts/types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";

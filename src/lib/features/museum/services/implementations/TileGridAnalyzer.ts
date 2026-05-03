@@ -7,30 +7,11 @@
  * become placement objects with 3D coordinates.
  */
 
-import type {
-	MuseumGrid,
-	MuseumTile,
-	WingRegion,
-	Direction,
-	ExhibitDefinition,
-	PerformerDefinition,
-} from "../../domain/museum-grid-types";
+import type { MuseumGrid, MuseumTile, WingRegion, Direction, ExhibitDefinition, PerformerDefinition, } from "../../domain/museum-grid-types";
 import { tileKey, parseTileKey } from "../../domain/museum-grid-types";
 import type {
-	RoomDefinition,
-	RoomObjectDefinition,
-	RoomLightDefinition,
-	EntranceDefinition,
-	WallMaterialId,
-} from "$lib/shared/3d/indoor/domain/room-types";
-import type {
-	ITileGridAnalyzer,
-	AnalyzedMuseum,
-	ExhibitPlacement,
-	PerformerPlacement,
-	LightPlacement,
-	ConnectionDef,
-} from "../contracts/ITileGridAnalyzer";
+	RoomDefinition, RoomObjectDefinition, RoomLightDefinition, EntranceDefinition, WallMaterialId, } from "$lib/shared/3d/indoor/domain/room-types";
+import type { AnalyzedMuseum, ExhibitPlacement, PerformerPlacement, LightPlacement, ConnectionDef } from "../contracts/types";
 
 // ── Coordinate helpers ──
 
@@ -79,7 +60,7 @@ function toWallMaterial(theme: string): WallMaterialId {
 
 // ── Main analyzer ──
 
-export class TileGridAnalyzer implements ITileGridAnalyzer {
+export class TileGridAnalyzer {
 	analyze(grid: MuseumGrid): AnalyzedMuseum {
 		const rooms: RoomDefinition[] = [];
 		const connections: ConnectionDef[] = [];

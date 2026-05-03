@@ -10,27 +10,19 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  ISequenceEquivalenceDetector,
-  EquivalenceResult,
-  EquivalenceType,
-  TransformDetails,
-  SequenceSignature,
-  StepSignature,
-  MotionSignature,
-} from "$lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector";
-import type { ISequenceCanonicalizer } from "../contracts/ISequenceCanonicalizer";
+import type { EquivalenceResult, EquivalenceType, TransformDetails, SequenceSignature, StepSignature, MotionSignature } from "../../../../features/create/shared/services/contracts/types";
+import type { SequenceCanonicalizer } from "./SequenceCanonicalizer";
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { SpatialTransformDetector } from "./SpatialTransformDetector";
-import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
+import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector {
+export class SequenceEquivalenceDetector {
   constructor(
-    private readonly sequenceCanonicalizer: ISequenceCanonicalizer,
+    private readonly sequenceCanonicalizer: SequenceCanonicalizer,
     private readonly stepSignatureGenerator: StepSignatureGenerator,
     private readonly spatialTransformDetector: SpatialTransformDetector,
-    private readonly wordCyclicEquivalenceDetector: IWordCyclicEquivalenceDetector
+    private readonly wordCyclicEquivalenceDetector: WordCyclicEquivalenceDetector
   ) {}
 
   areEquivalent(sequenceA: SequenceData, sequenceB: SequenceData): EquivalenceResult {

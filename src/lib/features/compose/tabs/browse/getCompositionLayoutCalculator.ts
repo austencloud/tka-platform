@@ -1,7 +1,7 @@
-import type { ICompositionLayoutCalculator } from './services/contracts/ICompositionLayoutCalculator';
+
 import { CompositionLayoutCalculator } from './services/implementations/CompositionLayoutCalculator';
 
-let instance: ICompositionLayoutCalculator | null = null;
-export function getCompositionLayoutCalculator(): ICompositionLayoutCalculator {
+let instance: CompositionLayoutCalculator | null = null;
+export function getCompositionLayoutCalculator(): CompositionLayoutCalculator {
   return instance ??= new CompositionLayoutCalculator();
 }

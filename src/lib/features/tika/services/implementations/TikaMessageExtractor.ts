@@ -13,9 +13,9 @@ import type {
 	InlineStepGrid,
 	InlineQuiz
 } from '../../types';
-import type { ITikaMessageExtractor, ToolInfo, InlineContent } from '../contracts/ITikaMessageExtractor';
+import type { ToolInfo, InlineContent } from "../contracts/types";
 
-export class TikaMessageExtractor implements ITikaMessageExtractor {
+export class TikaMessageExtractor {
 	getTextFromParts(parts: UIMessage['parts']): string {
 		if (!parts) return '';
 		return parts

@@ -1,0 +1,89 @@
+import type { DocumentSnapshot } from "firebase/firestore";
+import type {
+  CreatorQueryOptions,
+  CreatorSortCriteria,
+  EnhancedUserProfile,
+  UserProfile,
+} from "../../domain/models/enhanced-user-profile";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
+// --- From IUserRepository ---
+/**
+ * IUserRepository
+ * Service contract for user profiles with social features (follow/unfollow)
+ */
+
+
+/**
+ * Result from paginated user queries
+ */
+export interface PaginatedUsersResult {
+  users: EnhancedUserProfile[];
+  lastDocSnapshot: DocumentSnapshot | null;
+  hasMore: boolean;
+}
+
+/**
+ * Options for paginated user queries
+ */
+export interface PaginatedQueryOptions {
+  sortBy: CreatorSortCriteria;
+  sortDirection: "asc" | "desc";
+  limit: number;
+  cursor?: DocumentSnapshot | null;
+}
+
+// --- From IConnectionManager ---
+
+export interface ConnectionDocument {
+  notes?: string;
+  createdAt?: import("firebase/firestore").Timestamp;
+  updatedAt?: import("firebase/firestore").Timestamp;
+}
+
+export interface MutualFollowInfo {
+  isMutual: boolean;
+  iFollowThem: boolean;
+  theyFollowMe: boolean;
+  mutualSince?: Date;
+  iFollowedAt?: Date;
+  theyFollowedAt?: Date;
+}
+
+export interface SharedSequenceSummary {
+  canonicalSignature: string;
+  mySequence: {
+    id: string;
+    name: string;
+    word: string;
+    thumbnailUrl?: string;
+  };
+  theirSequence: {
+    id: string;
+    name: string;
+    word: string;
+    thumbnailUrl?: string;
+  };
+}
+
+export interface ConnectionInfo {
+  notes: string;
+  notesCreatedAt?: Date;
+  notesUpdatedAt?: Date;
+  mutualFollow: MutualFollowInfo;
+  sharedSequences: SharedSequenceSummary[];
+  sharedSequenceCount: number;
+}
+
+// --- From IPropPreferencePersister ---
+
+export interface CatdogCombo {
+  bluePropType: PropType;
+  redPropType: PropType;
+}
+
+export interface PropPreferences {
+  propsISpinWith: PropType[];
+  favoriteProp: PropType | null;
+  favoriteCatdog: CatdogCombo | null;
+}

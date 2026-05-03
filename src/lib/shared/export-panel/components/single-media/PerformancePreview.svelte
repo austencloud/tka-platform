@@ -23,7 +23,7 @@
   import type {
     RecordingProgress,
     RecordingResult,
-  } from "$lib/shared/video-record/services/contracts/IVideoRecorder";
+  } from "$lib/shared/video-record/services/contracts/types";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   const hubState = getExportPanelState();

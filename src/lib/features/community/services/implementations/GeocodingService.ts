@@ -3,9 +3,9 @@
  * Uses Google Geocoding API to convert coordinates to city/country
  */
 
-import type { IGeocodingService, CityLocation } from "../contracts/IGeocodingService";
+import type { CityLocation } from "../contracts/types";
 
-export class GeocodingService implements IGeocodingService {
+export class GeocodingService {
   constructor(private apiKey: string) {}
 
   async reverseGeocode(lat: number, lng: number): Promise<CityLocation> {

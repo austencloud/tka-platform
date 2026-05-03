@@ -31,7 +31,7 @@ with pre-prepared data for better performance.
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
-  import type { IPictographPreparer } from "../services/contracts/IPictographPreparer";
+  import type { IPictographPreparer } from "../../../../features/create/construct/option-picker/services/contracts/types";
   import { pictographPreparer } from "../services/implementations/PictographPreparer";
   import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
   import type { PictographData } from "../domain/models/PictographData";

@@ -10,12 +10,12 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
-import type { IPrintCardRenderer, PrintRenderOptions } from "../contracts/IPrintCardRenderer";
-import type { ICardBackDomRenderer } from "../contracts/ICardBackDomRenderer";
-import type { IInfoCardCanvasRenderer } from "../contracts/IInfoCardCanvasRenderer";
+import type { ImageComposer } from "../../../../shared/render/services/implementations/ImageComposer";
+import type { PrintRenderOptions } from "../contracts/types";
+import type { CardBackDomRenderer } from "./CardBackDomRenderer";
+import type { InfoCardCanvasRenderer } from "./InfoCardCanvasRenderer";
 import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
-import type { ILOOPExplainer } from "../contracts/ILOOPExplainer";
+import type { LOOPExplainer } from "./LOOPExplainer";
 
 
 // MPC poker card defaults
@@ -31,13 +31,13 @@ const CARD_RADIUS_PCT = 0.0472;
 const OUTER_RADIUS = Math.round(MPC_WIDTH * CARD_RADIUS_PCT);  // ~39px
 const INNER_RADIUS = Math.round(CONTENT_WIDTH * CARD_RADIUS_PCT); // ~35px
 
-export class PrintCardRenderer implements IPrintCardRenderer {
+export class PrintCardRenderer {
   constructor(
-    private readonly imageComposer: IImageComposer,
-    private readonly cardBackDomRenderer: ICardBackDomRenderer,
-    private readonly infoCardRenderer: IInfoCardCanvasRenderer,
+    private readonly imageComposer: ImageComposer,
+    private readonly cardBackDomRenderer: CardBackDomRenderer,
+    private readonly infoCardRenderer: InfoCardCanvasRenderer,
     private readonly sequenceToEntryConverter: SequenceToEntryConverter,
-    private readonly loopExplainer: ILOOPExplainer,
+    private readonly loopExplainer: LOOPExplainer,
     private readonly theme: string = "nightSky"
   ) {}
 

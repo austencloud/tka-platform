@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IUserKnowledgeProfilePersister } from './services/contracts/IUserKnowledgeProfilePersister';
+
 import { UserKnowledgeProfilePersister } from './services/implementations/UserKnowledgeProfilePersister';
 
-let instance: IUserKnowledgeProfilePersister | null = null;
+let instance: UserKnowledgeProfilePersister | null = null;
 
-export function getUserKnowledgeProfilePersister(): IUserKnowledgeProfilePersister {
+export function getUserKnowledgeProfilePersister(): UserKnowledgeProfilePersister {
 	if (!browser) throw new Error('getUserKnowledgeProfilePersister() is browser-only');
 	return instance ??= new UserKnowledgeProfilePersister();
 }

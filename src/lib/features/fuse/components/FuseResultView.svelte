@@ -14,7 +14,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
@@ -23,7 +23,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	const DEFAULT_BPM = 60;
 
 	// Animation playback state
-	let controller = $state<IAnimationPlaybackController | null>(null);
+	let controller = $state<AnimationPlaybackController | null>(null);
 	let motionLoader = $state<SequenceMotionLoader | null>(null);
 	const animState = createAnimationPanelState();
 

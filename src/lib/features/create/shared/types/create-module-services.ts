@@ -7,14 +7,14 @@
  * Domain: Create module - Service types
  */
 
-import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { StartPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
 import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
-import type { INavigationSyncer } from "../services/contracts/INavigationSyncer";
+import type { NavigationSyncer } from "../services/implementations/NavigationSyncer";
 import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { Sharer } from "../../../../shared/share/services/implementations/Sharer";
 
 /**
  * Container for all CreateModule services
@@ -25,7 +25,7 @@ export interface CreateModuleOrchestrators {
   StartPositionManager: StartPositionManager;
   CreateModuleOrchestrator: CreateModuleOrchestrator;
   layoutService: ResponsiveLayoutManager;
-  NavigationSyncer: INavigationSyncer;
+  NavigationSyncer: NavigationSyncer;
   StepOperator: StepOperator;
-  shareService: ISharer;
+  shareService: Sharer;
 }

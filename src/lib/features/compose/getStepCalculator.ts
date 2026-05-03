@@ -1,7 +1,6 @@
-import type { IStepCalculator } from './services/contracts/IStepCalculator';
 import { StepCalculator } from './services/implementations/StepCalculator';
 
-let instance: IStepCalculator | null = null;
-export function getStepCalculator(): IStepCalculator {
+let instance: StepCalculator | null = null;
+export function getStepCalculator(): StepCalculator {
   return instance ??= new StepCalculator();
 }

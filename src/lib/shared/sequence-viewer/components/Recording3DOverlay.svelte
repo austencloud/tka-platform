@@ -7,8 +7,7 @@
   - Full-screen progress overlay during Pass 2 (deterministic render)
 -->
 <script lang="ts">
-  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-
+  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
   interface Props {
     countdownValue: number;
     isRecording: boolean;

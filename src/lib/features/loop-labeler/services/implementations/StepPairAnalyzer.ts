@@ -1,20 +1,16 @@
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type {
-  IStepPairAnalyzer,
-  StepPairRelationship,
-  LetterRelationshipInfo,
-} from "../contracts/IStepPairAnalyzer";
 import {
   INVERTED_LETTER_MAP,
   COMPOUND_LETTER_MAP,
   ALPHA_BETA_COUNTERPART_LETTER_MAP,
 } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
+import type { StepPairRelationship, LetterRelationshipInfo } from "../contracts/types";
 
 /**
  * Service for analyzing relationships between beat pairs
  */
-export class StepPairAnalyzer implements IStepPairAnalyzer {
+export class StepPairAnalyzer {
   analyzeBeatPair(step1: StepData, step2: StepData): StepPairRelationship {
     const transformations: string[] = [];
 

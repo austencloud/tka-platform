@@ -7,7 +7,7 @@
 
 import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 import type { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
-import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
+import type { SequenceConverter } from "$lib/shared/3d/services/implementations/SequenceConverter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { VillageOrchestrator } from "../engine/VillageOrchestrator";
@@ -21,7 +21,7 @@ import type {
 
 export interface RendererDeps {
 	propInterpolator: PropStateInterpolator;
-	sequenceConverter: ISequenceConverter;
+	sequenceConverter: SequenceConverter;
 }
 
 export interface AvatarRenderState {

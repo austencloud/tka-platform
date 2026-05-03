@@ -24,7 +24,7 @@
 		LIGHT_MOTION_PURPLE_STROKE,
 		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
-	import type { IMandalaGeometryCalculator } from "../services/contracts/IMandalaGeometryCalculator";
+	import type { MandalaGeometryCalculator } from "../services/implementations/MandalaGeometryCalculator";
 	import type { MandalaRenderer } from '$lib/shared/mandala/services/implementations/MandalaRenderer'
 
 	interface Props {
@@ -81,7 +81,7 @@
 		purpleFill: LIGHT_MOTION_PURPLE_FILL,
 	};
 
-	let calculator: IMandalaGeometryCalculator | null = $state(null);
+	let calculator: MandalaGeometryCalculator | null = $state(null);
 	let renderer: MandalaRenderer | null = $state(null);
 
 	onMount(() => {

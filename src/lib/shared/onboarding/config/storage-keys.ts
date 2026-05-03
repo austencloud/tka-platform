@@ -10,12 +10,12 @@
  */
 
 import { getOnboardingPersister } from "$lib/shared/onboarding/getOnboardingPersister";
-import type { IOnboardingPersister } from "../services/contracts/IOnboardingPersister";
+import type { OnboardingPersister } from "../services/implementations/OnboardingPersister";
 
 // Lazy service resolution to avoid circular dependencies
-let _onboardingService: IOnboardingPersister | null = null;
+let _onboardingService: OnboardingPersister | null = null;
 
-function getOnboardingService(): IOnboardingPersister | null {
+function getOnboardingService(): OnboardingPersister | null {
   if (_onboardingService) return _onboardingService;
 
   try {

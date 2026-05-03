@@ -16,38 +16,33 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceVisibility } from "../../domain/models/LibrarySequence";
-import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
-import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { TagManager } from "./TagManager";
-import type { ILibraryRepository } from "../contracts/ILibraryRepository";
 import type { ArtifactExtractor } from "./ArtifactExtractor";
 import { TAG_COLORS } from "../../domain/models/Tag";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import type {
-  ILibrarySaveService,
-  SaveToLibraryOptions,
-  SaveProgress,
-  SaveResult,
-} from "../contracts/ILibrarySaveService";
+  SaveToLibraryOptions, SaveProgress, SaveResult } from "../contracts/types";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { LibraryError } from "./LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-
-export class LibrarySaveService implements ILibrarySaveService {
-  private readonly shareService: ISharer | null;
-  private readonly uploadService: IVideoUploader | null;
+import type { Sharer } from "../../../../shared/share/services/implementations/Sharer";
+import type { R2VideoUploader } from "../../../../shared/share/services/implementations/R2VideoUploader";
+import type { LibraryRepository } from "../implementations/LibraryRepository";
+export class LibrarySaveService {
+  private readonly shareService: Sharer | null;
+  private readonly uploadService: R2VideoUploader | null;
   private readonly tagService: TagManager | null;
-  private readonly libraryRepository: ILibraryRepository;
+  private readonly libraryRepository: LibraryRepository;
   private readonly artifactExtractor: ArtifactExtractor | null;
 
   constructor(
-    shareService: ISharer | null,
-    uploadService: IVideoUploader | null,
+    shareService: Sharer | null,
+    uploadService: R2VideoUploader | null,
     tagService: TagManager | null,
-    libraryRepository: ILibraryRepository,
+    libraryRepository: LibraryRepository,
     artifactExtractor?: ArtifactExtractor | null
   ) {
     this.shareService = shareService ?? null;

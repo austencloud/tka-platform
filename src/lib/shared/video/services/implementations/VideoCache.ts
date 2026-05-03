@@ -11,11 +11,10 @@
  * - Memory-efficient blob URL management
  */
 import type {
-  IVideoCache,
   GetVideoOptions,
   CacheStats,
   CachedVideo,
-} from "../contracts/IVideoCache";
+} from "../contracts/types";
 
 const DB_NAME = "tka-video-cache";
 const DB_VERSION = 1;
@@ -23,7 +22,7 @@ const STORE_NAME = "videos";
 const MAX_CACHE_SIZE_MB = 500; // 500MB max cache
 const DEFAULT_MAX_AGE_DAYS = 30;
 
-export class VideoCache implements IVideoCache {
+export class VideoCache {
   private db: IDBDatabase | null = null;
   private dbPromise: Promise<IDBDatabase> | null = null;
   private blobUrls = new Map<string, string>(); // original URL -> blob URL

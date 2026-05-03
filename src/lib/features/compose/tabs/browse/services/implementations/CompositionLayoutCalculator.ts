@@ -8,11 +8,9 @@
 
 import type { CompositionBrowseItem } from "../../state/composition-browse-state.svelte";
 import type {
-	CardSize,
-	ICompositionLayoutCalculator,
-} from "../contracts/ICompositionLayoutCalculator";
+	CardSize } from "../contracts/types";
 
-export class CompositionLayoutCalculator implements ICompositionLayoutCalculator {
+export class CompositionLayoutCalculator {
 	calculateCardSizes(
 		compositions: CompositionBrowseItem[],
 		columnCount: number

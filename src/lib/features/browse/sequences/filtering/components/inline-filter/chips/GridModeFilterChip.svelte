@@ -8,7 +8,7 @@ Options: All, Diamond, Box, Skewed. Each shows contextual count.
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   interface Props {
@@ -20,7 +20,7 @@ Options: All, Diamond, Box, Skewed. Each shows contextual count.
   let { activeGridMode, onSelect, getFilteredCount }: Props = $props();
 
   let isOpen = $state(false);
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;

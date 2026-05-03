@@ -1,7 +1,6 @@
-import type { IPoiDeviceAdapter } from './services/contracts/IPoiDeviceAdapter';
 import { OpenPixelPoiAdapter } from './services/implementations/OpenPixelPoiAdapter';
 
-let instance: IPoiDeviceAdapter | null = null;
-export function getOpenPixelPoiAdapter(): IPoiDeviceAdapter {
+let instance: OpenPixelPoiAdapter | null = null;
+export function getOpenPixelPoiAdapter(): OpenPixelPoiAdapter {
   return instance ??= new OpenPixelPoiAdapter();
 }

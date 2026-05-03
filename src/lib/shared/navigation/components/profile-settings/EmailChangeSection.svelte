@@ -6,7 +6,7 @@
   Sends verification email to new address.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
 
   const ctx = getProfileSettingsContext();
@@ -14,7 +14,7 @@
   let { onChangeEmail, onCancel, hapticService } = $props<{
     onChangeEmail: () => Promise<void>;
     onCancel: () => void;
-    hapticService: IHapticFeedback | null;
+    hapticService: HapticFeedback | null;
   }>();
 
   // Validation state

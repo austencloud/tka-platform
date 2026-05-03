@@ -15,12 +15,9 @@
 <script lang="ts">
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor,
-    Orientation,
-    RotationDirection,
-  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+    MotionColor, Orientation, RotationDirection, } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
-  import type { GridHitTarget } from "../services/contracts/IGridHitTargetCalculator";
+  import type { GridHitTarget } from "../services/contracts/types";
   import { GridHitTargetCalculator } from "../services/implementations/GridHitTargetCalculator";
   import { SvgPropAnimator } from "../services/implementations/SvgPropAnimator";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
@@ -780,7 +777,6 @@
       opacity: 1;
     }
   }
-
 
   /* Hit targets - default (idle phase, no hand color yet) */
   .hit-target {

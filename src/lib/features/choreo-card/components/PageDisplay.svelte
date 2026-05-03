@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy } from "svelte";
@@ -51,7 +51,7 @@
     onContextMenu,
   }: Props = $props();
 
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
   let cumulativeScrollDelta = 0;
   let pageDisplayEl: HTMLDivElement;
 

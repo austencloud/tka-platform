@@ -7,7 +7,7 @@
  * 3. Random: 10% fully random pairs for exploration
  */
 
-import type { IMatchupSelector, MatchupCandidate } from "../contracts/IMatchupSelector";
+import type { MatchupCandidate } from "../contracts/types";
 import type { MatchupReason } from "../../domain/models/arena-models";
 import {
   COLD_START_THRESHOLD,
@@ -16,7 +16,7 @@ import {
   INITIAL_MU,
 } from "../../domain/constants/arena-constants";
 
-export class MatchupSelector implements IMatchupSelector {
+export class MatchupSelector {
   selectMatchup(
     candidates: MatchupCandidate[],
     voterId: string,

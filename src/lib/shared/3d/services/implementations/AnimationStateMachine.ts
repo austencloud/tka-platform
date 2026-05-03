@@ -36,7 +36,7 @@ const DEFAULT_CONFIG: Required<AnimationStateMachineConfig> = {
 	verticalThreshold: 0.5,
 };
 
-export class AnimationStateMachine implements IAnimationStateMachine {
+export class AnimationStateMachine {
 	private state = LocomotionState.IDLE;
 	private config: Required<AnimationStateMachineConfig>;
 

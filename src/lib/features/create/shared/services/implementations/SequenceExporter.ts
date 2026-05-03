@@ -1,12 +1,4 @@
-import type {
-  ISequenceExporter,
-  ExportableSequenceData,
-  CondensedSequenceData,
-  CondensedStartPosition,
-  CondensedStepData,
-  CondensedMotionData,
-  CondensedStartMotion,
-} from "../contracts/ISequenceExporter";
+import type { ExportableSequenceData, CondensedSequenceData, CondensedStartPosition, CondensedStepData, CondensedMotionData, CondensedStartMotion } from "../contracts/types";
 import type { StepData } from "../../domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
@@ -14,7 +6,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
  * Service for exporting sequence data in various formats
  * Pure business logic - no Svelte dependencies
  */
-export class SequenceExporter implements ISequenceExporter {
+export class SequenceExporter {
   /**
    * Create a condensed, human-readable version of sequence data
    * Removes: IDs, placement data, metadata, redundant fields

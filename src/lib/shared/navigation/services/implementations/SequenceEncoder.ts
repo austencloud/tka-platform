@@ -11,16 +11,7 @@ import {
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type {
-  ISequenceEncoder,
-  CompressionResult,
-  ShareURLResult,
-  ShareURLMetadata,
-  DeepLinkParseResult,
-  QRSizeEstimate,
-  SequenceRouteIdParseResult,
-  URLPropOptions,
-} from "../contracts/ISequenceEncoder";
+import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "../contracts/types";
 
 const LOCATION_ENCODE: Record<GridLocation, string> = {
   [GridLocation.NORTH]: "no",
@@ -126,7 +117,7 @@ const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(
   Object.entries(PROP_TYPE_ENCODE).map(([k, v]) => [v, k as PropType])
 ) as Record<string, PropType>;
 
-export class SequenceEncoder implements ISequenceEncoder {
+export class SequenceEncoder {
   encode(sequence: SequenceData): string {
     let startPositionStep: StepData | StartPositionData;
     let actualSteps: readonly StepData[];

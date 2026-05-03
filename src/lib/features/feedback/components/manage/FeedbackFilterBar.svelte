@@ -1,7 +1,7 @@
 <!-- FeedbackFilterBar - Responsive filters composed of child components -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import { createFilterBarUIState } from "../../state/filter-bar-ui-state.svelte";
   import {

@@ -1,5 +1,5 @@
 import type { TipPointOverrideProvider } from "../services/implementations/TipPointOverrideProvider";
-import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
+import type { EffectPointsPersister } from "../services/implementations/EffectPointsPersister";
 import type { TipPoint } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
@@ -45,7 +45,7 @@ export class EffectPointEditorState {
 
 	constructor(
 		provider: TipPointOverrideProvider,
-		persister?: IEffectPointsPersister,
+		persister?: EffectPointsPersister,
 	) {
 		this.storageKey = "effects-lab-selected-prop";
 		this.provider = provider;

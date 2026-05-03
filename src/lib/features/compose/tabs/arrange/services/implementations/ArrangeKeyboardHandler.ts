@@ -6,13 +6,9 @@
  */
 
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
-import type {
-  IArrangeKeyboardHandler,
-  KeyboardContext,
-  KeyboardCallbacks,
-} from "../contracts/IArrangeKeyboardHandler";
+import type { KeyboardContext, KeyboardCallbacks } from "../contracts/types";
 
-export class ArrangeKeyboardHandler implements IArrangeKeyboardHandler {
+export class ArrangeKeyboardHandler {
   handleKeyDown(
     e: KeyboardEvent,
     context: KeyboardContext,

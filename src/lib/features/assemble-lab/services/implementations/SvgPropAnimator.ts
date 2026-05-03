@@ -11,7 +11,7 @@ import {
   PI,
   TWO_PI,
 } from "$lib/features/compose/shared/domain/math-constants";
-import type { AnimationParams, ISvgPropAnimator } from "../contracts/ISvgPropAnimator";
+import type { AnimationParams } from "../contracts/types";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
 
@@ -74,7 +74,7 @@ function isCenter(loc: GridLocation): boolean {
   return loc === GridLocation.CENTER;
 }
 
-export class SvgPropAnimator implements ISvgPropAnimator {
+export class SvgPropAnimator {
   private animationFrameId: number | null = null;
   private cancelResolve: (() => void) | null = null;
 

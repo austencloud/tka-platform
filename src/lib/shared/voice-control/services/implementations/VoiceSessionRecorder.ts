@@ -15,13 +15,9 @@ import type {
   ResolutionTier,
 } from "../../domain/voice-session-types";
 import type { VoiceCommandCategory } from "../../domain/voice-command-types";
-import type {
-  IVoiceSessionRecorder,
-  RecordEventParams,
-  SessionEndedCallback,
-} from "../contracts/IVoiceSessionRecorder";
+import type { RecordEventParams, SessionEndedCallback } from "../contracts/types";
 
-export class VoiceSessionRecorder implements IVoiceSessionRecorder {
+export class VoiceSessionRecorder {
   private recording = false;
   private sessionStartedAt: Date | null = null;
   private sessionStartMs = 0;

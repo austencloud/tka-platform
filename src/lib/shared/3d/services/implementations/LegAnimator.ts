@@ -200,7 +200,7 @@ interface DirectionalClip {
   action: AnimationAction | null;
 }
 
-export class LegAnimator implements ILegAnimator {
+export class LegAnimator {
   private mixer: AnimationMixer | null = null;
   private root: Object3D | null = null;
   private loader: GLTFLoader;

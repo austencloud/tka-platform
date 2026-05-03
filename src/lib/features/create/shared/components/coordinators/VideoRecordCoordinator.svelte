@@ -17,8 +17,8 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
     type SaveMetadata,
   } from "../SaveToLibraryDialog.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
-  import type { RecordingResult } from "$lib/shared/video-record/services/contracts/IVideoRecorder";
-  import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
+  import type { RecordingResult } from "$lib/shared/video-record/services/contracts/types";
+  import type { VideoUploader } from "$lib/shared/share/services/implementations/VideoUploader";
   import { RecordingPersister } from "$lib/shared/video-record/services/implementations/RecordingPersister";
   import {
     createRecordingMetadata,
@@ -33,7 +33,7 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
   const { CreateModuleState, panelState } = ctx;
 
   // Services
-  const uploadService = getVideoUploader() as IVideoUploader;
+  const uploadService = getVideoUploader() as VideoUploader;
   let persistenceService: RecordingPersister | null = $state(null);
 
   // UI State

@@ -1,7 +1,7 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
-import type { ISwimLaneDeriver, SwimLane } from "../contracts/ISwimLaneDeriver";
+import type { SwimLane } from "../contracts/types";
 
-export class SwimLaneDeriver implements ISwimLaneDeriver {
+export class SwimLaneDeriver {
   deriveLane(item: FeedbackItem): SwimLane {
     // Critical: High-priority bugs that need immediate attention
     if (item.priority === 'critical' && item.type === 'bug') {

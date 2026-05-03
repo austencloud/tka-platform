@@ -5,20 +5,19 @@ import type {
 } from "$lib/shared/voice-control/domain/voice-session-types";
 import type { VoiceCommandCategory } from "$lib/shared/voice-control/domain/voice-command-types";
 import type {
-  IVoiceSessionAnalyzer,
   SessionAnalysis,
   FailingTranscript,
   Tier2Candidate,
   SessionSuccessPoint,
   LatencyByTier,
   UnresolvedPattern,
-} from "../contracts/IVoiceSessionAnalyzer";
+} from "../contracts/types";
 
 const TIER2_CANDIDATE_THRESHOLD = 3;
 
 const MAX_RESULTS_PER_CATEGORY = 20;
 
-export class VoiceSessionAnalyzer implements IVoiceSessionAnalyzer {
+export class VoiceSessionAnalyzer {
   analyzeSessions(sessions: VoiceSession[]): SessionAnalysis {
     if (sessions.length === 0) {
       return this.emptyAnalysis();

@@ -6,18 +6,18 @@
   import { getSubscriptionManager } from "$lib/shared/subscription/getSubscriptionManager";
   import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  import type { ISubscriptionManager } from "../../../../subscription/services/contracts/ISubscriptionManager";
-  import type { SubscriptionInfo } from "../../../../subscription/services/contracts/ISubscriptionManager";
-  import type { IHapticFeedback } from "../../../../application/services/contracts/IHapticFeedback";
+  import type { SubscriptionManager } from "../../../../subscription/services/implementations/SubscriptionManager";
+  import type { SubscriptionInfo } from "../../../../subscription/services/contracts/types";
+  import type { HapticFeedback } from "../../../../application/services/implementations/HapticFeedback";
 
   interface Props {
-    hapticService?: IHapticFeedback | null;
+    hapticService?: HapticFeedback | null;
   }
 
   let { hapticService = null }: Props = $props();
 
   // Services
-  let subscriptionService: ISubscriptionManager | null = $state(null);
+  let subscriptionService: SubscriptionManager | null = $state(null);
 
   // State
   let subscriptionInfo = $state<SubscriptionInfo | null>(null);

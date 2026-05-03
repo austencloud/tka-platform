@@ -8,10 +8,7 @@
  */
 
 import { browser } from "$app/environment";
-import type {
-  IPictographSVGCache,
-  PictographCacheStats,
-} from "../contracts/IPictographSVGCache";
+import type { PictographCacheStats } from "../contracts/types";
 
 const DB_NAME = "pictograph-svg-cache";
 const STORE_NAME = "svgs";
@@ -28,7 +25,7 @@ interface CachedSVGEntry {
   sizeBytes: number;
 }
 
-export class PictographSVGCache implements IPictographSVGCache {
+export class PictographSVGCache {
   private dbPromise: Promise<IDBDatabase> | null = null;
 
   private getDB(): Promise<IDBDatabase> {

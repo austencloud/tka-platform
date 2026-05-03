@@ -12,10 +12,7 @@
 import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 import type { GenerationOptions } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import {
-  DifficultyLevel,
-  GenerationMode,
-} from "$lib/features/create/generate/shared/domain/models/generate-models";
-import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  DifficultyLevel, GenerationMode, } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import {
@@ -56,7 +53,7 @@ export interface RetroGenerationResult {
   /**
    * The raw SequenceData from the orchestrator, kept alongside the pixel
    * renderer's beat list so the SCRIBE menu can pass it straight to
-   * ILibraryRepository without re-running generation.
+   * LibraryRepository without re-running generation.
    */
   sequenceData: SequenceData;
 }
@@ -186,7 +183,7 @@ export async function saveRetroSequence(
   sequenceData: SequenceData,
   dosName: string,
 ): Promise<LibrarySequence> {
-  const repo = getLibraryRepository() as ILibraryRepository;
+  const repo = getLibraryRepository();
 
   // Turn "FIRFLOWB" into "Firflowb" as a display-friendly name.
   // The user chose the name in the DOS save dialog - keep it simple.
@@ -211,6 +208,6 @@ export async function saveRetroSequence(
 export async function loadRetroSequence(
   sequenceId: string,
 ): Promise<LibrarySequence | null> {
-  const repo = getLibraryRepository() as ILibraryRepository;
+  const repo = getLibraryRepository();
   return await repo.getSequence(sequenceId);
 }

@@ -6,15 +6,11 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-import type {
-  ITunnelModeSequenceManager,
-  SequenceType,
-  TransformOperation,
-} from "../contracts/ITunnelModeSequenceManager";
+import type { SequenceType, TransformOperation } from "../contracts/types";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 
-export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
+export class TunnelModeSequenceManager {
   constructor(
     private readonly sequenceService: SequenceRepository,
     private readonly transformationService: SequenceTransformer

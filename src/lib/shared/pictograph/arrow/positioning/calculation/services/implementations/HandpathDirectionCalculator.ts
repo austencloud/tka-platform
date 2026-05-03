@@ -3,10 +3,7 @@ import {
   allClockwisePairs,
   allCounterClockwisePairs,
 } from "../../config/HandpathDirectionMaps";
-import type {
-  HandpathDirection,
-  IHandpathDirectionCalculator,
-} from "../contracts/IHandpathDirectionCalculator";
+import type { HandpathDirection } from "../contracts/types";
 
 /**
  * Implementation of handpath direction calculator.
@@ -16,7 +13,7 @@ import type {
  *
  * Matches legacy HandpathCalculator logic.
  */
-export class HandpathDirectionCalculator implements IHandpathDirectionCalculator {
+export class HandpathDirectionCalculator {
   calculateDirection(
     startLocation: GridLocation,
     endLocation: GridLocation

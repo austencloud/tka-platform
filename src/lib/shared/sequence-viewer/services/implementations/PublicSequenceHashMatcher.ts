@@ -19,14 +19,10 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
-import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
-import type {
-	IPublicSequenceHashMatcher,
-	SequenceMatchResult,
-} from "../contracts/IPublicSequenceHashMatcher";
-
-export class PublicSequenceHashMatcher implements IPublicSequenceHashMatcher {
-	constructor(private readonly encoder: ISequenceEncoder) {}
+import type { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import type { SequenceMatchResult } from "../contracts/types";
+export class PublicSequenceHashMatcher {
+	constructor(private readonly encoder: SequenceEncoder) {}
 
 	async findPublicMatch(
 		sequence: SequenceData

@@ -6,7 +6,7 @@ Animates forward in z-axis and expands to fill the container space
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
@@ -29,7 +29,7 @@ Animates forward in z-axis and expands to fill the container space
     onLoopDisable?: () => void;
   }>();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   let isMultiSelectMode = $state(false);
   let localSelectedComponents = $state(new Set<LOOPComponent>());
   const explanationGenerator = new LOOPExplanationTextGenerator();

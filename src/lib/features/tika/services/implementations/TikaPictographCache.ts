@@ -10,10 +10,7 @@
  */
 
 import { browser } from "$app/environment";
-import type {
-  ITikaPictographCache,
-  TikaPictographCacheStats,
-} from "../contracts/ITikaPictographCache";
+import type { TikaPictographCacheStats } from "../contracts/types";
 
 const DB_NAME = "tika-pictograph-cache";
 const STORE_NAME = "pictographs";
@@ -26,7 +23,7 @@ interface CachedEntry {
   sizeBytes: number;
 }
 
-export class TikaPictographCache implements ITikaPictographCache {
+export class TikaPictographCache {
   /** Layer 1: In-memory cache for instant access */
   private memoryCache = new Map<string, string>();
 

@@ -13,7 +13,7 @@ Design Principles:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   type TabType = "construct" | "generate";
 
@@ -27,7 +27,7 @@ Design Principles:
     showLabels?: boolean;
   }>();
 
-  const hapticService: IHapticFeedback = getHapticFeedback();
+  const hapticService: HapticFeedback = getHapticFeedback();
 
   function handleClick() {
     hapticService?.trigger("selection");

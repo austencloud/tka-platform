@@ -8,10 +8,10 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { getCodex as getCodexService } from "$lib/features/learn/codex/getCodex";
-import type { ICodex } from "../services/contracts/ICodex";
+import type { Codex } from "../services/implementations/Codex";
 
 export function createCodexState() {
-  function getCodex(): ICodex {
+  function getCodex(): Codex {
     return getCodexService();
   }
 

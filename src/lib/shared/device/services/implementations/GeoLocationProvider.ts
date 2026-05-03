@@ -8,10 +8,7 @@
  */
 
 
-import type {
-  IGeoLocationProvider,
-  UserLocation,
-} from "../contracts/IGeoLocationProvider";
+import type { UserLocation } from "../contracts/types";
 
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 const STORAGE_KEY = "tka_user_geolocation";
@@ -23,7 +20,7 @@ const _DEFAULT_LOCATION: UserLocation = {
   timestamp: 0,
 };
 
-export class GeoLocationProvider implements IGeoLocationProvider {
+export class GeoLocationProvider {
   private cachedLocation: UserLocation | null = null;
   private isRealLocation = false;
 

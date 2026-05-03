@@ -47,18 +47,10 @@
  * Domain: Collision Lab - automated stance search
  */
 
-import type {
-  IStanceOptimizer,
-  OptimizerBounds,
-  OptimizerInput,
-  OptimizerResult,
-} from "../contracts/IStanceOptimizer";
-import type {
-  IStanceSimulator,
-  SimResult,
-} from "../contracts/IStanceSimulator";
+import type { OptimizerBounds, OptimizerInput, OptimizerResult } from "../contracts/types";
+import type { SimResult } from "../contracts/types";
 import type { StancePose } from "../../domain/types";
-
+import type { StanceSimulator } from "./StanceSimulator";
 // Loss function weights. Tuned so that "unreachable by 1 cm" produces a
 // larger loss than "clear but slightly imbalanced", which is the right
 // priority ordering for a reviewer.
@@ -136,10 +128,10 @@ interface DescentResult {
   evaluations: number;
 }
 
-export class StanceOptimizer implements IStanceOptimizer {
-  readonly simulator: IStanceSimulator;
+export class StanceOptimizer {
+  readonly simulator: StanceSimulator;
 
-  constructor(simulator: IStanceSimulator) {
+  constructor(simulator: StanceSimulator) {
     this.simulator = simulator;
   }
 

@@ -1,12 +1,7 @@
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  IPresentationResolver,
-  ViewingContext,
-  ResolvedPresentation,
-} from "../contracts/IPresentationResolver";
-
-export class PresentationResolver implements IPresentationResolver {
+import type { ViewingContext, ResolvedPresentation } from "../contracts/types";
+export class PresentationResolver {
   resolve(
     sequence: SequenceData,
     viewingContext: ViewingContext,

@@ -17,7 +17,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { PropState } from "../../shared/domain/types/PropState";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
-import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
+import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/types";
 
 /**
  * A single point in a trail

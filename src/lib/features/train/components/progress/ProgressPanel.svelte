@@ -9,11 +9,11 @@
   import { onMount } from "svelte";
   import { getPerformanceHistoryTracker } from "$lib/features/train/getPerformanceHistoryTracker";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type {
     StatsOverview,
     PersonalBest,
-  } from "../../services/contracts/IPerformanceHistoryTracker";
+  } from "../../services/contracts/types";
   import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";

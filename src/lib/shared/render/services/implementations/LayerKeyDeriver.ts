@@ -24,7 +24,7 @@
 
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
-import type { LayerRenderOptions, LayerType } from "../contracts/ILayerCompositor";
+import type { LayerRenderOptions, LayerType } from "../contracts/types";
 
 export interface BaseLayerKeyComponents {
   // Motion hash (identifies the pictograph's movements)

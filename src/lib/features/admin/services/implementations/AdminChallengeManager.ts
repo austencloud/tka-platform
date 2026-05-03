@@ -25,10 +25,10 @@ import type {
   ChallengeScheduleEntry,
   ChallengeFormData,
 } from "../../domain/models/AdminModels";
-import type { IAuditLogger } from "../contracts/IAuditLogger";
+import type { AuditLogger } from "./AuditLogger";
 
 export class AdminChallengeManager {
-  constructor(private readonly auditLogger: IAuditLogger) {}
+  constructor(private readonly auditLogger: AuditLogger) {}
   /**
    * Get all scheduled challenges for a date range
    * Optimized: Single batch query instead of per-day requests

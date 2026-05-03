@@ -1,13 +1,10 @@
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-import type {
-  ILayoutDetector,
-  LayoutConfig,
-} from "../contracts/ILayoutDetector";
+import type { LayoutConfig } from "../contracts/types";
 
 // Re-export LayoutConfig type to avoid duplicate type issues
 type LocalLayoutConfig = LayoutConfig;
 
-export class LayoutDetector implements ILayoutDetector {
+export class LayoutDetector {
   constructor(private deviceDetector: DeviceDetector) {}
 
   /**

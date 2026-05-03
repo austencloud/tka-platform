@@ -42,10 +42,8 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
   import MainInterface from "../../MainInterface.svelte";
   import AuthSheet from "../../navigation/components/AuthSheet.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
-  import type {
-    ISheetRouter,
-    SheetType,
-  } from "../../navigation/services/contracts/ISheetRouter";
+  import type { SheetRouter } from "../../navigation/services/implementations/SheetRouter";
+import type { SheetType } from "../../navigation/services/contracts/types";
   import { authState } from "../../auth/state/authState.svelte";
   import LandingPage from "../../auth/components/LandingPage.svelte";
   import AuthDrawer from "../../auth/components/AuthDrawer.svelte";
@@ -91,7 +89,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
   let initService: ApplicationInitializer | null = $state(null);
   let settingsService: SettingsState | null = $state(null);
   let deviceService: DeviceDetector | null = $state(null);
-  let sheetRouterService: ISheetRouter | null = $state(null);
+  let sheetRouterService: SheetRouter | null = $state(null);
   let authService: Authenticator | null = $state(null);
   let servicesResolved = $state(false);
 

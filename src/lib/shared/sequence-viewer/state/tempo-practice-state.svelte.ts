@@ -6,8 +6,7 @@
  * and persists config + personal bests to localStorage.
  */
 
-import type { TempoPracticeConfig, TempoPracticeProgress } from "../services/contracts/ITempoPracticeOrchestrator";
-
+import type { TempoPracticeConfig, TempoPracticeProgress } from "../services/contracts/types";
 const STORAGE_KEY_CONFIG = "tka-practice-config";
 const STORAGE_KEY_BESTS = "tka-practice-bests";
 

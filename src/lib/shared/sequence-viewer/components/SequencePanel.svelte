@@ -11,14 +11,14 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
   import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
-  import type { ISequenceDetailLoader } from "$lib/features/browse/sequences/display/services/contracts/ISequenceDetailLoader";
+  import type { SequenceDetailLoader } from "$lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader";
   import type { VideoCountManager } from "$lib/features/browse/sequences/display/services/implementations/VideoCountManager";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
   import type { PlaybackMode, StepPlaybackStepSize } from "$lib/features/compose/state/animation-panel-state.svelte";
 
   import { getSequenceDetailLoader } from "$lib/features/browse/sequences/display/getSequenceDetailLoader";
@@ -121,9 +121,9 @@
   } = $props();
 
   // Services
-  let hapticService: IHapticFeedback | null = null;
-  let imageSharer = $state<ISequenceImageSharer | null>(null);
-  let detailLoader: ISequenceDetailLoader | null = null;
+  let hapticService: HapticFeedback | null = null;
+  let imageSharer = $state<SequenceImageSharer | null>(null);
+  let detailLoader: SequenceDetailLoader | null = null;
   let videoCountManager: VideoCountManager | null = null;
 
   // Share state

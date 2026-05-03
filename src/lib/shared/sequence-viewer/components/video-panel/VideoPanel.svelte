@@ -4,7 +4,7 @@
   import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
   import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
@@ -63,7 +63,7 @@
   const uploadService = getVideoUploader();
   const videoManager = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback() as
-    | IHapticFeedback
+    | HapticFeedback
     | undefined;
 
   const currentUser = $derived(getAuthSync().currentUser);

@@ -8,7 +8,7 @@
  * Domain: Retro Desktop Shell
  */
 
-import type { IWindowManager, WindowOpenConfig } from "../contracts/IWindowManager";
+import type { WindowOpenConfig } from "../contracts/types";
 import type { RetroWindowState } from "../../domain/types/retro-types";
 import { desktopState } from "../../state/desktop-state.svelte";
 
@@ -22,7 +22,7 @@ interface WindowBounds {
 	height: number;
 }
 
-export class WindowManager implements IWindowManager {
+export class WindowManager {
 	/**
 	 * Stores the bounds a window had before it was maximized,
 	 * keyed by window ID. Cleared when the window is closed.

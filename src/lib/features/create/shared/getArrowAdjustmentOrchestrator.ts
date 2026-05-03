@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { IArrowAdjustmentOrchestrator } from './services/contracts/IArrowAdjustmentOrchestrator';
+
 import { ArrowAdjustmentOrchestrator } from './services/implementations/ArrowAdjustmentOrchestrator';
 import { getKeyboardArrowAdjuster } from './getKeyboardArrowAdjuster';
 import { screenSpaceAdjustmentTransformer } from '$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer';
@@ -9,9 +9,9 @@ import { pictographPreparer } from '$lib/shared/pictograph/shared/services/imple
 import { gridModeDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridModeDeriver';
 import { turnsTupleGenerator } from '$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator';
 
-let instance: IArrowAdjustmentOrchestrator | null = null;
+let instance: ArrowAdjustmentOrchestrator | null = null;
 
-export function getArrowAdjustmentOrchestrator(): IArrowAdjustmentOrchestrator {
+export function getArrowAdjustmentOrchestrator(): ArrowAdjustmentOrchestrator {
 	if (!browser) throw new Error('getArrowAdjustmentOrchestrator() is browser-only');
 	return instance ??= new ArrowAdjustmentOrchestrator(
 		getKeyboardArrowAdjuster(),

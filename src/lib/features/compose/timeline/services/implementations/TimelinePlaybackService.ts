@@ -6,16 +6,13 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type {
-  ITimelinePlayer,
-  ActiveClipInfo,
-} from "../contracts/ITimelinePlayer";
+import type { ActiveClipInfo } from "../contracts/types";
 import type { TimeSeconds, TimelineClip } from "../../domain/timeline-types";
 import { getClipEndTime } from "../../domain/timeline-types";
 import { getTimelineState } from "../../state/timeline-state.svelte";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
-export class TimelinePlayer implements ITimelinePlayer {
+export class TimelinePlayer {
   private animationFrameId: number | null = null;
   private lastFrameTime: number = 0;
   private isRunning: boolean = false;

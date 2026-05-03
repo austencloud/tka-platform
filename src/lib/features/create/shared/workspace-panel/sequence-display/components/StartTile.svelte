@@ -4,7 +4,7 @@
   import type { StepData } from "../../../domain/models/StepData";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import StepCell from "./StepCell.svelte";
 
   let {
@@ -31,7 +31,7 @@
     isTimelineMode?: boolean;
   }>();
 
-  const hapticService: IHapticFeedback | null = getHapticFeedback();
+  const hapticService: HapticFeedback | null = getHapticFeedback();
 
   function handleStartClick() {
     hapticService?.trigger("selection");

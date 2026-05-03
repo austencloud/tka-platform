@@ -5,14 +5,14 @@
  * Uses phi (rating deviation) as the primary signal of uncertainty.
  */
 
-import type { IStabilityAnalyzer, StabilityReport } from "../contracts/IStabilityAnalyzer";
+import type { StabilityReport } from "../contracts/types";
 import type { ArenaRating } from "../../domain/models/arena-models";
 import {
   STABLE_PHI_THRESHOLD,
   COLD_START_THRESHOLD,
 } from "../../domain/constants/arena-constants";
 
-export class StabilityAnalyzer implements IStabilityAnalyzer {
+export class StabilityAnalyzer {
   analyzePool(ratings: ArenaRating[]): StabilityReport {
     if (ratings.length === 0) {
       return {

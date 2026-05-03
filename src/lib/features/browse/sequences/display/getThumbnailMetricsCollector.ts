@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IThumbnailMetricsCollector } from './services/contracts/IThumbnailMetricsCollector';
 import { ThumbnailMetricsCollector } from './services/implementations/ThumbnailMetricsCollector';
 
-let instance: IThumbnailMetricsCollector | null = null;
+let instance: ThumbnailMetricsCollector | null = null;
 
-export function getThumbnailMetricsCollector(): IThumbnailMetricsCollector {
+export function getThumbnailMetricsCollector(): ThumbnailMetricsCollector {
 	if (!browser) throw new Error('getThumbnailMetricsCollector() is browser-only');
 	if (!instance) {
 		instance = new ThumbnailMetricsCollector();

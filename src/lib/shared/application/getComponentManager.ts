@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IComponentManager } from './services/contracts/IComponentManager';
 import { ComponentManager } from './services/implementations/ComponentManager';
 
-let instance: IComponentManager | null = null;
+let instance: ComponentManager | null = null;
 
-export function getComponentManager(): IComponentManager {
+export function getComponentManager(): ComponentManager {
 	if (!browser) throw new Error('getComponentManager() is browser-only');
 	return instance ??= new ComponentManager();
 }

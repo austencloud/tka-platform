@@ -10,7 +10,7 @@
  */
 
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type { IGalleryOfflineCache } from "$lib/shared/offline/services/contracts/IGalleryOfflineCache";
+import type { GalleryOfflineCache } from "../../../../../shared/offline/services/implementations/GalleryOfflineCache";
 import {
   onLibraryMutated,
   onLibrarySequenceAdded,
@@ -28,7 +28,7 @@ export class GalleryPrefetcher {
 
   constructor(
     private readonly loader: PublicSequencesLoader,
-    private readonly offlineCache: IGalleryOfflineCache
+    private readonly offlineCache: GalleryOfflineCache
   ) {}
 
   get isWarmed(): boolean {

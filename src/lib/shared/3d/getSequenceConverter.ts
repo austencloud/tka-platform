@@ -1,7 +1,6 @@
-import type { ISequenceConverter } from './services/contracts/ISequenceConverter';
 import { SequenceConverter } from './services/implementations/SequenceConverter';
 
-let instance: ISequenceConverter | null = null;
-export function getSequenceConverter(): ISequenceConverter {
+let instance: SequenceConverter | null = null;
+export function getSequenceConverter(): SequenceConverter {
   return instance ??= new SequenceConverter();
 }

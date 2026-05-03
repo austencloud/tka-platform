@@ -15,7 +15,7 @@ import type { SequencePersister } from "$lib/features/create/shared/services/imp
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type { IReversalDetector } from "../services/contracts/IReversalDetector";
+import type { ReversalDetector } from "../services/implementations/ReversalDetector";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { StepData } from "../domain/models/StepData";
@@ -25,10 +25,8 @@ import type { GeneratorTabState } from "./generator-tab-state.svelte";
 import type { ConstructTabState } from "./construct-tab-state.svelte";
 import type { AssembleTabState } from "./assemble-tab-state.svelte";
 import type { UndoController } from "./create-module/undo-controller.svelte";
-import type {
-  UndoOperationType,
-  UndoMetadata,
-} from "../services/contracts/IUndoManager";
+import type { UndoMetadata } from "../services/contracts/types";
+import { UndoOperationType } from "../services/contracts/types";
 
 /**
  * Creates the main Create Module state orchestrator
@@ -48,7 +46,7 @@ export function createCreateModuleState(
   sequenceValidationService?: SequenceValidator
 ) {
   // Create sequence state (shared/legacy - kept for backwards compatibility)
-  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
+  const ReversalDetector: ReversalDetector | undefined = getReversalDetector();
   const sequenceState = createSequenceState({
     sequenceService,
     ...(SequencePersister && { SequencePersister }),

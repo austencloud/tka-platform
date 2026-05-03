@@ -8,18 +8,14 @@
  * Follows the upload pattern from ProfilePictureManager.
  */
 
-import type {
-  IScreenshotUploader,
-  UploadScreenshotParams,
-  ScreenshotMetadata,
-} from "../contracts/IScreenshotUploader";
+import type { UploadScreenshotParams, ScreenshotMetadata } from "../contracts/types";
 import {
   getStorageInstance,
   getFirestoreInstance,
   getAuthSync,
 } from "$lib/shared/auth/firebase";
 
-export class ScreenshotUploader implements IScreenshotUploader {
+export class ScreenshotUploader {
   async upload(params: UploadScreenshotParams): Promise<ScreenshotMetadata> {
     const auth = getAuthSync();
     const userId = auth.currentUser?.uid;

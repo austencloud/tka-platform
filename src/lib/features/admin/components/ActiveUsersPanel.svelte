@@ -3,15 +3,16 @@
   import { onMount, onDestroy } from "svelte";
   import { getUserActivityTracker } from "$lib/features/admin/getUserActivityTracker";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { IUserActivityTracker } from "../services/contracts/IUserActivityTracker";
+  
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
   import UserPresenceCard from "./active-users/UserPresenceCard.svelte";
   import UserDetailModal from "./UserDetailModal.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+import type { UserActivityTracker } from "../services/implementations/UserActivityTracker";
 
   // Services
-  let userActivityService: IUserActivityTracker | null = null;
+  let userActivityService: UserActivityTracker | null = null;
 
   // State
   let users = $state<UserPresenceWithId[]>([]);
@@ -279,7 +280,6 @@
     font-size: 0.875rem;
     color: var(--theme-text-secondary, var(--theme-text-dim));
   }
-
 
   .clear-filter {
     display: flex;

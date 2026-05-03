@@ -25,35 +25,27 @@ import { createGeneratorTabState } from "$lib/features/create/shared/state/gener
 import { createAssembleTabState } from "$lib/features/create/shared/state/assemble-tab-state.svelte";
 import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
-import type { ICreateModuleEffectCoordinator } from "../contracts/ICreateModuleEffectCoordinator";
-import type { ICreateModuleHandlers } from "../contracts/ICreateModuleHandlers";
+import type { CreateModuleEffectCoordinator } from "./CreateModuleEffectCoordinator";
+import type { CreateModuleHandlers } from "./CreateModuleHandlers";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
-import type { IDeepLinkSequenceHandler } from "../contracts/IDeepLinkSequenceHandler";
-import type { INavigationSyncer } from "../contracts/INavigationSyncer";
+import type { DeepLinkSequenceHandler } from "./DeepLinkSequenceHandler";
+import type { NavigationSyncer } from "./NavigationSyncer";
 import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type {
-  CreateModuleInitializationResult,
-  ICreateModuleInitializer,
-  SequenceLoadResult,
-} from "../contracts/ICreateModuleInitializer";
+import type { CreateModuleInitializationResult, SequenceLoadResult } from "../contracts/types";
 import { getCreateModuleEventHandler } from "./CreateModuleEventHandler";
-import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
+import type { DeepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { ICreateModuleState } from "../../types/create-module-types";
-import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
-import type { IPanelPersister } from "../contracts/IPanelPersister";
+import type { PanelPersister } from "./PanelPersister.svelte";
 import type { StepData } from "../../domain/models/StepData";
-import type {
-  UndoOperationType} from "../contracts/IUndoManager";
-import {
-  type UndoMetadata,
-} from "../contracts/IUndoManager";
+import { UndoOperationType } from "../contracts/types";
+import type { UndoMetadata } from "../contracts/types";
 
-export class CreateModuleInitializer implements ICreateModuleInitializer {
+export class CreateModuleInitializer {
   constructor(
     // Core services
     private readonly sequenceService: SequenceRepository,
@@ -61,16 +53,16 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     private readonly StartPositionManager: StartPositionManager,
     private readonly CreateModuleOrchestrator: CreateModuleOrchestrator,
     private readonly layoutService: ResponsiveLayoutManager,
-    private readonly NavigationSyncer: INavigationSyncer,
+    private readonly NavigationSyncer: NavigationSyncer,
     private readonly StepOperator: StepOperator,
-    private readonly deepLinkService: IDeepLinkSequenceHandler,
-    private readonly navigationDeepLinker: IDeepLinker,
+    private readonly deepLinkService: DeepLinkSequenceHandler,
+    private readonly navigationDeepLinker: DeepLinker,
 
     // UI coordination services
-    private readonly handlers: ICreateModuleHandlers,
-    private readonly effectCoordinator: ICreateModuleEffectCoordinator,
-    private readonly shareService: ISharer,
-    private readonly panelPersistenceService: IPanelPersister,
+    private readonly handlers: CreateModuleHandlers,
+    private readonly effectCoordinator: CreateModuleEffectCoordinator,
+    private readonly shareService: Sharer,
+    private readonly panelPersistenceService: PanelPersister,
 
     // Sequence operation services
     private readonly sequenceStatisticsService: SequenceStatsCalculator,
@@ -304,6 +296,7 @@ import { panelPersister } from "./PanelPersister.svelte";
 import { sequenceStatsCalculator } from "./SequenceStatsCalculator";
 import { sequenceTransformer } from "./sequence-transforms/SequenceTransformer";
 import { sequenceValidator } from "./SequenceValidator";
+import type { Sharer } from "../../../../../shared/share/services/implementations/Sharer";
 
 export const createModuleInitializer = new CreateModuleInitializer(
   sequenceRepository,

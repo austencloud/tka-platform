@@ -11,7 +11,7 @@
  * - drawTintedImage mirrors Canvas2DDirectRenderer.drawColoredImage (OffscreenCanvas tint)
  */
 
-import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -31,9 +31,9 @@ const VIEWBOX_SIZE = 950;
 const OVERFLOW_EXPANSION = 0.15;
 
 export abstract class EraRendererBase {
-	protected preparer: IPictographPreparer;
+	protected preparer: PictographPreparer;
 
-	constructor(preparer: IPictographPreparer) {
+	constructor(preparer: PictographPreparer) {
 		this.preparer = preparer;
 	}
 

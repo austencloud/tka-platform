@@ -7,13 +7,13 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SortMethod } from "../../domain/option-picker-types";
-import type { IPositionAnalyzer } from "../contracts/IPositionAnalyzer";
+import type { PositionAnalyzer } from "./PositionAnalyzer";
 import type { ReversalChecker } from "./ReversalChecker";
 
 export class OptionSorter {
   constructor(
     private reversalChecker: ReversalChecker,
-    private positionAnalyzer: IPositionAnalyzer
+    private positionAnalyzer: PositionAnalyzer
   ) {}
 
   /**

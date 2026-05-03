@@ -2,10 +2,7 @@ import type {
   SkillProgression,
   UserSkillProgress,
 } from "../../../domain/models/challenge-models";
-import type {
-  SkillProgressActionType,
-  SkillProgressMetadata,
-} from "../../contracts/ISkillProgressionTracker";
+import type { SkillProgressActionType, SkillProgressMetadata } from "../../contracts/types";
 
 export function findRelevantSkills(params: {
   availableSkills: SkillProgression[];

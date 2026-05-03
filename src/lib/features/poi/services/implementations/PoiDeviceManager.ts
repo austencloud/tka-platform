@@ -1,4 +1,5 @@
-import type { IPoiDeviceAdapter, IPoiConnection } from "../contracts/IPoiDeviceAdapter";
+import type { OpenPixelPoiAdapter } from "./OpenPixelPoiAdapter";
+import type { IPoiConnection } from "../contracts/types";
 import type { PoiDeviceInfo } from "../../domain/DeviceTypes";
 import type { StripPattern } from "../../domain/StripPattern";
 
@@ -7,15 +8,15 @@ import type { StripPattern } from "../../domain/StripPattern";
  * connections + pattern uploads across all connected poi.
  */
 export class PoiDeviceManager {
-  private _adapters: IPoiDeviceAdapter[];
+  private _adapters: OpenPixelPoiAdapter[];
   private _connections: Map<string, IPoiConnection> = new Map();
-  private _deviceToAdapter: Map<string, IPoiDeviceAdapter> = new Map();
+  private _deviceToAdapter: Map<string, OpenPixelPoiAdapter> = new Map();
 
-  constructor(adapters: IPoiDeviceAdapter[]) {
+  constructor(adapters: OpenPixelPoiAdapter[]) {
     this._adapters = adapters;
   }
 
-  get adapters(): IPoiDeviceAdapter[] {
+  get adapters(): OpenPixelPoiAdapter[] {
     return this._adapters;
   }
 

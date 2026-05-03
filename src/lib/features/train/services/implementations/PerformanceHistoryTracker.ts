@@ -6,14 +6,10 @@
  */
 
 import { db } from "$lib/shared/persistence/database/TKADatabase";
-import type {
-  IPerformanceHistoryTracker,
-  PersonalBest,
-  StatsOverview,
-} from "../contracts/IPerformanceHistoryTracker";
+import type { PersonalBest, StatsOverview } from "../contracts/types";
 import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
 
-export class PerformanceHistoryTracker implements IPerformanceHistoryTracker {
+export class PerformanceHistoryTracker {
   /**
    * Save a completed performance session to IndexedDB
    */

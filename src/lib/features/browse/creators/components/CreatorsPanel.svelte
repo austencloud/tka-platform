@@ -16,13 +16,13 @@
   import { doc, getDoc } from "firebase/firestore";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
+  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
@@ -39,8 +39,8 @@
   let initError = $state<string | null>(null);
 
   // Service instances
-  let userRepository: IUserRepository;
-  let hapticService: IHapticFeedback;
+  let userRepository: UserRepository;
+  let hapticService: HapticFeedback;
 
   // Get current user ID
   const currentUserId = $derived(authState.user?.uid);

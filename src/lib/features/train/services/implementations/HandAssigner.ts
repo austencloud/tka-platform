@@ -7,18 +7,17 @@
  */
 
 import type {
-  IHandAssigner,
   DetectedHandData,
   HandAssignmentResult,
-} from "../contracts/IHandAssigner";
-import type { IHandTrackingStabilizer } from "../contracts/IHandTrackingStabilizer";
+} from "../contracts/types";
+import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
 import type { DetectedPosition } from "../../domain/models/DetectionFrame";
 import { QuadrantMapper } from "./QuadrantMapper";
 
 // How many frames to persist a hand after it disappears
 const HAND_PERSISTENCE_FRAMES = 5;
 
-export class HandAssigner implements IHandAssigner {
+export class HandAssigner {
   private _quadrantMapper = new QuadrantMapper();
 
   // Track last known positions for persistence
@@ -27,7 +26,7 @@ export class HandAssigner implements IHandAssigner {
   private _blueFramesMissing = 0;
   private _redFramesMissing = 0;
 
-  constructor(private _stabilizer: IHandTrackingStabilizer) {}
+  constructor(private _stabilizer: HandTrackingStabilizer) {}
 
   /**
    * Assign detected hands to blue/red slots

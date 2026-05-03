@@ -12,7 +12,7 @@
  * - error.mp3
  */
 
-import type { ISoundPlayer, SoundType } from '../contracts/ISoundPlayer';
+import type { SoundType } from "../contracts/types";
 
 // Sound file paths (relative to /static/)
 const SOUND_FILES: Record<SoundType, string> = {
@@ -23,7 +23,7 @@ const SOUND_FILES: Record<SoundType, string> = {
 	error: '/sounds/error.mp3'
 };
 
-export class SoundPlayer implements ISoundPlayer {
+export class SoundPlayer {
 	private audioContext: AudioContext | null = null;
 	private buffers: Map<SoundType, AudioBuffer> = new Map();
 	private enabled = true;

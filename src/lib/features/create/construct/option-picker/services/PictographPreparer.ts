@@ -4,6 +4,5 @@
 
 export type {
   PreparedPictographData,
-  IPictographPreparer,
-} from "./contracts/IPictographPreparer";
+} from "$lib/shared/pictograph/shared/services/contracts/types";
 export { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";

@@ -20,7 +20,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
   import {
     MotionColor,
@@ -31,7 +31,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
     getSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
-  import { UndoOperationType } from "../../services/contracts/IUndoManager";
+  import { UndoOperationType } from "../../services/contracts/types";
 
   const logger = createComponentLogger("StepEditorCoordinator");
 
@@ -44,7 +44,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   const { CreateModuleState, panelState } = ctx;
 
   // Services
-  const hapticService: IHapticFeedback = getHapticFeedback();
+  const hapticService: HapticFeedback = getHapticFeedback();
   const StepOperator: StepOperator = getStepOperator();
 
   // Only show panel if the current tab supports it AND panel state says it's open

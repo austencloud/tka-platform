@@ -12,7 +12,7 @@
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { ArrowPositioningOrchestrator } from "./ArrowPositioningOrchestrator";
-import type { IArrowSvgLoader } from "../../../rendering/services/contracts/IArrowSvgLoader";
+import type { ArrowSvgLoader } from "../../../rendering/services/implementations/ArrowSvgLoader";
 import type {
   ArrowAssets,
   ArrowLifecycleResult,
@@ -25,14 +25,11 @@ import {
   createArrowPosition,
   createArrowState,
 } from "../../domain/arrow-factories";
-import type {
-  IArrowLifecycleManager,
-  ArrowLifecycleOptions,
-} from "../contracts/IArrowLifecycleManager";
+import type { ArrowLifecycleOptions } from "../contracts/types";
 
-export class ArrowLifecycleManager implements IArrowLifecycleManager {
+export class ArrowLifecycleManager {
   constructor(
-    private svgLoader: IArrowSvgLoader,
+    private svgLoader: ArrowSvgLoader,
     private positioningOrchestrator: ArrowPositioningOrchestrator
   ) {}
 

@@ -1,7 +1,4 @@
-import type {
-  IPWAEngagementTracker,
-  PWAEngagementMetrics,
-} from "../contracts/IPWAEngagementTracker";
+import type { PWAEngagementMetrics } from "../contracts/types";
 
 const STORAGE_KEY = "tka_pwa_engagement";
 
@@ -19,7 +16,7 @@ const ENGAGEMENT_THRESHOLDS = {
  * Tracks user engagement to determine optimal timing for install prompts.
  * Uses localStorage for persistence across sessions.
  */
-export class PWAEngagementTracker implements IPWAEngagementTracker {
+export class PWAEngagementTracker {
   private metrics: PWAEngagementMetrics;
   private sessionStartTime: number | null = null;
   private sessionIntervalId: ReturnType<typeof setInterval> | null = null;

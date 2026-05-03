@@ -13,15 +13,15 @@
  * - Red solo prop (same for red)
  */
 
-import type { IHandPathRepository } from "$lib/shared/foundation/services/contracts/IHandPathRepository";
-import type { ISoloPropRepository } from "$lib/shared/foundation/services/contracts/ISoloPropRepository";
+import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+import type { SoloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
 
 export class ArtifactExtractor {
   constructor(
-    private readonly handPathRepository: IHandPathRepository,
-    private readonly soloPropRepository: ISoloPropRepository
+    private readonly handPathRepository: HandPathRepository,
+    private readonly soloPropRepository: SoloPropRepository
   ) {}
 
   async extract(sequence: SequenceData, userId: string): Promise<void> {

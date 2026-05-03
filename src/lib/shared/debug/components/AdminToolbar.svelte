@@ -31,10 +31,8 @@
   import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
   import { getQuickAccessPersister } from "$lib/shared/debug/getQuickAccessPersister";
   import { getImageComposer } from "$lib/shared/render/getImageComposer";
-  import type {
-    IQuickAccessPersister,
-    QuickAccessUser,
-  } from "../services/contracts/IQuickAccessPersister";
+  import type { QuickAccessPersister } from "../services/implementations/QuickAccessPersister";
+import type { QuickAccessUser } from "../services/contracts/types";
   import { tikaPictographCache } from "$lib/features/tika/services/implementations/TikaPictographCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
@@ -64,7 +62,7 @@
   });
 
   // Quick Access Service (resolved lazily since admin module loads async)
-  let quickAccessPersister: IQuickAccessPersister | null = $state(null);
+  let quickAccessPersister: QuickAccessPersister | null = $state(null);
 
   // State
   let quickAccessUsers = $state<QuickAccessUser[]>([]);

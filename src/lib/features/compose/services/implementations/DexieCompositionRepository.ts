@@ -8,13 +8,8 @@
 
 import type { Composition } from "../../compose/domain/types";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
-import type {
-  ICompositionRepository,
-  CompositionQueryOptions,
-  CompositionStats,
-} from "../contracts/ICompositionRepository";
-
-export class DexieCompositionRepository implements ICompositionRepository {
+import type { CompositionQueryOptions, CompositionStats } from "../contracts/types";
+export class DexieCompositionRepository {
   // ============================================================================
   // CRUD OPERATIONS
   // ============================================================================

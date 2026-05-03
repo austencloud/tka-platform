@@ -1,10 +1,4 @@
-import type {
-  ILayeredPathDetector,
-  LayeredPathResult,
-  HandPathCycle,
-  ZoneCoverageAnalysis,
-  PositionalCategory,
-} from "../contracts/ILayeredPathDetector";
+import type { LayeredPathResult, HandPathCycle, ZoneCoverageAnalysis, PositionalCategory } from "../contracts/types";
 
 function getProperFactors(n: number): number[] {
   const factors: number[] = [];
@@ -53,7 +47,7 @@ function categorizePosition(endPos: string): PositionalCategory | null {
   return null;
 }
 
-export class LayeredPathDetector implements ILayeredPathDetector {
+export class LayeredPathDetector {
   detectLayeredPath(rawSequence: Record<string, unknown>[]): LayeredPathResult {
     const stepRecords = rawSequence.filter(
       (item) => typeof item.beat === "number" && item.beat > 0

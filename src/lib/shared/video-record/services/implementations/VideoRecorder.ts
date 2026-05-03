@@ -6,11 +6,10 @@
  */
 
 import type {
-  IVideoRecorder,
   RecordingProgress,
   RecordingResult,
   RecordingOptions,
-} from "../contracts/IVideoRecorder";
+} from "../contracts/types";
 
 // IndexedDB configuration
 const DB_NAME = "tka-video-recordings";
@@ -29,7 +28,7 @@ interface RecordingState {
   progressInterval?: number;
 }
 
-export class VideoRecorder implements IVideoRecorder {
+export class VideoRecorder {
   private db: IDBDatabase | null = null;
   private activeRecordings = new Map<string, RecordingState>();
 

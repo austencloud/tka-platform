@@ -16,7 +16,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { fly, fade } from "svelte/transition";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import {
     getTabIntroContent,
@@ -52,7 +52,7 @@
   // State
   let hasSeenIntro = $state(false);
   let isVisible = $state(false);
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
   let currentPageIndex = $state(0);
 
   // Derived

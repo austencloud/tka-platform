@@ -1,8 +1,7 @@
 import type {
-	ISequenceMutator,
 	MutationType,
 	MutationResult,
-} from "../contracts/ISequenceMutator";
+} from "../contracts/types";
 
 const MUTATION_TYPES: MutationType[] = [
 	"mirror",
@@ -17,7 +16,7 @@ const MUTATION_TYPES: MutationType[] = [
  * Phase 1: Lightweight synchronous mutator that generates novel sequence IDs.
  * Phase 2+ will wire to SequenceTransformer for real structural transforms.
  */
-export class SequenceMutator implements ISequenceMutator {
+export class SequenceMutator {
 	tryInventFrom(sourceSequenceId: string): MutationResult {
 		const type =
 			MUTATION_TYPES[Math.floor(Math.random() * MUTATION_TYPES.length)] ??

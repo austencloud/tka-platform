@@ -8,7 +8,7 @@
 import type { DocumentSnapshot } from "firebase/firestore";
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
-import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
+import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 const DEFAULT_PAGE_SIZE = 30;
@@ -47,7 +47,7 @@ function createCreatorsDataState() {
 
   // Cached repository reference so togglePropFilter can reload without needing
   // the caller to pass repository/userId again on every filter change.
-  let cachedRepository: IUserRepository | null = null;
+  let cachedRepository: UserRepository | null = null;
   let cachedCurrentUserId: string | undefined = undefined;
 
   // Track if initial load has happened
@@ -89,7 +89,7 @@ function createCreatorsDataState() {
    * loads the full set and disables the "load more" path.
    */
   async function loadCreators(
-    repository: IUserRepository,
+    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // If already loading, skip
@@ -161,7 +161,7 @@ function createCreatorsDataState() {
    * Not used when sortBy is "favoriteProp" - that view loads all at once.
    */
   async function loadMoreCreators(
-    repository: IUserRepository,
+    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // Don't load more if: already loading, no more to load, no cursor,
@@ -199,7 +199,7 @@ function createCreatorsDataState() {
   async function changeSortOrder(
     newSortBy: CreatorSortCriteria,
     newDirection: SortDirection,
-    repository: IUserRepository,
+    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // Update sort state
@@ -242,7 +242,7 @@ function createCreatorsDataState() {
    * Load featured creators (separate from main list)
    */
   async function loadFeaturedCreators(
-    repository: IUserRepository,
+    repository: UserRepository,
     limit = 8
   ): Promise<void> {
     if (isLoadingFeatured) return;
@@ -304,7 +304,7 @@ function createCreatorsDataState() {
    * Force refresh all data
    */
   async function refreshCreators(
-    repository: IUserRepository,
+    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // Reset all state
@@ -531,16 +531,16 @@ export const creatorsDataState = {
   },
 
   // Actions
-  loadCreators(repository: IUserRepository, currentUserId?: string) {
+  loadCreators(repository: UserRepository, currentUserId?: string) {
     return getCreatorsDataState().loadCreators(repository, currentUserId);
   },
-  loadMoreCreators(repository: IUserRepository, currentUserId?: string) {
+  loadMoreCreators(repository: UserRepository, currentUserId?: string) {
     return getCreatorsDataState().loadMoreCreators(repository, currentUserId);
   },
   changeSortOrder(
     sortBy: CreatorSortCriteria,
     direction: SortDirection,
-    repository: IUserRepository,
+    repository: UserRepository,
     currentUserId?: string
   ) {
     return getCreatorsDataState().changeSortOrder(
@@ -553,7 +553,7 @@ export const creatorsDataState = {
   togglePropFilter(prop: PropType) {
     return getCreatorsDataState().togglePropFilter(prop);
   },
-  loadFeaturedCreators(repository: IUserRepository, limit?: number) {
+  loadFeaturedCreators(repository: UserRepository, limit?: number) {
     return getCreatorsDataState().loadFeaturedCreators(repository, limit);
   },
   setSearchQuery(query: string) {
@@ -562,7 +562,7 @@ export const creatorsDataState = {
   clearSearch() {
     return getCreatorsDataState().clearSearch();
   },
-  refreshCreators(repository: IUserRepository, currentUserId?: string) {
+  refreshCreators(repository: UserRepository, currentUserId?: string) {
     return getCreatorsDataState().refreshCreators(repository, currentUserId);
   },
   updateUserFollowStatus(

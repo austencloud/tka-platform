@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IFileDownloader } from './services/contracts/IFileDownloader';
 import { FileDownloader } from './services/implementations/FileDownloader';
 
-let instance: IFileDownloader | null = null;
+let instance: FileDownloader | null = null;
 
-export function getFileDownloader(): IFileDownloader {
+export function getFileDownloader(): FileDownloader {
 	if (!browser) throw new Error('getFileDownloader() is browser-only');
 	return instance ??= new FileDownloader();
 }

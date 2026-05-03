@@ -1,10 +1,10 @@
 import type { ExhibitSlot } from "../../domain/museum-types";
-import type { IInteractionDetector, InteractionTarget } from "../contracts/IInteractionDetector";
+import type { InteractionTarget } from "../contracts/types";
 
 const INTERACTION_DISTANCE = 3.0; // meters
 const INTERACTION_ANGLE = Math.PI / 4; // 45 degrees
 
-export class InteractionDetector implements IInteractionDetector {
+export class InteractionDetector {
   findInteractableSlot(
     playerPosition: { x: number; y: number; z: number },
     cameraDirection: { x: number; y: number; z: number },

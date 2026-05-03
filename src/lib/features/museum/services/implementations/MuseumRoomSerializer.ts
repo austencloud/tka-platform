@@ -1,9 +1,5 @@
 import type { RoomNode, RoomEdge } from "../../domain/layout-types";
-import type {
-  IMuseumRoomSerializer,
-  SerializationResult,
-  ValidationError,
-} from "../contracts/IMuseumRoomSerializer";
+import type { SerializationResult, ValidationError } from "../contracts/types";
 
 const VALID_SEGMENT_TYPES = new Set([
   "door",
@@ -18,7 +14,7 @@ const VALID_SEGMENT_TYPES = new Set([
 const VALID_EDGE_TYPES = new Set(["main-path", "side-branch", "secret"]);
 const VALID_WALLS = new Set(["north", "south", "east", "west"]);
 
-export class MuseumRoomSerializer implements IMuseumRoomSerializer {
+export class MuseumRoomSerializer {
   serialize(rooms: RoomNode[], edges: RoomEdge[]): string {
     return JSON.stringify({ version: 1, rooms, edges }, null, 2);
   }

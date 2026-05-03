@@ -3,20 +3,19 @@
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import type { KanbanBoardState } from "../../state/kanban-board-state.svelte";
   import type {
-    FeedbackItem,
-    FeedbackStatus,
-  } from "../../domain/models/feedback-models";
+    FeedbackItem, FeedbackStatus, } from "../../domain/models/feedback-models";
   import { STATUS_CONFIG } from "../../domain/models/feedback-models";
   import FeedbackKanbanColumn from "./FeedbackKanbanColumn.svelte";
   import KanbanArchiveDropZone from "./KanbanArchiveDropZone.svelte";
   import KanbanDeferDropZone from "./KanbanDeferDropZone.svelte";
   import KanbanTrashDropZone from "./KanbanTrashDropZone.svelte";
-  import type { IClaimStatusDeriver } from "../../services/contracts/IClaimStatusDeriver";
+  import type { IClaimStatusDeriver } from "../../services/contracts/types";
+import type { ClaimStatusDeriver } from "../../services/implementations/ClaimStatusDeriver";
 
   interface Props {
     boardState: KanbanBoardState;
     manageState: FeedbackManageState;
-    claimStatusDeriver?: IClaimStatusDeriver;
+    claimStatusDeriver?: ClaimStatusDeriver;
     onOpenArchive?: () => void;
   }
 

@@ -6,15 +6,12 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  ISequenceNormalizer,
-  NormalizedSequenceData,
-} from "../contracts/ISequenceNormalizer";
+import type { NormalizedSequenceData } from "../contracts/types";
 import type { StepData } from "../../../create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../create/shared/domain/models/StartPositionData";
 import { createStartPositionData } from "../../../create/shared/domain/factories/createStartPositionData";
 
-export class SequenceNormalizer implements ISequenceNormalizer {
+export class SequenceNormalizer {
   /**
    * Normalize sequence data by separating start position from steps array.
    *

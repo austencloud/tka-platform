@@ -11,9 +11,9 @@ import {
   type EcologicalPattern,
   type RenderedTree,
 } from "@austencloud/backgrounds";
-import type { IPreviewAnimationController, PreviewStats, PlacementConfig } from "../contracts/IPreviewAnimationController";
+import type { PreviewStats, PlacementConfig } from "../contracts/types";
 
-export class PreviewAnimationController implements IPreviewAnimationController {
+export class PreviewAnimationController {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private system: FireflyForestBackgroundSystem | null = null;

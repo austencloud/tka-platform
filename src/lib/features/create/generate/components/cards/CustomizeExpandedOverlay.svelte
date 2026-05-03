@@ -39,7 +39,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount, untrack } from "svelte";
   import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -96,7 +96,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     onClose: () => void;
   }>();
 
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
 
   onMount(() => {
     hapticService = getHapticFeedback();

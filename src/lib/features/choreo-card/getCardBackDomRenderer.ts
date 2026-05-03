@@ -1,7 +1,7 @@
-import type { ICardBackDomRenderer } from './services/contracts/ICardBackDomRenderer';
+
 import { CardBackDomRenderer } from './services/implementations/CardBackDomRenderer';
 
-let instance: ICardBackDomRenderer | null = null;
-export function getCardBackDomRenderer(): ICardBackDomRenderer {
+let instance: CardBackDomRenderer | null = null;
+export function getCardBackDomRenderer(): CardBackDomRenderer {
   return instance ??= new CardBackDomRenderer();
 }

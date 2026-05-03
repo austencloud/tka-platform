@@ -2,12 +2,9 @@ import { Period } from "$lib/features/create/generate/circular/domain/models/cir
 import type { SectionDesignation } from "../../domain/models/section-models";
 import type { TransformationIntervals } from "../../domain/models/label-models";
 import { BASE_COMPONENTS, type ComponentId } from "../../domain/constants/loop-components";
-import type {
-  ILabelFormatter,
-  LOOPDesignationInput,
-} from "../contracts/ILabelFormatter";
+import type { LOOPDesignationInput } from "../contracts/types";
 
-export class LabelFormatter implements ILabelFormatter {
+export class LabelFormatter {
   formatDesignation(d: LOOPDesignationInput | SectionDesignation): string {
     const hasBaseWord = "baseWord" in d && d.baseWord;
 

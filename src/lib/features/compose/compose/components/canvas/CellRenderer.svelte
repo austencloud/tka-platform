@@ -14,12 +14,11 @@
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { CellConfig } from "../../domain/types";
-  import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "../../../services/implementations/AnimationPlaybackController";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
-  import type { AdditionalLayerProps } from "../../../services/contracts/ITrailCapturer";
-
+  import type { AdditionalLayerProps } from "../../../services/contracts/types";
   interface Props {
     cell: CellConfig;
     isPlaying: boolean;
@@ -36,7 +35,7 @@
   // Animation states - one per sequence (up to 2 for now)
   // MUST be $state for reactivity when sequences are added/removed after mount
   let animationStates = $state<ReturnType<typeof createAnimationPanelState>[]>([]);
-  let playbackControllers = $state<IAnimationPlaybackController[]>([]);
+  let playbackControllers = $state<AnimationPlaybackController[]>([]);
 
   let initialized = $state(false);
   let loading = $state(false);

@@ -19,7 +19,7 @@
  */
 
 import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
-import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -98,7 +98,7 @@ const HAND_DOT_RADIUS_VB = 22;
 // ============================================================================
 
 export class PixelRenderer extends EraRendererBase {
-	constructor(preparer: IPictographPreparer) {
+	constructor(preparer: PictographPreparer) {
 		super(preparer);
 	}
 

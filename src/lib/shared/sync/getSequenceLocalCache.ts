@@ -1,7 +1,6 @@
-import type { ISequenceLocalCache } from './services/contracts/ISequenceLocalCache';
 import { SequenceLocalCache } from './services/implementations/SequenceLocalCache';
 
-let instance: ISequenceLocalCache | null = null;
-export function getSequenceLocalCache(): ISequenceLocalCache {
+let instance: SequenceLocalCache | null = null;
+export function getSequenceLocalCache(): SequenceLocalCache {
   return instance ??= new SequenceLocalCache();
 }

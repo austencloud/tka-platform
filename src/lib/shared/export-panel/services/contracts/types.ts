@@ -1,0 +1,66 @@
+// --- From ExportOrchestrator ---
+/**
+ * ExportOrchestrator
+ *
+ * Contract for orchestrating exports from the export panel.
+ * Handles static, animation, and performance exports with progress tracking.
+ *
+ * Domain: Export Panel - Export Orchestration
+ */
+
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ExportSettings } from "../../domain/models/ExportSettings";
+import type { VideoExportProgress } from '$lib/features/compose/services/contracts/types';
+import type { AnimationPlaybackController } from '$lib/features/compose/services/implementations/AnimationPlaybackController';
+import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+
+/** Result of an export operation */
+export interface ExportResult {
+  success: boolean;
+  error?: string;
+}
+
+/** Dependencies needed for animation export */
+export interface AnimationExportDependencies {
+  canvas: HTMLCanvasElement;
+  playbackController: AnimationPlaybackController;
+  animationState: AnimationPanelState;
+}
+
+/** User info for image export metadata */
+export interface ExportUserInfo {
+  displayName: string | null;
+}
+
+// --- From ExportUrlManager ---
+/**
+ * ExportUrlManager
+ *
+ * Contract for managing URL state synchronization for the export panel.
+ * Handles deep linking, history management, and state restoration for animation exports.
+ *
+ * Domain: Export Panel - URL State Management
+ */
+
+import type { AnimationPanelState as URLAnimationState } from '$lib/shared/navigation/services/contracts/types';
+
+/**
+ * Animation state that can be persisted to/restored from URL
+ */
+export interface ExportAnimationUrlState {
+  sequenceId?: string;
+  speed?: number;
+  isPlaying?: boolean;
+  currentStep?: number;
+}
+
+/**
+ * Callbacks for URL-driven state changes
+ */
+export interface ExportUrlCallbacks {
+  /** Called when URL indicates animation panel should open */
+  onAnimationPanelOpen: () => void;
+  /** Called with restored state from URL (on initial load or back navigation) */
+  onStateRestore: (state: URLAnimationState) => void;
+}
+

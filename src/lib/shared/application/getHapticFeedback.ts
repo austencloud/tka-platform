@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { IHapticFeedback } from './services/contracts/IHapticFeedback';
 import { HapticFeedback } from './services/implementations/HapticFeedback';
 import { getNativePlatformDetector } from '../platform/getNativePlatformDetector';
 
-let instance: IHapticFeedback | null = null;
+let instance: HapticFeedback | null = null;
 
-export function getHapticFeedback(): IHapticFeedback {
+export function getHapticFeedback(): HapticFeedback {
 	if (!browser) throw new Error('getHapticFeedback() is browser-only');
 	return instance ??= new HapticFeedback(getNativePlatformDetector());
 }

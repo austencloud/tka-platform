@@ -1,5 +1,5 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { ICameraManager, CameraConfig } from "../contracts/ICameraManager";
+import type { CameraConfig } from "../contracts/types";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 const DEFAULT_CONFIG: CameraConfig = {
@@ -9,7 +9,7 @@ const DEFAULT_CONFIG: CameraConfig = {
   frameRate: 30,
 };
 
-export class CameraManager implements ICameraManager {
+export class CameraManager {
   private _stream: MediaStream | null = null;
   private _videoElement: HTMLVideoElement | null = null;
   private _isActive = false;

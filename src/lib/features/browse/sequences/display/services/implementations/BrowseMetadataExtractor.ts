@@ -22,11 +22,8 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { UniversalMetadataExtractor } from "$lib/shared/services/UniversalMetadataExtractor";
-import type {
-  IBrowseMetadataExtractor,
-  SequenceMetadata,
-} from "../contracts/IBrowseMetadataExtractor";
-import type { ISequenceDifficultyCalculator } from "../contracts/ISequenceDifficultyCalculator";
+import type { SequenceMetadata } from "../contracts/types";
+import type { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
 // Constants for metadata extraction
 // Using function to avoid module-level enum reference (fixes test initialization)
 const getDefaultMetadata = (): SequenceMetadata => ({
@@ -49,9 +46,9 @@ const DATE_FIELD_NAMES = [
   "timestamp",
 ] as const;
 
-export class BrowseMetadataExtractor implements IBrowseMetadataExtractor {
+export class BrowseMetadataExtractor {
   constructor(
-    private readonly difficultyCalculator: ISequenceDifficultyCalculator
+    private readonly difficultyCalculator: SequenceDifficultyCalculator
   ) {}
 
   async extractMetadata(

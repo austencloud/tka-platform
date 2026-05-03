@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import type { SpinnerStats } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+  import type { SpinnerStats } from '$lib/features/landing/services/contracts/types';
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceHistoryEntry } from "./SequenceHistoryPanel.svelte";
 

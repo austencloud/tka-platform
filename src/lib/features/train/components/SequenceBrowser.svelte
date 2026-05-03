@@ -7,7 +7,7 @@
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/types";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

@@ -12,7 +12,7 @@ import type {
   AnimationShortcutDefinition,
 } from "../contracts/IAnimationShortcutRegistrar";
 
-export class AnimationShortcutRegistrar implements IAnimationShortcutRegistrar {
+export class AnimationShortcutRegistrar {
   readonly shortcuts: readonly AnimationShortcutDefinition[] = [
     { key: "Space", label: "Play / Pause", description: "Toggle animation playback" },
     { key: "←", label: "Previous Beat", description: "Move backward one full beat" },

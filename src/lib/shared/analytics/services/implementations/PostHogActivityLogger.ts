@@ -25,7 +25,7 @@ import type {
   ActivitySummary,
 } from "../../domain/models/ActivityEvent";
 
-export class PostHogActivityLogger implements IActivityLogger {
+export class PostHogActivityLogger {
   /**
    * Log a single activity event to PostHog
    */

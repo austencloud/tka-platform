@@ -10,13 +10,9 @@
  */
 
 import { getStorageInstance } from "$lib/shared/auth/firebase";
-import type {
-  IImageStager,
-  StagedUploadHandle,
-  StagedProgressCallback,
-} from "../contracts/IImageStager";
+import type { StagedUploadHandle, StagedProgressCallback } from "../contracts/types";
 
-export class ImageStager implements IImageStager {
+export class ImageStager {
   stageImage(
     file: File,
     userId: string,

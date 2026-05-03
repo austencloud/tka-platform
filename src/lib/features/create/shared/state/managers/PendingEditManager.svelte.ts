@@ -7,12 +7,12 @@
  */
 
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { IDeepLinkSequenceHandler } from "../../services/contracts/IDeepLinkSequenceHandler";
+import type { DeepLinkSequenceHandler } from "../../services/implementations/DeepLinkSequenceHandler";
 import type { CreateModuleState } from "../create-module-state.svelte";
 import type { ConstructTabState } from "../construct-tab-state.svelte";
 
 export interface PendingEditConfig {
-  getDeepLinker: () => IDeepLinkSequenceHandler | null;
+  getDeepLinker: () => DeepLinkSequenceHandler | null;
   getCreateModuleState: () => CreateModuleState | null;
   getConstructTabState: () => ConstructTabState | null;
   isServicesInitialized: () => boolean;

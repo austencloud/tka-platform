@@ -8,11 +8,11 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import PictographRenderer from "./QuizPictographRenderer.svelte";
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   // Initialize haptic service
   $effect(() => {

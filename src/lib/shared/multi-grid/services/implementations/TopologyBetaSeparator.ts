@@ -12,7 +12,7 @@
  */
 
 import type { GridTopology, PointRef, Vec2 } from "../../domain/models/GridTopology";
-import type { ITopologyBetaSeparator, BetaOffset } from "../contracts/ITopologyBetaSeparator";
+import type { BetaOffset } from "../contracts/types";
 import { getBetaOffsetSize } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { LOCATION_OFFSETS, PIXELS_PER_UNIT } from "../../domain/constants/GridModeOffsets";
 
@@ -24,7 +24,7 @@ const NO_OFFSET: BetaOffset = {
 /** Tolerance in SVG pixels for considering two positions as overlapping */
 const OVERLAP_THRESHOLD_PX = 5;
 
-export class TopologyBetaSeparator implements ITopologyBetaSeparator {
+export class TopologyBetaSeparator {
   calculateOffset(
     topology: GridTopology,
     blueRef: PointRef,

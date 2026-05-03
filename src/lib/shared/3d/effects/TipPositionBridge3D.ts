@@ -1,7 +1,6 @@
 import { Vector3, Quaternion, Euler } from "three";
 import type { PropTipPositions3D, TipPositionData3D } from "./types";
 import type {
-	ITipPositionBridge3D,
 	PropState3DLike,
 } from "./contracts/ITipPositionBridge3D";
 
@@ -25,7 +24,7 @@ interface TipHistory {
  * are read. The rig's T.Group rotation.y handles facing, so no facing
  * quaternion is needed here.
  */
-export class TipPositionBridge3D implements ITipPositionBridge3D {
+export class TipPositionBridge3D {
 	private history = new Map<string, TipHistory>();
 	private readonly tempQuat = new Quaternion();
 	private readonly tempAxis = new Vector3();

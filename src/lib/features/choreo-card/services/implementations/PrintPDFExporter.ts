@@ -1,12 +1,12 @@
 import { PDFDocument } from 'pdf-lib';
-import type { CardPair, IPrintPDFExporter } from '../contracts/IPrintPDFExporter';
+import type { CardPair } from "../contracts/types";
 import { CARD_SIZES, getPageLayout, type CardSizeId } from '../../domain/card-sizes';
 
 // Home printing: US Letter (8.5" x 11")
 const LETTER_W = 612; // 8.5 * 72
 const LETTER_H = 792; // 11 * 72
 
-export class PrintPDFExporter implements IPrintPDFExporter {
+export class PrintPDFExporter {
 	/** One card per page, alternating front/back. For MPC/print service upload. */
 	async exportDeckPDF(
 		pairs: CardPair[],

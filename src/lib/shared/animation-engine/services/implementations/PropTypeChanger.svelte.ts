@@ -12,7 +12,7 @@ import type {
   PropTypeChangerState,
 } from "../contracts/IPropTypeChanger";
 
-export class PropTypeChanger implements IPropTypeChanger {
+export class PropTypeChanger {
   // Reactive state - owned by service
   state = $state<PropTypeChangerState>({
     bluePropType: "staff",

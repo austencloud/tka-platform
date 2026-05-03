@@ -4,7 +4,7 @@ Provides consistent, beautiful button layouts for modal actions
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   let {
     onCancel,
@@ -22,7 +22,7 @@ Provides consistent, beautiful button layouts for modal actions
     confirmVariant?: "primary" | "success" | "danger";
   }>();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   try {
     hapticService = getHapticFeedback();
   } catch {

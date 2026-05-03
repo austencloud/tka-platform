@@ -35,8 +35,8 @@
 
 import { tick } from "svelte";
 import { Vector2 } from "three";
-import type { IBackgroundVideoEncoder } from "$lib/features/compose/services/contracts/IBackgroundVideoEncoder";
-import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+import type { BackgroundVideoEncoder } from "$lib/features/compose/services/implementations/BackgroundVideoEncoder";
+import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
 import type {
   IOffline3DExporter,
   Offline3DExportDependencies,
@@ -47,7 +47,7 @@ import {
   calculateBitrate,
 } from "$lib/features/compose/shared/domain/video-export-calculations";
 import type { CanvasFrameCapturer } from "$lib/shared/video-export/services/implementations/CanvasFrameCapturer";
-import type { ICameraKeyframeInterpolator } from "$lib/shared/video-export/services/contracts/ICameraKeyframeInterpolator";
+import type { CameraKeyframeInterpolator } from "$lib/shared/video-export/services/implementations/CameraKeyframeInterpolator";
 import { ExportDiagnostics } from "$lib/shared/video-export/domain/ExportDiagnostics";
 
 const KEYFRAME_INTERVAL = 30;
@@ -60,13 +60,13 @@ const YIELD_EVERY_N_FRAMES = 8;
 const CINEMA_SSAA = 2;
 const CINEMA_SUB_FRAMES = 4;
 
-export class Offline3DExporter implements IOffline3DExporter {
+export class Offline3DExporter {
   private shouldCancel = false;
 
   constructor(
-    private readonly backgroundEncoder: IBackgroundVideoEncoder,
+    private readonly backgroundEncoder: BackgroundVideoEncoder,
     private readonly capturer: CanvasFrameCapturer,
-    private readonly cameraInterpolator: ICameraKeyframeInterpolator
+    private readonly cameraInterpolator: CameraKeyframeInterpolator
   ) {}
 
   async exportOffline(

@@ -13,7 +13,7 @@
   import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
   import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import {
@@ -51,7 +51,7 @@
   // Services
   const uploadService = getVideoUploader();
   const videoService = getCollaborativeVideoManager();
-  const hapticService = getHapticFeedback() as IHapticFeedback | undefined;
+  const hapticService = getHapticFeedback() as HapticFeedback | undefined;
 
   // File state
   let selectedFile = $state<File | null>(null);

@@ -11,7 +11,7 @@ import { dashNoRotationMap } from "../../config/DashRotationMaps";
 import { RotationMapSelector } from "../../utils/RotationMapSelector";
 import { RotationOverrideChecker } from "../../utils/RotationOverrideChecker";
 import { isNoRotation } from "../../utils/RotationDirectionUtils";
-import type { IHandpathDirectionCalculator } from "../contracts/IHandpathDirectionCalculator";
+import type { HandpathDirectionCalculator } from "../implementations/HandpathDirectionCalculator";
 
 export class ArrowRotationCalculator {
   /**
@@ -29,14 +29,14 @@ export class ArrowRotationCalculator {
    * - Rotation maps are extracted to dedicated config files for maintainability
    * - Map selection logic is centralized in RotationMapSelector utility
    * - Override checking logic is centralized in RotationOverrideChecker utility
-   * - Handpath direction calculation is delegated to IHandpathDirectionCalculator service
+   * - Handpath direction calculation is delegated to HandpathDirectionCalculator service
    * - Rotation direction normalization is handled by RotationDirectionUtils
    */
 
   constructor(
     private SpecialPlacer?: SpecialPlacer,
     private rotationOverrideKeyGenerator?: IRotationAngleOverrideKeyGenerator,
-    private handpathDirectionCalculator?: IHandpathDirectionCalculator
+    private handpathDirectionCalculator?: HandpathDirectionCalculator
   ) {}
 
   async calculateRotation(

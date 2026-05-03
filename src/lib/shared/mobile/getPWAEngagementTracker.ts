@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IPWAEngagementTracker } from './services/contracts/IPWAEngagementTracker';
 import { PWAEngagementTracker } from './services/implementations/PWAEngagementTracker';
 
-let instance: IPWAEngagementTracker | null = null;
+let instance: PWAEngagementTracker | null = null;
 
-export function getPWAEngagementTracker(): IPWAEngagementTracker {
+export function getPWAEngagementTracker(): PWAEngagementTracker {
 	if (!browser) throw new Error('getPWAEngagementTracker() is browser-only');
 	return instance ??= new PWAEngagementTracker();
 }

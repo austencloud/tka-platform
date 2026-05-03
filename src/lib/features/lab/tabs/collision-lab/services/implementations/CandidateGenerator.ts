@@ -35,12 +35,8 @@
  * Domain: Collision Lab - AI-assisted multiple-choice labeling
  */
 
-import type {
-  IStanceOptimizer,
-  OptimizerBounds,
-  OptimizerInput,
-  OptimizerResult,
-} from "../contracts/IStanceOptimizer";
+import type { OptimizerBounds, OptimizerInput, OptimizerResult } from "../contracts/types";
+import type { StanceOptimizer } from "./StanceOptimizer";
 import type {
   CandidateSet,
   PoseDefinition,
@@ -80,7 +76,7 @@ interface SeedRecipe {
 }
 
 export class CandidateGenerator {
-  constructor(private readonly optimizer: IStanceOptimizer) {}
+  constructor(private readonly optimizer: StanceOptimizer) {}
 
   // ------------------------------------------------------------------
   // Public API

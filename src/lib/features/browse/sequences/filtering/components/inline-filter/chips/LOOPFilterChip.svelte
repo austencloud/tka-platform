@@ -7,7 +7,7 @@ Color-coded icons per primitive. Rotated splits into halved/quartered.
   import FilterChipBase from "../FilterChipBase.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   interface Props {
@@ -19,7 +19,7 @@ Color-coded icons per primitive. Rotated splits into halved/quartered.
   let { activeValue, loopTypeCounts, onSelect }: Props = $props();
 
   let isOpen = $state(false);
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;

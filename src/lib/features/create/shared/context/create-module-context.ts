@@ -18,7 +18,7 @@ import type { PanelCoordinationState } from "../state/panel-coordination-state.s
 import type { CreateModuleOrchestrators } from "../types/create-module-services";
 import type { SessionManager } from "../services/SessionManager.svelte";
 import type { Autosaver } from "../services/Autosaver";
-import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 
 type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 type ConstructTabState = ReturnType<typeof ConstructTabStateType>;
@@ -39,7 +39,7 @@ export interface CreateModuleContext {
   // Session management services
   sessionManager: SessionManager | null;
   autosaver: Autosaver | null;
-  libraryRepository: ILibraryRepository | null;
+  libraryRepository: LibraryRepository | null;
 
   // Layout state
   layout: {
@@ -50,7 +50,6 @@ export interface CreateModuleContext {
     /** Set input mode (called by SpellPanel when word input is focused) */
     setInputMode: (mode: boolean) => void;
   };
-
 
   // Common handlers
   handlers: {

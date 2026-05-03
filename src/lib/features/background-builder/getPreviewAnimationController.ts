@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IPreviewAnimationController } from './services/contracts/IPreviewAnimationController';
+
 import { PreviewAnimationController } from './services/implementations/PreviewAnimationController';
 
-let instance: IPreviewAnimationController | null = null;
+let instance: PreviewAnimationController | null = null;
 
-export function getPreviewAnimationController(): IPreviewAnimationController {
+export function getPreviewAnimationController(): PreviewAnimationController {
 	if (!browser) throw new Error('getPreviewAnimationController() is browser-only');
 	return instance ??= new PreviewAnimationController();
 }

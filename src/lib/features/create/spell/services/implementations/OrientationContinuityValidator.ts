@@ -5,11 +5,7 @@
  * Each beat's start orientation must match the previous beat's end orientation.
  */
 
-import type {
-  IOrientationContinuityValidator,
-  OrientationContinuityError,
-  TransitionValidationResult,
-} from "../contracts/IOrientationContinuityValidator";
+import type { OrientationContinuityError, TransitionValidationResult } from "../contracts/types";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -17,7 +13,6 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class OrientationContinuityValidator
-  implements IOrientationContinuityValidator
 {
   validateSequence(sequence: SequenceData): OrientationContinuityError[] {
     const errors: OrientationContinuityError[] = [];

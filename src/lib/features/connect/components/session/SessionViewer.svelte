@@ -23,7 +23,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 		createSequenceData,
 		type SequenceData
 	} from '$lib/shared/foundation/domain/models/SequenceData';
-	import type { IAnimationPlaybackController } from '$lib/features/compose/services/contracts/IAnimationPlaybackController';
+	import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 	import type { AnimationPanelState } from '$lib/features/compose/state/animation-panel-state.svelte';
 	import SessionControls from './SessionControls.svelte';
 	import SyncToggle from './SyncToggle.svelte';
@@ -49,7 +49,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 	let showParticipants = $state(false);
 
 	// Animation controller reference for driving playback from sync state
-	let animController = $state<IAnimationPlaybackController | null>(null);
+	let animController = $state<AnimationPlaybackController | null>(null);
 	let animStateRef = $state<AnimationPanelState | null>(null);
 	let animStateUnsub: (() => void) | null = null;
 	// Timestamp of the last sync state we applied locally - prevents echo loops
@@ -70,7 +70,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 	const playbackSpeed = $derived(playbackState.speed);
 
 	// Called when AnimationPlayer's internal controller is ready
-	function handleControllerReady(ctrl: IAnimationPlaybackController, state: AnimationPanelState) {
+	function handleControllerReady(ctrl: AnimationPlaybackController, state: AnimationPanelState) {
 		animController = ctrl;
 		animStateRef = state;
 

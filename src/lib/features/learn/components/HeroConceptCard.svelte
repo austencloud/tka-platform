@@ -9,7 +9,7 @@ Clean design with:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../shared/application/services/implementations/HapticFeedback";
   import { CONCEPT_CATEGORIES } from "../domain/concepts";
   import type { LearnConcept, ConceptStatus } from "../domain/types";
 

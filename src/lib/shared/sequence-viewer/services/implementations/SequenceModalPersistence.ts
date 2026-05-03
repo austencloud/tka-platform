@@ -1,14 +1,10 @@
-import type {
-  ISequenceModalPersistence,
-  ViewMode,
-} from "../contracts/ISequenceModalPersistence";
-
+import type { ViewMode } from "../contracts/types";
 const STORAGE_KEYS = {
   viewMode: "tka_sequence_details_view_mode",
   columnCount: "tka_seq_details_img_columnCount",
 } as const;
 
-export class SequenceModalPersistence implements ISequenceModalPersistence {
+export class SequenceModalPersistence {
   loadViewMode(): ViewMode {
     if (typeof localStorage === "undefined") return "split";
 

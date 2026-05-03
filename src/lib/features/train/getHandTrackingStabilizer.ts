@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IHandTrackingStabilizer } from './services/contracts/IHandTrackingStabilizer';
+
 import { HandTrackingStabilizer } from './services/implementations/HandTrackingStabilizer';
 
-let instance: IHandTrackingStabilizer | null = null;
+let instance: HandTrackingStabilizer | null = null;
 
-export function getHandTrackingStabilizer(): IHandTrackingStabilizer {
+export function getHandTrackingStabilizer(): HandTrackingStabilizer {
 	if (!browser) throw new Error('getHandTrackingStabilizer() is browser-only');
 	return instance ??= new HandTrackingStabilizer();
 }

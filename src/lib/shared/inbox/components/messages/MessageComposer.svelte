@@ -10,7 +10,7 @@
   import { onMount } from "svelte";
   import { messagingService } from "../../../messaging/services/implementations/Messenger";
   import { toast } from "../../../toast/state/toast-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { inboxState } from "../../state/inbox-state.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
 
@@ -30,7 +30,7 @@
   const TYPING_DEBOUNCE_MS = 1000;
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();

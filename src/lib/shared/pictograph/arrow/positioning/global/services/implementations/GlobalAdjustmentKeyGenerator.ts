@@ -10,16 +10,11 @@ import type { GridModeDeriver } from "../../../../../grid/services/implementatio
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { GlobalAdjustmentKey } from "../../domain/GlobalArrowAdjustment";
-import type {
-  IGlobalAdjustmentKeyGenerator,
-  KeyGeneratorPropOptions,
-} from "../contracts/IGlobalAdjustmentKeyGenerator";
+import type { KeyGeneratorPropOptions } from "../contracts/types";
 import type { TurnsTupleGenerator } from "../../../placement/services/implementations/TurnsTupleGenerator";
 import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
 
-export class GlobalAdjustmentKeyGenerator
-  implements IGlobalAdjustmentKeyGenerator
-{
+export class GlobalAdjustmentKeyGenerator {
   private readonly oriKeyGenerator: SpecialPlacementOriKeyGenerator;
 
   constructor(

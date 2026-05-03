@@ -1,13 +1,10 @@
 import type { PictographData } from "../../domain/models/PictographData";
 import { createArrowLifecycleResult } from "../../../arrow/orchestration/domain/arrow-factories";
-import type { IArrowLifecycleManager } from "../../../arrow/orchestration/services/contracts/IArrowLifecycleManager";
-import type {
-  IPictographCoordinator,
-  PictographRenderingState,
-} from "../contracts/IPictographCoordinator";
+import type { ArrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
+import type { PictographRenderingState } from "../contracts/types";
 
-export class PictographCoordinator implements IPictographCoordinator {
-  constructor(private arrowLifecycleManager: IArrowLifecycleManager) {}
+export class PictographCoordinator {
+  constructor(private arrowLifecycleManager: ArrowLifecycleManager) {}
 
   async coordinatePictographLifecycle(
     pictographData: PictographData

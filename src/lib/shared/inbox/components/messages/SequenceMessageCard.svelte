@@ -12,7 +12,7 @@
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import { goto } from "$app/navigation";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
   import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
@@ -29,7 +29,7 @@
   let isChecking = $state(false);
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   // Extract sequence metadata
   const sequenceId = $derived(attachment.metadata?.sequenceId);

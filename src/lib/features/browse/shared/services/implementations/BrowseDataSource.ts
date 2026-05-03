@@ -6,20 +6,17 @@
  * loader. Solo modes query the hand path or solo prop repositories directly.
  */
 
-import type {
-  IBrowseDataSource,
-  BrowseQueryResult,
-} from "../contracts/IBrowseDataSource";
+import type { BrowseQueryResult } from "../contracts/types";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type { ISoloPropRepository } from "$lib/shared/foundation/services/contracts/ISoloPropRepository";
-import type { IHandPathRepository } from "$lib/shared/foundation/services/contracts/IHandPathRepository";
+import type { SoloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
+import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
 import type { BrowseViewMode } from "../../domain/BrowseViewMode";
 
-export class BrowseDataSource implements IBrowseDataSource {
+export class BrowseDataSource {
   constructor(
     private readonly browseLoader: PublicSequencesLoader,
-    private readonly soloPropRepository: ISoloPropRepository,
-    private readonly handPathRepository: IHandPathRepository
+    private readonly soloPropRepository: SoloPropRepository,
+    private readonly handPathRepository: HandPathRepository
   ) {}
 
   async query(viewMode: BrowseViewMode): Promise<BrowseQueryResult> {

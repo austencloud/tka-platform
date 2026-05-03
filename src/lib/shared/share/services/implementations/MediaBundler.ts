@@ -1,4 +1,3 @@
-import type { ISharer } from "../contracts/ISharer";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { InstagramMediaItem } from "../../domain/models/InstagramMedia";
 import type { ShareOptions } from "../../domain/models/ShareOptions";
@@ -6,9 +5,10 @@ import {
   INSTAGRAM_MEDIA_CONSTRAINTS,
   validateMediaItem,
 } from "../../domain/models/InstagramMedia";
+import type { Sharer } from "./Sharer";
 
 export class MediaBundler {
-  constructor(private shareService: ISharer) {}
+  constructor(private shareService: Sharer) {}
 
   async bundleSequenceMedia(
     sequence: SequenceData,

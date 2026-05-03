@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISequenceNormalizer } from './services/contracts/ISequenceNormalizer';
 import { SequenceNormalizer } from './services/implementations/SequenceNormalizer';
 
-let instance: ISequenceNormalizer | null = null;
+let instance: SequenceNormalizer | null = null;
 
-export function getSequenceNormalizer(): ISequenceNormalizer {
+export function getSequenceNormalizer(): SequenceNormalizer {
 	if (!browser) throw new Error('getSequenceNormalizer() is browser-only');
 	return instance ??= new SequenceNormalizer();
 }

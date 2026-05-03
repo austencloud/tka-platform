@@ -6,7 +6,7 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
@@ -20,7 +20,7 @@ import type {
   AnimationRendererLoadResult,
 } from "../contracts/IAnimatorLoader";
 
-export class AnimatorLoader implements IAnimatorLoader {
+export class AnimatorLoader {
   loadAnimatorServices(): AnimatorServiceLoadResult {
     try {
       // With ITI, all services are already composed at startup - no async loading needed
@@ -57,7 +57,7 @@ export class AnimatorLoader implements IAnimatorLoader {
     try {
       // Canvas2DAnimationRenderer is not a singleton - each canvas gets its own instance
       // This matches behavior of VideoPreRenderer and SequenceFramePreRenderer
-      const renderer: IAnimationRenderer = new Canvas2DAnimationRenderer();
+      const renderer: AnimationRenderer = new Canvas2DAnimationRenderer();
       return { success: true, renderer };
     } catch (err) {
       console.error("Failed to load animation renderer:", err);

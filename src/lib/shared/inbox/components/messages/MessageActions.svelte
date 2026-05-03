@@ -11,7 +11,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
@@ -38,7 +38,7 @@
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let wrapperEl: HTMLDivElement | undefined = $state();
 
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();

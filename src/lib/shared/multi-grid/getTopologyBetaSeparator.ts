@@ -1,7 +1,6 @@
-import type { ITopologyBetaSeparator } from './services/contracts/ITopologyBetaSeparator';
 import { TopologyBetaSeparator } from './services/implementations/TopologyBetaSeparator';
 
-let instance: ITopologyBetaSeparator | null = null;
-export function getTopologyBetaSeparator(): ITopologyBetaSeparator {
+let instance: TopologyBetaSeparator | null = null;
+export function getTopologyBetaSeparator(): TopologyBetaSeparator {
   return instance ??= new TopologyBetaSeparator();
 }

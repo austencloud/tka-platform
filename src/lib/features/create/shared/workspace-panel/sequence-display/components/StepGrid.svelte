@@ -4,7 +4,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../../domain/models/StepData";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";

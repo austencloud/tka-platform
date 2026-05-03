@@ -4,7 +4,7 @@
  * Includes persistence for HMR/refresh survival
  */
 
-import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 import {
   PROSPIN_LETTERS,
   ANTISPIN_LETTERS,
@@ -13,7 +13,7 @@ import {
 import { getExperiencePersistence } from "../../../../../state/experience-persistence.svelte";
 
 export interface Type1ConceptStateOptions {
-  hapticService: IHapticFeedback | null;
+  hapticService: HapticFeedback | null;
   getOnComplete?: () => (() => void) | undefined;
 }
 

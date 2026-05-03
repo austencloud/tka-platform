@@ -3,8 +3,8 @@
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CardSizeId } from "../../domain/card-sizes";
-  import type { CardPair } from "../../services/contracts/IPrintPDFExporter";
-  import type { PrintRenderOptions } from "../../services/contracts/IPrintCardRenderer";
+  import type { CardPair } from "../../services/contracts/types";
+  import type { PrintRenderOptions } from "../../services/contracts/types";
   import { type ElementalTheme, VTG_ELEMENTAL_THEMES } from "../../domain/elemental-theme";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";

@@ -8,7 +8,7 @@ import {
 import { doc, deleteDoc } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../firebase";
 import { nuclearCacheClear } from "../../utils/nuclearCacheClear";
-import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
 
 /**
  * Manages user account operations using Firebase client SDK directly.
@@ -16,7 +16,7 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
  * and Firestore client libraries, which work with adapter-static.
  */
 export class AccountManager {
-  constructor(private haptics: IHapticFeedback) {}
+  constructor(private haptics: HapticFeedback) {}
 
   async changePassword(
     currentPassword: string,

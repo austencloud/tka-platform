@@ -1,5 +1,5 @@
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { ISVGGenerator, PropSvgData } from "../contracts/ISVGGenerator";
+import type { PropSvgData } from "../contracts/types";
 import {
   applyColorToSvg,
   SELECTIVE_COLOR_PROP_TYPES,
@@ -14,7 +14,7 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
  * Based on the exact implementation from standalone_animator.html
  */
 
-export class SVGGenerator implements ISVGGenerator {
+export class SVGGenerator {
   // Static cache for fetched SVG content to avoid repeated network requests
   private static svgCache = new Map<string, string>();
 

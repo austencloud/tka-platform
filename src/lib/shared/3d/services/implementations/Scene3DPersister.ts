@@ -12,7 +12,7 @@ import type {
 
 const STORAGE_KEY = "tka-3d-animator-state";
 
-export class Scene3DPersister implements IScene3DPersister {
+export class Scene3DPersister {
   /**
    * Save state to localStorage (merges with existing)
    */

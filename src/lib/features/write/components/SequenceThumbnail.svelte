@@ -1,7 +1,7 @@
 <!-- SequenceThumbnail.svelte - Individual sequence thumbnail widget -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { generateSequenceThumbnail } from "../domain/types/write";
   import { onMount } from "svelte";
@@ -15,7 +15,7 @@
   }>();
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   onMount(() => {
     hapticService = getHapticFeedback();

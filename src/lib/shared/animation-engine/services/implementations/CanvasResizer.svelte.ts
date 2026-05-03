@@ -14,7 +14,7 @@ import {
   type CanvasResizeState,
 } from "../contracts/ICanvasResizer";
 
-export class CanvasResizer implements ICanvasResizer {
+export class CanvasResizer {
   // Reactive state - owned by service
   state = $state<CanvasResizeState>({
     currentSize: DEFAULT_CANVAS_SIZE,

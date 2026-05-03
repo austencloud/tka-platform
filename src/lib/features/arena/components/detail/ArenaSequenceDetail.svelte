@@ -9,7 +9,7 @@
   import ArenaPersonalStats from "../leaderboard/ArenaPersonalStats.svelte";
   import ArenaWinLossChart from "./ArenaWinLossChart.svelte";
   import type { ArenaUserStats } from "../../domain/models/arena-models";
-  import type { StabilityReport } from "../../services/contracts/IStabilityAnalyzer";
+  import type { StabilityReport } from "../../services/contracts/types";
   import { getArenaOrchestrator } from "../../getArenaOrchestrator";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 

@@ -5,7 +5,7 @@
   Used during video/image export operations.
 -->
 <script lang="ts">
-	import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+	import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
 	import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
 	let {

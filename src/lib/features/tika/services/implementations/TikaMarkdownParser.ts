@@ -5,10 +5,10 @@
  * Handles tables, links (as footnote references), and standard markdown.
  */
 
-import type { ITikaMarkdownParser, ParsedMarkdown } from '../contracts/ITikaMarkdownParser';
 import DOMPurify from 'dompurify';
+import type { ParsedMarkdown } from "../contracts/types";
 
-export class TikaMarkdownParser implements ITikaMarkdownParser {
+export class TikaMarkdownParser {
 	parse(markdown: string): ParsedMarkdown {
 		if (!markdown) return { html: '', links: [] };
 

@@ -1,7 +1,7 @@
-import type { IVideoCuratorPersister } from './services/contracts/IVideoCuratorPersister';
+
 import { VideoCuratorPersister } from './services/implementations/VideoCuratorPersister';
 
-let instance: IVideoCuratorPersister | null = null;
-export function getVideoCuratorPersister(): IVideoCuratorPersister {
+let instance: VideoCuratorPersister | null = null;
+export function getVideoCuratorPersister(): VideoCuratorPersister {
   return instance ??= new VideoCuratorPersister();
 }

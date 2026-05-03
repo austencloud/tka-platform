@@ -5,8 +5,7 @@
 -->
 <script lang="ts">
   import VideoRecordDrawer from "$lib/shared/video-record/components/VideoRecordDrawer.svelte";
-  import type { RecordingResult } from "$lib/shared/video-record/services/contracts/IVideoRecorder";
-
+  import type { RecordingResult } from "$lib/shared/video-record/services/contracts/types";
   let showDrawer = $state(false);
   let lastRecording = $state<RecordingResult | null>(null);
 

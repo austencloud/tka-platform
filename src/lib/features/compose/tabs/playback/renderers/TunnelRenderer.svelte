@@ -16,10 +16,10 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "../../../services/implementations/AnimationPlaybackController";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
-  import type { AdditionalLayerProps } from "../../../services/contracts/ITrailCapturer";
+  import type { AdditionalLayerProps } from "../../../services/contracts/types";
   import {
     ANIMATION_LOAD_DELAY_MS,
     ANIMATION_AUTO_START_DELAY_MS,
@@ -75,8 +75,8 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   } = $props();
 
   // Services
-  let primaryPlaybackController: IAnimationPlaybackController | null = null;
-  let secondaryPlaybackController: IAnimationPlaybackController | null = null;
+  let primaryPlaybackController: AnimationPlaybackController | null = null;
+  let secondaryPlaybackController: AnimationPlaybackController | null = null;
   let settingsService: SettingsState | null = null;
 
   // Animation states (one for each sequence)

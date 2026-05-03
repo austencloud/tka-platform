@@ -38,10 +38,7 @@ import { auth, getFirestoreInstance } from "../../firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { isValidUserRole } from "../../domain/models/FeatureFlag";
 import type { UserRole } from "../../domain/models/UserRole";
-import type {
-  IGlobalFeatureFlagPersister,
-  GlobalFlagOverrides,
-} from "../contracts/IGlobalFeatureFlagPersister";
+import type { GlobalFlagOverrides } from "../contracts/types";
 
 const LOG_PREFIX = "[GlobalFeatureFlagPersister]";
 const FIRESTORE_DOC_PATH = "config/featureFlags";
@@ -50,7 +47,7 @@ const FIRESTORE_DOC_PATH = "config/featureFlags";
 const LOCAL_FLAG_OVERRIDES_KEY = "tka-global-flag-overrides";
 const LOCAL_ROLE_OVERRIDES_KEY = "tka-global-role-overrides";
 
-export class GlobalFeatureFlagPersister implements IGlobalFeatureFlagPersister {
+export class GlobalFeatureFlagPersister {
   private unsubscribe: Unsubscribe | null = null;
 
   // ------------------------------------------------------------------

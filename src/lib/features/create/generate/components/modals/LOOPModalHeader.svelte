@@ -4,14 +4,14 @@ Simple header with title and close button
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   let { title, onClose } = $props<{
     title: string;
     onClose: () => void;
   }>();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   try {
     hapticService = getHapticFeedback();
   } catch {

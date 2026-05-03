@@ -7,12 +7,9 @@
  *
  * REFACTORED: Converted from utils to proper service with interface.
  */
-import type {
-  ArrowLocationInput,
-  IArrowLocator,
-} from "../contracts/IArrowLocator";
+import type { ArrowLocationInput } from "../contracts/types";
 
-export class ArrowLocator implements IArrowLocator {
+export class ArrowLocator {
   /**
    * Calculate arrow location based on start and end positions
    */

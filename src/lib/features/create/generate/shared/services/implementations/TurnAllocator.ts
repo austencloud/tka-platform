@@ -4,13 +4,10 @@
  * Calculates turn distribution across steps.
  * Extracted from SequenceGenerationService for single responsibility.
  */
-import type {
-  ITurnAllocator,
-  TurnAllocation,
-} from "../contracts/ITurnAllocator";
+import type { TurnAllocation } from "../contracts/types";
 import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
 
-export class TurnAllocator implements ITurnAllocator {
+export class TurnAllocator {
   constructor(private loopParams: LOOPParameterProvider) {}
 
   /**

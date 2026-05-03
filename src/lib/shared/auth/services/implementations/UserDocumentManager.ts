@@ -8,7 +8,7 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { getFirestoreInstance } from "../../firebase";
-import type { IProfilePictureManager } from "../contracts/IProfilePictureManager";
+import type { ProfilePictureManager } from "../implementations/ProfilePictureManager";
 import type { UsernameValidator } from '$lib/shared/auth/services/implementations/UsernameValidator'
 import { formatUsername } from "../../domain/models/UsernameValidation";
 
@@ -46,7 +46,7 @@ function capitalizeName(name: string): string {
 
 export class UserDocumentManager {
   constructor(
-    private readonly profilePictureService: IProfilePictureManager,
+    private readonly profilePictureService: ProfilePictureManager,
     private readonly usernameValidator: UsernameValidator
   ) {}
 

@@ -17,12 +17,9 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type {
-  IPreviewCellRenderer,
-  PreviewCellRenderOptions,
-} from "../contracts/IPreviewCellRenderer";
+import type { PreviewCellRenderOptions } from "../contracts/types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/services/contracts/ILayerCompositor";
+import type { LayerRenderOptions, LayerVisibility } from "../../../render/services/contracts/types";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/implementations/WorkerRenderPool";
@@ -31,7 +28,7 @@ import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseVi
 
 import { getPreviewCellRenderer } from "$lib/shared/sequence-viewer/getPreviewCellRenderer";
 
-export class PreviewCellRenderer implements IPreviewCellRenderer {
+export class PreviewCellRenderer {
 
   /**
    * Render a single pictograph and return a blob URL.

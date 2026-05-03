@@ -14,8 +14,7 @@
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";
-  import type { ICoralSceneRenderer } from "../services/contracts/ICoralSceneRenderer";
-
+  import type { CoralSceneRenderer } from "../services/implementations/CoralSceneRenderer";
   type ColorPreset = "default" | "cyan" | "blue" | "lime" | "amber" | "rose" | "emerald" | "red" | "gray";
 
   // Canvas reference
@@ -29,7 +28,7 @@
   let quality: QualityLevel = $state("high");
 
   // Coral renderer
-  let coralRenderer: ICoralSceneRenderer = getCoralSceneRenderer();
+  let coralRenderer: CoralSceneRenderer = getCoralSceneRenderer();
   let showCoral = $state(true);
   let coralCount = $state(0);
 

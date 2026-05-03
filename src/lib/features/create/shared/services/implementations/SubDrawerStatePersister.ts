@@ -1,7 +1,4 @@
-import type {
-  ISubDrawerStatePersister,
-  SubDrawerType,
-} from "../contracts/ISubDrawerStatePersister";
+import type { SubDrawerType } from "../contracts/types";
 
 const SUB_DRAWER_KEY = "tka_sequence_actions_sub_drawer";
 
@@ -12,7 +9,7 @@ const SUB_DRAWER_KEY = "tka_sequence_actions_sub_drawer";
  * - Survives HMR (hot module replacement)
  * - Clears when browser tab closes (session end)
  */
-export class SubDrawerStatePersister implements ISubDrawerStatePersister {
+export class SubDrawerStatePersister {
   getActiveSubDrawer(): SubDrawerType {
     if (typeof sessionStorage === "undefined") return null;
     const value = sessionStorage.getItem(SUB_DRAWER_KEY);

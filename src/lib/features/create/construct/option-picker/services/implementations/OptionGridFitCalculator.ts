@@ -10,14 +10,7 @@
  * and inline component calculations.
  */
 
-import type {
-  DeviceAwareSizingParams,
-  DeviceAwareSizingResult,
-  DeviceConfig,
-  GridFitParams,
-  GridFitResult,
-  IOptionGridFitCalculator,
-} from "../contracts/IGridFitCalculator";
+import type { DeviceAwareSizingParams, DeviceAwareSizingResult, DeviceConfig, GridFitParams, GridFitResult, IOptionGridFitCalculator } from "../contracts/types";
 import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
 const DEFAULT_MIN_SIZE = 40;

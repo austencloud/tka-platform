@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { ICreateModuleInitializer } from './services/contracts/ICreateModuleInitializer';
+
 import { CreateModuleInitializer } from './services/implementations/CreateModuleInitializer';
 import { getSequenceRepository } from './getSequenceRepository';
 import { getSequencePersister } from './getSequencePersister';
@@ -18,9 +18,9 @@ import { getSequenceStatsCalculator } from './getSequenceStatsCalculator';
 import { getSequenceTransformer } from './getSequenceTransformer';
 import { getSequenceValidator } from './getSequenceValidator';
 
-let instance: ICreateModuleInitializer | null = null;
+let instance: CreateModuleInitializer | null = null;
 
-export function getCreateModuleInitializer(): ICreateModuleInitializer {
+export function getCreateModuleInitializer(): CreateModuleInitializer {
 	if (!browser) throw new Error('getCreateModuleInitializer() is browser-only');
 	return instance ??= new CreateModuleInitializer(
 		getSequenceRepository(),

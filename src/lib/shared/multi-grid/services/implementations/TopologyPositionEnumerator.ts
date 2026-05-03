@@ -15,13 +15,10 @@
  */
 
 import type { GridTopology, PointRef } from "../../domain/models/GridTopology";
-import type {
-  ITopologyPositionEnumerator,
-  PositionPair,
-} from "../contracts/ITopologyPositionEnumerator";
+import type { PositionPair } from "../contracts/types";
 import { HAND_POINT_LOCATIONS } from "../../domain/constants/GridModeOffsets";
 
-export class TopologyPositionEnumerator implements ITopologyPositionEnumerator {
+export class TopologyPositionEnumerator {
   enumerateHandPoints(topology: GridTopology): PointRef[] {
     const points: PointRef[] = [];
 

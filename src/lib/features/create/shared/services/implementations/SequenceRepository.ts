@@ -16,8 +16,8 @@ import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
 import type { SequenceImporter } from "./SequenceImporter";
-import type { IReversalDetector } from "../contracts/IReversalDetector";
-import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
+import type { ReversalDetector } from "./ReversalDetector";
+import type { SequenceNormalizer } from "$lib/features/compose/services/implementations/SequenceNormalizer";
 import type { SequenceDomainManager } from "./SequenceDomainManager";
 import {
   collection,
@@ -36,8 +36,8 @@ export class SequenceRepository {
   constructor(
     private readonly sequenceDomainManager: SequenceDomainManager,
     private readonly persistenceService: DexiePersistenceService,
-    private readonly reversalDetector: IReversalDetector,
-    private readonly normalizationService: ISequenceNormalizer,
+    private readonly reversalDetector: ReversalDetector,
+    private readonly normalizationService: SequenceNormalizer,
     private readonly sequenceImportService?: SequenceImporter
   ) {}
 

@@ -12,7 +12,7 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import GroupAvatarStack from "./GroupAvatarStack.svelte";
   import { formatRelativeTime, truncateText } from "../../utils/format";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {
     conversation: ConversationPreview;
@@ -22,7 +22,7 @@
   let { conversation, onclick }: Props = $props();
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();

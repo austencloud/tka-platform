@@ -20,7 +20,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   import PageDisplay from "./PageDisplay.svelte";
   import type { Deck } from "../domain/models/Deck";
   import type { DeckLoader } from "../services/implementations/DeckLoader";
-  import type { IThumbnailRenderOrchestrator } from "../../browse/sequences/display/services/contracts/IThumbnailRenderOrchestrator";
+  import type { ThumbnailRenderOrchestrator } from "../../browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
   import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";
@@ -407,7 +407,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   });
 
   onDestroy(() => {
-    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
+    (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
   });
 
   async function loadSequences() {
@@ -484,7 +484,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   }
 
   function handleBackToCollections() {
-    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
+    (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
     selectedDeckId = null;
     selectedVtgFamily = null;
     deckSequences = [];
@@ -520,7 +520,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   }
 
   async function handleSelectDeck(deckId: string, vtgFamily?: string | null) {
-    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
+    (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
     selectedDeckId = deckId;
     selectedVtgFamily = vtgFamily ?? null;
     deckSequences = [];
@@ -531,7 +531,7 @@ import { getDeckLoader } from "$lib/features/choreo-card/getDeckLoader";
   }
 
   function handleBackToDeckList() {
-    (getThumbnailRenderOrchestrator() as IThumbnailRenderOrchestrator)?.cancelAll();
+    (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
     selectedDeckId = null;
     deckSequences = [];
     persist(STORAGE_KEY_SELECTED_DECK, null);

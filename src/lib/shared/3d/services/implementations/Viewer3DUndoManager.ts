@@ -15,7 +15,7 @@ import type {
 
 const DEFAULT_MAX_HISTORY_SIZE = 50;
 
-export class Viewer3DUndoManager implements IViewer3DUndoManager {
+export class Viewer3DUndoManager {
   private _undoHistory: ViewerUndoEntry[] = [];
   private _redoHistory: ViewerUndoEntry[] = [];
   private _maxHistorySize: number = DEFAULT_MAX_HISTORY_SIZE;

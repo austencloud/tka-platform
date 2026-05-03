@@ -1,15 +1,16 @@
 import type { Festival } from "../domain/models/festival";
 import type { UserFestivalTracker } from "../domain/models/festival-tracker";
 import type { TeachingPortfolio } from "../domain/models/teaching-portfolio";
-import type { IFestivalLoader, FestivalFilters } from "../services/contracts/IFestivalLoader";
+import type { FestivalFilters } from "../services/contracts/types";
 import type { FestivalTrackerRepository } from "../services/implementations/FestivalTrackerRepository";
 import type { FestivalAttendanceRepository } from "../services/implementations/FestivalAttendanceRepository";
 import type { WorkshopPortfolioRepository } from "../services/implementations/WorkshopPortfolioRepository";
+import type { FestivalLoader } from "../services/implementations/FestivalLoader";
 
 export type FestivalTab = "discover" | "map" | "calendar" | "portfolio";
 
 export function createFestivalState(
-  loader: IFestivalLoader,
+  loader: FestivalLoader,
   trackerRepo: FestivalTrackerRepository,
   attendanceRepo: FestivalAttendanceRepository,
   portfolioRepo: WorkshopPortfolioRepository

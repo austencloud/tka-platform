@@ -7,8 +7,8 @@ Landscape: Left half decrements, right half increments (horizontal layout)
 <script lang="ts">
   import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { RippleEffect } from "$lib/shared/application/services/implementations/RippleEffect";
   import { onMount } from "svelte";
   import LandscapeLayout from "./StepperLandscapeLayout.svelte";
   import PortraitLayout from "./StepperPortraitLayout.svelte";
@@ -49,8 +49,8 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     headerFontSize?: string;
   }>();
 
-  let hapticService: IHapticFeedback;
-  let rippleService: IRippleEffect;
+  let hapticService: HapticFeedback;
+  let rippleService: RippleEffect;
   let cardElement: HTMLDivElement | null = $state(null);
   let previousColor = $state("");
   let isTransitioning = $state(false);

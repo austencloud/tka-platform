@@ -6,11 +6,8 @@
  */
 
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { LOOPOption } from "../contracts/ISequenceExtender";
-import type {
-  ILOOPValidator,
-  LOOPValidationResult,
-} from "../contracts/ILOOPValidator";
+import type { LOOPOption } from "../contracts/types";
+import type { LOOPValidationResult } from "../contracts/types";
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
 import {
   LOOPType,
@@ -119,7 +116,7 @@ const ALL_LOOP_TYPES = [
   LOOPType.STRICT_REWOUND,
 ];
 
-export class LOOPValidator implements ILOOPValidator {
+export class LOOPValidator {
   constructor(private loopExecutorSelector: LOOPExecutorSelector) {}
 
   /**

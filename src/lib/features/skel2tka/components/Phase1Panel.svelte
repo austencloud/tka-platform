@@ -17,7 +17,7 @@
   import type { SanityCheckReport } from "../domain/verification-models";
   import type { PhaseVerdict, UserCorrection } from "../domain/verification-models";
   import type { TrainingPair, VerifiedStepPosition, VideoReference } from "../domain/training-models";
-  import type { IOverlayRenderer } from "../services/contracts/IOverlayRenderer";
+  import type { OverlayRenderer } from "../services/implementations/OverlayRenderer";
   import type { SanityChecker } from "../services/implementations/SanityChecker";
   import type { TrainingDataPersister } from "../services/implementations/TrainingDataPersister";
   import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";

@@ -11,10 +11,7 @@
  */
 
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
-import type {
-  ITopologyPropLoader,
-  TopologyPropRenderData,
-} from "../contracts/ITopologyPropLoader";
+import type { TopologyPropRenderData } from "../contracts/types";
 import { DefaultPropPositioner } from "$lib/shared/pictograph/prop/services/implementations/DefaultPropPositioner";
 import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/implementations/PropRotAngleManager";
 import { GridLocation as GridLocationEnum, GridMode as GridModeEnum } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -69,7 +66,7 @@ const GRID_MODE_MAP: Record<string, GridModeEnum> = {
 // IMPLEMENTATION
 // ============================================================================
 
-export class TopologyPropLoader implements ITopologyPropLoader {
+export class TopologyPropLoader {
   async loadProp(
     location: GridLocation,
     gridMode: GridMode,

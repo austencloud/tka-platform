@@ -1,7 +1,7 @@
-import type { IArrangeLayerTransformer } from './services/contracts/IArrangeLayerTransformer';
+
 import { ArrangeLayerTransformer } from './services/implementations/ArrangeLayerTransformer';
 
-let instance: IArrangeLayerTransformer | null = null;
-export function getArrangeLayerTransformer(): IArrangeLayerTransformer {
+let instance: ArrangeLayerTransformer | null = null;
+export function getArrangeLayerTransformer(): ArrangeLayerTransformer {
   return instance ??= new ArrangeLayerTransformer();
 }

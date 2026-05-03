@@ -18,7 +18,7 @@
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
   import { elasticOut } from "svelte/easing";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {
     /** Button size (same for both layouts) */
@@ -48,7 +48,7 @@
 
   let isVisible = $state(false);
   let hasCheckedStorage = $state(false);
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
   let isDesktop = $state(false);
 
   // Update isDesktop based on viewport

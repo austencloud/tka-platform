@@ -25,11 +25,11 @@ import type { SequenceRepository } from "$lib/features/create/shared/services/im
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type { IReversalDetector } from "../services/contracts/IReversalDetector";
+import type { ReversalDetector } from "../services/implementations/ReversalDetector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
-import type { UndoMetadata } from "../services/contracts/IUndoManager";
-import { UndoOperationType } from "../services/contracts/IUndoManager";
+import type { UndoMetadata } from "../services/contracts/types";
+import { UndoOperationType } from "../services/contracts/types";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { IFilterPersister } from "../../construct/option-picker/services/FilterPersister";
 
@@ -116,7 +116,7 @@ export function createConstructTabState(
 
   // Construct tab has its own independent sequence state
   // IMPORTANT: Pass tabId="construct" to ensure persistence loads/saves only construct's data
-  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
+  const ReversalDetector: ReversalDetector | undefined = getReversalDetector();
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,

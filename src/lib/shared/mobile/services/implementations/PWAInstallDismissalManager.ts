@@ -1,7 +1,4 @@
-import type {
-  IPWAInstallDismissalManager,
-  PWADismissalState,
-} from "../contracts/IPWAInstallDismissalManager";
+import type { PWADismissalState } from "../contracts/types";
 
 const STORAGE_KEY = "tka_pwa_dismissal";
 
@@ -18,7 +15,7 @@ const DISMISSAL_DELAYS = {
  * Tracks dismissals and enforces respectful timing between prompts.
  * Uses localStorage for persistence.
  */
-export class PWAInstallDismissalManager implements IPWAInstallDismissalManager {
+export class PWAInstallDismissalManager {
   private state: PWADismissalState;
 
   constructor() {

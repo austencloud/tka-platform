@@ -8,13 +8,9 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
-import type { SequenceEntry, RawStepData, RawMotionAttributes } from "../contracts/IStepDataConverter";
-import type { LabeledSequence } from "../contracts/ILOOPLabelsFirebaseRepository";
-import type {
-  ISequenceLoader,
-  FilterMode,
-  SequenceStats,
-} from "../contracts/ISequenceLoader";
+import type { SequenceEntry, RawStepData, RawMotionAttributes } from "../contracts/types";
+import type { LabeledSequence } from "../contracts/types";
+import type { FilterMode, SequenceStats } from "../contracts/types";
 
 /**
  * Service for loading and filtering sequences from Firestore.
@@ -23,7 +19,7 @@ import type {
  * then lazy-fetches full sequence data from the source library document
  * when a specific sequence is selected.
  */
-export class SequenceLoader implements ISequenceLoader {
+export class SequenceLoader {
   async loadSequences(): Promise<SequenceEntry[]> {
     try {
       const firestore = await getFirestoreInstance();

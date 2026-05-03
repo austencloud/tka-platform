@@ -7,11 +7,11 @@
  * This validator catches those problems before they become runtime mysteries.
  */
 
-import type { IRoomValidator, ValidationIssue, ValidationResult } from "../contracts/IRoomValidator";
+import type { ValidationIssue, ValidationResult } from "../contracts/IRoomValidator";
 import type { RoomDefinition, SolvedRoom } from "../../domain/room-types";
 import { snapToGrid } from "../../domain/room-types";
 
-export class RoomValidator implements IRoomValidator {
+export class RoomValidator {
 	validate(definition: RoomDefinition, solved: SolvedRoom): ValidationResult {
 		const issues: ValidationIssue[] = [
 			...this.checkFloorCoverage(definition, solved),

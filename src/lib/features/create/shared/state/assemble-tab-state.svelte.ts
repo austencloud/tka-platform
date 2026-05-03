@@ -16,7 +16,7 @@ import type { SequencePersister } from "$lib/features/create/shared/services/imp
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type { IReversalDetector } from "../services/contracts/IReversalDetector";
+import type { ReversalDetector } from "../services/implementations/ReversalDetector";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
@@ -49,7 +49,7 @@ export function createAssembleTabState(
   let letterCache = $state<Map<number, Letter | null>>(new Map());
 
   // Isolated sequence state for this tab
-  const ReversalDetector: IReversalDetector | undefined = getReversalDetector();
+  const ReversalDetector: ReversalDetector | undefined = getReversalDetector();
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,

@@ -6,10 +6,8 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type {
-  ISequenceAnalyzer,
-  StrictLoopType,
-} from "$lib/features/create/shared/services/contracts/ISequenceAnalyzer";
+import type { SequenceAnalyzer } from "../../../create/shared/services/implementations/SequenceAnalyzer";
+import type { StrictLoopType } from "../../../create/shared/services/contracts/types";
 import type {
   SequenceFeatures,
   PositionDominance,
@@ -26,7 +24,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceFeatureExtractor {
-  constructor(private readonly SequenceAnalyzer: ISequenceAnalyzer) {}
+  constructor(private readonly SequenceAnalyzer: SequenceAnalyzer) {}
 
   /**
    * Extract all analyzable features from a sequence

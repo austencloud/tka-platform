@@ -5,15 +5,12 @@
  * swapColors, invert, and rewind transforms to arrange grid layers.
  */
 
-import type {
-  IArrangeLayerTransformer,
-  TransformResult,
-} from "../contracts/IArrangeLayerTransformer";
+import type { TransformResult } from "../contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TransformType } from "../../../../compose/domain/types";
 import { sequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 
-export class ArrangeLayerTransformer implements IArrangeLayerTransformer {
+export class ArrangeLayerTransformer {
   async applyTransform(
     sequence: SequenceData,
     transformType: TransformType

@@ -5,7 +5,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getGapDetector } from "$lib/features/learn/getGapDetector";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onDestroy, onMount } from "svelte";
   import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import { QuizType } from "../domain/enums/quiz-enums";
@@ -20,7 +20,8 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import MisconceptionHint from "./shared/MisconceptionHint.svelte";
   import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
-  import type { IGapDetector, DetectedGap } from "../../services/contracts/IGapDetector";
+  import type { GapDetector } from "../../services/implementations/GapDetector";
+import type { DetectedGap } from "../../services/contracts/types";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (event: QuizAnswerEvent) => void;
@@ -28,8 +29,8 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
     onBack?: () => void;
   }>();
 
-  let hapticService: IHapticFeedback;
-  let gapDetector: IGapDetector;
+  let hapticService: HapticFeedback;
+  let gapDetector: GapDetector;
   const delightOrchestrator = getDelightOrchestrator();
 
   let scorePopTimer: ReturnType<typeof setTimeout> | null = null;

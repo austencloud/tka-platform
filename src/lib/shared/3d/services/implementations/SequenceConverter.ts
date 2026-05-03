@@ -24,7 +24,7 @@ import type {
 } from "../contracts/ISequenceConverter";
 import type { PlaneModeConfig } from "../../domain/constants/plane-mode-configs";
 
-export class SequenceConverter implements ISequenceConverter {
+export class SequenceConverter {
   /**
    * Convert a MotionData object to MotionConfig3D
    */

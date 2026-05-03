@@ -10,7 +10,6 @@
  * since they hold no per-animation state.
  */
 
-import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
 import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { AnimationLoop } from "./AnimationLoop";
 import { AnimationStateManager } from "./AnimationStateManager";
@@ -28,7 +27,7 @@ export class AnimationPlaybackControllerFactory
     private readonly loopabilityChecker: SequenceLoopabilityChecker
   ) {}
 
-  create(): IAnimationPlaybackController {
+  create(): AnimationPlaybackController {
     // Each instance gets its own stateful services so animations don't interfere.
     // Calculators are stateless - safe to create fresh lightweight instances.
     const angleCalculator = new AngleCalculator();

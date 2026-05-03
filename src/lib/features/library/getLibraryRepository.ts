@@ -1,4 +1,4 @@
-import type { ILibraryRepository } from './services/contracts/ILibraryRepository';
+
 import { LibraryRepository } from './services/implementations/LibraryRepository';
 import { getAchievementManager } from '$lib/shared/gamification/getAchievementManager';
 import { getTagManager } from './getTagManager';
@@ -7,8 +7,8 @@ import { getPublicIndexSyncer } from './getPublicIndexSyncer';
 import { getConflictResolver } from '$lib/shared/offline/getConflictResolver';
 import { getSequenceContentHasher } from './getSequenceContentHasher';
 
-let instance: ILibraryRepository | null = null;
-export function getLibraryRepository(): ILibraryRepository {
+let instance: LibraryRepository | null = null;
+export function getLibraryRepository(): LibraryRepository {
   return instance ??= new LibraryRepository(
     getAchievementManager(),
     getTagManager(),

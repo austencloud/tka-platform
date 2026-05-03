@@ -6,7 +6,7 @@ import type {
 	PopulationStats,
 } from "../domain/village-types";
 import type { VillageConfig } from "./VillageConfig";
-import type { ISequenceMutator } from "../services/contracts/ISequenceMutator";
+import type { SequenceMutator } from "../services/implementations/SequenceMutator";
 import type { VillageEventEmitter } from "./VillageEventEmitter";
 import { createVillageWorld } from "./VillageWorld";
 import { PersonalityGenerator } from "../services/implementations/PersonalityGenerator";
@@ -56,7 +56,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 	constructor(
 		private config: VillageConfig,
-		mutator: ISequenceMutator,
+		mutator: SequenceMutator,
 	) {
 		this.world = createVillageWorld();
 		this.personalityGenerator = new PersonalityGenerator();

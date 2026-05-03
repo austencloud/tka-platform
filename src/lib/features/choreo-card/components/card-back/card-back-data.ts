@@ -6,7 +6,8 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
-import type { ILOOPExplainer, LOOPExplanation } from "../../services/contracts/ILOOPExplainer";
+import type { LOOPExplainer } from "../../services/implementations/LOOPExplainer";
+import type { LOOPExplanation } from "../../services/contracts/types";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { DIFFICULTY_LEVELS, DIFFICULTY_FONT_FAMILY } from "$lib/shared/config/difficulty-styles";
 import {
@@ -422,7 +423,7 @@ export function deriveCardBackData(
   // Kept for call-site compatibility - the shared loop-display resolver
   // owns the SequenceData→SequenceEntry conversion internally now.
   _converter: SequenceToEntryConverter | null,
-  explainer: ILOOPExplainer | null = null
+  explainer: LOOPExplainer | null = null
 ): CardBackData {
   const levelNum = sequence.level ?? 1;
   const badge = LEVEL_BADGES[levelNum] ?? LEVEL_BADGES[1]!;

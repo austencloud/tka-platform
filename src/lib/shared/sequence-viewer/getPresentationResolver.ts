@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IPresentationResolver } from './services/contracts/IPresentationResolver';
 import { PresentationResolver } from './services/implementations/PresentationResolver';
 
-let instance: IPresentationResolver | null = null;
+let instance: PresentationResolver | null = null;
 
-export function getPresentationResolver(): IPresentationResolver {
+export function getPresentationResolver(): PresentationResolver {
 	if (!browser) throw new Error('getPresentationResolver() is browser-only');
 	return instance ??= new PresentationResolver();
 }

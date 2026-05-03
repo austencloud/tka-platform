@@ -1,3 +1,5 @@
+import type { SummaryMetrics, ContentStatistics, EngagementMetrics, AnalyticsTimeRange } from "../contracts/types";
+import type { SystemStateManager } from "./SystemStateManager";
 /**
  * User Metrics Analyzer
  *
@@ -5,13 +7,6 @@
  * Handles summary metrics, content statistics, and engagement metrics.
  */
 
-import type { ISystemStateManager } from "../contracts/ISystemStateManager";
-import type {
-  SummaryMetrics,
-  ContentStatistics,
-  EngagementMetrics,
-  AnalyticsTimeRange,
-} from "../contracts/IAnalyticsDataProvider";
 
 /**
  * Interface for the UserMetricsAnalyzer
@@ -52,8 +47,8 @@ const EMPTY_ENGAGEMENT_METRICS: EngagementMetrics = {
   totalAchievementsPossible: 0,
 };
 
-export class UserMetricsAnalyzer implements IUserMetricsAnalyzer {
-  constructor(private readonly systemStateManager: ISystemStateManager) {}
+export class UserMetricsAnalyzer {
+  constructor(private readonly systemStateManager: SystemStateManager) {}
 
   /**
    * Get summary metrics from cached user data

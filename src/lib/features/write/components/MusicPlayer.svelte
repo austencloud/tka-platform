@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { MusicPlayerState } from "../domain/types/write";
   import {
     createDefaultMusicPlayerState,
@@ -37,7 +37,7 @@
 
   let isSeeking = $state(false);
   let seekPosition = $state(0);
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   onMount(() => {
     hapticService = getHapticFeedback();

@@ -1,4 +1,3 @@
-import type { ICommandDispatcher } from './services/contracts/ICommandDispatcher';
 import { CommandDispatcher } from './services/implementations/CommandDispatcher';
 import { NavigationCommandHandler } from './services/implementations/NavigationCommandHandler';
 import { SettingsCommandHandler } from './services/implementations/handlers/SettingsCommandHandler';
@@ -10,8 +9,8 @@ import { SearchCommandHandler } from './services/implementations/handlers/Search
 import { PropCommandHandler } from './services/implementations/handlers/PropCommandHandler';
 import { GeneratorCommandHandler } from './services/implementations/handlers/GeneratorCommandHandler';
 
-let instance: ICommandDispatcher | null = null;
-export function getCommandDispatcher(): ICommandDispatcher {
+let instance: CommandDispatcher | null = null;
+export function getCommandDispatcher(): CommandDispatcher {
   if (!instance) {
     const dispatcher = new CommandDispatcher();
     dispatcher.register(new NavigationCommandHandler());

@@ -22,10 +22,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type {
-  ITikaInteractionTracker,
-  TikaTopicInteraction,
-} from "../contracts/ITikaInteractionTracker";
+import type { TikaTopicInteraction } from "../contracts/types";
 import type { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
 import {
   getUserTikaInteractionsPath,
@@ -34,7 +31,7 @@ import {
 
 const DEFAULT_HISTORY_LIMIT = 20;
 
-export class TikaInteractionTracker implements ITikaInteractionTracker {
+export class TikaInteractionTracker {
   constructor(private readonly quizHistoryRecorder: QuizHistoryRecorder) {}
 
   async recordTopicDiscussion(userId: string, topic: string): Promise<void> {

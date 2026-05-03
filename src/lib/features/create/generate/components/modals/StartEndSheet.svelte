@@ -6,7 +6,7 @@ End Position: Single select (for freeform mode only)
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import {
@@ -44,7 +44,7 @@ End Position: Single select (for freeform mode only)
     gridMode?: GridMode;
   }>();
 
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   // Local pending state for editing
   let pendingOptions = $state<StartEndOptions>({

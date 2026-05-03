@@ -11,17 +11,14 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { VariationConstraints } from "../../domain/models/spell-models";
-import type {
-  IRandomSequenceGenerator,
-  RandomSequenceGenerationOptions,
-} from "../contracts/IRandomSequenceGenerator";
+import type { RandomSequenceGenerationOptions } from "../contracts/types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionValidator } from "./StartPositionValidator";
-import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
+import type { OrientationContinuityValidator } from "./OrientationContinuityValidator";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
+import type { SequenceExtender } from "../../../shared/services/implementations/SequenceExtender";
 import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
-import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import type { ReversalDetector } from "../../../shared/services/implementations/ReversalDetector";
 import type { LOOPEndPositionResolver } from "./LOOPEndPositionResolver";
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
@@ -43,15 +40,15 @@ interface RandomWalkState {
   chosenIndicesPerStep: number[];
 }
 
-export class RandomSequenceGenerator implements IRandomSequenceGenerator {
+export class RandomSequenceGenerator {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
     private startPositionValidator: StartPositionValidator,
-    private orientationContinuityValidator: IOrientationContinuityValidator,
+    private orientationContinuityValidator: OrientationContinuityValidator,
     private orientationCalculator: OrientationCalculator,
-    private sequenceExtender: ISequenceExtender,
+    private sequenceExtender: SequenceExtender,
     private stepConverter: StepConverter,
-    private reversalDetector: IReversalDetector,
+    private reversalDetector: ReversalDetector,
     private loopEndPositionResolver: LOOPEndPositionResolver
   ) {}
 

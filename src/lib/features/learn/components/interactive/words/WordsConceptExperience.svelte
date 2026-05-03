@@ -4,7 +4,7 @@ Orchestrator component that manages page navigation and state
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
   import WordsIntroPage from "./pages/WordsIntroPage.svelte";

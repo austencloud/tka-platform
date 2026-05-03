@@ -7,7 +7,7 @@ Controls moved below the grid for better UX
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -45,7 +45,7 @@ Controls moved below the grid for better UX
   let showAdvancedPicker = $state(false);
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   // Load persisted preferences on mount
   onMount(() => {

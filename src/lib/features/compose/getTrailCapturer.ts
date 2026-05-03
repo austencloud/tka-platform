@@ -1,7 +1,6 @@
-import type { ITrailCapturer } from './services/contracts/ITrailCapturer';
 import { TrailCapturer } from './services/implementations/TrailCapturer';
 
-let instance: ITrailCapturer | null = null;
-export function getTrailCapturer(): ITrailCapturer {
+let instance: TrailCapturer | null = null;
+export function getTrailCapturer(): TrailCapturer {
   return instance ??= new TrailCapturer();
 }

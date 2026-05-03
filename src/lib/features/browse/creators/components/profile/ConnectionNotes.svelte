@@ -8,7 +8,7 @@
 
   import { getConnectionManager } from "$lib/shared/community/getConnectionManager";
   import { onDestroy } from "svelte";
-  import type { IConnectionManager } from "$lib/shared/community/services/contracts/IConnectionManager";
+  import type { ConnectionManager } from "$lib/shared/community/services/implementations/ConnectionManager";
 
   interface Props {
     targetUserId: string;
@@ -30,7 +30,7 @@
   });
 
   // Service
-  let connectionManager: IConnectionManager;
+  let connectionManager: ConnectionManager;
 
   $effect(() => {
     connectionManager = getConnectionManager();

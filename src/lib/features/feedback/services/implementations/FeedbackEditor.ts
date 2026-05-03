@@ -5,15 +5,10 @@
  * Used by FeedbackDetailState to track edits and restore from snapshots.
  */
 
-import type {
-  IFeedbackEditor,
-  EditSnapshot,
-  EditableFields,
-  ValidationResult,
-} from "../contracts/IFeedbackEditor";
+import type { EditSnapshot, EditableFields, ValidationResult } from "../contracts/types";
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 
-export class FeedbackEditor implements IFeedbackEditor {
+export class FeedbackEditor {
   /**
    * Create a snapshot of current feedback state for change tracking
    */

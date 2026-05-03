@@ -12,7 +12,6 @@
  * Note: Not using @injectable() for PoC - will add DI once concept is proven.
  */
 
-import type { IPropTracker } from '../contracts/IPropTracker';
 import type {
 	BoundingBox,
 	TrackedFrame,
@@ -21,7 +20,7 @@ import type {
 } from '../../domain/models';
 import { DEFAULT_TRACKING_CONFIG } from '../../domain/models';
 
-export class SimplePropTracker implements IPropTracker {
+export class SimplePropTracker {
 	private config: TrackingConfig = { ...DEFAULT_TRACKING_CONFIG };
 	private templateHistogram: number[] | null = null;
 	private lastBox: BoundingBox | null = null;

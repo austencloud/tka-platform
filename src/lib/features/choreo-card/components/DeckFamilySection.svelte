@@ -15,7 +15,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { IHandPathDataBuilder } from "../services/contracts/IHandPathDataBuilder";
+  import type { HandPathDataBuilder } from "../services/implementations/HandPathDataBuilder";
   import type { ArrowCollisionResolver } from "../services/implementations/ArrowCollisionResolver";
   import ChoreoCard from "./ChoreoCard.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";

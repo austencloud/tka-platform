@@ -13,7 +13,7 @@
   import type {
     RecordingProgress,
     RecordingResult,
-  } from "../services/contracts/IVideoRecorder";
+  } from "../services/contracts/types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createVideoRecordSettings } from "../state/video-record-settings.svelte";
   import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";

@@ -15,7 +15,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
-  import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
 import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { onMount } from "svelte";
   import { translateModule } from "$lib/shared/i18n/translate";
@@ -34,7 +34,7 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     onModuleSelect?: (moduleId: ModuleId) => void;
   }>();
 
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   // Track drag state to prevent clicks during swipe gestures
   let dragState = $state<{

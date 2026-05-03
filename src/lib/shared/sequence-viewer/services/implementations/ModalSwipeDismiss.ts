@@ -1,9 +1,4 @@
-import type {
-  IModalSwipeDismiss,
-  ModalSwipeDismissConfig,
-  ModalSwipeDismissState,
-} from "../contracts/IModalSwipeDismiss";
-
+import type { ModalSwipeDismissConfig, ModalSwipeDismissState } from "../contracts/types";
 /**
  * Modal swipe-to-dismiss gesture handler.
  *
@@ -12,7 +7,7 @@ import type {
  * - Visual feedback during drag
  * - Click blocking after swipe
  */
-export class ModalSwipeDismiss implements IModalSwipeDismiss {
+export class ModalSwipeDismiss {
   private readonly threshold: number;
   private readonly commitThreshold: number;
   private readonly horizontalTolerance: number;
@@ -201,6 +196,6 @@ export class ModalSwipeDismiss implements IModalSwipeDismiss {
  */
 export function createModalSwipeDismiss(
   config?: ModalSwipeDismissConfig
-): IModalSwipeDismiss {
+): ModalSwipeDismiss {
   return new ModalSwipeDismiss(config);
 }

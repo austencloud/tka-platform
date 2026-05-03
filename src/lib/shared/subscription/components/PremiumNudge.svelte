@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { NudgeConfig } from "../services/contracts/IPremiumGateChecker";
+	import type { NudgeConfig } from "../services/contracts/types";
 
 	interface Props {
 		nudge: NudgeConfig;

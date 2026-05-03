@@ -8,11 +8,10 @@
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 import type * as THREE from "three";
 import type {
-  IPromoVideoExporter,
   ExportProgressCallback,
   ExportStage,
   ExportResult,
-} from "../contracts/IPromoVideoExporter";
+} from "../contracts/types";
 import type {
   ExportConfig,
   ExportResolution,
@@ -20,7 +19,7 @@ import type {
 } from "../../domain/promo-models";
 import { RESOLUTION_DIMENSIONS } from "../../domain/promo-models";
 
-export class PromoVideoExporter implements IPromoVideoExporter {
+export class PromoVideoExporter {
   private renderer: THREE.WebGLRenderer | null = null;
   private scene: THREE.Scene | null = null;
   private camera: THREE.PerspectiveCamera | null = null;

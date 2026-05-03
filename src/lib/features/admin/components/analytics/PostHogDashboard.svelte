@@ -14,11 +14,9 @@
   import { onMount } from "svelte";
   import { getPostHogAnalyticsProvider } from "$lib/features/admin/getPostHogAnalyticsProvider";
   import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
-  import type {
-    ISystemStateManager,
-    CachedUserMetadata,
-  } from "../../services/contracts/ISystemStateManager";
-  import type { IPostHogAnalyticsProvider } from "../../services/contracts/IPostHogAnalyticsProvider";
+  import type { CachedUserMetadata } from "../../services/contracts/types";
+  import type { SystemStateManager } from "../../services/implementations/SystemStateManager";
+  import type { PostHogAnalyticsProvider } from "../../services/implementations/PostHogAnalyticsProvider";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // PostHog project ID for dashboard links

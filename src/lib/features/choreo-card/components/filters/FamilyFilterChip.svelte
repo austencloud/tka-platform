@@ -7,7 +7,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import type { DeckFamily } from "$lib/features/choreo-card/domain/models/Deck";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   interface Props {
@@ -29,7 +29,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
   });
 
   let isOpen = $state(false);
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;

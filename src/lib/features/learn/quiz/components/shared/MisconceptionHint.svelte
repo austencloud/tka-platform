@@ -7,8 +7,8 @@ Tappable: navigates to TIKA with the misconception pre-loaded.
 -->
 <script lang="ts">
   import { getLetterBreakdownGenerator } from "$lib/features/learn/getLetterBreakdownGenerator";
-  import type { DetectedGap } from "../../../services/contracts/IGapDetector";
-  import type { ILetterBreakdownGenerator } from "../../../services/contracts/ILetterBreakdownGenerator";
+  import type { DetectedGap } from "../../../services/contracts/types";
+  import type { LetterBreakdownGenerator } from "../../../services/implementations/LetterBreakdownGenerator";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { browser } from "$app/environment";
 

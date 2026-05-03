@@ -7,7 +7,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import {
     createTutorialState,
     type CreateTutorialStep,
@@ -27,7 +27,7 @@
   const { onComplete, onSkip }: Props = $props();
 
   let animateIn = $state(false);
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   const STEP_ICONS: Record<CreateTutorialStep, string> = {
     "pick-start": "fa-crosshairs",

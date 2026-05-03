@@ -1,7 +1,6 @@
-import type { IAdaptiveHeartbeat } from './services/contracts/IAdaptiveHeartbeat';
 import { AdaptiveHeartbeat } from './services/implementations/AdaptiveHeartbeat';
 
-let instance: IAdaptiveHeartbeat | null = null;
-export function getAdaptiveHeartbeat(): IAdaptiveHeartbeat {
+let instance: AdaptiveHeartbeat | null = null;
+export function getAdaptiveHeartbeat(): AdaptiveHeartbeat {
   return instance ??= new AdaptiveHeartbeat();
 }

@@ -11,10 +11,10 @@ import { getReversalDetector } from "$lib/features/create/shared/getReversalDete
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
 
-import type { IBuildConstructSectionCoordinator } from "../contracts/IConstructCoordinator";
+import type { ConstructCoordinator } from "./ConstructCoordinator";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { IReversalDetector } from "../contracts/IReversalDetector";
+import type { ReversalDetector } from "./ReversalDetector";
 import { orientationCalculator as orientationCalculatorDirect } from "../../../../../shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { StepData } from "../../domain/models/StepData";
 import { createStepData } from "../../domain/factories/createStepData";
@@ -22,9 +22,9 @@ import { createStepData } from "../../domain/factories/createStepData";
 import { getConstructCoordinator } from "$lib/features/create/shared/getConstructCoordinator";
 
 export class CreateModuleEventHandler {
-  private constructCoordinator: IBuildConstructSectionCoordinator | null = null;
+  private constructCoordinator: ConstructCoordinator | null = null;
   private OrientationCalculator: OrientationCalculator | null = null;
-  private ReversalDetector: IReversalDetector | null = null;
+  private ReversalDetector: ReversalDetector | null = null;
   private initialized = false;
 
   // Callback to access current sequence from component state
@@ -53,7 +53,7 @@ export class CreateModuleEventHandler {
 
     // Resolve services via ITI container - services may be undefined if not registered
     try {
-      this.constructCoordinator = getConstructCoordinator() as unknown as IBuildConstructSectionCoordinator | undefined ?? null;
+      this.constructCoordinator = getConstructCoordinator() as unknown as ConstructCoordinator | undefined ?? null;
     } catch {
       this.constructCoordinator = null;
     }

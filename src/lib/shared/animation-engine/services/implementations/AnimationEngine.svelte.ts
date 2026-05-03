@@ -22,14 +22,13 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { ISVGGenerator as SVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { PropState } from "../../domain/PropState";
 import { type TrailSettings } from "../../domain/types/TrailTypes";
-import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/types";
 import type { AnimationVisibilityState } from "../contracts/IAnimationVisibilitySynchronizer";
 import type { PreRenderProgress } from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
 
@@ -236,12 +235,12 @@ export class AnimationEngine {
   // ============================================================================
   // PRIVATE SERVICES
   // ============================================================================
-  private svgGenerator: ISVGGenerator | null = null;
+  private svgGenerator: SVGGenerator | null = null;
   private settingsService: SettingsState | null = null;
   private orchestrator: SequenceAnimationOrchestrator | null = null;
-  private trailCapturer: ITrailCapturer | null = null;
+  private trailCapturer: TrailCapturer | null = null;
   private turnsTupleGenerator: TurnsTupleGenerator | null = null;
-  private animationRenderer: IAnimationRenderer | null = null;
+  private animationRenderer: AnimationRenderer | null = null;
 
   private canvasResizerService: ICanvasResizer | null = null;
   private propTextureService: IPropTextureLoader | null = null;

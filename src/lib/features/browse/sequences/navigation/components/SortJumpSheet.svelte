@@ -6,7 +6,7 @@ Touch-friendly interface for changing sort method and jumping to sections
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { NavigationSection } from "$lib/features/browse/shared/domain/types/browse-types";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 
@@ -22,7 +22,7 @@ Touch-friendly interface for changing sort method and jumping to sections
     onSectionClick: (sectionId: string) => void;
   }>();
 
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();

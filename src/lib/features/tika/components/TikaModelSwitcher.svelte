@@ -7,7 +7,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { ModelOption } from "../types";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   let {
@@ -23,7 +23,7 @@
   let triggerElement: HTMLButtonElement | null = null;
   let popoverElement: HTMLElement | null = null;
   let isOpen = $state(false);
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   // Find current model data
   const currentModelData = $derived(

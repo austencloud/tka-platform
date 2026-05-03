@@ -1,8 +1,8 @@
-import type { IPhraseInterpolator, PhraseInterpolationResult } from "../contracts/IPhraseInterpolator";
+import type { PhraseInterpolationResult } from "../contracts/types";
 import type { EffortPhrase } from "../../domain/effort-timeline-types";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
 
-export class PhraseInterpolator implements IPhraseInterpolator {
+export class PhraseInterpolator {
   interpolate(
     phrase: EffortPhrase,
     currentStep: number,

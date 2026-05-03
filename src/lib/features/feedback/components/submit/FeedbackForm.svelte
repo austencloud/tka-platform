@@ -3,9 +3,9 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import type { VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
+  import type { VoiceRecordingResult } from "../../services/contracts/types";
   import { getVoiceRecorder } from "$lib/features/feedback/getVoiceRecorder";
   import { getTranscriptionClient } from "$lib/features/feedback/getTranscriptionClient";
   import { getFormDraftPersister } from "$lib/features/feedback/getFormDraftPersister";

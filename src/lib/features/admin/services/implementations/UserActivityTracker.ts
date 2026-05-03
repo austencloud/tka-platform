@@ -17,19 +17,14 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PresenceTracker } from "$lib/shared/presence/services/implementations/PresenceTracker";
 import type {
-  IUserActivityTracker,
-  UserWithActivity,
-  SessionSummary,
-  UserActivityQueryOptions,
-} from "../contracts/IUserActivityTracker";
+  UserWithActivity, SessionSummary, UserActivityQueryOptions } from "../contracts/types";
 import type {
   ActivityEvent,
   ActivityCategory,
   ActivityEventType,
 } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
-
-export class UserActivityTracker implements IUserActivityTracker {
+export class UserActivityTracker {
   constructor(private presenceService: PresenceTracker) {}
 
   async getAllUsersWithPresence(): Promise<UserWithActivity[]> {

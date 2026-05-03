@@ -4,7 +4,7 @@
   Displays key training statistics in a responsive grid.
 -->
 <script lang="ts">
-  import type { StatsOverview } from "../../services/contracts/IPerformanceHistoryTracker";
+  import type { StatsOverview } from "../../services/contracts/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

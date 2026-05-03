@@ -6,12 +6,8 @@
  */
 
 import type { StepData } from "../../../create/shared/domain/models/StepData";
-import type {
-  StepCalculationResult,
-  IStepCalculator,
-} from "../contracts/IStepCalculator";
-
-export class StepCalculator implements IStepCalculator {
+import type { StepCalculationResult } from "../contracts/types";
+export class StepCalculator {
   /**
    * Calculate current beat index and progress from animation time
    * EXACT LOGIC FROM STANDALONE ANIMATOR

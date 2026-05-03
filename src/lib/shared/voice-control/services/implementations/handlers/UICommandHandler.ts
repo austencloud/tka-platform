@@ -5,12 +5,12 @@
  * Uses browser APIs directly for scroll and fullscreen.
  */
 
-import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
 } from "../../../domain/voice-command-types";
+import type { IVoiceCommandHandler } from "../../contracts/types";
 
 export class UICommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["ui"];

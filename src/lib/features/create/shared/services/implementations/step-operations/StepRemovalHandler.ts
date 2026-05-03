@@ -4,7 +4,7 @@
  */
 
 import type { ICreateModuleState } from "../../../types/create-module-types";
-import { UndoOperationType } from "../../../services/contracts/IUndoManager";
+import { UndoOperationType } from "../../contracts/types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("StepRemoval");

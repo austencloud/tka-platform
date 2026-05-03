@@ -1,7 +1,7 @@
 /**
  * CellTransformStack - Non-destructive transform replay
  *
- * Receives IArrangeLayerTransformer via constructor injection.
+ * Receives ArrangeLayerTransformer via constructor injection.
  * Replays an ordered stack of transforms against the original sequence
  * to produce the effective (displayed) result. The original is never mutated.
  *
@@ -11,10 +11,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
-import type { IArrangeLayerTransformer } from "../contracts/IArrangeLayerTransformer";
+import type { ArrangeLayerTransformer } from "../implementations/ArrangeLayerTransformer";
 
 export class CellTransformStack {
-  constructor(private readonly transformer: IArrangeLayerTransformer) {}
+  constructor(private readonly transformer: ArrangeLayerTransformer) {}
 
   async computeEffective(
     original: SequenceData,

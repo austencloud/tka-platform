@@ -1,7 +1,7 @@
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IPropPreferencePersister, PropPreferences, CatdogCombo } from "../contracts/IPropPreferencePersister";
+import type { PropPreferences, CatdogCombo } from "../contracts/types";
 
 const DEFAULT_PREFS: PropPreferences = {
   propsISpinWith: [],
@@ -9,7 +9,7 @@ const DEFAULT_PREFS: PropPreferences = {
   favoriteCatdog: null,
 };
 
-export class PropPreferencePersister implements IPropPreferencePersister {
+export class PropPreferencePersister {
   async load(userId: string): Promise<PropPreferences> {
     const db = await getFirestoreInstance();
     const userDoc = await getDoc(doc(db, "users", userId));

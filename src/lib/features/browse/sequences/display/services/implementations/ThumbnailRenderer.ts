@@ -15,17 +15,10 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type {
-  IThumbnailRenderer,
-  RenderOptions,
-  RenderProgressCallback,
-} from "../contracts/IThumbnailRenderer";
-import type {
-  ThumbnailRenderInput,
-  CompositionDefaults,
-} from "../contracts/IThumbnailKeyDeriver";
 import type { ILOOPDetector } from "$lib/features/create/generate/circular/services/contracts/ILOOPDetector";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { RenderOptions, RenderProgressCallback } from "../contracts/types";
+import type { ThumbnailRenderInput, CompositionDefaults } from "../contracts/types";
 
 const DEFAULT_BEAT_SIZE = 240;
 const DEFAULT_FORMAT = "WebP" as const;
@@ -47,7 +40,7 @@ const WORDCARD_DEFAULTS: CompositionDefaults = {
   addUserInfo: true,
 };
 
-export class ThumbnailRenderer implements IThumbnailRenderer {
+export class ThumbnailRenderer {
   constructor(
     private sequenceRenderer: SequenceRenderer,
     private startPositionDeriver: StartPositionDeriver,

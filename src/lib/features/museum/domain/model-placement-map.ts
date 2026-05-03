@@ -9,7 +9,7 @@
  * to interactive or decorative tiles.
  */
 
-import type { MuseumModelRole } from "../services/contracts/IMuseumModelLoader";
+import type { MuseumModelRole } from "../services/contracts/types";
 import type { TileType } from "./museum-grid-types";
 
 export interface ModelPlacement {

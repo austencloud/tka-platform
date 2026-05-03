@@ -1,9 +1,9 @@
 /**
  * ActManager - Implementation for Write tab Act operations
  */
-import type { ActSummary, IActManager } from "../contracts/IActManager";
+import type { ActSummary } from "../contracts/types";
 
-export class ActManager implements IActManager {
+export class ActManager {
   private acts: Map<string, ActSummary> = new Map();
   private initialized = false;
 

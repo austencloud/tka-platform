@@ -19,7 +19,7 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import type { Group } from "three";
-  import type { MuseumModelRole } from "../../services/contracts/IMuseumModelLoader";
+  import type { MuseumModelRole } from "../../services/contracts/types";
 
   interface FurniturePlacement {
     id: string;

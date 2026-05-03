@@ -1,15 +1,11 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
-import type {
-  IClaimStatusDeriver,
-  EffectiveStatus,
-  ClaimHealth,
-} from "../contracts/IClaimStatusDeriver";
+import type { EffectiveStatus, ClaimHealth } from "../contracts/types";
 import {
   STALE_THRESHOLDS,
   checkClaimStaleness as sharedCheckClaimStaleness,
 } from "../../config/claim-config";
 
-export class ClaimStatusDeriver implements IClaimStatusDeriver {
+export class ClaimStatusDeriver {
   private readonly staleThresholdMs: number;
 
   constructor(staleThresholdMs: number = STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS) {

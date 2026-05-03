@@ -3,13 +3,9 @@
  * Wraps native geolocation with Promise-based interface
  */
 
-import type {
-  GeolocationError,
-  GeolocationPosition,
-  ILocationProvider,
-} from "../contracts/ILocationProvider";
+import type { GeolocationError, GeolocationPosition } from "../contracts/types";
 
-export class LocationProvider implements ILocationProvider {
+export class LocationProvider {
   isSupported(): boolean {
     return "geolocation" in navigator;
   }

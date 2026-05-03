@@ -1,7 +1,6 @@
-import type { IMessageBatcher } from './services/contracts/IMessageBatcher';
 import { MessageBatcher } from './services/implementations/MessageBatcher';
 
-let instance: IMessageBatcher | null = null;
-export function getMessageBatcher(): IMessageBatcher {
+let instance: MessageBatcher | null = null;
+export function getMessageBatcher(): MessageBatcher {
   return instance ??= new MessageBatcher();
 }

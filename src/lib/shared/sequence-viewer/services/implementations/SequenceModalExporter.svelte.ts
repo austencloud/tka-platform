@@ -1,5 +1,4 @@
 import type {
-  ISequenceModalExporter,
   ExportState,
   ExportCallbacks,
   VideoExportDependencies,
@@ -7,8 +6,9 @@ import type {
   ImageExportDependencies,
   VideoExportOptions,
   ImageExportOptions,
-} from "../contracts/ISequenceModalExporter";
-import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+} from "../contracts/types";
+import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
 import type { IOffline3DExporter } from "$lib/shared/3d/services/contracts/IOffline3DExporter";
 import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
@@ -20,17 +20,17 @@ import { recordExportThroughput } from "../../state/export-timing-tracker";
 import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
 
-export class SequenceModalExporter implements ISequenceModalExporter {
+export class SequenceModalExporter {
   private _isExporting = $state(false);
   private _progress = $state<VideoExportProgress | null>(null);
   private _error = $state<string | null>(null);
   private _previewBlobUrl = $state<string | null>(null);
 
-  private _videoExportOrchestrator: IVideoExportOrchestrator | null = null;
+  private _videoExportOrchestrator: VideoExportOrchestrator | null = null;
   private _sequenceRenderer: SequenceRenderer | null = null;
   private _activeExporter: IOffline3DExporter | null = null;
 
-  private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
+  private get videoExportOrchestrator(): VideoExportOrchestrator | null {
     if (!this._videoExportOrchestrator) {
       this._videoExportOrchestrator = getVideoExportOrchestrator();
     }

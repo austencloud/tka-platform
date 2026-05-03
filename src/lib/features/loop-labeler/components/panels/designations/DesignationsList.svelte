@@ -8,12 +8,11 @@
   import type { LOOPDesignation } from "../../../domain/models/label-models";
   import type { SectionDesignation } from "../../../domain/models/section-models";
   import type { StepPairRelationship } from "../../../domain/models/steppair-models";
-  import type { AxisAlternatingPattern } from "../../../services/contracts/ILOOPDetector";
+  import type { AxisAlternatingPattern } from "../../../services/contracts/types";
   import DesignationItem from "./DesignationItem.svelte";
   import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
-  import type { ILabelFormatter } from "../../../services/contracts/ILabelFormatter";
-
-  const labelFormatter = getLabelFormatter() as ILabelFormatter;
+  import type { LabelFormatter } from "../../../services/implementations/LabelFormatter";
+  const labelFormatter = getLabelFormatter() as LabelFormatter;
 
   interface Props {
     wholeDesignations: LOOPDesignation[];

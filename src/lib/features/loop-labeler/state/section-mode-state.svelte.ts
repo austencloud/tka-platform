@@ -6,11 +6,11 @@
  */
 
 import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
-import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { LabeledSequence } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
 import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { LOOPLabelsFirebaseRepository } from "../services/implementations/LOOPLabelsFirebaseRepository";
 
 export interface SectionModeState {
   // Beat selection
@@ -66,7 +66,7 @@ export function createSectionModeState(): SectionModeState {
 
   // Services
   const labelsService =
-    getLOOPLabelsFirebaseRepository() as ILOOPLabelsFirebaseRepository | null;
+    getLOOPLabelsFirebaseRepository() as LOOPLabelsFirebaseRepository | null;
 
   // Actions
   const actions = {

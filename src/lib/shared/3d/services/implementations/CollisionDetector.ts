@@ -71,7 +71,7 @@ interface ZoneStats {
   severityCounts: Record<CollisionSeverity, number>;
 }
 
-export class CollisionDetector implements ICollisionDetector {
+export class CollisionDetector {
   /** Detection itself - when false, detect() returns [] and no stats are collected. */
   enabled = true;
 

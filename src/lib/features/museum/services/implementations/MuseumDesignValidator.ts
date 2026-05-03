@@ -13,7 +13,7 @@
 import type { PlacedRoom, RoomEdge } from "../../domain/layout-types";
 import type { MuseumGrid, Direction } from "../../domain/museum-grid-types";
 import { tileKey } from "../../domain/museum-grid-types";
-import type { DesignViolation, IMuseumDesignValidator } from "../contracts/IMuseumDesignValidator";
+import type { DesignViolation } from "../contracts/types";
 import type { ExhibitSegment } from "../../domain/wall-segment-types";
 import {
   DEV_WHITEBOARDS_ENABLED,
@@ -75,7 +75,7 @@ function bresenhamLine(a: TilePos, b: TilePos): TilePos[] {
   return points;
 }
 
-export class MuseumDesignValidator implements IMuseumDesignValidator {
+export class MuseumDesignValidator {
   /**
    * Validates a single room's exhibits against design rules that don't
    * require the full tile grid. Only anchor metadata checks remain here;

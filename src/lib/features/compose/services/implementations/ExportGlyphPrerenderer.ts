@@ -12,10 +12,7 @@
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SvgImageConverter } from '$lib/shared/foundation/services/implementations/SvgImageConverter'
-import type {
-  GlyphAsset,
-  IExportGlyphPrerenderer,
-} from "../contracts/IExportGlyphPrerenderer";
+import type { GlyphAsset } from "../contracts/types";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { TurnColorInterpreter } from "$lib/shared/pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
@@ -62,7 +59,7 @@ interface GlyphBuildData {
   step: StepData;
 }
 
-export class ExportGlyphPrerenderer implements IExportGlyphPrerenderer {
+export class ExportGlyphPrerenderer {
   private cache = new Map<string, GlyphAsset>();
   private stepKeyMap = new Map<number, string>();
   private tupleGenerator = new TurnsTupleGenerator();

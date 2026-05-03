@@ -7,16 +7,12 @@
  * Falls back to WASM-based h264-mp4-encoder for browsers without WebCodecs (Firefox).
  */
 
-import type {
-  IVideoExporter,
-  VideoExportOptions,
-  VideoFormat,
-} from "../contracts/IVideoExporter";
+import type { VideoExportOptions, VideoFormat } from "../contracts/types";
 import { VIDEO_EXPORT_FPS } from "../../shared/domain/constants/timing";
 import { WebCodecsVideoEncoder } from "./WebCodecsVideoEncoder";
 import { WasmVideoEncoder } from "./WasmVideoEncoder";
 
-export class VideoExporter implements IVideoExporter {
+export class VideoExporter {
   private isCurrentlyExporting = false;
   private shouldCancel = false;
   private activeEncoder: WebCodecsVideoEncoder | WasmVideoEncoder | null = null;

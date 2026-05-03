@@ -12,34 +12,27 @@
  * while internally using decomposed, single-responsibility services.
  */
 
-import type {
-  IPositionDetector,
-  DetectionCapabilities,
-} from "../contracts/IPositionDetector";
+import type { DetectionCapabilities, HandLandmark, DetectedHandData } from "../contracts/types";
 import type {
   DetectionFrame,
   DetectedPosition,
 } from "../../domain/models/DetectionFrame";
-import type {
-  IHandLandmarker,
-  HandLandmark,
-} from "../contracts/IHandLandmarker";
-import type { IHandednessAnalyzer } from "../contracts/IHandednessAnalyzer";
-import type { IHandStateAnalyzer } from "../contracts/IHandStateAnalyzer";
-import type { IHandTrackingStabilizer } from "../contracts/IHandTrackingStabilizer";
-import type { DetectedHandData } from "../contracts/IHandAssigner";
+import type { HandLandmarker } from "./HandLandmarker";
+import type { HandednessAnalyzer } from "./HandednessAnalyzer";
+import type { HandStateAnalyzer } from "./HandStateAnalyzer";
+import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
 import { QuadrantMapper } from "./QuadrantMapper";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // How many frames to persist a hand after it disappears (for stability)
 const HAND_PERSISTENCE_FRAMES = 5;
 
-export class MediaPipeDetector implements IPositionDetector {
+export class MediaPipeDetector {
   // Sub-services (injected via DI)
-  private _landmarker: IHandLandmarker;
-  private _handednessAnalyzer: IHandednessAnalyzer;
-  private _stateAnalyzer: IHandStateAnalyzer;
-  private _stabilizer: IHandTrackingStabilizer;
+  private _landmarker: HandLandmarker;
+  private _handednessAnalyzer: HandednessAnalyzer;
+  private _stateAnalyzer: HandStateAnalyzer;
+  private _stabilizer: HandTrackingStabilizer;
 
   // State
   private _isDetecting = false;
@@ -63,10 +56,10 @@ export class MediaPipeDetector implements IPositionDetector {
   private _redFramesMissing = 0;
 
   constructor(
-    landmarker: IHandLandmarker,
-    handednessAnalyzer: IHandednessAnalyzer,
-    stateAnalyzer: IHandStateAnalyzer,
-    stabilizer: IHandTrackingStabilizer
+    landmarker: HandLandmarker,
+    handednessAnalyzer: HandednessAnalyzer,
+    stateAnalyzer: HandStateAnalyzer,
+    stabilizer: HandTrackingStabilizer
   ) {
     this._landmarker = landmarker;
     this._handednessAnalyzer = handednessAnalyzer;

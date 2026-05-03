@@ -1,14 +1,9 @@
-import type {
-	ITrainingDataStore,
-	TrainingDataEntry,
-	TrainingDataSource,
-} from "../contracts/ITrainingDataStore";
-
+import type { TrainingDataEntry, TrainingDataSource } from "../contracts/types";
 const DB_NAME = "tka-training-data";
 const DB_VERSION = 1;
 const STORE_NAME = "entries";
 
-export class TrainingDataStore implements ITrainingDataStore {
+export class TrainingDataStore {
 	private dbPromise: Promise<IDBDatabase> | null = null;
 
 	async save(entry: TrainingDataEntry): Promise<void> {

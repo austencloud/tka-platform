@@ -2,7 +2,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
@@ -17,7 +17,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   const propTypeApplier = new PropTypeApplier();
   const visibilityManager = getAnimationVisibilityManager();
 
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   let currentSequence = $state<SequenceData | null>(null);
   let ready = $state(false);
   let error = $state<string | null>(null);

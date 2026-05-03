@@ -13,7 +13,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
   import { onMount, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
   import type { WordSequenceGenerator } from "$lib/features/create/spell/services/implementations/WordSequenceGenerator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -27,7 +27,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
   } = $props();
 
   // Services (resolved from DI container)
-  let controller = $state<IAnimationPlaybackController | null>(null);
+  let controller = $state<AnimationPlaybackController | null>(null);
   let motionLoader = $state<SequenceMotionLoader | null>(null);
   let sequenceGenerator = $state<WordSequenceGenerator | null>(null);
 

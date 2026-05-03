@@ -11,7 +11,7 @@
  */
 
 import { browser } from '$app/environment';
-import type { IHapticFeedback } from '$lib/shared/application/services/contracts/IHapticFeedback';
+import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 import {
 	type AchievementType,
 	type DelightIntensity,
@@ -33,7 +33,7 @@ export class DelightOrchestrator {
 	// Audio context for sound effects (lazy initialized)
 	private audioContext: AudioContext | null = null;
 
-	constructor(private hapticService: IHapticFeedback | null) {
+	constructor(private hapticService: HapticFeedback | null) {
 		this.initializeService();
 	}
 

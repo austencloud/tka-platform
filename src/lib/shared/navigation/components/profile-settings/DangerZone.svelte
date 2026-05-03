@@ -6,14 +6,14 @@
   Includes GitHub-style text confirmation barrier.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
 
   const ctx = getProfileSettingsContext();
 
   let { onDeleteAccount, hapticService, userIdentifier } = $props<{
     onDeleteAccount: (password: string) => Promise<void>;
-    hapticService: IHapticFeedback | null;
+    hapticService: HapticFeedback | null;
     userIdentifier: string;
   }>();
 

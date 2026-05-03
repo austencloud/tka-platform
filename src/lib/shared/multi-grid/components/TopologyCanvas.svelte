@@ -20,9 +20,9 @@
 -->
 <script lang="ts">
   import type { GridTopology, PointRef, Vec2 } from "../domain/models/GridTopology";
-  import type { ViewBoxData } from "../services/contracts/ITopologyRenderer";
-  import type { TopologyPropRenderData } from "../services/contracts/ITopologyPropLoader";
-  import type { BetaOffset } from "../services/contracts/ITopologyBetaSeparator";
+  import type { ViewBoxData } from "../services/contracts/types";
+  import type { TopologyPropRenderData } from "../services/contracts/types";
+  import type { BetaOffset } from "../services/contracts/types";
   import type { GridLocation } from "$lib/shared/render/core/types";
   import { TopologyRenderer } from "../services/implementations/TopologyRenderer";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";

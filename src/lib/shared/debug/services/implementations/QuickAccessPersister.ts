@@ -5,14 +5,11 @@
  * Uses localStorage for persistence across sessions.
  */
 
-import type {
-  IQuickAccessPersister,
-  QuickAccessUser,
-} from "../contracts/IQuickAccessPersister";
+import type { QuickAccessUser } from "../contracts/types";
 
 const STORAGE_KEY = "tka-quick-access-users";
 
-export class QuickAccessPersister implements IQuickAccessPersister {
+export class QuickAccessPersister {
   private cache: QuickAccessUser[] | null = null;
 
   load(): QuickAccessUser[] {

@@ -23,13 +23,7 @@ import {
 import type { Timestamp, DocumentData } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type {
-  IConnectionManager,
-  ConnectionInfo,
-  MutualFollowInfo,
-  SharedSequenceSummary,
-  ConnectionDocument,
-} from "../contracts/IConnectionManager";
+import type { ConnectionInfo, MutualFollowInfo, SharedSequenceSummary, ConnectionDocument } from "../contracts/types";
 
 /**
  * Firestore follow document structure
@@ -49,7 +43,7 @@ interface SequenceWithSignature {
   thumbnails?: string[];
 }
 
-export class ConnectionManager implements IConnectionManager {
+export class ConnectionManager {
   private readonly USERS_COLLECTION = "users";
   private readonly CONNECTIONS_SUBCOLLECTION = "connections";
   private readonly SEQUENCES_SUBCOLLECTION = "sequences";

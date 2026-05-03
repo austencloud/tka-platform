@@ -1,7 +1,6 @@
-import type { IPreviewCellRenderer } from './services/contracts/IPreviewCellRenderer';
 import { PreviewCellRenderer } from './services/implementations/PreviewCellRenderer';
 
-let instance: IPreviewCellRenderer | null = null;
-export function getPreviewCellRenderer(): IPreviewCellRenderer {
+let instance: PreviewCellRenderer | null = null;
+export function getPreviewCellRenderer(): PreviewCellRenderer {
   return instance ??= new PreviewCellRenderer();
 }

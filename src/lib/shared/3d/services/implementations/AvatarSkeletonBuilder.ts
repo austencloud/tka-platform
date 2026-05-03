@@ -88,7 +88,7 @@ for (const side of ["Left", "Right"] as const) {
   }
 }
 
-export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+export class AvatarSkeletonBuilder {
   private state: SkeletonState = {
     isLoaded: false,
     root: null,

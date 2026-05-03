@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ICameraManager } from './services/contracts/ICameraManager';
 import { CameraManager } from './services/implementations/CameraManager';
 
-let instance: ICameraManager | null = null;
+let instance: CameraManager | null = null;
 
-export function getCameraManager(): ICameraManager {
+export function getCameraManager(): CameraManager {
 	if (!browser) throw new Error('getCameraManager() is browser-only');
 	return instance ??= new CameraManager();
 }

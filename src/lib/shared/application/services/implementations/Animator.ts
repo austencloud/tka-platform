@@ -15,7 +15,7 @@ import type {
   TransitionResult,
 } from "../contracts/IAnimator";
 
-export class Animator implements IAnimator {
+export class Animator {
   /**
    * Create a fold transition effect
    */

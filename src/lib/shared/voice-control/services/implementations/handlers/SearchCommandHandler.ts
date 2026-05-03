@@ -7,12 +7,12 @@
  * (BrowseFilter, BrowseSorter) can be added when those expose global refs.
  */
 
-import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
 } from "../../../domain/voice-command-types";
+import type { IVoiceCommandHandler } from "../../contracts/types";
 
 export class SearchCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["search"];

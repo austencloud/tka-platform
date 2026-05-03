@@ -11,7 +11,7 @@
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import ModuleList from "./ModuleList.svelte";
-  import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import Drawer from "../../foundation/ui/Drawer.svelte";
@@ -37,7 +37,7 @@
     onModuleChange?: (moduleId: ModuleId) => void;
   }>();
 
-  let hapticService: IHapticFeedback = null!;
+  let hapticService: HapticFeedback = null!;
   let deviceDetector: DeviceDetector | null = null;
   let isOpen = $state(false);
 

@@ -1,11 +1,3 @@
-import type {
-  ITransformationAnalyzer,
-  AxisAlternatingResult,
-  ModularAnalysisResult,
-  ColumnBehavior,
-  SwapRhythmPattern,
-} from "../contracts/ITransformationAnalyzer";
-import type { ICandidateFormatter } from "../contracts/ICandidateFormatter";
 import type { InternalStepPair } from "../../domain/models/internal-step-models";
 import type { StepPairGroups } from "../../domain/models/label-models";
 import { TRANSFORMATION_PRIORITY } from "../../domain/constants/transformation-priority";
@@ -20,8 +12,8 @@ void TRANSFORMATION_PRIORITY;
 /**
  * Service for analyzing transformation patterns across beat pairs.
  */
-export class TransformationAnalyzer implements ITransformationAnalyzer {
-  constructor(private formattingService: ICandidateFormatter) {}
+export class TransformationAnalyzer {
+  constructor(private formattingService: CandidateFormatter) {}
 
   normalizeToBase(transformation: string): string {
     return transformation
@@ -627,6 +619,8 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
 // ============================================================================
 
 import { candidateFormatter } from "./CandidateFormatter";
+import type { AxisAlternatingResult, ModularAnalysisResult, ColumnBehavior, SwapRhythmPattern } from "../contracts/types";
+import type { CandidateFormatter } from "./CandidateFormatter";
 
 export const transformationAnalyzer = new TransformationAnalyzer(
   candidateFormatter

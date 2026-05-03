@@ -1,19 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type {
-    FireflyForestLayers,
-    TreeTypeVisibility,
-    EcologicalPattern,
-    QualityLevel,
-    TreeCategory,
-    RenderedTree,
-  } from "@austencloud/backgrounds";
+  import type { FireflyForestLayers, TreeTypeVisibility, EcologicalPattern, QualityLevel, TreeCategory, RenderedTree, } from "@austencloud/backgrounds";
   import {
-    getFireflyForestSettings,
-    updateFireflyForestSettings,
-  } from "../state/background-builder-state.svelte";
+    getFireflyForestSettings, updateFireflyForestSettings, } from "../state/background-builder-state.svelte";
   import { getPreviewAnimationController } from "../getPreviewAnimationController";
-  import type { PreviewStats } from "../services/contracts/IPreviewAnimationController";
+  import type { PreviewStats } from "../services/contracts/types";
 
   // Child components
   import PreviewControls from "./PreviewControls.svelte";

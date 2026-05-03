@@ -15,19 +15,19 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ISequenceDetailLoader } from "../services/contracts/ISequenceDetailLoader";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { SequenceDetailLoader } from "../services/implementations/SequenceDetailLoader";
   import type { VideoCountManager } from "$lib/features/browse/sequences/display/services/implementations/VideoCountManager";
-  import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
+  import type { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
   import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
-  import type { IClaudeCodeCopier } from "../services/contracts/IClaudeCodeCopier";
+  import type { ClaudeCodeCopier } from "../services/implementations/ClaudeCodeCopier";
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
-  import type { IPresentationResolver, ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/IPresentationResolver";
+  import type { PresentationResolver } from "$lib/shared/sequence-viewer/services/implementations/PresentationResolver";
+import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/types";
   import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-
+  import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
   import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
   import { getVideoCountManager } from "../getVideoCountManager";
   import { getClaudeCodeCopier } from "../getClaudeCodeCopier";
@@ -60,16 +60,16 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // Services (resolved in onMount)
-  let hapticService: IHapticFeedback | null = null;
-  let detailLoader = $state<ISequenceDetailLoader | null>(null);
+  let hapticService: HapticFeedback | null = null;
+  let detailLoader = $state<SequenceDetailLoader | null>(null);
   let videoCountManager = $state<VideoCountManager | null>(null);
-  let imageSharer = $state<ISequenceImageSharer | null>(null);
-  let claudeCopier = $state<IClaudeCodeCopier | null>(null);
+  let imageSharer = $state<SequenceImageSharer | null>(null);
+  let claudeCopier = $state<ClaudeCodeCopier | null>(null);
 
   // Save state detection
   let isSaved = $state(true); // Default: assume saved (hide Save button while checking)
   let isFavorite = $state(false);
-  let libraryRepo = $state<ILibraryRepository | null>(null);
+  let libraryRepo = $state<LibraryRepository | null>(null);
   let collectionManager = $state<CollectionManager | null>(null);
 
   // Content hash cache (avoids re-querying Firestore for same hash)

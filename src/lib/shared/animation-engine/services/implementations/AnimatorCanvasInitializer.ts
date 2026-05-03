@@ -4,7 +4,7 @@
  * Orchestrates the complex async initialization sequence for AnimatorCanvas.
  */
 
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { loadAnimationRenderer } from "./AnimatorLoader";
 import { DEFAULT_CANVAS_SIZE } from "../contracts/ICanvasResizer";
 import type {
@@ -27,8 +27,8 @@ function measureContainerSize(container: HTMLDivElement): number {
   return size > 0 ? size : DEFAULT_CANVAS_SIZE;
 }
 
-export class AnimatorCanvasInitializer implements IAnimatorCanvasInitializer {
-  private renderer: IAnimationRenderer | null = null;
+export class AnimatorCanvasInitializer {
+  private renderer: AnimationRenderer | null = null;
   private initialized = false;
   private isInitializing = false;
   private destroyRequested = false;
@@ -181,7 +181,7 @@ export class AnimatorCanvasInitializer implements IAnimatorCanvasInitializer {
     callbacks.onInitialized(false);
   }
 
-  getRenderer(): IAnimationRenderer | null {
+  getRenderer(): AnimationRenderer | null {
     return this.renderer;
   }
 

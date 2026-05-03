@@ -18,7 +18,7 @@
   import { replaceState } from "$app/navigation";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
-  import type { IURLSyncer } from "$lib/shared/navigation/services/contracts/IURLSyncer";
+  import type { URLSyncer } from "$lib/shared/navigation/services/implementations/URLSyncer";
   import { getURLSyncer } from "$lib/shared/navigation/getURLSyncer";
   import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
   import { consumeSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
@@ -37,7 +37,7 @@
   const composeState = getComposeModuleState();
 
   // Services
-  let urlSyncService: IURLSyncer | null = $state(null);
+  let urlSyncService: URLSyncer | null = $state(null);
 
   // Track if deep link has been processed
   let deepLinkProcessed = $state(false);

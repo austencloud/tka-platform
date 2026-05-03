@@ -26,7 +26,7 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 
 import { PropPreferencePersister } from "../../../src/lib/shared/community/services/implementations/PropPreferencePersister";
 import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/PropType";
-import type { PropPreferences } from "../../../src/lib/shared/community/services/contracts/IPropPreferencePersister";
+import type { PropPreferences } from "../../../src/lib/shared/community/services/contracts/types";
 import { updateDoc, getDoc } from "firebase/firestore";
 
 describe("PropPreferencePersister", () => {

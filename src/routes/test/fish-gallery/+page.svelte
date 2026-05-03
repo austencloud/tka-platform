@@ -1,12 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type {
-    FishMarineLife,
-    FishSpecies,
-    FinState,
-    TailState,
-    FishColorPalette,
-  } from "@austencloud/backgrounds";
+  import type { FishMarineLife, FishSpecies, FinState, TailState, FishColorPalette } from "@austencloud/backgrounds";
+import {  } from "@austencloud/backgrounds";
 
   let staticCanvas: HTMLCanvasElement;
   let animatedCanvas: HTMLCanvasElement;

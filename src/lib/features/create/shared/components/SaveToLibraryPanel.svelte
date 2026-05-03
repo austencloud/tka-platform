@@ -29,7 +29,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
+  import type { ILibrarySaveService } from "$lib/features/library/services/contracts/types";
   import type { ContentModerator } from "$lib/features/moderation/services/implementations/ContentModerator";
   import { getContentModerator } from "$lib/features/moderation/getContentModerator";
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
@@ -39,6 +39,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   import type { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import type { LibrarySaveService } from "$lib/features/library/services/implementations/LibrarySaveService";
   interface Props {
     show: boolean;
     word?: string;
@@ -81,7 +82,7 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   let publishToCommunity = $state(false);
 
   // Get the save service
-  let librarySaveService: ILibrarySaveService | null = null;
+  let librarySaveService: LibrarySaveService | null = null;
   try {
     librarySaveService = getLibrarySaveService();
   } catch (error) {
@@ -439,7 +440,6 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   function handleShameCanceled() {
     showShameGate = false;
   }
-
 
 </script>
 

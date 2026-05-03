@@ -23,7 +23,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
-import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+import type { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export interface CodeEntry {
@@ -68,12 +68,44 @@ class ScanActivityState {
   private authorCache = new Map<string, { displayName: string; avatarUrl?: string }>();
   private authorInflight = new Map<string, Promise<{ displayName: string; avatarUrl?: string }>>();
 
+  view = $state<"active" | "zero-scan">("active");
+
   filtered = $derived.by(() => {
     const q = this.searchQuery.trim().toLowerCase();
-    if (!q) return this.codes;
-    return this.codes.filter(
+    let base = this.codes;
+    if (this.view === "zero-scan") {
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      base = base.filter(
+        (c) => c.scanCount === 0 && new Date(c.createdAt).getTime() < thirtyDaysAgo
+      );
+    }
+    if (!q) return base;
+    return base.filter(
       (c) => c.word.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
     );
+  });
+
+  zeroScanCount = $derived(
+    this.codes.filter((c) => {
+      if (c.scanCount !== 0) return false;
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      return new Date(c.createdAt).getTime() < thirtyDaysAgo;
+    }).length
+  );
+
+  sparklineData = $derived.by(() => {
+    const map = new Map<string, number[]>();
+    const now = Date.now();
+    for (const ev of this.recentEvents) {
+      const ts = new Date(ev.timestamp).getTime();
+      if (!ts) continue;
+      const daysAgo = Math.floor((now - ts) / (24 * 60 * 60 * 1000));
+      if (daysAgo >= 30) continue;
+      const existing = map.get(ev.code) ?? new Array(30).fill(0);
+      existing[29 - daysAgo]!++;
+      map.set(ev.code, existing);
+    }
+    return map;
   });
 
   async subscribe(currentUserId: string | null): Promise<void> {
@@ -82,7 +114,7 @@ class ScanActivityState {
     this.teardown();
 
     const firestore = await getFirestoreInstance();
-    const encoder = getSequenceEncoder() as ISequenceEncoder;
+    const encoder = getSequenceEncoder() as SequenceEncoder;
 
     const codesRef = collection(firestore, "shortcodes");
     const codesQ =
@@ -165,7 +197,7 @@ class ScanActivityState {
   private ingestCodeDoc(
     code: string,
     data: DocumentData,
-    encoder: ISequenceEncoder
+    encoder: SequenceEncoder
   ): void {
     const encoded: string = data.encoded ?? "";
     const entry: CodeEntry = {
@@ -203,7 +235,7 @@ class ScanActivityState {
   private async decodeAsync(
     entry: CodeEntry,
     encoded: string,
-    encoder: ISequenceEncoder
+    encoder: SequenceEncoder
   ): Promise<void> {
     try {
       const decoded = await encoder.decodeFromQR(encoded);

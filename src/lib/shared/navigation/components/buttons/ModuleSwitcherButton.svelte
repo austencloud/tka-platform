@@ -2,7 +2,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
@@ -16,7 +16,7 @@
     longPressMs?: number;
   }>();
 
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let suppressClick = $state(false);
 

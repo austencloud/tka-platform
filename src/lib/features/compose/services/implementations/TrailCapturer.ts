@@ -27,15 +27,14 @@ import {
   TrailEffect,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type {
-  ITrailCapturer,
   TrailCapturePropStates,
   PropDimensions,
   TrailCaptureConfig,
   IAnimationCacheService,
   IPerformanceMonitorService,
-} from "../contracts/ITrailCapturer";
+} from "../contracts/types";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
-import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
+import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/types";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 
 /** Standard viewbox size used by the prop coordinate system */
@@ -167,7 +166,7 @@ interface LastCapturedPoint {
   timestamp: number;
 }
 
-export class TrailCapturer implements ITrailCapturer {
+export class TrailCapturer {
   // Shared calculator for prop endpoint positions
   private readonly propPositionCalculator = new PropPositionCalculator();
   // Configuration

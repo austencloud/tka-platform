@@ -16,13 +16,8 @@
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
-import type {
-  ICloudThumbnailCache,
-  CloudThumbnailKey,
-  ThumbnailVariant,
-  DeleteProgress,
-} from "../contracts/ICloudThumbnailCache";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { CloudThumbnailKey, ThumbnailVariant, DeleteProgress } from "../contracts/types";
 
 // In-memory cache with TTL to avoid stale URLs
 // Firebase download URLs expire after ~1 hour, so we refresh after 30 minutes
@@ -143,7 +138,7 @@ function releaseCheckSlot(): void {
   }
 }
 
-export class CloudThumbnailCache implements ICloudThumbnailCache {
+export class CloudThumbnailCache {
   /**
    * Get the storage path for a thumbnail
    * Includes variant in path to separate gallery (no user data) from wordcard (with user data)

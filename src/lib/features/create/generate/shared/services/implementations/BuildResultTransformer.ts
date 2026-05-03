@@ -26,7 +26,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { GenerationOptions } from "../../domain/models/generate-models";
 import type { SequenceMetadataManager } from "./SequenceMetadataManager";
-import type { IReversalDetector } from "../../../../shared/services/contracts/IReversalDetector";
+import type { ReversalDetector } from "../../../../shared/services/implementations/ReversalDetector";
 import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { PropContinuity } from "../../domain/models/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -48,7 +48,7 @@ import type { LOOPType as AppLOOPType } from "../../../circular/domain/models/ci
 export class BuildResultTransformer {
   constructor(
     private readonly metadataManager: SequenceMetadataManager,
-    private readonly reversalDetector: IReversalDetector,
+    private readonly reversalDetector: ReversalDetector,
     private readonly orientationCycleDetector: OrientationCycleDetector
   ) {}
 

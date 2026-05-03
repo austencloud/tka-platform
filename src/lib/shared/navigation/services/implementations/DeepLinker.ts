@@ -12,13 +12,8 @@ import { browser } from "$app/environment";
 import { goto, replaceState } from "$app/navigation";
 import { navigationState } from "../../state/navigation-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  IDeepLinker,
-  DeepLinkResult,
-  DeepLinkData,
-  ModuleMapping,
-} from "../contracts/IDeepLinker";
-import type { ISequenceEncoder } from "../contracts/ISequenceEncoder";
+import type { DeepLinkResult, DeepLinkData, ModuleMapping } from "../contracts/types";
+import type { SequenceEncoder } from "../implementations/SequenceEncoder";
 
 /**
  * Internal storage structure for deep link data
@@ -57,14 +52,14 @@ const MODULE_MAPPINGS: Record<string, ModuleMapping> = {
   sequence: { moduleId: "view" },
 };
 
-export class DeepLinker implements IDeepLinker {
+export class DeepLinker {
   /** Internal storage for deep link data (replaces deepLinkStore) */
   private storedData: StoredDeepLinkData | null = null;
 
   /** Stale data threshold in milliseconds */
   private static readonly STALE_THRESHOLD_MS = 5000;
 
-  constructor(private SequenceEncoder: ISequenceEncoder) {}
+  constructor(private SequenceEncoder: SequenceEncoder) {}
 
   initialize(): void {
     if (!browser) {
@@ -234,7 +229,7 @@ export class DeepLinker implements IDeepLinker {
    */
   private parseDeepLinkURL(url: string): {
     module: string;
-    sequence: ReturnType<ISequenceEncoder["decode"]>;
+    sequence: ReturnType<SequenceEncoder["decode"]>;
   } | null {
     return this.SequenceEncoder.parseDeepLink(url);
   }

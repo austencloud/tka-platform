@@ -1,11 +1,11 @@
 /**
  * Persists video curator data to Firestore
  */
-import type { IVideoCuratorPersister, VideoUpdateData } from "../contracts/IVideoCuratorPersister";
+import type { VideoUpdateData } from "../contracts/types";
 import type { VideoCategory, UserProfile } from "../../types";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 
-export class VideoCuratorPersister implements IVideoCuratorPersister {
+export class VideoCuratorPersister {
   async saveCategories(categories: VideoCategory[]): Promise<void> {
     const { doc, setDoc } = await import("firebase/firestore");
     const db = await getFirestoreInstance();

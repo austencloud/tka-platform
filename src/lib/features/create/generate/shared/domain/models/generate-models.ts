@@ -160,4 +160,4 @@ export interface RotationDirections {
 
 // TurnAllocation is exported from services/contracts/ITurnAllocator.ts
 // Re-exporting here for backwards compatibility
-export type { TurnAllocation } from "../../services/contracts/ITurnAllocator";
+export type { TurnAllocation } from "../../services/contracts/types";

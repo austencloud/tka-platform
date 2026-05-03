@@ -7,8 +7,7 @@
   Mobile:  60 BPM  Round 3/5  [Stop]  + progress bar below
 -->
 <script lang="ts">
-  import type { TempoPracticeProgress } from "../services/contracts/ITempoPracticeOrchestrator";
-
+  import type { TempoPracticeProgress } from "../services/contracts/types";
   interface Props {
     progress: TempoPracticeProgress;
     onStop: () => void;

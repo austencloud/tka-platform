@@ -20,8 +20,8 @@ import type {
 	RetroPictographData,
 	RetroHandData,
 } from "$lib/features/retro/shared/domain/pictograph-types";
-import type { IVariationExplorationOrchestrator } from "$lib/features/create/spell/services/contracts/IVariationExplorationOrchestrator";
-import type { IRandomSequenceGenerator } from "$lib/features/create/spell/services/contracts/IRandomSequenceGenerator";
+import type { VariationExplorationOrchestrator } from "../../create/spell/services/implementations/VariationExplorationOrchestrator";
+import type { RandomSequenceGenerator } from "../../create/spell/services/implementations/RandomSequenceGenerator";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 

@@ -1,8 +1,7 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
-import type { IClaimStatusDeriver } from "../contracts/IClaimStatusDeriver";
 import { ClaimStatusDeriver } from "./ClaimStatusDeriver";
 import { SwimLaneDeriver } from "./SwimLaneDeriver";
-import type { SwimLane } from "../contracts/ISwimLaneDeriver";
+import type { SwimLane } from "../contracts/types";
 
 export class FeedbackSorter {
   private readonly PRIORITY_ORDER: Record<string, number> = {
@@ -13,16 +12,16 @@ export class FeedbackSorter {
   };
 
   private readonly swimLaneDeriver = new SwimLaneDeriver();
-  private readonly claimStatusDeriver: IClaimStatusDeriver;
+  private readonly claimStatusDeriver: ClaimStatusDeriver;
 
-  constructor(claimStatusDeriver?: IClaimStatusDeriver) {
+  constructor(claimStatusDeriver?: ClaimStatusDeriver) {
     this.claimStatusDeriver = claimStatusDeriver ?? new ClaimStatusDeriver();
   }
 
   /**
    * Get the claim status deriver for external access (e.g., WIP counting)
    */
-  getClaimStatusDeriver(): IClaimStatusDeriver {
+  getClaimStatusDeriver(): ClaimStatusDeriver {
     return this.claimStatusDeriver;
   }
 

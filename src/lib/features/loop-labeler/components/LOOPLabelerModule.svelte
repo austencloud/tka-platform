@@ -10,11 +10,9 @@
   import { getStepDataConverter } from "$lib/features/loop-labeler/getStepDataConverter";
   import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
   import { loopDetector } from "../services/implementations/LOOPDetector";
-  import type { IStepDataConverter } from "../services/contracts/IStepDataConverter";
-  import type {
-    ILOOPDetector,
-    LOOPDetectionResult,
-  } from "../services/contracts/ILOOPDetector";
+  import type { StepDataConverter } from "../services/implementations/StepDataConverter";
+  import type { LOOPDetectionResult } from "../services/contracts/types";
+  import type { LOOPDetector } from "../services/implementations/LOOPDetector";
   import type { ComponentId } from "../domain/constants/loop-components";
   import type { LOOPLabelerState } from "../state/loop-labeler-state.svelte";
   import {
@@ -57,8 +55,8 @@
   let verifiedToastTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Store service references after loading (to avoid resolving in $derived)
-  let detectionService = $state<ILOOPDetector | null>(null);
-  let conversionService = $state<IStepDataConverter | null>(null);
+  let detectionService = $state<LOOPDetector | null>(null);
+  let conversionService = $state<StepDataConverter | null>(null);
 
   // Create mode-specific state managers (after module loads)
   let sectionState = $state<ReturnType<typeof createSectionModeState>>();
@@ -77,7 +75,7 @@
 
       // Also cache the conversion service for beat parsing
       conversionService =
-        getStepDataConverter() as IStepDataConverter | null;
+        getStepDataConverter() as StepDataConverter | null;
 
       // Pre-cache all services to ensure they're available for subsequent operations
       loopLabelerController.cacheServices();

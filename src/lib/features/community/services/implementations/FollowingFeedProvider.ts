@@ -8,22 +8,18 @@
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { getUserRepository } from "$lib/shared/community/getUserRepository";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
-import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
+import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+import type { PostHogActivityLogger } from "$lib/shared/analytics/services/implementations/PostHogActivityLogger";
 import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
 import type {
-  IFollowingFeedProvider,
-  FollowingFeedItem,
-  FollowingFeedOptions,
-} from "../contracts/IFollowingFeedProvider";
+  FollowingFeedItem, FollowingFeedOptions } from "../contracts/types";
 import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
 import { getCollectionManager } from "$lib/features/library/getCollectionManager";
-
-export class FollowingFeedProvider implements IFollowingFeedProvider {
-  private userService: IUserRepository | null = null;
-  private activityLogService: IActivityLogger | null = null;
+export class FollowingFeedProvider {
+  private userService: UserRepository | null = null;
+  private activityLogService: PostHogActivityLogger | null = null;
   private collectionService: CollectionManager | null = null;
 
   private getServices(): boolean {

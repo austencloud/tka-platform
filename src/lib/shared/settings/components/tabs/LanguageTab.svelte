@@ -8,7 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { t, locales, baseLocale } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import {
     getReactiveLocale,
     switchLocale,
@@ -30,7 +30,7 @@
   };
 
   // Services
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   // State
   let isVisible = $state(false);

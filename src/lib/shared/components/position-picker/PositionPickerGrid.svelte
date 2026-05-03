@@ -6,7 +6,7 @@ Uses StartPositionManager to load variations and displays actual pictographs
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -26,7 +26,7 @@ Uses StartPositionManager to load variations and displays actual pictographs
 
   // State
   let variations = $state<PictographData[]>([]);
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
   let isLoading = $state(true);
 
   // Load variations based on grid mode (reactive to prop changes)

@@ -5,11 +5,11 @@
   import { doc, setDoc } from "firebase/firestore";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/types";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -24,6 +24,7 @@
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
   import FollowersModal from "./profile/FollowersModal.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 
   interface Props {
     userId: string;
@@ -49,9 +50,9 @@
   let followingLoaded = $state(false);
 
   // Services
-  let userService: IUserRepository;
-  let libraryService: ILibraryRepository;
-  let hapticService: IHapticFeedback;
+  let userService: UserRepository;
+  let libraryService: LibraryRepository;
+  let hapticService: HapticFeedback;
 
   const currentUserId = $derived(authState.user?.uid);
   const isOwnProfile = $derived(currentUserId === userId);

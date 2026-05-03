@@ -10,10 +10,7 @@
 
 import { browser } from "$app/environment";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  ISequenceLocalCache,
-  SequenceLocalCacheStats,
-} from "../contracts/ISequenceLocalCache";
+import type { SequenceLocalCacheStats } from "../contracts/types";
 
 const DB_NAME = "sequence-local-cache";
 const STORE_NAME = "sequences";
@@ -31,7 +28,7 @@ interface CachedSequence {
   sizeBytes: number;
 }
 
-export class SequenceLocalCache implements ISequenceLocalCache {
+export class SequenceLocalCache {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private maxSizeBytes: number;
   private isPruning = false;

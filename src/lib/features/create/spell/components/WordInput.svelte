@@ -10,7 +10,7 @@ Features:
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
-  import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
+  import type { GreekKeyMapper } from "$lib/shared/keyboard/services/implementations/GreekKeyMapper";
   import {
     uppercasePreservingGreek,
     insertAtCursor,

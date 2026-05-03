@@ -18,10 +18,7 @@
 // Type imports removed — value imports at bottom of file provide both type and value
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 import type { ArrowSvgData } from "../../../../shared/domain/models/svg-models";
-import type {
-  IArrowSvgLoader,
-  ArrowSvgLoadOptions,
-} from "../contracts/IArrowSvgLoader";
+import type { ArrowSvgLoadOptions } from "../contracts/types";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { ThemeMode } from "../../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../../animation-engine/state/animation-visibility-state.svelte";
@@ -77,7 +74,7 @@ async function loadSplitManifest(): Promise<void> {
   return manifestLoadPromise;
 }
 
-export class ArrowSvgLoader implements IArrowSvgLoader {
+export class ArrowSvgLoader {
   // 🚀 OPTIMIZATION: Use HMR-aware module-level caches
   private rawSvgCache = hmrRawSvgCache; // path -> raw SVG text
   private transformedSvgCache = hmrTransformedSvgCache; // path:color:themeMode -> transformed data

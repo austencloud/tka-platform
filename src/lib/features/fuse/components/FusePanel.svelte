@@ -8,7 +8,7 @@
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
 	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
@@ -24,7 +24,7 @@
 	}: {
 		side: "left" | "right";
 		bpm: number;
-		onControllerReady?: (controller: IAnimationPlaybackController) => void;
+		onControllerReady?: (controller: AnimationPlaybackController) => void;
 		onCurrentSequenceChange?: (seq: SequenceData | null) => void;
 		length?: number;
 		currentStep?: number;

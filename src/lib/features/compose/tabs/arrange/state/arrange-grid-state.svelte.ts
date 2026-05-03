@@ -16,12 +16,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import {
-  type TunnelLayerConfig,
-  type TransformType,
-  type AppliedTransform,
-  type CellEffect,
-  getTunnelLayerColors,
-} from "../../../compose/domain/types";
+  type TunnelLayerConfig, type TransformType, type AppliedTransform, type CellEffect, getTunnelLayerColors, } from "../../../compose/domain/types";
 
 import type { CellMediaType, PropColors } from "../../../compose/domain/types";
 import type { Composition } from "../../../compose/domain/types";
@@ -29,9 +24,7 @@ import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes"
 import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 // compose-arrange-container dissolved - services accessed via module singleton getters
 import type {
-  ArrangeUndoOperationType,
-  ArrangeGridSnapshot,
-} from "../services/contracts/IArrangeUndoManager";
+  ArrangeUndoOperationType, ArrangeGridSnapshot } from "../services/contracts/types";
 
 import { ArrangeGridSerializer } from "../services/implementations/ArrangeGridSerializer";
 import { ArrangeCompositionConverter } from "../services/implementations/ArrangeCompositionConverter";

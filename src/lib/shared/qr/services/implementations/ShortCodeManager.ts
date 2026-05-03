@@ -30,14 +30,9 @@ import {
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+import type { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 import type { IPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/contracts/IPublicSequenceHashMatcher";
-import type {
-  IShortCodeManager,
-  ShortCodeRecord,
-  CreateShortCodeResult,
-  ShortCodeURLOptions,
-} from "../contracts/IShortCodeManager";
+import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "../contracts/types";
 
 const SHORTCODES_COLLECTION = "shortcodes";
 const MIN_CODE_LENGTH = 4;
@@ -60,7 +55,7 @@ interface ShortCodeData {
   encoded?: string;
 }
 
-export class ShortCodeManager implements IShortCodeManager {
+export class ShortCodeManager {
   private firestore: Firestore | null = null;
   private staticSnapshotCache: Map<string, ShortCodeData> | null = null;
   /** In-flight single-flight cache keyed by encoderHash (or fallback id when
@@ -75,7 +70,7 @@ export class ShortCodeManager implements IShortCodeManager {
 
   constructor(
     private readonly browseLoader: PublicSequencesLoader,
-    private readonly sequenceEncoder: ISequenceEncoder,
+    private readonly sequenceEncoder: SequenceEncoder,
     private readonly hashMatcher?: IPublicSequenceHashMatcher
   ) {}
 

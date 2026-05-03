@@ -6,8 +6,8 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { authState } from "../../../auth/state/authState.svelte";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { getPropPreferencePersister } from "../../../community/getPropPreferencePersister";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import type { IPropPreferencePersister } from "../../../community/services/contracts/IPropPreferencePersister";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { PropPreferencePersister } from "../../../community/services/implementations/PropPreferencePersister";
   import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import {

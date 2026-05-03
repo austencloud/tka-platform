@@ -6,16 +6,9 @@
  * - Cell layout section showing grid positions, spans, layers, transforms, offsets
  */
 
-import type {
-  TunnelLayerConfig,
-  TransformType,
-  AppliedTransform,
-} from "../../../../compose/domain/types";
+import type { TunnelLayerConfig, TransformType, AppliedTransform, } from "../../../../compose/domain/types";
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
-import type {
-  IArrangeGridSerializer,
-  SerializationContext,
-} from "../contracts/IArrangeGridSerializer";
+import type { SerializationContext } from "../contracts/types";
 
 /**
  * Migrates legacy `appliedTransforms` (string[]) to the new `transformStack`
@@ -48,7 +41,7 @@ interface RegistryEntry {
   refLayer: TunnelLayerConfig;
 }
 
-export class ArrangeGridSerializer implements IArrangeGridSerializer {
+export class ArrangeGridSerializer {
   serialize(context: SerializationContext): string {
     const { cells, bpm, skipStartPosition, gridRows, gridCols } = context;
 

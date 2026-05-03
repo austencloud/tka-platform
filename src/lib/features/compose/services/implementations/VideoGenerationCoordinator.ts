@@ -1,12 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  IVideoGenerationCoordinator,
-  VideoGenerationOptions,
-} from "../contracts/IVideoGenerationCoordinator";
-import type {
-  VideoRenderProgress,
-  VideoRenderResult,
-} from "../contracts/IVideoPreRenderer";
+import type { VideoGenerationOptions } from "../contracts/types";
+import type { VideoRenderProgress, VideoRenderResult } from "../contracts/types";
 import { getVideoPreRenderer } from "./VideoPreRenderer";
 
 /**
@@ -15,7 +9,7 @@ import { getVideoPreRenderer } from "./VideoPreRenderer";
  * Orchestrates video generation workflow including cache checking,
  * progress tracking, and error handling.
  */
-export class VideoGenerationCoordinator implements IVideoGenerationCoordinator {
+export class VideoGenerationCoordinator {
   private videoService = getVideoPreRenderer();
   private generating = false;
 

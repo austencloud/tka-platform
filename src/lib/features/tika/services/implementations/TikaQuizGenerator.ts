@@ -12,15 +12,7 @@ import {
   LETTER_TYPES,
   LETTER_TO_TYPE,
 } from "@tka/domain";
-import type {
-  ITikaQuizGenerator,
-  QuizResult,
-  InlineQuiz,
-  QuizDifficulty,
-  PictographOption,
-  MotionPatternOption,
-  TextOption,
-} from "../contracts/ITikaQuizGenerator";
+import type { QuizResult, InlineQuiz, QuizDifficulty, PictographOption, MotionPatternOption, TextOption } from "../contracts/types";
 
 interface PositionQuestion {
   question: string;
@@ -286,7 +278,7 @@ const MOTION_QUESTION_POOL: MotionQuestion[] = [
   },
 ];
 
-export class TikaQuizGenerator implements ITikaQuizGenerator {
+export class TikaQuizGenerator {
   private quizCounter = 0;
 
   generateQuiz(

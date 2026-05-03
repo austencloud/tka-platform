@@ -17,10 +17,10 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getPropPreferencePersister } from "$lib/shared/community/getPropPreferencePersister";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { FirstRunStep } from "../../domain/first-run-types";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { IPropPreferencePersister } from "$lib/shared/community/services/contracts/IPropPreferencePersister";
+  import type { PropPreferencePersister } from "$lib/shared/community/services/implementations/PropPreferencePersister";
 
   import WelcomeStep from "./steps/WelcomeStep.svelte";
   import DisplayNameStep from "./steps/DisplayNameStep.svelte";
@@ -64,7 +64,7 @@
   );
 
   // Services
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   // All possible steps (auth step only shown if not already authenticated)
   const ALL_STEPS: FirstRunStep[] = [

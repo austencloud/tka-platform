@@ -4,7 +4,7 @@ Always opens selector panel when clicked
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import {
     LOOP_TYPE_LABELS,
     LOOPType,
@@ -31,7 +31,7 @@ Always opens selector panel when clicked
     headerFontSize?: string;
   }>();
 
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   // Get panel coordination state from context (provided by CreateModule)
   const panelState = getContext<PanelCoordinationState>("panelState");

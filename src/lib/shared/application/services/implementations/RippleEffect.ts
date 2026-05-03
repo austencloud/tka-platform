@@ -1,6 +1,6 @@
-import type { IRippleEffect, RippleOptions } from "../contracts/IRippleEffect";
+import type { RippleOptions } from "../contracts/types";
 
-export class RippleEffect implements IRippleEffect {
+export class RippleEffect {
   private readonly DEFAULT_OPTIONS: Required<RippleOptions> = {
     duration: 350,
     color: "rgba(255, 255, 255, 0.3)",

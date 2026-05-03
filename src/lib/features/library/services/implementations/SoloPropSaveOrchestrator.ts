@@ -7,15 +7,15 @@
  * so it appears in the hand path library too.
  */
 
-import type { ISoloPropRepository } from "$lib/shared/foundation/services/contracts/ISoloPropRepository";
-import type { IHandPathRepository } from "$lib/shared/foundation/services/contracts/IHandPathRepository";
+import type { SoloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
+import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
 import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
 
 export class SoloPropSaveOrchestrator {
   constructor(
-    private readonly soloPropRepository: ISoloPropRepository,
-    private readonly handPathRepository: IHandPathRepository
+    private readonly soloPropRepository: SoloPropRepository,
+    private readonly handPathRepository: HandPathRepository
   ) {}
 
   async save(data: SoloPropData, name?: string): Promise<void> {

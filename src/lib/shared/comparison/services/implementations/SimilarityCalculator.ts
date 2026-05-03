@@ -10,16 +10,9 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  ISimilarityCalculator,
-  SimilarityReport,
-  CommonSubsequence,
-  SimilarityBreakdown,
-  QuickSimilarityResult,
-  SimilarityOptions,
-} from "../contracts/ISimilarityCalculator";
+import type { SimilarityReport, CommonSubsequence, SimilarityBreakdown, QuickSimilarityResult, SimilarityOptions } from "../contracts/types";
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
-import type { ISequenceAligner } from "../contracts/ISequenceAligner";
+import type { SequenceAligner } from "./SequenceAligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
@@ -31,10 +24,10 @@ const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
   considerSpatialTransforms: true,
 };
 
-export class SimilarityCalculator implements ISimilarityCalculator {
+export class SimilarityCalculator {
   constructor(
     private readonly stepSignatureGenerator: StepSignatureGenerator,
-    private readonly sequenceAligner: ISequenceAligner
+    private readonly sequenceAligner: SequenceAligner
   ) {}
 
   computeSimilarity(

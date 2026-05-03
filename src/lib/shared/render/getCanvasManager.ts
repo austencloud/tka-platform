@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { ICanvasManager } from './services/contracts/ICanvasManager';
+
 import { CanvasManager } from './services/implementations/CanvasManager';
 
-let instance: ICanvasManager | null = null;
+let instance: CanvasManager | null = null;
 
-export function getCanvasManager(): ICanvasManager {
+export function getCanvasManager(): CanvasManager {
 	if (!browser) throw new Error('getCanvasManager() is browser-only');
 	return instance ??= new CanvasManager();
 }

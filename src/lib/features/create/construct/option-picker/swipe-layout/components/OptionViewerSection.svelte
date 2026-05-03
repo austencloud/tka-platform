@@ -8,13 +8,11 @@ Renders a section with:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type {
-    IReversalDetector,
-    PictographWithReversals,
-  } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+  import type { ReversalDetector } from "../../../../shared/services/implementations/ReversalDetector";
+import type { PictographWithReversals } from "../../../../shared/services/contracts/types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { IOptionGridFitCalculator } from "../../services/contracts/types";
   import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
   import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
   import { onMount } from "svelte";
@@ -61,8 +59,8 @@ Renders a section with:
 
   // Services - resolve synchronously to avoid first-render sizing issues
   // gridFitCalculator must be available immediately for correct initial sizing
-  let hapticService: IHapticFeedback | null = null;
-  let reversalDetector: IReversalDetector | null = null;
+  let hapticService: HapticFeedback | null = null;
+  let reversalDetector: ReversalDetector | null = null;
   const gridFitCalculator: IOptionGridFitCalculator | null = optionGridFitCalculator;
 
   onMount(() => {

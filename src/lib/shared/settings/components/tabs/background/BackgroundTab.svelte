@@ -15,7 +15,7 @@
   } from "@austencloud/backgrounds/card";
   import type { BackgroundCardSelectDetail } from "@austencloud/backgrounds/card";
   import { applyThemeFromColors } from "../../../utils/background-theme-calculator";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -26,7 +26,7 @@
     onUpdate?: (event: { key: string; value: unknown }) => void;
   }>();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   let isVisible = $state(false);
   let gridEl: HTMLDivElement;
 

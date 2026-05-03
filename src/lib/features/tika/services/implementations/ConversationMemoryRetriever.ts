@@ -6,17 +6,14 @@
  * full message arrays.
  */
 
-import type {
-  IConversationMemoryRetriever,
-  ConversationMemorySummary,
-} from "../contracts/IConversationMemoryRetriever";
+import type { ConversationMemorySummary } from "../contracts/types";
 import type { TikaSessionRepository } from "./TikaSessionRepository";
 import type { TikaSessionPreview } from "../../domain/models/tika-conversation-models";
 
 const MAX_MEMORY_CHARS = 500;
 const DEFAULT_MATCH_LIMIT = 3;
 
-export class ConversationMemoryRetriever implements IConversationMemoryRetriever {
+export class ConversationMemoryRetriever {
   constructor(private readonly sessionRepository: TikaSessionRepository) {}
 
   async findRelevantSessions(

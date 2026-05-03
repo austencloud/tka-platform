@@ -6,7 +6,7 @@
  */
 
 import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
-import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
 
 export type EmailLinkingStep = "form" | "verifying" | "success";
 
@@ -50,7 +50,7 @@ export interface EmailLinkingState {
 
 export function createEmailLinkingState(
   authService: Authenticator,
-  hapticService: IHapticFeedback | null,
+  hapticService: HapticFeedback | null,
   initialEmail: string,
   onSuccess?: () => void,
   onClose?: () => void

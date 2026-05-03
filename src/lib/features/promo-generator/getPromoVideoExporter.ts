@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IPromoVideoExporter } from './services/contracts/IPromoVideoExporter';
 import { PromoVideoExporter } from './services/implementations/PromoVideoExporter';
 
-let instance: IPromoVideoExporter | null = null;
+let instance: PromoVideoExporter | null = null;
 
-export function getPromoVideoExporter(): IPromoVideoExporter {
+export function getPromoVideoExporter(): PromoVideoExporter {
 	if (!browser) throw new Error('getPromoVideoExporter() is browser-only');
 	return instance ??= new PromoVideoExporter();
 }

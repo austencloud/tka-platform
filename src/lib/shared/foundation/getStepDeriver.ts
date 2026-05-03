@@ -1,8 +1,7 @@
-import type { IStepDeriver } from './services/contracts/IStepDeriver';
 import { StepDeriver } from './services/implementations/StepDeriver';
 
-let instance: IStepDeriver | null = null;
+let instance: StepDeriver | null = null;
 
-export function getStepDeriver(): IStepDeriver {
+export function getStepDeriver(): StepDeriver {
 	return instance ??= new StepDeriver();
 }

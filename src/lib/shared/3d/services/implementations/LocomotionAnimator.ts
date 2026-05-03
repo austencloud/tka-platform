@@ -167,7 +167,7 @@ function remapClipToSkeleton(
   return new AnimationClip(clip.name, clip.duration, tracks);
 }
 
-export class LocomotionAnimator implements ILocomotionAnimator {
+export class LocomotionAnimator {
   private mixer: AnimationMixer | null = null;
   private root: Object3D | null = null;
   private loader = new GLTFLoader();

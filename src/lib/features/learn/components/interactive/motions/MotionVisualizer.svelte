@@ -4,7 +4,7 @@ Shows shift (adjacent), dash (opposite), and static (stay) motions with animated
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import {
     GRID_POINTS_4,

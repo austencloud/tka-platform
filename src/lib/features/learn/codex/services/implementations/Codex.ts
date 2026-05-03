@@ -11,10 +11,10 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { QuizRepoManager } from "../../../quiz/services/implementations/QuizRepoManager";
 import type { CodexPictographUpdater } from "./CodexPictographUpdater";
-import type { ICodex } from "../contracts/ICodex";
+
 import type { CodexLetterMappingRepo } from "./CodexLetterMappingRepo";
 
-export class Codex implements ICodex {
+export class Codex {
   private initialized = false;
 
   constructor(

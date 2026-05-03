@@ -11,11 +11,7 @@
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { Group } from "three";
-import type {
-  IMuseumModelLoader,
-  MuseumModelDefinition,
-  MuseumModelRole,
-} from "../contracts/IMuseumModelLoader";
+import type { MuseumModelDefinition, MuseumModelRole } from "../contracts/types";
 
 // ── Role-to-model mapping ──
 // These are the 5 proof-of-concept models chosen from the 140-model
@@ -69,7 +65,7 @@ const ROLE_DEFINITIONS: Record<MuseumModelRole, MuseumModelDefinition> = {
   },
 };
 
-export class MuseumModelLoader implements IMuseumModelLoader {
+export class MuseumModelLoader {
   private loader = new GLTFLoader();
 
   /** Resolved model templates - load once, clone many times. */

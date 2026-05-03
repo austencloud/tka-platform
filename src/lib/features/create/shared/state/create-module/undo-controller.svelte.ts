@@ -7,11 +7,9 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
-import type {
-  IUndoManager,
-  UndoMetadata,
-} from "../../services/contracts/IUndoManager";
-import { UndoOperationType } from "../../services/contracts/IUndoManager";
+import type { UndoManager } from "../../services/implementations/UndoManager";
+import type { UndoMetadata } from "../../services/contracts/types";
+import { UndoOperationType } from "../../services/contracts/types";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 // @ts-ignore tsc doesn't recognize Svelte module script exports, but svelte-check does
@@ -22,7 +20,7 @@ import { setSuppressNextAnimation } from "../../workspace-panel/sequence-display
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 type UndoControllerDeps = {
-  UndoManager: IUndoManager;
+  UndoManager: UndoManager;
   sequenceState: SequenceState;
   getActiveSection: () => BuildModeId;
   setActiveSectionInternal: (

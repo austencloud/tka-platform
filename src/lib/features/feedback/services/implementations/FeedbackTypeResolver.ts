@@ -1,14 +1,11 @@
-import type {
-  IFeedbackTypeResolver,
-  FeedbackTypeConfig,
-} from "../contracts/IFeedbackTypeResolver";
+import type { FeedbackTypeConfig } from "../contracts/types";
 import type { FeedbackType } from "../../domain/models/feedback-models";
 import { TYPE_CONFIG } from "../../domain/models/feedback-models";
 
 /**
  * Resolves type-specific configuration for feedback forms.
  */
-export class FeedbackTypeResolver implements IFeedbackTypeResolver {
+export class FeedbackTypeResolver {
   private readonly encouragementMessages: Record<FeedbackType, string> = {
     bug: "Steps to reproduce, error messages, and screenshots help a lot.",
     feature:

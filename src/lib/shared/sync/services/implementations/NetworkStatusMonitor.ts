@@ -1,10 +1,4 @@
-import type {
-	INetworkStatusMonitor,
-	NetworkStatus,
-	NetworkConnectionType,
-	EffectiveConnectionType,
-	NetworkChangeEvent
-} from '../contracts/INetworkStatusMonitor';
+import type { NetworkStatus, NetworkConnectionType, EffectiveConnectionType, NetworkStatusChangeEvent } from "../contracts/types";
 
 interface NetworkInformation extends EventTarget {
 	type?: string;
@@ -22,7 +16,7 @@ interface NavigatorWithConnection extends Navigator {
 	webkitConnection?: NetworkInformation;
 }
 
-export class NetworkStatusMonitor implements INetworkStatusMonitor {
+export class NetworkStatusMonitor {
 	private _status: NetworkStatus;
 	private _isRunning: boolean = false;
 	private _isNetworkInfoSupported: boolean = false;
@@ -32,7 +26,7 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 	private boundConnectionChangeHandler: () => void;
 
 	private onlineChangeCallbacks: Set<(isOnline: boolean) => void> = new Set();
-	private changeCallbacks: Set<(event: NetworkChangeEvent) => void> = new Set();
+	private changeCallbacks: Set<(event: NetworkStatusChangeEvent) => void> = new Set();
 	private connectionTypeCallbacks: Set<(type: NetworkConnectionType) => void> = new Set();
 
 	constructor() {
@@ -117,7 +111,7 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 		return () => this.onlineChangeCallbacks.delete(callback);
 	}
 
-	onChange(callback: (event: NetworkChangeEvent) => void): () => void {
+	onChange(callback: (event: NetworkStatusChangeEvent) => void): () => void {
 		this.changeCallbacks.add(callback);
 		return () => this.changeCallbacks.delete(callback);
 	}
@@ -281,7 +275,7 @@ export class NetworkStatusMonitor implements INetworkStatusMonitor {
 	}
 
 	private emitChanges(previous: NetworkStatus, current: NetworkStatus): void {
-		const event: NetworkChangeEvent = {
+		const event: NetworkStatusChangeEvent = {
 			previous,
 			current,
 			timestamp: Date.now()

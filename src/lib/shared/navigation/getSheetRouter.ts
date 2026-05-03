@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISheetRouter } from './services/contracts/ISheetRouter';
 import { SheetRouter } from './services/implementations/SheetRouter';
 
-let instance: ISheetRouter | null = null;
+let instance: SheetRouter | null = null;
 
-export function getSheetRouter(): ISheetRouter {
+export function getSheetRouter(): SheetRouter {
 	if (!browser) throw new Error('getSheetRouter() is browser-only');
 	return instance ??= new SheetRouter();
 }

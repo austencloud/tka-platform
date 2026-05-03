@@ -21,7 +21,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
   import { updateStepDuration } from "../../../services/implementations/step-operations/DurationHandler";
-  import { UndoOperationType } from "../../../services/contracts/IUndoManager";
+  import { UndoOperationType } from "../../../services/contracts/types";
 
   let {
     sequenceState,

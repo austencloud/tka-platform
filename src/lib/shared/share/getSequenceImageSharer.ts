@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { ISequenceImageSharer } from './services/contracts/ISequenceImageSharer';
 import { SequenceImageSharer } from './services/implementations/SequenceImageSharer';
 import { getSequenceRenderer } from '$lib/shared/render/getSequenceRenderer';
 
-let instance: ISequenceImageSharer | null = null;
+let instance: SequenceImageSharer | null = null;
 
-export function getSequenceImageSharer(): ISequenceImageSharer {
+export function getSequenceImageSharer(): SequenceImageSharer {
 	if (!browser) throw new Error('getSequenceImageSharer() is browser-only');
 	return instance ??= new SequenceImageSharer(getSequenceRenderer());
 }

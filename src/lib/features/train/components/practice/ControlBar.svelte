@@ -7,7 +7,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { TrainMode, PracticeMode } from "../../domain/enums/TrainEnums";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

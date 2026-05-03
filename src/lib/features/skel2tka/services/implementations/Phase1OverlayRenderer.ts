@@ -11,10 +11,7 @@
  * - Beat boundary indicator bar
  */
 
-import type {
-  IOverlayRenderer,
-  OverlayRenderContext,
-} from "../contracts/IOverlayRenderer";
+import type { OverlayRenderContext } from "../contracts/types";
 import type { DetectedBeat } from "../../domain/models";
 
 /** Grid location to normalized position mapping (0-1 range) */
@@ -35,7 +32,7 @@ const CONFIDENCE_RING_WIDTH = 3;
 const GRID_LABEL_FONT_SIZE = 11;
 const CROSSHAIR_OPACITY = 0.15;
 
-export class Phase1OverlayRenderer implements IOverlayRenderer {
+export class Phase1OverlayRenderer {
   readonly name = "Phase 1: Hand Positions";
   readonly phase = 1;
 

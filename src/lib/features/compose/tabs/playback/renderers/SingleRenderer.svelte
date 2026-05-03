@@ -15,7 +15,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "../../../services/implementations/AnimationPlaybackController";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import {
     ANIMATION_LOAD_DELAY_MS,
@@ -50,7 +50,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   } = $props();
 
   // Services
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
 
   // Animation state
   const animationState = createAnimationPanelState();

@@ -8,7 +8,7 @@
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import FamilyFilterChip from "./FamilyFilterChip.svelte";
   import type { DeckFamily } from "../../domain/models/Deck";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   interface Props {
@@ -30,7 +30,7 @@
   }: Props = $props();
 
   let posOpen = $state(false);
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;

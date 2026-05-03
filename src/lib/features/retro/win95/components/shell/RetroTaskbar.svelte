@@ -10,14 +10,15 @@
   Domain: Retro Desktop Shell
 -->
 <script lang="ts">
-  import type { IWindowManager } from "../../services/contracts/IWindowManager";
+  
   import { desktopState } from "../../state/desktop-state.svelte";
   import { RETRO_ICONS } from "../rendering/retro-icons";
+import type { WindowManager } from "../../services/implementations/WindowManager";
 
   let {
     windowManager,
   }: {
-    windowManager: IWindowManager;
+    windowManager: WindowManager;
   } = $props();
 
   function toggleStartMenu() {

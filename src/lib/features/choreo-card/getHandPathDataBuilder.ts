@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IHandPathDataBuilder } from './services/contracts/IHandPathDataBuilder';
+
 import { HandPathDataBuilder } from './services/implementations/HandPathDataBuilder';
 
-let instance: IHandPathDataBuilder | null = null;
+let instance: HandPathDataBuilder | null = null;
 
-export function getHandPathDataBuilder(): IHandPathDataBuilder {
+export function getHandPathDataBuilder(): HandPathDataBuilder {
 	if (!browser) throw new Error('getHandPathDataBuilder() is browser-only');
 	return instance ??= new HandPathDataBuilder();
 }

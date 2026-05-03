@@ -5,7 +5,7 @@
  * rating updates, and matchup prefetching.
  */
 
-import type { IMatchupSelector, MatchupCandidate } from "../contracts/IMatchupSelector";
+import type { MatchupCandidate } from "../contracts/types";
 import type {
   ArenaMatchup,
   ArenaLeaderboardEntry,
@@ -18,6 +18,7 @@ import {
 } from "../../domain/constants/arena-constants";
 import type { ArenaRepository } from "./ArenaRepository";
 import type { RatingCalculator } from "./RatingCalculator";
+import type { MatchupSelector } from "../implementations/MatchupSelector";
 
 export class ArenaOrchestrator {
   private userId = "";
@@ -33,7 +34,7 @@ export class ArenaOrchestrator {
   constructor(
     private readonly repository: ArenaRepository,
     private readonly ratingCalculator: RatingCalculator,
-    private readonly matchupSelector: IMatchupSelector
+    private readonly matchupSelector: MatchupSelector
   ) {}
 
   async initialize(userId: string): Promise<void> {

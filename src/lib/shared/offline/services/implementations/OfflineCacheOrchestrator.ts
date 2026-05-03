@@ -1,18 +1,18 @@
 
-import type { INetworkStatusMonitor } from "$lib/shared/sync/services/contracts/INetworkStatusMonitor";
-import type { IGalleryOfflineCache } from "../contracts/IGalleryOfflineCache";
-import type { IThumbnailLocalCache } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailLocalCache";
+import type { NetworkStatusMonitor } from "$lib/shared/sync/services/implementations/NetworkStatusMonitor";
+import type { GalleryOfflineCache } from "./GalleryOfflineCache";
 import type { OfflineCacheStats } from "../../domain/offline-cache-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ThumbnailLocalCache } from "../../../../features/browse/sequences/display/services/implementations/ThumbnailLocalCache";
 
 export class OfflineCacheOrchestrator {
   private cancelled = false;
   private prefetching = false;
 
   constructor(
-    private networkMonitor: INetworkStatusMonitor,
-    private galleryCache: IGalleryOfflineCache,
-    private thumbnailCache: IThumbnailLocalCache
+    private networkMonitor: NetworkStatusMonitor,
+    private galleryCache: GalleryOfflineCache,
+    private thumbnailCache: ThumbnailLocalCache
   ) {}
 
   /**

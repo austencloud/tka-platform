@@ -8,10 +8,7 @@
  */
 
 import type { ShortcutRegistry } from "./ShortcutRegistry";
-import type {
-  IShortcutCustomizer,
-  ShortcutWithBinding,
-} from "../contracts/IShortcutCustomizer";
+import type { ShortcutWithBinding } from "../contracts/types";
 import type {
   CustomBinding,
   ParsedKeyCombo,
@@ -27,7 +24,7 @@ import {
 } from "../../utils/key-combo-utils";
 import { keyboardShortcutState } from "../../state/keyboard-shortcut-state.svelte";
 
-export class ShortcutCustomizer implements IShortcutCustomizer {
+export class ShortcutCustomizer {
   constructor(private readonly registry: ShortcutRegistry) {}
 
   // ============================================

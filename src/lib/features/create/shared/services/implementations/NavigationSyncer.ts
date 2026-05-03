@@ -11,14 +11,9 @@
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-import type {
-  BuildSection,
-  CreateModuleStateForSync,
-  INavigationSyncer,
-  NavigationStateForSync,
-} from "../contracts/INavigationSyncer";
+import type { BuildSection, CreateModuleStateForSync, NavigationStateForSync } from "../contracts/types";
 
-export class NavigationSyncer implements INavigationSyncer {
+export class NavigationSyncer {
   private logger = createComponentLogger("CreateModule:NavigationSync");
 
   syncNavigationToCreateModule(

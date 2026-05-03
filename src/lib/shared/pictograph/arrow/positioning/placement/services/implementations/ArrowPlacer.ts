@@ -13,12 +13,11 @@ import type {
   AllPlacementData,
   JsonPlacementData,
 } from "../../domain/models/PlacementDataTypes";
-import type { IArrowPlacer } from "../contracts/IArrowPlacer";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("ArrowPlacer");
 
-export class ArrowPlacer implements IArrowPlacer {
+export class ArrowPlacer {
   private jsonCacheImpl: SimpleJsonCache;
   private allPlacements: AllPlacementData = {
     [GridMode.DIAMOND]: {},

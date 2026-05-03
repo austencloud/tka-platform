@@ -39,13 +39,7 @@
  */
 
 import { Vector3 } from "three";
-import type {
-  IStanceSimulator,
-  RestPoseGeometry,
-  SimPropTarget,
-  SimResult,
-  SimCollision,
-} from "../contracts/IStanceSimulator";
+import type { RestPoseGeometry, SimPropTarget, SimResult, SimCollision } from "../contracts/types";
 import type { StancePose } from "../../domain/types";
 
 // --- Collision radii - mirror the live CollisionDetector exactly so the
@@ -117,7 +111,7 @@ function makeSkeleton(): Skeleton {
   };
 }
 
-export class StanceSimulator implements IStanceSimulator {
+export class StanceSimulator {
   readonly restPose: RestPoseGeometry;
 
   private skeleton = makeSkeleton();

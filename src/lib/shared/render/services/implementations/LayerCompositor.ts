@@ -1,14 +1,4 @@
-import type {
-  ILayerCompositor,
-  LayerType,
-  LayerRenderOptions,
-  LayerVisibility,
-  LayerRenderResult,
-  CompositionResult,
-  LayerCacheStats,
-  RenderCanvas,
-  RenderContext2D,
-} from "../contracts/ILayerCompositor";
+import type { LayerType, LayerRenderOptions, LayerVisibility, LayerRenderResult, CompositionResult, LayerCacheStats, RenderCanvas, RenderContext2D } from "../contracts/types";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import { LayerKeyDeriver } from "./LayerKeyDeriver";
@@ -93,7 +83,7 @@ function createCanvas(width: number, height: number): RenderCanvas {
   return canvas;
 }
 
-export class LayerCompositor implements ILayerCompositor {
+export class LayerCompositor {
   private keyDeriver = new LayerKeyDeriver();
   private turnColorInterpreter = new TurnColorInterpreter();
 
@@ -179,7 +169,7 @@ export class LayerCompositor implements ILayerCompositor {
     const wm = options.widthMultiplier ?? 1;
     const canvasWidth = Math.round(options.size * wm);
     const canvas = createCanvas(canvasWidth, options.size);
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")! as RenderContext2D as RenderContext2D;
 
     const coreOffset = Math.round((canvasWidth - options.size) / 2);
     if (wm > 1) {
@@ -463,7 +453,7 @@ export class LayerCompositor implements ILayerCompositor {
     options: Pick<LayerRenderOptions, "size" | "darkMode">
   ): Promise<RenderCanvas> {
     const canvas = createCanvas(options.size, options.size);
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")! as RenderContext2D;
 
     ctx.clearRect(0, 0, options.size, options.size);
 
@@ -494,7 +484,7 @@ export class LayerCompositor implements ILayerCompositor {
     options: LayerRenderOptions
   ): Promise<RenderCanvas> {
     const canvas = createCanvas(options.size, options.size);
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")! as RenderContext2D;
 
     ctx.clearRect(0, 0, options.size, options.size);
 
@@ -560,7 +550,7 @@ export class LayerCompositor implements ILayerCompositor {
 
   private renderReversalOverlayInternal(stepData: StepData, size: number, darkMode: boolean): RenderCanvas {
     const canvas = createCanvas(size, size);
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")! as RenderContext2D;
 
     ctx.clearRect(0, 0, size, size);
 

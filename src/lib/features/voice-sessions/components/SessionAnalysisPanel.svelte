@@ -8,7 +8,8 @@
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
-  import type { IVoiceSessionAnalyzer, SessionAnalysis } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionAnalyzer";
+  import type { VoiceSessionAnalyzer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionAnalyzer";
+  import type { SessionAnalysis } from "$lib/features/voice-sessions/services/contracts/types";
   import type { VoiceSession, ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";
 
   let {
@@ -16,7 +17,7 @@
     analyzer,
   }: {
     repository: VoiceSessionRepository;
-    analyzer: IVoiceSessionAnalyzer;
+    analyzer: VoiceSessionAnalyzer;
   } = $props();
 
   let analysis = $state<SessionAnalysis | null>(null);

@@ -12,11 +12,7 @@
 
 import type { QuizAnswerEvent } from "../../quiz/domain/models/quiz-models";
 import { QuizType } from "../../quiz/domain/enums/quiz-enums";
-import type {
-  IGapDetector,
-  DetectedGap,
-  MisconceptionPattern,
-} from "../contracts/IGapDetector";
+import type { DetectedGap, MisconceptionPattern } from "../contracts/types";
 import type { LetterToConceptMapper } from "./LetterToConceptMapper";
 import {
   tkaKnowledgeGraph,
@@ -24,7 +20,7 @@ import {
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { QuizHistoryRecorder } from "./QuizHistoryRecorder";
 
-export class GapDetector implements IGapDetector {
+export class GapDetector {
   constructor(
     private readonly mapper: LetterToConceptMapper,
     private readonly historyRecorder: QuizHistoryRecorder

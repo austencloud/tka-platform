@@ -11,7 +11,7 @@
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { authState } from "../../../auth/state/authState.svelte";
 import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
   import { PROVIDERS, type ProviderId } from "./connectedAccounts.providers";
@@ -19,7 +19,7 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   // Services
   let authService = $state<Authenticator | null>(null);
-  let hapticService = $state<IHapticFeedback | null>(null);
+  let hapticService = $state<HapticFeedback | null>(null);
 
   // UI State
   let linkingProvider = $state<ProviderId | null>(null);

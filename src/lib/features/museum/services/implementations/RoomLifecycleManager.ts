@@ -15,14 +15,9 @@
 
 import type { RoomDescriptor } from "../../domain/room-descriptor";
 import type { RoomEdge } from "../../domain/layout-types";
-import {
-  RoomState,
-  type IRoomLifecycleManager,
-  type LifecycleUpdate,
-} from "../contracts/IRoomLifecycleManager";
+import { RoomState, type LifecycleUpdate } from "../contracts/types";
 
-// Re-export so test files can import from a single location.
-export { RoomState };
+export { RoomState, type LifecycleUpdate };
 
 export interface RoomLifecycleOptions {
   /**
@@ -34,7 +29,7 @@ export interface RoomLifecycleOptions {
   hysteresisMs?: number;
 }
 
-export class RoomLifecycleManager implements IRoomLifecycleManager {
+export class RoomLifecycleManager {
   /** room → set of directly connected rooms */
   private readonly adjacency = new Map<string, Set<string>>();
   /** Current lifecycle state for every known room */

@@ -7,18 +7,15 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  ISequenceCanonicalizer,
-  CanonicalSequence,
-} from "../contracts/ISequenceCanonicalizer";
+import type { CanonicalSequence } from "../contracts/types";
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
-import type { IWordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/contracts/IWordCyclicEquivalenceDetector";
+import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
 import type { SequenceSignature, StepSignature } from "../../domain/models/signatures";
 
-export class SequenceCanonicalizer implements ISequenceCanonicalizer {
+export class SequenceCanonicalizer {
   constructor(
     private readonly stepSignatureGenerator: StepSignatureGenerator,
-    private readonly wordCyclicEquivalenceDetector: IWordCyclicEquivalenceDetector
+    private readonly wordCyclicEquivalenceDetector: WordCyclicEquivalenceDetector
   ) {}
 
   canonicalize(sequence: SequenceData): CanonicalSequence {

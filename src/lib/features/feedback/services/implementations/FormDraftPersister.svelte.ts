@@ -1,7 +1,4 @@
-import type {
-  IFormDraftPersister,
-  DraftSaveStatus,
-} from "../contracts/IFormDraftPersister";
+import type { DraftSaveStatus } from "../contracts/types";
 import type {
   FeedbackFormData,
   FeedbackDraft,
@@ -16,7 +13,7 @@ import {
 /**
  * Manages auto-saving feedback form drafts with debouncing.
  */
-export class FormDraftPersister implements IFormDraftPersister {
+export class FormDraftPersister {
   private _saveStatus = $state<DraftSaveStatus>("idle");
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private resetTimer: ReturnType<typeof setTimeout> | null = null;

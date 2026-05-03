@@ -7,14 +7,13 @@
  */
 
 import type {
-  IHandednessAnalyzer,
   HandednessAnalysisResult,
   PalmOrientation,
   AnatomicalHandedness,
-} from "../contracts/IHandednessAnalyzer";
-import type { HandLandmark } from "../contracts/IHandLandmarker";
+  HandLandmark,
+} from "../contracts/types";
 
-export class HandednessAnalyzer implements IHandednessAnalyzer {
+export class HandednessAnalyzer {
   /**
    * Detect if palm is facing the camera or facing away
    * Uses Z-coordinates - palm facing camera has fingertips with lower Z than wrist

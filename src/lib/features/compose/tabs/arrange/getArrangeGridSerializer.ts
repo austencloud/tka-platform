@@ -1,7 +1,7 @@
-import type { IArrangeGridSerializer } from './services/contracts/IArrangeGridSerializer';
+
 import { ArrangeGridSerializer } from './services/implementations/ArrangeGridSerializer';
 
-let instance: IArrangeGridSerializer | null = null;
-export function getArrangeGridSerializer(): IArrangeGridSerializer {
+let instance: ArrangeGridSerializer | null = null;
+export function getArrangeGridSerializer(): ArrangeGridSerializer {
   return instance ??= new ArrangeGridSerializer();
 }

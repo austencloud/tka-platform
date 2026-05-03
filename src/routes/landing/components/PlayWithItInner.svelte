@@ -15,11 +15,11 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { AnimationPlaybackControllerFactory } from "$lib/features/compose/services/implementations/AnimationPlaybackControllerFactory";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+  import type { EndState } from '$lib/features/landing/services/contracts/types';
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
@@ -103,11 +103,11 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
 
   // ── Animation state ─────────────────────────────────────────────────────────
   const animationState = createAnimationPanelState();
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   let browseLoader: PublicSequencesLoader | null = null;
   let startPositionDeriver: StartPositionDeriver | null = null;
   let gridPositionDeriver: GridPositionDeriver | null = null;
-  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
+  let spinnerOrchestrator: EndlessSpinnerOrchestrator | null = null;
   let servicesReady = $state(false);
   let animationReady = $state(false);
   let animationError = $state(false);

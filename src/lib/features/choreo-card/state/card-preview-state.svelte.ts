@@ -1,7 +1,7 @@
 import type { Deck } from "../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { DeckLoader } from "../services/implementations/DeckLoader";
-import type { PrintRenderOptions } from "../services/contracts/IPrintCardRenderer";
+import type { PrintRenderOptions } from "../services/contracts/types";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
 
 export type CardPreviewSource = 'loops' | 'vtg';

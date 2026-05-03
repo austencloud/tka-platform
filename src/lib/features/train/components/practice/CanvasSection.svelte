@@ -11,7 +11,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -34,7 +34,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   }: Props = $props();
 
   // Services - using $state for reactivity with $effect
-  let playbackController = $state<IAnimationPlaybackController | null>(null);
+  let playbackController = $state<AnimationPlaybackController | null>(null);
   let pixiReady = $state(false);
 
   // Animation state - same pattern as SingleRenderer

@@ -22,7 +22,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -71,7 +71,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		/** Callback to receive reference to toggle playback function (for external keyboard control) */
 		onTogglePlaybackRef?: (toggleFn: () => void) => void;
 		/** Called when the internal playback controller is initialized, exposing it for external sync */
-		onControllerReady?: (ctrl: IAnimationPlaybackController, state: AnimationPanelState) => void;
+		onControllerReady?: (ctrl: AnimationPlaybackController, state: AnimationPanelState) => void;
 	} = $props();
 
 	// Context for external control mode
@@ -79,7 +79,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	const useContext = $derived(externalControl && !!ctx);
 
 	// Services (standalone mode only)
-	let controller = $state<IAnimationPlaybackController | null>(null);
+	let controller = $state<AnimationPlaybackController | null>(null);
 	let motionLoader = $state<SequenceMotionLoader | null>(null);
 
 	// State (standalone mode only)

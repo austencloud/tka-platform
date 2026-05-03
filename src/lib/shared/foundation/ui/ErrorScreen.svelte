@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
 import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -10,7 +10,7 @@ import { onMount } from "svelte";
   }>();
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   onMount(async () => {
     hapticService = getHapticFeedback();

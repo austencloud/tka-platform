@@ -6,7 +6,7 @@
  * leaks and improve performance during image export operations.
  */
 
-import type { ICanvasManager } from "../contracts/ICanvasManager";
+
 
 interface CanvasPoolEntry {
   canvas: HTMLCanvasElement;
@@ -14,7 +14,7 @@ interface CanvasPoolEntry {
   inUse: boolean;
 }
 
-export class CanvasManager implements ICanvasManager {
+export class CanvasManager {
   // Canvas pool management
   private canvasPool = new Map<string, CanvasPoolEntry[]>();
   private readonly MAX_POOL_SIZE_PER_DIMENSION = 10;

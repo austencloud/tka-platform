@@ -1,6 +1,6 @@
-import type { ISeoManager, SEOLinkOptions } from "../contracts/ISeoManager";
+import type { SEOLinkOptions } from "../contracts/types";
 
-export class SeoManager implements ISeoManager {
+export class SeoManager {
   /**
    * Generate a special SEO link that redirects users to the SPA
    */

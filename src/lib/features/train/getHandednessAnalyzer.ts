@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IHandednessAnalyzer } from './services/contracts/IHandednessAnalyzer';
+
 import { HandednessAnalyzer } from './services/implementations/HandednessAnalyzer';
 
-let instance: IHandednessAnalyzer | null = null;
+let instance: HandednessAnalyzer | null = null;
 
-export function getHandednessAnalyzer(): IHandednessAnalyzer {
+export function getHandednessAnalyzer(): HandednessAnalyzer {
 	if (!browser) throw new Error('getHandednessAnalyzer() is browser-only');
 	return instance ??= new HandednessAnalyzer();
 }

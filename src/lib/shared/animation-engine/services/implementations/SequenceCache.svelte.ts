@@ -13,7 +13,7 @@ import type {
   SequenceCacheState,
 } from "../contracts/ISequenceCache";
 
-export class SequenceCache implements ISequenceCache {
+export class SequenceCache {
   // Reactive state - owned by service
   state = $state<SequenceCacheState>({
     sequenceId: null,

@@ -1,7 +1,6 @@
 import type { RotationComparer } from "./RotationComparer";
 import type { ReflectionComparer } from "./ReflectionComparer";
 import type { SwapInvertComparer } from "./SwapInvertComparer";
-import type { ICandidateFormatter } from "../../contracts/ICandidateFormatter";
 import type {
   ExtractedStep,
   InternalStepPair,
@@ -20,7 +19,7 @@ export class StepComparisonOrchestrator {
     private rotationService: RotationComparer,
     private reflectionService: ReflectionComparer,
     private swapInvertService: SwapInvertComparer,
-    private formattingService: ICandidateFormatter
+    private formattingService: CandidateFormatter
   ) {}
 
   extractBeats(sequence: SequenceEntry): ExtractedStep[] {
@@ -204,6 +203,7 @@ import { rotationComparer } from "./RotationComparer";
 import { reflectionComparer } from "./ReflectionComparer";
 import { swapInvertComparer } from "./SwapInvertComparer";
 import { candidateFormatter } from "../CandidateFormatter";
+import type { CandidateFormatter } from "../CandidateFormatter";
 
 export const stepComparisonOrchestrator = new StepComparisonOrchestrator(
   rotationComparer,

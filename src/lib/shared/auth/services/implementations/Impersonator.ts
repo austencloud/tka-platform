@@ -8,15 +8,12 @@
 
 import { doc, getDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../../firebase";
-import type {
-  IImpersonator,
-  ImpersonatedUser,
-} from "../contracts/IImpersonator";
+import type { ImpersonatedUser } from "../contracts/types";
 import type { UserRole } from "../../domain/models/UserRole";
 import { isAdmin } from "../../state/authState.svelte";
 import { featureFlagService } from "../PostHogFeatureFlagService.svelte";
 
-export class Impersonator implements IImpersonator {
+export class Impersonator {
   private _impersonatedUser: ImpersonatedUser | null = null;
 
   /**

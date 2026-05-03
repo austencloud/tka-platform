@@ -7,9 +7,9 @@
  * card face images.
  */
 
-import type { IPrintZipExporter, ZipCardPair } from "../contracts/IPrintZipExporter";
+import type { ZipCardPair } from "../contracts/types";
 
-export class PrintZipExporter implements IPrintZipExporter {
+export class PrintZipExporter {
   async exportDeckZIP(
     pairs: ZipCardPair[],
     deckName: string,

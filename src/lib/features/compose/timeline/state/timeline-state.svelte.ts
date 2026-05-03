@@ -10,40 +10,19 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
 import type {
-  TimelineProject,
-  TimelineTrack,
-  TimelineClip,
-  PlayheadState,
-  SelectionState,
-  ViewportState,
-  SnapSettings,
-  TimeSeconds,
-} from "../domain/timeline-types";
+  TimelineProject, TimelineTrack, TimelineClip, PlayheadState, SelectionState, ViewportState, SnapSettings, TimeSeconds, } from "../domain/timeline-types";
 import {
-  createProject,
-  createTrack,
-  createClip,
-  createDefaultPlayheadState,
-  createDefaultSelectionState,
-  createDefaultViewportState,
-  generateClipId,
-  getClipEndTime,
-  calculateProjectDuration,
-  snapTime,
-} from "../domain/timeline-types";
+  createProject, createTrack, createClip, createDefaultPlayheadState, createDefaultSelectionState, createDefaultViewportState, generateClipId, getClipEndTime, calculateProjectDuration, snapTime, } from "../domain/timeline-types";
 
 import {
-  loadFromStorage,
-  saveToStorage,
-  TIMELINE_STORAGE_KEYS,
-} from "./timeline-storage";
+  loadFromStorage, saveToStorage, TIMELINE_STORAGE_KEYS, } from "./timeline-storage";
 import { getStepTimes } from "../services/StepGridCalculator";
 import { createPlayheadActions } from "./actions/playhead-actions";
 import { createSelectionActions } from "./actions/selection-actions";
 import { createViewportActions } from "./actions/viewport-actions";
 import { createUIStateActions } from "./actions/ui-state-actions";
 import { getTimelineUndoManager } from "../services/implementations/TimelineUndoManager";
-import type { TimelineUndoOperationType } from "../services/contracts/ITimelineUndoManager";
+import type { TimelineUndoOperationType } from "../services/contracts/types";
 
 // ============================================================================
 // Project Deduplication Helper

@@ -1,10 +1,5 @@
-import type {
-	ExtractedFrame,
-	FrameExtractionConfig,
-	IFrameExtractor,
-} from "../contracts/IFrameExtractor";
-
-export class FrameExtractor implements IFrameExtractor {
+import type { ExtractedFrame, FrameExtractionConfig } from "../contracts/types";
+export class FrameExtractor {
 	async *extractFrames(
 		videoElement: HTMLVideoElement,
 		config: FrameExtractionConfig,

@@ -21,7 +21,7 @@
 import { Quaternion, Euler, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { Object3D, AnimationClip, QuaternionKeyframeTrack } from "three";
-import type { ITurnAnimator, TurnRequest, TurnSample } from "../contracts/ITurnAnimator";
+import type { TurnRequest, TurnSample } from "../contracts/ITurnAnimator";
 import type { ContactCurveData } from "../contracts/IContactCurveCache";
 
 // ---------------------------------------------------------------------------
@@ -291,7 +291,7 @@ function sampleContactAtPhase(curve: number[], phase: number): number {
 // Main class
 // ---------------------------------------------------------------------------
 
-export class ClipBasedTurnAnimator implements ITurnAnimator {
+export class ClipBasedTurnAnimator {
   private clips: BakedTurnClip[] = [];
   private ready = false;
 

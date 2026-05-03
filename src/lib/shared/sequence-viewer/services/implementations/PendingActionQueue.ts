@@ -1,12 +1,8 @@
-import type {
-  IPendingActionQueue,
-  PendingAction,
-  PendingActionType,
-} from "../contracts/IPendingActionQueue";
+import type { PendingAction, PendingActionType } from "../contracts/types";
 import {
   PENDING_URL_PARAM,
   PENDING_ACTION_TTL_MS,
-} from "../contracts/IPendingActionQueue";
+} from "../contracts/types";
 
 const VALID_TYPES: ReadonlySet<PendingActionType> = new Set([
   "save",
@@ -20,7 +16,7 @@ function isValidType(value: string): value is PendingActionType {
   return VALID_TYPES.has(value as PendingActionType);
 }
 
-export class PendingActionQueue implements IPendingActionQueue {
+export class PendingActionQueue {
   private pending: PendingAction | null = null;
 
   enqueue(action: Omit<PendingAction, "ts">): void {

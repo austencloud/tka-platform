@@ -9,30 +9,30 @@ import { getSequenceLoader } from "$lib/features/loop-labeler/getSequenceLoader"
 import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
 import { getLoopLabelerNavigator } from "$lib/features/loop-labeler/getNavigator";
 import { loopDetector as loopDetectorInstance } from "../services/implementations/LOOPDetector";
-import type { ISequenceLoader } from "../services/contracts/ISequenceLoader";
-import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { Navigator } from "../services/implementations/Navigator";
 import type { ILOOPDetector } from "../services/contracts/ILOOPDetector";
+import type { SequenceLoader } from "../services/implementations/SequenceLoader";
+import type { LOOPLabelsFirebaseRepository } from "../services/implementations/LOOPLabelsFirebaseRepository";
 
 export class LOOPLabelerServiceLocator {
-  private cachedSequenceLoader: ISequenceLoader | null = null;
-  private cachedLabelsRepository: ILOOPLabelsFirebaseRepository | null = null;
+  private cachedSequenceLoader: SequenceLoader | null = null;
+  private cachedLabelsRepository: LOOPLabelsFirebaseRepository | null = null;
   private cachedNavigator: Navigator | null = null;
   private cachedDetector: ILOOPDetector | null = null;
 
-  get sequenceLoader(): ISequenceLoader | null {
+  get sequenceLoader(): SequenceLoader | null {
     if (!this.cachedSequenceLoader) {
       this.cachedSequenceLoader =
-        getSequenceLoader() as ISequenceLoader | null;
+        getSequenceLoader() as SequenceLoader | null;
     }
     return this.cachedSequenceLoader;
   }
 
-  get labelsRepository(): ILOOPLabelsFirebaseRepository | null {
+  get labelsRepository(): LOOPLabelsFirebaseRepository | null {
     if (!this.cachedLabelsRepository) {
       try {
         this.cachedLabelsRepository =
-          getLOOPLabelsFirebaseRepository() as ILOOPLabelsFirebaseRepository | null;
+          getLOOPLabelsFirebaseRepository() as LOOPLabelsFirebaseRepository | null;
       } catch {
         return null;
       }

@@ -6,11 +6,10 @@
  */
 
 import type {
-  IHandTrackingStabilizer,
   HandHistory,
   SmoothedPosition,
   StabilizerConfig,
-} from "../contracts/IHandTrackingStabilizer";
+} from "../contracts/types";
 
 const DEFAULT_CONFIG: StabilizerConfig = {
   smoothingWindow: 3,
@@ -18,7 +17,7 @@ const DEFAULT_CONFIG: StabilizerConfig = {
   handednessSwitchThreshold: 0.4,
 };
 
-export class HandTrackingStabilizer implements IHandTrackingStabilizer {
+export class HandTrackingStabilizer {
   private _blueHistory: HandHistory = {
     positions: [],
     assignedHand: "left",

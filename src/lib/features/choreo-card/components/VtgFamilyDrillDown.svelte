@@ -5,10 +5,11 @@ import { getVtgFamilyAggregator } from "$lib/features/choreo-card/getVtgFamilyAg
 
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { FamilyRatioGroup } from "../services/contracts/IVtgFamilyAggregator";
-  import type { IVtgFamilyAggregator } from "../services/contracts/IVtgFamilyAggregator";
-  import type { CardPair, IPrintPDFExporter } from "../services/contracts/IPrintPDFExporter";
-  import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
+  import type { FamilyRatioGroup } from "../services/contracts/types";
+  import type { VtgFamilyAggregator } from "../services/implementations/VtgFamilyAggregator";
+  import type { PrintPDFExporter } from "../services/implementations/PrintPDFExporter";
+import type { CardPair } from "../services/contracts/types";
+  import type { PrintZipExporter } from "../services/implementations/PrintZipExporter";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
@@ -158,7 +159,7 @@ import { getVtgFamilyAggregator } from "$lib/features/choreo-card/getVtgFamilyAg
       const { PrintPDFExporter } = await import(
         "$lib/features/choreo-card/services/implementations/PrintPDFExporter"
       );
-      const pdfExporter: IPrintPDFExporter = new PrintPDFExporter();
+      const pdfExporter: PrintPDFExporter = new PrintPDFExporter();
       const blob = await pdfExporter.exportHomePrintPDF(renderedPairs, familyLabel, cardSize);
       downloadBlob(blob, `${familyLabel}-${cardSize}.pdf`);
     } finally {

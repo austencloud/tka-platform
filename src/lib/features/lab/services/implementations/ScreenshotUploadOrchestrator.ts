@@ -6,23 +6,19 @@
  * recently uploaded screenshots to avoid re-uploading on consecutive captures.
  */
 
-import type {
-  IScreenshotUploadOrchestrator,
-  UploadProgress,
-} from "../contracts/IScreenshotUploadOrchestrator";
-import type { IScreenshotUploader } from "../contracts/IScreenshotUploader";
-import type { IScreenshotOrchestrator } from "../contracts/IScreenshotOrchestrator";
+import type { UploadProgress } from "../contracts/types";
 import type { ScreenshotLoader } from "./ScreenshotLoader";
+import type { ScreenshotOrchestrator } from "../implementations/ScreenshotOrchestrator";
+import type { ScreenshotUploader } from "../implementations/ScreenshotUploader";
 
 /** How recently a screenshot must have been uploaded to count as a duplicate (ms) */
 const DEDUP_WINDOW_MS = 60_000;
 
 export class ScreenshotUploadOrchestrator
-  implements IScreenshotUploadOrchestrator
 {
   constructor(
-    private readonly uploader: IScreenshotUploader,
-    private readonly orchestrator: IScreenshotOrchestrator,
+    private readonly uploader: ScreenshotUploader,
+    private readonly orchestrator: ScreenshotOrchestrator,
     private readonly loader: ScreenshotLoader
   ) {}
 

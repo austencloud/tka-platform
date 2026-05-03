@@ -1,5 +1,5 @@
 import type { NightSkyBackgroundSystem } from "@austencloud/backgrounds";
-import type { IUFOStatusPoller, UFOStatusSnapshot } from "../contracts/IUFOStatusPoller";
+import type { UFOStatusSnapshot } from "../contracts/types";
 
 const DEFAULT_POLL_INTERVAL_MS = 100; // 10Hz polling
 
@@ -7,7 +7,7 @@ const DEFAULT_POLL_INTERVAL_MS = 100; // 10Hz polling
  * Polls the NightSkyBackgroundSystem for UFO status at regular intervals.
  * Used by UFO Lab mode to display live status updates.
  */
-export class UFOStatusPoller implements IUFOStatusPoller {
+export class UFOStatusPoller {
   private intervalId: number | null = null;
   private system: NightSkyBackgroundSystem | null = null;
   private callback: ((status: UFOStatusSnapshot) => void) | null = null;

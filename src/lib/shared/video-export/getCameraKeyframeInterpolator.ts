@@ -1,7 +1,6 @@
-import type { ICameraKeyframeInterpolator } from './services/contracts/ICameraKeyframeInterpolator';
 import { CameraKeyframeInterpolator } from './services/implementations/CameraKeyframeInterpolator';
 
-let instance: ICameraKeyframeInterpolator | null = null;
-export function getCameraKeyframeInterpolator(): ICameraKeyframeInterpolator {
+let instance: CameraKeyframeInterpolator | null = null;
+export function getCameraKeyframeInterpolator(): CameraKeyframeInterpolator {
   return instance ??= new CameraKeyframeInterpolator();
 }

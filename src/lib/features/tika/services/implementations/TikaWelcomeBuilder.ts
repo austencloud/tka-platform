@@ -10,13 +10,8 @@
  * 4. Explore (static fallback) - purple
  */
 
-import type {
-  ITikaWelcomeBuilder,
-  WelcomeContext,
-  WelcomeSuggestion,
-} from "../contracts/ITikaWelcomeBuilder";
+import type { WelcomeContext, WelcomeSuggestion, TikaTopicInteraction } from "../contracts/types";
 import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
-import type { TikaTopicInteraction } from "../contracts/ITikaInteractionTracker";
 
 const MAX_SUGGESTIONS = 6;
 
@@ -29,7 +24,7 @@ const STATIC_SUGGESTIONS: WelcomeSuggestion[] = [
   { icon: "fa-layer-group", text: "Type 1 letters", question: "What are Type 1 letters?", reason: "explore" },
 ];
 
-export class TikaWelcomeBuilder implements ITikaWelcomeBuilder {
+export class TikaWelcomeBuilder {
   buildWelcome(
     masteryContext?: MasteryContext,
     topicHistory?: TikaTopicInteraction[],

@@ -2,7 +2,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import PanelTabs from "$lib/shared/components/panel/PanelTabs.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
@@ -17,7 +17,7 @@
     onSequenceClick: (sequence: LibrarySequence) => void;
   } = $props();
 
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   let reducedMotion = $state(
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches

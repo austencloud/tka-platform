@@ -4,13 +4,10 @@ import type {
   PreparedPictographData,
   PreparedRenderData,
 } from "../../domain/models/PreparedPictographData";
-import type {
-  IPictographPreparer,
-  PrepareOptions,
-} from "../contracts/IPictographPreparer";
-import type { IArrowLifecycleManager } from "../../../arrow/orchestration/services/contracts/IArrowLifecycleManager";
-import type { IPropSvgLoader } from "../../../prop/services/contracts/IPropSvgLoader";
-import type { IPropPlacer } from "../../../prop/services/contracts/IPropPlacer";
+import type { PrepareOptions } from "../contracts/types";
+import type { ArrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
+import type { PropSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
+import type { PropPlacer } from "../../../prop/services/implementations/PropPlacer";
 import type { GridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
 import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
@@ -19,16 +16,16 @@ import { PropType } from "../../../prop/domain/enums/PropType";
 import { MotionType, HandPath } from "../../domain/enums/pictograph-enums";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
-export class PictographPreparer implements IPictographPreparer {
+export class PictographPreparer {
   private prepareCache = new Map<string, PreparedRenderData>();
   private pendingPrepares = new Map<string, Promise<PreparedRenderData>>();
   private cacheHits = 0;
   private cacheMisses = 0;
 
   constructor(
-    private arrowManager: IArrowLifecycleManager,
-    private propLoader: IPropSvgLoader,
-    private propPlacer: IPropPlacer,
+    private arrowManager: ArrowLifecycleManager,
+    private propLoader: PropSvgLoader,
+    private propPlacer: PropPlacer,
     private gridModeDeriver: GridModeDeriver
   ) {}
 

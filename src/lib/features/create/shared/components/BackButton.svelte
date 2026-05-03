@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { fade } from "svelte/transition";
 
   const {
@@ -19,7 +19,7 @@
   } = $props();
 
   // Services
-  const hapticService: IHapticFeedback = getHapticFeedback();
+  const hapticService: HapticFeedback = getHapticFeedback();
 
   function handleBack() {
     // Trigger navigation haptic feedback for back navigation

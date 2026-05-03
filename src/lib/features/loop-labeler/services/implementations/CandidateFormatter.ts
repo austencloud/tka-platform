@@ -1,8 +1,3 @@
-import type {
-  ICandidateFormatter,
-  FormattedTransformations,
-} from "../contracts/ICandidateFormatter";
-import type { StepPairRelationship } from "../contracts/IStepPairAnalyzer";
 import type { ComponentId } from "../../domain/constants/loop-components";
 import type { CandidateDesignation } from "../../domain/models/label-models";
 import type {
@@ -10,11 +5,13 @@ import type {
   InternalStepPair,
 } from "../../domain/models/internal-step-models";
 import { TRANSFORMATION_PRIORITY } from "../../domain/constants/transformation-priority";
+import type { FormattedTransformations } from "../contracts/types";
+import type { StepPairRelationship } from "../contracts/types";
 
 /**
  * Service for formatting transformations and building candidate designations.
  */
-export class CandidateFormatter implements ICandidateFormatter {
+export class CandidateFormatter {
   formatSingleTransformation(raw: string): string {
     let formatted = raw.toUpperCase();
 

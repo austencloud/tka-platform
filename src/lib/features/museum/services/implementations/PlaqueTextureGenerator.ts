@@ -6,11 +6,7 @@
  * Canvases are cached by key so identical plaques reuse the same texture source.
  */
 
-import type {
-  IPlaqueTextureGenerator,
-  PlaqueContent,
-  PlaqueSize,
-} from "../contracts/IPlaqueTextureGenerator";
+import type { PlaqueContent, PlaqueSize } from "../contracts/types";
 
 // ---------------------------------------------------------------------------
 // Size configuration
@@ -162,7 +158,7 @@ function wordWrap(
 // PlaqueTextureGenerator
 // ---------------------------------------------------------------------------
 
-export class PlaqueTextureGenerator implements IPlaqueTextureGenerator {
+export class PlaqueTextureGenerator {
   private readonly cache = new Map<string, OffscreenCanvas>();
 
   generateCanvas(

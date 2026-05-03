@@ -14,7 +14,7 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
@@ -94,7 +94,7 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
 
   // Services - per-instance to allow multiple simultaneous players (e.g., Arena)
   let sequenceService: SequenceRepository | null = null;
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   let servicesReady = $state(false);
   let loading = $state(true);
   let error = $state<string | null>(null);

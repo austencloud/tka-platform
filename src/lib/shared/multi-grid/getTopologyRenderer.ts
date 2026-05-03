@@ -1,7 +1,6 @@
-import type { ITopologyRenderer } from './services/contracts/ITopologyRenderer';
 import { TopologyRenderer } from './services/implementations/TopologyRenderer';
 
-let instance: ITopologyRenderer | null = null;
-export function getTopologyRenderer(): ITopologyRenderer {
+let instance: TopologyRenderer | null = null;
+export function getTopologyRenderer(): TopologyRenderer {
   return instance ??= new TopologyRenderer();
 }

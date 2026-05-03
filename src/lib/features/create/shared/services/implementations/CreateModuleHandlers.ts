@@ -8,15 +8,12 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { CreateModuleState } from "../../state/create-module-state.svelte";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
-import type {
-  ICreateModuleHandlers,
-  ClearSequenceParams,
-} from "../contracts/ICreateModuleHandlers";
+import type { ClearSequenceParams } from "../contracts/types";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
 import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import { executeClearSequenceWorkflow } from "../../utils/clearSequenceWorkflow";
 
-export class CreateModuleHandlers implements ICreateModuleHandlers {
+export class CreateModuleHandlers {
   constructor(
     private CreateModuleOrchestrator: CreateModuleOrchestrator,
     private StepOperator: StepOperator

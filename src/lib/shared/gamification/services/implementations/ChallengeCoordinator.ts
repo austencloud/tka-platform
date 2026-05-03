@@ -24,10 +24,10 @@ import type {
 } from "../../domain/models/challenge-models";
 import type { DailyChallengeManager } from "./DailyChallengeManager";
 import type { WeeklyChallengeManager } from "./WeeklyChallengeManager";
-import type { ISkillProgressionTracker } from "../contracts/ISkillProgressionTracker";
+import type { SkillProgressionTracker } from "./SkillProgressionTracker";
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import type { StreakTracker } from '$lib/shared/gamification/services/implementations/StreakTracker'
-import type { SkillProgressActionType } from "../contracts/ISkillProgressionTracker";
+import type { SkillProgressActionType } from "../contracts/types";
 
 export class ChallengeCoordinator {
   private _initialized = false;
@@ -35,7 +35,7 @@ export class ChallengeCoordinator {
   constructor(
     private _dailyChallengeService: DailyChallengeManager,
     private _weeklyChallengeService: WeeklyChallengeManager,
-    private _skillProgressionService: ISkillProgressionTracker,
+    private _skillProgressionService: SkillProgressionTracker,
     private _achievementService: AchievementManager,
     private _streakService: StreakTracker
   ) {}

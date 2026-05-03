@@ -11,15 +11,9 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
+import type { PostHogActivityLogger } from "$lib/shared/analytics/services/implementations/PostHogActivityLogger";
 import type { UserAttribution } from "$lib/shared/attribution/domain/types";
-import type {
-  ISystemStateManager,
-  SystemState,
-  CachedUserMetadata,
-  CachedChallenge,
-  CachedAnnouncement,
-} from "../contracts/ISystemStateManager";
+import type { SystemState, CachedUserMetadata, CachedChallenge, CachedAnnouncement } from "../contracts/types";
 
 // Cache TTL: 2-3 minutes for ops work (stale data is acceptable)
 const SYSTEM_STATE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
@@ -43,10 +37,10 @@ function withTimeout<T>(
   ]);
 }
 
-export class SystemStateManager implements ISystemStateManager {
+export class SystemStateManager {
   private cachedState: SystemState | null = null;
 
-  constructor(private readonly activityLogService: IActivityLogger) {}
+  constructor(private readonly activityLogService: PostHogActivityLogger) {}
 
   /**
    * Check if Firestore is available

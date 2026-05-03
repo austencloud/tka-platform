@@ -7,19 +7,10 @@
 
 import { doc, collection, query, orderBy, limit, onSnapshot, Timestamp, type Firestore } from "firebase/firestore";
 import { httpsCallable, type Functions } from "firebase/functions";
+import type { BroadcastState, BroadcastStateClient, BroadcastHistoryEntry, ServerTimeResponse, } from "../../domain/models/broadcast-models";
 import type {
-  BroadcastState,
-  BroadcastStateClient,
-  BroadcastHistoryEntry,
-  ServerTimeResponse,
-} from "../../domain/models/broadcast-models";
-import type {
-  IBroadcastRepository,
-  BroadcastStateCallback,
-  BroadcastHistoryCallback,
-} from "../contracts/IBroadcastRepository";
+  BroadcastStateCallback, BroadcastHistoryCallback } from "../contracts/types";
 import { getFirestoreInstance, getFunctionsInstance } from "$lib/shared/auth/firebase";
-
 // Firestore paths
 const BROADCAST_STATE_DOC = "liveBroadcast/current";
 const BROADCAST_HISTORY_COLLECTION = "liveBroadcast/history/entries";
@@ -47,7 +38,7 @@ function convertToClientState(state: BroadcastState): BroadcastStateClient {
   };
 }
 
-export class BroadcastRepository implements IBroadcastRepository {
+export class BroadcastRepository {
   private serverTimeOffset: number | null = null;
   private firestoreInstance: Firestore | null = null;
   private functionsInstance: Functions | null = null;

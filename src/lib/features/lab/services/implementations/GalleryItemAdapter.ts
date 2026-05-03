@@ -7,11 +7,9 @@
 
 import type { MediaItem } from "@austencloud/media-tagging-types";
 import type {
-  GalleryItem,
-  IGalleryItemAdapter,
-} from "../contracts/IGalleryItemAdapter";
+  GalleryItem } from "../contracts/types";
 
-export class GalleryItemAdapter implements IGalleryItemAdapter {
+export class GalleryItemAdapter {
   toMediaItem(item: GalleryItem): MediaItem {
     return {
       id: item.id,

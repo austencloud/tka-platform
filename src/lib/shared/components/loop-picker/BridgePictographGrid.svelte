@@ -9,8 +9,8 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { CircularizationOption } from "../../../features/create/shared/services/contracts/types";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { onMount } from "svelte";
@@ -28,7 +28,7 @@
   let { options, onSelect, isLoading = false }: Props = $props();
 
   // Services
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   // Layout stabilization to prevent flicker
   let isLayoutStabilizing = $state(true);

@@ -5,7 +5,7 @@
  * Reduces Firestore reads by caching counts.
  */
 
-import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
+import type { CollaborativeVideoManager } from "$lib/shared/video-collaboration/services/implementations/CollaborativeVideoManager";
 
 export class VideoCountManager {
   // Cache video counts to avoid repeated Firestore queries
@@ -14,7 +14,7 @@ export class VideoCountManager {
   private pendingRequests = new Map<string, Promise<number>>();
 
   constructor(
-    private readonly videoManager: ICollaborativeVideoManager
+    private readonly videoManager: CollaborativeVideoManager
   ) {}
 
   async getVideoCount(sequenceId: string): Promise<number> {

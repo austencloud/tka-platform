@@ -2,7 +2,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { authState } from "../../../auth/state/authState.svelte";
-import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import { authDrawerState } from "../../../auth/state/auth-drawer-state.svelte";
 
@@ -22,7 +22,7 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
 
   function handleClick() {
     try {
-      const hapticService = getHapticFeedback() as IHapticFeedback;
+      const hapticService = getHapticFeedback() as HapticFeedback;
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -51,7 +51,7 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
     <button
       class="account-row drawer interactive"
       onclick={() => {
-        try { (getHapticFeedback() as IHapticFeedback)?.trigger("selection"); } catch {}
+        try { (getHapticFeedback() as HapticFeedback)?.trigger("selection"); } catch {}
         // Close the containing drawer (e.g. mobile nav) before the auth drawer
         // opens, so we never stack two full-height sheets on top of each other.
         onclick?.();

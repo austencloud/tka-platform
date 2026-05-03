@@ -9,7 +9,7 @@
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { turnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
@@ -22,7 +22,7 @@
   const animationState = createAnimationPanelState();
   const visibilityManager = getAnimationVisibilityManager();
 
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   let browseLoader: PublicSequencesLoader | null = null;
 
   let loading = $state(true);

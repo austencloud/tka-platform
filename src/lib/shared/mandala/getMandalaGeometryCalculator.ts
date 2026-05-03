@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IMandalaGeometryCalculator } from './services/contracts/IMandalaGeometryCalculator';
 import { MandalaGeometryCalculator } from './services/implementations/MandalaGeometryCalculator';
 
-let instance: IMandalaGeometryCalculator | null = null;
+let instance: MandalaGeometryCalculator | null = null;
 
-export function getMandalaGeometryCalculator(): IMandalaGeometryCalculator {
+export function getMandalaGeometryCalculator(): MandalaGeometryCalculator {
 	if (!browser) throw new Error('getMandalaGeometryCalculator() is browser-only');
 	return instance ??= new MandalaGeometryCalculator();
 }

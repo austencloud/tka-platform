@@ -4,7 +4,7 @@ StyleExpandPanel.svelte - 3-axis style config (Prop Reversals, Hand Reversals, D
 Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip is active.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   let {
     constraintPreset,
@@ -18,7 +18,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     constraintPreset: "smooth" | "mixed" | "choppy";
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
-    haptic: IHapticFeedback | null;
+    haptic: HapticFeedback | null;
     onPropsChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandsChange: (v: "smooth" | "mixed" | "choppy") => void;
     onDashesChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;

@@ -1,4 +1,4 @@
-import type { IStepDeriver } from "../contracts/IStepDeriver";
+import type { StepDeriver } from "../implementations/StepDeriver";
 import type { SequenceDecomposer } from "./SequenceDecomposer";
 import type { SequenceData } from "../../domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -92,7 +92,7 @@ function backfillPrefloatFromLegacySteps(
 
 export class SequenceHydrator {
 	constructor(
-		private readonly stepDeriver: IStepDeriver,
+		private readonly stepDeriver: StepDeriver,
 		private readonly sequenceDecomposer: SequenceDecomposer
 	) {}
 

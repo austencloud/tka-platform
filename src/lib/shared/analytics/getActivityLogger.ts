@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IActivityLogger } from './services/contracts/IActivityLogger';
 import { PostHogActivityLogger } from './services/implementations/PostHogActivityLogger';
 
-let instance: IActivityLogger | null = null;
+let instance: PostHogActivityLogger | null = null;
 
-export function getActivityLogger(): IActivityLogger {
+export function getActivityLogger(): PostHogActivityLogger {
   if (!browser) throw new Error('getActivityLogger() is browser-only');
   return instance ??= new PostHogActivityLogger();
 }

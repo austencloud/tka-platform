@@ -5,25 +5,9 @@
  * comparisons, term definitions, and visual examples.
  */
 
-import type {
-  ITikaPictographLoader,
-  PictographData,
-} from "../contracts/ITikaPictographLoader";
-import type { ITikaSequenceGenerator } from "../contracts/ITikaSequenceGenerator";
-import type { ITikaSequenceValidator } from "../contracts/ITikaSequenceValidator";
-import type {
-  ITikaToolExecutor,
-  LetterExplanationResult,
-  ComparisonResult,
-  TypeListResult,
-  TermDefinitionResult,
-  PositionExamplesResult,
-  MotionExamplesResult,
-  SequenceResult,
-  StepGridResult,
-  PictographExample,
-  InlineGallery,
-} from "../contracts/ITikaToolExecutor";
+import type { PictographData } from "../contracts/types";
+import type { TikaPictographLoader } from "./TikaPictographLoader";
+import type { TikaSequenceValidator } from "./TikaSequenceValidator";
 import {
   TYPE_DEFINITIONS,
   POSITION_DEFINITIONS,
@@ -31,6 +15,8 @@ import {
   LETTER_TO_TYPE,
   LETTER_TYPES,
 } from "@tka/domain";
+import type { LetterExplanationResult, ComparisonResult, TypeListResult, TermDefinitionResult, PositionExamplesResult, MotionExamplesResult, ToolExecutorSequenceResult, StepGridResult, PictographExample } from "../contracts/types";
+import type { TikaSequenceGenerator } from "./TikaSequenceGenerator";
 
 const POSITION_STATIC_LETTERS: Record<string, string> = {
   alpha: "α",
@@ -38,11 +24,11 @@ const POSITION_STATIC_LETTERS: Record<string, string> = {
   gamma: "γ",
 };
 
-export class TikaToolExecutor implements ITikaToolExecutor {
+export class TikaToolExecutor {
   constructor(
-    private pictographLoader: ITikaPictographLoader,
-    private sequenceGenerator: ITikaSequenceGenerator,
-    private sequenceValidator: ITikaSequenceValidator
+    private pictographLoader: TikaPictographLoader,
+    private sequenceGenerator: TikaSequenceGenerator,
+    private sequenceValidator: TikaSequenceValidator
   ) {}
 
   getLetterExplanation(
@@ -446,7 +432,7 @@ In TKA, **position** describes where your two hands are relative to each other o
     };
   }
 
-  async explainSequence(word: string): Promise<SequenceResult | string> {
+  async explainSequence(word: string): Promise<ToolExecutorSequenceResult | string> {
     try {
       const letters = this.sequenceValidator.parseWordToLetters(
         word.toUpperCase()
@@ -511,7 +497,10 @@ In TKA, **position** describes where your two hands are relative to each other o
       const stepGridItems = result.steps.map((step) => ({
         stepNumber: step.stepNumber,
         letter: step.letter,
+        variation: step.variation,
         label: step.stepNumber === 0 ? "Start" : `Step ${step.stepNumber}`,
+        startPosition: step.startPosition,
+        endPosition: step.endPosition,
       }));
 
       const normalizedWord = letters.join("");

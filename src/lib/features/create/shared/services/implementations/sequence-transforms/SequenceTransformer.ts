@@ -12,7 +12,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import type { IReversalDetector } from "../../contracts/IReversalDetector";
+import type { ReversalDetector } from "../ReversalDetector";
 import type { TargetHand } from "../../../state/panel-coordination-state.svelte";
 
 import {
@@ -32,7 +32,7 @@ export class SequenceTransformer {
   constructor(
     private readonly motionQueryHandler: IMotionQueryHandler,
     private readonly orientationCalculator: OrientationCalculator,
-    private readonly reversalDetector: IReversalDetector,
+    private readonly reversalDetector: ReversalDetector,
     private readonly positionDeriver: GridPositionDeriver
   ) {}
 

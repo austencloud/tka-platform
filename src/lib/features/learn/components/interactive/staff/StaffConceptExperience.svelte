@@ -10,7 +10,7 @@ Manages navigation through 5 pages:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedbackType } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedbackType } from "$lib/shared/application/services/contracts/types";
   import StaffIntroPage from "./pages/StaffIntroPage.svelte";
   import ThumbOrientationsPage from "./pages/ThumbOrientationsPage.svelte";
   import ProspinPage from "./pages/ProspinPage.svelte";

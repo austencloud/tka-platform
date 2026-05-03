@@ -13,7 +13,7 @@
  * 9. Run validation
  */
 
-import type { IMuseumGridBuilder, MuseumGridBuildResult } from "../contracts/IMuseumGridBuilder";
+import type { MuseumGridBuildResult } from "../contracts/types";
 import type { RoomNode, RoomEdge, GridConfig, PlacedRoom, CorridorSegment } from "../../domain/layout-types";
 import type {
   MuseumGrid,
@@ -30,7 +30,7 @@ import { LayoutValidator } from "./LayoutValidator";
 import { WallSegmentStamper } from "./WallSegmentStamper";
 import { ROOM_CONTENT } from "../../data/museum-room-content";
 
-export class MuseumGridBuilder implements IMuseumGridBuilder {
+export class MuseumGridBuilder {
   private layoutEngine = new GraphLayoutEngine();
   private corridorRouter = new CorridorRouter();
   private validator = new LayoutValidator();

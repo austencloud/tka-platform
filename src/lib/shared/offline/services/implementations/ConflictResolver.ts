@@ -8,14 +8,9 @@
  */
 
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-import type {
-  IConflictResolver,
-  VersionConflict,
-  ConflictResolution,
-  ConflictPromptCallback,
-} from "../contracts/IConflictResolver";
+import type { VersionConflict, ConflictResolution, ConflictPromptCallback } from "../contracts/types";
 
-export class ConflictResolver implements IConflictResolver {
+export class ConflictResolver {
   private promptCallback: ConflictPromptCallback | null = null;
 
   /**

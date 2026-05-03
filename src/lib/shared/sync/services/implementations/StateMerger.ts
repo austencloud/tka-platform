@@ -1,4 +1,4 @@
-import type { IStateMerger, MergeResult } from '../contracts/IStateMerger';
+import type { MergeResult } from "../contracts/types";
 import type { HybridLogicalClock } from './HybridLogicalClock';
 import type {
 	HLCTimestamp,
@@ -11,7 +11,7 @@ import type {
 /**
  * All operations are immutable - inputs are never mutated.
  */
-export class StateMerger implements IStateMerger {
+export class StateMerger {
 	constructor(private readonly hlc: HybridLogicalClock) {}
 
 	/**

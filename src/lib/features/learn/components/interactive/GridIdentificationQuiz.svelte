@@ -8,7 +8,7 @@ Two phases:
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onDestroy } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { GRID_DIRECTIONS } from "../../domain/constants/grid-constants";
   import QuizProgressBar from "./grid-quiz/QuizProgressBar.svelte";
   import ModeQuizSection from "./grid-quiz/ModeQuizSection.svelte";

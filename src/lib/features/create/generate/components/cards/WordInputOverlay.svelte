@@ -10,7 +10,7 @@
   import { onMount } from "svelte";
   import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
   import MobileInputToolbar from "$lib/shared/components/MobileInputToolbar.svelte";
-  import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
+  import type { GreekKeyMapper } from "$lib/shared/keyboard/services/implementations/GreekKeyMapper";
   import {
     uppercasePreservingGreek,
     insertAtCursor,
@@ -27,7 +27,7 @@
   }>();
 
   let inputElement = $state<HTMLInputElement | null>(null);
-  let greekKeyMapper: IGreekKeyMapper | null = null;
+  let greekKeyMapper: GreekKeyMapper | null = null;
   let isInputFocused = $state(false);
 
   onMount(() => {

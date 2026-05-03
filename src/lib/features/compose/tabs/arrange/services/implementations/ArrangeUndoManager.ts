@@ -5,18 +5,12 @@
  * Grid state itself still persists via arrange-grid-state's save().
  */
 
-import type {
-  IArrangeUndoManager,
-  ArrangeUndoOperationType,
-  ArrangeUndoEntry,
-  ArrangeGridSnapshot,
-  UndoResult,
-} from "../contracts/IArrangeUndoManager";
+import type { ArrangeUndoOperationType, ArrangeUndoEntry, ArrangeGridSnapshot, UndoResult } from "../contracts/types";
 
 const MAX_HISTORY_SIZE = 50;
 const DEFAULT_COALESCING_WINDOW_MS = 500;
 
-export class ArrangeUndoManager implements IArrangeUndoManager {
+export class ArrangeUndoManager {
   private undoStack: ArrangeUndoEntry[] = [];
   private redoStack: ArrangeUndoEntry[] = [];
   private pendingEntry: ArrangeUndoEntry | null = null;

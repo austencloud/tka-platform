@@ -1,13 +1,8 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type {
-  IVideoUploader,
-  VideoUploadResult,
-  UploadOptions,
-  MultipartUploadState,
-} from "../contracts/IVideoUploader";
 import type { R2Presigner } from "./R2Presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { VideoUploadResult, UploadOptions, MultipartUploadState } from "../contracts/types";
 
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024;
 const PART_SIZE = 10 * 1024 * 1024;
@@ -165,7 +160,7 @@ async function xhrPut(
   throw new Error("Upload failed after retries");
 }
 
-export class R2VideoUploader implements IVideoUploader {
+export class R2VideoUploader {
   private readonly presigner: R2Presigner;
 
   constructor(presigner: R2Presigner) {

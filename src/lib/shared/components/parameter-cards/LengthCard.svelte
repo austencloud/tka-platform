@@ -6,8 +6,8 @@ Can operate as stepper (inline) or panel opener (click to select)
 <script lang="ts">
   import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { RippleEffect } from "$lib/shared/application/services/implementations/RippleEffect";
   import { onMount } from "svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
 
@@ -39,8 +39,8 @@ Can operate as stepper (inline) or panel opener (click to select)
     onOpenSheet?: () => void;
   } = $props();
 
-  let hapticService: IHapticFeedback | null = null;
-  let rippleService: IRippleEffect | null = null;
+  let hapticService: HapticFeedback | null = null;
+  let rippleService: RippleEffect | null = null;
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {

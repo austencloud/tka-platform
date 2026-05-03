@@ -13,7 +13,7 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
   import { onMount, onDestroy, tick } from "svelte";
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { AnimationPlaybackControllerFactory } from "$lib/features/compose/services/implementations/AnimationPlaybackControllerFactory";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -38,7 +38,7 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
 
   // Animation engine state
   const animationState = createAnimationPanelState();
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   let startPositionDeriver: StartPositionDeriver | null = null;
   let animationReady = $state(false);
   let animationError = $state(false);

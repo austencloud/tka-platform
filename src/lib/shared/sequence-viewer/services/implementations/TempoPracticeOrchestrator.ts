@@ -6,12 +6,7 @@
  * Does NOT control playback - fires return values for the consumer to act on.
  */
 
-import type {
-  ITempoPracticeOrchestrator,
-  TempoPracticeConfig,
-  TempoPracticeProgress,
-} from "../contracts/ITempoPracticeOrchestrator";
-
+import type { TempoPracticeConfig, TempoPracticeProgress } from "../contracts/types";
 const DEFAULT_CONFIG: TempoPracticeConfig = {
   startBpm: 15,
   increment: 5,
@@ -19,7 +14,7 @@ const DEFAULT_CONFIG: TempoPracticeConfig = {
   maxBpm: 300,
 };
 
-export class TempoPracticeOrchestrator implements ITempoPracticeOrchestrator {
+export class TempoPracticeOrchestrator {
   private config: TempoPracticeConfig = { ...DEFAULT_CONFIG };
   private active = false;
   private currentBpm = 0;

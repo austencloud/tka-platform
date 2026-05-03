@@ -8,13 +8,8 @@
  */
 
 import { browser } from "$app/environment";
-import type {
-  CreateModuleStateSnapshot,
-  IUndoManager,
-  UndoHistoryEntry,
-  UndoMetadata,
-  UndoOperationType,
-} from "../contracts/IUndoManager";
+import type { CreateModuleStateSnapshot, UndoHistoryEntry, UndoMetadata } from "../contracts/types";
+import { UndoOperationType } from "../contracts/types";
 
 /**
  * Default maximum number of undo entries to keep
@@ -59,7 +54,7 @@ const OPERATION_DESCRIPTIONS: Record<UndoOperationType, string> = {
   SPELL_APPLY_LOOP: "Spell Apply LOOP",
 };
 
-export class UndoManager implements IUndoManager {
+export class UndoManager {
   // Pure TypeScript arrays - reactivity handled by wrapper
   private _undoHistory: UndoHistoryEntry[] = [];
   private _redoHistory: UndoHistoryEntry[] = [];

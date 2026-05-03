@@ -9,8 +9,8 @@
  * Handles RAF scheduling, trail point gathering, and scene rendering.
  */
 
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { ITrailCapturer as TrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
@@ -105,9 +105,9 @@ function hasTrailTips(map: TipEffectMap | undefined): boolean {
   return Object.values(map).some(a => a.effect === "trails");
 }
 
-export class AnimationRenderLoop implements IAnimationRenderLoop {
-  private renderer: IAnimationRenderer | null = null;
-  private TrailCapturer: ITrailCapturer | null = null;
+export class AnimationRenderLoop {
+  private renderer: AnimationRenderer | null = null;
+  private TrailCapturer: TrailCapturer | null = null;
   private pathCache: AnimationPathCache | null = null;
   private frameBudgetMonitor: FrameBudgetMonitor | null = null;
   private fireRenderer: WebGLFireRenderer | null = null;

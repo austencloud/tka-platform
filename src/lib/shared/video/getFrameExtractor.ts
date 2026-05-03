@@ -1,7 +1,6 @@
-import type { IFrameExtractor } from './services/contracts/IFrameExtractor';
 import { FrameExtractor } from './services/implementations/FrameExtractor';
 
-let instance: IFrameExtractor | null = null;
-export function getFrameExtractor(): IFrameExtractor {
+let instance: FrameExtractor | null = null;
+export function getFrameExtractor(): FrameExtractor {
   return instance ??= new FrameExtractor();
 }

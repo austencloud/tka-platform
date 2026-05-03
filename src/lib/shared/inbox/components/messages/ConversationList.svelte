@@ -14,7 +14,7 @@
   import ConversationItem from "./ConversationItem.svelte";
   import ConversationSkeleton from "../skeletons/ConversationSkeleton.svelte";
   import EmptyConversations from "../empty-states/EmptyConversations.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {
     conversations: ConversationPreview[];
@@ -27,7 +27,7 @@
   let isMarkingRead = $state(false);
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();

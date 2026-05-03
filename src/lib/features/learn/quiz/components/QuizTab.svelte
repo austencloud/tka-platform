@@ -9,14 +9,14 @@ Provides quiz functionality for learning TKA notation:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onDestroy, onMount } from "svelte";
-  import type { ICodex } from "../../codex/services/contracts/ICodex";
+  import type { Codex } from "../../codex/services/implementations/Codex";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
   import type { QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
   import type { QuizRepoManager } from "../services/implementations/QuizRepoManager";
   import type { QuizSessionManager } from "../services/implementations/QuizSessionManager";
-  import type { DetectedGap } from "../../services/contracts/IGapDetector";
+  import type { DetectedGap } from "../../services/contracts/types";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
   import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import QuizResultsView from "./QuizResultsView.svelte";

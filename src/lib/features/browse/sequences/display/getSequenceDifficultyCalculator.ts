@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISequenceDifficultyCalculator } from './services/contracts/ISequenceDifficultyCalculator';
 import { SequenceDifficultyCalculator } from './services/implementations/SequenceDifficultyCalculator';
 
-let instance: ISequenceDifficultyCalculator | null = null;
+let instance: SequenceDifficultyCalculator | null = null;
 
-export function getSequenceDifficultyCalculator(): ISequenceDifficultyCalculator {
+export function getSequenceDifficultyCalculator(): SequenceDifficultyCalculator {
 	if (!browser) throw new Error('getSequenceDifficultyCalculator() is browser-only');
 	return instance ??= new SequenceDifficultyCalculator();
 }

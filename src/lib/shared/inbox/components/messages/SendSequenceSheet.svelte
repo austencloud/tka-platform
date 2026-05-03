@@ -15,7 +15,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import type { SequenceSharePayload } from "../../domain/models/sequence-share-payload";
 
@@ -56,7 +56,7 @@
   let isLoadingSuggestions = $state(true);
 
   // Services
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   // Current user
   const currentUserId = $derived(authState.user?.uid ?? "");

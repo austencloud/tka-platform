@@ -6,7 +6,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {
     selectedProps: PropType[];
@@ -23,7 +23,7 @@
     chosenProp = prop;
 
     try {
-      const haptic = getHapticFeedback() as IHapticFeedback;
+      const haptic = getHapticFeedback() as HapticFeedback;
       haptic?.trigger("success");
     } catch {
       // Not available

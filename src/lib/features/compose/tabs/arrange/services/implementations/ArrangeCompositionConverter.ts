@@ -8,27 +8,14 @@
  * CellConfig stores sequences[] at the cell level, with optional tunnelLayers.
  */
 
-import type {
-  Composition,
-  CellConfig,
-  CellType,
-  MediaDisplayType,
-} from "../../../../compose/domain/types";
+import type { Composition, CellConfig, CellType, MediaDisplayType, } from "../../../../compose/domain/types";
 import {
-  getDefaultTrailSettings,
-  getTunnelLayerColors,
-} from "../../../../compose/domain/types";
+  getDefaultTrailSettings, getTunnelLayerColors, } from "../../../../compose/domain/types";
 import type { CellMediaType } from "../../../../compose/domain/types";
 import type { TunnelLayerConfig } from "../../../../compose/domain/types";
 import {
-  type GridCell,
-  createInitialGrid,
-  generateCellId,
-} from "../../state/arrange-grid-state.svelte";
-import type {
-  IArrangeCompositionConverter,
-  GridStateSnapshot,
-} from "../contracts/IArrangeCompositionConverter";
+  type GridCell, createInitialGrid, generateCellId, } from "../../state/arrange-grid-state.svelte";
+import type { GridStateSnapshot } from "../contracts/types";
 
 /**
  * Map CellMediaType (Arrange) → MediaDisplayType (Composition).
@@ -71,7 +58,7 @@ function displayTypeToCellMedia(display: MediaDisplayType | undefined): CellMedi
   }
 }
 
-export class ArrangeCompositionConverter implements IArrangeCompositionConverter {
+export class ArrangeCompositionConverter {
   gridCellsToComposition(
     id: string,
     name: string,

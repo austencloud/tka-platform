@@ -25,10 +25,7 @@ import { createPropPlacementFromPosition } from "../../domain/factories/createPr
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import type { BetaDetector } from "./BetaDetector";
-import type {
-  IPropPlacer,
-  PropPlacementVisibility,
-} from "../contracts/IPropPlacer";
+import type { PropPlacementVisibility } from "../contracts/types";
 import DefaultPropPositioner from "./DefaultPropPositioner";
 import { PropRotAngleManager } from "./PropRotAngleManager";
 import {
@@ -37,7 +34,7 @@ import {
   type BetaMotionInput,
 } from "$lib/shared/render/core/calculations/beta-offset";
 
-export class PropPlacer implements IPropPlacer {
+export class PropPlacer {
   constructor(
     private gridModeService: GridModeDeriver,
     private BetaDetector: BetaDetector,

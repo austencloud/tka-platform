@@ -8,7 +8,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -61,7 +61,7 @@
   let preRenderedCleared = $state(false);
   const usePreRendered = $derived(!!preRenderedImageUrlProp && !preRenderedCleared);
 
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
   let thumbnailRef: PropAwareThumbnail | undefined = $state();
 
   export function rerender(): void {

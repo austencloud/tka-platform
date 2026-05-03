@@ -17,7 +17,7 @@ import { getAnimator } from "$lib/shared/application/getAnimator";
     Letter,
     getLetterType,
   } from "$lib/shared/foundation/domain/models/Letter";
-  import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
+  import type { IOptionGridFitCalculator } from "../../services/contracts/types";
   import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
   import type { TypeFilter } from "../../domain/option-picker-types";
   import OptionViewerSection from "./OptionViewerSection.svelte";

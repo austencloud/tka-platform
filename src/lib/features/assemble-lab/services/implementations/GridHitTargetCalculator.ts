@@ -12,7 +12,7 @@ import {
 	GridLocation,
 	GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IGridHitTargetCalculator, GridHitTarget } from "../contracts/IGridHitTargetCalculator";
+import type { GridHitTarget } from "../contracts/types";
 
 /** Parse "(x, y)" string format from gridCoordinates into numbers */
 function parseCoord(coordString: string): { x: number; y: number } {
@@ -48,7 +48,7 @@ const CENTER_TARGET: GridHitTarget = {
 	location: GridLocation.CENTER, x: 475, y: 475, label: "Center"
 };
 
-export class GridHitTargetCalculator implements IGridHitTargetCalculator {
+export class GridHitTargetCalculator {
 	getHitTargets(gridMode: GridMode, showCenter: boolean = false): GridHitTarget[] {
 		let targets: GridHitTarget[];
 		switch (gridMode) {

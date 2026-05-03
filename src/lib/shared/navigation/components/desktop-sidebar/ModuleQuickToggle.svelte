@@ -24,7 +24,7 @@
   import { isModuleEnabledInEnvironment } from "../../../environment/environment-features";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../../domain/types";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
 
   interface Props {
     isCollapsed: boolean;
@@ -32,7 +32,7 @@
 
   let { isCollapsed }: Props = $props();
 
-  let hapticService: IHapticFeedback = null!;
+  let hapticService: HapticFeedback = null!;
   let open = $state(false);
   let saving = $state(false);
   let savingModuleId = $state<string | null>(null);

@@ -19,10 +19,8 @@
  */
 
 import { untrack } from "svelte";
-import type {
-  CreateModuleStateForSync,
-  INavigationSyncer,
-} from "../../services/contracts/INavigationSyncer";
+import type { CreateModuleStateForSync } from "../../services/contracts/types";
+import type { NavigationSyncer } from "../../services/implementations/NavigationSyncer";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 import type { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
@@ -32,7 +30,7 @@ type NavigationState = typeof navigationState;
 export interface NavigationSyncManagerConfig {
   CreateModuleState: CreateModuleState;
   navigationState: NavigationState;
-  NavigationSyncer: INavigationSyncer;
+  NavigationSyncer: NavigationSyncer;
 }
 
 /**

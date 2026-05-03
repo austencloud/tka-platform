@@ -1,9 +1,9 @@
 import { mount, unmount } from "svelte";
 import CardBack from "../../components/card-back/CardBack.svelte";
-import type { ICardBackDomRenderer, CardBackDomRenderOptions } from "../contracts/ICardBackDomRenderer";
+import type { CardBackDomRenderOptions } from "../contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-export class CardBackDomRenderer implements ICardBackDomRenderer {
+export class CardBackDomRenderer {
   async render(sequence: SequenceData, options: CardBackDomRenderOptions): Promise<HTMLCanvasElement> {
     const { width, height, bleedPx } = options;
     const contentW = width - bleedPx * 2;

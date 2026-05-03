@@ -1,7 +1,6 @@
-import type { IQualityTierDetector } from './contracts/IQualityTierDetector';
 import { QualityTierDetector } from './QualityTierDetector';
 
-let instance: IQualityTierDetector | null = null;
-export function getQualityTierDetector(): IQualityTierDetector {
+let instance: QualityTierDetector | null = null;
+export function getQualityTierDetector(): QualityTierDetector {
   return instance ??= new QualityTierDetector();
 }

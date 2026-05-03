@@ -1,7 +1,6 @@
-import type { IPropPositionCalculator } from './services/contracts/IPropPositionCalculator';
 import { PropPositionCalculator } from './services/implementations/PropPositionCalculator';
 
-let instance: IPropPositionCalculator | null = null;
-export function getPropPositionCalculator(): IPropPositionCalculator {
+let instance: PropPositionCalculator | null = null;
+export function getPropPositionCalculator(): PropPositionCalculator {
   return instance ??= new PropPositionCalculator();
 }

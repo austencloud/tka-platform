@@ -17,24 +17,21 @@ import {
   VIDEO_INITIAL_CAPTURE_DELAY_MS,
 } from "../../shared/domain/constants/timing";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
-import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/IFileDownloader";
-import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
+import type { FileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
+import type { AnimationPlaybackController } from "../implementations/AnimationPlaybackController";
 import type { CanvasRenderer } from "./CanvasRenderer";
 import type {
   VideoExportFormat,
   VideoExportOrchestratorOptions,
-  IVideoExportOrchestrator,
   VideoExportProgress,
   VideoResolution,
   VideoEffectOverrides,
-} from "../contracts/IVideoExportOrchestrator";
-import type { IVideoExporter } from "../contracts/IVideoExporter";
-import type { ICompositeVideoRenderer } from "../contracts/ICompositeVideoRenderer";
-import type {
-  GlyphAsset,
-  IExportGlyphPrerenderer,
-} from "../contracts/IExportGlyphPrerenderer";
-import type { IBackgroundVideoEncoder } from "../contracts/IBackgroundVideoEncoder";
+} from "../contracts/types";
+import type { VideoExporter } from "../implementations/VideoExporter";
+import type { CompositeVideoRenderer } from "../implementations/CompositeVideoRenderer";
+import type { ExportGlyphPrerenderer } from "../implementations/ExportGlyphPrerenderer";
+import type { GlyphAsset } from "../contracts/types";
+import type { BackgroundVideoEncoder } from "../implementations/BackgroundVideoEncoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
@@ -44,22 +41,22 @@ import { Period } from "$lib/features/create/generate/circular/domain/models/cir
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
-export class VideoExportOrchestrator implements IVideoExportOrchestrator {
+export class VideoExportOrchestrator {
   private _isExporting = false;
   private shouldCancel = false;
 
   constructor(
-    private readonly VideoExporter: IVideoExporter,
+    private readonly VideoExporter: VideoExporter,
     private readonly canvasRenderer: CanvasRenderer,
-    private readonly fileDownloadService: IFileDownloader,
-    private readonly compositeRenderer: ICompositeVideoRenderer,
-    private readonly glyphPrerenderer: IExportGlyphPrerenderer,
-    private readonly backgroundEncoder: IBackgroundVideoEncoder
+    private readonly fileDownloadService: FileDownloader,
+    private readonly compositeRenderer: CompositeVideoRenderer,
+    private readonly glyphPrerenderer: ExportGlyphPrerenderer,
+    private readonly backgroundEncoder: BackgroundVideoEncoder
   ) {}
 
   async executeExport(
     canvas: HTMLCanvasElement,
-    playbackController: IAnimationPlaybackController,
+    playbackController: AnimationPlaybackController,
     panelState: AnimationPanelState,
     onProgress: (progress: VideoExportProgress) => void,
     options: VideoExportOrchestratorOptions = {}
@@ -861,7 +858,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   }
 
   private restorePlaybackState(
-    playbackController: IAnimationPlaybackController,
+    playbackController: AnimationPlaybackController,
     snapshot: { wasPlaying: boolean; step: number }
   ): void {
     playbackController.jumpToStep(snapshot.step);

@@ -8,7 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import Drawer from "../../foundation/ui/Drawer.svelte";
-import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import AuthFooter from "../../auth/components/AuthFooter.svelte";
   import AuthHeader from "../../auth/components/AuthHeader.svelte";
@@ -24,7 +24,7 @@ import type { IHapticFeedback } from "../../application/services/contracts/IHapt
   }>();
 
   // Services
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   let authService: Authenticator | null = null;
 
   // Track auth mode to update UI accordingly

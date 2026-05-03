@@ -1,11 +1,9 @@
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type {
-  IPropPreferencePersister,
-  CatdogCombo,
-} from "../services/contracts/IPropPreferencePersister";
+import type { PropPreferencePersister } from "../services/implementations/PropPreferencePersister";
+import type { CatdogCombo } from "../services/contracts/types";
 
 export function createPropPreferenceState(
-  persister: IPropPreferencePersister,
+  persister: PropPreferencePersister,
   userId: string
 ) {
   let propsISpinWith = $state<PropType[]>([]);

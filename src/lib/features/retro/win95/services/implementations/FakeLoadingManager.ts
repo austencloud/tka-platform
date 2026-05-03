@@ -11,11 +11,7 @@
  * Domain: Retro Desktop Effects
  */
 
-import type {
-	IFakeLoadingManager,
-	LoadingContext,
-	LoadingSession,
-} from "../contracts/IFakeLoadingManager";
+import type { LoadingContext, LoadingSession } from "../contracts/types";
 
 // ============================================================================
 // MESSAGE POOLS
@@ -110,7 +106,7 @@ const DEFAULT_DURATION_MS = 3000;
 // IMPLEMENTATION
 // ============================================================================
 
-export class FakeLoadingManager implements IFakeLoadingManager {
+export class FakeLoadingManager {
 	private progress = 0;
 	private message = "";
 	private isComplete = false;

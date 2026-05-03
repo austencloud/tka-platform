@@ -29,9 +29,9 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/export-panel/domain/models/ExportSettings";
   import type { ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
-  import type { IExportOrchestrator } from "$lib/shared/export-panel/services/contracts/IExportOrchestrator";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { PlatformDetector } from "$lib/shared/mobile/services/implementations/PlatformDetector";
+  import type { ExportOrchestrator } from "$lib/shared/export-panel/services/implementations/ExportOrchestrator";
 
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
@@ -45,14 +45,12 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   // Animation imports
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type {
-    IVideoExportOrchestrator,
-    VideoExportProgress,
-  } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
   import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-  import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
+  import type { SheetRouter } from "$lib/shared/navigation/services/implementations/SheetRouter";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
   import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import {
@@ -71,15 +69,15 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   const { CreateModuleState, panelState } = ctx;
 
   // Core services (resolved immediately)
-  let hapticService: IHapticFeedback | null = null;
-  let exportOrchestrator: IExportOrchestrator | null = null;
-  let platformService: IPlatformDetector | null = null;
-  let sheetRouterService: ISheetRouter | null = null;
+  let hapticService: HapticFeedback | null = null;
+  let exportOrchestrator: ExportOrchestrator | null = null;
+  let platformService: PlatformDetector | null = null;
+  let sheetRouterService: SheetRouter | null = null;
   let sequenceService: SequenceRepository | null = null;
 
   // Animation services (lazy-loaded when Animation format selected)
-  let playbackController: IAnimationPlaybackController | null = null;
-  let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
+  let videoExportOrchestrator: VideoExportOrchestrator | null = null;
   let loopabilityChecker: SequenceLoopabilityChecker | null = null;
   let layoutService: ResponsiveLayoutManager | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;

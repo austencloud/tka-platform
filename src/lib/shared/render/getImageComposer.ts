@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { IImageComposer } from './services/contracts/IImageComposer';
+
 import { ImageComposer } from './services/implementations/ImageComposer';
 import { getLayoutCalculator } from './getLayoutCalculator';
 import { getTextRenderer } from './getTextRenderer';
@@ -12,9 +12,9 @@ import { getCanvas2DRenderer } from './getCanvas2DRenderer';
 import { getLayerCompositor } from './getLayerCompositor';
 import type { Canvas2DDirectRenderer } from './services/implementations/Canvas2DDirectRenderer';
 
-let instance: IImageComposer | null = null;
+let instance: ImageComposer | null = null;
 
-export function getImageComposer(): IImageComposer {
+export function getImageComposer(): ImageComposer {
 	if (!browser) throw new Error('getImageComposer() is browser-only');
 	return instance ??= new ImageComposer(
 		getLayoutCalculator(),

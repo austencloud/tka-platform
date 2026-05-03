@@ -20,8 +20,8 @@ import {
   TrackingMode,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
-import type { AdditionalLayerRenderData } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/contracts/ICanvasResizer";
+import type { AdditionalLayerRenderData } from "$lib/features/compose/services/contracts/types";
+import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/contracts/types";
 
 // ============================================================================
 // CATMULL-ROM SPLINE (pure math, no framework dependencies)

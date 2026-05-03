@@ -10,7 +10,7 @@ const EMPTY_SAMPLE: ContactSample = Object.freeze({
   hasCurve: false,
 }) as ContactSample;
 
-export class ContactCurveCache implements IContactCurveCache {
+export class ContactCurveCache {
   private readonly curves = new Map<string, ContactCurveData>();
 
   register(data: ContactCurveData): void {

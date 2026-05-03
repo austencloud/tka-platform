@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { ISequenceExtender } from './services/contracts/ISequenceExtender';
+
 import { SequenceExtender } from './services/implementations/SequenceExtender';
 import { getLOOPExecutorSelector } from '$lib/features/create/generate/circular/getLOOPExecutors';
 import { getReversalDetector } from './getReversalDetector';
@@ -12,9 +12,9 @@ import { getBridgeFinder } from './getBridgeFinder';
 import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
 import { gridModeDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridModeDeriver';
 
-let instance: ISequenceExtender | null = null;
+let instance: SequenceExtender | null = null;
 
-export function getSequenceExtender(): ISequenceExtender {
+export function getSequenceExtender(): SequenceExtender {
 	if (!browser) throw new Error('getSequenceExtender() is browser-only');
 	return instance ??= new SequenceExtender(
 		getLOOPExecutorSelector(),

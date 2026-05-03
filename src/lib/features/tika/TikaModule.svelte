@@ -26,13 +26,13 @@
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
   import type { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
   import type { ConceptRecommender } from "$lib/features/learn/services/implementations/ConceptRecommender";
-  import type { IGapDetector } from "$lib/features/learn/services/contracts/IGapDetector";
+  import type { GapDetector } from "../learn/services/implementations/GapDetector";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
   import { ConversationMemoryRetriever } from "./services/implementations/ConversationMemoryRetriever";
   import { TikaInteractionTracker } from "./services/implementations/TikaInteractionTracker";
   import { TikaWelcomeBuilder } from "./services/implementations/TikaWelcomeBuilder";
-  import type { WelcomeContext } from "./services/contracts/ITikaWelcomeBuilder";
+  import type { WelcomeContext } from "./services/contracts/types";
   import { TIKA_LIMITS } from "./data/firestore-paths";
   import type { ModelOption } from "./types";
 
@@ -117,7 +117,7 @@
   const conceptRecommender: ConceptRecommender | null = browser
     ? getConceptRecommender() ?? null
     : null;
-  const gapDetector: IGapDetector | null = browser
+  const gapDetector: GapDetector | null = browser
     ? getGapDetector() ?? null
     : null;
 

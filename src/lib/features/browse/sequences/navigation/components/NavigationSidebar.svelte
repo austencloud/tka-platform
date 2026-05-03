@@ -19,7 +19,7 @@ Follows Svelte 5 runes + microservices architecture.
     BrowseNavigationConfig,
     BrowseNavigationItem,
   } from "../domain/models/navigation-models";
-  import type { IHapticFeedback } from "../../../../../shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../../../shared/application/services/implementations/HapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
@@ -38,7 +38,7 @@ Follows Svelte 5 runes + microservices architecture.
   }>();
 
   // Services
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
 
   onMount(() => {
     hapticService = getHapticFeedback();

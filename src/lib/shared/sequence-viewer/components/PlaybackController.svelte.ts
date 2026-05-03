@@ -10,9 +10,9 @@
  * Extracted from SequenceViewerOrchestrator.
  */
 
-import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState, AnimationStateKey, PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
-import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
@@ -36,8 +36,8 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   let arrivedViaStepping = $state(false);
 
   // External dependencies (set by orchestrator after service load)
-  let _playbackController: IAnimationPlaybackController | null = null;
-  let _hapticService: IHapticFeedback | null = null;
+  let _playbackController: AnimationPlaybackController | null = null;
+  let _hapticService: HapticFeedback | null = null;
   let _onUrlParamChange: ((key: string, value: string) => void) | undefined;
 
   // ── Animation state subscription ──
@@ -257,9 +257,9 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     practiceState,
 
     // Dependency injection (set after service load)
-    setPlaybackController(pc: IAnimationPlaybackController) { _playbackController = pc; },
+    setPlaybackController(pc: AnimationPlaybackController) { _playbackController = pc; },
     getPlaybackController() { return _playbackController; },
-    setHapticService(hs: IHapticFeedback) { _hapticService = hs; },
+    setHapticService(hs: HapticFeedback) { _hapticService = hs; },
     setOnUrlParamChange(cb: ((key: string, value: string) => void) | undefined) { _onUrlParamChange = cb; },
 
     // Handlers

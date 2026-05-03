@@ -3,20 +3,20 @@
  * Coordinates location permission, geocoding, and Firebase persistence
  */
 
-import type { ILocationProvider } from "../contracts/ILocationProvider";
 import type { UserLocationRepository } from "./UserLocationRepository";
-import type { IGeocodingService } from "../contracts/IGeocodingService";
 import type {
   UserLocationWithProfile,
   LocationSharingPreferences,
 } from "../../domain/models/user-location";
 import { Timestamp } from "firebase/firestore";
+import type { GeocodingService } from "../implementations/GeocodingService";
+import type { LocationProvider } from "../implementations/LocationProvider";
 
 export class LocationSharingOrchestrator {
   constructor(
-    private locationProvider: ILocationProvider,
+    private locationProvider: LocationProvider,
     private repository: UserLocationRepository,
-    private geocodingService: IGeocodingService
+    private geocodingService: GeocodingService
   ) {}
 
   async hasConsented(userId: string): Promise<boolean> {

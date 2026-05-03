@@ -5,9 +5,9 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { ISVGGenerator as SVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
+import type { ITrailCapturer as TrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type {
   IPropTextureLoader,
   PropTextureState,
@@ -17,7 +17,7 @@ import {
   getPropDimensions,
 } from "../contracts/IPropTextureLoader";
 
-export class PropTextureLoader implements IPropTextureLoader {
+export class PropTextureLoader {
   // Reactive state - owned by service, read by component via $derived
   state = $state<PropTextureState>({
     blueDimensions: { ...DEFAULT_PROP_DIMENSIONS },
@@ -27,14 +27,14 @@ export class PropTextureLoader implements IPropTextureLoader {
     error: null,
   });
 
-  private renderer: IAnimationRenderer | null = null;
-  private svgGenerator: ISVGGenerator | null = null;
-  private TrailCapturer: ITrailCapturer | null = null;
+  private renderer: AnimationRenderer | null = null;
+  private svgGenerator: SVGGenerator | null = null;
+  private TrailCapturer: TrailCapturer | null = null;
 
   initialize(
-    renderer: IAnimationRenderer,
-    svgGenerator: ISVGGenerator,
-    TrailCapturer: ITrailCapturer | null
+    renderer: AnimationRenderer,
+    svgGenerator: SVGGenerator,
+    TrailCapturer: TrailCapturer | null
   ): void {
     this.renderer = renderer;
     this.svgGenerator = svgGenerator;

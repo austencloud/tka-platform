@@ -15,7 +15,7 @@
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { authState } from "../state/authState.svelte";
 import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
-  import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import {
     createEmailLinkingState,
@@ -37,7 +37,7 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   // Services
   let authService = $state<Authenticator | null>(null);
-  let hapticService = $state<IHapticFeedback | null>(null);
+  let hapticService = $state<HapticFeedback | null>(null);
   let linkingState = $state<EmailLinkingState | null>(null);
 
   onMount(() => {

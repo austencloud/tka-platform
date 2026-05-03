@@ -1,11 +1,10 @@
-import type { IMobileConnectionAdapter } from './services/contracts/IMobileConnectionAdapter';
 import { MobileConnectionAdapter } from './services/implementations/MobileConnectionAdapter';
 import { getNetworkStatusMonitor } from './getNetworkStatusMonitor';
 import { getMessageBatcher } from './getMessageBatcher';
 
-let instance: IMobileConnectionAdapter | null = null;
+let instance: MobileConnectionAdapter | null = null;
 
-export function getMobileConnectionAdapter(): IMobileConnectionAdapter {
+export function getMobileConnectionAdapter(): MobileConnectionAdapter {
   if (!instance) {
     instance = new MobileConnectionAdapter();
     getNetworkStatusMonitor().onConnectionTypeChange((type) => {

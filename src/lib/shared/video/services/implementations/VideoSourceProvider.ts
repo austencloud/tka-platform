@@ -1,9 +1,5 @@
-import type {
-	IVideoSourceProvider,
-	VideoSourceInfo,
-} from "../contracts/IVideoSourceProvider";
-
-export class VideoSourceProvider implements IVideoSourceProvider {
+import type { VideoSourceInfo } from "../contracts/types";
+export class VideoSourceProvider {
 	private videoEl: HTMLVideoElement | null = null;
 	private offscreenCanvas: HTMLCanvasElement | null = null;
 	private offscreenCtx: CanvasRenderingContext2D | null = null;

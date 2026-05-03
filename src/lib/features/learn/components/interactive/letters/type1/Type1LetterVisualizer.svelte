@@ -11,7 +11,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     GridPositionGroup,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";

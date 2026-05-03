@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IPWAInstallDismissalManager } from './services/contracts/IPWAInstallDismissalManager';
 import { PWAInstallDismissalManager } from './services/implementations/PWAInstallDismissalManager';
 
-let instance: IPWAInstallDismissalManager | null = null;
+let instance: PWAInstallDismissalManager | null = null;
 
-export function getPWAInstallDismissalManager(): IPWAInstallDismissalManager {
+export function getPWAInstallDismissalManager(): PWAInstallDismissalManager {
 	if (!browser) throw new Error('getPWAInstallDismissalManager() is browser-only');
 	return instance ??= new PWAInstallDismissalManager();
 }

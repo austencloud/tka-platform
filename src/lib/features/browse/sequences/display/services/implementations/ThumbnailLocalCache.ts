@@ -13,10 +13,7 @@
  */
 
 import { browser } from "$app/environment";
-import type {
-  IThumbnailLocalCache,
-  ThumbnailLocalCacheStats,
-} from "../contracts/IThumbnailLocalCache";
+import type { ThumbnailLocalCacheStats } from "../contracts/types";
 
 const DB_NAME = "thumbnail-local-cache";
 const STORE_NAME = "thumbnails";
@@ -37,7 +34,7 @@ interface CachedEntry {
   sizeBytes: number;
 }
 
-export class ThumbnailLocalCache implements IThumbnailLocalCache {
+export class ThumbnailLocalCache {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private maxSizeBytes: number;
   private isPruning = false; // Concurrency guard to prevent overlapping prune operations

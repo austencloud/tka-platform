@@ -10,7 +10,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { fuseTourState } from "../../state/fuse-tour-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   let {
     variant = "fullscreen" as "fullscreen" | "banner",
@@ -71,7 +71,7 @@
   // Show Next button only when there's button text and we're not waiting for action.
   const showNext = $derived(!!current.buttonText && !isWaiting);
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   try {
     hapticService = getHapticFeedback();
   } catch {}

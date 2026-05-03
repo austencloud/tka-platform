@@ -12,7 +12,7 @@ import type {
   IComponentManager,
 } from "../contracts/IComponentManager";
 
-export class ComponentManager implements IComponentManager {
+export class ComponentManager {
   /**
    * Calculate required components based on pictograph data
    */

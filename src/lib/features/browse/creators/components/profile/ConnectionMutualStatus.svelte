@@ -5,7 +5,7 @@
    * Shows mutual follow badge and timestamps for the relationship.
    */
 
-  import type { MutualFollowInfo } from "$lib/shared/community/services/contracts/IConnectionManager";
+  import type { MutualFollowInfo } from "$lib/shared/community/services/contracts/types";
 
   interface Props {
     mutualFollow: MutualFollowInfo;

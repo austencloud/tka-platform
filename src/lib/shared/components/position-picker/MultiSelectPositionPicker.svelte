@@ -10,7 +10,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import {
     GridMode,
     GridPosition,
@@ -33,7 +33,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
 
   // State
   let variations = $state<PictographData[]>([]);
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
   let isLoading = $state(true);
 
   // Convert blockedPositions to Set for O(1) lookup

@@ -22,7 +22,7 @@ import { getRotationDirectionPatternManager } from "$lib/features/create/shared/
     createUniformPattern,
     type RotationDirectionTemplateDefinition,
   } from "../../domain/templates/rotation-direction-templates";
-  import type { IRotationDirectionPatternManager } from "../../services/contracts/IRotationDirectionPatternManager";
+  import type { RotationDirectionPatternManager } from "../../services/implementations/RotationDirectionPatternManager";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
   // Child components

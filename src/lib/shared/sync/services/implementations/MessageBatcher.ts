@@ -1,11 +1,5 @@
-import type {
-	IMessageBatcher,
-	MessageBatcherConfig,
-	MessagePriority,
-	QueuedMessage,
-	BatchFlushEvent
-} from '../contracts/IMessageBatcher';
-import { DEFAULT_MESSAGE_BATCHER_CONFIG } from '../contracts/IMessageBatcher';
+import type { MessageBatcherConfig, MessagePriority, QueuedMessage, BatchFlushEvent } from "../contracts/types";
+import { DEFAULT_MESSAGE_BATCHER_CONFIG } from "../contracts/types";
 import type { SyncMessage } from '../../domain/sync-messages';
 
 interface BatchTimers {
@@ -14,7 +8,7 @@ interface BatchTimers {
 	low: ReturnType<typeof setTimeout> | null;
 }
 
-export class MessageBatcher implements IMessageBatcher {
+export class MessageBatcher {
 	private config: MessageBatcherConfig;
 
 	private _isEnabled: boolean;

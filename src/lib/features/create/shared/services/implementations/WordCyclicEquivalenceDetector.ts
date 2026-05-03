@@ -1,7 +1,4 @@
-import type {
-  IWordCyclicEquivalenceDetector,
-  WordCyclicEquivalenceResult,
-} from "../contracts/IWordCyclicEquivalenceDetector";
+import type { WordCyclicEquivalenceResult } from "../contracts/types";
 
 /**
  * Detects cyclic equivalence between words (letter sequences).
@@ -11,7 +8,6 @@ import type {
  * a substring of s1 + s1.
  */
 export class WordCyclicEquivalenceDetector
-  implements IWordCyclicEquivalenceDetector
 {
   areCyclicEquivalent(wordA: string, wordB: string): WordCyclicEquivalenceResult {
     // Quick checks

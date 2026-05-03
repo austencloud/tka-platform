@@ -30,7 +30,7 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CellMediaType } from "../../compose/domain/types";
   import type { TransformType } from "../../compose/domain/types";
-  import type { KeyboardContext, KeyboardCallbacks } from "./services/contracts/IArrangeKeyboardHandler";
+  import type { KeyboardContext, KeyboardCallbacks } from "./services/contracts/types";
 
   // Use singleton grid state
   const gridState = arrangeGridState;

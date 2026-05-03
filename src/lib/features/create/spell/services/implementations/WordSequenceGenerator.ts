@@ -10,15 +10,15 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
-import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import type { SequenceExtender } from "../../../shared/services/implementations/SequenceExtender";
+import type { ReversalDetector } from "../../../shared/services/implementations/ReversalDetector";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 import type { LetterTransitionGraph } from "../implementations/LetterTransitionGraph";
 import type { StartPositionValidator } from "./StartPositionValidator";
-import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
+import type { OrientationContinuityValidator } from "./OrientationContinuityValidator";
 import type {
   SpellGenerationOptions,
   SpellResult,
@@ -39,10 +39,10 @@ export class WordSequenceGenerator {
     private letterQueryHandler: ILetterQueryHandler,
     private stepConverter: StepConverter,
     private orientationCalculator: OrientationCalculator,
-    private sequenceExtender: ISequenceExtender,
+    private sequenceExtender: SequenceExtender,
     private startPositionValidator: StartPositionValidator,
-    private orientationContinuityValidator: IOrientationContinuityValidator,
-    private reversalDetector: IReversalDetector
+    private orientationContinuityValidator: OrientationContinuityValidator,
+    private reversalDetector: ReversalDetector
   ) {}
 
   async generateFromWord(

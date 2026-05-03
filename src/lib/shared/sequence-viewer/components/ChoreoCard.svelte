@@ -16,7 +16,7 @@
   // Note: transition/animation imports (fade, fly, scale, flip, cubicOut) moved to
   // extracted sub-components (CardHeader, CardFooter, CardGridLayout, CellRenderer).
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PreviewCellRenderOptions } from "../services/contracts/IPreviewCellRenderer";
+  import type { PreviewCellRenderOptions } from "../services/contracts/types";
   import { onMount, onDestroy, untrack } from "svelte";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";

@@ -1,9 +1,4 @@
-import type {
-  IGestureHandler,
-  SwipeGestureConfig,
-  SwipeGestureHandler,
-  GestureDirection,
-} from "../contracts/IGestureHandler";
+import type { SwipeGestureConfig, SwipeGestureHandler, GestureDirection } from "../contracts/types";
 
 interface SwipeGestureState {
   touchStartX: number;
@@ -18,7 +13,7 @@ interface SwipeGestureState {
  *
  * Provides reusable touch gesture handling for common interaction patterns.
  */
-export class GestureHandler implements IGestureHandler {
+export class GestureHandler {
   createSwipeGestureHandler(config: SwipeGestureConfig): SwipeGestureHandler {
     const threshold = config.threshold ?? 100;
 

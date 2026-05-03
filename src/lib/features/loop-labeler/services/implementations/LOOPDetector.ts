@@ -6,16 +6,10 @@ import type {
 } from "../contracts/ILOOPDetector";
 import type { TransformationIntervals } from "../../domain/models/label-models";
 import type { StepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
-import type { ITransformationAnalyzer } from "../contracts/ITransformationAnalyzer";
-import type { ICandidateFormatter } from "../contracts/ICandidateFormatter";
 import type {
   IPolyrhythmicDetector,
   PolyrhythmicLOOPResult,
 } from "../contracts/IPolyrhythmicDetector";
-import type {
-  ILayeredPathDetector,
-  LayeredPathResult,
-} from "../contracts/ILayeredPathDetector";
 import type {
   InternalStepPair,
   ExtractedStep,
@@ -97,10 +91,10 @@ function mergeComponents(
 export class LOOPDetector implements ILOOPDetector {
   constructor(
     private comparisonOrchestrator: StepComparisonOrchestrator,
-    private analysisService: ITransformationAnalyzer,
-    private formattingService: ICandidateFormatter,
+    private analysisService: TransformationAnalyzer,
+    private formattingService: CandidateFormatter,
     private polyrhythmicService?: IPolyrhythmicDetector,
-    private layeredPathService?: ILayeredPathDetector
+    private layeredPathService?: LayeredPathDetector
   ) {}
 
   isCircular(sequence: SequenceEntry): boolean {
@@ -589,6 +583,10 @@ import { transformationAnalyzer } from "./TransformationAnalyzer";
 import { candidateFormatter } from "./CandidateFormatter";
 import { polyrhythmicDetector } from "./PolyrhythmicDetector";
 import { layeredPathDetector } from "./LayeredPathDetector";
+import type { LayeredPathResult } from "../contracts/types";
+import type { TransformationAnalyzer } from "./TransformationAnalyzer";
+import type { CandidateFormatter } from "./CandidateFormatter";
+import type { LayeredPathDetector } from "./LayeredPathDetector";
 
 export const loopDetector = new LOOPDetector(
   stepComparisonOrchestrator,

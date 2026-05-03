@@ -16,10 +16,7 @@ import {
   startAfter,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type {
-  IFeedbackQueryService,
-  FeedbackQueryResult,
-} from "../contracts/IFeedbackQueryService";
+import type { FeedbackQueryResult } from "../contracts/types";
 import type {
   FeedbackItem,
   FeedbackFilterOptions,
@@ -28,7 +25,7 @@ import { type FeedbackDocumentMapper, feedbackDocumentMapper } from "./FeedbackD
 
 const COLLECTION_NAME = "feedback";
 
-export class FeedbackQueryService implements IFeedbackQueryService {
+export class FeedbackQueryService {
   constructor(
     private readonly mapper: FeedbackDocumentMapper = feedbackDocumentMapper
   ) {}

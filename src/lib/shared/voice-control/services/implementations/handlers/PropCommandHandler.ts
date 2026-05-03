@@ -5,7 +5,6 @@
  * Delegates to the settings service to update prop types.
  */
 
-import type { IVoiceCommandHandler } from "../../contracts/ICommandDispatcher";
 import type {
   VoiceCommand,
   VoiceCommandCategory,
@@ -13,6 +12,7 @@ import type {
 } from "../../../domain/voice-command-types";
 import { settingsService } from "../../../../settings/state/SettingsState.svelte";
 import type { PropType } from "../../../../pictograph/prop/domain/enums/PropType";
+import type { IVoiceCommandHandler } from "../../contracts/types";
 
 export class PropCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["prop"];

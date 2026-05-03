@@ -10,14 +10,8 @@
 
 import QRCodeStyling from "qr-code-styling";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IShortCodeManager } from "../contracts/IShortCodeManager";
-import type {
-  IQRCodeGenerator,
-  QRCodeOptions,
-  QRCodeResult,
-  QRCodeStyle,
-  QRStylePreset,
-} from "../contracts/IQRCodeGenerator";
+import type { ShortCodeManager } from "../implementations/ShortCodeManager";
+import type { QRCodeOptions, QRCodeResult, QRCodeStyle, QRStylePreset } from "../contracts/types";
 
 /**
  * Style presets for quick styling
@@ -49,8 +43,8 @@ const STYLE_PRESETS: Record<QRStylePreset, QRCodeStyle> = {
   },
 };
 
-export class QRCodeGenerator implements IQRCodeGenerator {
-  constructor(private readonly shortCodeManager: IShortCodeManager) {}
+export class QRCodeGenerator {
+  constructor(private readonly shortCodeManager: ShortCodeManager) {}
 
   /**
    * Resolve style from preset name or object

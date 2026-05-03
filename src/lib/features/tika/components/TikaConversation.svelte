@@ -14,7 +14,7 @@
   import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
   import type { ModelOption } from "../types";
   import type { ReviewStatus, ReviewMetadata } from "../domain/models/tika-conversation-models";
-  import type { WelcomeContext } from "../services/contracts/ITikaWelcomeBuilder";
+  import type { WelcomeContext } from "../services/contracts/types";
 
   // Props
   let {

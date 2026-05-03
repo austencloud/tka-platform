@@ -1,7 +1,6 @@
-import type { ITopologyPositionEnumerator } from './services/contracts/ITopologyPositionEnumerator';
 import { TopologyPositionEnumerator } from './services/implementations/TopologyPositionEnumerator';
 
-let instance: ITopologyPositionEnumerator | null = null;
-export function getTopologyPositionEnumerator(): ITopologyPositionEnumerator {
+let instance: TopologyPositionEnumerator | null = null;
+export function getTopologyPositionEnumerator(): TopologyPositionEnumerator {
   return instance ??= new TopologyPositionEnumerator();
 }

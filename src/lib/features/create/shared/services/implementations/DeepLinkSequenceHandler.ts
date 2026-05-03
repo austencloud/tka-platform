@@ -12,11 +12,8 @@ import {
   createSequenceData,
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  DeepLinkLoadResult,
-  IDeepLinkSequenceHandler,
-} from "../contracts/IDeepLinkSequenceHandler";
-import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
+import type { DeepLinkLoadResult } from "../contracts/types";
+import type { DeepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { LetterDeriver } from '$lib/shared/navigation/services/implementations/LetterDeriver'
 import type { PositionDeriver } from '$lib/shared/navigation/services/implementations/PositionDeriver'
 
@@ -29,9 +26,9 @@ const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
  */
 let pendingEditProcessedThisSession = false;
 
-export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
+export class DeepLinkSequenceHandler {
   constructor(
-    private deepLinkService: IDeepLinker | null,
+    private deepLinkService: DeepLinker | null,
     private LetterDeriver: LetterDeriver | null,
     private positionDeriverService: PositionDeriver | null
   ) {}

@@ -1,4 +1,4 @@
-import type { IPoiDeviceAdapter, IPoiConnection } from "../contracts/IPoiDeviceAdapter";
+import type { IPoiConnection } from "../contracts/types";
 import type { PoiDeviceInfo } from "../../domain/DeviceTypes";
 import type { StripPattern } from "../../domain/StripPattern";
 import {
@@ -94,7 +94,7 @@ export function chunkPacket(packet: Uint8Array, chunkSize: number = BLE_CHUNK_SI
  * Web Bluetooth adapter for Open-Pixel-Poi hardware.
  * Requires browser with Web Bluetooth API support.
  */
-export class OpenPixelPoiAdapter implements IPoiDeviceAdapter {
+export class OpenPixelPoiAdapter {
   readonly protocolName = "Open-Pixel-Poi BLE";
 
   async scan(): Promise<PoiDeviceInfo[]> {

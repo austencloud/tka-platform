@@ -15,15 +15,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type {
-    ViewerPlaybackState,
-    ImageCompositionProps,
-    PropRenderingProps,
-  } from "../domain/viewer-prop-groups";
-  import type { ResolvedPresentation, ViewingContext } from "../services/contracts/IPresentationResolver";
-
+    ViewerPlaybackState, ImageCompositionProps, PropRenderingProps, } from "../domain/viewer-prop-groups";
+  import type { ResolvedPresentation, ViewingContext } from "../services/contracts/types";
   export type ViewMode = "animation" | "image" | "split";
   export type ExportType = "animation" | "image" | "both";
   export type PlaybackSource = "animation" | "video";
@@ -166,9 +162,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { browser } from "$app/environment";
   import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/implementations/SequenceDataProvider";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
@@ -191,16 +187,16 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+  import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/types";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/types";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
-  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/IPendingActionQueue";
+  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/types";
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
 
@@ -209,6 +205,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { createPropContextResolver } from "./PropContextResolver.svelte";
   import { createImageCompositionSync } from "./ImageCompositionSync.svelte";
   import { createAuthActionQueue } from "./AuthActionQueue.svelte";
+import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 
   interface Props {
     sequence: SequenceData | null;
@@ -245,9 +242,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   let animationLoading = $state(false);
   let lastLoadedSequenceId: string | null = null;
 
-  let playbackControllerRef = $state<IAnimationPlaybackController | null>(null);
+  let playbackControllerRef = $state<AnimationPlaybackController | null>(null);
   let sequenceDataProvider: SequenceDataProvider | null = null;
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   const playback = createPlaybackController({ modalAnimationState, initialBpm: 60, initialStep: 0 });
 
@@ -445,7 +442,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       return;
     }
 
-    const repo = getLibraryRepository() as ILibraryRepository;
+    const repo = getLibraryRepository() as LibraryRepository;
     repo.hasMatchingContent(hash)
       .then((found) => {
         savedHashCache.set(hash, found);
@@ -474,7 +471,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   async function handlePublishAction() {
     if (!sequence) return;
     try {
-      const repo = getLibraryRepository() as ILibraryRepository;
+      const repo = getLibraryRepository() as LibraryRepository;
       await repo.publishSequence(sequence.id);
     } catch (e) {
       console.error("[Orchestrator] publishSequence FAILED:", e);
@@ -483,7 +480,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   async function handleUnpublishAction() {
     if (!sequence) return;
-    const repo = getLibraryRepository() as ILibraryRepository;
+    const repo = getLibraryRepository() as LibraryRepository;
     await repo.unpublishSequence(sequence.id);
   }
 

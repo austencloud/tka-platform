@@ -13,13 +13,13 @@
 import { browser } from "$app/environment";
 import { replaceState } from "$app/navigation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IURLSyncer, URLSyncOptions } from "../contracts/IURLSyncer";
-import type { ISequenceEncoder } from "../contracts/ISequenceEncoder";
+import type { URLSyncOptions } from "../contracts/types";
+import type { SequenceEncoder } from "../implementations/SequenceEncoder";
 
-export class URLSyncer implements IURLSyncer {
+export class URLSyncer {
   private pendingUpdate: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private SequenceEncoder: ISequenceEncoder) {}
+  constructor(private SequenceEncoder: SequenceEncoder) {}
 
   syncURLWithSequence(
     sequence: SequenceData | null,

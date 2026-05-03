@@ -9,11 +9,11 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   const LONG_PRESS_MS = 500;
 
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let suppressClick = $state(false);
 

@@ -14,7 +14,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { Dialog as DialogPrimitive } from "bits-ui";
-  import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
 import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -80,7 +80,7 @@ import { onMount } from "svelte";
   const isConfirmDisabled = $derived(delayRemaining > 0);
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   onMount(async () => {
     hapticService = getHapticFeedback();

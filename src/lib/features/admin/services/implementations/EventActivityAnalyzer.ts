@@ -7,14 +7,7 @@
 
 import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
-import type {
-  UserActivityPoint,
-  AnalyticsTimeRange,
-  EventTypeBreakdown,
-  ModuleUsageData,
-  RecentActivityEvent,
-} from "../contracts/IAnalyticsDataProvider";
+import type { PostHogActivityLogger } from "$lib/shared/analytics/services/implementations/PostHogActivityLogger";
 import {
   getEventTypeDisplay,
   getModuleDisplay,
@@ -23,6 +16,7 @@ import {
   extractUserDisplayDetails,
   type UserDisplayDetails,
 } from "../utils/ProfilePictureResolver";
+import type { UserActivityPoint, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "../contracts/types";
 
 // Timeout for Firebase queries (10 seconds)
 const QUERY_TIMEOUT_MS = 10000;
@@ -56,7 +50,7 @@ export interface IEventActivityAnalyzer {
 }
 
 export class EventActivityAnalyzer implements IEventActivityAnalyzer {
-  constructor(private readonly activityLogService: IActivityLogger) {}
+  constructor(private readonly activityLogService: PostHogActivityLogger) {}
 
   /**
    * Get user activity over time

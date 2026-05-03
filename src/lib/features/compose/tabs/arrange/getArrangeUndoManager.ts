@@ -1,7 +1,7 @@
-import type { IArrangeUndoManager } from './services/contracts/IArrangeUndoManager';
+
 import { ArrangeUndoManager } from './services/implementations/ArrangeUndoManager';
 
-let instance: IArrangeUndoManager | null = null;
-export function getArrangeUndoManager(): IArrangeUndoManager {
+let instance: ArrangeUndoManager | null = null;
+export function getArrangeUndoManager(): ArrangeUndoManager {
   return instance ??= new ArrangeUndoManager();
 }

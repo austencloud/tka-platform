@@ -14,7 +14,7 @@ import type { PlacedRoom, RoomEdge } from "../../domain/layout-types";
 import type { WallDefinition, WallSegment } from "../../domain/wall-segment-types";
 import { computeSegmentWidth } from "../../domain/wall-segment-types";
 import { ROOM_CONTENT } from "../../data/museum-room-content";
-import type { IWallSegmentStamper, StampResult, DoorPosition } from "../contracts/IWallSegmentStamper";
+import type { StampResult, DoorPosition } from "../contracts/types";
 
 type WallName = "north" | "south" | "east" | "west";
 
@@ -74,7 +74,7 @@ function getWallGeometry(room: PlacedRoom, wall: WallName): WallGeometry {
 	}
 }
 
-export class WallSegmentStamper implements IWallSegmentStamper {
+export class WallSegmentStamper {
 	stampRoom(
 		tiles: Map<string, MuseumTile>,
 		room: PlacedRoom,

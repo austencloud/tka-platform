@@ -1,9 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  IFirstStepAnalyzer,
-  FirstBeatAnalysisResult,
-  FirstBeatResult,
-} from "../contracts/IFirstStepAnalyzer";
+import type { FirstBeatAnalysisResult, FirstBeatResult } from "../contracts/types";
 
 /**
  * FirstStepAnalyzer
@@ -12,7 +8,7 @@ import type {
  * When user clicks a beat to become the new first beat,
  * this determines if confirmation is needed and calculates results.
  */
-export class FirstStepAnalyzer implements IFirstStepAnalyzer {
+export class FirstStepAnalyzer {
   analyzeSelection(
     sequence: SequenceData,
     stepNumber: number

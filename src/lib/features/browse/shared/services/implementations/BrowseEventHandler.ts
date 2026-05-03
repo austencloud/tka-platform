@@ -7,13 +7,11 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
-  IBrowseEventHandler,
-  BrowseEventHandlerParams,
-} from "../contracts/IBrowseEventHandler";
+  BrowseEventHandlerParams } from "../contracts/types";
 import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
 import { browseScrollState } from "../../state/BrowseScrollState.svelte";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
+import type { SheetRouter } from "../../../../../shared/navigation/services/implementations/SheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 import { openVariationPicker } from "../../state/variation-picker-state.svelte";
@@ -21,12 +19,11 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
-
-export class BrowseEventHandler implements IBrowseEventHandler {
+export class BrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
 
   constructor(
-    private sheetRouterService: ISheetRouter | null,
+    private sheetRouterService: SheetRouter | null,
     private loaderService: PublicSequencesLoader | null
   ) {}
 

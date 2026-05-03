@@ -8,7 +8,7 @@
  */
 
 import { getPWAEngagementTracker } from "$lib/shared/mobile/getPWAEngagementTracker";
-import type { IPWAEngagementTracker } from "$lib/shared/mobile/services/contracts/IPWAEngagementTracker";
+import type { PWAEngagementTracker } from "$lib/shared/mobile/services/implementations/PWAEngagementTracker";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 

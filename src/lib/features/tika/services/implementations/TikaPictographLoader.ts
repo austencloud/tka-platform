@@ -9,15 +9,14 @@
 import fs from "fs";
 import path from "path";
 import type {
-  ITikaPictographLoader,
   PictographData,
   PictographDataWithMode,
   GlossaryEntry,
   LetterTypeInfo,
   LetterPositionMapping,
-} from "../contracts/ITikaPictographLoader";
+} from "../contracts/types";
 
-export class TikaPictographLoader implements ITikaPictographLoader {
+export class TikaPictographLoader {
   private allPictographs: PictographData[] = [];
   private diamondPictographs: PictographDataWithMode[] = [];
   private boxPictographs: PictographDataWithMode[] = [];

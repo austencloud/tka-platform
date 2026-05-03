@@ -9,14 +9,11 @@
  */
 
 import type { ExtractedFrame, ProgressCallback } from "../../domain/models";
-import type {
-  IVideoFrameExtractor,
-  FrameExtractionOptions,
-} from "../contracts/IVideoFrameExtractor";
+import type { FrameExtractionOptions } from "../contracts/types";
 
 const DEFAULT_FPS = 15;
 
-export class VideoFrameExtractor implements IVideoFrameExtractor {
+export class VideoFrameExtractor {
   async extractFrames(
     file: File,
     options?: FrameExtractionOptions,

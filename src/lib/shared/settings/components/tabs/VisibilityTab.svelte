@@ -18,7 +18,7 @@
     getSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { VisibilityMode } from "./visibility/visibility-types";
   import MobileSegmentControl from "./visibility/MobileSegmentControl.svelte";
   import PictographPanel from "./visibility/PictographPanel.svelte";
@@ -29,7 +29,7 @@
   const avm = getAnimationVisibilityManager();
   const icm = getImageCompositionManager();
 
-  let haptic: IHapticFeedback | null = null;
+  let haptic: HapticFeedback | null = null;
 
   // Entry animation
   let isVisible = $state(false);

@@ -11,8 +11,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { ITrailCapturer as TrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 import {
@@ -64,7 +64,7 @@ function storeInGlobalCache(hash: string, cache: AnimationPathCache): void {
   globalPathCacheMap.set(hash, cache);
 }
 
-export class AnimationPrecomputer implements IAnimationPrecomputer {
+export class AnimationPrecomputer {
   // Reactive state - owned by service
   state = $state<PrecomputationState>({
     pathCacheData: null,
@@ -75,8 +75,8 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
   });
 
   private orchestrator: SequenceAnimationOrchestrator | null = null;
-  private TrailCapturer: ITrailCapturer | null = null;
-  private renderer: IAnimationRenderer | null = null;
+  private TrailCapturer: TrailCapturer | null = null;
+  private renderer: AnimationRenderer | null = null;
   private propDimensions: PropDimensions = { width: 100, height: 100 };
   private canvasSize: number = 950;
   private instanceId: string = "unknown";

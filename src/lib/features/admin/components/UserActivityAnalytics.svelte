@@ -7,14 +7,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getPostHogUserAnalytics } from "$lib/features/admin/getPostHogUserAnalytics";
-  import type {
-    IPostHogUserAnalytics,
-    UserEngagementSummary,
-    ModuleActivityBreakdown,
-    ContentMetrics,
-    PostHogSessionSummary,
-    TimePeriod,
-  } from "../services/contracts/IPostHogUserAnalytics";
+  import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "../services/contracts/types";
+import type { PostHogUserAnalytics } from "../services/implementations/PostHogUserAnalytics";
 
   interface Props {
     userId: string;
@@ -24,7 +18,7 @@
   let { userId, compact = false }: Props = $props();
 
   // Service
-  let analyticsService: IPostHogUserAnalytics | null = null;
+  let analyticsService: PostHogUserAnalytics | null = null;
 
   // Data state
   let engagement = $state<UserEngagementSummary | null>(null);

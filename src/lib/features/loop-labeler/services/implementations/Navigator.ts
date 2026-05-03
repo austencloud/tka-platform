@@ -2,7 +2,7 @@ import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,
 } from "$app/navigation";
-import type { LabeledSequence } from "../contracts/ILOOPLabelsFirebaseRepository";
+import type { LabeledSequence } from "../contracts/types";
 
 /**
  * Service for navigation and utility functions

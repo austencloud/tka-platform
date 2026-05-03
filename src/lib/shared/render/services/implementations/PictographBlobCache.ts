@@ -1,8 +1,5 @@
 import { browser } from "$app/environment";
-import type {
-  IPictographBlobCache,
-  PictographBlobCacheStats,
-} from "../contracts/IPictographBlobCache";
+import type { PictographBlobCacheStats } from "../contracts/types";
 
 const DB_NAME = "pictograph-blob-cache";
 const STORE_NAME = "blobs";
@@ -19,7 +16,7 @@ interface CachedBlobEntry {
   sizeBytes: number;
 }
 
-export class PictographBlobCache implements IPictographBlobCache {
+export class PictographBlobCache {
   private dbPromise: Promise<IDBDatabase> | null = null;
 
   private getDB(): Promise<IDBDatabase> {

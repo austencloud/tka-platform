@@ -1,17 +1,10 @@
 import { PDFDocument, rgb } from "pdf-lib";
 import type { StickerSheet, StickerUnit, SheetSize } from "../../domain/sticker-types";
 import {
-  SHEET_DIMENSIONS_IN,
-  STICKER_GAP_IN,
-  STICKER_TILE_SIZE_PX,
-  STICKER_DPI,
-} from "../../domain/sticker-constants";
+  SHEET_DIMENSIONS_IN, STICKER_GAP_IN, STICKER_TILE_SIZE_PX, STICKER_DPI, } from "../../domain/sticker-constants";
 import { StickerUnitRenderer } from "./StickerUnitRenderer";
 import { rasterizeSvgToPng } from "./rasterizeSvg";
-import type {
-  IStickerSheetPdfExporter,
-  StickerMandalaLookup,
-} from "../contracts/IStickerSheetPdfExporter";
+import type { StickerMandalaLookup } from "../contracts/types";
 
 const PDF_POINTS_PER_INCH = 72;
 
@@ -24,7 +17,7 @@ interface Placement {
   centerYIn: number;
 }
 
-export class StickerSheetPdfExporter implements IStickerSheetPdfExporter {
+export class StickerSheetPdfExporter {
   private readonly unitRenderer: StickerUnitRenderer;
 
   constructor(unitRenderer: StickerUnitRenderer = new StickerUnitRenderer()) {

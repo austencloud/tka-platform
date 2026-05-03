@@ -10,13 +10,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "../../domain/models/StepData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "../../domain/factories/createStepData";
-import type {
-  IReversalDetector,
-  PictographWithReversals,
-  ReversalInfo,
-} from "../contracts/IReversalDetector";
+import type { PictographWithReversals, ReversalInfo } from "../contracts/types";
 
-export class ReversalDetector implements IReversalDetector {
+export class ReversalDetector {
   /**
    * Process reversals for an entire sequence.
    *

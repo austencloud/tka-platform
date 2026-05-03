@@ -6,7 +6,7 @@ Modern, touch-friendly interface for selecting view presets
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { FilterPreset } from "$lib/features/browse/shared/domain/types/browse-types";
 
   let { currentFilter, onFilterChange } = $props<{
@@ -14,7 +14,7 @@ Modern, touch-friendly interface for selecting view presets
     onFilterChange: (preset: FilterPreset) => void;
   }>();
 
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();

@@ -13,12 +13,9 @@ import {
   getMetadata,
 } from "firebase/storage";
 import { getAuth } from "firebase/auth";
-import type {
-  IAudioStorageManager,
-  UploadProgress,
-} from "../contracts/IAudioStorageManager";
+import type { UploadProgress } from "../contracts/types";
 
-export class AudioStorageManager implements IAudioStorageManager {
+export class AudioStorageManager {
   /**
    * Get storage path for audio file
    */

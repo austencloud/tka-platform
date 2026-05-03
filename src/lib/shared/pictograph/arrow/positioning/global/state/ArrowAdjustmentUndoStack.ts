@@ -7,7 +7,7 @@
  * Used by ArrowAdjustmentPanel to implement Ctrl+Z undo.
  */
 
-import type { AdjustmentTargetKey } from "$lib/features/create/shared/services/contracts/IArrowAdjustmentOrchestrator";
+import type { AdjustmentTargetKey } from "../../../../../../features/create/shared/services/contracts/types";
 
 const MAX_STACK_SIZE = 50;
 

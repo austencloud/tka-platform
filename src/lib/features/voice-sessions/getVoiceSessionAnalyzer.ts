@@ -1,7 +1,6 @@
-import type { IVoiceSessionAnalyzer } from './services/contracts/IVoiceSessionAnalyzer';
 import { VoiceSessionAnalyzer } from './services/implementations/VoiceSessionAnalyzer';
 
-let instance: IVoiceSessionAnalyzer | null = null;
-export function getVoiceSessionAnalyzer(): IVoiceSessionAnalyzer {
+let instance: VoiceSessionAnalyzer | null = null;
+export function getVoiceSessionAnalyzer(): VoiceSessionAnalyzer {
   return instance ??= new VoiceSessionAnalyzer();
 }

@@ -14,7 +14,7 @@ import type {
   PictographDisplayData,
 } from "../contracts/IDataTransformer";
 
-export class DataTransformer implements IDataTransformer {
+export class DataTransformer {
   /**
    * Transform pictograph data into display-ready format
    */

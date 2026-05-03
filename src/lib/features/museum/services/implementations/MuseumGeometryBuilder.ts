@@ -11,7 +11,7 @@ import type { Texture } from "three";
 import type { MuseumGrid, MuseumTile, FloorMaterial, TileType } from "../../domain/museum-grid-types";
 import type { WingTheme } from "../../domain/museum-grid-types";
 import { parseTileKey, tileKey } from "../../domain/museum-grid-types";
-import type { PlaqueContent, PlaqueSize } from "../contracts/IPlaqueTextureGenerator";
+import type { PlaqueContent, PlaqueSize } from "../contracts/types";
 import { MANUAL_PLACEMENTS } from '../../data/museum-manual-placements';
 import { getPlaceableObject } from '../../domain/placeable-object-registry';
 import type { BatchTransfer } from "../../workers/geometry-worker-protocol";
@@ -166,7 +166,6 @@ export interface BatchedMeshData {
 
 /** @deprecated Use BatchedMeshData */
 export type InstancedMeshData = BatchedMeshData;
-
 
 // ── Yield helper ──
 

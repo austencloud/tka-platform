@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { PendingActionQueue } from "$lib/shared/sequence-viewer/services/implementations/PendingActionQueue";
-import { PENDING_ACTION_TTL_MS } from "$lib/shared/sequence-viewer/services/contracts/IPendingActionQueue";
-
+import type { PENDING_ACTION_TTL_MS } from "$lib/shared/sequence-viewer/services/contracts/types";
 describe("PendingActionQueue", () => {
 	let queue: PendingActionQueue;
 

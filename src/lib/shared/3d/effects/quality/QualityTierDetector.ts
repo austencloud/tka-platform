@@ -2,12 +2,11 @@ import { QualityTier, TIER_CONFIGS } from "../types";
 import type { QualityTierConfig } from "../types";
 import type {
   GPUCapabilities,
-  IQualityTierDetector,
 } from "./contracts/IQualityTierDetector";
 
 const STORAGE_KEY = "tka-3d-quality-tier-override";
 
-export class QualityTierDetector implements IQualityTierDetector {
+export class QualityTierDetector {
   private detectedTier: QualityTier = QualityTier.MEDIUM;
   private overrideTier: QualityTier | null = null;
 

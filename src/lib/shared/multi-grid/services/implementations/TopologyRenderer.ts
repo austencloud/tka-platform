@@ -7,13 +7,13 @@
  */
 
 import type { Vec2, GridTopology, GridPlacement } from "../../domain/models/GridTopology";
-import type { ViewBoxData, ITopologyRenderer } from "../contracts/ITopologyRenderer";
+import type { ViewBoxData } from "../contracts/types";
 import { PIXELS_PER_UNIT, SVG_CENTER } from "../../domain/constants/GridModeOffsets";
 
 /** Default margin around the topology in SVG units */
 const DEFAULT_MARGIN = 100;
 
-export class TopologyRenderer implements ITopologyRenderer {
+export class TopologyRenderer {
   computeViewBox(
     topology: GridTopology,
     pixelsPerUnit: number = PIXELS_PER_UNIT,

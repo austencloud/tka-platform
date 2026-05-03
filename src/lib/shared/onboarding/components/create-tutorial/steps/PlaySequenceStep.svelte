@@ -20,12 +20,12 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import {
     createAnimationPanelState,
     type AnimationStateKey,
   } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {
     onAdvance: () => void;
@@ -36,7 +36,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   const isDarkMode = $derived(getSettings().darkMode ?? false);
 
   // Haptic
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   try {
     hapticService = getHapticFeedback();
   } catch {
@@ -48,7 +48,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   let isPlaying = $state(false);
   let hasPlayed = $state(false);
   let currentStep = $state(0);
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   const animationState = createAnimationPanelState();
   let stateUnsubscribe: (() => void) | undefined;
 

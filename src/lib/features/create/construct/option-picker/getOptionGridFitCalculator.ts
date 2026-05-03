@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { IOptionGridFitCalculator } from './services/contracts/IGridFitCalculator';
+import type { IOptionGridFitCalculator } from "./services/contracts/types";
 import { OptionGridFitCalculator } from './services/implementations/OptionGridFitCalculator';
 
 let instance: IOptionGridFitCalculator | null = null;

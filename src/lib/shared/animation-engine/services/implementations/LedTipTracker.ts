@@ -47,7 +47,7 @@ function createStoredTip(): StoredTip {
 	return { x: 0, y: 0, time: 0, valid: false };
 }
 
-export class LedTipTracker implements ILedTipTracker {
+export class LedTipTracker {
 	private positionCalculator = new PropPositionCalculator();
 
 	/**

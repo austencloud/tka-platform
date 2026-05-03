@@ -30,11 +30,7 @@ import {
   HandPath,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type {
-  IHandPathDataBuilder,
-  HandPathTrace,
-  HandSkew,
-} from "../contracts/IHandPathDataBuilder";
+import type { HandPathTrace, HandSkew } from "../contracts/types";
 
 // ============================================================================
 // DIRECTION LOOKUP
@@ -62,7 +58,7 @@ const LOCATION_BY_VALUE: Record<string, GridLocation> = Object.fromEntries(
 // HAND PATH DATA BUILDER
 // ============================================================================
 
-export class HandPathDataBuilder implements IHandPathDataBuilder {
+export class HandPathDataBuilder {
   /**
    * Parses a hand-path ID into blue and red GridLocation arrays.
    *

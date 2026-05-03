@@ -9,11 +9,11 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { DeviceCategory } from "../../services/contracts/IScreenshotOrchestrator";
-  import type { ScreenshotMetadata } from "../../services/contracts/IScreenshotUploader";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { DeviceCategory } from "../../services/contracts/types";
+  import type { ScreenshotMetadata } from "../../services/contracts/types";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { ScreenshotTagController } from "../../services/implementations/ScreenshotTagController";
-  import type { GalleryItem } from "../../services/contracts/IGalleryItemAdapter";
+  import type { GalleryItem } from "../../services/contracts/types";
   import { getScreenshotOrchestrator } from "../../getScreenshotOrchestrator";
   import { getScreenshotUploadOrchestrator } from "../../getScreenshotUploadOrchestrator";
   import { getScreenshotTagController } from "../../getScreenshotTagController";
@@ -33,7 +33,7 @@
   import { createGallerySelectionState } from "./state/gallery-selection-state.svelte";
   import { createGalleryCaptureState } from "./state/gallery-capture-state.svelte";
 
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
   let tagController: ScreenshotTagController | null = $state(null);
   const adapter = new GalleryItemAdapter();
 

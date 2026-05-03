@@ -5,14 +5,14 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type {
   IGlyphTextureLoader,
   GlyphTextureState,
   PendingGlyph,
 } from "../contracts/IGlyphTextureLoader";
 
-export class GlyphTextureLoader implements IGlyphTextureLoader {
+export class GlyphTextureLoader {
   // Reactive state - owned by service
   state = $state<GlyphTextureState>({
     isLoaded: false,
@@ -22,9 +22,9 @@ export class GlyphTextureLoader implements IGlyphTextureLoader {
     error: null,
   });
 
-  private renderer: IAnimationRenderer | null = null;
+  private renderer: AnimationRenderer | null = null;
 
-  initialize(renderer: IAnimationRenderer): void {
+  initialize(renderer: AnimationRenderer): void {
     this.renderer = renderer;
   }
 

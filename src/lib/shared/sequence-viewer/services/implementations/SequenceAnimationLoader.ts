@@ -1,10 +1,6 @@
-import type {
-  ISequenceAnimationLoader,
-  AnimationLoadResult,
-  AnimationLoadOptions,
-} from "../contracts/ISequenceAnimationLoader";
+import type { AnimationLoadResult, AnimationLoadOptions } from "../contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -13,7 +9,7 @@ import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-pane
  * Handles loading and initializing sequence animation data.
  * Extracts animation loading logic from the sequence viewer.
  */
-export class SequenceAnimationLoader implements ISequenceAnimationLoader {
+export class SequenceAnimationLoader {
   private _isLoading = false;
   private _lastLoadedSequenceId: string | null = null;
 
@@ -23,7 +19,7 @@ export class SequenceAnimationLoader implements ISequenceAnimationLoader {
 
   async load(
     sequence: SequenceData,
-    playbackController: IAnimationPlaybackController,
+    playbackController: AnimationPlaybackController,
     panelState: AnimationPanelState,
     options: AnimationLoadOptions = {}
   ): Promise<AnimationLoadResult> {

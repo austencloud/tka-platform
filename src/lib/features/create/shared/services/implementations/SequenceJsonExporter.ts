@@ -2,12 +2,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "../../domain/models/StepData";
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type {
-  ISequenceJsonExporter,
-  MinimalSequence,
-  MinimalStep,
-  MinimalMotion,
-} from "../contracts/ISequenceJsonExporter";
+import type { MinimalSequence, MinimalStep, MinimalMotion } from "../contracts/types";
 
 /** Union type for beat-like objects that can be exported */
 type StepLike = StepData | StartPositionData | null | undefined;
@@ -18,7 +13,7 @@ type StepLike = StepData | StartPositionData | null | undefined;
  * Exports sequences to minimal JSON format for debugging/admin use.
  * Strips placement data fluff, keeps only essential motion data.
  */
-export class SequenceJsonExporter implements ISequenceJsonExporter {
+export class SequenceJsonExporter {
   toMinimalJson(sequence: SequenceData): MinimalSequence {
     return {
       key: {

@@ -7,7 +7,7 @@ with exported sequence cards.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
@@ -33,7 +33,7 @@ with exported sequence cards.
       onClose: () => void;
     }>();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   let isMultiSelectMode = $state(false);
   let showPresets = $state(false);
   let favorites = $state<string[]>([]);

@@ -1,10 +1,9 @@
-import type { IAutoHideController, AutoHideControllerOptions } from "../contracts/IAutoHideController";
-
+import type { AutoHideControllerOptions } from "../contracts/types";
 /**
  * Controls auto-hiding behavior for UI elements.
  * Used for fullscreen controls and footer auto-hide.
  */
-export class AutoHideController implements IAutoHideController {
+export class AutoHideController {
   private _isVisible = true;
   private _hideTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly _hideDelay: number;
@@ -63,6 +62,6 @@ export class AutoHideController implements IAutoHideController {
  * Factory function to create an auto-hide controller.
  * Use this instead of the singleton when you need multiple instances.
  */
-export function createAutoHideController(options?: AutoHideControllerOptions): IAutoHideController {
+export function createAutoHideController(options?: AutoHideControllerOptions): AutoHideController {
   return new AutoHideController(options);
 }

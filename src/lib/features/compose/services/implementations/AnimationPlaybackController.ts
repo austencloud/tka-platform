@@ -12,13 +12,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { AnimationLoop } from "./AnimationLoop";
-import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
-export class AnimationPlaybackController implements IAnimationPlaybackController {
+export class AnimationPlaybackController {
   private state: AnimationPanelState | null = null;
   private sequenceData: SequenceData | null = null;
   private _isSeamlesslyLoopable: boolean = false;

@@ -11,7 +11,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { IOverlayRenderer } from "../../services/contracts/IOverlayRenderer";
+  import type { OverlayRenderer } from "../../services/implementations/OverlayRenderer";
   import type { Phase1Result } from "../../domain/models";
   import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
   import DetectionOverlay from "./DetectionOverlay.svelte";
@@ -24,7 +24,7 @@
   }: {
     videoFile: File;
     result: Phase1Result;
-    renderer: IOverlayRenderer;
+    renderer: OverlayRenderer;
   } = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();

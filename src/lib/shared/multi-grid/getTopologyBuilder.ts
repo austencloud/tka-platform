@@ -1,7 +1,6 @@
-import type { ITopologyBuilder } from './services/contracts/ITopologyBuilder';
 import { TopologyBuilder } from './services/implementations/TopologyBuilder';
 
-let instance: ITopologyBuilder | null = null;
-export function getTopologyBuilder(): ITopologyBuilder {
+let instance: TopologyBuilder | null = null;
+export function getTopologyBuilder(): TopologyBuilder {
   return instance ??= new TopologyBuilder();
 }

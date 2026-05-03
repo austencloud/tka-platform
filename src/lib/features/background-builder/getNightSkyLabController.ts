@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { INightSkyLabController } from './services/contracts/INightSkyLabController';
+
 import { NightSkyLabController } from './services/implementations/NightSkyLabController';
 
-let instance: INightSkyLabController | null = null;
+let instance: NightSkyLabController | null = null;
 
-export function getNightSkyLabController(): INightSkyLabController {
+export function getNightSkyLabController(): NightSkyLabController {
 	if (!browser) throw new Error('getNightSkyLabController() is browser-only');
 	return instance ??= new NightSkyLabController();
 }

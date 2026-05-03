@@ -16,7 +16,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
-  import type { ILOOPExplainer } from "../../services/contracts/ILOOPExplainer";
+  import type { LOOPExplainer } from "../../services/implementations/LOOPExplainer";
 import { onMount } from "svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
   import { deriveCardBackData } from "./card-back-data";
@@ -33,7 +33,7 @@ import { onMount } from "svelte";
   let { sequence }: Props = $props();
 
   let converter: SequenceToEntryConverter | null = $state(null);
-  let explainer: ILOOPExplainer | null = $state(null);
+  let explainer: LOOPExplainer | null = $state(null);
   onMount(() => {
     converter = getSequenceToEntryConverter();
     explainer = getLOOPExplainer();

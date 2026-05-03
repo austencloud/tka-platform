@@ -12,10 +12,8 @@
 
   import { onMount } from "svelte";
   import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
-  import type {
-    ISystemStateManager,
-    CachedUserMetadata,
-  } from "../../services/contracts/ISystemStateManager";
+  import type { CachedUserMetadata } from "../../services/contracts/types";
+  import type { SystemStateManager } from "../../services/implementations/SystemStateManager";
   import type {
     ReferrerCategory,
     SelfReportedSource,
@@ -96,7 +94,7 @@
 
   onMount(async () => {
     try {
-      const systemStateService: ISystemStateManager = getSystemStateManager();
+      const systemStateService: SystemStateManager = getSystemStateManager();
       const state = await systemStateService.getSystemState();
       const users = state.users;
 

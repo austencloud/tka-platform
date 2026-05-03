@@ -10,7 +10,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getSidebarTabToggler } from "../../getSidebarTabToggler";
-  import type { ISidebarTabToggler, TabVisibilityInfo } from "../../services/contracts/ISidebarTabToggler";
+  import type { SidebarTabToggler } from "../../services/implementations/SidebarTabToggler";
+import type { TabVisibilityInfo } from "../../services/contracts/types";
   import type { ModuleId } from "../../domain/types";
   import { translateTab } from "$lib/shared/i18n/translate";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
@@ -37,7 +38,7 @@
     onClose: () => void;
   }>();
 
-  let sidebarTabToggler: ISidebarTabToggler | null = null;
+  let sidebarTabToggler: SidebarTabToggler | null = null;
   let tabInfos: TabVisibilityInfo[] = $state([]);
 
   // Reactive locale for translations

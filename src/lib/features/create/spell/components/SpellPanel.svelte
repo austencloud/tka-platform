@@ -14,13 +14,13 @@ Same functionality, different density.
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
 import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
-  import type { IRandomSequenceGenerator } from "../services/contracts/IRandomSequenceGenerator";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { VariationExplorationOrchestrator } from "../services/implementations/VariationExplorationOrchestrator";
+  import type { RandomSequenceGenerator } from "../services/implementations/RandomSequenceGenerator";
   import type { SpellServiceLoader } from "../services/implementations/SpellServiceLoader";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
+  import { UndoOperationType } from "../../shared/services/contracts/types";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import WordInput from "./WordInput.svelte";
@@ -84,9 +84,9 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   });
 
   // Lazy-resolved services
-  let orchestrator: IVariationExplorationOrchestrator | null = null;
+  let orchestrator: VariationExplorationOrchestrator | null = null;
   let serviceLoader: SpellServiceLoader | null = null;
-  let randomGenerator: IRandomSequenceGenerator | null = null;
+  let randomGenerator: RandomSequenceGenerator | null = null;
 
   function getServiceLoader(): SpellServiceLoader {
     if (!serviceLoader) {
@@ -95,14 +95,14 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
     return serviceLoader;
   }
 
-  function getOrchestrator(): IVariationExplorationOrchestrator {
+  function getOrchestrator(): VariationExplorationOrchestrator {
     if (!orchestrator) {
       orchestrator = getVariationExplorationOrchestratorGetter();
     }
     return orchestrator;
   }
 
-  async function getRandomGenerator(): Promise<IRandomSequenceGenerator> {
+  async function getRandomGenerator(): Promise<RandomSequenceGenerator> {
     if (!randomGenerator) {
       const loader = getServiceLoader();
       randomGenerator = await loader.getRandomSequenceGenerator();

@@ -13,8 +13,8 @@ import type { GridTopology, PointRef } from "$lib/shared/multi-grid/domain/model
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import type { GridMode } from "$lib/shared/render/core/types";
-import type { PrepareOptions } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
-import type { PositionPair } from "$lib/shared/multi-grid/services/contracts/ITopologyPositionEnumerator";
+import type { PrepareOptions } from "$lib/shared/pictograph/shared/services/contracts/types";
+import type { PositionPair } from "$lib/shared/multi-grid/services/contracts/types";
 import type { ConjoinedGridMode, PropPlacement, JunctionOverlap } from "../domain/types";
 import { TOPOLOGY_PRESETS, type TopologyPreset } from "$lib/shared/multi-grid/domain/constants/TopologyPresets";
 import { JunctionOverlapDetector } from "../services/implementations/JunctionOverlapDetector";

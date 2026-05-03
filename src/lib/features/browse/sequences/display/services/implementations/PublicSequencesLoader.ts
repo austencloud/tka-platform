@@ -26,7 +26,7 @@ import type { PublicSequenceIndex } from "$lib/features/library/domain/models/Pu
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
-import type { IGalleryOfflineCache } from "$lib/shared/offline/services/contracts/IGalleryOfflineCache";
+import type { GalleryOfflineCache } from "../../../../../../shared/offline/services/implementations/GalleryOfflineCache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
 export class PublicSequencesLoader {
@@ -36,10 +36,10 @@ export class PublicSequencesLoader {
   // Both keys point to the same sourceRef so we can look up by either.
   // ID-based lookup is preferred when available (disambiguates same-word variations).
   private sourceRefCache: Map<string, string> = new Map();
-  private galleryOfflineCache: IGalleryOfflineCache | null;
+  private galleryOfflineCache: GalleryOfflineCache | null;
   private lastFetchedDocs: PublicSequenceIndex[] = [];
 
-  constructor(galleryOfflineCache?: IGalleryOfflineCache) {
+  constructor(galleryOfflineCache?: GalleryOfflineCache) {
     this.galleryOfflineCache = galleryOfflineCache ?? null;
     if (this.galleryOfflineCache) {
       this.galleryOfflineCache.setConverter(

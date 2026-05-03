@@ -80,6 +80,14 @@
           All (admin)
         </button>
       </div>
+      <div class="view-toggle" role="radiogroup" aria-label="View">
+        <button role="radio" aria-checked={scanState.view === "active"} class:active={scanState.view === "active"} onclick={() => (scanState.view = "active")}>
+          Active
+        </button>
+        <button role="radio" aria-checked={scanState.view === "zero-scan"} class:active={scanState.view === "zero-scan"} onclick={() => (scanState.view = "zero-scan")}>
+          Zero-scan ({scanState.zeroScanCount})
+        </button>
+      </div>
     {/if}
   </header>
 
@@ -96,7 +104,7 @@
       {:else}
         <div class="grid">
           {#each scanState.filtered as entry, i (entry.code)}
-            <ScanActivityCard {entry} sequence={entry.decoded} hot={i === 0} onOpen={openCard} />
+            <ScanActivityCard {entry} sequence={entry.decoded} hot={i === 0} sparkline={scanState.sparklineData.get(entry.code)} onOpen={openCard} />
           {/each}
         </div>
       {/if}
@@ -139,13 +147,13 @@
     color: var(--theme-text-muted, #d0d5e0); font-size: var(--font-size-sm, 14px);
   }
   .spacer { flex: 1; }
-  .scope { display: flex; background: var(--theme-card-bg, #141824); border-radius: 8px; padding: 4px; border: 1px solid var(--theme-stroke, #222838); }
-  .scope button {
+  .scope, .view-toggle { display: flex; background: var(--theme-card-bg, #141824); border-radius: 8px; padding: 4px; border: 1px solid var(--theme-stroke, #222838); }
+  .scope button, .view-toggle button {
     padding: 0 16px; min-height: 44px; border: 0; border-radius: 6px; background: transparent;
     color: var(--theme-text-dim, #8b93a7); font: inherit; font-size: var(--font-size-sm, 14px); cursor: pointer;
   }
-  .scope button.active { background: rgba(16, 185, 129, 0.15); color: var(--theme-accent, #34d399); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3); }
-  .scope button:focus-visible { outline: 2px solid var(--theme-accent, #34d399); outline-offset: 2px; }
+  .scope button.active, .view-toggle button.active { background: rgba(16, 185, 129, 0.15); color: var(--theme-accent, #34d399); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3); }
+  .scope button:focus-visible, .view-toggle button:focus-visible { outline: 2px solid var(--theme-accent, #34d399); outline-offset: 2px; }
 
   .body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; flex: 1; min-height: 0; overflow-y: auto; }
 

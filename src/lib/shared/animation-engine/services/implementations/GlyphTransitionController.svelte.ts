@@ -17,7 +17,7 @@ import type {
 // Set higher (e.g., 100-200) for smoother continuous playback
 const GLYPH_TRANSITION_DURATION_MS = 0;
 
-export class GlyphTransitionController implements IGlyphTransitionController {
+export class GlyphTransitionController {
   // Reactive state - owned by service
   state = $state<GlyphTransitionState>({
     displayedLetter: null,

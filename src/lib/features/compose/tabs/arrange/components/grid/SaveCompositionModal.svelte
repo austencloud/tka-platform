@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/features/create/generate/components/modals/ModalHeader.svelte";
@@ -24,7 +24,7 @@
     onClose: () => void;
   } = $props();
 
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
   let nameInput: HTMLInputElement;
 
   let compositionName = $state("");

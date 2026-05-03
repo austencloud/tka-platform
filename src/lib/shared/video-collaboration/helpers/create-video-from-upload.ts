@@ -5,13 +5,13 @@
  * and CollaborativeVideoManager (collaborative metadata).
  */
 
-import type { VideoUploadResult } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import {
   createCollaborativeVideo,
   type CollaborativeVideo,
   type VideoVisibility,
 } from "../domain/CollaborativeVideo";
+import type { VideoUploadResult } from "../../share/services/contracts/types";
 
 export interface CreateVideoFromUploadOptions {
   /** The upload result from R2VideoUploader */

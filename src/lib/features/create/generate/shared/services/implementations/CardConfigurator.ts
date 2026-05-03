@@ -7,11 +7,7 @@ import {
   periodToNumber,
 } from "../../../circular/domain/models/circular-models";
 import { minLength as minLengthEngine } from "@tka/sequence-engine/generation";
-import type {
-  CardDescriptor,
-  CardHandlers,
-  ICardConfigurator,
-} from "../contracts/ICardConfigurator";
+import type { CardDescriptor, CardHandlers } from "../contracts/types";
 
 /**
  * Derive minimum sequence length for a LOOP configuration via the engine's
@@ -55,7 +51,7 @@ function deriveLoopMinOverride(
  *   Row 3 (with slice): Customize(2) + LOOP(2) + Slice(2) = 6
  *   Row 4: Generate(6)
  */
-export class CardConfigurator implements ICardConfigurator {
+export class CardConfigurator {
   buildCardDescriptors(
     config: UIGenerationConfig,
     currentLevel: DifficultyLevel,

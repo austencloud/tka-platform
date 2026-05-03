@@ -6,10 +6,10 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import PremiumShowcase from "./components/PremiumShowcase.svelte";
 
-  let hapticService = $state<IHapticFeedback | null>(null);
+  let hapticService = $state<HapticFeedback | null>(null);
 
   $effect(() => {
     hapticService = getHapticFeedback();

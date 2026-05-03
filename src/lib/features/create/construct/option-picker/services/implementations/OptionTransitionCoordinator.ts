@@ -4,17 +4,13 @@
  * Extracted from OptionViewer.svelte to centralize transition choreography.
  */
 
-import type {
-  IOptionTransitionCoordinator,
-  TransitionCallbacks,
-  TransitionLifecycle,
-} from "../contracts/IOptionTransitionCoordinator";
+import type { TransitionCallbacks, TransitionLifecycle } from "../contracts/types";
 
 // Transition timing constants (same as original component)
 const FADE_OUT_DURATION = 250;
 const FADE_IN_DURATION = 250;
 
-export class OptionTransitionCoordinator implements IOptionTransitionCoordinator {
+export class OptionTransitionCoordinator {
   private _isFadingOut = false;
   private _isTransitioning = false;
   private activeTimeouts: Array<ReturnType<typeof setTimeout>> = [];

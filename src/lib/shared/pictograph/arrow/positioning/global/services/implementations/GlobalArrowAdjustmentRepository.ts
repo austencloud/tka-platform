@@ -14,10 +14,7 @@ import {
   type GlobalArrowAdjustment,
   type GlobalArrowAdjustmentInput,
 } from "../../domain/GlobalArrowAdjustment";
-import type {
-  IGlobalArrowAdjustmentRepository,
-  CascadingLookupResult,
-} from "../contracts/IGlobalArrowAdjustmentRepository";
+import type { CascadingLookupResult } from "../contracts/types";
 import type { GlobalArrowAdjustmentPersister } from "./GlobalArrowAdjustmentPersister";
 import {
   createGlobalArrowAdjustmentState,
@@ -31,9 +28,7 @@ const logger = createComponentLogger("GlobalArrowAdjustmentRepository");
 // Admin email for authorization
 const ADMIN_EMAIL = "austencloud@gmail.com";
 
-export class GlobalArrowAdjustmentRepository
-  implements IGlobalArrowAdjustmentRepository
-{
+export class GlobalArrowAdjustmentRepository {
   private readonly state: GlobalArrowAdjustmentState;
   private unsubscribe: (() => void) | null = null;
   private initializePromise: Promise<void> | null = null;

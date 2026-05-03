@@ -8,14 +8,13 @@
 import { MeshStandardMaterial, Color } from "three";
 import type { Material } from "three";
 import type {
-  IAvatarCustomizer,
   BodyType,
   SkinTonePreset,
   BodyProportions,
   AvatarCustomization,
   ProportionPreset,
 } from "../contracts/IAvatarCustomizer";
-import type { IScene3DPersister } from "../contracts/IScene3DPersister";
+import type { Scene3DPersister } from "./Scene3DPersister";
 
 /**
  * Anthropometric ratios based on research
@@ -134,13 +133,13 @@ function deriveProportionsInternal(
   };
 }
 
-export class AvatarCustomizer implements IAvatarCustomizer {
+export class AvatarCustomizer {
   private state: AvatarCustomization;
   private skinMaterial: MeshStandardMaterial;
   private bodyMaterial: MeshStandardMaterial;
   private listeners: Set<(state: AvatarCustomization) => void> = new Set();
 
-  constructor(private persistence: IScene3DPersister) {
+  constructor(private persistence: Scene3DPersister) {
     // Get Austen preset (index 2)
     const austenPreset = PROPORTION_PRESETS.find((p) => p.id === "tall-male");
     const defaultProportions =

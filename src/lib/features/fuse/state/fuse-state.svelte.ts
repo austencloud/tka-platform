@@ -9,9 +9,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceFuser } from "../services/contracts/ISequenceFuser";
-import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-
+import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+import type { SequenceFuser } from "../services/implementations/SequenceFuser";
 export type FusePhase =
 	| "browse"
 	| "left-selected"
@@ -20,7 +19,7 @@ export type FusePhase =
 	| "result";
 
 export interface FuseStateDeps {
-	sequenceFuser: ISequenceFuser;
+	sequenceFuser: SequenceFuser;
 }
 
 const STORAGE_KEY = "fuse-tab-state";
@@ -68,8 +67,8 @@ export function createFuseState(deps: FuseStateDeps) {
 	});
 
 	// Animation controller references for sync
-	let leftController: IAnimationPlaybackController | null = null;
-	let rightController: IAnimationPlaybackController | null = null;
+	let leftController: AnimationPlaybackController | null = null;
+	let rightController: AnimationPlaybackController | null = null;
 
 	// Shared beat clock - single rAF loop drives all panels
 	let currentStep = $state(0);
@@ -210,7 +209,7 @@ export function createFuseState(deps: FuseStateDeps) {
 		stopClock();
 	}
 
-	function registerController(side: "left" | "right", controller: IAnimationPlaybackController) {
+	function registerController(side: "left" | "right", controller: AnimationPlaybackController) {
 		if (side === "left") leftController = controller;
 		else rightController = controller;
 

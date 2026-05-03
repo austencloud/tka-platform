@@ -9,11 +9,7 @@
 
 import * as THREE from "three";
 import { Timeline, type TweenOptions } from "../../animation/Timeline";
-import type {
-  IPromoAnimationController,
-  AnimationPlaybackState,
-  AnimationProgressCallback,
-} from "../contracts/IPromoAnimationController";
+import type { AnimationPlaybackState, AnimationProgressCallback } from "../contracts/types";
 import type {
   AnimationPreset,
   AnimationKeyframe,
@@ -26,7 +22,7 @@ import {
   DEFAULT_PRESET_ID,
 } from "../../presets/animation-presets";
 
-export class PromoAnimationController implements IPromoAnimationController {
+export class PromoAnimationController {
   private device: THREE.Group | null = null;
   private camera: THREE.PerspectiveCamera | null = null;
   private timeline: Timeline | null = null;

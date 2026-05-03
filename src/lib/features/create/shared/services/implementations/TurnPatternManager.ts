@@ -25,11 +25,7 @@ import type {
   TurnPatternEntry,
   TurnValue,
 } from "../../domain/models/TurnPatternData";
-import type {
-  ITurnPatternManager,
-  TurnPatternApplyResult,
-  TargetHand,
-} from "../contracts/ITurnPatternManager";
+import type { TurnPatternApplyResult, TargetHand } from "../contracts/types";
 import {
   createMotionData,
   type MotionData,
@@ -45,7 +41,7 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("TurnPatternManager");
 
-export class TurnPatternManager implements ITurnPatternManager {
+export class TurnPatternManager {
   /**
    * Extract a turn pattern from a sequence
    */

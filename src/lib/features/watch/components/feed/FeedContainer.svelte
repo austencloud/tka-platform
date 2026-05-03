@@ -18,7 +18,7 @@ import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { FeedSnapDetector } from "../../services/implementations/FeedSnapDetector";
   import type { FeedPreloader } from "../../services/implementations/FeedPreloader";
   import type { FeedScrollBehavior } from "../../services/implementations/FeedScrollBehavior";
@@ -59,7 +59,7 @@ import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
   let containerRef = $state<HTMLDivElement | null>(null);
 
   // Services
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
   let snapDetector: FeedSnapDetector | undefined;
   let preloader: FeedPreloader | undefined;
   let scrollBehavior: FeedScrollBehavior | undefined;

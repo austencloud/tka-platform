@@ -20,7 +20,7 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   import { AnimationStateManager } from "../../../../services/implementations/AnimationStateManager";
   import { createAnimationPanelState } from "../../../../state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import type { AdditionalLayerProps } from "../../../../services/contracts/ITrailCapturer";
+  import type { AdditionalLayerProps } from "../../../../services/contracts/types";
   import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/FireTypes";
   import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
 

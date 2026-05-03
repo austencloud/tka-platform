@@ -11,7 +11,7 @@
  */
 
 import type { PlaybackIntent } from '../../domain/sync-types';
-import type { IPlaybackPositionCalculator, PositionResult } from '../contracts/IPlaybackPositionCalculator';
+import type { PositionResult } from "../contracts/types";
 
 /** Default beat duration (60 BPM = 1000ms per beat) */
 const DEFAULT_BEAT_DURATION_MS = 1000;
@@ -32,7 +32,7 @@ const DEFAULT_MAX_CORRECTION = 0.1;
  * every device will calculate the same position. This eliminates sync drift
  * without requiring constant network communication.
  */
-export class PlaybackPositionCalculator implements IPlaybackPositionCalculator {
+export class PlaybackPositionCalculator {
 	private _beatDurationMs: number = DEFAULT_BEAT_DURATION_MS;
 
 	/**

@@ -29,7 +29,7 @@ const DEFAULT_GRID_HALFWAY_OFFSET = 150;
 /** Default inward factor (no adjustment for animation mode) */
 const DEFAULT_INWARD_FACTOR = 1.0;
 
-export class PropPositionCalculator implements IPropPositionCalculator {
+export class PropPositionCalculator {
   calculateEndpoint(
     prop: PropState,
     config: PropEndpointConfig,

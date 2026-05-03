@@ -21,7 +21,7 @@
   import { CARD_REGISTRY, type GeneratorCardId } from "$lib/features/create/generate/shared/domain/card-registry";
   import { getCardColor } from "$lib/features/create/generate/shared/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   // Mini card definition - derived from the card registry
   interface MiniCard {
@@ -70,7 +70,7 @@
     },
   };
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
   try {
     hapticService = getHapticFeedback();
   } catch {

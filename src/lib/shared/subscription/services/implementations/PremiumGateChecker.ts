@@ -1,13 +1,10 @@
 import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 import { CAPABILITY_NUDGES } from "../../domain/capability-nudges";
-import type {
-	IPremiumGateChecker,
-	PremiumGateResult,
-} from "../contracts/IPremiumGateChecker";
+import type { PremiumGateResult } from "../contracts/types";
 import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/FeatureFlag";
 
-export class PremiumGateChecker implements IPremiumGateChecker {
+export class PremiumGateChecker {
 	check(capability: CapabilityFeatureId): PremiumGateResult {
 		const role = featureFlagService.effectiveRole;
 

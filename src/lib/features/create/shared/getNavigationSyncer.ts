@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { INavigationSyncer } from './services/contracts/INavigationSyncer';
+
 import { NavigationSyncer } from './services/implementations/NavigationSyncer';
 
-let instance: INavigationSyncer | null = null;
+let instance: NavigationSyncer | null = null;
 
-export function getNavigationSyncer(): INavigationSyncer {
+export function getNavigationSyncer(): NavigationSyncer {
 	if (!browser) throw new Error('getNavigationSyncer() is browser-only');
 	return instance ??= new NavigationSyncer();
 }

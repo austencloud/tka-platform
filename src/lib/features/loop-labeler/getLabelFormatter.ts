@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ILabelFormatter } from './services/contracts/ILabelFormatter';
 import { LabelFormatter } from './services/implementations/LabelFormatter';
 
-let instance: ILabelFormatter | null = null;
+let instance: LabelFormatter | null = null;
 
-export function getLabelFormatter(): ILabelFormatter {
+export function getLabelFormatter(): LabelFormatter {
 	if (!browser) throw new Error('getLabelFormatter() is browser-only');
 	return instance ??= new LabelFormatter();
 }

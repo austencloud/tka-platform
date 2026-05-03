@@ -17,12 +17,8 @@ import {
 	ENGINE_GRID_RADIUS,
 } from "../../domain/mandala-constants";
 import type { SVGPathData } from "../../domain/mandala-types";
-import type {
-	IMandalaPathPreparer,
-	PreparedMandalaPath,
-	PreparedMandalaPaths,
-} from "../contracts/IMandalaPathPreparer";
-import type { StepLike } from "../contracts/IMandalaGeometryCalculator";
+import type { PreparedMandalaPath, PreparedMandalaPaths } from "../contracts/types";
+import type { StepLike } from "../contracts/types";
 import { MandalaGeometryCalculator } from "./MandalaGeometryCalculator";
 
 // ─── Path length measurement ───────────────────────────────────────────────
@@ -82,7 +78,7 @@ function preparePaths(
 
 // ─── Public class ──────────────────────────────────────────────────────────
 
-export class MandalaPathPreparer implements IMandalaPathPreparer {
+export class MandalaPathPreparer {
 	private readonly geometryCalculator = new MandalaGeometryCalculator();
 
 	// Simple cache: store the last computation and only recompute when inputs change

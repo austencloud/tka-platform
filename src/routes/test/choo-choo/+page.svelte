@@ -10,7 +10,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
 
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import {
@@ -30,7 +30,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   let config = $state<ChooChooConfig>({ ...DEFAULT_CONFIG });
 
   // Animation state
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   const animationState = createAnimationPanelState();
   let isPlaying = $state(false);
   let loading = $state(false);

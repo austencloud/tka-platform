@@ -7,10 +7,9 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceDetailLoader } from "../contracts/ISequenceDetailLoader";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 
-export class SequenceDetailLoader implements ISequenceDetailLoader {
+export class SequenceDetailLoader {
   // In-flight loads to prevent duplicates
   private loadPromises = new Map<string, Promise<SequenceData | null>>();
 

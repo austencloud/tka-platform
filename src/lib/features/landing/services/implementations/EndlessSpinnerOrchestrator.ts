@@ -16,11 +16,7 @@ import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/service
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type {
-  IEndlessSpinnerOrchestrator,
-  EndState,
-  PositionGroup,
-  SpinnerStats,
-} from "../contracts/IEndlessSpinnerOrchestrator";
+  EndState, PositionGroup, SpinnerStats } from "../contracts/types";
 import {
   GridMode,
   GridPosition,
@@ -43,7 +39,6 @@ import {
   createStartPositionFromStepEnd,
 } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
-
 // Cardinal locations (for DIAMOND grid) and intercardinal (for BOX grid)
 const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTH,
@@ -285,7 +280,7 @@ function getGammaCycle(position: GridPosition | string | null): "low" | "high" |
   return num <= 8 ? "low" : "high";
 }
 
-export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
+export class EndlessSpinnerOrchestrator {
   /** All circular sequences loaded from database */
   private circularSequences: SequenceData[] = [];
 

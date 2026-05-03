@@ -7,11 +7,7 @@
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { LetterSource } from "../../domain/models/spell-models";
 import type { SpellServiceLoader } from "../implementations/SpellServiceLoader";
-import type {
-  IVariationExplorationOrchestrator,
-  WordParseResult,
-  WordParseOptions,
-} from "../contracts/IVariationExplorationOrchestrator";
+import type { WordParseResult, WordParseOptions } from "../contracts/types";
 
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
@@ -23,7 +19,7 @@ const DASH_LETTERS: Set<string> = new Set([
   "Φ-", "Ψ-", "Λ-",
 ]);
 
-export class VariationExplorationOrchestrator implements IVariationExplorationOrchestrator {
+export class VariationExplorationOrchestrator {
   constructor(private serviceLoader: SpellServiceLoader) {}
 
   async parseWord(word: string, options?: WordParseOptions): Promise<WordParseResult> {

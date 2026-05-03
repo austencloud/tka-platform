@@ -12,7 +12,7 @@
  * - Email/display name updates
  *
  * Extracted responsibilities (now services):
- * - Profile picture management → IProfilePictureManager
+ * - Profile picture management → ProfilePictureManager
  * - User document CRUD → UserDocumentManager
  *
  * Preview mode integration:
@@ -36,7 +36,7 @@ import { getActivityLogger } from "../../analytics/getActivityLogger";
 import { getPresenceTracker } from "../../presence/getPresenceTracker";
 
 // Service imports
-import type { IProfilePictureManager } from "../services/contracts/IProfilePictureManager";
+import type { ProfilePictureManager } from "../services/implementations/ProfilePictureManager";
 import type { UserDocumentManager } from '$lib/shared/auth/services/implementations/UserDocumentManager'
 import { auth } from "../firebase";
 // Preview state for admin "View As" feature

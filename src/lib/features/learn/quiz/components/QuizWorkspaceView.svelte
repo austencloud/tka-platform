@@ -4,7 +4,7 @@
   import QuizTimer from "./QuizTimer.svelte";
   import { onDestroy, onMount } from "svelte";
 
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { getQuizSessionManager } from "$lib/features/learn/quiz/getQuizSessionManager";
 
   import LetterToPictographQuiz from "./LetterToPictographQuiz.svelte";

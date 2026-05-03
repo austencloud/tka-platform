@@ -41,7 +41,7 @@ import {
 import { auth } from "../firebase";
 import { GlobalFeatureFlagPersister } from "./implementations/GlobalFeatureFlagPersister";
 import { UserFeatureFlagPersister } from "./implementations/UserFeatureFlagPersister";
-import type { GlobalFlagOverrides } from "./contracts/IGlobalFeatureFlagPersister";
+import type { GlobalFlagOverrides } from "./contracts/types";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { PREMIUM_CAPABILITY_CONFIGS } from "$lib/shared/subscription/domain/capability-flag-configs";
 

@@ -12,10 +12,7 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
 import type { HandTimeline, DetectedBeat, StepPosition } from "../../domain/models";
-import type {
-  IStepBoundaryDetector,
-  StepDetectionOptions,
-} from "../contracts/IStepBoundaryDetector";
+import type { StepDetectionOptions } from "../contracts/types";
 
 const DEFAULT_MIN_FRAMES_PER_BEAT = 3;
 const DEFAULT_MIN_CONFIDENCE = 0.5;
@@ -26,7 +23,7 @@ interface FrameGroup {
   redLocation: GridLocation | null;
 }
 
-export class StepBoundaryDetector implements IStepBoundaryDetector {
+export class StepBoundaryDetector {
   detectBeats(
     timeline: HandTimeline,
     options?: StepDetectionOptions

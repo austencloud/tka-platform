@@ -15,9 +15,9 @@ import {
   KNOWLEDGE_GRAPH,
   isConceptUnlocked,
 } from "@tka/domain";
-import type { ITikaProgressWriter, VerificationResult } from "../contracts/ITikaProgressWriter";
+import type { VerificationResult } from "../contracts/types";
 
-export class TikaProgressWriter implements ITikaProgressWriter {
+export class TikaProgressWriter {
   private readonly MAX_CONCEPTS_PER_CALL = 8;
 
   /**

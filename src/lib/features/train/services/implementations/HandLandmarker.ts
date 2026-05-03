@@ -5,15 +5,12 @@
  * provide raw landmark detection for video frames and images.
  */
 
-import type {
-  IHandLandmarker,
-  HandLandmarkerResult,
-} from "../contracts/IHandLandmarker";
+import type { HandLandmarkerResult } from "../contracts/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MediaPipeHandLandmarker = any;
 
-export class HandLandmarker implements IHandLandmarker {
+export class HandLandmarker {
   private _handLandmarker: MediaPipeHandLandmarker = null;
   private _isInitialized = false;
 

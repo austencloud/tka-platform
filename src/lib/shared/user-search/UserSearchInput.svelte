@@ -2,13 +2,13 @@
   UserSearchInput - Shared user search with autocomplete
 
   Reusable component for searching users by name or email.
-  Uses IUserSearcher service for efficient Firestore queries.
+  Uses UserSearcher service for efficient Firestore queries.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { getUserSearcher } from "./getUserSearcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import type { UserSearchResult } from "./services/contracts/IUserSearcher";
+  import type { UserSearchResult } from "./services/contracts/types";
 
   type UserResult = UserSearchResult;
 

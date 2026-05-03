@@ -25,11 +25,7 @@ import {
 import { auth, getFirestoreInstance } from "../../../auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
-import type {
-  ISubscriptionManager,
-  SubscriptionInfo,
-  SubscriptionStatus,
-} from "../contracts/ISubscriptionManager";
+import type { SubscriptionInfo, SubscriptionStatus } from "../contracts/types";
 
 const DEFAULT_SUBSCRIPTION_INFO: SubscriptionInfo = {
   status: "none",
@@ -37,7 +33,7 @@ const DEFAULT_SUBSCRIPTION_INFO: SubscriptionInfo = {
   cancelAtPeriodEnd: false,
 };
 
-export class SubscriptionManager implements ISubscriptionManager {
+export class SubscriptionManager {
   /**
    * Ensure a customer document exists for the current user.
    * The Stripe extension needs this to create a Stripe customer.

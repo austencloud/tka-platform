@@ -2,11 +2,11 @@
 status: backlog
 value: 3
 effort: S
-remaining: "Wave 2 polish: sparklines, zero-scan candidates view"
+remaining: "Wave 2 delivered via ScanActivityTab (sparklines, zero-scan view, live feed, globe). Wave 3 (community map pings) needs brainstorming session."
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-03
 ---
 # Shortcode Durability Roadmap
 

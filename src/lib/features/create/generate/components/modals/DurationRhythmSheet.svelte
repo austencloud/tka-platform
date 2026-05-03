@@ -18,7 +18,7 @@
     type DurationTemplateDefinition,
   } from "$lib/features/create/shared/domain/templates/duration-templates";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   let {
     isOpen,
@@ -34,7 +34,7 @@
     onClose: () => void;
   } = $props();
 
-  let haptic: IHapticFeedback | null = null;
+  let haptic: HapticFeedback | null = null;
 
   onMount(() => {
     try {

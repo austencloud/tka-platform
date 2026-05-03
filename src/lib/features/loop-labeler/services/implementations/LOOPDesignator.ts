@@ -1,9 +1,5 @@
 import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import type {
-  ILOOPDesignator,
-  LOOPDesignation,
-  SectionDesignation,
-} from "../contracts/ILOOPDesignator";
+import type { LOOPDesignation, SectionDesignation } from "../contracts/types";
 
 /**
  * Base LOOP components for reference
@@ -20,7 +16,7 @@ const BASE_COMPONENTS = [
 /**
  * Service for formatting and managing LOOP designations
  */
-export class LOOPDesignator implements ILOOPDesignator {
+export class LOOPDesignator {
   formatDesignation(d: LOOPDesignation | SectionDesignation): string {
     if (d.components.length === 0) return "Freeform";
 

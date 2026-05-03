@@ -5,7 +5,7 @@ Reads from / writes to a headless BrowseEngine instance.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
@@ -31,7 +31,7 @@ Reads from / writes to a headless BrowseEngine instance.
 
   let { engine }: Props = $props();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;

@@ -3,8 +3,8 @@
 
   Thin presentation component for sequence thumbnails.
   All logic delegated to services:
-  - IThumbnailKeyDeriver: Cache key derivation
-  - IThumbnailRenderOrchestrator: Cache check → queue → render → upload
+  - ThumbnailKeyDeriver: Cache key derivation
+  - ThumbnailRenderOrchestrator: Cache check → queue → render → upload
 
   Features:
   - Lazy loading via IntersectionObserver
@@ -18,22 +18,17 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import RenderingOverlay from "$lib/shared/components/loading/RenderingOverlay.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
+  import type { ThumbnailVariant } from "../services/contracts/types";
   import { getThumbnailRenderOrchestrator } from "../getThumbnailRenderOrchestrator";
   import { getThumbnailKeyDeriver } from "../getThumbnailKeyDeriver";
   import { getCloudThumbnailCache } from "../getCloudThumbnailCache";
   import { getThumbnailLocalCache } from "../getThumbnailLocalCache";
-  import type {
-    IThumbnailRenderOrchestrator,
-    ThumbnailLoadStatus,
-  } from "../services/contracts/IThumbnailRenderOrchestrator";
-  import type {
-    IThumbnailKeyDeriver,
-    ThumbnailRenderInput,
-    ThumbnailVisibilitySettings,
-  } from "../services/contracts/IThumbnailKeyDeriver";
-  import type { ICloudThumbnailCache } from "../services/contracts/ICloudThumbnailCache";
-  import type { IThumbnailLocalCache } from "../services/contracts/IThumbnailLocalCache";
+  import type { ThumbnailLoadStatus } from "../services/contracts/types";
+  import type { ThumbnailRenderOrchestrator } from "../services/implementations/ThumbnailRenderOrchestrator";
+  import type { ThumbnailRenderInput, ThumbnailVisibilitySettings } from "../services/contracts/types";
+  import type { ThumbnailKeyDeriver } from "../services/implementations/ThumbnailKeyDeriver";
+  import type { CloudThumbnailCache } from "../services/implementations/CloudThumbnailCache";
+  import type { ThumbnailLocalCache } from "../services/implementations/ThumbnailLocalCache";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
@@ -101,10 +96,10 @@
   let errorDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Services (resolved once on mount)
-  let orchestrator: IThumbnailRenderOrchestrator | null = null;
-  let keyDeriver: IThumbnailKeyDeriver | null = null;
-  let cloudCache: ICloudThumbnailCache | null = null;
-  let localCache: IThumbnailLocalCache | null = null;
+  let orchestrator: ThumbnailRenderOrchestrator | null = null;
+  let keyDeriver: ThumbnailKeyDeriver | null = null;
+  let cloudCache: CloudThumbnailCache | null = null;
+  let localCache: ThumbnailLocalCache | null = null;
   let servicesReady = $state(false);
 
 

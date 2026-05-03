@@ -1,14 +1,5 @@
-import type {
-	IMobileConnectionAdapter,
-	MobileConnectionConfig,
-	NetworkType,
-	RecoveryState,
-	NetworkChangeEvent,
-	RecoveryStateEvent
-} from '../contracts/IMobileConnectionAdapter';
-import {
-	DEFAULT_MOBILE_CONNECTION_CONFIG
-} from '../contracts/IMobileConnectionAdapter';
+import type { MobileConnectionConfig, NetworkType, RecoveryState, NetworkChangeEvent, RecoveryStateEvent } from "../contracts/types";
+import { DEFAULT_MOBILE_CONNECTION_CONFIG } from "../contracts/types";
 import type { ConnectionQuality } from '../../domain/sync-types';
 
 interface NetworkInformation extends EventTarget {
@@ -26,7 +17,7 @@ interface NavigatorWithConnection extends Navigator {
 	webkitConnection?: NetworkInformation;
 }
 
-export class MobileConnectionAdapter implements IMobileConnectionAdapter {
+export class MobileConnectionAdapter {
 	private config: MobileConnectionConfig;
 
 	private _recoveryState: RecoveryState = 'disconnected';

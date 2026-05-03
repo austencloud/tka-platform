@@ -20,8 +20,9 @@
 import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../domain/models/StepData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IArrowAdjustmentOrchestrator, AdjustmentTargetKey } from "$lib/features/create/shared/services/contracts/IArrowAdjustmentOrchestrator";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { ArrowAdjustmentOrchestrator } from "../../services/implementations/ArrowAdjustmentOrchestrator";
+import type { AdjustmentTargetKey } from "../../services/contracts/types";
   import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
   import { onMount } from "svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
@@ -43,8 +44,8 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
   let { stepData, onStepDataUpdate, onPushUndoSnapshot }: Props = $props();
 
   // Services
-  let hapticService: IHapticFeedback | null = null;
-  let adjustmentOrchestrator: IArrowAdjustmentOrchestrator | null = null;
+  let hapticService: HapticFeedback | null = null;
+  let adjustmentOrchestrator: ArrowAdjustmentOrchestrator | null = null;
 
   // Auto-save configuration
   const AUTO_SAVE_DELAY_MS = 1500;

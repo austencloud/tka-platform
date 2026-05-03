@@ -16,8 +16,8 @@ import type {
   SequenceMetadata,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import type { IAnimationStateManager } from "../contracts/IAnimationStateManager";
-import type { IStepCalculator } from "../contracts/IStepCalculator";
+import type { AnimationStateManager } from "../implementations/AnimationStateManager";
+import type { StepCalculator } from "../implementations/StepCalculator";
 import type { PropInterpolator } from "./PropInterpolator";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
@@ -55,8 +55,8 @@ export class SequenceAnimationOrchestrator {
   private atStartPosition = true; // Track if we're at start position
 
   constructor(
-    private readonly animationStateService: IAnimationStateManager,
-    private readonly stepCalculationService: IStepCalculator,
+    private readonly animationStateService: AnimationStateManager,
+    private readonly stepCalculationService: StepCalculator,
     private readonly propInterpolationService: PropInterpolator
   ) {}
 

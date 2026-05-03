@@ -1,11 +1,9 @@
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-import type { IPlaybackPositionCalculator } from '../contracts/IPlaybackPositionCalculator';
-import type { IStateMerger } from '../contracts/IStateMerger';
-import type { ISequenceLocalCache } from '../contracts/ISequenceLocalCache';
 import type { PeerConnectionManager } from '$lib/shared/lan-sync/services/implementations/PeerConnectionManager'
-import type { IAdaptiveHeartbeat } from '../contracts/IAdaptiveHeartbeat';
-import type { IMessageBatcher, MessagePriority } from '../contracts/IMessageBatcher';
-import type { IMobileConnectionAdapter } from '../contracts/IMobileConnectionAdapter';
+import type { AdaptiveHeartbeat } from "../implementations/AdaptiveHeartbeat";
+import type { MessageBatcher } from "../implementations/MessageBatcher";
+import type { MessagePriority } from "../contracts/types";
+import type { MobileConnectionAdapter } from "../implementations/MobileConnectionAdapter";
 import type {
 	SyncConnectionState,
 	SyncedRoomState,
@@ -46,20 +44,20 @@ interface PendingHeartbeat {
 }
 
 export interface MobileOptimizations {
-	adaptiveHeartbeat?: IAdaptiveHeartbeat;
-	messageBatcher?: IMessageBatcher;
-	connectionAdapter?: IMobileConnectionAdapter;
+	adaptiveHeartbeat?: AdaptiveHeartbeat;
+	messageBatcher?: MessageBatcher;
+	connectionAdapter?: MobileConnectionAdapter;
 }
 
 export class DeviceSyncCoordinator {
 	private readonly hlc: HybridLogicalClock;
-	private readonly positionCalculator: IPlaybackPositionCalculator;
-	private readonly stateMerger: IStateMerger;
-	private readonly sequenceCache: ISequenceLocalCache;
+	private readonly positionCalculator: PlaybackPositionCalculator;
+	private readonly stateMerger: StateMerger;
+	private readonly sequenceCache: SequenceLocalCache;
 
-	private readonly adaptiveHeartbeat: IAdaptiveHeartbeat | null;
-	private readonly messageBatcher: IMessageBatcher | null;
-	private readonly connectionAdapter: IMobileConnectionAdapter | null;
+	private readonly adaptiveHeartbeat: AdaptiveHeartbeat | null;
+	private readonly messageBatcher: MessageBatcher | null;
+	private readonly connectionAdapter: MobileConnectionAdapter | null;
 
 	private readonly config: SyncConfig;
 
@@ -92,7 +90,7 @@ export class DeviceSyncCoordinator {
 	constructor(
 		private readonly peerManager: PeerConnectionManager,
 		config: Partial<SyncConfig> = {},
-		sequenceCache?: ISequenceLocalCache,
+		sequenceCache?: SequenceLocalCache,
 		mobileOptimizations?: MobileOptimizations
 	) {
 		const nodeId = generateNodeId();
@@ -792,7 +790,7 @@ export class DeviceSyncCoordinator {
 		this.broadcast(message);
 	}
 
-	private applyAndBroadcastIntent(intent: ReturnType<IStateMerger['createIntent']>): void {
+	private applyAndBroadcastIntent(intent: ReturnType<StateMerger['createIntent']>): void {
 		if (!this._roomState) return;
 
 		this._roomState = this.stateMerger.mergeIntent(this._roomState, intent);

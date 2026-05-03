@@ -7,19 +7,12 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type {
-  IExtensionFlowCoordinator,
-  ExtensionFlowStart,
-  BridgeAppendResult,
-  ExtensionApplyResult,
-} from "../contracts/IExtensionFlowCoordinator";
-import type {
-  ISequenceExtender,
-  LOOPType,
-} from "../contracts/ISequenceExtender";
+import type { ExtensionFlowStart, BridgeAppendResult, ExtensionApplyResult } from "../contracts/types";
+import type { SequenceExtender } from "./SequenceExtender";
+import type { LOOPType } from "../contracts/types";
 
-export class ExtensionFlowCoordinator implements IExtensionFlowCoordinator {
-  constructor(private readonly sequenceExtender: ISequenceExtender) {}
+export class ExtensionFlowCoordinator {
+  constructor(private readonly sequenceExtender: SequenceExtender) {}
 
   canExtend(sequence: SequenceData): boolean {
     try {

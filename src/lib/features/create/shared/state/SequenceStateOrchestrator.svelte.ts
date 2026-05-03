@@ -29,7 +29,7 @@ import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-import type { IReversalDetector } from "../services/contracts/IReversalDetector";
+import type { ReversalDetector } from "../services/implementations/ReversalDetector";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
@@ -53,7 +53,7 @@ export interface SequenceStateServices {
   sequenceStatisticsService?: SequenceStatsCalculator;
   SequenceTransformer?: SequenceTransformer;
   sequenceValidationService?: SequenceValidator;
-  ReversalDetector?: IReversalDetector;
+  ReversalDetector?: ReversalDetector;
   /**
    * IMPORTANT: Tab ID for persistence isolation.
    * Each tab (construct, assembler, generator) should have its own persisted data.

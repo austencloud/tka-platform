@@ -2,7 +2,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { Section } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
@@ -47,7 +47,7 @@
   let navElement = $state<HTMLElement | null>(null);
   let peekHasAnimated = $state(false);
   let availableWidth = $state(0);
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   // Calculate required width for all tabs
   // Layout: [ModuleSwitcher] [Tab1] [Tab2] [Tab3] [Tab4] [Prop]
@@ -111,7 +111,7 @@
       hapticService = getHapticFeedback();
     } catch (error) {
       console.warn(
-        "BottomNavigation: Failed to resolve IHapticFeedback",
+        "BottomNavigation: Failed to resolve HapticFeedback",
         error
       );
     }

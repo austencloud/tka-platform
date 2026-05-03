@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IThumbnailKeyDeriver } from './services/contracts/IThumbnailKeyDeriver';
 import { ThumbnailKeyDeriver } from './services/implementations/ThumbnailKeyDeriver';
 
-let instance: IThumbnailKeyDeriver | null = null;
+let instance: ThumbnailKeyDeriver | null = null;
 
-export function getThumbnailKeyDeriver(): IThumbnailKeyDeriver {
+export function getThumbnailKeyDeriver(): ThumbnailKeyDeriver {
 	if (!browser) throw new Error('getThumbnailKeyDeriver() is browser-only');
 	return instance ??= new ThumbnailKeyDeriver();
 }

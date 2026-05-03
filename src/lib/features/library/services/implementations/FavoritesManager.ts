@@ -6,7 +6,6 @@
  */
 
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
-import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { CollectionManager } from "./CollectionManager";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 

@@ -4,7 +4,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { StartEndOptions, PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { onMount, getContext } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -55,7 +55,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     headerFontSize?: string;
   }>();
 
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   onMount(() => {

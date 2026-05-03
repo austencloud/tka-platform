@@ -8,7 +8,6 @@
 import { Vector3, Quaternion, Matrix4, Euler } from "three";
 import type { Bone } from "three";
 import type {
-  IIKSolver,
   IKAlgorithm,
   JointConstraints,
   IKTarget,
@@ -17,7 +16,7 @@ import type {
 } from "../contracts/IIKSolver";
 import type { BoneChain } from "../contracts/IAvatarSkeletonBuilder";
 
-export class IKSolver implements IIKSolver {
+export class IKSolver {
   private maxIterations = 10;
   private convergenceThreshold = 0.01;
 

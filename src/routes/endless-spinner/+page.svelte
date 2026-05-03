@@ -4,13 +4,9 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-  import type {
-    IEndlessSpinnerOrchestrator,
-    EndState,
-    SpinnerStats,
-  } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+  import type { EndState, SpinnerStats } from '$lib/features/landing/services/contracts/types';
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
@@ -64,9 +60,9 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
 
   // Animation state
   const animationState = createAnimationPanelState();
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   let browseLoader: PublicSequencesLoader | null = null;
-  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
+  let spinnerOrchestrator: EndlessSpinnerOrchestrator | null = null;
   let servicesReady = $state(false);
   let animationReady = $state(false);
   let animationError = $state(false);

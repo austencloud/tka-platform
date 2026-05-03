@@ -9,12 +9,10 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type {
-    IEndlessSpinnerOrchestrator,
-    EndState,
-  } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+    EndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/types";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import {
@@ -72,9 +70,9 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
 
   // Animation state
   const animationState = createAnimationPanelState();
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
   let startPositionDeriver: StartPositionDeriver | null = null;
-  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
+  let spinnerOrchestrator: EndlessSpinnerOrchestrator | null = null;
 
   let isReady = $state(false);
   let isLoading = $state(false);

@@ -26,13 +26,10 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type {
-    IVideoExportOrchestrator,
-    VideoExportProgress,
-    VideoExportFormat,
-  } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-  import type { IVideoExporter } from "$lib/features/compose/services/contracts/IVideoExporter";
+  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compose/services/contracts/types";
+  import type { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
   import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
@@ -40,17 +37,15 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
-  import type { IHapticFeedback } from "../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../application/services/implementations/HapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import {
     ANIMATION_LOAD_DELAY_MS,
     ANIMATION_AUTO_START_DELAY_MS,
     VIDEO_EXPORT_SUCCESS_DELAY_MS,
   } from "$lib/features/compose/shared/domain/constants/timing";
-  import type {
-    ISheetRouter,
-    AnimationPanelState,
-  } from "../navigation/services/contracts/ISheetRouter";
+  import type { SheetRouter } from "../navigation/services/implementations/SheetRouter";
+import type { AnimationPanelState } from "../navigation/services/contracts/types";
   import { createComponentLogger } from "../utils/debug-logger";
   import { setAnimationPlaybackRef } from "./animation-playback-ref.svelte";
 
@@ -71,11 +66,11 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
 
   // Services
   let browseLoader: PublicSequencesLoader | null = null;
-  let playbackController: IAnimationPlaybackController | null = null;
-  let hapticService: IHapticFeedback | null = null;
-  let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
-  let VideoExporter: IVideoExporter | null = null;
-  let sheetRouterService: ISheetRouter | null = null;
+  let playbackController: AnimationPlaybackController | null = null;
+  let hapticService: HapticFeedback | null = null;
+  let videoExportOrchestrator: VideoExportOrchestrator | null = null;
+  let VideoExporter: VideoExporter | null = null;
+  let sheetRouterService: SheetRouter | null = null;
   let loopabilityChecker: SequenceLoopabilityChecker | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 

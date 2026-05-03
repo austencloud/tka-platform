@@ -6,13 +6,13 @@
  * and bulk tag operations on selected items.
  */
 
-import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 import type { ScreenshotTagController } from "../../../services/implementations/ScreenshotTagController";
-import type { GalleryItem } from "../../../services/contracts/IGalleryItemAdapter";
+import type { GalleryItem } from "../../../services/contracts/types";
 import type { MediaTag } from "@austencloud/media-tagging-types";
 
 export interface GallerySelectionDeps {
-  getHapticService: () => IHapticFeedback | null;
+  getHapticService: () => HapticFeedback | null;
   getTagController: () => ScreenshotTagController | null;
   getFlatItems: () => GalleryItem[];
 }

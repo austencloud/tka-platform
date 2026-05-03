@@ -9,8 +9,8 @@
 import type { LetterTransitionGraph } from "../implementations/LetterTransitionGraph";
 import type { WordSequenceGenerator } from "../implementations/WordSequenceGenerator";
 import type { VariationConstraintBuilder } from "../implementations/VariationConstraintBuilder";
-import type { IRandomSequenceGenerator } from "../contracts/IRandomSequenceGenerator";
-import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
+import type { RandomSequenceGenerator } from "./RandomSequenceGenerator";
+import type { SequenceExtender } from "../../../shared/services/implementations/SequenceExtender";
 
 // Direct singleton imports
 import { letterTransitionGraph as letterTransitionGraphSingleton } from "./LetterTransitionGraph";
@@ -34,7 +34,7 @@ export class SpellServiceLoader {
     return letterTransitionGraphSingleton;
   }
 
-  async getSequenceExtender(): Promise<ISequenceExtender> {
+  async getSequenceExtender(): Promise<SequenceExtender> {
     return sequenceExtenderSingleton;
   }
 
@@ -42,7 +42,7 @@ export class SpellServiceLoader {
     return variationConstraintBuilderSingleton;
   }
 
-  async getRandomSequenceGenerator(): Promise<IRandomSequenceGenerator> {
+  async getRandomSequenceGenerator(): Promise<RandomSequenceGenerator> {
     return randomSequenceGeneratorSingleton;
   }
 }

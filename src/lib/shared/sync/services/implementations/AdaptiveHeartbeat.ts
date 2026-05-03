@@ -1,9 +1,4 @@
-import type {
-	IAdaptiveHeartbeat,
-	HeartbeatMode,
-	HeartbeatStats,
-	HeartbeatEvent
-} from '../contracts/IAdaptiveHeartbeat';
+import type { HeartbeatMode, HeartbeatStats, HeartbeatEvent } from "../contracts/types";
 import type {
 	AdaptiveHeartbeatConfig,
 	ConnectionQuality
@@ -25,7 +20,7 @@ interface NavigatorWithBattery extends Navigator {
 	getBattery?: () => Promise<BatteryManager>;
 }
 
-export class AdaptiveHeartbeat implements IAdaptiveHeartbeat {
+export class AdaptiveHeartbeat {
 	private config: AdaptiveHeartbeatConfig;
 
 	private _mode: HeartbeatMode = 'normal';

@@ -69,7 +69,7 @@ import { getSvgAssetLoader } from "./SvgAssetLoader";
 import { getLetterImagePath, isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter, getLetterType } from "../../../foundation/domain/models/Letter";
 import { LetterType } from "../../../foundation/domain/models/LetterType";
-import type { IPictographPreparer } from "../../../pictograph/shared/services/contracts/IPictographPreparer";
+import type { PictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
@@ -159,17 +159,17 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   private initialized = false;
   private memoryUsage = 0;
   private turnColorInterpreter = new TurnColorInterpreter();
-  private preparer?: IPictographPreparer;
+  private preparer?: PictographPreparer;
 
   // Global preparer function that can be set at app initialization
-  private static globalPreparerGetter?: () => IPictographPreparer | undefined;
+  private static globalPreparerGetter?: () => PictographPreparer | undefined;
   private static globalTurnsTupleGeneratorGetter?: () => TurnsTupleGenerator | undefined;
 
   /**
    * Set a global preparer getter function
    * Called once at app initialization to wire up DI container
    */
-  static setGlobalPreparerGetter(getter: () => IPictographPreparer | undefined) {
+  static setGlobalPreparerGetter(getter: () => PictographPreparer | undefined) {
     Canvas2DDirectRenderer.globalPreparerGetter = getter;
   }
 
@@ -181,7 +181,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter = getter;
   }
 
-  constructor(preparer?: IPictographPreparer) {
+  constructor(preparer?: PictographPreparer) {
     this.preparer = preparer;
   }
 

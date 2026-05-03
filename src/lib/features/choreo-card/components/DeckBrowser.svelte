@@ -21,8 +21,9 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
-  import type { IPrintPDFExporter, CardPair } from "../services/contracts/IPrintPDFExporter";
-  import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
+  import type { PrintPDFExporter } from "../services/implementations/PrintPDFExporter";
+import type { CardPair } from "../services/contracts/types";
+  import type { PrintZipExporter } from "../services/implementations/PrintZipExporter";
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
   interface Props {
@@ -142,7 +143,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
       const { PrintPDFExporter } = await import(
         "$lib/features/choreo-card/services/implementations/PrintPDFExporter"
       );
-      const exporter: IPrintPDFExporter = new PrintPDFExporter();
+      const exporter: PrintPDFExporter = new PrintPDFExporter();
       const deckName = selectedDeck?.name ?? "deck";
       const blob = await exporter.exportHomePrintPDF(renderedPairs, deckName, cardSize);
       const url = URL.createObjectURL(blob);

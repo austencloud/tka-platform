@@ -7,8 +7,8 @@
   import { getSubscriptionManager } from "$lib/shared/subscription/getSubscriptionManager";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
-  import type { ISubscriptionManager } from "../../../shared/subscription/services/contracts/ISubscriptionManager";
-  import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
+  import type { SubscriptionManager } from "../../../shared/subscription/services/implementations/SubscriptionManager";
+  import type { HapticFeedback } from "../../../shared/application/services/implementations/HapticFeedback";
   import PremiumHero from "./PremiumHero.svelte";
   import PremiumCTA from "./PremiumCTA.svelte";
   import StickyPremiumCTA from "./StickyPremiumCTA.svelte";
@@ -21,12 +21,12 @@
 
   interface Props {
     onClose?: () => void;
-    hapticService?: IHapticFeedback | null;
+    hapticService?: HapticFeedback | null;
   }
 
   let { onClose, hapticService = null }: Props = $props();
 
-  let subscriptionService: ISubscriptionManager | null = $state(null);
+  let subscriptionService: SubscriptionManager | null = $state(null);
   let isLoading = $state(false);
 
   const PRICE_ID =

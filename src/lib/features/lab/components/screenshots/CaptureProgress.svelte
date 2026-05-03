@@ -5,14 +5,12 @@
 -->
 <script lang="ts">
   import { untrack } from "svelte";
-  import type {
-    CaptureJobStatus,
-    IScreenshotOrchestrator,
-  } from "../../services/contracts/IScreenshotOrchestrator";
+  import type { CaptureJobStatus } from "../../services/contracts/types";
+import type { ScreenshotOrchestrator } from "../../services/implementations/ScreenshotOrchestrator";
 
   interface Props {
     jobId: string | null;
-    orchestrator: IScreenshotOrchestrator;
+    orchestrator: ScreenshotOrchestrator;
     onPollStatus?: (status: CaptureJobStatus) => void;
     onComplete?: () => void;
   }

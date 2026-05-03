@@ -7,10 +7,7 @@
  */
 
 import type { ModuleId } from "../../domain/types";
-import type {
-  ISidebarTabToggler,
-  TabVisibilityInfo,
-} from "../contracts/ISidebarTabToggler";
+import type { TabVisibilityInfo } from "../contracts/types";
 import { MODULE_DEFINITIONS } from "../../config/module-definitions";
 import {
   featureFlagService,
@@ -22,7 +19,7 @@ import {
 } from "$lib/shared/auth/domain/models/FeatureFlag";
 import { hasRolePrivilege } from "$lib/shared/auth/domain/models/UserRole";
 
-export class SidebarTabToggler implements ISidebarTabToggler {
+export class SidebarTabToggler {
   getAllTabsForModule(moduleId: ModuleId): TabVisibilityInfo[] {
     const moduleDef = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
     if (!moduleDef) return [];

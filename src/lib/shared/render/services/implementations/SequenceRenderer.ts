@@ -1,15 +1,13 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import { LayoutCalculator } from "./LayoutCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
-import type {
-  CompositionProgressCallback,
-  IImageComposer,
-} from "../contracts/IImageComposer";
+import type { ImageComposer } from "./ImageComposer";
+import type { CompositionProgressCallback } from "../contracts/types";
 import type { ImageFormatConverter } from "./ImageFormatConverter";
 
 export class SequenceRenderer {
   constructor(
-    private compositionService: IImageComposer,
+    private compositionService: ImageComposer,
     private formatService: ImageFormatConverter
   ) {}
 

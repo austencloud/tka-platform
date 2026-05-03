@@ -5,12 +5,7 @@
  * Provides snap calculations for steps, clip edges, grid, and playhead.
  */
 
-import type {
-  ITimelineSnapper,
-  SnapResult,
-  SnapPoint,
-  SnapType,
-} from "../contracts/ITimelineSnapper";
+import type { SnapResult, SnapPoint, SnapType } from "../contracts/types";
 import type { TimeSeconds } from "../../domain/timeline-types";
 import {
   snapTimeValue,
@@ -20,7 +15,7 @@ import {
 } from "../SnapService";
 import { getTimelineState } from "../../state/timeline-state.svelte";
 
-export class TimelineSnapper implements ITimelineSnapper {
+export class TimelineSnapper {
   private _activeSnapResult: SnapResult | null = null;
   private _draggingClipIds: string[] = [];
 

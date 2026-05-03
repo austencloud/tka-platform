@@ -11,10 +11,7 @@
  * Domain: Keyboard Input
  */
 
-import type {
-  GreekKeyMapping,
-  IGreekKeyMapper,
-} from "../contracts/IGreekKeyMapper";
+import type { GreekKeyMapping } from "../contracts/types";
 
 const NUMBER_ROW_MAPPINGS: readonly GreekKeyMapping[] = [
   { code: "Digit1", symbol: "Σ", label: "Sigma", group: "number-row" },
@@ -47,7 +44,7 @@ const SYMBOL_MAP = new Map<string, string>(
   ALL_MAPPINGS.map((m) => [m.code, m.symbol])
 );
 
-export class GreekKeyMapper implements IGreekKeyMapper {
+export class GreekKeyMapper {
   getSymbol(code: string): string | null {
     return SYMBOL_MAP.get(code) ?? null;
   }

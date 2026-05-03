@@ -5,7 +5,7 @@
  * Supports real-time subscriptions, module filtering, and tag-based queries.
  */
 
-import type { ScreenshotMetadata } from "../contracts/IScreenshotUploader";
+import type { ScreenshotMetadata } from "../contracts/types";
 import {
   getFirestoreInstance,
   getStorageInstance,

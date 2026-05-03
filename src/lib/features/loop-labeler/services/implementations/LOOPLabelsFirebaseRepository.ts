@@ -9,10 +9,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import type {
-  ILOOPLabelsFirebaseRepository,
-  LabeledSequence,
-} from "../contracts/ILOOPLabelsFirebaseRepository";
+import type { LabeledSequence } from "../contracts/types";
 
 const LOOP_LABELS_COLLECTION = "loop-labels";
 const PUBLIC_SEQUENCES_COLLECTION = "publicSequences";
@@ -27,9 +24,7 @@ const LOCAL_STORAGE_KEY = "loop-labels";
  * - On load: Fetch from Firebase, merge with localStorage (recover any local-only items)
  * - On save: Write to Firebase FIRST, then update localStorage cache
  */
-export class LOOPLabelsFirebaseRepository
-  implements ILOOPLabelsFirebaseRepository
-{
+export class LOOPLabelsFirebaseRepository {
   private firestore: Firestore | null = null;
   private syncStatus: "synced" | "syncing" | "error" = "synced";
 

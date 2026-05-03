@@ -9,12 +9,8 @@ import type {
   PropState,
   PropStates,
 } from "../../shared/domain/types/PropState";
-import type {
-  IAnimationStateManager,
-  InterpolationResult,
-} from "../contracts/IAnimationStateManager";
-
-export class AnimationStateManager implements IAnimationStateManager {
+import type { InterpolationResult } from "../contracts/types";
+export class AnimationStateManager {
 
   private bluePropState: PropState = {
     centerPathAngle: 0,

@@ -9,14 +9,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type {
-  ISequenceAligner,
-  AlignmentResult,
-  AlignedBeatPair,
-  LocalAlignmentResult,
-  CircularAlignmentResult,
-  AlignmentOptions,
-} from "../contracts/ISequenceAligner";
+import type { AlignmentResult, AlignedBeatPair, LocalAlignmentResult, CircularAlignmentResult, AlignmentOptions } from "../contracts/types";
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { SpatialTransformDetector } from "./SpatialTransformDetector";
 import type { SpatialTransform } from "../../domain/models/signatures";
@@ -28,7 +21,7 @@ const DEFAULT_OPTIONS: Required<AlignmentOptions> = {
   trySpatialTransforms: true,
 };
 
-export class SequenceAligner implements ISequenceAligner {
+export class SequenceAligner {
   constructor(
     private readonly beatSignatureGenerator: StepSignatureGenerator,
     private readonly spatialTransformDetector: SpatialTransformDetector

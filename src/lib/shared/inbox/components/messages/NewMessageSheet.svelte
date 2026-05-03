@@ -16,9 +16,9 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
-  import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
+  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {
     recipientId?: string | null;
@@ -51,8 +51,8 @@
   let isLoadingSuggestions = $state(true);
 
   // Services
-  let userService: IUserRepository | undefined;
-  let hapticService: IHapticFeedback | undefined;
+  let userService: UserRepository | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   // Current user
   const currentUserId = $derived(authState.user?.uid ?? "");

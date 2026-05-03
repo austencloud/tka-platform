@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { CellTransformStack } from "$lib/features/compose/tabs/arrange/services/implementations/CellTransformStack";
-import type { IArrangeLayerTransformer } from "$lib/features/compose/tabs/arrange/services/contracts/IArrangeLayerTransformer";
+import type { ArrangeLayerTransformer } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeLayerTransformer";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
 
@@ -22,7 +22,7 @@ function makeSequence(name: string): SequenceData {
   } as unknown as SequenceData;
 }
 
-function makeMockTransformer(): IArrangeLayerTransformer {
+function makeMockTransformer(): ArrangeLayerTransformer {
   return {
     applyTransform: vi.fn(async (seq: SequenceData, type: string) => ({
       success: true,
@@ -77,7 +77,7 @@ describe("CellTransformStack", () => {
     });
 
     it("skips failed transforms and continues with the last good state", async () => {
-      const transformer: IArrangeLayerTransformer = {
+      const transformer: ArrangeLayerTransformer = {
         applyTransform: vi.fn()
           .mockResolvedValueOnce({
             success: true,

@@ -16,8 +16,7 @@
     ExportConfig,
     EnvironmentType,
   } from "../domain/promo-models";
-  import type { ExportStage } from "../services/contracts/IPromoVideoExporter";
-
+  import type { ExportStage } from "../services/contracts/types";
   // Props
   interface Props {
     initialModelPath?: string;

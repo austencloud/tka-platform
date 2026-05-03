@@ -16,10 +16,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type {
-  IOnboardingPersister,
-  OnboardingStatus,
-} from "../contracts/IOnboardingPersister";
+import type { OnboardingStatus } from "../contracts/types";
 import {
   ONBOARDING_COMPLETED_KEY,
   ONBOARDING_COMPLETED_AT_KEY,
@@ -39,7 +36,7 @@ const MODULES_WITH_ONBOARDING = [
   "library",
 ];
 
-export class OnboardingPersister implements IOnboardingPersister {
+export class OnboardingPersister {
   private cachedStatus: OnboardingStatus | null = null;
   private unsubscribe: Unsubscribe | null = null;
 

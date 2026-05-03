@@ -1,11 +1,6 @@
-import type {
-  IFileDownloader,
-  DownloadOptions,
-  BatchDownloadOptions,
-  DownloadResult,
-} from "../contracts/IFileDownloader";
+import type { DownloadOptions, BatchDownloadOptions, DownloadResult } from "../contracts/types";
 
-export class FileDownloader implements IFileDownloader {
+export class FileDownloader {
   async downloadBlob(
     blob: Blob,
     filename: string,

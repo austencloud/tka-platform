@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IAuditLogger } from './services/contracts/IAuditLogger';
 import { AuditLogger } from './services/implementations/AuditLogger';
 
-let instance: IAuditLogger | null = null;
+let instance: AuditLogger | null = null;
 
-export function getAuditLogger(): IAuditLogger {
+export function getAuditLogger(): AuditLogger {
 	if (!browser) throw new Error('getAuditLogger() is browser-only');
 	return instance ??= new AuditLogger();
 }

@@ -4,7 +4,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import {
     LOOPType,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
@@ -30,7 +30,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
     headerFontSize?: string;
   }>();
 
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   onMount(() => {

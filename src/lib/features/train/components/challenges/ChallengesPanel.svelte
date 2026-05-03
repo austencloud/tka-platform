@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import { getTrainChallengeManager } from "$lib/features/train/getTrainChallengeManager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type {
     TrainChallengeFilter,
     TrainChallengeSortBy,

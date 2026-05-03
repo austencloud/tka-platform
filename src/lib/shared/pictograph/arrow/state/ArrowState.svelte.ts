@@ -7,7 +7,7 @@
 
 import type { PictographData } from "../../shared/domain/models/PictographData";
 import type { ArrowAssets } from "../orchestration/domain/arrow-models";
-import type { IArrowLifecycleManager } from "../orchestration/services/contracts/IArrowLifecycleManager";
+import type { ArrowLifecycleManager } from "../orchestration/services/implementations/ArrowLifecycleManager";
 
 export interface ArrowState {
   readonly arrowPositions: Record<
@@ -21,7 +21,7 @@ export interface ArrowState {
 }
 
 export function createArrowState(
-  arrowLifecycleManager: IArrowLifecycleManager
+  arrowLifecycleManager: ArrowLifecycleManager
 ): ArrowState {
   // Arrow positioning state
   let arrowPositions = $state<

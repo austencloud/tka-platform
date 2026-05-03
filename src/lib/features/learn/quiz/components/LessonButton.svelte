@@ -7,7 +7,7 @@ and smooth hover animations.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { QuizType } from "../domain/enums/quiz-enums";
 
@@ -27,7 +27,7 @@ and smooth hover animations.
   }>();
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
 
   onMount(() => {
     hapticService = getHapticFeedback();

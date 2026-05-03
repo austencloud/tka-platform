@@ -1,14 +1,14 @@
 import type { World } from "miniplex";
 import type { VillageEntity, LearnedSequence } from "../../domain/village-types";
 import type { VillageConfig } from "../VillageConfig";
-import type { ISequenceMutator } from "../../services/contracts/ISequenceMutator";
+import type { SequenceMutator } from "../../services/implementations/SequenceMutator";
 import type { VillageEventEmitter } from "../VillageEventEmitter";
 import { INTERACTION_COOLDOWN_BASE } from "../../domain/village-constants";
 
 export class RecombinationSystem {
 	constructor(
 		private config: VillageConfig,
-		private mutator: ISequenceMutator,
+		private mutator: SequenceMutator,
 		private emitter: VillageEventEmitter,
 	) {}
 

@@ -11,7 +11,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import { onMount, onDestroy, untrack } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
@@ -28,13 +28,13 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		sequence: SequenceData;
 		bpm?: number;
 		onBack?: () => void;
-		onControllerReady?: (controller: IAnimationPlaybackController) => void;
+		onControllerReady?: (controller: AnimationPlaybackController) => void;
 		propColor?: "blue" | "red";
 		currentStep?: number;
 		showBackButton?: boolean;
 	} = $props();
 
-	let controller = $state<IAnimationPlaybackController | null>(null);
+	let controller = $state<AnimationPlaybackController | null>(null);
 	let motionLoader = $state<SequenceMotionLoader | null>(null);
 	const animState = createAnimationPanelState();
 	let initialized = $state(false);

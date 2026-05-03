@@ -7,10 +7,7 @@
  * Domain: Create module - Effect Orchestration
  */
 
-import type {
-  ICreateModuleEffectCoordinator,
-  CreateModuleEffectConfig,
-} from "../contracts/ICreateModuleEffectCoordinator";
+import type { CreateModuleEffectConfig } from "../contracts/types";
 import {
   createAutoEditPanelEffect,
   createAutoStepEditorEffect,
@@ -25,7 +22,7 @@ import { createPendingEditEffect } from "../../state/managers/PendingEditManager
 import { createPropTypeSyncEffect } from "../../state/managers/PropTypeSyncManager.svelte";
 import { createAutosaveEffect } from "../../state/managers/AutosaveManager.svelte";
 
-export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordinator {
+export class CreateModuleEffectCoordinator {
   setupEffects(config: CreateModuleEffectConfig): () => void {
     const {
       getCreateModuleState,

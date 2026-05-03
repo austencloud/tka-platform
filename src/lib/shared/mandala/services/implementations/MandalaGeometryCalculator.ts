@@ -35,11 +35,7 @@ import type {
 	SVGPathData,
 	MandalaPoint,
 } from "../../domain/mandala-types";
-import type {
-	IMandalaGeometryCalculator,
-	StepLike,
-	MotionLike,
-} from "../contracts/IMandalaGeometryCalculator";
+import type { StepLike, MotionLike } from "../contracts/types";
 
 // ─── Internal types ─────────────────────────────────────────────────────────
 
@@ -584,7 +580,7 @@ function computePurplePaths(
 
 // ─── Public class ───────────────────────────────────────────────────────────
 
-export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
+export class MandalaGeometryCalculator {
 	private cache = new Map<string, MandalaPaths>();
 	private static MAX_CACHE_SIZE = 50;
 

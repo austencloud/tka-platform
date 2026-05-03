@@ -1,7 +1,7 @@
 <!-- QuizResultsView - Refactored with service architecture -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onDestroy, onMount } from "svelte";
   import { getQuizResultsAnalyzer } from "$lib/features/learn/quiz/getQuizResultsAnalyzer";
   import type { QuizResults } from "../domain/models/quiz-models";
@@ -15,7 +15,7 @@
   import QuizMisconceptionSummary from "./QuizMisconceptionSummary.svelte";
   import AchievementUnlockOverlay from "./AchievementUnlockOverlay.svelte";
   import PerfectQuizCelebration from "./PerfectQuizCelebration.svelte";
-  import type { DetectedGap } from "../../services/contracts/IGapDetector";
+  import type { DetectedGap } from "../../services/contracts/types";
 
   // Props
   let {
@@ -35,7 +35,7 @@
   }>();
 
   // Services
-  let hapticService = $state<IHapticFeedback | null>(null);
+  let hapticService = $state<HapticFeedback | null>(null);
   let analyzer = $state<IQuizResultsAnalyzer | null>(null);
 
   // Celebration overlay states

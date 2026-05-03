@@ -10,17 +10,16 @@
  */
 
 import type {
-  ICompositeVideoRenderer,
   CompositeDimensions,
   CompositeLayoutOptions,
   StepGridPosition,
-} from "../contracts/ICompositeVideoRenderer";
+} from "../contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
-import type { IDimensionCalculator } from "$lib/shared/render/services/contracts/IDimensionCalculator";
+import type { ImageComposer } from "../../../../shared/render/services/implementations/ImageComposer";
+import type { DimensionCalculator } from "../../../../shared/render/services/implementations/DimensionCalculator";
 import type { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
 
-export class CompositeVideoRenderer implements ICompositeVideoRenderer {
+export class CompositeVideoRenderer {
   private sequence: SequenceData | null = null;
   private options: CompositeLayoutOptions | null = null;
   private cachedGridCanvas: HTMLCanvasElement | null = null;
@@ -29,8 +28,8 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   private gridLayout: [number, number] | null = null; // [columns, rows] from LayoutCalculator
 
   constructor(
-    private imageComposer: IImageComposer,
-    private dimensionService: IDimensionCalculator,
+    private imageComposer: ImageComposer,
+    private dimensionService: DimensionCalculator,
     private layoutCalculator: LayoutCalculator
   ) {}
 

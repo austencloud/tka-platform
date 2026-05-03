@@ -17,11 +17,11 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import { onMount } from "svelte";
   import type { WakeWordDetector } from "$lib/shared/voice-control/services/implementations/WakeWordDetector";
   import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
-  import type { ICommandDispatcher } from "$lib/shared/voice-control/services/contracts/ICommandDispatcher";
-  import type { IVoiceSessionRecorder } from "$lib/shared/voice-control/services/contracts/IVoiceSessionRecorder";
+  import type { CommandDispatcher } from "$lib/shared/voice-control/services/implementations/CommandDispatcher";
+  import type { VoiceSessionRecorder } from "$lib/shared/voice-control/services/implementations/VoiceSessionRecorder";
   import type { VoiceSessionFormatter } from "$lib/features/voice-sessions/services/implementations/VoiceSessionFormatter";
   import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
-  import type { IVoiceSessionAnalyzer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionAnalyzer";
+  import type { VoiceSessionAnalyzer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionAnalyzer";
   import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
   import type { VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
@@ -32,11 +32,11 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
 
   let detector: WakeWordDetector | null = null;
   let interpreter: CommandInterpreter | null = null;
-  let dispatcher: ICommandDispatcher | null = null;
-  let sessionRecorder: IVoiceSessionRecorder | null = null;
+  let dispatcher: CommandDispatcher | null = null;
+  let sessionRecorder: VoiceSessionRecorder | null = null;
   let sessionFormatter = $state<VoiceSessionFormatter | null>(null);
   let sessionRepository = $state<VoiceSessionRepository | null>(null);
-  let sessionAnalyzer = $state<IVoiceSessionAnalyzer | null>(null);
+  let sessionAnalyzer = $state<VoiceSessionAnalyzer | null>(null);
   let sessionReplayer = $state<VoiceSessionReplayer | null>(null);
 
   let supported = $state(false);

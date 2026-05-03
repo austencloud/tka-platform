@@ -8,21 +8,20 @@
  * like SpecialPlacer without requiring DI container reconstruction.
  */
 
-import type { IGlobalArrowAdjustmentRepository } from "./contracts/IGlobalArrowAdjustmentRepository";
 import { GlobalArrowAdjustmentRepository } from "./implementations/GlobalArrowAdjustmentRepository";
 import { GlobalArrowAdjustmentPersister } from "./implementations/GlobalArrowAdjustmentPersister";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("GlobalAdjustmentSingleton");
 
-let repositoryInstance: IGlobalArrowAdjustmentRepository | null = null;
+let repositoryInstance: GlobalArrowAdjustmentRepository | null = null;
 let initializationPromise: Promise<void> | null = null;
 
 /**
  * Get the global adjustment repository instance.
  * Returns null if not initialized yet.
  */
-export function getGlobalAdjustmentRepository(): IGlobalArrowAdjustmentRepository | null {
+export function getGlobalAdjustmentRepository(): GlobalArrowAdjustmentRepository | null {
   return repositoryInstance;
 }
 

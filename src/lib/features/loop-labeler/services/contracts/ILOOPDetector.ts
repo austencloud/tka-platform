@@ -4,11 +4,11 @@ import type {
   StepPairGroups,
   TransformationIntervals,
 } from "../../domain/models/label-models";
-import type { StepPairRelationship } from "./IStepPairAnalyzer";
 import type { ComponentId } from "../../domain/constants/loop-components";
 import type { PolyrhythmicLOOPResult } from "./IPolyrhythmicDetector";
-import type { LayeredPathResult } from "./ILayeredPathDetector";
 import type { DetectedComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { StepPairRelationship } from "./types";
+import type { LayeredPathResult } from "./types";
 
 /**
  * Describes a compound LOOP pattern with multiple transformations at different intervals

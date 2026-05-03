@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import type { IOrientationContinuityValidator } from './services/contracts/IOrientationContinuityValidator';
+
 import { OrientationContinuityValidator } from './services/implementations/OrientationContinuityValidator';
 
-let instance: IOrientationContinuityValidator | null = null;
+let instance: OrientationContinuityValidator | null = null;
 
-export function getOrientationContinuityValidator(): IOrientationContinuityValidator {
+export function getOrientationContinuityValidator(): OrientationContinuityValidator {
 	if (!browser) throw new Error('getOrientationContinuityValidator() is browser-only');
 	return instance ??= new OrientationContinuityValidator();
 }

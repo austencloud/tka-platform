@@ -2,12 +2,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BetaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
-import type {
-  ISequenceAnalyzer,
-  CircularityAnalysis,
-  CircularType,
-  StrictLoopType,
-} from "../contracts/ISequenceAnalyzer";
+import type { CircularityAnalysis, CircularType, StrictLoopType } from "../contracts/types";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
@@ -28,7 +23,7 @@ import {
  * - Uses predefined position maps (quartered, halved, mirrored, swapped, inverted)
  * - Intermediate pictographs are irrelevant - only start/end positions matter
  */
-export class SequenceAnalyzer implements ISequenceAnalyzer {
+export class SequenceAnalyzer {
   constructor(private readonly BetaDetector: BetaDetector) {}
 
   /**

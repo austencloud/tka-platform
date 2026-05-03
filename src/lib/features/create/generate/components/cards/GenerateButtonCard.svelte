@@ -10,7 +10,7 @@ Always renders as a pure button. Word input is now in WordInputCard.
   import type { UIGenerationConfig } from "../../state/generate-config.svelte";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { uiConfigToGenerationOptions } from "$lib/features/create/generate/shared/utils/config-mapper";
 
   let {
@@ -39,7 +39,7 @@ Always renders as a pure button. Word input is now in WordInputCard.
 
   let buttonIcon = $derived(hasSettingsChanged && !isGenerating ? "arrows-rotate" : "dice");
 
-  let hapticService: IHapticFeedback | null = $state(null);
+  let hapticService: HapticFeedback | null = $state(null);
 
   onMount(() => {
     hapticService = getHapticFeedback();

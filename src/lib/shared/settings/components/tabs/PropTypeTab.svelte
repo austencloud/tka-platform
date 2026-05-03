@@ -12,7 +12,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { AppSettings, PropPreset } from "../../domain/AppSettings";
   import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { onMount, onDestroy } from "svelte";
   // PropTypeRegistry imports removed - variations now visible in Bento grid
@@ -45,7 +45,7 @@
   }>();
 
   // Services
-  let hapticService: IHapticFeedback;
+  let hapticService: HapticFeedback;
   let deviceDetector: DeviceDetector | null = null;
 
   // Device detection

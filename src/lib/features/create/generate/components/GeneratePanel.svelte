@@ -16,7 +16,7 @@ Card-based architecture with integrated Generate button:
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { createDeviceState } from "../state/generate-device.svelte";
   import { createGenerationActionsState } from "../state/generate-actions.svelte";
@@ -140,7 +140,7 @@ Card-based architecture with integrated Generate button:
     );
   });
 
-  let hapticService = $state<IHapticFeedback | null>(null);
+  let hapticService = $state<HapticFeedback | null>(null);
 
   // Tour trigger
   function handleHelpClick(event?: MouseEvent) {

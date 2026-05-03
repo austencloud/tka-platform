@@ -14,10 +14,7 @@
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import type { PropRenderData } from "../../domain/models/PropRenderData";
-import type {
-  IPropSvgLoader,
-  PropSvgLoadOptions,
-} from "../contracts/IPropSvgLoader";
+import type { PropSvgLoadOptions } from "../contracts/types";
 import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
@@ -54,7 +51,7 @@ if (import.meta.hot) {
   });
 }
 
-export class PropSvgLoader implements IPropSvgLoader {
+export class PropSvgLoader {
   // 🚀 OPTIMIZATION: Use HMR-aware module-level caches
   private rawSvgCache = hmrRawSvgCache; // path -> raw SVG text
   private transformedSvgCache = hmrTransformedSvgCache; // path:color:themeMode -> transformed data

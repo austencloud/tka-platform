@@ -22,9 +22,10 @@ import {
   templateToPattern,
 } from "$lib/features/create/shared/domain/templates/duration-templates";
 import type { SpellModeState } from "./spell-mode-state.svelte";
-import type { UndoMetadata, UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
-import { UndoOperationType as UndoOp } from "$lib/features/create/shared/services/contracts/IUndoManager";
-import type { IVariationExplorationOrchestrator } from "$lib/features/create/spell/services/contracts/IVariationExplorationOrchestrator";
+import type { UndoMetadata } from "../../shared/services/contracts/types";
+import { UndoOperationType } from "../../shared/services/contracts/types";
+import { UndoOperationType as UndoOp } from "../../shared/services/contracts/types";
+import type { VariationExplorationOrchestrator } from "../../spell/services/implementations/VariationExplorationOrchestrator";
 import type { SpellServiceLoader } from "$lib/features/create/spell/services/implementations/SpellServiceLoader";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
@@ -210,7 +211,7 @@ export function createGenerationActionsState(
   // Lazy-resolved spell services - used only for word parsing (Greek aliases,
   // bridge-letter expansion, target-length padding). The actual sequence
   // generation goes through generationOrchestrator (same path as freeform + MCP).
-  let spellOrchestrator: IVariationExplorationOrchestrator | null = null;
+  let spellOrchestrator: VariationExplorationOrchestrator | null = null;
   let spellServiceLoader: SpellServiceLoader | null = null;
 
   async function onSpellGenerate() {
@@ -226,7 +227,7 @@ export function createGenerationActionsState(
     try {
       // Lazy-resolve services
       if (!spellOrchestrator) {
-        spellOrchestrator = getVariationExplorationOrchestrator() as IVariationExplorationOrchestrator;
+        spellOrchestrator = getVariationExplorationOrchestrator() as VariationExplorationOrchestrator;
       }
       if (!spellServiceLoader) {
         spellServiceLoader = getSpellServiceLoader() as SpellServiceLoader;

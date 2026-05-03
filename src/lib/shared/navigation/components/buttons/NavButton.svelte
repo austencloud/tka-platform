@@ -1,7 +1,7 @@
 <!-- NavButton - Reusable Navigation Button Component -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   let {
@@ -34,7 +34,7 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
   }
 
   // Services
-  let hapticService: IHapticFeedback | undefined;
+  let hapticService: HapticFeedback | undefined;
 
   // Label values (NavigationLabelService was a no-op, removed)
   let compactLabel = $derived(label);

@@ -5,7 +5,7 @@
   Each editor is a separate component with its own state and styles.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import type { User } from "firebase/auth";
   import DisplayNameEditor from "./DisplayNameEditor.svelte";
   import UsernameEditor from "./UsernameEditor.svelte";
@@ -17,7 +17,7 @@
     user: User;
     hasPasswordProvider: boolean;
     onChangePassword: () => Promise<void>;
-    hapticService: IHapticFeedback | null;
+    hapticService: HapticFeedback | null;
     onPronounsChanged?: (pronouns: string) => void;
   }
 

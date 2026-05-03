@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import KeyboardKeyDisplay from "./KeyboardKeyDisplay.svelte";
-  import type { ShortcutWithBinding } from "../../services/contracts/IShortcutCustomizer";
+  import type { ShortcutWithBinding } from "../../services/contracts/types";
 
   let {
     item,

@@ -23,7 +23,7 @@ import type {
   ConjoinConstraint,
   PointRef,
 } from "../../domain/models/GridTopology";
-import type { ITopologyBuilder, GridOptions } from "../contracts/ITopologyBuilder";
+import type { GridOptions } from "../contracts/types";
 import { LOCATION_OFFSETS, OUTER_POINT_MULTIPLIER, PERIMETER_LOCATIONS } from "../../domain/constants/GridModeOffsets";
 
 /** Tolerance for clustering world points into junctions (in abstract units) */
@@ -37,17 +37,17 @@ interface PendingGrid {
   plane?: string;
 }
 
-export class TopologyBuilder implements ITopologyBuilder {
+export class TopologyBuilder {
   private pendingGrids: PendingGrid[] = [];
   private constraints: ConjoinConstraint[] = [];
 
-  create(): ITopologyBuilder {
+  create(): TopologyBuilder {
     this.pendingGrids = [];
     this.constraints = [];
     return this;
   }
 
-  addGrid(id: string, options?: GridOptions): ITopologyBuilder {
+  addGrid(id: string, options?: GridOptions): TopologyBuilder {
     if (this.pendingGrids.some((g) => g.id === id)) {
       throw new Error(`Duplicate grid ID: "${id}"`);
     }
@@ -68,7 +68,7 @@ export class TopologyBuilder implements ITopologyBuilder {
     locationOnA: GridLocation,
     gridBId: string,
     locationOnB: GridLocation = "c",
-  ): ITopologyBuilder {
+  ): TopologyBuilder {
     // Auto-create grid B if it doesn't exist yet
     if (!this.pendingGrids.some((g) => g.id === gridBId)) {
       // Inherit mode from grid A if available
@@ -86,7 +86,7 @@ export class TopologyBuilder implements ITopologyBuilder {
     return this;
   }
 
-  chain(count: number, mode: GridMode, edge: GridLocation): ITopologyBuilder {
+  chain(count: number, mode: GridMode, edge: GridLocation): TopologyBuilder {
     if (count < 1) throw new Error("Chain count must be at least 1");
 
     for (let i = 0; i < count; i++) {

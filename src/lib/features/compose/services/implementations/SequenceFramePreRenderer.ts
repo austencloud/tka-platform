@@ -14,7 +14,7 @@
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-import type { IAnimationRenderer } from "../contracts/IAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "../contracts/IAnimationRenderer";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
@@ -99,7 +99,7 @@ export class SequenceFramePreRenderer {
   private currentRender: PreRenderedSequence | null = null;
   private isRendering = false;
   private shouldCancel = false;
-  private offscreenRenderer: IAnimationRenderer | null = null;
+  private offscreenRenderer: AnimationRenderer | null = null;
   private offscreenContainer: HTMLDivElement | null = null;
   private loadedGlyphs = new Set<Letter>(); // Track which glyphs have been loaded
 
@@ -110,7 +110,7 @@ export class SequenceFramePreRenderer {
 
   constructor(
     private readonly orchestrator: SequenceAnimationOrchestrator,
-    private readonly renderer: IAnimationRenderer
+    private readonly renderer: AnimationRenderer
   ) {}
 
   /**
@@ -120,7 +120,7 @@ export class SequenceFramePreRenderer {
   private async createOffscreenRenderer(
     size: number,
     _trailSettings: TrailSettings
-  ): Promise<IAnimationRenderer> {
+  ): Promise<AnimationRenderer> {
     // Create offscreen container (not attached to DOM)
     this.offscreenContainer = document.createElement("div");
     this.offscreenContainer.style.position = "absolute";

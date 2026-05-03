@@ -1,4 +1,4 @@
-import type { IStepDeriver, ViewerPreferences } from "../contracts/IStepDeriver";
+import type { ViewerPreferences } from "../contracts/types";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { StepPairingData } from "../../domain/models/StepPairingData";
 import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
@@ -135,7 +135,7 @@ function rehydrateMotion(
   });
 }
 
-export class StepDeriver implements IStepDeriver {
+export class StepDeriver {
   deriveSteps(
     blueSoloProp: SoloPropData,
     redSoloProp: SoloPropData,

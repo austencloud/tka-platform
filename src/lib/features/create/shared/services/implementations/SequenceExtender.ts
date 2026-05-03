@@ -8,20 +8,14 @@
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type {
-  ISequenceExtender,
-  ExtensionAnalysis,
-  ExtensionOptions,
-  ExtensionType,
-  CircularizationOption,
-} from "../contracts/ISequenceExtender";
+import type { ExtensionAnalysis, ExtensionOptions, ExtensionType, CircularizationOption } from "../contracts/types";
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
-import type { IReversalDetector } from "../contracts/IReversalDetector";
+import type { ReversalDetector } from "./ReversalDetector";
 import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { ILOOPValidator } from "../contracts/ILOOPValidator";
-import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
+import type { LOOPValidator } from "./LOOPValidator";
+import type { SequenceAnalyzer } from "./SequenceAnalyzer";
 import type { BridgeFinder } from "./BridgeFinder";
 import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -36,15 +30,15 @@ import {
   Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
-export class SequenceExtender implements ISequenceExtender {
+export class SequenceExtender {
   constructor(
     private loopExecutorSelector: LOOPExecutorSelector,
-    private reversalDetector: IReversalDetector,
+    private reversalDetector: ReversalDetector,
     private letterQueryHandler: ILetterQueryHandler,
     private stepConverter: StepConverter,
     private orientationCalculator: OrientationCalculator,
-    private loopValidator: ILOOPValidator,
-    private sequenceAnalyzer: ISequenceAnalyzer,
+    private loopValidator: LOOPValidator,
+    private sequenceAnalyzer: SequenceAnalyzer,
     private bridgeFinder: BridgeFinder,
     private motionQueryHandler: IMotionQueryHandler,
     private gridModeDeriver: GridModeDeriver

@@ -14,7 +14,7 @@ import {
   type MotionQuizQuestion,
 } from "$lib/features/learn/domain/constants/motion-quiz-data";
 import { getCodex } from "$lib/features/learn/codex/getCodex";
-import type { ICodex } from "$lib/features/learn/codex/services/contracts/ICodex";
+import type { Codex } from "../../../learn/codex/services/implementations/Codex";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
@@ -126,7 +126,7 @@ export interface RetroCodexLetter {
  */
 export async function loadCodexLetters(): Promise<RetroCodexLetter[]> {
   try {
-    const codex = getCodex() as ICodex;
+    const codex = getCodex() as Codex;
     const allData = await codex.getAllPictographData();
     return Object.entries(allData)
       .filter(([_, data]) => data !== null && data.letter != null)

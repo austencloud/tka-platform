@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { IShortCodeManager } from './services/contracts/IShortCodeManager';
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import { ShortCodeManager } from './services/implementations/ShortCodeManager';
 import { getSequenceEncoder } from '$lib/shared/navigation/getSequenceEncoder';
 import { getPublicSequenceHashMatcher } from '$lib/shared/sequence-viewer/getPublicSequenceHashMatcher';
 
-let instance: IShortCodeManager | null = null;
+let instance: ShortCodeManager | null = null;
 let _browseLoader: PublicSequencesLoader | null = null;
 
 /**
@@ -16,7 +15,7 @@ export function configureShortCodeManager(browseLoader: PublicSequencesLoader): 
 	_browseLoader = browseLoader;
 }
 
-export function getShortCodeManager(): IShortCodeManager {
+export function getShortCodeManager(): ShortCodeManager {
 	if (!browser) throw new Error('getShortCodeManager() is browser-only');
 	if (!instance) {
 		if (!_browseLoader) {

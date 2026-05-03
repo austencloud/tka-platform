@@ -4,7 +4,7 @@ Only renders when at least one filter is active.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import type { ActiveFilter } from "../../../../shared/domain/models/multi-filter-models";
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -17,7 +17,7 @@ Only renders when at least one filter is active.
 
   let { filters, onRemoveFilter, onClearAll }: Props = $props();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;

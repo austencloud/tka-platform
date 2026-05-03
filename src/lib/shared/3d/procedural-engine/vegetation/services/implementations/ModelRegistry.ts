@@ -13,7 +13,7 @@ import {
   type Material,
 } from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import type { IModelRegistry, CachedModel, ModelInfo } from "../contracts/IModelRegistry";
+import type { CachedModel, ModelInfo } from "../contracts/IModelRegistry";
 import type {
   VegetationCategory,
   ManifestBiome,
@@ -37,7 +37,7 @@ const MODEL_BASE_PATH = "/models/vegetation/";
 // MODEL REGISTRY
 // ============================================================================
 
-export class ModelRegistry implements IModelRegistry {
+export class ModelRegistry {
   private loader: GLTFLoader;
   private manifest: VegetationManifest | null = null;
   private modelsByCategory: Map<VegetationCategory, ModelInfo[]> = new Map();

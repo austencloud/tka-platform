@@ -5,25 +5,19 @@
  * that chain together based on position groups.
  */
 
-import type {
-  ITikaPictographLoader,
-  PictographData,
-} from "../contracts/ITikaPictographLoader";
-import type {
-  ITikaSequenceGenerator,
-  SequenceResult,
-  SequenceStep,
-} from "../contracts/ITikaSequenceGenerator";
+import type { PictographData } from "../contracts/types";
+import type { TikaPictographLoader } from "./TikaPictographLoader";
+import type { GeneratedSequenceResult, SequenceStep } from "../contracts/types";
 
 const TYPE_6_LETTERS = ["α", "β", "γ"];
 
-export class TikaSequenceGenerator implements ITikaSequenceGenerator {
-  constructor(private pictographLoader: ITikaPictographLoader) {}
+export class TikaSequenceGenerator {
+  constructor(private pictographLoader: TikaPictographLoader) {}
 
   async generateSequence(
     letters: string[],
     maxAttempts: number = 100
-  ): Promise<SequenceResult> {
+  ): Promise<GeneratedSequenceResult> {
     this.pictographLoader.ensureLoaded();
 
     if (letters.length === 0) {
@@ -58,7 +52,7 @@ export class TikaSequenceGenerator implements ITikaSequenceGenerator {
     return TYPE_6_LETTERS;
   }
 
-  private attemptSequenceBuild(letters: string[]): SequenceResult {
+  private attemptSequenceBuild(letters: string[]): GeneratedSequenceResult {
     const word = letters.join("");
     const steps: SequenceStep[] = [];
     const allPictographs = this.pictographLoader.getAllPictographs();

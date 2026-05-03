@@ -9,10 +9,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import type {
-  ExtensionAnalysis,
-  LOOPOption,
-} from "$lib/features/create/shared/services/contracts/ISequenceExtender";
+import type { ExtensionAnalysis, LOOPOption } from "../../../shared/services/contracts/types";
 import type { ConstraintPresetId } from "$lib/shared/sequence-engine/constraints";
 
 /**

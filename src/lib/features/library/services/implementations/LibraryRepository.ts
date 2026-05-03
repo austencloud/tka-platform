@@ -37,16 +37,13 @@ import type { AchievementManager } from '$lib/shared/gamification/services/imple
 import type { TagManager } from "./TagManager";
 import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import type { PublicIndexSyncer } from "./PublicIndexSyncer";
-import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
+import type { ConflictResolver } from "../../../../shared/offline/services/implementations/ConflictResolver";
 import type { SequenceContentHasher } from "./SequenceContentHasher";
 import { migrateSequenceTags } from "../migrations/tag-migration";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import type {
-  ILibraryRepository,
-  LibraryStats,
-  LibraryQueryOptions,
-} from "../contracts/ILibraryRepository";
+  LibraryStats, LibraryQueryOptions } from "../contracts/types";
 import type {
   LibrarySequence,
   SequenceVisibility,
@@ -102,7 +99,7 @@ export class LibraryError extends Error {
   }
 }
 
-export class LibraryRepository implements ILibraryRepository {
+export class LibraryRepository {
   /**
    * Cache of the last-known local sequences from subscription callbacks.
    * Used by conflict detection to provide the user's local version when
@@ -115,7 +112,7 @@ export class LibraryRepository implements ILibraryRepository {
     private tagService: TagManager,
     private orientationCycleDetector: OrientationCycleDetector,
     private publicIndexSyncer: PublicIndexSyncer,
-    private conflictResolver?: IConflictResolver,
+    private conflictResolver?: ConflictResolver,
     private contentHasher?: SequenceContentHasher
   ) {}
 

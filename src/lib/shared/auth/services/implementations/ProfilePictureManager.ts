@@ -7,14 +7,11 @@
  */
 
 import { updateProfile, type User } from "firebase/auth";
-import type {
-  IProfilePictureManager,
-  GeneratedAvatarData,
-} from "../contracts/IProfilePictureManager";
+import type { GeneratedAvatarData } from "../contracts/types";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
 import { PROP_TYPE_DISPLAY_REGISTRY } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 
-export class ProfilePictureManager implements IProfilePictureManager {
+export class ProfilePictureManager {
   /**
    * Update Facebook profile picture to high resolution if needed.
    *

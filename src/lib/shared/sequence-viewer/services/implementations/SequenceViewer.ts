@@ -2,7 +2,7 @@ import type { SequenceData } from "../../../foundation/domain/models/SequenceDat
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { DexiePersistenceService } from "../../../persistence/services/implementations/DexiePersistenceService";
-import type { ISequenceEncoder } from "../../../navigation/services/contracts/ISequenceEncoder";
+import type { SequenceEncoder } from "../../../navigation/services/implementations/SequenceEncoder";
 import {
   updateSequenceData,
   removeStepFromSequence,
@@ -11,7 +11,7 @@ import {
 export class SequenceViewer {
   constructor(
     private persistenceService: DexiePersistenceService,
-    private SequenceEncoder: ISequenceEncoder
+    private SequenceEncoder: SequenceEncoder
   ) {}
 
   async loadSequence(sequenceId: string): Promise<SequenceData | null> {

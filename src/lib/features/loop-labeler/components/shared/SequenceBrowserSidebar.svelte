@@ -10,9 +10,8 @@
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
   import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
-  import type { ILabelFormatter } from "../../services/contracts/ILabelFormatter";
-
-  const labelFormatter = getLabelFormatter() as ILabelFormatter;
+  import type { LabelFormatter } from "../../services/implementations/LabelFormatter";
+  const labelFormatter = getLabelFormatter() as LabelFormatter;
 
   interface Props {
     sequences: SequenceEntry[];

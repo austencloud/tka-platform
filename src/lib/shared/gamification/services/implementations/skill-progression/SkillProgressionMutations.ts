@@ -2,7 +2,6 @@ import type {
   SkillProgression,
   UserSkillProgress,
 } from "../../../domain/models/challenge-models";
-import type { ISkillProgressionTracker } from "../../contracts/ISkillProgressionTracker";
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import { computeSkillProgressUpdate } from "./SkillProgressionUpdate";
 import {
@@ -11,12 +10,18 @@ import {
   persistStartedSkill,
 } from "./SkillProgressionPersistence";
 
-type UpdateSkillProgressResult = Awaited<
-  ReturnType<ISkillProgressionTracker["updateSkillProgress"]>
->;
-type TrackActionResult = Awaited<
-  ReturnType<ISkillProgressionTracker["trackAction"]>
->;
+type UpdateSkillProgressResult = {
+  progress: UserSkillProgress;
+  levelCompleted: boolean;
+  skillCompleted: boolean;
+  xpAwarded: number;
+};
+type TrackActionResult = Array<{
+  skillId: string;
+  progressDelta: number;
+  levelCompleted: boolean;
+  skillCompleted: boolean;
+}>;
 
 export async function startSkillForUser(params: {
   userId: string;

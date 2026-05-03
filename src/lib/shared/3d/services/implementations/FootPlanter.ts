@@ -20,13 +20,14 @@
 
 import { Vector3 } from "three";
 import type {
-  IFootPlanter,
   FootPlanterInput,
   FootPlanterConfig,
 } from "../contracts/IFootPlanter";
-import type { IAvatarSkeletonBuilder, BoneChain } from "../contracts/IAvatarSkeletonBuilder";
-import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
-import type { IContactCurveCache } from "../contracts/IContactCurveCache";
+import type { BoneChain } from "../contracts/AvatarSkeletonBuilder";
+import type { AvatarSkeletonBuilder } from "./AvatarSkeletonBuilder";
+import type { LegIKInput } from "../contracts/ILegIKSolver";
+import type { HingeConstrainedLegIKSolver } from "./HingeConstrainedLegIKSolver";
+import type { ContactCurveCache } from "./ContactCurveCache";
 import { LocomotionState } from "../contracts/IAnimationStateMachine";
 import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
 
@@ -70,10 +71,10 @@ function createFootState(): FootState {
   };
 }
 
-export class FootPlanter implements IFootPlanter {
-  private skeleton: IAvatarSkeletonBuilder | null = null;
-  private legIKSolver: ILegIKSolver | null = null;
-  private contactCurveCache: IContactCurveCache | null = null;
+export class FootPlanter {
+  private skeleton: AvatarSkeletonBuilder | null = null;
+  private legIKSolver: HingeConstrainedLegIKSolver | null = null;
+  private contactCurveCache: ContactCurveCache | null = null;
   private config: Required<FootPlanterConfig> = { ...DEFAULT_CONFIG };
 
   private leftFoot: FootState = createFootState();
@@ -98,9 +99,9 @@ export class FootPlanter implements IFootPlanter {
   private firstFrame = true;
 
   initialize(
-    skeleton: IAvatarSkeletonBuilder,
-    legIKSolver: ILegIKSolver,
-    contactCurveCache: IContactCurveCache
+    skeleton: AvatarSkeletonBuilder,
+    legIKSolver: HingeConstrainedLegIKSolver,
+    contactCurveCache: ContactCurveCache
   ): void {
     this.skeleton = skeleton;
     this.legIKSolver = legIKSolver;
@@ -438,7 +439,7 @@ export class FootPlanter implements IFootPlanter {
 
     this.legIKSolver.solve(input);
 
-    // ILegIKSolver does its own weight blending, so no slerp here.
+    // HingeConstrainedLegIKSolver does its own weight blending, so no slerp here.
     // Update matrices from hip down so foot world position reflects the solve.
     chain.root.updateMatrixWorld(true);
   }

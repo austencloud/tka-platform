@@ -1,10 +1,4 @@
-import type {
-  IPlatformDetector,
-  Platform,
-  Browser,
-  InAppBrowser,
-  PlatformInfo,
-} from "../contracts/IPlatformDetector";
+import type { Platform, Browser, InAppBrowser, PlatformInfo } from "../contracts/types";
 import { BREAKPOINTS } from "../../../device/domain/constants/device-constants";
 
 interface VendorNavigator extends Navigator {
@@ -17,7 +11,7 @@ interface VendorNavigator extends Navigator {
  * Provides comprehensive platform, browser, and in-app browser detection.
  * Critical for determining the correct PWA installation flow.
  */
-export class PlatformDetector implements IPlatformDetector {
+export class PlatformDetector {
   detectPlatformAndBrowser(): PlatformInfo {
     return {
       platform: this.detectPlatform(),

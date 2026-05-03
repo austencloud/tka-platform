@@ -12,7 +12,6 @@ import { PerspectiveCamera, Vector3 as ThreeVector3 } from "three";
 import { CameraMode } from "../../types";
 import type { PhysicsProvider, Vector3 } from "../../types";
 import type {
-	ICameraMovementController,
 	MovementInput,
 	LookInput,
 	CameraState,
@@ -33,7 +32,7 @@ const DEFAULT_CONFIG: Required<Omit<CameraMovementConfig, "destinationId">> = {
 	orbitMaxDistance: 50,
 };
 
-export class CameraMovementController implements ICameraMovementController {
+export class CameraMovementController {
 	private camera: PerspectiveCamera | null = null;
 	private physicsProvider: PhysicsProvider | null = null;
 	private config: Required<CameraMovementConfig>;

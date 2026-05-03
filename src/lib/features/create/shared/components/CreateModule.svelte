@@ -49,10 +49,10 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import ErrorBanner from "./ErrorBanner.svelte";
   import AltHotkeyOverlay from "../../components/AltHotkeyOverlay.svelte";
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
-  import type { ICreateModuleInitializer } from "../services/contracts/ICreateModuleInitializer";
-  import type { ICreateModuleHandlers } from "../services/contracts/ICreateModuleHandlers";
-  import type { ICreateModuleEffectCoordinator } from "../services/contracts/ICreateModuleEffectCoordinator";
-  import type { IPanelPersister } from "../services/contracts/IPanelPersister";
+  import type { CreateModuleInitializer } from "../services/implementations/CreateModuleInitializer";
+  import type { CreateModuleHandlers } from "../services/implementations/CreateModuleHandlers";
+  import type { CreateModuleEffectCoordinator } from "../services/implementations/CreateModuleEffectCoordinator";
+  import type { PanelPersister } from "../services/implementations/PanelPersister";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { createConstructTabState as ConstructTabStateType } from "../state/construct-tab-state.svelte";
   import { createPanelCoordinationState } from "../state/panel-coordination-state.svelte";
@@ -86,7 +86,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { UndoOperationType } from "../services/contracts/IUndoManager";
+  import { UndoOperationType } from "../services/contracts/types";
 
   const logger = createComponentLogger("CreateModule");
 
@@ -108,10 +108,10 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   // SERVICES & STATE (Resolved via DI)
   // ============================================================================
   let services: CreateModuleOrchestrators | null = $state(null);
-  let handlers: ICreateModuleHandlers | null = $state(null);
-  let effectCoordinator: ICreateModuleEffectCoordinator | null = $state(null);
+  let handlers: CreateModuleHandlers | null = $state(null);
+  let effectCoordinator: CreateModuleEffectCoordinator | null = $state(null);
   let deepLinkService: any = $state(null);
-  let panelPersistenceService: IPanelPersister | null = $state(null);
+  let panelPersistenceService: PanelPersister | null = $state(null);
   let CreateModuleState: CreateModuleState | null = $state(null);
   let constructTabState: ConstructTabState | null = $state(null);
 

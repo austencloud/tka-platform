@@ -27,7 +27,7 @@ import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circ
 import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../../domain/models/spinner-models";
-import type { EndState } from "../contracts/IEndlessSpinnerOrchestrator";
+import type { EndState } from "../contracts/types";
 import type { SpinnerMetricsRepository } from "./SpinnerMetricsRepository";
 
 /**

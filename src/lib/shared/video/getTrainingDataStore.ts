@@ -1,7 +1,6 @@
-import type { ITrainingDataStore } from './services/contracts/ITrainingDataStore';
 import { TrainingDataStore } from './services/implementations/TrainingDataStore';
 
-let instance: ITrainingDataStore | null = null;
-export function getTrainingDataStore(): ITrainingDataStore {
+let instance: TrainingDataStore | null = null;
+export function getTrainingDataStore(): TrainingDataStore {
   return instance ??= new TrainingDataStore();
 }

@@ -12,11 +12,7 @@ import type {
   SkillCategory,
   SkillLevel,
 } from "../../domain/models/challenge-models";
-import type {
-  ISkillProgressionTracker,
-  SkillProgressActionType,
-  SkillProgressMetadata,
-} from "../contracts/ISkillProgressionTracker";
+import type { SkillProgressActionType, SkillProgressMetadata } from "../contracts/types";
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import { calculateSkillStats } from "./skill-progression/SkillProgressionStats";
 import { getRecommendedSkills } from "./skill-progression/SkillProgressionRecommendations";
@@ -47,7 +43,7 @@ import {
   updateSkillProgressForUser,
 } from "./skill-progression/SkillProgressionMutations";
 
-export class SkillProgressionTracker implements ISkillProgressionTracker {
+export class SkillProgressionTracker {
   private _initialized = false;
   private _achievementService: AchievementManager | null = null;
   private _userProgressCache: Map<string, UserSkillProgress> = new Map();
@@ -96,8 +92,13 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
     return getAvailableSkillsForUser({ completedSkillIds, userLevel });
   }
 
-  async getLockedSkills(): ReturnType<
-    ISkillProgressionTracker["getLockedSkills"]
+  async getLockedSkills(): Promise<
+    Array<{
+      skill: SkillProgression;
+      reason: "prerequisite" | "level" | "not_active";
+      missingPrerequisites?: string[];
+      requiredLevel?: number;
+    }>
   > {
     const user = auth.currentUser;
     if (!user) return [];
@@ -124,7 +125,7 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
 
   async getUserProgressByCategory(
     category: SkillCategory
-  ): ReturnType<ISkillProgressionTracker["getUserProgressByCategory"]> {
+  ): Promise<Map<string, UserSkillProgress>> {
     const allProgress = await this.getAllUserProgress();
     const categorySkills = await this.getSkillsByCategory(category);
     return getUserProgressByCategoryFromProgress({
@@ -151,8 +152,14 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
 
   async updateSkillProgress(
     skillId: string,
-    progressDelta: number
-  ): ReturnType<ISkillProgressionTracker["updateSkillProgress"]> {
+    progressDelta: number,
+    _metadata?: unknown
+  ): Promise<{
+    progress: UserSkillProgress;
+    levelCompleted: boolean;
+    skillCompleted: boolean;
+    xpAwarded: number;
+  }> {
     const user = auth.currentUser;
     if (!user) {
       throw new Error("No user logged in");
@@ -173,7 +180,12 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
   async trackAction(
     actionType: SkillProgressActionType,
     metadata: SkillProgressMetadata
-  ): ReturnType<ISkillProgressionTracker["trackAction"]> {
+  ): Promise<Array<{
+    skillId: string;
+    progressDelta: number;
+    levelCompleted: boolean;
+    skillCompleted: boolean;
+  }>> {
     return trackSkillActionForUser({
       findRelevantSkills: () => this._findRelevantSkills(actionType, metadata),
       updateSkillProgress: (id, delta) => this.updateSkillProgress(id, delta),
@@ -256,8 +268,11 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
     return getMasteredSkillsFromProgress({ allSkills, allProgress });
   }
 
-  async getSkillsInProgress(): ReturnType<
-    ISkillProgressionTracker["getSkillsInProgress"]
+  async getSkillsInProgress(): Promise<
+    Array<{
+      skill: SkillProgression;
+      progress: UserSkillProgress;
+    }>
   > {
     const allProgress = await this.getAllUserProgress();
     return getSkillsInProgressFromProgress({
@@ -266,8 +281,12 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
     });
   }
 
-  async getRecentCompletions(): ReturnType<
-    ISkillProgressionTracker["getRecentCompletions"]
+  async getRecentCompletions(): Promise<
+    Array<{
+      skill: SkillProgression;
+      level: number;
+      completedAt: Date;
+    }>
   > {
     const allProgress = await this.getAllUserProgress();
     return getRecentCompletionsFromProgress({
@@ -278,7 +297,25 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
     });
   }
 
-  async getStats(): ReturnType<ISkillProgressionTracker["getStats"]> {
+  async getStats(): Promise<{
+    totalSkills: number;
+    skillsStarted: number;
+    skillsInProgress: number;
+    skillsMastered: number;
+    totalLevelsCompleted: number;
+    totalPossibleLevels: number;
+    completionPercentage: number;
+    xpFromSkills: number;
+    byCategory: Map<
+      SkillCategory,
+      {
+        total: number;
+        started: number;
+        mastered: number;
+        levelsCompleted: number;
+      }
+    >;
+  }> {
     const allSkills = await this.getAllSkills();
     const allProgress = await this.getAllUserProgress();
 
@@ -287,7 +324,14 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
 
   async getCategoryStats(
     category: SkillCategory
-  ): ReturnType<ISkillProgressionTracker["getCategoryStats"]> {
+  ): Promise<{
+    total: number;
+    started: number;
+    mastered: number;
+    levelsCompleted: number;
+    totalPossibleLevels: number;
+    completionPercentage: number;
+  }> {
     const stats = await this.getStats();
     const catStats = stats.byCategory.get(category);
 
@@ -318,7 +362,13 @@ export class SkillProgressionTracker implements ISkillProgressionTracker {
 
   async getRecommendedSkills(
     limit: number = 5
-  ): ReturnType<ISkillProgressionTracker["getRecommendedSkills"]> {
+  ): Promise<
+    Array<{
+      skill: SkillProgression;
+      reason: "continue" | "new" | "almost_complete" | "trending";
+      progress?: UserSkillProgress;
+    }>
+  > {
     const allProgress = await this.getAllUserProgress();
     const availableSkills = await this.getAvailableSkills();
     return getRecommendedSkills({ limit, allProgress, availableSkills });

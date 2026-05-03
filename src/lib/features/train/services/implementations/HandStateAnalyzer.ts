@@ -6,11 +6,7 @@
  * point selection and palm center calculation based on hand state.
  */
 
-import type {
-  IHandStateAnalyzer,
-  HandStateAnalysisResult,
-} from "../contracts/IHandStateAnalyzer";
-import type { HandLandmark } from "../contracts/IHandLandmarker";
+import type { HandStateAnalysisResult, HandLandmark } from "../contracts/types";
 import type { HandState } from "../../domain/models/DetectionFrame";
 
 // Finger landmark indices
@@ -26,7 +22,7 @@ const WRIST = 0;
 const MIDDLE_FINGER_PIP = 10; // Middle knuckle
 const MIDDLE_FINGER_TIP = 12;
 
-export class HandStateAnalyzer implements IHandStateAnalyzer {
+export class HandStateAnalyzer {
   /**
    * Analyze hand landmarks to determine hand state (open/closed/partial)
    */

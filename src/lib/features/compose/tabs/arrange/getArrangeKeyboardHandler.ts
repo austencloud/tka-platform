@@ -1,7 +1,7 @@
-import type { IArrangeKeyboardHandler } from './services/contracts/IArrangeKeyboardHandler';
+
 import { ArrangeKeyboardHandler } from './services/implementations/ArrangeKeyboardHandler';
 
-let instance: IArrangeKeyboardHandler | null = null;
-export function getArrangeKeyboardHandler(): IArrangeKeyboardHandler {
+let instance: ArrangeKeyboardHandler | null = null;
+export function getArrangeKeyboardHandler(): ArrangeKeyboardHandler {
   return instance ??= new ArrangeKeyboardHandler();
 }

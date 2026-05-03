@@ -12,7 +12,7 @@ import type {
   VisibilityStateCallback,
 } from "../contracts/IAnimationVisibilitySynchronizer";
 
-export class AnimationVisibilitySynchronizer implements IAnimationVisibilitySynchronizer {
+export class AnimationVisibilitySynchronizer {
   private manager: AnimationVisibilityStateManager;
   private callbacks: Set<VisibilityStateCallback> = new Set();
   private boundObserver: () => void;

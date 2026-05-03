@@ -12,10 +12,7 @@ import {
   type PropGeometryAdjustmentInput,
   type PropGeometryKey,
 } from "../../domain/PropGeometryAdjustment";
-import type {
-  IPropGeometryAdjustmentRepository,
-  CascadingPropGeometryResult,
-} from "../contracts/IPropGeometryAdjustmentRepository";
+import type { CascadingPropGeometryResult } from "../contracts/types";
 import type { PropGeometryAdjustmentPersister } from "./PropGeometryAdjustmentPersister";
 import {
   createPropGeometryAdjustmentState,
@@ -27,9 +24,7 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 const logger = createComponentLogger("PropGeometryAdjustmentRepository");
 const ADMIN_EMAIL = "austencloud@gmail.com";
 
-export class PropGeometryAdjustmentRepository
-  implements IPropGeometryAdjustmentRepository
-{
+export class PropGeometryAdjustmentRepository {
   private readonly state: PropGeometryAdjustmentState;
   private unsubscribe: (() => void) | null = null;
   private initializePromise: Promise<void> | null = null;

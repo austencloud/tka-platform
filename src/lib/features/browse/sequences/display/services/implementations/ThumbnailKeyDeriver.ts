@@ -6,13 +6,8 @@
  */
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type {
-  IThumbnailKeyDeriver,
-  ThumbnailRenderInput,
-  ThumbnailCacheKey,
-  CompositionDefaults,
-} from "../contracts/IThumbnailKeyDeriver";
-import type { ThumbnailVariant } from "../contracts/ICloudThumbnailCache";
+import type { ThumbnailRenderInput, ThumbnailCacheKey, CompositionDefaults } from "../contracts/types";
+import type { ThumbnailVariant } from "../contracts/types";
 
 const GALLERY_DEFAULTS: CompositionDefaults = {
   addWord: true,
@@ -30,7 +25,7 @@ const WORDCARD_DEFAULTS: CompositionDefaults = {
   addUserInfo: true,
 };
 
-export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
+export class ThumbnailKeyDeriver {
   deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey {
     const defaults = this.getVariantDefaults(input.variant);
     const usesDefaults = this.checkInputUsesDefaults(input, defaults);

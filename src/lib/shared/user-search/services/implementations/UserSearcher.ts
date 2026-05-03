@@ -15,13 +15,9 @@ import {
   limit as firestoreLimit,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type {
-  IUserSearcher,
-  UserSearchResult,
-  UserSearchOptions,
-} from "../contracts/IUserSearcher";
+import type { UserSearchResult, UserSearchOptions } from "../contracts/types";
 
-export class UserSearcher implements IUserSearcher {
+export class UserSearcher {
   /**
    * Fuzzy match - checks if ALL query terms appear anywhere in text
    * Case insensitive, matches partial words

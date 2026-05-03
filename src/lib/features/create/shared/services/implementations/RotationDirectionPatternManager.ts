@@ -36,11 +36,7 @@ import type {
   RotationDirectionPatternEntry,
   RotationDirectionValue,
 } from "../../domain/models/RotationDirectionPatternData";
-import type {
-  IRotationDirectionPatternManager,
-  RotationDirectionPatternApplyResult,
-  TargetHand,
-} from "../contracts/IRotationDirectionPatternManager";
+import type { RotationDirectionPatternApplyResult, TargetHand } from "../contracts/types";
 import {
   createMotionData,
   type MotionData,
@@ -59,7 +55,7 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("RotationDirectionPatternManager");
 
-export class RotationDirectionPatternManager implements IRotationDirectionPatternManager {
+export class RotationDirectionPatternManager {
   /**
    * Extract a rotation direction pattern from a sequence
    *

@@ -27,15 +27,12 @@ import type {
   DurationPatternCreateData,
   DurationPatternEntry,
 } from "../../domain/models/DurationPatternData";
-import type {
-  IDurationPatternManager,
-  DurationPatternApplyResult,
-} from "../contracts/IDurationPatternManager";
+import type { DurationPatternApplyResult } from "../contracts/types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("DurationPatternManager");
 
-export class DurationPatternManager implements IDurationPatternManager {
+export class DurationPatternManager {
   /**
    * Extract a duration pattern from a sequence
    */

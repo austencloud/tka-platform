@@ -28,10 +28,10 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import { onMount } from "svelte";
   import type { WakeWordDetector } from "$lib/shared/voice-control/services/implementations/WakeWordDetector";
   import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
-  import type { ICommandDispatcher } from "../services/contracts/ICommandDispatcher";
+  import type { CommandDispatcher } from "../services/implementations/CommandDispatcher";
   import type { LLMIntentResolver } from "$lib/shared/voice-control/services/implementations/LLMIntentResolver";
   import type { WebSpeechTTSProvider } from "$lib/shared/voice-control/services/implementations/WebSpeechTTSProvider";
-  import type { IVoiceSessionRecorder } from "../services/contracts/IVoiceSessionRecorder";
+  import type { VoiceSessionRecorder } from "../services/implementations/VoiceSessionRecorder";
   import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import { voiceControlState } from "../state/voice-control-state.svelte";
@@ -40,10 +40,10 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
 
   let wakeWordDetector: WakeWordDetector | null = null;
   let commandInterpreter: CommandInterpreter | null = null;
-  let commandDispatcher: ICommandDispatcher | null = null;
+  let commandDispatcher: CommandDispatcher | null = null;
   let intentResolver: LLMIntentResolver | null = null;
   let ttsProvider: WebSpeechTTSProvider | null = null;
-  let sessionRecorder: IVoiceSessionRecorder | null = null;
+  let sessionRecorder: VoiceSessionRecorder | null = null;
   let sessionRepository: VoiceSessionRepository | null = null;
 
   function getContext() {

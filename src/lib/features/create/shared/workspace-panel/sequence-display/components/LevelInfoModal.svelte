@@ -2,7 +2,7 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import { LEVEL_METADATA, type LevelNumber } from "$lib/shared/domain/curriculum/level-metadata";
-  import type { DifficultyAnalysis } from "$lib/features/browse/sequences/display/services/contracts/ISequenceDifficultyCalculator";
+  import type { DifficultyAnalysis } from "$lib/features/browse/sequences/display/services/contracts/types";
   import LevelProgressionRow from "./LevelProgressionRow.svelte";
 
   interface Props {
