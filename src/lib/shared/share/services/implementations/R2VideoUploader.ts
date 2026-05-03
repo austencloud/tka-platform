@@ -5,7 +5,7 @@ import type {
   UploadOptions,
   MultipartUploadState,
 } from "../contracts/IVideoUploader";
-import type { IR2Presigner } from "../contracts/IR2Presigner";
+import type { R2Presigner } from "./R2Presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
@@ -166,9 +166,9 @@ async function xhrPut(
 }
 
 export class R2VideoUploader implements IVideoUploader {
-  private readonly presigner: IR2Presigner;
+  private readonly presigner: R2Presigner;
 
-  constructor(presigner: IR2Presigner) {
+  constructor(presigner: R2Presigner) {
     this.presigner = presigner;
 
     if (typeof window !== "undefined") {

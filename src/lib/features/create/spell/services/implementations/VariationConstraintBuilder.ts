@@ -7,7 +7,7 @@
  */
 
 import type { IVariationConstraintBuilder } from "../contracts/IVariationConstraintBuilder";
-import type { ILetterTypeClassifier } from "../contracts/ILetterTypeClassifier";
+import type { LetterTypeClassifier } from "./LetterTypeClassifier";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
   SpellPreferences,
@@ -15,7 +15,7 @@ import type {
 } from "../../domain/models/spell-models";
 
 export class VariationConstraintBuilder implements IVariationConstraintBuilder {
-  constructor(private readonly letterTypeClassifier: ILetterTypeClassifier) {}
+  constructor(private readonly letterTypeClassifier: LetterTypeClassifier) {}
 
   buildConstraints(
     preferences: SpellPreferences,

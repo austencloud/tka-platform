@@ -16,7 +16,7 @@ import type {
   RandomSequenceGenerationOptions,
 } from "../contracts/IRandomSequenceGenerator";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IStartPositionValidator } from "../contracts/IStartPositionValidator";
+import type { StartPositionValidator } from "./StartPositionValidator";
 import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";

@@ -8,7 +8,7 @@
 
 import type { ILanSyncCoordinator } from '../contracts/ILanSyncCoordinator';
 import type { IPeerConnectionManager } from '../contracts/IPeerConnectionManager';
-import type { ISyncRoomBroadcaster } from '../contracts/ISyncRoomBroadcaster';
+import type { SyncRoomBroadcaster } from './SyncRoomBroadcaster';
 import type {
 	SyncedPlaybackState,
 	PeerConnectionState,
@@ -47,7 +47,7 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 
 	constructor(
 		private peerManager: IPeerConnectionManager,
-		private broadcaster: ISyncRoomBroadcaster,
+		private broadcaster: SyncRoomBroadcaster,
 		config: Partial<LanSyncConfig> = {}
 	) {
 		this.config = { ...DEFAULT_LAN_SYNC_CONFIG, ...config };

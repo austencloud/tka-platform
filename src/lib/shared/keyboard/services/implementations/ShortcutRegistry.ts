@@ -7,7 +7,6 @@
  * Domain: Keyboard Shortcuts
  */
 
-import type { IShortcutRegistry } from "../contracts/IShortcutRegistry";
 import type { Shortcut } from "../../domain/models/Shortcut";
 import type {
   KeyModifier,
@@ -16,7 +15,7 @@ import type {
 import { keyboardShortcutState } from "../../state/keyboard-shortcut-state.svelte";
 import { keyComboEquals, buildKeyCombo } from "../../utils/key-combo-utils";
 
-export class ShortcutRegistry implements IShortcutRegistry {
+export class ShortcutRegistry {
   private shortcuts: Map<string, Shortcut> = new Map();
 
   add(shortcut: Shortcut): void {

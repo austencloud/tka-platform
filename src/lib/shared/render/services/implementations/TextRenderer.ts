@@ -1,11 +1,10 @@
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
-import type { ILOOPIconStripRenderer } from "../contracts/ILOOPIconStripRenderer";
+import type { LOOPIconStripRenderer } from "./LOOPIconStripRenderer";
 import type {
   TextRenderOptions,
   UserExportInfo,
 } from "../../domain/models/SequenceExportOptions";
-import type { ITextRenderer } from "../contracts/ITextRenderer";
 import {
   renderHeader,
   renderFooter,
@@ -21,7 +20,7 @@ import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { compressWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
-export class TextRenderer implements ITextRenderer {
+export class TextRenderer {
   private readonly titleFontFamily = "Georgia, serif";
   private readonly titleFontWeight = "600";
   private readonly fallbackFontFamily =
@@ -29,7 +28,7 @@ export class TextRenderer implements ITextRenderer {
 
   constructor(
     private dimensionService: IDimensionCalculator,
-    private loopIconStripRenderer?: ILOOPIconStripRenderer
+    private loopIconStripRenderer?: LOOPIconStripRenderer
   ) {}
 
   private glyphImageCache = new Map<string, GlyphImageData>();

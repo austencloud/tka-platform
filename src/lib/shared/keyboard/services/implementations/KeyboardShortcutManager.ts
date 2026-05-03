@@ -7,7 +7,7 @@
  * Domain: Keyboard Shortcuts
  */
 
-import type { IShortcutRegistry } from "../contracts/IShortcutRegistry";
+import type { ShortcutRegistry } from "./ShortcutRegistry";
 import type { IKeyboardShortcutManager } from "../contracts/IKeyboardShortcutManager";
 import type {
   ShortcutContext,
@@ -27,7 +27,7 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
   private isInitialized = false;
   private keydownHandler: ((event: KeyboardEvent) => void) | null = null;
 
-  constructor(private registry: IShortcutRegistry) {}
+  constructor(private registry: ShortcutRegistry) {}
 
   initialize(): void {
     if (this.isInitialized) return;

@@ -5,7 +5,6 @@
  * Phase 1: External linking without API integration.
  */
 
-import type { IInstagramLinker } from "../contracts/IInstagramLinker";
 import type {
   InstagramLink,
   InstagramUrlValidation,
@@ -15,7 +14,7 @@ import {
   createInstagramLink,
 } from "../../domain/models/InstagramLink";
 
-export class InstagramLinker implements IInstagramLinker {
+export class InstagramLinker {
   /**
    * Validate an Instagram URL and extract metadata
    */

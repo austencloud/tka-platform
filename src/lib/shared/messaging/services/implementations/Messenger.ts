@@ -34,7 +34,6 @@ import type {
   MessageReaction,
   MessageEdit,
 } from "../../domain/models/message-models";
-import type { IMessenger } from "../contracts/IMessenger";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MESSAGES_SUBCOLLECTION = "messages";
@@ -46,7 +45,7 @@ const TYPING_TIMEOUT_MS = 3000;
 const MAX_MESSAGE_LENGTH = 2000;
 const MIN_MESSAGE_INTERVAL_MS = 500;
 
-export class Messenger implements IMessenger {
+export class Messenger {
   private messageSubscriptions = new Map<string, () => void>();
   private typingSubscriptions = new Map<string, () => void>();
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();

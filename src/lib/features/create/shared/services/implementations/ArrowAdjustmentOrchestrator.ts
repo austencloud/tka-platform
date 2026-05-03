@@ -15,7 +15,7 @@ import type {
   AdjustmentTargetKey,
   CascadingLookupResult,
 } from "../contracts/IArrowAdjustmentOrchestrator";
-import type { IKeyboardArrowAdjuster } from "../contracts/IKeyboardArrowAdjuster";
+import type { KeyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
 import type { IScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IScreenSpaceAdjustmentTransformer";
 import type { IArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowAdjustmentCalculator";
 import type { IArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowLocationCalculator";
@@ -66,7 +66,7 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
   }
 
   constructor(
-    private keyboardAdjuster: IKeyboardArrowAdjuster,
+    private keyboardAdjuster: KeyboardArrowAdjuster,
     private screenSpaceTransformer: IScreenSpaceAdjustmentTransformer,
     private arrowAdjustmentCalculator: IArrowAdjustmentCalculator,
     private arrowLocationCalculator: IArrowLocationCalculator,

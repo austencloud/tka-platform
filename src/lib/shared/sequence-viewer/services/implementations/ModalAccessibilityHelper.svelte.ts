@@ -1,5 +1,4 @@
 import { tick } from "svelte";
-import type { IModalAccessibilityHelper } from "../contracts/IModalAccessibilityHelper";
 
 /**
  * Creates a modal accessibility helper for WCAG-compliant focus management and screen reader announcements.
@@ -14,7 +13,7 @@ import type { IModalAccessibilityHelper } from "../contracts/IModalAccessibility
  * 5. Call restoreFocus() when modal closes
  * 6. Bind {helper.announcement} to an aria-live region in your template
  */
-export function createModalAccessibilityHelper(): IModalAccessibilityHelper {
+export function createModalAccessibilityHelper() {
   let announcement = $state("");
   let triggerElement: HTMLElement | null = null;
 

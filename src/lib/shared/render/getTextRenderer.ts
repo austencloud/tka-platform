@@ -1,12 +1,11 @@
 import { browser } from '$app/environment';
-import type { ITextRenderer } from './services/contracts/ITextRenderer';
 import { TextRenderer } from './services/implementations/TextRenderer';
 import { getDimensionCalculator } from './getDimensionCalculator';
 import { getLoopIconStripRenderer } from './getLoopIconStripRenderer';
 
-let instance: ITextRenderer | null = null;
+let instance: TextRenderer | null = null;
 
-export function getTextRenderer(): ITextRenderer {
+export function getTextRenderer(): TextRenderer {
 	if (!browser) throw new Error('getTextRenderer() is browser-only');
 	return instance ??= new TextRenderer(
 		getDimensionCalculator(),

@@ -17,7 +17,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IWordSequenceGenerator } from "../contracts/IWordSequenceGenerator";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
-import type { IStartPositionValidator } from "../contracts/IStartPositionValidator";
+import type { StartPositionValidator } from "./StartPositionValidator";
 import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
 import type {
   SpellGenerationOptions,
@@ -40,7 +40,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     private stepConverter: IStepConverter,
     private orientationCalculator: IOrientationCalculator,
     private sequenceExtender: ISequenceExtender,
-    private startPositionValidator: IStartPositionValidator,
+    private startPositionValidator: StartPositionValidator,
     private orientationContinuityValidator: IOrientationContinuityValidator,
     private reversalDetector: IReversalDetector
   ) {}

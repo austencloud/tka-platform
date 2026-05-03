@@ -1,6 +1,6 @@
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 import type { IDeviceSyncCoordinator } from '../contracts/IDeviceSyncCoordinator';
-import type { IHybridLogicalClock } from '../contracts/IHybridLogicalClock';
+import type { HybridLogicalClock } from './HybridLogicalClock';
 import type { IPlaybackPositionCalculator } from '../contracts/IPlaybackPositionCalculator';
 import type { IStateMerger } from '../contracts/IStateMerger';
 import type { ISequenceLocalCache } from '../contracts/ISequenceLocalCache';
@@ -54,7 +54,7 @@ export interface MobileOptimizations {
 }
 
 export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
-	private readonly hlc: IHybridLogicalClock;
+	private readonly hlc: HybridLogicalClock;
 	private readonly positionCalculator: IPlaybackPositionCalculator;
 	private readonly stateMerger: IStateMerger;
 	private readonly sequenceCache: ISequenceLocalCache;

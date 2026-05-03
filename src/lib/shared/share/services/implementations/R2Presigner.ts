@@ -9,10 +9,9 @@
  * by what they do, not with a generic "Service" suffix.
  */
 
-import type { IR2Presigner } from "../contracts/IR2Presigner";
 import { getFunctionsInstance } from "$lib/shared/auth/firebase";
 
-export class R2Presigner implements IR2Presigner {
+export class R2Presigner {
   private async call<T>(functionName: string, data: unknown): Promise<T> {
     const { httpsCallable } = await import("firebase/functions");
     const functions = await getFunctionsInstance();

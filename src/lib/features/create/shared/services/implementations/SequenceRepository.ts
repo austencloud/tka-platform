@@ -15,11 +15,11 @@ import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator"
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 import type { IPersistenceService } from "../contracts/IPersister";
-import type { ISequenceImporter } from "../contracts/ISequenceImporter";
+import type { SequenceImporter } from "./SequenceImporter";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
 import type { ISequenceRepository } from "../contracts/ISequenceRepository";
 import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
-import type { ISequenceDomainManager } from "../contracts/ISequenceDomainManager";
+import type { SequenceDomainManager } from "./SequenceDomainManager";
 import {
   collection,
   getDocs,
@@ -35,11 +35,11 @@ import {
 
 export class SequenceRepository implements ISequenceRepository {
   constructor(
-    private readonly sequenceDomainManager: ISequenceDomainManager,
+    private readonly sequenceDomainManager: SequenceDomainManager,
     private readonly persistenceService: IPersistenceService,
     private readonly reversalDetector: IReversalDetector,
     private readonly normalizationService: ISequenceNormalizer,
-    private readonly sequenceImportService?: ISequenceImporter
+    private readonly sequenceImportService?: SequenceImporter
   ) {}
 
   // If compositional fields are present, derive steps from them so the

@@ -1,10 +1,9 @@
-import type { ISoloPropFactory } from './services/contracts/ISoloPropFactory';
 import { SoloPropFactory } from './services/implementations/SoloPropFactory';
 import { getHandPathFactory } from './getHandPathFactory';
 import { getContentHasher } from './getContentHasher';
 
-let instance: ISoloPropFactory | null = null;
+let instance: SoloPropFactory | null = null;
 
-export function getSoloPropFactory(): ISoloPropFactory {
+export function getSoloPropFactory(): SoloPropFactory {
 	return instance ??= new SoloPropFactory(getHandPathFactory(), getContentHasher());
 }

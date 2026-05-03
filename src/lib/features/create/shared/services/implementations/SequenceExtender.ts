@@ -22,7 +22,7 @@ import type { IStepConverter } from "$lib/features/create/generate/shared/servic
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ILOOPValidator } from "../contracts/ILOOPValidator";
 import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
-import type { IBridgeFinder } from "../contracts/IBridgeFinder";
+import type { BridgeFinder } from "./BridgeFinder";
 import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { recalculateAllOrientations } from "./sequence-transforms/orientation-propagation";
@@ -45,7 +45,7 @@ export class SequenceExtender implements ISequenceExtender {
     private orientationCalculator: IOrientationCalculator,
     private loopValidator: ILOOPValidator,
     private sequenceAnalyzer: ISequenceAnalyzer,
-    private bridgeFinder: IBridgeFinder,
+    private bridgeFinder: BridgeFinder,
     private motionQueryHandler: IMotionQueryHandler,
     private gridModeDeriver: IGridModeDeriver
   ) {}

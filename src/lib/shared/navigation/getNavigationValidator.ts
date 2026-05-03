@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { INavigationValidator } from './services/contracts/INavigationValidator';
 import { NavigationValidator } from './services/implementations/NavigationValidator';
 
-let instance: INavigationValidator | null = null;
+let instance: NavigationValidator | null = null;
 
-export function getNavigationValidator(): INavigationValidator {
+export function getNavigationValidator(): NavigationValidator {
 	if (!browser) throw new Error('getNavigationValidator() is browser-only');
 	return instance ??= new NavigationValidator();
 }

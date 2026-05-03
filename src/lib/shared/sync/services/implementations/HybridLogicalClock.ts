@@ -8,8 +8,6 @@
  */
 
 import type { HLCTimestamp, SerializedHLC } from '../../domain/sync-types';
-import type { IHybridLogicalClock } from '../contracts/IHybridLogicalClock';
-
 /**
  * Default maximum allowed drift from wall clock time.
  * If the logical clock drifts more than this, we reset to prevent unbounded drift.
@@ -23,7 +21,7 @@ const DEFAULT_MAX_DRIFT_MS = 60000;
  * - Handle clock drift gracefully between devices
  * - Provide deterministic tie-breaking for truly concurrent events
  */
-export class HybridLogicalClock implements IHybridLogicalClock {
+export class HybridLogicalClock {
 	readonly nodeId: string;
 	readonly maxDriftMs: number;
 

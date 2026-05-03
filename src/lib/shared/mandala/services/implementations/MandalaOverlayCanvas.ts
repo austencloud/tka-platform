@@ -12,14 +12,13 @@
  * BEHIND trails (z-index 1).
  */
 
-import type { IMandalaOverlayCanvas } from "../contracts/IMandalaOverlayCanvas";
 import type { MandalaOverlayRenderParams } from "../../domain/mandala-overlay-types";
 import {
 	OVERLAY_WARMUP_FRAMES,
 	OVERLAY_ALPHA_DECAY,
 } from "../../domain/mandala-constants";
 
-export class MandalaOverlayCanvas implements IMandalaOverlayCanvas {
+export class MandalaOverlayCanvas {
 	private canvas: HTMLCanvasElement | null = null;
 	private ctx: CanvasRenderingContext2D | null = null;
 	private bufferCanvas: OffscreenCanvas | null = null;

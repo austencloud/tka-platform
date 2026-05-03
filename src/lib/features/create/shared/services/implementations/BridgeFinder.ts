@@ -21,7 +21,7 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contra
 import type { IPositionAnalyzer } from "$lib/features/create/construct/option-picker/services/contracts/IPositionAnalyzer";
 import type { ILOOPValidator } from "../contracts/ILOOPValidator";
 import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
-import type { IOrientationAlignmentCalculator } from "../contracts/IOrientationAlignmentCalculator";
+import type { OrientationAlignmentCalculator } from "./OrientationAlignmentCalculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   LOOPType,
@@ -39,7 +39,7 @@ export class BridgeFinder {
     private positionAnalyzer: IPositionAnalyzer,
     private loopValidator: ILOOPValidator,
     private sequenceAnalyzer: ISequenceAnalyzer,
-    private orientationCalculator: IOrientationAlignmentCalculator
+    private orientationCalculator: OrientationAlignmentCalculator
   ) {}
 
   /**

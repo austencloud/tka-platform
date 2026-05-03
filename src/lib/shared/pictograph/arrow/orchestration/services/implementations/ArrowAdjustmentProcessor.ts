@@ -11,9 +11,8 @@ import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
 import type { IArrowLocationCalculator } from "../../../positioning/calculation/services/contracts/IArrowLocationCalculator";
 import type { IArrowQuadrantCalculator } from "../contracts/IArrowQuadrantCalculator";
-import type { IArrowAdjustmentProcessor } from "../contracts/IArrowAdjustmentProcessor";
 
-export class ArrowAdjustmentProcessor implements IArrowAdjustmentProcessor {
+export class ArrowAdjustmentProcessor {
   constructor(private quadrantCalculator: IArrowQuadrantCalculator) {}
 
   getBasicAdjustment(

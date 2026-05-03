@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IShortcutRegistry } from './services/contracts/IShortcutRegistry';
 import { ShortcutRegistry } from './services/implementations/ShortcutRegistry';
 
-let instance: IShortcutRegistry | null = null;
+let instance: ShortcutRegistry | null = null;
 
-export function getShortcutRegistry(): IShortcutRegistry {
+export function getShortcutRegistry(): ShortcutRegistry {
 	if (!browser) throw new Error('getShortcutRegistry() is browser-only');
 	return instance ??= new ShortcutRegistry();
 }

@@ -1,5 +1,3 @@
-import type { IWebviewDetector } from "../contracts/IWebviewDetector";
-
 const WEBVIEW_PATTERNS: readonly RegExp[] = [
 	/Instagram/i,
 	/FBAN|FBAV|FB_IAB|FB4A/i, // Facebook family
@@ -10,7 +8,7 @@ const WEBVIEW_PATTERNS: readonly RegExp[] = [
 	/Snapchat\//i, // Snapchat
 ];
 
-export class WebviewDetector implements IWebviewDetector {
+export class WebviewDetector {
 	get isInAppWebview(): boolean {
 		if (typeof navigator === "undefined") return false;
 		const ua = navigator.userAgent ?? "";

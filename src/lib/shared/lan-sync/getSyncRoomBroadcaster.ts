@@ -1,7 +1,6 @@
-import type { ISyncRoomBroadcaster } from './services/contracts/ISyncRoomBroadcaster';
 import { SyncRoomBroadcaster } from './services/implementations/SyncRoomBroadcaster';
 
-let instance: ISyncRoomBroadcaster | null = null;
-export function getSyncRoomBroadcaster(): ISyncRoomBroadcaster {
+let instance: SyncRoomBroadcaster | null = null;
+export function getSyncRoomBroadcaster(): SyncRoomBroadcaster {
   return instance ??= new SyncRoomBroadcaster();
 }

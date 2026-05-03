@@ -38,12 +38,11 @@ import type {
   GroupMetadata,
   ConversationType,
 } from "../../domain/models/conversation-models";
-import type { IConversationManager } from "../contracts/IConversationManager";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MAX_GROUP_PARTICIPANTS = 50;
 
-export class ConversationManager implements IConversationManager {
+export class ConversationManager {
   private conversationsUnsubscribe: (() => void) | null = null;
   private unreadCountUnsubscribe: (() => void) | null = null;
 

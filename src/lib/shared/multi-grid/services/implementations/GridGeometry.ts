@@ -6,14 +6,13 @@
 
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
 import type { Vec2, GridPlacement } from "../../domain/models/GridTopology";
-import type { IGridGeometry } from "../contracts/IGridGeometry";
 import {
   LOCATION_OFFSETS,
   HAND_POINT_LOCATIONS,
   PERIMETER_LOCATIONS,
 } from "../../domain/constants/GridModeOffsets";
 
-export class GridGeometry implements IGridGeometry {
+export class GridGeometry {
   getLocationOffset(location: GridLocation): Vec2 {
     return LOCATION_OFFSETS[location];
   }

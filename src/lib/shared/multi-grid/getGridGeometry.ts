@@ -1,7 +1,6 @@
-import type { IGridGeometry } from './services/contracts/IGridGeometry';
 import { GridGeometry } from './services/implementations/GridGeometry';
 
-let instance: IGridGeometry | null = null;
-export function getGridGeometry(): IGridGeometry {
+let instance: GridGeometry | null = null;
+export function getGridGeometry(): GridGeometry {
   return instance ??= new GridGeometry();
 }

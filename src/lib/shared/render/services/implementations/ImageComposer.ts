@@ -28,10 +28,10 @@ import type {
   IImageComposer,
 } from "../contracts/IImageComposer";
 import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
-import type { ITextRenderer } from "../contracts/ITextRenderer";
+import type { TextRenderer } from "./TextRenderer";
 import type { IPictographBlobCache } from "../contracts/IPictographBlobCache";
 import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
-import type { IStepNumberRenderer } from "../contracts/IStepNumberRenderer";
+import type { StepNumberRenderer } from "./StepNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
 import type { ILayerCompositor } from "../contracts/ILayerCompositor";
@@ -65,12 +65,12 @@ export class ImageComposer implements IImageComposer {
 
   constructor(
     private readonly layoutService: ILayoutCalculator,
-    private readonly TextRenderer: ITextRenderer,
+    private readonly TextRenderer: TextRenderer,
     private readonly DimensionCalculator: IDimensionCalculator,
     private readonly blobCache: IPictographBlobCache,
     private readonly keyHasher: IPictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
-    private readonly stepNumberRenderer: IStepNumberRenderer,
+    private readonly stepNumberRenderer: StepNumberRenderer,
     private readonly canvas2DRenderer: Canvas2DDirectRenderer,
     private readonly layerCompositor?: ILayerCompositor,
     private qrCodeGenerator?: IQRCodeGenerator

@@ -5,10 +5,9 @@
  * Responsible for converting between coordinate systems.
  */
 
-import type { IArrowCoordinateTransformer } from "../contracts/IArrowCoordinateTransformer";
 
 
-export class ArrowCoordinateTransformer implements IArrowCoordinateTransformer {
+export class ArrowCoordinateTransformer {
   transformAdjustmentByRotation(
     adjustmentX: number,
     adjustmentY: number,

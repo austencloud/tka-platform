@@ -9,11 +9,10 @@ import type { ArrowPlacementData } from "../../../positioning/placement/domain/A
 import type { Point } from "fabric";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
-import type { IArrowDataProcessor } from "../contracts/IArrowDataProcessor";
+import type { ArrowGridCoordinator } from "./ArrowGridCoordinator";
 
-export class ArrowDataProcessor implements IArrowDataProcessor {
-  constructor(private coordinateSystem: IArrowGridCoordinator) {}
+export class ArrowDataProcessor {
+  constructor(private coordinateSystem: ArrowGridCoordinator) {}
 
   getMotionFromPictograph(
     arrowColor: string, // ✅ FIXED: Pass color directly since ArrowPlacementData no longer has color

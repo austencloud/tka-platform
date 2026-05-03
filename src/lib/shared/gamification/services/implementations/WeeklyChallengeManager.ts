@@ -183,7 +183,7 @@ export class WeeklyChallengeManager {
     }
   }
 
-  async updateWeeklyProgress(progressDelta: number): Promise<{
+  async updateWeeklyProgress(progressDelta: number, _metadata?: unknown): Promise<{
     completed: boolean;
     progress: UserWeeklyChallengeProgress;
     bonusEarned: boolean;

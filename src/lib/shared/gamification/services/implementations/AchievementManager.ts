@@ -41,13 +41,13 @@ import type {
   XPEventMetadata,
 } from "../../domain/models/achievement-models";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
-import type { IGamificationNotifier } from "../contracts/IGamificationNotifier";
+import type { GamificationNotifier } from "./GamificationNotifier";
 
 export class AchievementManager implements IAchievementManager {
   private _initialized = false;
-  private _notificationService: IGamificationNotifier | null = null;
+  private _notificationService: GamificationNotifier | null = null;
 
-  constructor(notificationService: IGamificationNotifier) {
+  constructor(notificationService: GamificationNotifier) {
     this._notificationService = notificationService;
   }
 

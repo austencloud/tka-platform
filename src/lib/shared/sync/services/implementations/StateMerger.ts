@@ -1,5 +1,5 @@
 import type { IStateMerger, MergeResult } from '../contracts/IStateMerger';
-import type { IHybridLogicalClock } from '../contracts/IHybridLogicalClock';
+import type { HybridLogicalClock } from './HybridLogicalClock';
 import type {
 	HLCTimestamp,
 	PlaybackIntent,
@@ -12,7 +12,7 @@ import type {
  * All operations are immutable - inputs are never mutated.
  */
 export class StateMerger implements IStateMerger {
-	constructor(private readonly hlc: IHybridLogicalClock) {}
+	constructor(private readonly hlc: HybridLogicalClock) {}
 
 	/**
 	 * Merge remote state into local state using CRDT semantics.

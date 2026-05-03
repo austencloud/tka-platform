@@ -7,7 +7,7 @@
  * Domain: Keyboard Shortcuts - Customization
  */
 
-import type { IShortcutRegistry } from "../contracts/IShortcutRegistry";
+import type { ShortcutRegistry } from "./ShortcutRegistry";
 import type {
   IShortcutCustomizer,
   ShortcutWithBinding,
@@ -28,7 +28,7 @@ import {
 import { keyboardShortcutState } from "../../state/keyboard-shortcut-state.svelte";
 
 export class ShortcutCustomizer implements IShortcutCustomizer {
-  constructor(private readonly registry: IShortcutRegistry) {}
+  constructor(private readonly registry: ShortcutRegistry) {}
 
   // ============================================
   // Binding Management

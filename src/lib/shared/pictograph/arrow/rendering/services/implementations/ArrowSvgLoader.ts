@@ -15,9 +15,7 @@
  * Extracted from ArrowRenderer to improve modularity and reusability.
  */
 
-import type { ArrowPathResolver as ArrowPathResolverType } from "./ArrowPathResolver";
-import type { ArrowSvgParser as ArrowSvgParserType } from "./ArrowSvgParser";
-import type { ArrowSvgColorTransformer as ArrowSvgColorTransformerType } from "./ArrowSvgColorTransformer";
+// Type imports removed — value imports at bottom of file provide both type and value
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 import type { ArrowSvgData } from "../../../../shared/domain/models/svg-models";
 import type {

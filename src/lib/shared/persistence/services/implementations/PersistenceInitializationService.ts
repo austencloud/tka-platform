@@ -6,9 +6,8 @@
  */
 
 import type { IPersistenceService } from "../contracts/IPersistenceService";
-import type { IPersistenceInitializationService } from "../contracts/IPersistenceInitializationService";
 
-export class PersistenceInitializationService implements IPersistenceInitializationService {
+export class PersistenceInitializationService {
   private isInitialized = false;
   private initializationError?: string;
 

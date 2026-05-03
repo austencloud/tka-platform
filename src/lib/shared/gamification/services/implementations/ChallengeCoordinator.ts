@@ -22,20 +22,19 @@ import type {
   LeaderboardTimeframe,
   LeaderboardData,
 } from "../../domain/models/challenge-models";
-import type { IChallengeCoordinator } from "../contracts/IChallengeCoordinator";
-import type { IDailyChallengeManager } from "../contracts/IDailyChallengeManager";
-import type { IWeeklyChallengeManager } from "../contracts/IWeeklyChallengeManager";
+import type { DailyChallengeManager } from "./DailyChallengeManager";
+import type { WeeklyChallengeManager } from "./WeeklyChallengeManager";
 import type { ISkillProgressionTracker } from "../contracts/ISkillProgressionTracker";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
 import type { IStreakTracker } from "../contracts/IStreakTracker";
 import type { SkillProgressActionType } from "../contracts/ISkillProgressionTracker";
 
-export class ChallengeCoordinator implements IChallengeCoordinator {
+export class ChallengeCoordinator {
   private _initialized = false;
 
   constructor(
-    private _dailyChallengeService: IDailyChallengeManager,
-    private _weeklyChallengeService: IWeeklyChallengeManager,
+    private _dailyChallengeService: DailyChallengeManager,
+    private _weeklyChallengeService: WeeklyChallengeManager,
     private _skillProgressionService: ISkillProgressionTracker,
     private _achievementService: IAchievementManager,
     private _streakService: IStreakTracker

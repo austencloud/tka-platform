@@ -5,11 +5,10 @@
  * Provides validation and lookup methods for navigation elements.
  */
 
-import type { INavigationValidator } from "../contracts/INavigationValidator";
 import type { ModuleDefinition, ModuleId, Section } from "../../domain/types";
 import { MODULE_DEFINITIONS } from "../../config/module-definitions";
 
-export class NavigationValidator implements INavigationValidator {
+export class NavigationValidator {
   /**
    * Check if a module ID is valid
    */

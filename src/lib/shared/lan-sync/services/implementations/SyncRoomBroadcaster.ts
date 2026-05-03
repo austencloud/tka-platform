@@ -14,11 +14,10 @@ import {
 	type DatabaseReference
 } from 'firebase/database';
 import { getDatabaseInstance, getAuthSync } from '$lib/shared/auth/firebase';
-import type { ISyncRoomBroadcaster } from '../contracts/ISyncRoomBroadcaster';
 import type { SyncRoom } from '../../domain/models/lan-sync-models';
 import { localSyncSessionId } from '../../domain/models/lan-sync-models';
 
-export class SyncRoomBroadcaster implements ISyncRoomBroadcaster {
+export class SyncRoomBroadcaster {
 	private _isBroadcasting = false;
 	private _currentRoom: SyncRoom | null = null;
 	private roomRef: DatabaseReference | null = null;
