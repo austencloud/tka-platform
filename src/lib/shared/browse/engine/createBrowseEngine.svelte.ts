@@ -27,7 +27,7 @@ import type { SectionConfig, SequenceSection } from "$lib/features/browse/shared
 
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
@@ -262,7 +262,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			const comps: readonly LOOPComponent[] = seq.components?.length
 				? seq.components
 				: seq.loopType
-					? Array.from(loopTypeResolver.parseComponents(seq.loopType as LOOPType))
+					? Array.from(parseLoopComponents(seq.loopType as LOOPType))
 					: [];
 
 			for (const comp of comps) {

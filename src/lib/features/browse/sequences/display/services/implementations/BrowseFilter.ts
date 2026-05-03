@@ -15,7 +15,7 @@ import {
   LOOP_TYPE_LABELS,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
 import { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
 
@@ -439,7 +439,7 @@ export class BrowseFilter {
 
   private getSequenceComponents(seq: SequenceData): readonly LOOPComponent[] {
     if (seq.components?.length) return seq.components;
-    if (seq.loopType) return Array.from(loopTypeResolver.parseComponents(seq.loopType as LOOPType));
+    if (seq.loopType) return Array.from(parseLoopComponents(seq.loopType as LOOPType));
     return [];
   }
 

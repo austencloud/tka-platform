@@ -22,7 +22,7 @@ import type {
   CompoundPattern,
 } from "../contracts/ILOOPDetector";
 import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
-import type { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import {
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
@@ -43,7 +43,6 @@ import {
 export class LOOPDetector implements ILOOPDetector {
   constructor(
     private loopabilityChecker: SequenceLoopabilityChecker,
-    private LOOPTypeResolver: LOOPTypeResolver
   ) {}
 
   // ============ POSITION DERIVATION ============
@@ -170,13 +169,8 @@ export class LOOPDetector implements ILOOPDetector {
     let confidence: "strict" | "probable" | "accidental" = "accidental";
 
     if (detectedComponents.size > 0) {
-      if (this.LOOPTypeResolver.isImplemented(detectedComponents)) {
-        loopType = this.LOOPTypeResolver.generateLOOPType(detectedComponents);
-        confidence = "strict";
-      } else {
-        // Has components but combination not implemented
-        confidence = "probable";
-      }
+      loopType = generateLOOPType(detectedComponents);
+      confidence = "strict";
     }
 
     return {
@@ -809,9 +803,7 @@ export class LOOPDetector implements ILOOPDetector {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
-import { loopTypeResolver } from "../../../shared/services/implementations/LOOPTypeResolver";
 
 export const loopDetector = new LOOPDetector(
   sequenceLoopabilityChecker,
-  loopTypeResolver
 );

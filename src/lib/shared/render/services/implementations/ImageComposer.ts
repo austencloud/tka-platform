@@ -4,7 +4,7 @@ import type { PictographData } from "../../../pictograph/shared/domain/models/Pi
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
-import { LOOPTypeResolver } from "../../../../features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { parseLoopComponents } from "../../../../features/create/generate/shared/services/implementations/loop-type-utils";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
@@ -48,8 +48,6 @@ const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.1)";
 
 export class ImageComposer implements IImageComposer {
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
-  private readonly loopTypeResolver = new LOOPTypeResolver();
-
   private layer1Hits = 0;
   private layer1Misses = 0;
   private layer2Hits = 0;
@@ -429,7 +427,7 @@ export class ImageComposer implements IImageComposer {
     if (display.components.size > 0) {
       loopComponents = display.components;
     } else if (loopTypeOverride) {
-      const parsed = this.loopTypeResolver.parseComponents(loopTypeOverride);
+      const parsed = parseLoopComponents(loopTypeOverride);
       const filtered = new Set<LOOPComponent>();
       for (const c of parsed) {
         if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) filtered.add(c);

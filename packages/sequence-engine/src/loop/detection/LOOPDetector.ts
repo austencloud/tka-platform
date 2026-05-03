@@ -100,16 +100,14 @@ export interface RichLOOPDetectionResult {
 
 
 /**
- * Maps a set of detected components to a LOOPType.
- * Returns null if the combination is unknown/unimplemented.
- *
- * @deprecated Use LOOPSpec instead
+ * Derive a backward-compatible LOOPType from detected components.
+ * Returns null if the combination has no corresponding LOOPType.
  */
-function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType | null {
+function deriveLoopTypeFromComponents(components: Set<LOOPComponent>): LOOPType | null {
+  if (components.size === 0) return null;
   const has = (c: LOOPComponent) => components.has(c);
   const size = components.size;
 
-  // Single-component types
   if (size === 1) {
     if (has(LOOPComponent.ROTATED)) return LOOPType.ROTATED;
     if (has(LOOPComponent.MIRRORED)) return LOOPType.MIRRORED;
@@ -118,8 +116,6 @@ function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType |
     if (has(LOOPComponent.INVERTED)) return LOOPType.INVERTED;
     if (has(LOOPComponent.REWOUND)) return LOOPType.REWOUND;
   }
-
-  // Two-component types
   if (size === 2) {
     if (has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED)) return LOOPType.SWAPPED_INVERTED;
     if (has(LOOPComponent.ROTATED) && has(LOOPComponent.INVERTED)) return LOOPType.ROTATED_INVERTED;
@@ -128,29 +124,16 @@ function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType |
     if (has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED)) return LOOPType.ROTATED_SWAPPED;
     if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED)) return LOOPType.MIRRORED_ROTATED;
   }
-
-  // Three-component types
   if (size === 3) {
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.ROTATED)) {
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.ROTATED))
       return LOOPType.MIRRORED_INVERTED_ROTATED;
-    }
-    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED)) {
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED))
       return LOOPType.MIRRORED_ROTATED_SWAPPED;
-    }
   }
-
-  // Four-component type
   if (size === 4) {
-    if (
-      has(LOOPComponent.MIRRORED) &&
-      has(LOOPComponent.ROTATED) &&
-      has(LOOPComponent.INVERTED) &&
-      has(LOOPComponent.SWAPPED)
-    ) {
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.SWAPPED))
       return LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED;
-    }
   }
-
   return null;
 }
 
@@ -359,7 +342,7 @@ export class LOOPDetectorClass {
     let confidence: DetectionConfidence = "accidental";
 
     if (detectedComponents.size > 0) {
-      loopType = resolveComponentsToLOOPType(detectedComponents);
+      loopType = deriveLoopTypeFromComponents(detectedComponents);
       confidence = loopType ? "strict" : "probable";
     }
 

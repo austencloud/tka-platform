@@ -17,7 +17,7 @@ import {
   LOOPType,
   Period,
   LOOP_TYPE_LABELS,
-  SUPPORTED_LOOP_TYPES,
+  ALL_LOOP_TYPES,
   getLOOPOptionsForPositionPair,
   executeLOOP,
   findBridgeLettersForLoop,
@@ -99,7 +99,7 @@ export function registerLoopTools(server: McpServer): void {
           name: opt.name,
           reason: opt.reason || "Position pair not valid for this LOOP type",
         })),
-        supportedTypes: SUPPORTED_LOOP_TYPES.map((t) => ({
+        supportedTypes: ALL_LOOP_TYPES.map((t: LOOPType) => ({
           loopType: t,
           name: LOOP_TYPE_LABELS[t],
         })),

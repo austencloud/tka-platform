@@ -13,7 +13,7 @@ import {
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { loopDetector } from "./implementations/LOOPDetector";
 import { sequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
-import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 
 export interface LoopDisplay {
   components: Set<LOOPComponent>;
@@ -230,7 +230,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
 
   const storedLoopType = input.loopType as LOOPType | null | undefined;
   if (storedLoopType) {
-    const parsed = loopTypeResolver.parseComponents(storedLoopType);
+    const parsed = parseLoopComponents(storedLoopType);
     const components = new Set<LOOPComponent>();
     const componentDomains: Partial<Record<LOOPComponent, LOOPDomain>> = {};
     for (const c of parsed) {

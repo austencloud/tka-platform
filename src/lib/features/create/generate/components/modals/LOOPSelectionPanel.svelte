@@ -14,7 +14,6 @@ with exported sequence cards.
   import { LOOP_COMPONENTS } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
   import { loopFavoritesManager } from "$lib/features/create/generate/shared/services/implementations/LOOPFavoritesManager";
-  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
   import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
   import LOOPComponentGrid from "./LOOPComponentGrid.svelte";
@@ -50,11 +49,8 @@ with exported sequence cards.
     explanationGenerator.generateExplanationText(selectedComponents)
   );
 
-  // Check if the current combination is implemented
-  const isImplemented = $derived.by(() => {
-    if (selectionCount === 0) return true;
-    return loopTypeResolver.isImplemented(selectedComponents);
-  });
+  // All component combinations are now implemented
+  const isImplemented = $derived(true);
 
   // Derive selection count and adaptive button text
   const selectionCount = $derived(selectedComponents.size);

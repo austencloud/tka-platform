@@ -11,7 +11,7 @@
 <script lang="ts">
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
-  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import type { LOOPOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
@@ -53,7 +53,7 @@
   const availableComponents = $derived.by(() => {
     const set = new Set<LOOPComponent>();
     for (const option of availableLOOPOptions) {
-      const components = loopTypeResolver.parseComponents(option.loopType);
+      const components = parseLoopComponents(option.loopType);
       for (const c of components) set.add(c);
     }
     return set;
@@ -71,13 +71,13 @@
    */
   function findBestLoopType(component: LOOPComponent): LOOPOption | null {
     const matching = availableLOOPOptions.filter((opt) => {
-      const components = loopTypeResolver.parseComponents(opt.loopType);
+      const components = parseLoopComponents(opt.loopType);
       return components.has(component);
     });
     if (matching.length === 0) return null;
     matching.sort((a, b) => {
-      const aSize = loopTypeResolver.parseComponents(a.loopType).size;
-      const bSize = loopTypeResolver.parseComponents(b.loopType).size;
+      const aSize = parseLoopComponents(a.loopType).size;
+      const bSize = parseLoopComponents(b.loopType).size;
       return aSize - bSize;
     });
     return matching[0] ?? null;

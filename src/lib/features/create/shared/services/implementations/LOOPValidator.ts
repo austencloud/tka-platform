@@ -87,6 +87,10 @@ const LOOP_OPTION_CONFIG: Record<
     icon: "fa-diagram-project",
     description: "Mirror, invert, and rotate",
   },
+  [LOOPType.MIRRORED_ROTATED_SWAPPED]: {
+    icon: "fa-object-group",
+    description: "Mirror, rotate, and swap colors",
+  },
   [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: {
     icon: "fa-circle-nodes",
     description: "All four transformations combined",

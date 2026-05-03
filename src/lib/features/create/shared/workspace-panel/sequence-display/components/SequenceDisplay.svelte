@@ -14,7 +14,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import LevelInfoModal from "./LevelInfoModal.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
-  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
@@ -152,7 +152,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
 
   const loopDisplayName = $derived.by(() => {
     if (!loopDetectionResult?.loopType) return "";
-    return loopTypeResolver.formatForDisplay(loopDetectionResult.loopType);
+    return formatLOOPTypeForDisplay(loopDetectionResult.loopType);
   });
 
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid

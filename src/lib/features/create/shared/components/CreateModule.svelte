@@ -84,7 +84,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { UndoOperationType } from "../services/contracts/IUndoManager";
 
@@ -150,7 +150,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   let isApplyingLoop = $state(false);
   let pendingLoopBeatCount = $state(0);
   let pendingLoopComponentName = $state("");
-  const loopTypeResolver = new LOOPTypeResolver();
   let isMobile = $state(false);
   let sequenceToTransfer: PictographData[] | null = $state(null);
   let toolPanelElement: HTMLElement | null = $state(null);
@@ -542,7 +541,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
     const sequence = activeSeqState?.currentSequence;
     if (!sequence) return;
 
-    pendingLoopComponentName = loopTypeResolver.formatForDisplay(loopType);
+    pendingLoopComponentName = formatLOOPTypeForDisplay(loopType);
 
     const result = await extensionFlowCoordinator.startFlow(sequence);
     if (!result.canExtend || !result.analysis) {

@@ -8,7 +8,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   import {
     LOOPType,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -39,7 +39,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
 
   // Selected components for the overlay
   const selectedComponents = $derived(
-    loopTypeResolver.parseComponents(currentLOOPType)
+    parseLoopComponents(currentLOOPType)
   );
 
   // Display value: "Off" or the LOOP type name
@@ -58,6 +58,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
       [LOOPType.ROTATED_SWAPPED]: t("generator_loop_rotated_swapped"),
       [LOOPType.MIRRORED_ROTATED]: t("generator_loop_mirrored_rotated"),
       [LOOPType.MIRRORED_INVERTED_ROTATED]: t("generator_loop_mir_comp_rot"),
+      [LOOPType.MIRRORED_ROTATED_SWAPPED]: t("generator_loop_mirrored_rotated") + " + " + t("generator_loop_swapped"),
       [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
       [LOOPType.STRICT_REWOUND]: t("generator_loop_rewound"),
     };

@@ -16,7 +16,7 @@ Container-aware responsive design (2-tier):
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOOPType, LOOP_TYPE_LABELS } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
-  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { parseLoopComponents, generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { LOOP_COMPONENTS } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import MorphChipGroup from "$lib/shared/foundation/ui/morph-chip/MorphChipGroup.svelte";
   import MorphChip from "$lib/shared/foundation/ui/morph-chip/MorphChip.svelte";
@@ -58,7 +58,7 @@ Container-aware responsive design (2-tier):
   // Sync local selection from preferences on external changes
   $effect(() => {
     if (preferences.makeCircular && preferences.selectedLOOPType) {
-      localLoopSelection = loopTypeResolver.parseComponents(preferences.selectedLOOPType);
+      localLoopSelection = parseLoopComponents(preferences.selectedLOOPType);
       isValidLoopCombo = true;
     } else if (!preferences.makeCircular) {
       localLoopSelection = new Set();
@@ -154,8 +154,8 @@ Container-aware responsive design (2-tier):
   /** Check if a set of components round-trips through LOOPType resolution */
   function isRoundTripValid(components: Set<LOOPComponent>): boolean {
     if (components.size === 0) return true;
-    const type = loopTypeResolver.generateLOOPType(components);
-    const parsed = loopTypeResolver.parseComponents(type);
+    const type = generateLOOPType(components);
+    const parsed = parseLoopComponents(type);
     if (parsed.size !== components.size) return false;
     for (const c of components) {
       if (!parsed.has(c)) return false;
@@ -181,7 +181,7 @@ Container-aware responsive design (2-tier):
       const valid = isRoundTripValid(newSet);
       isValidLoopCombo = valid;
       if (valid) {
-        const newType = loopTypeResolver.generateLOOPType(newSet);
+        const newType = generateLOOPType(newSet);
         onPreferenceChange("makeCircular", true);
         onPreferenceChange("selectedLOOPType", newType);
       }

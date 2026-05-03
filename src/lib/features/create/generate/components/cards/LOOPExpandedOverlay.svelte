@@ -7,7 +7,7 @@ Animates forward in z-axis and expands to fill the container space
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
@@ -48,11 +48,8 @@ Animates forward in z-axis and expands to fill the container space
     explanationGenerator.generateExplanationText(localSelectedComponents)
   );
 
-  // Check if the current combination is implemented
-  const isImplemented = $derived.by(() => {
-    if (selectionCount === 0) return true;
-    return loopTypeResolver.isImplemented(localSelectedComponents);
-  });
+  // All component combinations are now implemented
+  const isImplemented = $derived(true);
 
   // Derive selection count
   const selectionCount = $derived(localSelectedComponents.size);
@@ -97,7 +94,7 @@ Animates forward in z-axis and expands to fill the container space
   function applyAndClose() {
     if (selectionCount === 0) return;
 
-    const newLoopType = loopTypeResolver.generateLOOPType(localSelectedComponents);
+    const newLoopType = generateLOOPType(localSelectedComponents);
     onChange(newLoopType);
     onClose();
   }
