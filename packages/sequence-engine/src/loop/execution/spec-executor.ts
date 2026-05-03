@@ -26,16 +26,40 @@ export function executeSymmetricSpec(
 
   let result = sequence;
 
+  // Assumes caller has pre-validated via validateLOOPSpec (rewound_exclusivity).
   if (spec.components.has(LOOPComponent.REWOUND)) {
     const period = spec.components.get(LOOPComponent.REWOUND)!.period;
     const periodEnum = period === 4 ? Period.QUARTERED : Period.HALVED;
     return rewoundExecutor.executeLOOP(result, periodEnum);
   }
 
+  // Decide whether ROTATED needs a separate stage or is absorbed by
+  // FusedExecutor.  FusedExecutor.computeEndLocation() inherently rotates
+  // locations by applying the hand-path direction from the seed step.
+  // When the fuseable group at the same period contains only SWAP/INVERT
+  // (no MIRROR/FLIP), that implicit rotation is sufficient and a separate
+  // ROTATED stage would incorrectly double the sequence a second time.
+  //
+  // When the fuseable group at the same period includes MIRROR or FLIP,
+  // the separate ROTATED stage IS required: ROTATED must expand the
+  // sequence first so that MIRROR/FLIP can then double the expanded
+  // sequence (matching the legacy chaining executors like
+  // MirroredRotatedExecutor).
   if (spec.components.has(LOOPComponent.ROTATED)) {
-    const period = spec.components.get(LOOPComponent.ROTATED)!.period;
-    const periodEnum = period === 4 ? Period.QUARTERED : Period.HALVED;
-    result = strictRotatedExecutor.executeLOOP(result, periodEnum);
+    const rotatedPeriod = spec.components.get(LOOPComponent.ROTATED)!.period;
+    const fuseableAtSamePeriod = hasFuseableAtPeriod(spec, rotatedPeriod);
+    const mirrorOrFlipAtSamePeriod = hasMirrorOrFlipAtPeriod(spec, rotatedPeriod);
+
+    // Run ROTATED as a separate stage only when:
+    // - there are no fuseable components at the same period (pure rotation), OR
+    // - fuseable components at the same period include MIRROR or FLIP
+    //   (chaining pattern: rotate first, then mirror/flip the expanded result)
+    if (!fuseableAtSamePeriod || mirrorOrFlipAtSamePeriod) {
+      const periodEnum = rotatedPeriod === 4 ? Period.QUARTERED : Period.HALVED;
+      result = strictRotatedExecutor.executeLOOP(result, periodEnum);
+    }
+    // Otherwise (only SWAP/INVERT at the same period), FusedExecutor's
+    // computeEndLocation handles the rotation implicitly — skip the stage.
   }
 
   const groups = groupFuseableByPeriod(spec);
@@ -62,6 +86,27 @@ export function executeLOOPSpec(
     "Asymmetric LOOPSpec execution not yet implemented. " +
       "Per-prop independent execution requires Phase 3b follow-on.",
   );
+}
+
+/** True when at least one FUSEABLE component exists at the given period. */
+function hasFuseableAtPeriod(spec: PropLOOPSpec, period: number): boolean {
+  for (const [comp, cSpec] of spec.components) {
+    if (FUSEABLE.has(comp) && cSpec.period === period) return true;
+  }
+  return false;
+}
+
+/** True when MIRRORED or FLIPPED exists at the given period. */
+function hasMirrorOrFlipAtPeriod(spec: PropLOOPSpec, period: number): boolean {
+  for (const [comp, cSpec] of spec.components) {
+    if (
+      (comp === LOOPComponent.MIRRORED || comp === LOOPComponent.FLIPPED) &&
+      cSpec.period === period
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function groupFuseableByPeriod(
