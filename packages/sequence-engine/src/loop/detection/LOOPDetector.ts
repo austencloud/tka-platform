@@ -125,6 +125,9 @@ function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType |
     if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.ROTATED)) {
       return LOOPType.MIRRORED_INVERTED_ROTATED;
     }
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED)) {
+      return LOOPType.MIRRORED_ROTATED_SWAPPED;
+    }
   }
 
   // Four-component type
@@ -295,7 +298,7 @@ export class LOOPDetectorClass {
     const detectedComponents = new Set<LOOPComponent>();
 
     if (compoundPattern) {
-      period = Period.QUARTERED;
+      period = this.detectsQuarteredRotation(letterSteps) ? Period.QUARTERED : Period.HALVED;
       compoundPattern.quarteredTransformations.forEach((c) => detectedComponents.add(c));
       compoundPattern.halvedTransformations.forEach((c) => detectedComponents.add(c));
     } else {
@@ -593,6 +596,18 @@ export class LOOPDetectorClass {
     return validComparisons > 0;
   }
 
+  private detectsInnerHalvedRotation(steps: readonly SequenceStep[]): boolean {
+    const length = steps.length;
+    if (length < 8 || length % 4 !== 0) return false;
+
+    const quarterLength = length / 4;
+    const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
+    const q2Start = steps[quarterLength] ? this.deriveStartPosition(steps[quarterLength]!) : null;
+
+    if (!q1Start || !q2Start) return false;
+    return HALF_POSITION_MAP[q1Start] === q2Start;
+  }
+
   private detectCompoundPattern(
     steps: readonly SequenceStep[],
     quarteredComponents: LOOPComponent[],
@@ -643,6 +658,21 @@ export class LOOPDetectorClass {
         halvedTransformations: [LOOPComponent.SWAPPED, LOOPComponent.INVERTED],
         description: `${rotDesc} (quartered) + Swapped + Inverted (halved)`,
       };
+    }
+
+    // Compound: inner halved rotation + outer mirrored/swapped
+    if (!hasQuarteredRotation && this.detectsInnerHalvedRotation(steps)) {
+      const outerTransformations = halvedComponents.filter(
+        (c) => c !== LOOPComponent.ROTATED
+      );
+      if (outerTransformations.length > 0) {
+        return {
+          isCompound: true,
+          quarteredTransformations: [LOOPComponent.ROTATED],
+          halvedTransformations: outerTransformations,
+          description: `180° Inner Rotated (halved) + ${outerTransformations.join(" + ")} (outer halved)`,
+        };
+      }
     }
 
     return null;

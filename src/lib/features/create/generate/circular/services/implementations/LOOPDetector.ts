@@ -138,9 +138,9 @@ export class LOOPDetector implements ILOOPDetector {
     const detectedComponents = new Set<LOOPComponent>();
 
     if (compoundPattern) {
-      // Compound pattern: use quartered as primary slice size
-      period = Period.QUARTERED;
-      // Combine all components
+      // For existing quartered-rotation compounds: period = QUARTERED.
+      // For inner-halved-rotation compounds: period = HALVED.
+      period = this.detectsQuarteredRotation(steps) ? Period.QUARTERED : Period.HALVED;
       compoundPattern.quarteredTransformations.forEach((c) =>
         detectedComponents.add(c)
       );
@@ -397,7 +397,7 @@ export class LOOPDetector implements ILOOPDetector {
   }
 
   /**
-   * Detect if sequence follows inversion transformation (complementary motion types)
+   * Detect if sequence follows inversion transformation (inverted motion types)
    */
   private detectsInversion(steps: readonly StepData[]): boolean {
     const length = steps.length;
@@ -650,6 +650,23 @@ export class LOOPDetector implements ILOOPDetector {
   }
 
   /**
+   * Detect inner halved rotation: the first half of the sequence is itself a ROTATED loop.
+   * Checks if beat[0].startPosition → beat[N/4].startPosition follows HALF_POSITION_MAP.
+   * Example: 16-beat sequence where beats 1-8 form a 2-period rotated loop.
+   */
+  private detectsInnerHalvedRotation(steps: readonly StepData[]): boolean {
+    const length = steps.length;
+    if (length < 8 || length % 4 !== 0) return false;
+
+    const quarterLength = length / 4;
+    const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
+    const q2Start = steps[quarterLength] ? this.deriveStartPosition(steps[quarterLength]) : null;
+
+    if (!q1Start || !q2Start) return false;
+    return HALF_POSITION_MAP[q1Start] === q2Start;
+  }
+
+  /**
    * Detect compound pattern where different transformations occur at different intervals
    * e.g., 90 degree rotation (quartered) + swap (halved)
    */
@@ -733,6 +750,23 @@ export class LOOPDetector implements ILOOPDetector {
         halvedTransformations: [LOOPComponent.SWAPPED, LOOPComponent.INVERTED],
         description: `${rotationDesc} (quartered) + Swapped + Inverted (halved)`,
       };
+    }
+
+    // Compound pattern: inner halved rotation + outer mirrored/swapped
+    // Detects sequences where the first half is itself a ROTATED loop,
+    // and the second half applies MIRRORED and/or SWAPPED on top of the first half.
+    if (!hasQuarteredRotation && this.detectsInnerHalvedRotation(steps)) {
+      const outerTransformations = halvedComponents.filter(
+        (c) => c !== LOOPComponent.ROTATED
+      );
+      if (outerTransformations.length > 0) {
+        return {
+          isCompound: true,
+          quarteredTransformations: [LOOPComponent.ROTATED],
+          halvedTransformations: outerTransformations,
+          description: `180° Inner Rotated (halved) + ${outerTransformations.join(" + ")} (outer halved)`,
+        };
+      }
     }
 
     return null;

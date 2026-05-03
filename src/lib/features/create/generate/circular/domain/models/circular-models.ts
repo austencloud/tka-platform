@@ -48,6 +48,9 @@ export enum LOOPType {
   /** Mirrored inverted rotated - combines all three transformations */
   MIRRORED_INVERTED_ROTATED = "mirrored_inverted_rotated",
 
+  /** Mirrored rotated swapped - inner halved rotation + outer mirrored + swapped */
+  MIRRORED_ROTATED_SWAPPED = "mirrored_rotated_swapped",
+
   /** Mirrored rotated inverted swapped - combines all four transformations */
   MIRRORED_ROTATED_INVERTED_SWAPPED = "mirrored_rotated_inverted_swapped",
 
@@ -156,6 +159,7 @@ export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
   [LOOPType.ROTATED_SWAPPED]: "Rotated / Swapped",
   [LOOPType.MIRRORED_ROTATED]: "Mirrored / Rotated",
   [LOOPType.MIRRORED_INVERTED_ROTATED]: "Mir / Comp / Rot",
+  [LOOPType.MIRRORED_ROTATED_SWAPPED]: "Mir / Rot / Swap",
   [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: "All Four",
   [LOOPType.STRICT_REWOUND]: "Rewound",
 };
@@ -167,5 +171,6 @@ export const ROTATED_LOOP_TYPES = new Set<LOOPType>([
   LOOPType.ROTATED_SWAPPED,
   LOOPType.MIRRORED_ROTATED,
   LOOPType.MIRRORED_INVERTED_ROTATED,
+  LOOPType.MIRRORED_ROTATED_SWAPPED,
   LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
 ]);

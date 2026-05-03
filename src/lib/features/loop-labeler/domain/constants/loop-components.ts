@@ -94,6 +94,7 @@ export function componentsToLOOPType(
     mirrored_rotated: LOOPType.MIRRORED_ROTATED,
     flipped_rotated: "flipped_rotated",
     inverted_mirrored_rotated: LOOPType.MIRRORED_INVERTED_ROTATED,
+    mirrored_rotated_swapped: LOOPType.MIRRORED_ROTATED_SWAPPED,
     inverted_mirrored_rotated_swapped:
       LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
     rewound: "rewound",

@@ -62,12 +62,11 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
       const hasMirrored = componentSet.has(LOOPComponent.MIRRORED);
       const hasInverted = componentSet.has(LOOPComponent.INVERTED);
       const hasRotated = componentSet.has(LOOPComponent.ROTATED);
+      const hasSwapped = componentSet.has(LOOPComponent.SWAPPED);
 
-      // Only Mirrored + Inverted + Rotated is implemented
-      if (hasMirrored && hasInverted && hasRotated) {
-        return true;
-      }
-      return false; // Other 3-component combinations not yet implemented
+      if (hasMirrored && hasInverted && hasRotated) return true;
+      if (hasMirrored && hasRotated && hasSwapped) return true;
+      return false;
     }
 
     // Four components
@@ -135,13 +134,19 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
     // Three components
     if (sorted.length === 3) {
       const componentSet = new Set(sorted);
-      // Only Mirrored + Inverted + Rotated is implemented
       if (
         componentSet.has(LOOPComponent.MIRRORED) &&
         componentSet.has(LOOPComponent.INVERTED) &&
         componentSet.has(LOOPComponent.ROTATED)
       ) {
         return LOOPType.MIRRORED_INVERTED_ROTATED;
+      }
+      if (
+        componentSet.has(LOOPComponent.MIRRORED) &&
+        componentSet.has(LOOPComponent.ROTATED) &&
+        componentSet.has(LOOPComponent.SWAPPED)
+      ) {
+        return LOOPType.MIRRORED_ROTATED_SWAPPED;
       }
     }
 

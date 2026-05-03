@@ -232,6 +232,9 @@ export class StrictMirroredLOOPExecutor {
       startLocation: previousMotion.endLocation,
       endLocation: mirroredEndLocation,
       rotationDirection: mirroredPropRotDir,
+      prefloatRotationDirection: sourceMotion.prefloatRotationDirection
+        ? this._getMirroredPropRotDir(sourceMotion.prefloatRotationDirection)
+        : undefined,
     };
   }
 

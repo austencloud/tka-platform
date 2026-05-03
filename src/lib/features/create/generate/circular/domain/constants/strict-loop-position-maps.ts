@@ -4,7 +4,7 @@
  * These maps define transformations for:
  * - MIRRORED: Vertical mirroring of positions and locations
  * - SWAPPED: Color swapping position transformations
- * - INVERTED: Letter complementarity mappings
+ * - INVERTED: Letter inversion mappings
  *
  * Note: ROTATED uses different maps defined in circular-position-maps.ts
  */
