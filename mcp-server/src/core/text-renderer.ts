@@ -74,18 +74,8 @@ export interface LetterStyle {
   isDerived?: boolean;
 }
 
-/**
- * LOOP Component enum — kept for backward compatibility with callers.
- * Values are identical to LOOPComponentId strings from the shared package.
- */
-export enum LOOPComponent {
-  ROTATED = "rotated",
-  MIRRORED = "mirrored",
-  FLIPPED = "flipped",
-  SWAPPED = "swapped",
-  INVERTED = "inverted",
-  REWOUND = "rewound",
-}
+import { LOOPComponent } from "@tka/sequence-engine/loop";
+export { LOOPComponent };
 
 /**
  * Render word header at the top of a canvas.

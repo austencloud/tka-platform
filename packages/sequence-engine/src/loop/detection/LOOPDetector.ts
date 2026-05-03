@@ -27,45 +27,22 @@ import {
 } from "../position-maps/strict-loop-position-maps.js";
 import { LOOPType, Period } from "../loop-types.js";
 import {
-  LOOPComponent as CanonicalLOOPComponent,
+  LOOPComponent,
   type LOOPSpec,
   type PropLOOPSpec,
   type ComponentSpec,
 } from "../loop-spec.js";
 
+export { LOOPComponent };
 
-/**
- * LOOP component primitives that can be detected.
- * String union for the functional API.
- */
 export type LOOPComponentId = "rotated" | "mirrored" | "flipped" | "swapped" | "inverted" | "rewound";
 
-/**
- * Result of the functional LOOP detection (backward-compatible MCP API).
- */
 export interface LOOPDetectionResult {
-  /** Whether the sequence is circular (ends where it starts) */
   isCircular: boolean;
-  /** Detected LOOP components */
   components: LOOPComponentId[];
-  /** Whether this is a freeform circular sequence (no pattern detected) */
   isFreeform: boolean;
-  /** Rotation direction if detected */
   rotationDirection: "cw" | "ccw" | null;
-  /** Human-readable description */
   description: string;
-}
-
-/**
- * Enum version of LOOP components used by the class-based detector.
- */
-export enum LOOPComponent {
-  ROTATED = "rotated",
-  MIRRORED = "mirrored",
-  FLIPPED = "flipped",
-  SWAPPED = "swapped",
-  INVERTED = "inverted",
-  REWOUND = "rewound",
 }
 
 /**
@@ -263,23 +240,23 @@ export class LOOPDetectorClass {
     if (components.size === 0) return null;
 
     const periodNum = period ? (period === Period.QUARTERED ? 4 : 2) : 2;
-    const compMap = new Map<CanonicalLOOPComponent, ComponentSpec>();
+    const compMap = new Map<LOOPComponent, ComponentSpec>();
 
     for (const comp of components) {
-      const canonical = comp as unknown as CanonicalLOOPComponent;
+      const canonical = comp;
       compMap.set(canonical, { period: periodNum });
     }
 
     if (compoundPattern) {
       // Quartered transformations get period 4, halved transformations get period 2
       for (const comp of compoundPattern.quarteredTransformations) {
-        const canonical = comp as unknown as CanonicalLOOPComponent;
+        const canonical = comp;
         if (compMap.has(canonical)) {
           compMap.set(canonical, { period: 4 });
         }
       }
       for (const comp of compoundPattern.halvedTransformations) {
-        const canonical = comp as unknown as CanonicalLOOPComponent;
+        const canonical = comp;
         if (compMap.has(canonical)) {
           compMap.set(canonical, { period: 2 });
         }
