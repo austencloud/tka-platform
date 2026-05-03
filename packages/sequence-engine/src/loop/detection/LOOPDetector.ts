@@ -26,6 +26,12 @@ import {
   INVERTED_LETTER_MAP,
 } from "../position-maps/strict-loop-position-maps.js";
 import { LOOPType, Period } from "../loop-types.js";
+import {
+  LOOPComponent as CanonicalLOOPComponent,
+  type LOOPSpec,
+  type PropLOOPSpec,
+  type ComponentSpec,
+} from "../loop-spec.js";
 
 
 /**
@@ -85,6 +91,7 @@ export type DetectionConfidence = "strict" | "probable" | "accidental";
  */
 export interface RichLOOPDetectionResult {
   isCircular: boolean;
+  spec: LOOPSpec | null;
   loopType: LOOPType | null;
   period: Period | null;
   confidence: DetectionConfidence;
@@ -95,6 +102,8 @@ export interface RichLOOPDetectionResult {
 /**
  * Maps a set of detected components to a LOOPType.
  * Returns null if the combination is unknown/unimplemented.
+ *
+ * @deprecated Use LOOPSpec instead
  */
 function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType | null {
   const has = (c: LOOPComponent) => components.has(c);
@@ -263,6 +272,41 @@ export class LOOPDetectorClass {
     }
   }
 
+  private buildLOOPSpec(
+    components: Set<LOOPComponent>,
+    period: Period | null,
+    compoundPattern?: CompoundPattern,
+  ): LOOPSpec | null {
+    if (components.size === 0) return null;
+
+    const periodNum = period ? (period === Period.QUARTERED ? 4 : 2) : 2;
+    const compMap = new Map<CanonicalLOOPComponent, ComponentSpec>();
+
+    for (const comp of components) {
+      const canonical = comp as unknown as CanonicalLOOPComponent;
+      compMap.set(canonical, { period: periodNum });
+    }
+
+    if (compoundPattern) {
+      // Quartered transformations get period 4, halved transformations get period 2
+      for (const comp of compoundPattern.quarteredTransformations) {
+        const canonical = comp as unknown as CanonicalLOOPComponent;
+        if (compMap.has(canonical)) {
+          compMap.set(canonical, { period: 4 });
+        }
+      }
+      for (const comp of compoundPattern.halvedTransformations) {
+        const canonical = comp as unknown as CanonicalLOOPComponent;
+        if (compMap.has(canonical)) {
+          compMap.set(canonical, { period: 2 });
+        }
+      }
+    }
+
+    const prop: PropLOOPSpec = { components: compMap };
+    return { blue: prop, red: prop };
+  }
+
   /**
    * Takes an array of SequenceStep where step 0 is the start position
    * and subsequent steps are the letter steps.
@@ -272,14 +316,14 @@ export class LOOPDetectorClass {
     const circular = isSequenceCircular(steps);
 
     if (!circular) {
-      return { isCircular: false, loopType: null, period: null, confidence: "accidental" };
+      return { isCircular: false, spec: null, loopType: null, period: null, confidence: "accidental" };
     }
 
     // Get letter steps only (exclude start position)
     const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
     if (letterSteps.length < 2) {
-      return { isCircular: true, loopType: null, period: null, confidence: "accidental" };
+      return { isCircular: true, spec: null, loopType: null, period: null, confidence: "accidental" };
     }
 
     // Detect transformations at BOTH intervals independently
@@ -321,6 +365,7 @@ export class LOOPDetectorClass {
 
     return {
       isCircular: true,
+      spec: this.buildLOOPSpec(detectedComponents, period, compoundPattern ?? undefined),
       loopType,
       period: detectedComponents.has(LOOPComponent.ROTATED) ? period : null,
       confidence,
