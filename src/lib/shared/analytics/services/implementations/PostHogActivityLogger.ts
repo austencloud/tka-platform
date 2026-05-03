@@ -15,7 +15,7 @@ import { browser } from "$app/environment";
 import { captureEvent } from "../posthog";
 import type {
   ActivityQueryOptions,
-} from "../contracts/IActivityLogger";
+} from "../contracts/types";
 import type {
   ActivityEvent,
   ActivityEventType,

@@ -21,8 +21,7 @@
 import { Quaternion, Euler, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { Object3D, AnimationClip, QuaternionKeyframeTrack } from "three";
-import type { TurnRequest, TurnSample } from "../contracts/ITurnAnimator";
-import type { ContactCurveData } from "../contracts/IContactCurveCache";
+import type { TurnRequest, TurnSample, ContactCurveData } from "../contracts/types";
 
 // ---------------------------------------------------------------------------
 // Constants

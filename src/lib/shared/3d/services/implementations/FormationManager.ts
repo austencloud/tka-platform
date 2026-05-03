@@ -27,7 +27,7 @@ import type {
   PerformerFormationState,
   FormationChangeCallback,
   TransitionUpdateCallback,
-} from "../contracts/IFormationManager";
+} from "../contracts/types";
 
 /**
  * Easing function for smooth transitions (ease-in-out cubic)

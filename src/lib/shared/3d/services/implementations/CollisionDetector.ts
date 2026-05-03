@@ -25,7 +25,7 @@ import type {
   CollisionZone,
   CollisionSeverity,
   PropSegment,
-} from "../contracts/ICollisionDetector";
+} from "../contracts/types";
 
 // Bounding radii for body parts (meters, scene scale)
 const HEAD_RADIUS = 0.09;

@@ -9,7 +9,7 @@ import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } f
 import type {
   AnimationVisibilityState,
   VisibilityStateCallback,
-} from "../contracts/IAnimationVisibilitySynchronizer";
+} from "../contracts/types";
 
 export class AnimationVisibilitySynchronizer {
   private manager: AnimationVisibilityStateManager;

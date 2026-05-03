@@ -1,7 +1,7 @@
 import type {
   ContactCurveData,
   ContactSample,
-} from "../contracts/IContactCurveCache";
+} from "../contracts/types";
 
 const EMPTY_SAMPLE: ContactSample = Object.freeze({
   leftFoot: 0,

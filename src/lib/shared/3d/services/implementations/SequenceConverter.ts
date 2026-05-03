@@ -20,7 +20,7 @@ import {
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
   StepMotionConfigs,
-} from "../contracts/ISequenceConverter";
+} from "../contracts/types";
 import type { PlaneModeConfig } from "../../domain/constants/plane-mode-configs";
 
 export class SequenceConverter {

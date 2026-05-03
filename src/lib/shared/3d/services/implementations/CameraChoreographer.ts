@@ -26,7 +26,7 @@ import type {
   PerformerPositionProvider,
   CameraStateChangeCallback,
   KeyframeEventCallback,
-} from "../contracts/ICameraChoreographer";
+} from "../contracts/types";
 
 /**
  * Create a CameraChoreographer instance

@@ -14,9 +14,9 @@ import { getTipPoints, type TipPoint } from "../../domain/types/PropTipPoints";
 import type {
 	FireTipTrackerConfig,
 	FireTipUpdateResult,
-} from "../contracts/IFireTipTracker";
+} from "../contracts/types";
 import { PropPositionCalculator } from "./PropPositionCalculator";
-import type { PropEndpointConfig } from "../contracts/IPropPositionCalculator";
+import type { PropEndpointConfig } from "../contracts/types";
 
 /** Minimum dt to avoid velocity spikes on first frame or pauses */
 const MIN_DT_SECONDS = 1 / 120;

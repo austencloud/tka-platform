@@ -40,7 +40,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
-  import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
+  import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/types";
 
   import { getEffectDescriptor } from "../domain/EffectDescriptor";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";

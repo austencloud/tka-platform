@@ -11,7 +11,7 @@ import {
   DEFAULT_CANVAS_SIZE,
   type ResizableRenderer,
   type CanvasResizeState,
-} from "../contracts/ICanvasResizer";
+} from "../contracts/types";
 
 export class CanvasResizer {
   // Reactive state - owned by service

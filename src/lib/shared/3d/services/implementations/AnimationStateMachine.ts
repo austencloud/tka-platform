@@ -23,7 +23,7 @@ import {
 	type LocomotionStateInput,
 	type LocomotionStateOutput,
 	type AnimationStateMachineConfig,
-} from "../contracts/IAnimationStateMachine";
+} from "../contracts/types";
 
 // ── Defaults ──
 

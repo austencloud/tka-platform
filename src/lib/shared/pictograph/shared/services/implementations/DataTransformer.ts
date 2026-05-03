@@ -15,7 +15,7 @@ import { createPictographData } from "../../domain/factories/createPictographDat
 import type { MotionData } from "../../domain/models/MotionData";
 import type { PictographData } from "../../domain/models/PictographData";
 
-// Interface moved to contracts/IDataTransformer.ts
+// Types moved to application/services/contracts/types.ts
 
 export class DataTransformer {
   /**

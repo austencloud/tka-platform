@@ -11,7 +11,7 @@ import type { MotionData } from "../../../pictograph/shared/domain/models/Motion
 import type {
   MotionRenderData,
   PictographDisplayData,
-} from "../contracts/IDataTransformer";
+} from "../contracts/types";
 
 export class DataTransformer {
   /**

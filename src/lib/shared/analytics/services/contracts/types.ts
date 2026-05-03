@@ -34,4 +34,3 @@ export interface ActivityQueryOptions {
   /** Order by timestamp */
   orderDirection?: "asc" | "desc";
 }
-

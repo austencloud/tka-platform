@@ -13,7 +13,7 @@ import type {
   BodyProportions,
   AvatarCustomization,
   ProportionPreset,
-} from "../contracts/IAvatarCustomizer";
+} from "../contracts/types";
 import type { Scene3DPersister } from "./Scene3DPersister";
 
 /**

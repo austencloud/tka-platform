@@ -40,18 +40,18 @@
 
   import type { LocomotionAnimator } from "../services/implementations/LocomotionAnimator";
   import type { AnimationStateMachine } from "../services/implementations/AnimationStateMachine";
-  import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
+  import { LocomotionState } from "../services/contracts/types";
   import type { RootMotionExtractor } from "../services/implementations/RootMotionExtractor";
   import type { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import type { FootPlanter } from "../services/implementations/FootPlanter";
   import type { HingeConstrainedLegIKSolver } from "../services/implementations/HingeConstrainedLegIKSolver";
   import type { ContactCurveCache } from "../services/implementations/ContactCurveCache";
   import type { ClipBasedTurnAnimator } from "../services/implementations/ClipBasedTurnAnimator";
-  import type { TurnRequest } from "../services/contracts/ITurnAnimator";
+  import type { TurnRequest } from "../services/contracts/types";
   import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
   import { CollisionDetector } from "../services/implementations/CollisionDetector";
-  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
+  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/types";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
   import {
@@ -630,7 +630,7 @@
 
         // Apply bone rotations - overwrite animation pose for lower body
         for (const [boneName, quat] of sample.boneRotations) {
-          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
+          const bone = bones.get(boneName as import("../services/contracts/types").BoneName);
           if (bone) {
             bone.quaternion.copy(quat);
           }

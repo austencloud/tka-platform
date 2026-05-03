@@ -19,8 +19,8 @@ import type {
   LocomotionInput,
   AnimationUrls,
   LocomotionConfig,
-} from "../contracts/ILocomotionAnimator";
-import { LocomotionState } from "../contracts/IAnimationStateMachine";
+} from "../contracts/types";
+import { LocomotionState } from "../contracts/types";
 
 type DirectionKey = "forward" | "backward" | "strafeLeft" | "strafeRight";
 

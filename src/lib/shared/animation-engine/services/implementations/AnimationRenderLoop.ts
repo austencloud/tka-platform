@@ -17,10 +17,10 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
 import type { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
 import type { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
-import type { FireTipTrackerConfig } from "../contracts/IFireTipTracker";
+import type { FireTipTrackerConfig } from "../contracts/types";
 import type { FireTipTracker } from "./FireTipTracker";
 import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer'
-import type { LedTipTrackerConfig } from "../contracts/ILedTipTracker";
+import type { LedTipTrackerConfig } from "../contracts/types";
 import type { LedTipTracker } from "./LedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import type { ZapOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/ZapOverlayRenderer'
@@ -937,7 +937,7 @@ export class AnimationRenderLoop {
       && params.pulseConfig != null;
     const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate || hasSilkOverlayForTipUpdate || hasPulseOverlayForTipUpdate;
 
-    let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
+    let sharedTipResult: import("../contracts/types").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
       // Reset tip tracker on loop to prevent velocity spike from position teleport.
       // Without this, the position delta (end-of-sequence → start-of-sequence) produces

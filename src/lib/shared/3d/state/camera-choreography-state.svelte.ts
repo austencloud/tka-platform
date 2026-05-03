@@ -23,7 +23,7 @@ import {
 
 import type {
   PerformerPositionProvider,
-} from "../services/contracts/ICameraChoreographer";
+} from "../services/contracts/types";
 
 /**
  * Create camera choreography state with Svelte 5 reactivity

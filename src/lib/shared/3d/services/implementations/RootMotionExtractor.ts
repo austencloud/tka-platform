@@ -18,7 +18,7 @@
 import type { Bone } from "three";
 import type {
   RootMotionDelta,
-} from "../contracts/IRootMotionExtractor";
+} from "../contracts/types";
 
 const ZERO_DELTA: RootMotionDelta = { x: 0, forward: 0, yawDelta: 0 };
 

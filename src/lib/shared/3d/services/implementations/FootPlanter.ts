@@ -22,13 +22,13 @@ import { Vector3 } from "three";
 import type {
   FootPlanterInput,
   FootPlanterConfig,
-} from "../contracts/IFootPlanter";
-import type { BoneChain } from "../contracts/AvatarSkeletonBuilder";
+  BoneChain,
+  LegIKInput,
+} from "../contracts/types";
+import { LocomotionState } from "../contracts/types";
 import type { AvatarSkeletonBuilder } from "./AvatarSkeletonBuilder";
-import type { LegIKInput } from "../contracts/ILegIKSolver";
 import type { HingeConstrainedLegIKSolver } from "./HingeConstrainedLegIKSolver";
 import type { ContactCurveCache } from "./ContactCurveCache";
-import { LocomotionState } from "../contracts/IAnimationStateMachine";
 import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
 
 // ── Defaults ──

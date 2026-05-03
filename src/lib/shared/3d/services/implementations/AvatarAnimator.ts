@@ -12,10 +12,10 @@ import type {
   AnimationLayer,
   TransitionConfig,
   PositionOffset,
-} from "../contracts/IAvatarAnimator";
-import type { IKTarget } from "../contracts/IKSolver";
+  IKTarget,
+  BoneName,
+} from "../contracts/types";
 import type { IKSolver } from "./IKSolver";
-import type { BoneName } from "../contracts/AvatarSkeletonBuilder";
 import type { AvatarSkeletonBuilder } from "./AvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { ElbowPoleComputer } from "./ElbowPoleComputer";

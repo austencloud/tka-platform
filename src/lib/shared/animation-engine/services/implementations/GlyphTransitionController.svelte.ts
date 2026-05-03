@@ -9,7 +9,7 @@
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
   GlyphTransitionState,
-} from "../contracts/IGlyphTransitionController";
+} from "../contracts/types";
 
 // Glyph transition duration - controls the cross-fade animation
 // Set to 0 for instant swap (best for step playback sync)

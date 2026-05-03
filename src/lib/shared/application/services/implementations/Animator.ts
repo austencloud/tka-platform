@@ -12,7 +12,7 @@ import type {
   FoldTransitionParams,
   SlideTransitionParams,
   TransitionResult,
-} from "../contracts/IAnimator";
+} from "../contracts/types";
 
 export class Animator {
   /**

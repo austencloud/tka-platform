@@ -13,8 +13,8 @@ import type {
   IKTarget,
   IKSolution,
   HumanoidConstraints,
-} from "../contracts/IIKSolver";
-import type { BoneChain } from "../contracts/IAvatarSkeletonBuilder";
+  BoneChain,
+} from "../contracts/types";
 
 export class IKSolver {
   private maxIterations = 10;

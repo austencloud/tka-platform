@@ -12,7 +12,7 @@ import type {
   BoneName,
   BoneChain,
   SkeletonState,
-} from "../contracts/IAvatarSkeletonBuilder";
+} from "../contracts/types";
 import {
   FINGER_BONES,
   type FingerBoneName,

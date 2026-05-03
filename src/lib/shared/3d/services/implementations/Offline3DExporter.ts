@@ -40,7 +40,7 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
 import type {
   Offline3DExportDependencies,
   Offline3DExportOptions,
-} from "../contracts/IOffline3DExporter";
+} from "../contracts/types";
 import {
   getExportDimensions,
   calculateBitrate,

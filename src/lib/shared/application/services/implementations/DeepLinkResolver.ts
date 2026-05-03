@@ -9,7 +9,7 @@
 
 import type {
   DeepLinkResult,
-} from "../contracts/IDeepLinkResolver";
+} from "../contracts/types";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import { getCachedSequence } from "../../state/ui/modal-url-state.svelte";

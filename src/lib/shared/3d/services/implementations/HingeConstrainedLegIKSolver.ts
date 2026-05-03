@@ -1,7 +1,7 @@
 // src/lib/shared/3d/services/implementations/HingeConstrainedLegIKSolver.ts
 
 import { Vector3, Quaternion, Matrix4 } from "three";
-import type { LegIKInput } from "../contracts/ILegIKSolver";
+import type { LegIKInput } from "../contracts/types";
 
 /**
  * HingeConstrainedLegIKSolver

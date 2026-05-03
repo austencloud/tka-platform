@@ -10,7 +10,7 @@ import type {
   ViewerOperationType,
   ViewerSnapshot,
   ViewerUndoEntry,
-} from "../contracts/IViewer3DUndoManager";
+} from "../contracts/types";
 
 const DEFAULT_MAX_HISTORY_SIZE = 50;
 

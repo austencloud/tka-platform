@@ -18,7 +18,7 @@ import { getDeepLinkResolver } from "$lib/shared/application/getDeepLinkResolver
     getModalUrlState,
     clearModalUrlState,
   } from "../state/ui/modal-url-state.svelte";
-  import type { DeepLinkError } from "../services/contracts/IDeepLinkResolver";
+  import type { DeepLinkError } from "../services/contracts/types";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
