@@ -42,6 +42,12 @@
  */
 
 import { LOOPType } from "../../loop/loop-types.js";
+import {
+  type LOOPSpec,
+  allActiveComponents,
+  loopSpecPeriod,
+  LOOPComponent,
+} from "../../loop/loop-spec.js";
 
 /**
  * LOOP domain — matches the shared type in the app's generate-models.
@@ -103,6 +109,37 @@ export function minLength(args: MinLengthArgs): number {
 
   // Level 2+: all standard LOOPs feasible. Minimum = base × period.
   return basePatternMinimum(loopType, level) * period;
+}
+
+/**
+ * LOOPSpec-based minimum length. Compositional equivalent of `minLength`.
+ */
+export function minLengthForSpec(spec: LOOPSpec, level: number): number {
+  const period = loopSpecPeriod(spec);
+  if (period <= 1) return 1;
+
+  const active = allActiveComponents(spec);
+
+  if (level === 1) {
+    for (const [comp] of active) {
+      if (comp !== LOOPComponent.ROTATED && comp !== LOOPComponent.REWOUND) {
+        if (period > 2) return Infinity;
+      }
+    }
+  }
+
+  let baseMin = 1;
+  for (const [comp] of active) {
+    if (
+      comp === LOOPComponent.ROTATED ||
+      comp === LOOPComponent.MIRRORED ||
+      comp === LOOPComponent.FLIPPED
+    ) {
+      baseMin = Math.max(baseMin, 2);
+    }
+  }
+
+  return baseMin * period;
 }
 
 /**
