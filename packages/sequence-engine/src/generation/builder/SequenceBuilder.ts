@@ -48,6 +48,7 @@ import {
   ROTATED_LOOP_TYPES,
   periodToNumber,
 } from "../../loop/loop-types.js";
+import type { LOOPSpec } from "../../loop/loop-spec.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
 import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
 import {
@@ -183,6 +184,9 @@ export interface LoopOptions {
 
   /** Whether to use targeted end-position generation */
   useTargetedGeneration?: boolean;
+
+  /** Compositional LOOPSpec. When present, preferred over type+period by new execution paths. */
+  loopSpec?: LOOPSpec;
 }
 
 /**

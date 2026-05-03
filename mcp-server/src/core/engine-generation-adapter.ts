@@ -18,7 +18,7 @@ import {
   getPresetOptions,
   type ConstraintOptions,
 } from "@tka/sequence-engine/generation";
-import { LOOPType, Period } from "@tka/sequence-engine/loop";
+import { LOOPType, Period, loopSpecFromLegacy } from "@tka/sequence-engine/loop";
 import { MCPVariationProvider } from "./MCPVariationProvider.js";
 import type { PictographData } from "@tka/sequence-engine/generation";
 import type { SequenceStep, SequenceResult } from "./sequence-builder-adapter.js";
@@ -193,10 +193,12 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
       throw new Error(`Unknown LOOP type: "${params.loopType}"`);
     }
 
+    const periodNum = period === Period.QUARTERED ? 4 : 2;
     options.loop = {
       type: engineLoopType,
       period,
       useTargetedGeneration: true,
+      loopSpec: loopSpecFromLegacy(engineLoopType, periodNum),
     };
   } else if (params.length && !params.word) {
     // Freeform (no LOOP): length is the total beat count directly
