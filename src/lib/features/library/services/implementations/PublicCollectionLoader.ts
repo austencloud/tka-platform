@@ -15,7 +15,6 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IPublicCollectionLoader } from "../contracts/IPublicCollectionLoader";
 import type { LibraryCollection } from "../../domain/models/Collection";
 import { SYSTEM_COLLECTION_IDS } from "../../domain/models/Collection";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
@@ -28,7 +27,7 @@ import {
   batchFetchSequences,
 } from "./collection-firestore-mapper";
 
-export class PublicCollectionLoader implements IPublicCollectionLoader {
+export class PublicCollectionLoader {
   async getUserPublicCollections(
     userId: string
   ): Promise<LibraryCollection[]> {

@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ILetterToConceptMapper } from './services/contracts/ILetterToConceptMapper';
 import { LetterToConceptMapper } from './services/implementations/LetterToConceptMapper';
 
-let instance: ILetterToConceptMapper | null = null;
+let instance: LetterToConceptMapper | null = null;
 
-export function getLetterToConceptMapper(): ILetterToConceptMapper {
+export function getLetterToConceptMapper(): LetterToConceptMapper {
 	if (!browser) throw new Error('getLetterToConceptMapper() is browser-only');
 	return instance ??= new LetterToConceptMapper();
 }

@@ -24,7 +24,6 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencePath, getPublicSequencesPath } from "../../data/firestore-paths";
-import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
@@ -59,7 +58,7 @@ function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
-export class PublicIndexSyncer implements IPublicIndexSyncer {
+export class PublicIndexSyncer {
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
 
   constructor(

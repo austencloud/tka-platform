@@ -36,7 +36,7 @@ import type { IErrorHandler } from "$lib/shared/application/services/contracts/I
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { IOrientationCycleDetector } from "../../../create/generate/circular/services/contracts/IOrientationCycleDetector";
-import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
+import type { PublicIndexSyncer } from "./PublicIndexSyncer";
 import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
 import type { ISequenceContentHasher } from "../contracts/ISequenceContentHasher";
 import { migrateSequenceTags } from "../migrations/tag-migration";
@@ -114,7 +114,7 @@ export class LibraryRepository implements ILibraryRepository {
     private achievementService: IAchievementManager,
     private tagService: ITagManager,
     private orientationCycleDetector: IOrientationCycleDetector,
-    private publicIndexSyncer: IPublicIndexSyncer,
+    private publicIndexSyncer: PublicIndexSyncer,
     private conflictResolver?: IConflictResolver,
     private contentHasher?: ISequenceContentHasher
   ) {}

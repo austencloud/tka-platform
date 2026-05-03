@@ -17,7 +17,7 @@ import type {
   DetectedGap,
   MisconceptionPattern,
 } from "../contracts/IGapDetector";
-import type { ILetterToConceptMapper } from "../contracts/ILetterToConceptMapper";
+import type { LetterToConceptMapper } from "./LetterToConceptMapper";
 import type { IQuizHistoryRecorder } from "../contracts/IQuizHistoryRecorder";
 import {
   tkaKnowledgeGraph,
@@ -26,7 +26,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 
 export class GapDetector implements IGapDetector {
   constructor(
-    private readonly mapper: ILetterToConceptMapper,
+    private readonly mapper: LetterToConceptMapper,
     private readonly historyRecorder: IQuizHistoryRecorder
   ) {}
 

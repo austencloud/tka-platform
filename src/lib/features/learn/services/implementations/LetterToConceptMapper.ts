@@ -8,7 +8,6 @@
  * Concept IDs reference the curriculum in domain/concepts.ts.
  */
 
-import type { ILetterToConceptMapper } from "../contracts/ILetterToConceptMapper";
 
 /** Letter type number (1-6) for each TKA letter */
 const LETTER_TYPE_MAP: ReadonlyMap<string, number> = new Map([
@@ -47,7 +46,7 @@ const TYPE_TO_CONCEPT: ReadonlyMap<number, string> = new Map([
   [6, "type456-dash-static"],
 ]);
 
-export class LetterToConceptMapper implements ILetterToConceptMapper {
+export class LetterToConceptMapper {
   getConceptId(letter: string): string | null {
     const typeNum = LETTER_TYPE_MAP.get(letter);
     if (typeNum === undefined) return null;

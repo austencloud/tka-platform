@@ -13,13 +13,12 @@
  * - Red solo prop (same for red)
  */
 
-import type { IArtifactExtractor } from "../contracts/IArtifactExtractor";
 import type { IHandPathRepository } from "$lib/shared/foundation/services/contracts/IHandPathRepository";
 import type { ISoloPropRepository } from "$lib/shared/foundation/services/contracts/ISoloPropRepository";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
 
-export class ArtifactExtractor implements IArtifactExtractor {
+export class ArtifactExtractor {
   constructor(
     private readonly handPathRepository: IHandPathRepository,
     private readonly soloPropRepository: ISoloPropRepository

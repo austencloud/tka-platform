@@ -20,7 +20,7 @@ import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { ILibraryRepository } from "../contracts/ILibraryRepository";
-import type { IArtifactExtractor } from "../contracts/IArtifactExtractor";
+import type { ArtifactExtractor } from "./ArtifactExtractor";
 import { TAG_COLORS } from "../../domain/models/Tag";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -41,14 +41,14 @@ export class LibrarySaveService implements ILibrarySaveService {
   private readonly uploadService: IVideoUploader | null;
   private readonly tagService: ITagManager | null;
   private readonly libraryRepository: ILibraryRepository;
-  private readonly artifactExtractor: IArtifactExtractor | null;
+  private readonly artifactExtractor: ArtifactExtractor | null;
 
   constructor(
     shareService: ISharer | null,
     uploadService: IVideoUploader | null,
     tagService: ITagManager | null,
     libraryRepository: ILibraryRepository,
-    artifactExtractor?: IArtifactExtractor | null
+    artifactExtractor?: ArtifactExtractor | null
   ) {
     this.shareService = shareService ?? null;
     this.uploadService = uploadService ?? null;

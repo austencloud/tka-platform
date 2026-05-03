@@ -1,7 +1,6 @@
-import type { IPublicCollectionLoader } from './services/contracts/IPublicCollectionLoader';
 import { PublicCollectionLoader } from './services/implementations/PublicCollectionLoader';
 
-let instance: IPublicCollectionLoader | null = null;
-export function getPublicCollectionLoader(): IPublicCollectionLoader {
+let instance: PublicCollectionLoader | null = null;
+export function getPublicCollectionLoader(): PublicCollectionLoader {
   return instance ??= new PublicCollectionLoader();
 }

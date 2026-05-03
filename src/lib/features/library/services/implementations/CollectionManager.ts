@@ -573,7 +573,7 @@ export class CollectionManager implements ICollectionManager {
   // ============================================================
   // PUBLIC COLLECTIONS - delegated to PublicCollectionLoader
   // These remain on ICollectionManager for interface compatibility.
-  // New code should use IPublicCollectionLoader directly.
+  // New code should use PublicCollectionLoader directly.
   // ============================================================
 
   async getUserPublicCollections(userId: string): Promise<LibraryCollection[]> {
