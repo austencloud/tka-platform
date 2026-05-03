@@ -6,7 +6,7 @@
   Positioned identically to the video so markers line up with the footage.
 -->
 <script lang="ts">
-  import type { OverlayRenderer } from "../../services/implementations/OverlayRenderer";
+  import type { Phase1OverlayRenderer } from "../../services/implementations/Phase1OverlayRenderer";
 import type { OverlayRenderContext } from "../../services/contracts/types";
   import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
   import type { DetectedBeat } from "../../domain/models";
@@ -20,7 +20,7 @@ import type { OverlayRenderContext } from "../../services/contracts/types";
     width,
     height,
   }: {
-    renderer: OverlayRenderer;
+    renderer: Phase1OverlayRenderer;
     frame: DetectionFrame | null;
     frameIndex: number;
     beats: DetectedBeat[];

@@ -38,7 +38,6 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import type { WorkerOutMessage, RenderRequest, PrecomputedFrame } from "$lib/shared/qr-video/domain/qr-video-types";
-import {  } from "$lib/shared/qr-video/domain/qr-video-types";
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
@@ -65,14 +64,14 @@ import {  } from "$lib/shared/qr-video/domain/qr-video-types";
 
   const encoder = new SequenceEncoder();
 
-  const stubBrowseLoader: PublicSequencesLoader = {
+  const stubBrowseLoader = {
     loadSequenceMetadata: async () => [],
     loadFullSequenceData: async () => null,
     removeFromCache: () => {},
     addToCache: () => {},
     warmFromCache: () => {},
     refreshFromFirestore: async () => [],
-  };
+  } as unknown as PublicSequencesLoader;
 
   const shortCodeManager = new ShortCodeManager(stubBrowseLoader, encoder);
 

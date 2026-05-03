@@ -9,7 +9,6 @@
 import { getCompositionLayoutCalculator } from "$lib/features/compose/tabs/browse/getCompositionLayoutCalculator";
   import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import type { CardSize } from "../services/contracts/types";
-	import type { ICompositionLayoutCalculator } from "../services/contracts/types";
 	import CompositionCard from "./CompositionCard.svelte";
 	import CompositionHeroCard from "./CompositionHeroCard.svelte";
 	import { onMount } from "svelte";

@@ -190,7 +190,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/types";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/types";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";

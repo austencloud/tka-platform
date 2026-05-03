@@ -9,7 +9,6 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/types";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";

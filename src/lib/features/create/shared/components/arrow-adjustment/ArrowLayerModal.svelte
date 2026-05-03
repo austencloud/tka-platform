@@ -38,7 +38,7 @@ import type { SelectedArrowContext } from "../../services/contracts/types";
 
   $effect(() => {
     if (open && !adjustmentOrchestrator) {
-      adjustmentOrchestrator = getArrowAdjustmentOrchestrator() as IArrowAdjustmentOrchestrator;
+      adjustmentOrchestrator = getArrowAdjustmentOrchestrator() as ArrowAdjustmentOrchestrator;
     }
   });
 

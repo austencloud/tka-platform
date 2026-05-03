@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
+  import type { AnnouncementManager } from "../../services/implementations/AnnouncementManager";
   import type {
     Announcement,
     AnnouncementSeverity,

@@ -6,8 +6,7 @@
     FeedbackItem, FeedbackStatus, } from "../../domain/models/feedback-models";
   import FeedbackKanbanColumn from "./FeedbackKanbanColumn.svelte";
   import KanbanStatusTab from "./KanbanStatusTab.svelte";
-  import type { IClaimStatusDeriver } from "../../services/contracts/types";
-import type { ClaimStatusDeriver } from "../../services/implementations/ClaimStatusDeriver";
+  import type { ClaimStatusDeriver } from "../../services/implementations/ClaimStatusDeriver";
 
   interface Props {
     boardState: KanbanBoardState;

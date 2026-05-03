@@ -161,7 +161,7 @@ import type { CardPair } from "../services/contracts/types";
     if (renderedPairs.length === 0) return;
     isExporting = true;
     try {
-      const exporter = getPrintZipExporter() as IPrintZipExporter;
+      const exporter = getPrintZipExporter() as PrintZipExporter;
       const deckName = selectedDeck?.name ?? "deck";
       const blob = await exporter.exportDeckZIP(renderedPairs, deckName);
       const url = URL.createObjectURL(blob);

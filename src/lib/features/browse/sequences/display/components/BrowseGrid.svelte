@@ -7,7 +7,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // NOTE: animate-css-grid disabled - causes layout chaos with async thumbnail loading
   // import { wrapGrid } from "animate-css-grid";
   import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
-  import type { IVariationGrouper } from "../services/contracts/types";
+  import type { VariationGrouper } from "../services/implementations/VariationGrouper";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "./SectionHeader.svelte";
   import VirtualizedSequenceGrid, {

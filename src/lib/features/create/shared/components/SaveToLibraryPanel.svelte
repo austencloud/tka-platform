@@ -29,7 +29,6 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import type { ILibrarySaveService } from "$lib/features/library/services/contracts/types";
   import type { ContentModerator } from "$lib/features/moderation/services/implementations/ContentModerator";
   import { getContentModerator } from "$lib/features/moderation/getContentModerator";
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";

@@ -22,7 +22,7 @@ Tappable: navigates to TIKA with the misconception pre-loaded.
   function openInTika() {
     if (!browser) return;
 
-    const generator = getLetterBreakdownGenerator() as ILetterBreakdownGenerator;
+    const generator = getLetterBreakdownGenerator() as LetterBreakdownGenerator;
     const comparison = generator.compare(correctLetter, chosenLetter);
 
     let question: string;

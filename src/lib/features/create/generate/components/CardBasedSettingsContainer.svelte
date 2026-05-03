@@ -14,7 +14,6 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import type { CardDescriptor } from "../shared/services/contracts/types";
   import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
   import type { CardConfigurator } from "../shared/services/implementations/CardConfigurator";
-  import type { ResponsiveTypographer } from "$lib/features/create/generate/shared/services/implementations/ResponsiveTypographer";
   import { ResponsiveTypographer } from "../shared/services/implementations/ResponsiveTypographer";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
@@ -86,7 +85,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
 
   // Services - use $state to make them reactive
   let typographyService = $state<ResponsiveTypographer | null>(null);
-  let cardConfigService = $state<ICardConfigurator | null>(null);
+  let cardConfigService = $state<CardConfigurator | null>(null);
   let loopParamProvider = $state<LOOPParameterProvider | null>(null);
 
   // State

@@ -11,7 +11,7 @@
   import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
   import { loopDetector } from "../services/implementations/LOOPDetector";
   import type { StepDataConverter } from "../services/implementations/StepDataConverter";
-  import type { LOOPDetectionResult } from "../services/contracts/types";
+  import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
   import type { LOOPDetector } from "../services/implementations/LOOPDetector";
   import type { ComponentId } from "../domain/constants/loop-components";
   import type { LOOPLabelerState } from "../state/loop-labeler-state.svelte";

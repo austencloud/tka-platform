@@ -15,7 +15,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
   import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/types";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";

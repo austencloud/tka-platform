@@ -171,7 +171,7 @@ import type { CardPair } from "../services/contracts/types";
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
     try {
-      const zipExporter = getPrintZipExporter() as IPrintZipExporter;
+      const zipExporter = getPrintZipExporter() as PrintZipExporter;
       const blob = await zipExporter.exportDeckZIP(renderedPairs, familyLabel);
       downloadBlob(blob, `${familyLabel}-${cardSize}.zip`);
     } finally {

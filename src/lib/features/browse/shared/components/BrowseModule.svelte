@@ -19,7 +19,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
-  import type { IBrowseEventHandler } from "../services/contracts/types";
+  import type { BrowseEventHandler } from "../services/implementations/BrowseEventHandler";
   import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
@@ -39,7 +39,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
   import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
-import type { BrowseEventHandler } from "../services/implementations/BrowseEventHandler";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";

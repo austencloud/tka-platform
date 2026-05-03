@@ -26,7 +26,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import type { OptionOrganizer } from "$lib/features/create/construct/option-picker/services/implementations/OptionOrganizer";
   import type { IOptionGridFitCalculator } from "../services/contracts/types";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { IPictographPreparer } from "../services/PictographPreparer";
+  import type { PictographPreparer } from "../services/PictographPreparer";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
   import OptionPickerContent from "./OptionPickerContent.svelte";
@@ -75,7 +75,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   });
 
   // Services
-  let preparer: IPictographPreparer | null = null;
+  let preparer: PictographPreparer | null = null;
   let hapticService = $state<HapticFeedback | null>(null);
   let sizerService = $state<IOptionGridFitCalculator | null>(null);
   let organizerService = $state<OptionOrganizer | null>(null);
@@ -209,7 +209,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
 
       organizerService = getOptionOrganizer();
       sizerService = optionGridFitCalculator;
-      preparer = pictographPreparer as IPictographPreparer;
+      preparer = pictographPreparer as PictographPreparer;
       hapticService = getHapticFeedback();
 
       // Subscribe to Dark Mode changes for prop color updates

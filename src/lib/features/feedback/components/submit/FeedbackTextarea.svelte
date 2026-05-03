@@ -4,8 +4,7 @@
   import VoiceWaveform from "./VoiceWaveform.svelte";
   import ImageUpload from "./ImageUpload.svelte";
   import type { AudioAnalyzer } from "../../services/implementations/AudioAnalyzer";
-  import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/types";
-  import type { DraftSaveStatus } from "../../services/contracts/types";
+  import type { VoiceRecordingResult, DraftSaveStatus } from "../../services/contracts/types";
   import type { StagedImageState } from "../../domain/models/feedback-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 import type { VoiceRecorder } from "../../services/implementations/VoiceRecorder";

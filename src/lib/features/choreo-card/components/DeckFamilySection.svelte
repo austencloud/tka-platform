@@ -53,7 +53,7 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
   let expanded = $state((() => initiallyExpanded)());
 
   // Resolve DI services once - these are cheap singletons.
-  const handPathBuilder = getHandPathDataBuilder() as IHandPathDataBuilder;
+  const handPathBuilder = getHandPathDataBuilder() as HandPathDataBuilder;
   const collisionResolver = getArrowCollisionResolver() as ArrowCollisionResolver;
 
   /**

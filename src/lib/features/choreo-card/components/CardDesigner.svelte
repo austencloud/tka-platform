@@ -155,7 +155,7 @@
 
   // ── Event handlers ──────────────────────────────────────────────────
 
-  let hapticService: import("$lib/shared/application/services/contracts/HapticFeedback").HapticFeedback | undefined;
+  let hapticService: import("$lib/shared/application/services/implementations/HapticFeedback").HapticFeedback | undefined;
 
   onMount(async () => {
     hapticService = getHapticFeedback();

@@ -16,7 +16,7 @@ Only renders if there are actual type-confusion gaps to report.
   function openInTika(group: ConfusionGroup) {
     if (!browser) return;
 
-    const generator = getLetterBreakdownGenerator() as ILetterBreakdownGenerator;
+    const generator = getLetterBreakdownGenerator() as LetterBreakdownGenerator;
     const comparison = generator.compare(
       group.correctLabel,
       group.chosenLabel

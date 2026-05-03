@@ -132,7 +132,7 @@ import type { SelectedArrowContext } from "../../../services/contracts/types";
   function toggleEditing() {
     if (!isEditing) {
       if (!orchestrator) {
-        orchestrator = getArrowAdjustmentOrchestrator() as IArrowAdjustmentOrchestrator;
+        orchestrator = getArrowAdjustmentOrchestrator() as ArrowAdjustmentOrchestrator;
       }
       const defaultLayer = orchestrator.getDefaultSaveLayer(thisPropType, otherPropType);
       activeLayer = defaultLayer;

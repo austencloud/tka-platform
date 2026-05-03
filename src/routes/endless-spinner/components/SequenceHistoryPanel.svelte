@@ -2,7 +2,7 @@
   import { fly } from "svelte/transition";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { GenerationSettings } from "$lib/features/landing/domain/models/spinner-models";
-  import type { SequenceDataSerializer } from "../../services/implementations/SequenceDataSerializer";
+  import type { SequenceDataSerializer } from "$lib/features/landing/services/implementations/SequenceDataSerializer";
 
   export interface SequenceHistoryEntry {
     sequence: SequenceData;

@@ -17,7 +17,7 @@
   import type { SanityCheckReport } from "../domain/verification-models";
   import type { PhaseVerdict, UserCorrection } from "../domain/verification-models";
   import type { TrainingPair, VerifiedStepPosition, VideoReference } from "../domain/training-models";
-  import type { OverlayRenderer } from "../services/implementations/OverlayRenderer";
+  import type { Phase1OverlayRenderer } from "../services/implementations/Phase1OverlayRenderer";
   import type { SanityChecker } from "../services/implementations/SanityChecker";
   import type { TrainingDataPersister } from "../services/implementations/TrainingDataPersister";
   import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";
@@ -58,7 +58,7 @@
   const frameExtractor = getVideoFrameExtractor();
   const handAnalyzer = getVideoHandAnalyzer();
   const beatDetector = getStepBoundaryDetector();
-  const overlayRenderer = getPhase1OverlayRenderer() as IOverlayRenderer;
+  const overlayRenderer = getPhase1OverlayRenderer() as Phase1OverlayRenderer;
   const sanityChecker = getSanityChecker() as SanityChecker;
   const trainingPersister = getTrainingDataPersister() as TrainingDataPersister;
 

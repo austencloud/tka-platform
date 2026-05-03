@@ -11,8 +11,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type {
-    EndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/types";
+  import type { EndState } from "$lib/features/landing/services/contracts/types";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import {

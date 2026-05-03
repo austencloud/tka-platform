@@ -15,7 +15,6 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
-  import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
   import { SequenceAnimationOrchestrator } from "../../../../services/implementations/SequenceAnimationOrchestrator";
   import { AnimationStateManager } from "../../../../services/implementations/AnimationStateManager";
   import { createAnimationPanelState } from "../../../../state/animation-panel-state.svelte";

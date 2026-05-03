@@ -140,10 +140,10 @@ import type { ThumbnailMetricsCollector } from '$lib/features/browse/sequences/d
   }
 
   // Services
-  let orchestrator: IThumbnailRenderOrchestrator | null = null;
-  let keyDeriver: IThumbnailKeyDeriver | null = null;
-  let metricsCollector: IThumbnailMetricsCollector | null = null;
-  let localCache: IThumbnailLocalCache | null = null;
+  let orchestrator: ThumbnailRenderOrchestrator | null = null;
+  let keyDeriver: ThumbnailKeyDeriver | null = null;
+  let metricsCollector: ThumbnailMetricsCollector | null = null;
+  let localCache: ThumbnailLocalCache | null = null;
 
   onMount(async () => {
     if (!browser) return;
