@@ -5,13 +5,12 @@
  * that beat `i + length/period` is the transformation-of beat `i` for the
  * claimed transformation type. Beam search can plug these in as hard
  * constraints if closure ever needs to be enforced during search rather
- * than via the post-hoc StrictMirroredExecutor / StrictFlippedExecutor /
- * StrictSwappedExecutor / StrictInvertedExecutor pipeline.
+ * than via the post-hoc spec-executor / FusedExecutor pipeline.
  *
  * ## Status
  *
- * Instantiable skeletons. Not wired into beam search — the post-hoc
- * executors handle the current generation path. Kept as a ready-to-wire
+ * Instantiable skeletons. Not wired into beam search — the spec-executor
+ * pipeline handles the current generation path. Kept as a ready-to-wire
  * scaffold if we decide to close orientation during search instead.
  */
 

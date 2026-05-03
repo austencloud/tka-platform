@@ -91,7 +91,7 @@ export class LOOPEndPositionSelector {
       // Swapped + Inverted: the seed ends at the swapped position. The executor
       // then re-swaps in createStep, so the full extended sequence's final end
       // position lands back at start (swap is its own inverse). This matches
-      // SWAPPED_LOOP_VALIDATION_SET used by SwappedInvertedExecutor.
+      // SWAPPED_LOOP_VALIDATION_SET used by the spec-executor pipeline.
       case LOOPType.SWAPPED_INVERTED:
         return SWAPPED_POSITION_MAP[startPosition] ?? null;
 

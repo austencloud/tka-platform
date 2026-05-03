@@ -43,8 +43,7 @@ export function executeSymmetricSpec(
   // When the fuseable group at the same period includes MIRROR or FLIP,
   // the separate ROTATED stage IS required: ROTATED must expand the
   // sequence first so that MIRROR/FLIP can then double the expanded
-  // sequence (matching the legacy chaining executors like
-  // MirroredRotatedExecutor).
+  // sequence (matching the legacy chaining pattern).
   if (spec.components.has(LOOPComponent.ROTATED)) {
     const rotatedPeriod = spec.components.get(LOOPComponent.ROTATED)!.period;
     const fuseableAtSamePeriod = hasFuseableAtPeriod(spec, rotatedPeriod);

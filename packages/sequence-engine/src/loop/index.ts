@@ -137,24 +137,9 @@ export type { ILOOPExecutor } from "./execution/ILOOPExecutor.js";
 // Orientation helpers for executors
 export { updateStepOrientations } from "./execution/orientation-helpers.js";
 
-// Class-based LOOP executors (strict)
+// Class-based LOOP executors (kept — spec-executor delegates to these)
 export { StrictRotatedExecutor, strictRotatedExecutor } from "./execution/StrictRotatedExecutor.js";
-export { StrictMirroredExecutor, strictMirroredExecutor } from "./execution/StrictMirroredExecutor.js";
-export { StrictFlippedExecutor, strictFlippedExecutor } from "./execution/StrictFlippedExecutor.js";
-export { StrictSwappedExecutor, strictSwappedExecutor } from "./execution/StrictSwappedExecutor.js";
-export { StrictInvertedExecutor, strictInvertedExecutor } from "./execution/StrictInvertedExecutor.js";
 export { RewoundExecutor, rewoundExecutor } from "./execution/RewoundExecutor.js";
-
-// Class-based LOOP executors (compound)
-export { MirroredSwappedExecutor, mirroredSwappedExecutor } from "./execution/MirroredSwappedExecutor.js";
-export { SwappedInvertedExecutor, swappedInvertedExecutor } from "./execution/SwappedInvertedExecutor.js";
-export { MirroredInvertedExecutor, mirroredInvertedExecutor } from "./execution/MirroredInvertedExecutor.js";
-export { RotatedSwappedExecutor, rotatedSwappedExecutor } from "./execution/RotatedSwappedExecutor.js";
-export { RotatedInvertedExecutor, rotatedInvertedExecutor } from "./execution/RotatedInvertedExecutor.js";
-export { MirroredRotatedExecutor, mirroredRotatedExecutor } from "./execution/MirroredRotatedExecutor.js";
-export { MirroredRotatedInvertedExecutor, mirroredRotatedInvertedExecutor } from "./execution/MirroredRotatedInvertedExecutor.js";
-export { MirroredSwappedInvertedExecutor, mirroredSwappedInvertedExecutor } from "./execution/MirroredSwappedInvertedExecutor.js";
-export { MirroredRotatedInvertedSwappedExecutor, mirroredRotatedInvertedSwappedExecutor } from "./execution/MirroredRotatedInvertedSwappedExecutor.js";
 
 // Spec-based execution
 export { executeLOOPSpec, executeSymmetricSpec } from "./execution/spec-executor.js";
