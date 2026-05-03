@@ -6,8 +6,7 @@
  */
 
 /**
- * LOOP Type Enum
- * Defines the different types of Linked Orbital Offset Patterns
+ * @deprecated Use LOOPSpec from loop-spec.ts with loopSpecFromLegacy for migration.
  */
 export enum LOOPType {
   /** Rotated - rotates positions around the grid */
@@ -60,8 +59,7 @@ export enum LOOPType {
 }
 
 /**
- * Period
- * Determines how the circle is divided for rotation
+ * @deprecated Use integer period in LOOPSpec ComponentSpec.period instead.
  */
 export enum Period {
   /** Half rotation - 180° */

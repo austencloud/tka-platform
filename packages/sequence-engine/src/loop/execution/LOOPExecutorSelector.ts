@@ -49,6 +49,7 @@ export class LOOPExecutorSelector {
     ]);
   }
 
+  /** @deprecated Use executeSpec(sequence, spec) instead. */
   getExecutor(loopType: LOOPType): ILOOPExecutor {
     const executor = this.executorMap.get(loopType);
     if (!executor) {

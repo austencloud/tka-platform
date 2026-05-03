@@ -333,6 +333,7 @@ export const ROTATED_SWAPPED_QUARTERED_VALIDATION_SET = new Set<string>([
 ]);
 
 
+/** @deprecated Use isLOOPValidForSpec instead. */
 export function isLOOPValidForPositionPair(
   loopType: LOOPType,
   positionPair: string,

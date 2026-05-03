@@ -44,6 +44,7 @@ export class LOOPEndPositionSelector {
    * @param startPosition - The sequence's starting position
    * @param period - Halved or quartered
    * @returns The required end position, or null if no constraint (e.g., Rewound)
+   * @deprecated Use determineEndPositionForSpec instead.
    */
   determineEndPosition(
     loopType: LOOPType,
