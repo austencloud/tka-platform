@@ -159,7 +159,6 @@ const HELP_TOPIC_ALIASES: Record<string, GeneratorHelpId> = {
   generate: "generate",
 };
 // Regex patterns
-const SET_PATTERN =
 // "set {param} to {value}" or "change {param} to {value}" or "make {param} {value}"
 const SET_PATTERN =
   /^(?:set|change|make|switch)\s+(.+?)\s+(?:to|=)\s+(.+)$/;
