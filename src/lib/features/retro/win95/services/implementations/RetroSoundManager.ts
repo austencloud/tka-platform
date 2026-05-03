@@ -10,9 +10,7 @@
  * SSR-safe: all browser API access is guarded behind runtime checks.
  */
 
-import type { IRetroSoundManager } from "../contracts/IRetroSoundManager";
-
-export class RetroSoundManager implements IRetroSoundManager {
+export class RetroSoundManager {
 	private ctx: AudioContext | null = null;
 	private volume = 0.3;
 	private muted = false;

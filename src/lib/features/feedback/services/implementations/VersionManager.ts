@@ -20,7 +20,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import type { IVersionService } from "../contracts/IVersionService";
+
 import type {
   AppVersion,
   VersionFeedbackItem,
@@ -33,7 +33,7 @@ import { isFeedbackType } from "../../domain/models/feedback-models";
 const VERSIONS_COLLECTION = "versions";
 const FEEDBACK_COLLECTION = "feedback";
 
-export class VersionService implements IVersionService {
+export class VersionService {
   async getVersions(): Promise<AppVersion[]> {
     const firestore = await getFirestoreInstance();
     const q = query(

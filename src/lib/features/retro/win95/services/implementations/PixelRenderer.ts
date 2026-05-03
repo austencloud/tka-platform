@@ -18,7 +18,6 @@
  * Domain: 1995 TKA Notation System
  */
 
-import type { IPixelRenderer } from "../contracts/IPixelRenderer";
 import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
 import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
@@ -98,7 +97,7 @@ const HAND_DOT_RADIUS_VB = 22;
 // PIXEL RENDERER
 // ============================================================================
 
-export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
+export class PixelRenderer extends EraRendererBase {
 	constructor(preparer: IPictographPreparer) {
 		super(preparer);
 	}

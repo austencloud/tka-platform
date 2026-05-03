@@ -5,9 +5,6 @@
  * rating updates, and matchup prefetching.
  */
 
-import type { IArenaOrchestrator } from "../contracts/IArenaOrchestrator";
-import type { IArenaRepository } from "../contracts/IArenaRepository";
-import type { IRatingCalculator } from "../contracts/IRatingCalculator";
 import type { IMatchupSelector, MatchupCandidate } from "../contracts/IMatchupSelector";
 import type {
   ArenaMatchup,
@@ -19,8 +16,10 @@ import {
   MIN_VOTE_INTERVAL_MS,
   RECENT_MATCHUP_BUFFER_SIZE,
 } from "../../domain/constants/arena-constants";
+import type { ArenaRepository } from "./ArenaRepository";
+import type { RatingCalculator } from "./RatingCalculator";
 
-export class ArenaOrchestrator implements IArenaOrchestrator {
+export class ArenaOrchestrator {
   private userId = "";
   private pool: MatchupCandidate[] = [];
   private currentMatchup: ArenaMatchup | null = null;
@@ -32,8 +31,8 @@ export class ArenaOrchestrator implements IArenaOrchestrator {
   private lastVoteTime = 0;
 
   constructor(
-    private readonly repository: IArenaRepository,
-    private readonly ratingCalculator: IRatingCalculator,
+    private readonly repository: ArenaRepository,
+    private readonly ratingCalculator: RatingCalculator,
     private readonly matchupSelector: IMatchupSelector
   ) {}
 

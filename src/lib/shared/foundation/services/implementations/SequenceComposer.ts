@@ -1,6 +1,5 @@
-import type { ISequenceComposer } from "../contracts/ISequenceComposer";
-import type { IStepDeriver } from "../contracts/IStepDeriver";
-import type { IContentHasher } from "../contracts/IContentHasher";
+import type { StepDeriver } from "./StepDeriver";
+import type { ContentHasher } from "./ContentHasher";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { StepPairingData } from "../../domain/models/StepPairingData";
 import { createSequenceData, type SequenceData } from "../../domain/models/SequenceData";

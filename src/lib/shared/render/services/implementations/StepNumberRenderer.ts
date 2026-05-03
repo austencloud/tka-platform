@@ -16,7 +16,6 @@
  * - Dominant baseline: hanging (top-aligned)
  */
 
-import type { IStepNumberRenderer } from "../contracts/IStepNumberRenderer";
 
 import { getStepNumberRenderer } from "$lib/shared/render/getStepNumberRenderer";
 
@@ -41,7 +40,7 @@ const DARK_MODE_COLOR = "#ffffff";
 /** Text color for light mode (dark text on light background) */
 const LIGHT_MODE_COLOR = "#231f20";
 
-export class StepNumberRenderer implements IStepNumberRenderer {
+export class StepNumberRenderer {
   drawStepNumber(
     ctx: CanvasRenderingContext2D,
     stepNumber: number,

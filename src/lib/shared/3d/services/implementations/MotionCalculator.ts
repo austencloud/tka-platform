@@ -11,15 +11,15 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionConfig3D } from "../../domain/models/MotionData3D";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
-import type { IAngleMathCalculator } from "../contracts/IAngleMathCalculator";
-import type { IOrientationMapper } from "../contracts/IOrientationMapper";
+import type { AngleMathCalculator } from "./AngleMathCalculator";
+import type { OrientationMapper } from "./OrientationMapper";
 
 const PI = Math.PI;
 
 export class MotionCalculator implements IMotionCalculator {
   constructor(
-    private angleMath: IAngleMathCalculator,
-    private orientationService: IOrientationMapper
+    private angleMath: AngleMathCalculator,
+    private orientationService: OrientationMapper
   ) {}
 
   /**

@@ -11,10 +11,9 @@
   import type { ArenaUserStats } from "../../domain/models/arena-models";
   import type { StabilityReport } from "../../services/contracts/IStabilityAnalyzer";
   import { getArenaOrchestrator } from "../../getArenaOrchestrator";
-  import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
-  const orchestrator: IArenaOrchestrator = getArenaOrchestrator();
+  const orchestrator = getArenaOrchestrator();
 
   let userStats = $state<ArenaUserStats | null>(null);
   let loading = $state(true);

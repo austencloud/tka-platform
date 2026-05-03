@@ -14,23 +14,22 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type { IFeedbackStatusService } from "../contracts/IFeedbackStatusService";
+
 import type {
   FeedbackItem,
   FeedbackStatus,
   StatusHistoryEntry,
 } from "../../domain/models/feedback-models";
 import type { IFeedbackQueryService } from "../contracts/IFeedbackQueryService";
-import type { IFeedbackSubmissionService } from "../contracts/IFeedbackSubmissionService";
+import { type FeedbackSubmissionService, feedbackSubmissionService } from "./FeedbackSubmitter";
 import { feedbackQueryService } from "./FeedbackQuerier";
-import { feedbackSubmissionService } from "./FeedbackSubmitter";
 
 const COLLECTION_NAME = "feedback";
 
-export class FeedbackStatusService implements IFeedbackStatusService {
+export class FeedbackStatusService {
   constructor(
     private readonly queryService: IFeedbackQueryService = feedbackQueryService,
-    private readonly submissionService: IFeedbackSubmissionService = feedbackSubmissionService
+    private readonly submissionService: FeedbackSubmissionService = feedbackSubmissionService
   ) {}
 
   async updateStatus(

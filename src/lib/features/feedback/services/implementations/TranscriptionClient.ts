@@ -1,11 +1,10 @@
-import type { ITranscriptionClient } from "../contracts/ITranscriptionClient";
 
 /**
  * Converts a recorded audio Blob to base64 and calls the
  * `transcribeAudio` Cloud Function. Uses dynamic imports to
  * avoid loading Firebase Functions SDK until needed.
  */
-export class TranscriptionClient implements ITranscriptionClient {
+export class TranscriptionClient {
 	async transcribe(blob: Blob, mimeType: string): Promise<string> {
 		const audioBase64 = await this.blobToBase64(blob);
 

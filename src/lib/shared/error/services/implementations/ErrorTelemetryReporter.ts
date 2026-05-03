@@ -21,13 +21,12 @@ import {
   increment,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IErrorTelemetryReporter } from "../contracts/IErrorTelemetryReporter";
 import type { ShowErrorOptions } from "$lib/shared/error/domain/error-models";
 
 const COLLECTION = "errorTelemetry";
 const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export class ErrorTelemetryReporter implements IErrorTelemetryReporter {
+export class ErrorTelemetryReporter {
   async report(options: ShowErrorOptions): Promise<void> {
     try {
       const db = await getFirestoreInstance();

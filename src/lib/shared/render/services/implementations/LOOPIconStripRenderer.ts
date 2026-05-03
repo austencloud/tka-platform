@@ -1,12 +1,11 @@
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import type { ILOOPIconStripRenderer } from "../contracts/ILOOPIconStripRenderer";
 import { renderLoopIconStrip, type LOOPComponentId } from "@tka/render-composition";
 
 function toComponentId(c: LOOPComponent): LOOPComponentId {
   return c as unknown as LOOPComponentId;
 }
 
-export class LOOPIconStripRenderer implements ILOOPIconStripRenderer {
+export class LOOPIconStripRenderer {
   render(
     ctx: CanvasRenderingContext2D,
     components: Set<LOOPComponent>,

@@ -8,9 +8,7 @@
  * Domain: Retro File Manager
  */
 
-import type { IFileNameConverter } from "../contracts/IFileNameConverter";
-
-export class FileNameConverter implements IFileNameConverter {
+export class FileNameConverter {
 	convert(
 		name: string,
 		extension: string = ".SEQ",

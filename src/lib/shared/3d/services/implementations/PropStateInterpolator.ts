@@ -17,15 +17,15 @@ import {
   GRID_RADIUS_3D,
 } from "../../domain/constants/plane-transforms";
 import type { IPropStateInterpolator } from "../contracts/IPropStateInterpolator";
-import type { IAngleMathCalculator } from "../contracts/IAngleMathCalculator";
-import type { IOrientationMapper } from "../contracts/IOrientationMapper";
+import type { AngleMathCalculator } from "./AngleMathCalculator";
+import type { OrientationMapper } from "./OrientationMapper";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 export class PropStateInterpolator implements IPropStateInterpolator {
   constructor(
-    private angleMath: IAngleMathCalculator,
-    private orientationService: IOrientationMapper,
+    private angleMath: AngleMathCalculator,
+    private orientationService: OrientationMapper,
     private motionCalculator: IMotionCalculator
   ) {}
 

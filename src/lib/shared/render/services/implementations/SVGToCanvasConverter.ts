@@ -10,9 +10,7 @@ import type {
   RenderQualitySettings,
   SVGConversionOptions,
 } from "../../domain/models/SvgConversion";
-import type { ISVGToCanvasConverter } from "../contracts/ISVGToCanvasConverter";
-
-export class SVGToCanvasConverter implements ISVGToCanvasConverter {
+export class SVGToCanvasConverter {
   private defaultQuality: RenderQualitySettings = {
     antialiasing: true,
     smoothScaling: true,

@@ -12,7 +12,7 @@
  */
 
 import type { Unsubscribe } from "firebase/firestore";
-import type { IFeedbackService } from "../contracts/IFeedbackService";
+
 import type {
   FeedbackItem,
   FeedbackFormData,
@@ -44,7 +44,7 @@ import {
   type FeedbackSubscriptionService,
 } from "./FeedbackSubscriber";
 
-export class FeedbackService implements IFeedbackService {
+export class FeedbackService {
   constructor(
     private readonly submissionService: FeedbackSubmissionService = feedbackSubmissionService,
     private readonly queryService: FeedbackQueryService = feedbackQueryService,

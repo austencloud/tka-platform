@@ -15,7 +15,7 @@ export interface IPersistenceService {
 
   loadSequence(id: string): Promise<SequenceData | null>;
 
-  Get all sequences (with optional filtering)
+  /** Get all sequences (with optional filtering) */
   getAllSequences(filter?: {
     author?: string;
     level?: number;

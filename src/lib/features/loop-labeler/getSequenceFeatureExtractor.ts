@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { ISequenceFeatureExtractor } from './services/contracts/ISequenceFeatureExtractor';
 import { SequenceFeatureExtractor } from './services/implementations/SequenceFeatureExtractor';
 import { getSequenceAnalyzer } from '$lib/features/create/shared/getSequenceAnalyzer';
 
-let instance: ISequenceFeatureExtractor | null = null;
+let instance: SequenceFeatureExtractor | null = null;
 
-export function getSequenceFeatureExtractor(): ISequenceFeatureExtractor {
+export function getSequenceFeatureExtractor(): SequenceFeatureExtractor {
 	if (!browser) throw new Error('getSequenceFeatureExtractor() is browser-only');
 	return instance ??= new SequenceFeatureExtractor(getSequenceAnalyzer());
 }

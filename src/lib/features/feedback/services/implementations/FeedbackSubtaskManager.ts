@@ -7,13 +7,13 @@
 
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IFeedbackSubtaskManager } from "../contracts/IFeedbackSubtaskManager";
+
 import type {
   FeedbackSubtask,
   SubtaskStatus,
 } from "../../domain/models/feedback-models";
 
-export class FeedbackSubtaskManager implements IFeedbackSubtaskManager {
+export class FeedbackSubtaskManager {
   /**
    * Add a new subtask to feedback item
    */

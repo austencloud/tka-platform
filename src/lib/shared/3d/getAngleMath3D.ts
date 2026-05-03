@@ -1,8 +1,7 @@
-import type { IAngleMathCalculator } from '$lib/shared/3d/services/contracts/IAngleMathCalculator';
 import { AngleMathCalculator } from '$lib/shared/3d/services/implementations/AngleMathCalculator';
 
-let instance: IAngleMathCalculator | null = null;
+let instance: AngleMathCalculator | null = null;
 
-export function getAngleMath3D(): IAngleMathCalculator {
+export function getAngleMath3D(): AngleMathCalculator {
   return instance ??= new AngleMathCalculator();
 }

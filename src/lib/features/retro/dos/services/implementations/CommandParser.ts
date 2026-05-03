@@ -11,18 +11,17 @@
  * Domain: Retro DOS Era
  */
 
-import type { ICommandParser } from "../contracts/ICommandParser";
-import type { IDosFileSystem } from "../contracts/IDosFileSystem";
+import type { DosFileSystem } from "./DosFileSystem";
 import type { DosFile } from "../../domain/dos-types";
 import { terminalState } from "../../state/terminal-state.svelte";
 
-export class CommandParser implements ICommandParser {
-	private readonly fs: IDosFileSystem;
+export class CommandParser {
+	private readonly fs: DosFileSystem;
 
 	/** When true, the next execute() call handles serial number input */
 	private awaitingSerial = false;
 
-	constructor(fs: IDosFileSystem) {
+	constructor(fs: DosFileSystem) {
 		this.fs = fs;
 	}
 

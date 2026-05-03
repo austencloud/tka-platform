@@ -27,32 +27,6 @@ const MOTION_TYPES = {
   STATIC: MotionType.STATIC,
 } as const;
 
-export interface ITurnManager {
-  /**
-   * Set turns on a beat - handles both numeric turns and float conversions
-   */
-  setTurns(
-    beat: StepData,
-    turnBlue: number | "fl",
-    turnRed: number | "fl"
-  ): void;
-
-  /**
-   * Update rotation directions for dash/static motions based on prop continuity
-   */
-  updateDashStaticRotationDirections(
-    beat: StepData,
-    propContinuity: PropContinuity,
-    blueRotationDirection: string,
-    redRotationDirection: string
-  ): void;
-
-  /**
-   * Generate random rotation direction
-   */
-  getRandomRotationDirection(): RotationDirection;
-}
-
 export class TurnManager {
   /**
    * Set turns - exact port from legacy set_turns()

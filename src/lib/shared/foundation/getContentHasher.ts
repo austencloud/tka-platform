@@ -1,8 +1,7 @@
-import type { IContentHasher } from './services/contracts/IContentHasher';
 import { ContentHasher } from './services/implementations/ContentHasher';
 
-let instance: IContentHasher | null = null;
+let instance: ContentHasher | null = null;
 
-export function getContentHasher(): IContentHasher {
+export function getContentHasher(): ContentHasher {
 	return instance ??= new ContentHasher();
 }

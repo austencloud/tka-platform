@@ -11,35 +11,6 @@ import {
   type GenerationOptions,
 } from "../../domain/models/generate-models";
 
-export interface ISequenceMetadataManager {
-  /**
-   * Generate a sequence name based on options and timestamp
-   */
-  generateSequenceName(options: GenerationOptions): string;
-
-  /**
-   * Calculate word from beat letters
-   */
-  calculateWordFromBeats(steps: StepData[]): string;
-
-  /**
-   * Map difficulty level to numeric level (1-3)
-   */
-  mapDifficultyToLevel(difficulty: DifficultyLevel): number;
-
-  /**
-   * Create metadata object for generated sequence
-   */
-  createGenerationMetadata(options: {
-    stepsGenerated: number;
-    propContinuity: string;
-    blueRotationDirection: string;
-    redRotationDirection: string;
-    turnIntensity: number;
-    level: number;
-  }): Record<string, unknown>;
-}
-
 export class SequenceMetadataManager {
   /**
    * Generate sequence name based on options - matches legacy pattern

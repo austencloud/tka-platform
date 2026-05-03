@@ -19,7 +19,6 @@
   import ArenaPropDrawer from "./ArenaPropDrawer.svelte";
   import { arenaState } from "../../state/arena-state.svelte";
   import { getArenaOrchestrator } from "../../getArenaOrchestrator";
-  import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import {
@@ -41,7 +40,7 @@
   let userId = $state<string | null>(null);
 
   // Get orchestrator from DI
-  const orchestrator: IArenaOrchestrator = getArenaOrchestrator();
+  const orchestrator = getArenaOrchestrator();
 
   // Vote feedback animation state
   let voteResult = $state<"left" | "right" | null>(null);

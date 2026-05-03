@@ -20,60 +20,6 @@ const ROTATION_DIRS = {
   noRotation: RotationDirection.NO_ROTATION,
 } as const;
 
-export interface IPictographFilter {
-  /**
-   * Filter pictographs by continuity - next beat's start position must match last beat's end position
-   */
-  filterByContinuity(
-    options: PictographData[],
-    lastStep: StepData | StartPositionData | null
-  ): PictographData[];
-
-  /**
-   * Filter pictographs by rotation direction for continuous prop continuity
-   */
-  filterByRotation(
-    options: PictographData[],
-    blueRotationDirection: string,
-    redRotationDirection: string
-  ): PictographData[];
-
-  /**
-   * Filter for start positions (where startPosition === endPosition)
-   */
-  filterStartPositions(options: PictographData[]): PictographData[];
-
-  /**
-   * Filter Type 6 (static) pictographs based on difficulty level
-   * Level 1: No turns allowed, so filter out ALL Type 6 pictographs
-   * Level 2+: Filter out Type 6 pictographs that have no turns applied
-   */
-  filterStaticType6(options: PictographData[], level: number): PictographData[];
-
-  /**
-   * Filter pictographs by required end position
-   * Used for freeform mode when user specifies where the sequence should end
-   */
-  filterByEndPosition(
-    options: PictographData[],
-    requiredEndPosition: string
-  ): PictographData[];
-
-  /**
-   * Filter pictographs by prop type
-   * Ensures both motions match the specified prop type
-   */
-  filterByPropType(
-    options: PictographData[],
-    propType: string
-  ): PictographData[];
-
-  /**
-   * Select random item from array
-   */
-  selectRandom<T>(array: T[]): T;
-}
-
 export class PictographFilter {
   /**
    * Filter by continuity - next beat's start position must match last beat's end position

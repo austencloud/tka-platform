@@ -18,7 +18,7 @@ import { trackXP } from "$lib/shared/gamification/init/gamification-initializer"
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import type { IFeedbackSubmissionService } from "../contracts/IFeedbackSubmissionService";
+
 import type {
   FeedbackFormData,
   FeedbackProgressCallback,
@@ -32,7 +32,7 @@ import { captureDeviceContext } from "../../utils/device-context-capturer";
 const ADMIN_USER_ID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
 const COLLECTION_NAME = "feedback";
 
-export class FeedbackSubmissionService implements IFeedbackSubmissionService {
+export class FeedbackSubmissionService {
   generateTitleFromDescription(description: string): string {
     const trimmed = description.trim();
 

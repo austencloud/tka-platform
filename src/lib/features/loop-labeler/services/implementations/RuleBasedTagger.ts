@@ -5,7 +5,6 @@
  * Applies simple rules based on sequence features to generate tag suggestions.
  */
 
-import type { IRuleBasedTagger } from "../contracts/IRuleBasedTagger";
 import type { SequenceFeatures } from "../../domain/models/sequence-features";
 import type {
   SuggestedTag,
@@ -18,7 +17,7 @@ import {
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-export class RuleBasedTagger implements IRuleBasedTagger {
+export class RuleBasedTagger {
   /**
    * Suggest all applicable tags for a sequence
    */

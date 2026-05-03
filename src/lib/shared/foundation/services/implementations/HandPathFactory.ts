@@ -1,5 +1,4 @@
-import type { IHandPathFactory } from "../contracts/IHandPathFactory";
-import type { IContentHasher } from "../contracts/IContentHasher";
+import type { ContentHasher } from "./ContentHasher";
 import type { HandPathData } from "../../domain/models/HandPathData";
 import {
   GridLocation,
@@ -64,8 +63,8 @@ function deduplicateLocations(
   return result;
 }
 
-export class HandPathFactory implements IHandPathFactory {
-  constructor(private readonly hasher: IContentHasher) {}
+export class HandPathFactory {
+  constructor(private readonly hasher: ContentHasher) {}
 
   create(
     locations: readonly GridLocation[],

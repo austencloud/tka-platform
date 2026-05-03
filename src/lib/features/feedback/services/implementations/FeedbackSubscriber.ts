@@ -20,13 +20,13 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
-import type { IFeedbackSubscriptionService } from "../contracts/IFeedbackSubscriptionService";
+
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 import { type FeedbackDocumentMapper, feedbackDocumentMapper } from "./FeedbackDocumentMapper";
 
 const COLLECTION_NAME = "feedback";
 
-export class FeedbackSubscriptionService implements IFeedbackSubscriptionService {
+export class FeedbackSubscriptionService {
   constructor(
     private readonly mapper: FeedbackDocumentMapper = feedbackDocumentMapper
   ) {}

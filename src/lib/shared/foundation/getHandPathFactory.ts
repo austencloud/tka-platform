@@ -1,9 +1,8 @@
-import type { IHandPathFactory } from './services/contracts/IHandPathFactory';
 import { HandPathFactory } from './services/implementations/HandPathFactory';
 import { getContentHasher } from './getContentHasher';
 
-let instance: IHandPathFactory | null = null;
+let instance: HandPathFactory | null = null;
 
-export function getHandPathFactory(): IHandPathFactory {
+export function getHandPathFactory(): HandPathFactory {
 	return instance ??= new HandPathFactory(getContentHasher());
 }

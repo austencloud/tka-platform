@@ -1,8 +1,7 @@
-import type { IOrientationMapper } from '$lib/shared/3d/services/contracts/IOrientationMapper';
 import { OrientationMapper } from '$lib/shared/3d/services/implementations/OrientationMapper';
 
-let instance: IOrientationMapper | null = null;
+let instance: OrientationMapper | null = null;
 
-export function getOrientationMapper3D(): IOrientationMapper {
+export function getOrientationMapper3D(): OrientationMapper {
   return instance ??= new OrientationMapper();
 }

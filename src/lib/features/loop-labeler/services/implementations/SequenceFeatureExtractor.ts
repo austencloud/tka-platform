@@ -10,7 +10,6 @@ import type {
   ISequenceAnalyzer,
   StrictLoopType,
 } from "$lib/features/create/shared/services/contracts/ISequenceAnalyzer";
-import type { ISequenceFeatureExtractor } from "../contracts/ISequenceFeatureExtractor";
 import type {
   SequenceFeatures,
   PositionDominance,
@@ -26,7 +25,7 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
+export class SequenceFeatureExtractor {
   constructor(private readonly SequenceAnalyzer: ISequenceAnalyzer) {}
 
   /**

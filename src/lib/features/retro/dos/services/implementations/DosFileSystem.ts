@@ -11,7 +11,6 @@
  */
 
 import type { DosFile, DosDirectory } from "../../domain/dos-types";
-import type { IDosFileSystem } from "../contracts/IDosFileSystem";
 import { getAllLore } from "../../../shared/lore/order-references";
 
 /** Deterministic size from filename - simple hash to keep values stable across sessions */
@@ -210,7 +209,7 @@ function buildRoot(): DosDirectory {
 // Implementation
 // ---------------------------------------------------------------------------
 
-export class DosFileSystem implements IDosFileSystem {
+export class DosFileSystem {
 	private readonly root: DosDirectory;
 	private currentDir: DosDirectory;
 	private pathSegments: string[];

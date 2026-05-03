@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type { IFeedbackTesterWorkflowService } from "../contracts/IFeedbackTesterWorkflowService";
+
 import type {
   AdminResponse,
   TesterConfirmation,
@@ -29,7 +29,7 @@ import { feedbackQueryService } from "./FeedbackQuerier";
 
 const COLLECTION_NAME = "feedback";
 
-export class FeedbackTesterWorkflowService implements IFeedbackTesterWorkflowService {
+export class FeedbackTesterWorkflowService {
   constructor(
     private readonly queryService: IFeedbackQueryService = feedbackQueryService
   ) {}

@@ -1,4 +1,3 @@
-import type { IContentHasher } from "../contracts/IContentHasher";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
@@ -29,7 +28,7 @@ function serializeStep(step: SoloPropStepData): string {
   return s;
 }
 
-export class ContentHasher implements IContentHasher {
+export class ContentHasher {
   hashHandPath(locations: readonly GridLocation[]): string {
     const canonical = locations.join("|");
     return this.hash128(canonical);

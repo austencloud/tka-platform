@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISVGToCanvasConverter } from './services/contracts/ISVGToCanvasConverter';
 import { SVGToCanvasConverter } from './services/implementations/SVGToCanvasConverter';
 
-let instance: ISVGToCanvasConverter | null = null;
+let instance: SVGToCanvasConverter | null = null;
 
-export function getSvgToCanvasConverter(): ISVGToCanvasConverter {
+export function getSvgToCanvasConverter(): SVGToCanvasConverter {
 	if (!browser) throw new Error('getSvgToCanvasConverter() is browser-only');
 	return instance ??= new SVGToCanvasConverter();
 }

@@ -15,10 +15,9 @@
     ArenaUserStats,
   } from "../../domain/models/arena-models";
   import { getArenaOrchestrator } from "../../getArenaOrchestrator";
-  import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
-  const orchestrator: IArenaOrchestrator = getArenaOrchestrator();
+  const orchestrator = getArenaOrchestrator();
 
   let leaderboard = $state<ArenaLeaderboardEntry[]>([]);
   let userStats = $state<ArenaUserStats | null>(null);
