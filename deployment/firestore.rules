@@ -3,106 +3,79 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ============================================================================
-    // HELPER FUNCTIONS
-    // ============================================================================
-
-    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Check if user owns the document (based on userId field)
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Check if the incoming data has the correct userId
     function hasValidUserId() {
       return isAuthenticated()
         && request.resource.data.userId == request.auth.uid;
     }
 
-    // Check if user is an admin (supports both old isAdmin boolean and new role field)
     function isAdmin() {
       let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isAuthenticated()
         && (userData.role == 'admin' || userData.isAdmin == true);
     }
 
-    // Check if user is at least tester level
     function isTester() {
       let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isAuthenticated()
         && (userData.role == 'admin' || userData.role == 'tester' || userData.isAdmin == true);
     }
 
-    // Check if user is at least premium level
     function isPremium() {
       let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isAuthenticated()
         && (userData.role == 'admin' || userData.role == 'tester' || userData.role == 'premium' || userData.isAdmin == true);
     }
 
-    // -------------------------------------------------------------------------
-    // DEVELOPER SYSTEM HELPERS (uses developers collection)
-    // -------------------------------------------------------------------------
-
-    // Check if user is an approved, active developer
     function isApprovedDeveloper() {
       return request.auth != null
         && exists(/databases/$(database)/documents/developers/$(request.auth.uid))
         && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.active == true;
     }
 
-    // Check if user has admin role in the developers collection
     function isDeveloperAdmin() {
       return isApprovedDeveloper()
         && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.role == "admin";
     }
 
-    // Check if user has contributor role in the developers collection
     function isContributor() {
       return isApprovedDeveloper()
         && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.role == "contributor";
     }
 
-    // Check if user has verified their age (18+) for Hall of Shame access
     function isAgeVerified() {
       let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isAuthenticated() && userData.ageVerifiedAt != null;
     }
 
-    // ============================================================================
-    // CONFIG COLLECTIONS
-    // ============================================================================
-
-    // Feature flags configuration - readable by all authenticated users, writable by admins only
     match /config/featureFlags {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Video categories configuration - readable by authenticated users, writable by admins
     match /config/videoCategories {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Quick performers configuration - readable by authenticated users, writable by admins
     match /config/quickPerformers {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Effect point positions - readable by all (pre-auth safe), writable by admins
-    // Stores fire/LED point positions that apply to all users globally
+    // Effect point positions - readable by all (pre-auth safe)
     match /config/effectPoints {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Fire effect defaults - readable by all (including pre-auth), writable by admins
     // Must allow unauthenticated reads: FireDefaultsLoader runs during DI
     // container construction before auth completes
     match /config/fireDefaults {
@@ -111,25 +84,17 @@ service cloud.firestore {
     }
 
     // Prop geometry adjustments - arrow positioning offsets for pictograph rendering
-    // Readable by all (needed pre-auth for rendering), writable by admins
     match /prop_geometry_adjustments/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Feature flag audit log - append-only for admins
     match /audit/featureFlags/entries/{entryId} {
       allow read: if isAdmin();
       allow create: if isAdmin();
       allow update, delete: if false; // Immutable audit trail
     }
 
-    // ============================================================================
-    // GAMIFICATION COLLECTIONS (Root Level)
-    // ============================================================================
-
-    // User Achievements - users can read/write their own achievements
-    // SECURITY: userId field is required - no fallback for missing field
     match /userAchievements/{achievementId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if hasValidUserId();
@@ -137,8 +102,6 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // User XP - users can read/write their own XP data
-    // SECURITY: userId field is required - no fallback for missing field
     match /userXP/{xpId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if hasValidUserId();
@@ -146,46 +109,37 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // XP Events - append-only log, users can only create events for themselves
-    // SECURITY: userId field is required on create
     match /xpEvents/{eventId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if hasValidUserId();
       allow update, delete: if false; // Events are immutable
     }
 
-    // Daily Challenges - global data, read-only for users (admin can write)
     match /dailyChallenges/{challengeId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // Only admin can create/update/delete challenges
+      allow write: if isAdmin();
     }
 
-    // Weekly Challenges - global data, read-only for users (admin can write)
     match /weeklyChallenges/{challengeId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Skill Progressions - global skill definitions (admin can write)
     match /skillProgressions/{skillId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Train Challenges - global training challenges (admin can write)
     match /trainChallenges/{challengeId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Announcements - read by authenticated users, write by admins
     match /announcements/{announcementId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // User Challenge Progress - users can read/write their own progress
-    // SECURITY: userId field is required - no fallback for missing field
     match /userChallengeProgress/{progressId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if hasValidUserId();
@@ -193,8 +147,6 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // User Streaks - users can read/write their own streak data
-    // SECURITY: userId field is required - no fallback for missing field
     match /userStreaks/{streakId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if hasValidUserId();
@@ -202,8 +154,6 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // Achievement Notifications - users can only read/write their own notifications
-    // SECURITY: userId field is required - no fallback for missing field
     match /achievementNotifications/{notificationId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if hasValidUserId();
@@ -211,38 +161,18 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // ============================================================================
-    // USERNAME INDEX (Uniqueness Enforcement)
-    // ============================================================================
-
-    // Username index - maps lowercase username to userId for uniqueness enforcement
-    // Document ID is the lowercase username, document contains userId of owner
     match /usernames/{usernameLowercase} {
-      // Anyone authenticated can check username availability
       allow read: if isAuthenticated();
-
-      // Create: User can claim an unclaimed username for themselves
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid;
-
-      // Update: Only the owner can update their username claim
-      // (e.g., to update timestamps or reclaim after releasing)
       allow update: if isAuthenticated()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == request.auth.uid;
-
-      // Delete: Only owner can release their username, or admin for cleanup
       allow delete: if isAuthenticated()
         && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // ============================================================================
-    // USER DATA COLLECTIONS
-    // ============================================================================
-
-    // -------------------------------------------------------------------------
     // INTENTIONAL PUBLIC READ ACCESS
-    // -------------------------------------------------------------------------
     // The following collections use `allow read: if true` BY DESIGN.
     // This is NOT a security vulnerability - it's required for:
     //
@@ -272,22 +202,10 @@ service cloud.firestore {
     // SECURITY MODEL: Data separation, not access restriction
     // - Public data is stored in these public-readable collections
     // - Private data (messages, settings, drafts) uses auth-gated rules
-    // -------------------------------------------------------------------------
 
-    // User profiles - PUBLIC browsing allowed for everyone (even unauthenticated)
-    // Users can only edit their own profile data
     match /users/{userId} {
-      // ANYONE can read public profile data (no authentication required)
-      // See above documentation for security rationale
       allow read: if true;
-
-      // Users can only update their own profile
       allow create: if isOwner(userId);
-
-      // Allow updates for:
-      // 1. Owner updating their own profile
-      // 2. Admins updating any user's profile (role changes, moderation)
-      // 3. Authenticated users incrementing/decrementing followerCount (for follow/unfollow)
       allow update: if isOwner(userId)
         || isAdmin()
         || (isAuthenticated()
@@ -296,158 +214,96 @@ service cloud.firestore {
         || (isAuthenticated()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount'])
             && request.resource.data.followerCount == resource.data.followerCount - 1);
-
-      // Users can delete their own profile, admins can delete any user (for testing)
       allow delete: if isOwner(userId) || isAdmin();
 
-      // -------------------------------------------------------------------------
-      // USER SETTINGS (Private - admin can read for impersonation preview)
-      // -------------------------------------------------------------------------
       match /settings/{settingId} {
-        // Admins can read any user's settings for impersonation/preview mode
         allow read: if isOwner(userId) || isAdmin();
-        // Only the owner can write their own settings, admins can delete
         allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // USER TAGS (Private)
-      // -------------------------------------------------------------------------
       match /tags/{tagId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // USER GAMIFICATION SUBCOLLECTIONS (Private - admin can read for preview)
-      // -------------------------------------------------------------------------
-
-      // User achievements - PUBLIC read for creator profiles in Browse
       match /achievements/{achievementId} {
-        // Anyone can read achievements (for viewing creator profiles)
-        // Only owner can write, admins can delete
         allow read: if true;
         allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // User XP (single document or subcollection)
       match /xp/{xpId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // XP events log (append-only for users, admins can delete for cleanup)
       match /xpEvents/{eventId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
         allow update: if false; // Events are immutable
-        allow delete: if isAdmin(); // Admins can clean up
+        allow delete: if isAdmin();
       }
 
-      // Challenge progress
       match /challengeProgress/{progressId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // User streak (single document or subcollection)
       match /streak/{streakId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // User notifications
       match /notifications/{notificationId} {
-        // Admins can read for impersonation/preview mode
         allow read: if isOwner(userId) || isAdmin();
-        // Admins can create notifications on behalf of users (e.g., moderation warnings)
         allow create, update: if isOwner(userId) || isAdmin();
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // Dismissed announcements - users can read/write their own dismissals
       match /dismissedAnnouncements/{announcementId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // Create module sessions - users can read/write their own sessions
       match /sessions/{sessionId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // ONBOARDING STATUS
-      // -------------------------------------------------------------------------
       match /onboarding/{docId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // SEQUENCE DRAFTS (Autosave)
-      // -------------------------------------------------------------------------
       match /drafts/{draftId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // SOCIAL SUBCOLLECTIONS (Following/Followers)
-      // -------------------------------------------------------------------------
-      // Users can read anyone's following/followers lists (public social graph)
-      // Users can only write to their own following list
-
-      // Following list - who this user follows
       match /following/{followedUserId} {
-        // Anyone can read follow relationships (for "is following" checks)
         allow read: if isAuthenticated();
-        // Only the owner can add/remove follows, admins can delete
         allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // Followers list - who follows this user
       match /followers/{followerUserId} {
-        // Anyone can read follower lists
         allow read: if isAuthenticated();
-        // Written via transaction when someone follows/unfollows
-        // The follower (followerUserId) writes to the target user's followers list
         allow create: if isAuthenticated() && request.auth.uid == followerUserId;
-        allow update: if false; // No updates needed
+        allow update: if false;
         allow delete: if (isAuthenticated() && request.auth.uid == followerUserId) || isAdmin();
       }
 
-      // Private connection data - notes about other users
-      // Only the owner can read/write their own connection documents
       match /connections/{connectionId} {
         allow read, write: if isOwner(userId);
       }
 
-      // -------------------------------------------------------------------------
-      // USER LIBRARY (Sequences)
-      // -------------------------------------------------------------------------
-      // Public sequences are readable by anyone, private only by owner
-      // Admins can read any user's sequences for impersonation/preview mode
-
       match /sequences/{sequenceId} {
-        // Public sequences can be read by anyone, private only by owner
-        // Admins can read any user's library (for impersonation/preview mode)
         allow read: if resource.data.visibility == 'public' || isOwner(userId) || isAdmin();
-        // Owner can create/update, admins can update for data migrations
         allow create: if isOwner(userId);
         allow update: if isOwner(userId) || isAdmin();
         allow delete: if isOwner(userId) || isAdmin();
       }
-
-      // -------------------------------------------------------------------------
-      // COMPOSITIONAL MODEL: Hand Paths (Tier 1) and Solo Props (Tier 2)
-      // -------------------------------------------------------------------------
-      // User-owned artifacts for the three-tier compositional sequence model.
-      // Same ownership pattern as sequences.
 
       match /handPaths/{pathId} {
         allow read: if isOwner(userId) || isAdmin();
@@ -463,43 +319,31 @@ service cloud.firestore {
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // Weekly challenge progress
       match /weeklyProgress/{progressId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // Skill progression tracking
       match /skillProgress/{progressId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // Train challenge progress
       match /trainProgress/{progressId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // TIKA CONVERSATIONS (AI Learning Assistant)
-      // -------------------------------------------------------------------------
       match /tikaConversations/{conversationId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // TIKA INTERACTIONS (Topic Discussion Tracking)
-      // -------------------------------------------------------------------------
       match /tikaInteractions/{topicId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // TIKA VERIFICATIONS (Server-side audit log)
-      // -------------------------------------------------------------------------
       match /tikaVerifications/{verificationId} {
         allow read: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId);
@@ -507,17 +351,11 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // LEARNING PROGRESS (Concept Progress Tracking)
-      // -------------------------------------------------------------------------
       match /learningProgress/{docId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // QUIZ HISTORY (Append-only Quiz Attempts)
-      // -------------------------------------------------------------------------
       match /quizHistory/{attemptId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
@@ -525,111 +363,65 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // VOICE SESSIONS (Voice Practice Data)
-      // -------------------------------------------------------------------------
       match /voiceSessions/{sessionId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // TURN PATTERNS (Sequence Turn Pattern Templates)
-      // -------------------------------------------------------------------------
       match /turnPatterns/{patternId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // ROTATION DIRECTION PATTERNS (Sequence Rotation Direction Templates)
-      // -------------------------------------------------------------------------
       match /rotationDirectionPatterns/{patternId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // -------------------------------------------------------------------------
-      // FCM PUSH TOKENS (Device registration for push notifications)
-      // -------------------------------------------------------------------------
       match /fcmTokens/{tokenId} {
         allow read, write: if isOwner(userId);
       }
     }
 
-    // ============================================================================
-    // COLLECTIONS - User Collections for sequences, beats, etc.
-    // ============================================================================
-
-    // User Collections - PUBLIC browsing allowed for everyone
     match /users/{userId}/collections/{collectionId} {
-      // ANYONE can read public collections (no authentication required)
       allow read: if true;
-
-      // Only the owner can create/update/delete their collections
       allow create, update, delete: if isOwner(userId);
     }
 
-    // Sequences within collections
     match /users/{userId}/collections/{collectionId}/sequences/{sequenceId} {
-      // ANYONE can read public sequences (no authentication required)
       allow read: if true;
-
-      // Only the owner can create/update/delete their sequences
       allow create, update, delete: if isOwner(userId);
     }
 
-    // User-created sequences (if stored at root level)
     match /sequences/{sequenceId} {
-      // ANYONE can read public sequences (no authentication required)
       allow read: if true;
-
-      // Only the creator can modify their sequences
       allow create: if isAuthenticated() && hasValidUserId();
       allow update, delete: if isAuthenticated()
         && resource.data.userId == request.auth.uid;
     }
 
-    // User collections metadata (if stored at root level)
     match /collections/{collectionId} {
-      // ANYONE can read public collections (no authentication required)
       allow read: if true;
-
-      // Only the creator can modify their collections
       allow create: if isAuthenticated() && hasValidUserId();
       allow update, delete: if isAuthenticated()
         && resource.data.userId == request.auth.uid;
     }
 
-    // ============================================================================
-    // MESSAGING COLLECTIONS
-    // ============================================================================
-
-    // Check if user is a participant in a conversation (or admin for preview mode)
     function isConversationParticipant(conversationId) {
       let conv = get(/databases/$(database)/documents/conversations/$(conversationId)).data;
       return isAuthenticated() && (request.auth.uid in conv.participants || isAdmin());
     }
 
-    // Conversations - only participants can read/write
-    // Supports both direct (1:1) and group conversations
-    // Admins can read any conversation for impersonation/preview mode
     match /conversations/{conversationId} {
-      // Participants can read their conversations, admins can read any (for preview mode)
       allow read: if isAuthenticated()
         && (request.auth.uid in resource.data.participants || isAdmin());
 
-      // Creating a conversation - user must be in participants list OR be admin (for impersonation)
-      // Direct (1:1): exactly 2 participants, type must be "direct" or missing
-      // Groups: 2-50 participants, type must be "group", creator must be admin
       allow create: if isAuthenticated()
         && (request.auth.uid in request.resource.data.participants || isAdmin())
         && (
-          // Direct conversations (existing behavior, backward compatible)
           ((!('type' in request.resource.data) || request.resource.data.type == 'direct')
             && request.resource.data.participants.size() == 2)
           ||
-          // Group conversations (new)
           (request.resource.data.type == 'group'
             && request.resource.data.participants.size() >= 2
             && request.resource.data.participants.size() <= 50
@@ -637,179 +429,101 @@ service cloud.firestore {
             && request.auth.uid == request.resource.data.groupMetadata.createdBy)
         );
 
-      // Updating - participants can update their conversations
-      // Direct: cannot change participant list
-      // Groups: standard updates by participants, membership changes by admins only
       allow update: if isAuthenticated()
         && request.auth.uid in resource.data.participants
         && (
-          // Direct conversations: participant list must stay size 2
           ((!('type' in resource.data) || resource.data.type == 'direct')
             && request.resource.data.participants.size() == 2)
           ||
-          // Group conversations: standard updates or admin membership changes
           (resource.data.type == 'group' && (
-            // Standard updates (unread, lastMessage, typing, updatedAt)
             request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['unreadCount', 'lastMessage', 'updatedAt', 'typing'])
             ||
-            // Admin-only updates (participants, groupMetadata)
             request.auth.uid in resource.data.groupMetadata.adminIds
           ))
         );
 
-      // No deleting conversations (soft delete via flag if needed)
       allow delete: if false;
 
-      // Messages subcollection - only participants can read/write
       match /messages/{messageId} {
-        // Only participants of parent conversation can read messages
         allow read: if isConversationParticipant(conversationId);
-
-        // Creating messages - must be sender and a participant
         allow create: if isConversationParticipant(conversationId)
           && request.resource.data.senderId == request.auth.uid;
-
-        // Updating messages:
-        // - Sender can update any field (edit content, delete, etc.)
-        // - Any participant can update reactions, read status
         allow update: if isConversationParticipant(conversationId)
           && (resource.data.senderId == request.auth.uid
               || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'readBy', 'readAt']));
-
-        // No hard deleting messages (soft delete via isDeleted flag)
         allow delete: if false;
       }
     }
 
-    // ============================================================================
-    // STRIPE SUBSCRIPTION COLLECTIONS
-    // Firebase Stripe Extension manages these collections
-    // ============================================================================
-
-    // Customer data - managed by Stripe extension
     match /customers/{uid} {
-      // Users can only read their own customer data
       allow read: if isOwner(uid);
-      // Extension writes this data via admin SDK (no client writes)
       allow write: if false;
 
-      // Checkout sessions - created by client, processed by extension
       match /checkout_sessions/{sessionId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid);
         allow update, delete: if false;
       }
 
-      // Subscriptions - managed by extension webhooks
       match /subscriptions/{subscriptionId} {
         allow read: if isOwner(uid);
         allow write: if false;
       }
 
-      // Payment methods - managed by extension
       match /payments/{paymentId} {
         allow read: if isOwner(uid);
         allow write: if false;
       }
     }
 
-    // Products catalog - public read, admin write
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
 
-      // Price tiers for each product
       match /prices/{priceId} {
         allow read: if true;
         allow write: if isAdmin();
       }
     }
 
-    // ============================================================================
-    // PRESENCE TRACKING
-    // ============================================================================
-
-    // Presence collection - tracks user online status
     match /presence/{userId} {
-      // Anyone authenticated can read presence (for showing online status)
       allow read: if isAuthenticated();
-      // Users can write their own presence
       allow create, update: if isOwner(userId);
-      // Users can delete their own, admins can delete any (for user cleanup)
       allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // ============================================================================
-    // ACTIVITY LOGGING
-    // ============================================================================
-
-    // Activity log - users can read their own, admins can read all
-    // Events are append-only (no update/delete by users, admins can delete for cleanup)
     match /users/{userId}/activityLog/{eventId} {
-      // Users can read their own activity, admins can read anyone's
       allow read: if isOwner(userId) || isAdmin();
-
-      // Only the owner can create events in their own log
       allow create: if isOwner(userId);
-
-      // Events are immutable for users, but admins can delete for cleanup
       allow update: if false;
       allow delete: if isAdmin();
     }
 
-    // ============================================================================
-    // CONTRIBUTORS COLLECTION (Release Notes Attribution)
-    // ============================================================================
-
-    // Curated list of developers credited in release notes.
-    // Each doc references a user account (userId field).
-    // Anyone authenticated can read (badges shown in What's New modal).
-    // Only admins can add/remove contributors.
     match /contributors/{contributorId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // ============================================================================
-    // VERSIONS COLLECTION (Release Management)
-    // ============================================================================
-
-    // App versions - testers/admins can read, only admins can write
     match /versions/{versionId} {
       allow read: if isTester();
       allow write: if isAdmin();
     }
 
-    // ============================================================================
-    // FEEDBACK COLLECTION
-    // ============================================================================
-
-    // Feedback items - users can submit and read their own, testers/admins/developers can manage
     match /feedback/{feedbackId} {
-      // Users can read their own feedback, testers/admins can read all
-      // Any authenticated user can read (for developer CLI access)
       allow read: if isAuthenticated()
         && (resource.data.userId == request.auth.uid || isTester() || isApprovedDeveloper());
-
-      // Any authenticated user can submit feedback (must set their own userId)
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid;
-
-      // Testers/admins OR approved developers can update feedback
       allow update: if isTester() || isApprovedDeveloper();
-
-      // Admins can delete any feedback; contributors can delete their own
       allow delete: if isAdmin() || isDeveloperAdmin()
         || (isContributor() && resource.data.userId == request.auth.uid);
 
-      // Subtasks subcollection
       match /subtasks/{subtaskId} {
         allow read: if isTester();
         allow write: if isTester();
       }
 
-      // Journal subcollection (append-only activity log from CLI)
       match /journal/{entryId} {
         allow read: if isTester() || isApprovedDeveloper();
         allow create: if isTester() || isApprovedDeveloper();
@@ -817,54 +531,23 @@ service cloud.firestore {
       }
     }
 
-    // ============================================================================
-    // COLLABORATIVE VIDEOS
-    // ============================================================================
-
-    // Videos collection - for collaborative video uploads
-    // Note: Public videos are readable by all authenticated users to support
-    // browsing and discovery. Private video access requires collaborator status.
     match /videos/{videoId} {
-      // Authenticated users can read any video
-      // Privacy is enforced at query level (filter by visibility/collaboratorIds)
       allow read: if isAuthenticated();
-
-      // Only creator can create
       allow create: if isAuthenticated()
         && request.resource.data.creatorId == request.auth.uid;
-
-      // Creator can update, collaborators can update limited fields
       allow update: if isAuthenticated()
         && (resource.data.creatorId == request.auth.uid
             || request.auth.uid in resource.data.collaboratorIds);
-
-      // Only creator can delete
       allow delete: if isAuthenticated()
         && resource.data.creatorId == request.auth.uid;
     }
 
-    // ============================================================================
-    // QR CODE SHORT CODES
-    // ============================================================================
-
-    // Short codes for QR code URLs - maps 6-char codes to encoded sequences
-    // Public read so anyone can scan QR codes and resolve them
-    // Authenticated users can create new codes
     match /shortcodes/{code} {
-      // ANYONE can read short codes (QR scanning works without auth)
       allow read: if true;
-
-      // Authenticated users can create short codes
       allow create: if isAuthenticated();
-
-      // Anyone can increment scan count (fire-and-forget analytics)
-      // Only allow updating the scanCount field
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount']);
-
-      // No deletion - short codes are permanent
       allow delete: if isAdmin();
 
-      // Scan event log — append-only analytics per QR scan
       match /scanEvents/{eventId} {
         allow read: if isAdmin();
         allow create: if true;
@@ -872,205 +555,90 @@ service cloud.firestore {
       }
     }
 
-    // ============================================================================
-    // PUBLIC SEQUENCES INDEX
-    // ============================================================================
-
-    // Public sequences - denormalized for Browse page browsing
     match /publicSequences/{sequenceId} {
-      // ANYONE can read public sequences (no authentication required)
-      // See documentation at top of file for security rationale
       allow read: if true;
-
-      // Only the owner can write (via sync from their private library)
       allow create, update: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthenticated()
-        && resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid;
     }
 
-    // ============================================================================
-    // PUBLIC HAND PATHS AND SOLO PROPS
-    // ============================================================================
-
-    // Public hand paths - browsable by anyone, writable by owner
     match /publicHandPaths/{pathId} {
       allow read: if true;
       allow create, update: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthenticated()
-        && resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid;
     }
 
-    // Public solo props - browsable by anyone, writable by owner
     match /publicSoloProps/{soloPropId} {
       allow read: if true;
       allow create, update: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthenticated()
-        && resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid;
     }
 
-    // ============================================================================
-    // GLOBAL ARROW ADJUSTMENTS
-    // Admin-only collection for arrow position overrides
-    // ============================================================================
-
-    // Global arrow adjustments - admin-set arrow position overrides
-    // These adjustments apply to ALL pictographs matching the same key
-    // Document ID format: {gridMode}|{oriKey}|{letter}|{turnsTuple}|{arrowKey}
     match /global_arrow_adjustments/{adjustmentId} {
-      // ANYONE authenticated can read (required for rendering pipeline)
       allow read: if isAuthenticated();
-
-      // Only admin can write (create, update, delete)
       allow write: if isAdmin();
     }
 
-    // Audit trail for arrow adjustment changes
-    // Document ID: auto-generated
     match /global_arrow_adjustment_history/{entryId} {
       allow read: if isAdmin();
       allow write: if isAdmin();
     }
 
-    // ============================================================================
-    // APP METRICS (Public Counters)
-    // ============================================================================
-
-    // App-wide metrics like global counters for the endless spinner
-    // Public read/write for anonymous users to participate in global counters
     match /appMetrics/{metricId} {
-      // ANYONE can read metrics (for displaying global counters)
       allow read: if true;
-
-      // ANYONE can write (atomic increment of totalGenerated counter)
-      // This is intentionally permissive to allow anonymous users
-      // to contribute to the "sequences ever generated" counter
       allow write: if true;
     }
 
-    // ============================================================================
-    // LIVE BROADCAST (Synchronized Endless Spinner)
-    // ============================================================================
-
-    // Live broadcast state - everyone watches the same synchronized stream
-    // Cloud Functions write via Admin SDK, clients only read
     match /liveBroadcast/{document=**} {
-      // ANYONE can read the broadcast (no authentication required)
-      // This enables the synchronized experience for all visitors
       allow read: if true;
-
-      // No client writes - only Cloud Functions can update via Admin SDK
-      // This ensures a single authoritative source for the broadcast
       allow write: if false;
     }
 
-    // ============================================================================
-    // USER LOCATIONS (Global Community Map)
-    // ============================================================================
-
-    // User location sharing for the global TKA community map
-    // Users can share their coordinates to appear on the map
-    // Privacy controlled by visibility field (public/private)
     match /userLocations/{userId} {
-      // Anyone can read public locations (for the community map)
-      // Users can read their own location regardless of visibility
-      // Admins can read any location
       allow read: if resource.data.visibility == 'public'
         || isOwner(userId)
         || isAdmin();
-
-      // Only the user can create or update their own location
       allow create, update: if isOwner(userId);
-
-      // Users can delete their own location, admins can delete any
       allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // ============================================================================
-    // SHOWCASE VIDEOS (Landing Page Video Curation)
-    // ============================================================================
-
-    // Showcase videos - uploaded from Instagram, curated for landing page
-    // Authenticated users can read (admin module is access-controlled client-side)
-    // Public can read approved videos (for landing page display)
-    // Only admins can write
     match /showcaseVideos/{videoId} {
-      // Allow read for:
-      // 1. Any authenticated user (for admin curation UI)
-      // 2. Unauthenticated users for approved videos (landing page)
       allow read: if isAuthenticated() || resource.data.approved == true;
-
-      // Only admins can create/update/delete
       allow create, update, delete: if isAdmin();
     }
 
-    // ============================================================================
-    // USER REPORTS (Moderation System)
-    // ============================================================================
-
-    // User reports - community members can report problematic users
-    // Users can read their own submitted reports
-    // Admins can read all reports and update/delete them
     match /userReports/{reportId} {
-      // Users can read their own reports, admins can read all
       allow read: if isAuthenticated()
         && (resource.data.reporterId == request.auth.uid || isAdmin());
-
-      // Authenticated users can submit reports (not about themselves)
       allow create: if isAuthenticated()
         && request.resource.data.reporterId == request.auth.uid
         && request.resource.data.reportedUserId != request.auth.uid;
-
-      // Only admins can update reports (status changes, resolution, etc.)
       allow update: if isAdmin();
-
-      // Only admins can delete reports
       allow delete: if isAdmin();
     }
 
-    // ============================================================================
-    // CONTENT APPEALS (Content Moderation Appeals)
-    // ============================================================================
-
-    // Content appeals - users can appeal flagged content moderation decisions
-    // Users can read/create their own appeals
-    // Admins can read all appeals and resolve them
     match /contentAppeals/{appealId} {
-      // Users can read their own appeals, admins can read all
       allow read: if isAuthenticated()
         && (resource.data.ownerId == request.auth.uid || isAdmin());
-
-      // Users can create appeals for their own content
       allow create: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.status == 'pending';
-
-      // Only admins can update appeals (resolve them)
       allow update: if isAdmin();
-
-      // Only admins can delete appeals
       allow delete: if isAdmin();
     }
 
-    // ============================================================================
-    // HALL OF SHAME (Age-Gated Adult Content)
-    // ============================================================================
-
-    // Hall of Shame entries - age-verified users can browse, admins moderate
     match /hallOfShame/{sequenceId} {
-      // Age-verified users can read approved, non-hidden entries
-      // Users can always see their own entries (any status)
-      // Admins can read all entries for moderation
       allow read: if isAdmin()
         || (isAuthenticated()
             && isAgeVerified()
             && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid)
             && resource.data.hidden != true);
 
-      // Users can submit their own sequences (pending status only)
-      // Enforces initial values to prevent manipulation
       allow create: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.status == 'pending'
@@ -1080,129 +648,70 @@ service cloud.firestore {
         && request.resource.data.featured == false
         && request.resource.data.hidden == false;
 
-      // Only admins can approve/reject/feature/hide
       allow update: if isAdmin();
 
-      // Users can delete their own pending submissions only
       allow delete: if isAuthenticated()
         && resource.data.ownerId == request.auth.uid
         && resource.data.status == 'pending';
     }
 
-    // Hall of Shame votes - one vote per user per sequence
-    // Document ID format: {voterId}_{sequenceId} for uniqueness enforcement
     match /hallOfShameVotes/{voteId} {
-      // Age-verified users can read votes
       allow read: if isAuthenticated() && isAgeVerified();
-
-      // One vote per user per sequence (enforced by document ID pattern)
       allow create: if isAuthenticated()
         && isAgeVerified()
         && voteId == request.auth.uid + '_' + request.resource.data.sequenceId
         && request.resource.data.voterId == request.auth.uid;
-
-      // Votes cannot be changed or deleted (permanent)
       allow update, delete: if false;
     }
 
-    // Hall of Shame rate limits - tracks daily submission count
     match /hallOfShameRateLimits/{limitId} {
-      // Users can read/write their own rate limit docs
       allow read, create, update: if isAuthenticated()
         && limitId.matches(request.auth.uid + '_.*');
       allow delete: if isAdmin();
     }
 
-    // Hall of Shame reports - for post-approval issue tracking
     match /hallOfShameReports/{reportId} {
-      // Only admins can read reports
       allow read: if isAdmin();
-
-      // Age-verified users can submit reports
       allow create: if isAuthenticated()
         && isAgeVerified()
         && request.resource.data.reporterId == request.auth.uid;
-
-      // Reports cannot be modified or deleted
       allow update, delete: if false;
     }
 
-    // ============================================================================
-    // LOOP LABELS (Admin Labeling Tool)
-    // ============================================================================
-
-    // LOOP labels - admin tool for labeling sequences with LOOP patterns
-    // Document ID is the sequence word (uppercase)
     match /loop-labels/{word} {
-      // Authenticated users can read labels (needed for Browse to show LOOP icons)
       allow read: if isAuthenticated();
-
-      // Only admins can write labels
       allow write: if isAdmin();
     }
 
-    // ============================================================================
-    // SYSTEM DECKS (Curated Sequence Collections)
-    // ============================================================================
-
-    // System decks - readable by all authenticated users, writable by admins only
-    // These are curated collections of sequences (e.g., Level 1 LOOP deck)
     match /decks/{deckId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
 
-      // Sequences within a deck
       match /sequences/{sequenceId} {
         allow read: if isAuthenticated();
         allow write: if isAdmin();
       }
     }
 
-    // ============================================================================
-    // DEVELOPERS COLLECTION (Multi-Developer Access Control)
-    // ============================================================================
-
-    // Developers collection - the authority on who can access developer tools
-    // Any approved developer can read the roster; only admin can manage it
     match /developers/{uid} {
-      // Authenticated users can read their own record (needed for role lookup at login)
-      // Approved developers can read all records (for list-developers command)
       allow read: if isAuthenticated() && request.auth.uid == uid
                   || isApprovedDeveloper();
       allow write: if isDeveloperAdmin();
     }
 
-    // ============================================================================
-    // AGENT SESSIONS (Developer CLI Sessions)
-    // ============================================================================
-
-    // Agent sessions - tracks active developer CLI sessions
-    // Any approved developer can read/write session data
     match /agentSessions/{sessionId} {
       allow read, write: if isApprovedDeveloper();
     }
 
-    // ============================================================================
-    // MAIL COLLECTION (Email Trigger Extension)
-    // ============================================================================
-
-    // Mail collection - documents trigger the Firebase email extension
-    // Approved developers can create mail documents; no reads needed
     match /mail/{mailId} {
       allow create: if isApprovedDeveloper();
       allow read: if false;
     }
 
-    // ============================================================================
-    // FESTIVAL HUB
-    // ============================================================================
-
-    // Festival directory — public read, admin write
     match /festivals/{festivalId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
 
-      // Public attendance badges per festival
       match /attendance/{uid} {
         allow read: if isAuthenticated();
         allow create, update: if isOwner(uid);
@@ -1210,33 +719,24 @@ service cloud.firestore {
       }
     }
 
-    // Private application tracking per user
     match /userFestivalTracking/{userId}/tracked/{festivalId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId);
       allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // Teaching portfolio (single doc per user)
     match /userProfiles/{userId}/workshopPortfolio/{docId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId);
       allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // Festival submissions (moderation queue)
     match /festivalSubmissions/{submissionId} {
       allow create: if isAuthenticated();
       allow read: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
-    // ============================================================================
-    // EXPLICIT DENY FOR UNMATCHED PATHS
-    // Any collection not explicitly defined above is denied by default
-    // ============================================================================
-
-    // Firestore denies by default, but we make it explicit for clarity
-    // If you need a new collection, add explicit rules above this comment
+    // Firestore denies by default
   }
 }

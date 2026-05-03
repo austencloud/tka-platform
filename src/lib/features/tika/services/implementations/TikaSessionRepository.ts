@@ -58,9 +58,6 @@ export class TikaSessionError extends Error {
 }
 
 export class TikaSessionRepository implements ITikaSessionRepository {
-  /**
-   * Get the current user ID or throw if not authenticated
-   */
   private getUserId(): string {
     const userId = authState.effectiveUserId;
     if (!userId) {
@@ -69,9 +66,6 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     return userId;
   }
 
-  /**
-   * Convert Firestore timestamp to Date
-   */
   private toDate(timestamp: unknown): Date {
     if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
       return (timestamp as { toDate: () => Date }).toDate();
@@ -82,9 +76,6 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     return new Date();
   }
 
-  /**
-   * Map Firestore document to TikaSession
-   */
   private mapDocToSession(data: DocumentData, id: string): TikaSession {
     return {
       id,
@@ -104,9 +95,6 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     };
   }
 
-  /**
-   * Map Firestore review metadata, converting timestamps
-   */
   private mapReviewMetadata(data: DocumentData): ReviewMetadata {
     return {
       claimedAt: data.claimedAt ? this.toDate(data.claimedAt) : undefined,
@@ -120,9 +108,6 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     };
   }
 
-  /**
-   * Map Firestore document to TikaSessionPreview (excludes messages)
-   */
   private mapDocToPreview(data: DocumentData, id: string): TikaSessionPreview {
     return {
       id,
@@ -147,14 +132,12 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
 
-    // Create or update session data
     const session = createTikaSession(userId, messages, sessionId);
     const docRef = doc(
       firestore,
       getUserTikaConversationPath(userId, session.id)
     );
 
-    // Check if this is an update (preserve original createdAt)
     let createdAt = serverTimestamp();
     if (sessionId) {
       try {
@@ -163,7 +146,7 @@ export class TikaSessionRepository implements ITikaSessionRepository {
           createdAt = existingDoc.data().createdAt || serverTimestamp();
         }
       } catch {
-        // If we can't read the existing doc, use current time
+        // Fall back to current time if we can't read existing doc
       }
     }
 
@@ -240,7 +223,10 @@ export class TikaSessionRepository implements ITikaSessionRepository {
       return previews;
     } catch (error) {
       console.error("[TikaSessionRepository] Failed to list sessions:", error);
-      throw new TikaSessionError("Failed to load conversation history", "NETWORK");
+      throw new TikaSessionError(
+        "Failed to load conversation history",
+        "NETWORK"
+      );
     }
   }
 
@@ -272,7 +258,6 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     const sortDir = options?.sortDirection ?? "desc";
     const limitCount = options?.limit ?? TIKA_LIMITS.DEFAULT_QUERY_LIMIT;
 
-    // Initialize subscription asynchronously
     getFirestoreInstance()
       .then((firestore) => {
         const collectionRef = collection(
@@ -296,11 +281,10 @@ export class TikaSessionRepository implements ITikaSessionRepository {
             callback(previews);
           },
           (error) => {
-            console.error(
-              "[TikaSessionRepository] Subscription error:",
-              error
+            console.error("[TikaSessionRepository] Subscription error:", error);
+            onError?.(
+              error instanceof Error ? error : new Error(String(error))
             );
-            onError?.(error instanceof Error ? error : new Error(String(error)));
           }
         );
       })
@@ -312,7 +296,6 @@ export class TikaSessionRepository implements ITikaSessionRepository {
         onError?.(error instanceof Error ? error : new Error(String(error)));
       });
 
-    // Return cleanup function
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -355,7 +338,10 @@ export class TikaSessionRepository implements ITikaSessionRepository {
       }
     } catch (error) {
       console.error("[TikaSessionRepository] Failed to flag session:", error);
-      throw new TikaSessionError("Failed to flag conversation for review", "NETWORK");
+      throw new TikaSessionError(
+        "Failed to flag conversation for review",
+        "NETWORK"
+      );
     }
   }
 
@@ -384,16 +370,20 @@ export class TikaSessionRepository implements ITikaSessionRepository {
 
       return sessions;
     } catch (error) {
-      console.error("[TikaSessionRepository] Failed to get flagged sessions:", error);
-      throw new TikaSessionError("Failed to load flagged conversations", "NETWORK");
+      console.error(
+        "[TikaSessionRepository] Failed to get flagged sessions:",
+        error
+      );
+      throw new TikaSessionError(
+        "Failed to load flagged conversations",
+        "NETWORK"
+      );
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // REVIEW WORKFLOW METHODS
-  // ─────────────────────────────────────────────────────────────────────────
-
-  async getReviewQueue(options?: ReviewQueueQueryOptions): Promise<TikaSession[]> {
+  async getReviewQueue(
+    options?: ReviewQueueQueryOptions
+  ): Promise<TikaSession[]> {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
 
@@ -402,12 +392,12 @@ export class TikaSessionRepository implements ITikaSessionRepository {
       getUserTikaConversationsPath(userId)
     );
 
-    // Build query constraints
     const constraints = [];
 
-    // Filter by status(es)
     if (options?.status) {
-      const statuses = Array.isArray(options.status) ? options.status : [options.status];
+      const statuses = Array.isArray(options.status)
+        ? options.status
+        : [options.status];
       if (statuses.length === 1) {
         constraints.push(where("reviewStatus", "==", statuses[0]));
       } else {
@@ -436,12 +426,18 @@ export class TikaSessionRepository implements ITikaSessionRepository {
 
       return sessions;
     } catch (error) {
-      console.error("[TikaSessionRepository] Failed to get review queue:", error);
+      console.error(
+        "[TikaSessionRepository] Failed to get review queue:",
+        error
+      );
       throw new TikaSessionError("Failed to load review queue", "NETWORK");
     }
   }
 
-  async claimForReview(sessionId: string, claimedBy: string): Promise<TikaSession | null> {
+  async claimForReview(
+    sessionId: string,
+    claimedBy: string
+  ): Promise<TikaSession | null> {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
 
@@ -462,12 +458,13 @@ export class TikaSessionRepository implements ITikaSessionRepository {
         const data = docSnap.data();
 
         // Check if already claimed by someone else
-        if (data.reviewStatus === "claimed" && data.reviewMetadata?.claimedBy !== claimedBy) {
-          // Already claimed by another reviewer
+        if (
+          data.reviewStatus === "claimed" &&
+          data.reviewMetadata?.claimedBy !== claimedBy
+        ) {
           return null;
         }
 
-        // Claim it
         const reviewMetadata = {
           ...data.reviewMetadata,
           claimedAt: serverTimestamp(),
@@ -493,11 +490,17 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     } catch (error) {
       if (error instanceof TikaSessionError) throw error;
       console.error("[TikaSessionRepository] Failed to claim session:", error);
-      throw new TikaSessionError("Failed to claim session for review", "NETWORK");
+      throw new TikaSessionError(
+        "Failed to claim session for review",
+        "NETWORK"
+      );
     }
   }
 
-  async submitReview(sessionId: string, result: ReviewResult): Promise<TikaSession> {
+  async submitReview(
+    sessionId: string,
+    result: ReviewResult
+  ): Promise<TikaSession> {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
 
@@ -515,7 +518,6 @@ export class TikaSessionRepository implements ITikaSessionRepository {
       const data = docSnap.data();
       const existingMetadata = data.reviewMetadata || {};
 
-      // Determine final status based on review result
       let newStatus: ReviewStatus;
       if (result.autoApprove) {
         newStatus = "approved";
@@ -584,12 +586,18 @@ export class TikaSessionRepository implements ITikaSessionRepository {
       });
     } catch (error) {
       if (error instanceof TikaSessionError) throw error;
-      console.error("[TikaSessionRepository] Failed to add review notes:", error);
+      console.error(
+        "[TikaSessionRepository] Failed to add review notes:",
+        error
+      );
       throw new TikaSessionError("Failed to add review notes", "NETWORK");
     }
   }
 
-  async updateReviewStatus(sessionId: string, status: ReviewStatus): Promise<void> {
+  async updateReviewStatus(
+    sessionId: string,
+    status: ReviewStatus
+  ): Promise<void> {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
 
@@ -603,7 +611,10 @@ export class TikaSessionRepository implements ITikaSessionRepository {
         reviewStatus: status,
       });
     } catch (error) {
-      console.error("[TikaSessionRepository] Failed to update review status:", error);
+      console.error(
+        "[TikaSessionRepository] Failed to update review status:",
+        error
+      );
       throw new TikaSessionError("Failed to update review status", "NETWORK");
     }
   }

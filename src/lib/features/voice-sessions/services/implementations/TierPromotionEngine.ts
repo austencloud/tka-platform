@@ -42,23 +42,14 @@ const INTERPRETER_BASE_PATH =
 
 export class TierPromotionEngine implements ITierPromotionEngine {
   findPromotionCandidates(sessions: VoiceSession[]): PromotionCandidate[] {
-    // Collect all T2 events with their session context
     const t2Events = this.collectT2Events(sessions);
-
-    // Group by normalized transcript -> command signature
     const groups = this.groupByTranscriptAndCommand(t2Events);
-
-    // Filter to those meeting the threshold and generate candidates
     const candidates = this.generateCandidates(groups);
 
     return candidates
       .sort((a, b) => b.hitCount - a.hitCount)
       .slice(0, MAX_CANDIDATES);
   }
-
-  // --------------------------------------------------------------------------
-  // Event Collection
-  // --------------------------------------------------------------------------
 
   private collectT2Events(
     sessions: VoiceSession[]
@@ -75,10 +66,6 @@ export class TierPromotionEngine implements ITierPromotionEngine {
 
     return events;
   }
-
-  // --------------------------------------------------------------------------
-  // Grouping
-  // --------------------------------------------------------------------------
 
   private groupByTranscriptAndCommand(
     events: Array<{ event: VoiceSessionEvent; sessionId: string }>
@@ -124,10 +111,6 @@ export class TierPromotionEngine implements ITierPromotionEngine {
     return groups;
   }
 
-  // --------------------------------------------------------------------------
-  // Candidate Generation
-  // --------------------------------------------------------------------------
-
   private generateCandidates(
     groups: Map<string, TranscriptCommandGroup>
   ): PromotionCandidate[] {
@@ -158,10 +141,6 @@ export class TierPromotionEngine implements ITierPromotionEngine {
     return candidates;
   }
 
-  // --------------------------------------------------------------------------
-  // Regex Generation
-  // --------------------------------------------------------------------------
-
   /**
    * Generates a regex pattern from transcript variants.
    *
@@ -176,15 +155,12 @@ export class TierPromotionEngine implements ITierPromotionEngine {
   private generateRegex(variants: string[]): string {
     if (variants.length === 0) return "";
 
-    // Normalize all variants
     const normalized = variants.map((v) => v.toLowerCase().trim());
 
     if (normalized.length === 1) {
-      // Single variant: escape and convert spaces to \s+
       return `/${this.escapeForRegex(normalized[0]!)}/i`;
     }
 
-    // Try to find common prefix and suffix
     const result = this.buildAlternationRegex(normalized);
     return `/${result}/i`;
   }
@@ -196,23 +172,18 @@ export class TierPromotionEngine implements ITierPromotionEngine {
    */
   private buildAlternationRegex(variants: string[]): string {
     const wordArrays = variants.map((v) => v.split(/\s+/));
-
-    // Find common suffix words (working backwards)
     const commonSuffix = this.findCommonSuffix(wordArrays);
 
     if (commonSuffix.length === 0) {
-      // No common suffix - just create a flat alternation
       const escaped = variants.map((v) => this.escapeForRegex(v));
       return `(?:${escaped.join("|")})`;
     }
 
-    // Extract prefix parts (everything before the common suffix)
     const prefixes = wordArrays.map((words) => {
       const prefixWords = words.slice(0, words.length - commonSuffix.length);
       return prefixWords.join(" ");
     });
 
-    // Build the regex
     const uniquePrefixes = [...new Set(prefixes)].filter((p) => p.length > 0);
     const suffixStr = commonSuffix.map((w) => this.escapeWord(w)).join("\\s+");
 
@@ -220,15 +191,12 @@ export class TierPromotionEngine implements ITierPromotionEngine {
       return suffixStr;
     }
 
-    // Check if any prefix is a superset of another (e.g., "play the" vs "play")
-    // In that case, make the extra words optional
     const escapedPrefixes = uniquePrefixes.map((p) => this.escapeForRegex(p));
 
     if (uniquePrefixes.length === 1) {
       return `${escapedPrefixes[0]}\\s+${suffixStr}`;
     }
 
-    // Check for optional word patterns (e.g., "play" vs "play the")
     const optionalResult = this.detectOptionalWords(uniquePrefixes);
     if (optionalResult) {
       return `${optionalResult}\\s+${suffixStr}`;
@@ -277,16 +245,11 @@ export class TierPromotionEngine implements ITierPromotionEngine {
     return suffix;
   }
 
-  // --------------------------------------------------------------------------
-  // Helpers
-  // --------------------------------------------------------------------------
-
   private normalizeTranscript(transcript: string): string {
     return transcript.toLowerCase().trim().replace(/\s+/g, " ");
   }
 
   private escapeForRegex(text: string): string {
-    // Escape regex special chars, convert spaces to \s+
     return text
       .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
       .replace(/\s+/g, "\\s+");
@@ -296,10 +259,6 @@ export class TierPromotionEngine implements ITierPromotionEngine {
     return word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 }
-
-// --------------------------------------------------------------------------
-// Internal Types
-// --------------------------------------------------------------------------
 
 interface TranscriptCommandGroup {
   normalized: string;

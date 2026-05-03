@@ -18,10 +18,6 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
-// ============================================================================
-// Position Groups - Alpha, Beta, Gamma
-// ============================================================================
-
 export interface PositionGroupData {
   name: string;
   greek: string;
@@ -57,10 +53,6 @@ export const POSITION_GROUPS: PositionGroupData[] = [
     color: "#14b8a6", // Teal
   },
 ];
-
-// ============================================================================
-// Letter Triad - A, B, C
-// ============================================================================
 
 export interface LetterTriadData {
   letter: Letter;
@@ -101,10 +93,6 @@ export const LETTER_TRIAD: LetterTriadData[] = [
     description: "One hand rotates with, one against - the hybrid",
   },
 ];
-
-// ============================================================================
-// Real Pictograph Data for Letters A, B, C
-// ============================================================================
 
 /**
  * Creates real PictographData for letter A (Pro + Pro)
@@ -220,10 +208,6 @@ export function createLetterCPictograph(): PictographData {
   };
 }
 
-// ============================================================================
-// Motion Types Triad - STATIC, DASH, SHIFT
-// ============================================================================
-
 export interface MotionTypeTriadData {
   type: MotionType | "SHIFT";
   label: string;
@@ -262,10 +246,6 @@ export const MOTION_TYPE_TRIAD: MotionTypeTriadData[] = [
   },
 ];
 
-// ============================================================================
-// Orientation Behavior Pairing
-// ============================================================================
-
 export interface OrientationPairingData {
   family: string;
   members: string[];
@@ -290,10 +270,6 @@ export const ORIENTATION_PAIRINGS: OrientationPairingData[] = [
     color: "#ec4899",
   },
 ];
-
-// ============================================================================
-// The Four Orientations
-// ============================================================================
 
 export interface OrientationData {
   value: Orientation;
@@ -333,10 +309,6 @@ export const ORIENTATIONS: OrientationData[] = [
     opposite: Orientation.CLOCK,
   },
 ];
-
-// ============================================================================
-// Core Pattern Explanation
-// ============================================================================
 
 export const CORE_PATTERN = {
   title: "The Core Pattern",

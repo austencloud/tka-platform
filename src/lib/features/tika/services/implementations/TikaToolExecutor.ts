@@ -5,7 +5,10 @@
  * comparisons, term definitions, and visual examples.
  */
 
-import type { ITikaPictographLoader, PictographData, PictographDataWithMode } from "../contracts/ITikaPictographLoader";
+import type {
+  ITikaPictographLoader,
+  PictographData,
+} from "../contracts/ITikaPictographLoader";
 import type { ITikaSequenceGenerator } from "../contracts/ITikaSequenceGenerator";
 import type { ITikaSequenceValidator } from "../contracts/ITikaSequenceValidator";
 import type {
@@ -29,7 +32,6 @@ import {
   LETTER_TYPES,
 } from "@tka/domain";
 
-// Position to static letter mapping
 const POSITION_STATIC_LETTERS: Record<string, string> = {
   alpha: "α",
   beta: "β",
@@ -50,9 +52,10 @@ export class TikaToolExecutor implements ITikaToolExecutor {
   ): LetterExplanationResult | string {
     this.pictographLoader.ensureLoaded();
 
-    const variations = gridMode === "box"
-      ? this.pictographLoader.getLetterVariationsByMode(letter, "box")
-      : this.pictographLoader.getLetterVariations(letter);
+    const variations =
+      gridMode === "box"
+        ? this.pictographLoader.getLetterVariationsByMode(letter, "box")
+        : this.pictographLoader.getLetterVariations(letter);
     if (variations.length === 0) {
       return `Letter "${letter}" not found in the TKA alphabet.`;
     }
@@ -123,8 +126,7 @@ export class TikaToolExecutor implements ITikaToolExecutor {
     if (!entry) {
       const possibleMatches = Object.keys(glossary)
         .filter(
-          (key) =>
-            key.includes(normalizedTerm) || normalizedTerm.includes(key)
+          (key) => key.includes(normalizedTerm) || normalizedTerm.includes(key)
         )
         .slice(0, 5);
 
@@ -254,13 +256,19 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
     const letters: string[] = canonicalDef.letters
       .split(", ")
       .flatMap((l: string) =>
-        l.includes("through") ? (LETTER_TYPES[typeKey]?.letters as string[]) || [] : [l.trim()]
+        l.includes("through")
+          ? (LETTER_TYPES[typeKey]?.letters as string[]) || []
+          : [l.trim()]
       );
     const exampleLetters: string[] = (typeInfo?.letters as string[]) || letters;
 
     const explanation = `**Type ${type} (${canonicalDef.name})**: ${canonicalDef.description}. Blue hand ${canonicalDef.motionPattern.blue}, red hand ${canonicalDef.motionPattern.red}.`;
 
-    let galleryItems: Array<{ letter: string; variation?: number; label?: string }> = [];
+    let galleryItems: Array<{
+      letter: string;
+      variation?: number;
+      label?: string;
+    }> = [];
 
     if (type === 1 && canonicalDef.rotationPattern) {
       for (const group of canonicalDef.rotationPattern.groups) {
@@ -307,7 +315,10 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
   }
 
   showPositionExamples(position: string): PositionExamplesResult | string {
-    const positionDef = POSITION_DEFINITIONS[position.toLowerCase() as keyof typeof POSITION_DEFINITIONS];
+    const positionDef =
+      POSITION_DEFINITIONS[
+        position.toLowerCase() as keyof typeof POSITION_DEFINITIONS
+      ];
     if (!positionDef) {
       return `Position "${position}" not recognized. Valid positions: alpha, beta, gamma, zeta, eta`;
     }
@@ -425,7 +436,10 @@ In TKA, **position** describes where your two hands are relative to each other o
       explanation: `**${motionDef.name}:** ${motionDef.description}`,
       inlineGallery: {
         type: "inline-gallery" as const,
-        items: examples.map((ex) => ({ letter: ex.letter, variation: ex.variation })),
+        items: examples.map((ex) => ({
+          letter: ex.letter,
+          variation: ex.variation,
+        })),
         layout: "row" as const,
         caption: `Examples of ${motionType} motion`,
       },
@@ -434,7 +448,9 @@ In TKA, **position** describes where your two hands are relative to each other o
 
   async explainSequence(word: string): Promise<SequenceResult | string> {
     try {
-      const letters = this.sequenceValidator.parseWordToLetters(word.toUpperCase());
+      const letters = this.sequenceValidator.parseWordToLetters(
+        word.toUpperCase()
+      );
 
       if (letters.length === 0) {
         return `Cannot generate sequence: no valid letters in "${word}"`;
@@ -459,14 +475,17 @@ In TKA, **position** describes where your two hands are relative to each other o
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return `Error processing sequence: ${errorMessage}`;
     }
   }
 
   async showSequenceSteps(word: string): Promise<StepGridResult | string> {
     try {
-      const letters = this.sequenceValidator.parseWordToLetters(word.toUpperCase());
+      const letters = this.sequenceValidator.parseWordToLetters(
+        word.toUpperCase()
+      );
 
       if (letters.length === 0) {
         return `Cannot generate sequence: no valid letters in "${word}"`;
@@ -478,10 +497,15 @@ In TKA, **position** describes where your two hands are relative to each other o
         }
       }
 
-      const result = await this.sequenceGenerator.generateSequence(letters, 100);
+      const result = await this.sequenceGenerator.generateSequence(
+        letters,
+        100
+      );
 
       if (!result.isValid || result.steps.length === 0) {
-        return `Failed to generate sequence "${word}": ${result.error || "Unknown error"}`;
+        return `Failed to generate sequence "${word}": ${
+          result.error || "Unknown error"
+        }`;
       }
 
       const stepGridItems = result.steps.map((step) => ({
@@ -503,7 +527,8 @@ In TKA, **position** describes where your two hands are relative to each other o
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return `Error generating step grid: ${errorMessage}`;
     }
   }
@@ -602,10 +627,6 @@ In TKA, **position** describes where your two hands are relative to each other o
 
     return examples;
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Private Helpers
-  // ─────────────────────────────────────────────────────────────────────────
 
   private isPositionTerm(term: string): boolean {
     const normalized = term.toLowerCase().trim();

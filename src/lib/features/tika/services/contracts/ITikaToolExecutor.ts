@@ -5,12 +5,6 @@
  * term definitions, position examples, and more.
  */
 
-import type { PictographData, PictographDataWithMode } from "./ITikaPictographLoader";
-
-// ─────────────────────────────────────────────────────────────────────────
-// Inline Component Types
-// ─────────────────────────────────────────────────────────────────────────
-
 export interface InlinePictograph {
   type: "inline-pictograph";
   letter: string;
@@ -55,10 +49,6 @@ export interface InlineStepGrid {
   steps: InlineStepGridItem[];
   caption: string;
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// Result Types
-// ─────────────────────────────────────────────────────────────────────────
 
 export interface LetterExplanationResult {
   explanation: string;
@@ -167,69 +157,35 @@ export interface StepGridResult {
   inlineStepGrid?: InlineStepGrid;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Interface
-// ─────────────────────────────────────────────────────────────────────────
-
 export interface ITikaToolExecutor {
-  /**
-   * Get detailed explanation of a TKA letter.
-   */
   getLetterExplanation(
     letter: string,
     variation?: number,
     gridMode?: "diamond" | "box"
   ): LetterExplanationResult | string;
 
-  /**
-   * Get definition of a TKA term.
-   */
   getTermDefinition(term: string): TermDefinitionResult | string;
 
-  /**
-   * Compare two TKA letters side by side.
-   */
   compareLetters(letter1: string, letter2: string): ComparisonResult | string;
 
-  /**
-   * List all letters of a specific type with gallery.
-   */
   listLettersByType(type: number): TypeListResult | string;
 
-  /**
-   * Show position examples with pictographs.
-   */
   showPositionExamples(position: string): PositionExamplesResult | string;
 
-  /**
-   * Show motion type examples with pictographs.
-   */
   showMotionExamples(
     motionType: string,
     hand?: "blue" | "red" | "both"
   ): MotionExamplesResult | string;
 
-  /**
-   * Generate a sequence with player component.
-   */
   explainSequence(word: string): Promise<SequenceResult | string>;
 
-  /**
-   * Show sequence as step grid.
-   */
   showSequenceSteps(word: string): Promise<StepGridResult | string>;
 
-  /**
-   * Get position examples by grid mode.
-   */
   getPositionExamplesByMode(position: string): {
     diamond: PictographExample[];
     box: PictographExample[];
   };
 
-  /**
-   * Get motion examples.
-   */
   getMotionExamples(
     motionType: string,
     hand?: "blue" | "red" | "both"

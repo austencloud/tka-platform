@@ -23,9 +23,6 @@ interface TranscribeResponse {
   transcript: string;
 }
 
-/**
- * Determine file extension from MIME type for Whisper's file parameter.
- */
 function extensionFromMime(mimeType: string): string {
   if (mimeType.includes("webm")) return "webm";
   if (mimeType.includes("mp4") || mimeType.includes("m4a")) return "m4a";
@@ -35,11 +32,6 @@ function extensionFromMime(mimeType: string): string {
   return "webm";
 }
 
-/**
- * Check and increment the per-user rate limit counter.
- * Uses a Firestore document per user with an array of timestamps.
- * Returns true if the request is within limits.
- */
 async function checkRateLimit(uid: string): Promise<boolean> {
   const db = admin.firestore();
   const ref = db.collection("rateLimits").doc(`transcribe_${uid}`);
@@ -51,7 +43,6 @@ async function checkRateLimit(uid: string): Promise<boolean> {
     const data = doc.data();
     const timestamps: number[] = data?.timestamps ?? [];
 
-    // Prune timestamps outside the window
     const recent = timestamps.filter((t) => t > windowStart);
 
     if (recent.length >= RATE_LIMIT_PER_HOUR) {
@@ -64,15 +55,11 @@ async function checkRateLimit(uid: string): Promise<boolean> {
   });
 }
 
-/**
- * Callable Cloud Function: transcribe audio via OpenAI Whisper
- */
 export const transcribeAudio = functions.https.onCall(
   async (
     data: TranscribeRequest,
     context
   ): Promise<TranscribeResponse> => {
-    // Auth required
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
@@ -82,7 +69,6 @@ export const transcribeAudio = functions.https.onCall(
 
     const { audioBase64, mimeType } = data;
 
-    // Validate inputs
     if (!audioBase64 || typeof audioBase64 !== "string") {
       throw new functions.https.HttpsError(
         "invalid-argument",
@@ -97,7 +83,6 @@ export const transcribeAudio = functions.https.onCall(
       );
     }
 
-    // Decode and check size
     const audioBuffer = Buffer.from(audioBase64, "base64");
     if (audioBuffer.length > MAX_AUDIO_BYTES) {
       throw new functions.https.HttpsError(
@@ -113,7 +98,6 @@ export const transcribeAudio = functions.https.onCall(
       );
     }
 
-    // Rate limit check
     const withinLimit = await checkRateLimit(context.auth.uid);
     if (!withinLimit) {
       throw new functions.https.HttpsError(
@@ -122,7 +106,6 @@ export const transcribeAudio = functions.https.onCall(
       );
     }
 
-    // Get OpenAI API key
     const openaiKey = process.env.OPENAI_API_KEY;
     if (!openaiKey) {
       console.error("OPENAI_API_KEY not configured in functions/.env");
@@ -133,7 +116,6 @@ export const transcribeAudio = functions.https.onCall(
     }
 
     try {
-      // Build multipart form data for Whisper API
       const ext = extensionFromMime(mimeType);
       const filename = `recording.${ext}`;
 

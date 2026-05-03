@@ -10,30 +10,44 @@ export interface IPatternPreset {
   category: PresetCategory;
   /** CSS color string for UI thumbnails */
   previewColor: string;
-  generate(ledCount: number, frameCount: number, params: PatternParams): StripPattern;
+  generate(
+    ledCount: number,
+    frameCount: number,
+    params: PatternParams
+  ): StripPattern;
 }
 
-// ---------------------------------------------------------------------------
-// Helper: clamp to 0–255
-// ---------------------------------------------------------------------------
 function clamp255(v: number): number {
   return Math.max(0, Math.min(255, Math.round(v)));
 }
 
-// ---------------------------------------------------------------------------
-// Helper: HSL → RGB (h: 0–360, s: 0–1, l: 0–1) → 0–255
-// ---------------------------------------------------------------------------
+/** HSL → RGB (h: 0–360, s: 0–1, l: 0–1) → 0–255 */
 function hslToRgb(h: number, s: number, l: number): RGBColor {
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-  if (h < 60) { r = c; g = x; }
-  else if (h < 120) { r = x; g = c; }
-  else if (h < 180) { g = c; b = x; }
-  else if (h < 240) { g = x; b = c; }
-  else if (h < 300) { r = x; b = c; }
-  else { r = c; b = x; }
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (h < 60) {
+    r = c;
+    g = x;
+  } else if (h < 120) {
+    r = x;
+    g = c;
+  } else if (h < 180) {
+    g = c;
+    b = x;
+  } else if (h < 240) {
+    g = x;
+    b = c;
+  } else if (h < 300) {
+    r = x;
+    b = c;
+  } else {
+    r = c;
+    b = x;
+  }
   return {
     r: clamp255((r + m) * 255),
     g: clamp255((g + m) * 255),
@@ -41,9 +55,6 @@ function hslToRgb(h: number, s: number, l: number): RGBColor {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Helper: linear interpolation between two colors
-// ---------------------------------------------------------------------------
 function lerpColor(a: RGBColor, b: RGBColor, t: number): RGBColor {
   return {
     r: clamp255(a.r + (b.r - a.r) * t),
@@ -51,10 +62,6 @@ function lerpColor(a: RGBColor, b: RGBColor, t: number): RGBColor {
     b: clamp255(a.b + (b.b - a.b) * t),
   };
 }
-
-// ---------------------------------------------------------------------------
-// Presets
-// ---------------------------------------------------------------------------
 
 const solidPreset: IPatternPreset = {
   id: "solid",
@@ -139,7 +146,8 @@ const pulsePreset: IPatternPreset = {
     for (let f = 0; f < frameCount; f++) {
       for (let led = 0; led < ledCount; led++) {
         // Sine wave pulse traveling along strip
-        const phase = (led / ledCount + (f / frameCount) * params.speed) * Math.PI * 2;
+        const phase =
+          (led / ledCount + (f / frameCount) * params.speed) * Math.PI * 2;
         const intensity = (Math.sin(phase) + 1) / 2; // 0–1
         setPixel(pattern, f, led, {
           r: clamp255(params.primaryColor.r * intensity * params.brightness),
@@ -177,7 +185,6 @@ const propColorsPreset: IPatternPreset = {
   },
 };
 
-/** All built-in pattern presets */
 export const BUILT_IN_PRESETS: IPatternPreset[] = [
   solidPreset,
   gradientPreset,

@@ -5,26 +5,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ============================================================================
-    // GAMIFICATION RULES
-    // ============================================================================
-
-    // Helper function: Check if user is authenticated and accessing their own data
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Helper function: Check if data is being created (not updated)
     function isCreating() {
       return !exists(/databases/$(database)/documents/$(request.path));
     }
 
-    // User-specific gamification data
     match /users/{userId} {
-      // Allow users to read/write their own data
       allow read, write: if isOwner(userId);
 
-      // User Achievements
       match /achievements/{achievementId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
@@ -34,7 +25,6 @@ service cloud.firestore {
               || request.resource.data.progress >= request.resource.data.get('achievement_target', 0));
       }
 
-      // User XP
       match /xp/{xpId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
@@ -46,7 +36,6 @@ service cloud.firestore {
               || request.resource.data.totalXP == 0);
       }
 
-      // XP Events (append-only log)
       match /xpEvents/{eventId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId)
@@ -55,7 +44,6 @@ service cloud.firestore {
         allow update, delete: if false; // Events are immutable
       }
 
-      // Challenge Progress
       match /challengeProgress/{progressId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
@@ -64,7 +52,6 @@ service cloud.firestore {
           && request.resource.data.progress >= resource.data.progress;
       }
 
-      // User Streak
       match /streak/{streakId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
@@ -74,7 +61,6 @@ service cloud.firestore {
           && request.resource.data.longestStreak >= resource.data.longestStreak;
       }
 
-      // Notifications
       match /notifications/{notificationId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
@@ -83,26 +69,11 @@ service cloud.firestore {
       }
     }
 
-    // ============================================================================
-    // GLOBAL GAMIFICATION DATA
-    // ============================================================================
-
-    // Daily Challenges (global, read-only for users)
     match /dailyChallenges/{challengeId} {
-      // Anyone authenticated can read today's challenge
       allow read: if request.auth != null;
-
-      // Only server-side functions can write (or admin)
       allow write: if false;
-      // For testing/development, allow admins:
-      // allow write: if request.auth != null && request.auth.token.admin == true;
     }
 
-    // ============================================================================
-    // OPTIONAL: LEADERBOARDS (Future Feature)
-    // ============================================================================
-
-    // Global leaderboard (read-only)
     match /leaderboards/{leaderboardId} {
       allow read: if request.auth != null;
       allow write: if false; // Server-side only

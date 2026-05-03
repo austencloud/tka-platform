@@ -21,18 +21,10 @@ import type {
 	KnowledgeRelationship,
 	KnowledgeGraph,
 	KnowledgeNodeType,
-	RelationshipType,
-	Translatable
+	RelationshipType
 } from '../evaluation/types';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Knowledge Nodes
-// ═══════════════════════════════════════════════════════════════════════════
-
 const nodes: KnowledgeNode[] = [
-	// ─────────────────────────────────────────────────────────────────────────
-	// Core Concepts
-	// ─────────────────────────────────────────────────────────────────────────
 	{
 		id: 'grid',
 		type: 'concept',
@@ -78,10 +70,6 @@ const nodes: KnowledgeNode[] = [
 			{ en: 'Independent of motion type' }
 		]
 	},
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Position Terms
-	// ─────────────────────────────────────────────────────────────────────────
 	{
 		id: 'position-alpha',
 		type: 'term',
@@ -142,10 +130,6 @@ const nodes: KnowledgeNode[] = [
 		],
 		sourceOfTruth: 'mcp-server/data/tka-glossary.json#eta'
 	},
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Motion Terms
-	// ─────────────────────────────────────────────────────────────────────────
 	{
 		id: 'motion-static',
 		type: 'term',
@@ -176,10 +160,6 @@ const nodes: KnowledgeNode[] = [
 		facts: [{ en: 'Movement of 180° across the grid' }],
 		sourceOfTruth: 'mcp-server/data/tka-glossary.json#dash'
 	},
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Rotation Terms
-	// ─────────────────────────────────────────────────────────────────────────
 	{
 		id: 'rotation-pro',
 		type: 'term',
@@ -204,10 +184,6 @@ const nodes: KnowledgeNode[] = [
 		],
 		sourceOfTruth: 'mcp-server/data/tka-glossary.json#anti'
 	},
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Letter Types
-	// ─────────────────────────────────────────────────────────────────────────
 	{
 		id: 'type-1',
 		type: 'letter-type',
@@ -290,10 +266,6 @@ const nodes: KnowledgeNode[] = [
 		],
 		sourceOfTruth: 'mcp-server/data/letter-types.json#6'
 	},
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Rules and Conventions
-	// ─────────────────────────────────────────────────────────────────────────
 	{
 		id: 'rule-types-numbered',
 		type: 'rule',
@@ -324,10 +296,6 @@ const nodes: KnowledgeNode[] = [
 			{ en: 'The dash suffix is a NAMING convention, not a motion type' }
 		]
 	},
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Common Misconceptions
-	// ─────────────────────────────────────────────────────────────────────────
 	{
 		id: 'misconception-both-move',
 		type: 'misconception',
@@ -353,19 +321,13 @@ const nodes: KnowledgeNode[] = [
 	}
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Relationships
-// ═══════════════════════════════════════════════════════════════════════════
-
 const relationships: KnowledgeRelationship[] = [
-	// Position relationships
 	{ from: 'position-alpha', to: 'position', type: 'is-a', strength: 'strict' },
 	{ from: 'position-beta', to: 'position', type: 'is-a', strength: 'strict' },
 	{ from: 'position-gamma', to: 'position', type: 'is-a', strength: 'strict' },
 	{ from: 'position-zeta', to: 'position', type: 'is-a', strength: 'strict' },
 	{ from: 'position-eta', to: 'position', type: 'is-a', strength: 'strict' },
 
-	// Position opposites
 	{
 		from: 'position-alpha',
 		to: 'position-beta',
@@ -374,12 +336,10 @@ const relationships: KnowledgeRelationship[] = [
 		description: { en: 'Alpha (opposite points) vs Beta (same point)' }
 	},
 
-	// Motion relationships
 	{ from: 'motion-static', to: 'motion', type: 'is-a', strength: 'strict' },
 	{ from: 'motion-shift', to: 'motion', type: 'is-a', strength: 'strict' },
 	{ from: 'motion-dash', to: 'motion', type: 'is-a', strength: 'strict' },
 
-	// Motion contrasts
 	{
 		from: 'motion-shift',
 		to: 'motion-dash',
@@ -388,7 +348,6 @@ const relationships: KnowledgeRelationship[] = [
 		description: { en: 'Shift (adjacent) vs Dash (opposite)' }
 	},
 
-	// Rotation relationships
 	{ from: 'rotation-pro', to: 'rotation', type: 'is-a', strength: 'strict' },
 	{ from: 'rotation-anti', to: 'rotation', type: 'is-a', strength: 'strict' },
 	{
@@ -398,7 +357,6 @@ const relationships: KnowledgeRelationship[] = [
 		strength: 'strict'
 	},
 
-	// Type characteristics
 	{
 		from: 'type-1',
 		to: 'motion-shift',
@@ -428,7 +386,6 @@ const relationships: KnowledgeRelationship[] = [
 		description: { en: 'Type 5 uses dash for BOTH hands' }
 	},
 
-	// Commonly confused pairs
 	{
 		from: 'type-1',
 		to: 'type-3',
@@ -444,7 +401,6 @@ const relationships: KnowledgeRelationship[] = [
 		description: { en: 'Both have "both hands moving" but different motion types' }
 	},
 
-	// Misconception links
 	{
 		from: 'misconception-both-move',
 		to: 'type-1',
@@ -476,11 +432,9 @@ const relationships: KnowledgeRelationship[] = [
 		strength: 'strict'
 	},
 
-	// Grid requirements
 	{ from: 'position', to: 'grid', type: 'requires', strength: 'strict' },
 	{ from: 'motion', to: 'grid', type: 'requires', strength: 'strict' },
 
-	// Level prerequisites
 	{
 		from: 'position-zeta',
 		to: 'position-gamma',
@@ -495,10 +449,6 @@ const relationships: KnowledgeRelationship[] = [
 	}
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Graph Implementation
-// ═══════════════════════════════════════════════════════════════════════════
-
 class SemanticKnowledgeGraph implements KnowledgeGraph {
 	nodes: KnowledgeNode[];
 	relationships: KnowledgeRelationship[];
@@ -511,7 +461,6 @@ class SemanticKnowledgeGraph implements KnowledgeGraph {
 		this.nodes = nodes;
 		this.relationships = relationships;
 
-		// Build lookup maps
 		this.nodeMap = new Map(nodes.map((n) => [n.id, n]));
 		this.outgoingEdges = new Map();
 		this.incomingEdges = new Map();
@@ -565,37 +514,22 @@ class SemanticKnowledgeGraph implements KnowledgeGraph {
 		return node.misconceptions.map((m) => m.en).filter((m): m is string => !!m);
 	}
 
-	/**
-	 * Get nodes commonly confused with the given node
-	 */
 	getConfusedWith(nodeId: string): KnowledgeNode[] {
 		return this.getRelated(nodeId, 'commonly-confused-with');
 	}
 
-	/**
-	 * Get all misconception nodes
-	 */
 	getAllMisconceptions(): KnowledgeNode[] {
 		return this.nodes.filter((n) => n.type === 'misconception');
 	}
 
-	/**
-	 * Get nodes by type
-	 */
 	getNodesByType(type: KnowledgeNodeType): KnowledgeNode[] {
 		return this.nodes.filter((n) => n.type === type);
 	}
 
-	/**
-	 * Get nodes introduced at a specific level
-	 */
 	getNodesByLevel(level: 1 | 2 | 3 | 4): KnowledgeNode[] {
 		return this.nodes.filter((n) => n.introducedAtLevel === level);
 	}
 
-	/**
-	 * Find a path between two nodes (for reasoning about relationships)
-	 */
 	findPath(fromId: string, toId: string, maxDepth: number = 5): KnowledgeRelationship[] | null {
 		const visited = new Set<string>();
 		const queue: Array<{ nodeId: string; path: KnowledgeRelationship[] }> = [
@@ -621,13 +555,8 @@ class SemanticKnowledgeGraph implements KnowledgeGraph {
 	}
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Exported Instance
-// ═══════════════════════════════════════════════════════════════════════════
-
 export const tkaKnowledgeGraph = new SemanticKnowledgeGraph(nodes, relationships);
 
-// Helper exports
 export function getNodeById(id: string): KnowledgeNode | undefined {
 	return tkaKnowledgeGraph.getNode(id);
 }

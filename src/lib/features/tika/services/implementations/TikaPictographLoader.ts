@@ -91,10 +91,6 @@ export class TikaPictographLoader implements ITikaPictographLoader {
     return source.filter((p) => p.letter === letter);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Private Loading Methods
-  // ─────────────────────────────────────────────────────────────────────────
-
   private loadDataframe(): void {
     try {
       const diamondPath = path.join(
@@ -229,7 +225,6 @@ export class TikaPictographLoader implements ITikaPictographLoader {
 
       const data = JSON.parse(fs.readFileSync(mappingsPath, "utf-8"));
 
-      // Build letter position mappings
       for (const [letter, mapping] of Object.entries(data.letters)) {
         const m = mapping as { startPosition: string; endPosition: string };
         this.letterPositionMappings[letter] = {
@@ -240,7 +235,6 @@ export class TikaPictographLoader implements ITikaPictographLoader {
         };
       }
 
-      // Build bridge letter index
       const lettersByTransition: Record<string, string[]> = {};
       for (const [letter, mapping] of Object.entries(
         this.letterPositionMappings

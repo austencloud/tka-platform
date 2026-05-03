@@ -5,7 +5,10 @@
  * that chain together based on position groups.
  */
 
-import type { ITikaPictographLoader, PictographData } from "../contracts/ITikaPictographLoader";
+import type {
+  ITikaPictographLoader,
+  PictographData,
+} from "../contracts/ITikaPictographLoader";
 import type {
   ITikaSequenceGenerator,
   SequenceResult,
@@ -54,10 +57,6 @@ export class TikaSequenceGenerator implements ITikaSequenceGenerator {
   getStaticLetters(): string[] {
     return TYPE_6_LETTERS;
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Private Methods
-  // ─────────────────────────────────────────────────────────────────────────
 
   private attemptSequenceBuild(letters: string[]): SequenceResult {
     const word = letters.join("");

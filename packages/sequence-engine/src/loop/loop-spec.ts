@@ -398,8 +398,8 @@ export function validateLOOPSpec(spec: LOOPSpec): LOOPSpecValidationError[] {
     }
   }
 
-  const blueHasSwap = spec.blue?.components.has(LOOPComponent.SWAPPED);
-  const redHasSwap = spec.red?.components.has(LOOPComponent.SWAPPED);
+  const blueHasSwap = spec.blue?.components.has(LOOPComponent.SWAPPED) ?? false;
+  const redHasSwap = spec.red?.components.has(LOOPComponent.SWAPPED) ?? false;
   if (blueHasSwap !== redHasSwap) {
     errors.push({
       rule: "swapped_symmetry",

@@ -3,27 +3,14 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // ============================================================================
-    // HELPER FUNCTIONS
-    // ============================================================================
-
-    // Check if user has admin role via custom claims
-    // Custom claims are set by Cloud Functions (syncSubscriptionRole)
     function isAdmin() {
       return request.auth != null && request.auth.token.role == 'admin';
     }
 
-    // ============================================================================
-    // USER DATA COLLECTIONS
-    // ============================================================================
-
-    // ML Training data - users can only access their own data
     match /ml-training/{userId}/{allPaths=**} {
-      // Allow authenticated users to read/write their own training data
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Feedback images - users can only access their own, admins can access all
     // Path structure: feedback/{userId}/{feedbackId}/{filename}
     // Security fix: Previously any authenticated user could read any feedback image
     match /feedback/{userId}/{feedbackId}/{allPaths=**} {
@@ -38,104 +25,69 @@ service firebase.storage {
     match /feedback/{feedbackId}/{allPaths=**} {
       // Only admins can read legacy feedback images (tightened from "any authenticated user")
       allow read: if isAdmin();
-      // No new writes to legacy path
       allow write: if false;
     }
 
-    // User recordings - users can only access their own recordings
     match /users/{userId}/recordings/{allPaths=**} {
-      // Allow authenticated users to read/write their own recordings
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // User thumbnails - users can write their own, anyone can read (for public library)
     match /users/{userId}/thumbnails/{allPaths=**} {
-      // Owner can write their own thumbnails
       allow write: if request.auth != null && request.auth.uid == userId;
-      // Anyone can read thumbnails (for public sequence display)
       allow read: if true;
     }
 
-    // User animations - users can write their own, anyone can read (for public library)
     match /users/{userId}/animations/{allPaths=**} {
-      // Owner can write their own animations
       allow write: if request.auth != null && request.auth.uid == userId;
-      // Anyone can read animations (for public sequence display)
       allow read: if true;
     }
 
-    // User audio files - users can only access their own audio
     match /users/{userId}/audio/{allPaths=**} {
-      // Allow authenticated users to read/write their own audio files
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // User avatars - generated profile pictures
     match /avatars/{userId}/{fileName} {
-      // Owner can write their own avatars
       allow write: if request.auth != null && request.auth.uid == userId
-        // Only allow PNG images
         && request.resource.contentType == 'image/png'
-        // Limit file size to 1MB
         && request.resource.size < 1024 * 1024;
-      // Anyone can read avatars (for displaying in profiles, comments, etc.)
       allow read: if true;
     }
 
     // Thumbnail manifest - public read for instant cache hits
-    // Contains list of all existing thumbnails for pre-populating cache
     match /thumbnails/manifest.json {
       allow read: if true;
       // Only allow admin to update manifest (via admin script)
-      // Uses custom claim when available, falls back to auth check
       allow write: if request.auth != null
         && (request.auth.token.admin == true || request.auth.token.role == 'admin');
     }
 
     // Crowd-sourced thumbnails - first user to view renders and uploads
-    // New structure with variant: thumbnails/{variant}/{propType}/{sequenceName}_{mode}.webp
     // Variants: gallery (no user data), wordcard (with user data footer)
     match /thumbnails/{variant}/{propType}/{fileName} {
-      // Anyone can read thumbnails (for fast loading)
       allow read: if true;
-      // Authenticated users can upload thumbnails (crowd-sourced rendering)
       allow create, update: if request.auth != null
-        // Only allow WebP images
         && request.resource.contentType == 'image/webp'
-        // Limit file size to 500KB (thumbnails should be small)
         && request.resource.size < 500 * 1024;
-      // Only admins can delete thumbnails (cache clearing)
       allow delete: if request.auth != null
         && (request.auth.token.admin == true || request.auth.token.role == 'admin');
     }
 
     // Legacy thumbnails (backwards compatibility)
-    // Old structure: thumbnails/{propType}/{sequenceName}_{mode}.webp
     match /thumbnails/{propType}/{fileName} {
-      // Anyone can read thumbnails (for fast loading)
       allow read: if true;
-      // Authenticated users can upload thumbnails (crowd-sourced rendering)
       allow create, update: if request.auth != null
-        // Only allow WebP images
         && request.resource.contentType == 'image/webp'
-        // Limit file size to 500KB (thumbnails should be small)
         && request.resource.size < 500 * 1024;
-      // Only admins can delete thumbnails (cache clearing)
       allow delete: if request.auth != null
         && (request.auth.token.admin == true || request.auth.token.role == 'admin');
     }
 
-    // Screenshots - users can only access their own screenshots
     match /screenshots/{userId}/{allPaths=**} {
-      // Owner can read/write their own screenshots
       allow read, write: if request.auth != null && request.auth.uid == userId
-        // Only allow PNG images
         && (request.resource == null || request.resource.contentType == 'image/png')
-        // Limit file size to 10MB
         && (request.resource == null || request.resource.size < 10 * 1024 * 1024);
     }
 
-    // Default: deny all other access
     match /{allPaths=**} {
       allow read, write: if false;
     }
