@@ -6,6 +6,7 @@ import {
   RESERVED_ORIENTATION_PRIMITIVES,
   type LOOPDomain,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { LOOPSpec } from "@tka/sequence-engine/loop";
 import {
   Period,
   type LOOPType,
@@ -34,7 +35,7 @@ export interface LoopDisplay {
   inversionPeriod?: Period;
 }
 
-export type LoopDisplayInput = SequenceData | SequenceEntry;
+export type LoopDisplayInput = (SequenceData | SequenceEntry) & { loopSpec?: LOOPSpec };
 
 function toLoopComponent(id: ComponentId): LOOPComponent | null {
   switch (id) {
@@ -117,6 +118,29 @@ export function resolveLoopDisplay(input: LoopDisplayInput): LoopDisplay {
 }
 
 function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
+  if (input.loopSpec) {
+    const components = new Set<LOOPComponent>();
+    const componentDomains = new Map<LOOPComponent, LOOPDomain>();
+    let maxPeriod = 1;
+
+    for (const prop of [input.loopSpec.blue, input.loopSpec.red]) {
+      if (!prop) continue;
+      for (const [comp, cSpec] of prop.components) {
+        if (!RESERVED_ORIENTATION_PRIMITIVES.has(comp as unknown as LOOPComponent)) {
+          components.add(comp as unknown as LOOPComponent);
+          if (cSpec.domain) componentDomains.set(comp as unknown as LOOPComponent, cSpec.domain);
+          maxPeriod = Math.max(maxPeriod, cSpec.period);
+        }
+      }
+    }
+
+    return {
+      components,
+      period: maxPeriod,
+      componentDomains: Object.fromEntries(componentDomains) as Partial<Record<LOOPComponent, LOOPDomain>>,
+    };
+  }
+
   if (hasEnoughSteps(input)) {
     try {
       const entry = toSequenceEntry(input);
