@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IUserFeatureFlagPersister } from './services/contracts/IUserFeatureFlagPersister';
 import { UserFeatureFlagPersister } from './services/implementations/UserFeatureFlagPersister';
 
-let instance: IUserFeatureFlagPersister | null = null;
+let instance: UserFeatureFlagPersister | null = null;
 
-export function getUserFeatureFlagPersister(): IUserFeatureFlagPersister {
+export function getUserFeatureFlagPersister(): UserFeatureFlagPersister {
 	if (!browser) throw new Error('getUserFeatureFlagPersister() is browser-only');
 	return instance ??= new UserFeatureFlagPersister();
 }

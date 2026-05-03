@@ -23,11 +23,10 @@ import {
 	getAuthSync,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
-import type { IInviteHandler } from '../contracts/IInviteHandler';
 import type { Invite, InviteFirebaseData, InviteStatus } from '../../domain/models/connect-models';
 import { INVITE_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
 
-export class InviteHandler implements IInviteHandler {
+export class InviteHandler {
 	private _pendingInvites: Invite[] = [];
 	private _sentInvites: Invite[] = [];
 

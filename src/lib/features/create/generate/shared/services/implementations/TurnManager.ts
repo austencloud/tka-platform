@@ -53,7 +53,7 @@ export interface ITurnManager {
   getRandomRotationDirection(): RotationDirection;
 }
 
-export class TurnManager implements ITurnManager {
+export class TurnManager {
   /**
    * Set turns - exact port from legacy set_turns()
    */

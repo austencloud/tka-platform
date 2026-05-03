@@ -1,7 +1,6 @@
-import type { IArrangeGridPersister } from './services/contracts/IArrangeGridPersister';
 import { ArrangeGridPersister } from './services/implementations/ArrangeGridPersister';
 
-let instance: IArrangeGridPersister | null = null;
-export function getArrangeGridPersister(): IArrangeGridPersister {
+let instance: ArrangeGridPersister | null = null;
+export function getArrangeGridPersister(): ArrangeGridPersister {
   return instance ??= new ArrangeGridPersister();
 }

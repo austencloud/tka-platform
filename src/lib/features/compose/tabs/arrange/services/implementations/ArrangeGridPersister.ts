@@ -6,7 +6,6 @@
  * v7: 8x8 backing array with gridRows/gridCols dimensions
  */
 
-import type { IArrangeGridPersister } from "../contracts/IArrangeGridPersister";
 import type { GridConfig } from "../../state/arrange-grid-state.svelte";
 import {
   MAX_GRID_SIZE,
@@ -52,7 +51,7 @@ function clampDimension(n: number): number {
   return Math.max(1, Math.min(MAX_GRID_SIZE, Math.round(n)));
 }
 
-export class ArrangeGridPersister implements IArrangeGridPersister {
+export class ArrangeGridPersister {
   load(): GridConfig {
     if (typeof window === "undefined") {
       return {

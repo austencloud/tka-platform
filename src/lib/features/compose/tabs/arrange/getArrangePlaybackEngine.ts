@@ -1,7 +1,6 @@
-import type { IArrangePlaybackEngine } from './services/contracts/IArrangePlaybackEngine';
 import { ArrangePlaybackEngine } from './services/implementations/ArrangePlaybackEngine';
 
-let instance: IArrangePlaybackEngine | null = null;
-export function getArrangePlaybackEngine(): IArrangePlaybackEngine {
+let instance: ArrangePlaybackEngine | null = null;
+export function getArrangePlaybackEngine(): ArrangePlaybackEngine {
   return instance ??= new ArrangePlaybackEngine();
 }

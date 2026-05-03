@@ -6,16 +6,15 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IPoiSequenceValidator } from "../contracts/IPoiSequenceValidator";
-import type { IPoiConstraintValidator } from "../contracts/IPoiConstraintValidator";
+import type { PoiConstraintValidator } from "./PoiConstraintValidator";
 import type {
   PoiValidationResult,
   PoiConstraintViolation,
 } from "../../domain/poi-models";
 
-export class PoiSequenceValidator implements IPoiSequenceValidator {
+export class PoiSequenceValidator {
   constructor(
-    private readonly constraintValidator: IPoiConstraintValidator
+    private readonly constraintValidator: PoiConstraintValidator
   ) {}
 
   validateSequence(sequence: readonly PictographData[]): PoiValidationResult {

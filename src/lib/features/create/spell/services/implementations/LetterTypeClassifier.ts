@@ -5,11 +5,10 @@
  * filtering capabilities based on letter type.
  */
 
-import type { ILetterTypeClassifier } from "../contracts/ILetterTypeClassifier";
 import { Letter, getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
 
-export class LetterTypeClassifier implements ILetterTypeClassifier {
+export class LetterTypeClassifier {
   /**
    * Mapping of letter types to their letters.
    * Pre-computed for efficient lookup.

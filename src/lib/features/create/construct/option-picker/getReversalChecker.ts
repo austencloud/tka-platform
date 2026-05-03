@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IReversalChecker } from './services/contracts/IReversalChecker';
 import { ReversalChecker } from './services/implementations/ReversalChecker';
 
-let instance: IReversalChecker | null = null;
+let instance: ReversalChecker | null = null;
 
-export function getReversalChecker(): IReversalChecker {
+export function getReversalChecker(): ReversalChecker {
 	if (!browser) throw new Error('getReversalChecker() is browser-only');
 	return instance ??= new ReversalChecker();
 }

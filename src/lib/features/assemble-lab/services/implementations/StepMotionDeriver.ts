@@ -17,9 +17,7 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { HandPathMotionCalculator } from "$lib/features/create/assemble/services/HandPathMotionCalculator";
-import type { IStepMotionDeriver } from "../contracts/IStepMotionDeriver";
-
-export class StepMotionDeriver implements IStepMotionDeriver {
+export class StepMotionDeriver {
 	private readonly calculator = new HandPathMotionCalculator();
 
 	deriveMotion(

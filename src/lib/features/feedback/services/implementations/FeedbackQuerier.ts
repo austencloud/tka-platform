@@ -24,14 +24,13 @@ import type {
   FeedbackItem,
   FeedbackFilterOptions,
 } from "../../domain/models/feedback-models";
-import type { IFeedbackDocumentMapper } from "../contracts/IFeedbackDocumentMapper";
-import { feedbackDocumentMapper } from "./FeedbackDocumentMapper";
+import { type FeedbackDocumentMapper, feedbackDocumentMapper } from "./FeedbackDocumentMapper";
 
 const COLLECTION_NAME = "feedback";
 
 export class FeedbackQueryService implements IFeedbackQueryService {
   constructor(
-    private readonly mapper: IFeedbackDocumentMapper = feedbackDocumentMapper
+    private readonly mapper: FeedbackDocumentMapper = feedbackDocumentMapper
   ) {}
 
   async loadFeedback(

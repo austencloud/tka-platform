@@ -20,7 +20,6 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IAnimationStorageManager } from "../contracts/IAnimationStorageManager";
 import type { Animation } from "../../shared/domain/Animation";
 import { createAnimation } from "../../shared/domain/Animation";
 
@@ -53,7 +52,7 @@ interface AnimationFirestoreData {
   isPublic: boolean;
 }
 
-export class AnimationStorageManager implements IAnimationStorageManager {
+export class AnimationStorageManager {
   /**
    * Get the Firestore collection reference for a user's animations
    */

@@ -9,12 +9,11 @@
  * the best available result rather than losing all transforms.
  */
 
-import type { ICellTransformStack } from "../contracts/ICellTransformStack";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
 import type { IArrangeLayerTransformer } from "../contracts/IArrangeLayerTransformer";
 
-export class CellTransformStack implements ICellTransformStack {
+export class CellTransformStack {
   constructor(private readonly transformer: IArrangeLayerTransformer) {}
 
   async computeEffective(

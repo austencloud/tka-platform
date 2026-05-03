@@ -11,10 +11,10 @@ import {
   Orientation,
   RotationDirection,
 } from "../../../../shared/domain/enums/pictograph-enums";
-import type { IArrowPathResolver } from "../contracts/IArrowPathResolver";
 import type { IArrowSvgLoader } from "../contracts/IArrowSvgLoader";
-import type { IArrowSvgParser } from "../contracts/IArrowSvgParser";
-import type { ISvgColorTransformer } from "../contracts/IArrowSvgColorTransformer";
+import type { ArrowPathResolver } from "./ArrowPathResolver";
+import type { ArrowSvgParser } from "./ArrowSvgParser";
+import type { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
 
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
@@ -22,42 +22,11 @@ import { createMotionData } from "../../../../shared/domain/models/MotionData";
 import type { ArrowPosition } from "../../../orchestration/domain/arrow-models";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 
-export interface IArrowRenderer {
-  renderArrowAtPosition(
-    svg: SVGElement,
-    color: MotionColor,
-    position: ArrowPosition,
-    motionData: MotionData | undefined
-  ): Promise<void>;
-
-  // Legacy methods for backward compatibility
-  getArrowPath(
-    arrowData: ArrowPlacementData,
-    motionData: MotionData
-  ): string | null;
-
-  loadArrowSvg(
-    arrowData: ArrowPlacementData,
-    motionData: MotionData
-  ): Promise<{
-    imageSrc: string;
-    viewBox: { width: number; height: number };
-    center: { x: number; y: number };
-  }>;
-
-  parseArrowSvg(svgText: string): {
-    viewBox: { width: number; height: number };
-    center: { x: number; y: number };
-  };
-
-  applyColorToSvg(svgText: string, color: MotionColor): string;
-}
-
-export class ArrowRenderer implements IArrowRenderer {
+export class ArrowRenderer {
   constructor(
-    private pathResolver: IArrowPathResolver,
-    private svgParser: IArrowSvgParser,
-    private colorTransformer: ISvgColorTransformer,
+    private pathResolver: ArrowPathResolver,
+    private svgParser: ArrowSvgParser,
+    private colorTransformer: ArrowSvgColorTransformer,
     private svgLoader: IArrowSvgLoader
   ) {}
 

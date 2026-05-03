@@ -1,12 +1,10 @@
-import type { IVideoPlayer } from "../contracts/IVideoPlayer";
-
 /**
  * VideoPlayer
  *
  * Manages video element state, playback synchronization, and beat tracking.
  * Assumes videos are generated at 60 BPM (1 beat = 1 second).
  */
-export class VideoPlayer implements IVideoPlayer {
+export class VideoPlayer {
   private videoElement: HTMLVideoElement | null = null;
   private stepTrackingFrameId: number | null = null;
   private stepChangeCallback: ((beat: number) => void) | null = null;

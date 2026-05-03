@@ -5,10 +5,8 @@
  */
 
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { ILetterClassifier } from "../contracts/ILetterClassifier";
 
-
-export class LetterClassifier implements ILetterClassifier {
+export class LetterClassifier {
   private static readonly HYBRID_LETTERS = [
     "C",
     "F",

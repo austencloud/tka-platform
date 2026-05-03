@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IResourceTracker } from './services/contracts/IResourceTracker';
 import { ResourceTracker } from './services/implementations/ResourceTracker';
 
-let instance: IResourceTracker | null = null;
+let instance: ResourceTracker | null = null;
 
-export function getResourceTracker(): IResourceTracker {
+export function getResourceTracker(): ResourceTracker {
 	if (!browser) throw new Error('getResourceTracker() is browser-only');
 	return instance ??= new ResourceTracker();
 }

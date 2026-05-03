@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { IStepSignatureGenerator } from './services/contracts/IStepSignatureGenerator';
 import { StepSignatureGenerator } from './services/implementations/StepSignatureGenerator';
 import { getMotionSignatureGenerator } from './getMotionSignatureGenerator';
 
-let instance: IStepSignatureGenerator | null = null;
+let instance: StepSignatureGenerator | null = null;
 
-export function getStepSignatureGenerator(): IStepSignatureGenerator {
+export function getStepSignatureGenerator(): StepSignatureGenerator {
 	if (!browser) throw new Error('getStepSignatureGenerator() is browser-only');
 	return instance ??= new StepSignatureGenerator(getMotionSignatureGenerator());
 }

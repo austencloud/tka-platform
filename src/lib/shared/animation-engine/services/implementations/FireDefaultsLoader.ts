@@ -32,8 +32,6 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { FirePhysicsParams } from "../../domain/types/FireTypes";
 import type { PropTipConfig, TipPoint } from "../../domain/types/PropTipPoints";
-import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
-
 const LOG_PREFIX = "[FireDefaultsLoader]";
 const FIRESTORE_DOC_PATH = "config/fireDefaults";
 const LOCAL_CACHE_KEY = "tka-fire-defaults-cache";
@@ -42,7 +40,7 @@ function isPermissionError(error: unknown): boolean {
 	return error instanceof Error && error.message.includes("Missing or insufficient permissions");
 }
 
-export class FireDefaultsLoader implements IFireDefaultsLoader {
+export class FireDefaultsLoader {
 	private unsubscribe: Unsubscribe | null = null;
 	private loaded = false;
 	private firePoints: Record<string, PropTipConfig> = {};

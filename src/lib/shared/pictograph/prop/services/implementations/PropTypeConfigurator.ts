@@ -7,9 +7,7 @@
 
 import type { PictographData } from "../../../shared/domain/models/PictographData";
 import type { PropType } from "../../domain/enums/PropType";
-import type { IPropTypeConfigurator } from "../contracts/IPropTypeConfigurator";
-
-export class PropTypeConfigurator implements IPropTypeConfigurator {
+export class PropTypeConfigurator {
   /**
    * Convert UI prop type to filename format.
    * With the unified PropType enum, this is now a simple passthrough.

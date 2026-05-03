@@ -19,9 +19,9 @@ import {
   PropContinuity,
 } from "../../domain/models/generate-models";
 import type { IGenerationOrchestrator } from "../contracts/IGenerationOrchestrator";
-import type { IBrowserVariationProvider } from "../contracts/IBrowserVariationProvider";
-import type { IBuildResultTransformer } from "../contracts/IBuildResultTransformer";
-import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataManager";
+import type { BrowserVariationProvider } from "./BrowserVariationProvider";
+import type { BuildResultTransformer } from "./BuildResultTransformer";
+import type { SequenceMetadataManager } from "./SequenceMetadataManager";
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";
 import { LOOPType, Period as EnginePeriod } from "@tka/sequence-engine/loop";
@@ -58,9 +58,9 @@ function ensureEngineTransitionGraph(): Promise<void> {
 
 export class GenerationOrchestrator implements IGenerationOrchestrator {
   constructor(
-    private readonly variationProvider: IBrowserVariationProvider,
-    private readonly transformer: IBuildResultTransformer,
-    private readonly metadataManager: ISequenceMetadataManager
+    private readonly variationProvider: BrowserVariationProvider,
+    private readonly transformer: BuildResultTransformer,
+    private readonly metadataManager: SequenceMetadataManager
   ) {}
 
   /**

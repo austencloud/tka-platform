@@ -8,9 +8,8 @@
 
 import type { MuseumGrid } from "../../domain/museum-grid-types";
 import { serializeGrid, deserializeGrid } from "../../domain/museum-grid-types";
-import type { IMuseumGridPersister } from "../contracts/IMuseumGridPersister";
 
-export class MuseumGridPersister implements IMuseumGridPersister {
+export class MuseumGridPersister {
 	saveToJson(grid: MuseumGrid): string {
 		const serialized = serializeGrid(grid);
 		return JSON.stringify(serialized);

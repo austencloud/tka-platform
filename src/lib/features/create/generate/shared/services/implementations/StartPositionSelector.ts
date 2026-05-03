@@ -15,13 +15,11 @@ import type {
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { IStepConverter } from "../contracts/IStepConverter";
-import type { IPictographFilter } from "../contracts/IPictographFilter";
-import type { IStartPositionSelector } from "../contracts/IStartPositionSelector";
-
-export class StartPositionSelector implements IStartPositionSelector {
+import type { PictographFilter } from "./PictographFilter";
+export class StartPositionSelector {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
-    private PictographFilter: IPictographFilter,
+    private PictographFilter: PictographFilter,
     private StepConverter: IStepConverter,
     private arrowPositioningOrchestrator: IArrowPositioningOrchestrator
   ) {}

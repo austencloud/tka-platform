@@ -6,7 +6,6 @@
  */
 
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { IMotionSignatureGenerator } from "../contracts/IMotionSignatureGenerator";
 import type {
   MotionSignature,
   MotionComparisonResult,
@@ -44,7 +43,7 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
   [GridLocation.CENTER]: 0,
 };
 
-export class MotionSignatureGenerator implements IMotionSignatureGenerator {
+export class MotionSignatureGenerator {
   generateSignature(motion: MotionData): MotionSignature {
     return {
       motionType: motion.motionType,

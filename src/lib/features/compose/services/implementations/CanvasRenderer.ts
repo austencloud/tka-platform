@@ -4,7 +4,6 @@
  */
 
 import type { PropState } from "../../shared/domain/types/PropState";
-import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
 import { simplifyRepeatedWord, compressWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { renderHeader, type CompressedSegment } from "@tka/render-composition";
 import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
@@ -15,7 +14,7 @@ import { textRenderer } from "$lib/shared/render/services/implementations/TextRe
 // From gridCoordinates.ts: n_diamond_hand_point_strict at (475, 325.0) = 152px from center
 const GRID_HALFWAY_POINT_OFFSET = 150;
 
-export class CanvasRenderer implements ICanvasRenderer {
+export class CanvasRenderer {
   /**
    * Render the complete animation scene
    * @param bluePropViewBoxDimensions - ViewBox dimensions from the blue prop SVG (default: staff 252.8 x 77.8)

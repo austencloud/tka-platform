@@ -5,7 +5,6 @@
  * in a cell (and across all visible cells) to complete their cycles simultaneously.
  */
 
-import type { IArrangeStepCalculator } from "../contracts/IArrangeStepCalculator";
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
 
 function gcd(a: number, b: number): number {
@@ -16,7 +15,7 @@ function lcm(a: number, b: number): number {
   return (a * b) / gcd(a, b);
 }
 
-export class ArrangeStepCalculator implements IArrangeStepCalculator {
+export class ArrangeStepCalculator {
   calculateCellBeats(cell: GridCell, skipStartPosition: boolean): number {
     if (cell.layers.length === 0) return 0;
 

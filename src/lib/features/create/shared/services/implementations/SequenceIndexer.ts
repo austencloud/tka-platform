@@ -6,7 +6,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ISequenceIndexer } from "../contracts/ISequenceIndexer";
 
 interface SearchIndex {
   wordIndex: Map<string, Set<string>>; // word -> sequence IDs
@@ -15,7 +14,7 @@ interface SearchIndex {
   metadataIndex: Map<string, Set<string>>; // combined metadata -> sequence IDs
 }
 
-export class SequenceIndexer implements ISequenceIndexer {
+export class SequenceIndexer {
   buildIndex(_sequences: SequenceData[]): void {
     // Build search index for sequences - placeholder implementation
     // TODO: Implement full-text search indexing when needed

@@ -6,7 +6,6 @@
  */
 
 import { BREAKPOINTS } from "../../../device/domain/constants/device-constants";
-import type { IAttributionCapture } from "../contracts/IAttributionCapture";
 import type {
   TouchData,
   UtmParameters,
@@ -20,7 +19,7 @@ import {
   extractDomain,
 } from "../../config/referrer-patterns";
 
-export class AttributionCapture implements IAttributionCapture {
+export class AttributionCapture {
   /**
    * Capture complete touch data from current page context
    */

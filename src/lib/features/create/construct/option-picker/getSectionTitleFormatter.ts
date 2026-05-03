@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISectionTitleFormatter } from './services/contracts/ISectionTitleFormatter';
 import { SectionTitleFormatter } from './services/implementations/SectionTitleFormatter';
 
-let instance: ISectionTitleFormatter | null = null;
+let instance: SectionTitleFormatter | null = null;
 
-export function getSectionTitleFormatter(): ISectionTitleFormatter {
+export function getSectionTitleFormatter(): SectionTitleFormatter {
 	if (!browser) throw new Error('getSectionTitleFormatter() is browser-only');
 	return instance ??= new SectionTitleFormatter();
 }

@@ -6,9 +6,7 @@
  * beat increments calculated from frame deltas.
  */
 
-import type { IArrangePlaybackEngine } from "../contracts/IArrangePlaybackEngine";
-
-export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
+export class ArrangePlaybackEngine {
   private _isPlaying = false;
   private _currentStep = 0;
   private _bpm = 120;

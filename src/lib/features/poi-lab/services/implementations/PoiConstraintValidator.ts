@@ -10,13 +10,12 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { IPoiConstraintValidator } from "../contracts/IPoiConstraintValidator";
-import type { IPoiGravityOrientationDeriver } from "../contracts/IPoiGravityOrientationDeriver";
+import type { PoiGravityOrientationDeriver } from "./PoiGravityOrientationDeriver";
 import { PoiMotionValidity } from "../../domain/poi-enums";
 import type { PoiValidationResult, PoiConstraintViolation } from "../../domain/poi-models";
 
-export class PoiConstraintValidator implements IPoiConstraintValidator {
-  constructor(private readonly gravityDeriver: IPoiGravityOrientationDeriver) {}
+export class PoiConstraintValidator {
+  constructor(private readonly gravityDeriver: PoiGravityOrientationDeriver) {}
 
   validateMotion(motion: MotionData): PoiValidationResult {
     const violations: PoiConstraintViolation[] = [];

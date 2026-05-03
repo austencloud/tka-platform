@@ -9,7 +9,6 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import type { IPromoSceneManager } from "../contracts/IPromoSceneManager";
 import type {
   DeviceType,
   DeviceConfig,
@@ -90,7 +89,7 @@ const ENVIRONMENT_PRESETS: Record<EnvironmentType, EnvironmentConfig> = {
   },
 };
 
-export class PromoSceneManager implements IPromoSceneManager {
+export class PromoSceneManager {
   private scene: THREE.Scene | null = null;
   private camera: THREE.PerspectiveCamera | null = null;
   private renderer: THREE.WebGLRenderer | null = null;

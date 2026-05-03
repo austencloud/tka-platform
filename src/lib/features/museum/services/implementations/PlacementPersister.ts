@@ -1,5 +1,4 @@
 import { MANUAL_PLACEMENTS, type ManualPlacement } from '../../data/museum-manual-placements';
-import type { IPlacementPersister } from '../contracts/IPlacementPersister';
 
 /**
  * Persists manual editor placements to the in-memory MANUAL_PLACEMENTS record
@@ -9,7 +8,7 @@ import type { IPlacementPersister } from '../contracts/IPlacementPersister';
  * Keeping them in version control means the geometry builder always has them at
  * build time, and every edit is a real git commit.
  */
-export class PlacementPersister implements IPlacementPersister {
+export class PlacementPersister {
   save(roomId: string, placement: ManualPlacement): Promise<void> {
     if (!MANUAL_PLACEMENTS[roomId]) {
       MANUAL_PLACEMENTS[roomId] = [];

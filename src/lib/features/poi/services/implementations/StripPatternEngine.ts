@@ -1,5 +1,5 @@
 import type { IStripPatternEngine } from "../contracts/IStripPatternEngine";
-import type { IImagePatternLoader } from "../contracts/IImagePatternLoader";
+import type { ImagePatternLoader } from "./ImagePatternLoader";
 import type { StripPattern, PatternParams, StripFrame } from "../../domain/StripPattern";
 import type { IPatternPreset } from "../../domain/PatternPreset";
 import { BUILT_IN_PRESETS } from "../../domain/PatternPreset";
@@ -11,7 +11,7 @@ import { BUILT_IN_PRESETS } from "../../domain/PatternPreset";
 export class StripPatternEngine implements IStripPatternEngine {
   private presets: Map<string, IPatternPreset>;
 
-  constructor(private imageLoader: IImagePatternLoader) {
+  constructor(private imageLoader: ImagePatternLoader) {
     this.presets = new Map();
     for (const preset of BUILT_IN_PRESETS) {
       this.presets.set(preset.id, preset);

@@ -1,7 +1,6 @@
-import type { IAngleMathCalculator } from './services/contracts/IAngleMathCalculator';
 import { AngleMathCalculator } from './services/implementations/AngleMathCalculator';
 
-let instance: IAngleMathCalculator | null = null;
-export function getAngleMathCalculator(): IAngleMathCalculator {
+let instance: AngleMathCalculator | null = null;
+export function getAngleMathCalculator(): AngleMathCalculator {
   return instance ??= new AngleMathCalculator();
 }

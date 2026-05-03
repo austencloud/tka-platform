@@ -1,8 +1,7 @@
-import type { IPoiOptionFilterDecorator } from './services/contracts/IPoiOptionFilterDecorator';
 import { PoiOptionFilterDecorator } from './services/implementations/PoiOptionFilterDecorator';
 import { getPoiConstraintValidator } from './getPoiConstraintValidator';
 
-let instance: IPoiOptionFilterDecorator | null = null;
-export function getPoiOptionFilterDecorator(): IPoiOptionFilterDecorator {
+let instance: PoiOptionFilterDecorator | null = null;
+export function getPoiOptionFilterDecorator(): PoiOptionFilterDecorator {
   return instance ??= new PoiOptionFilterDecorator(getPoiConstraintValidator());
 }

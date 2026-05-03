@@ -5,7 +5,6 @@
 
 import type { ILocationProvider } from "../contracts/ILocationProvider";
 import type { IUserLocationRepository } from "../contracts/IUserLocationRepository";
-import type { ILocationSharingOrchestrator } from "../contracts/ILocationSharingOrchestrator";
 import type { IGeocodingService } from "../contracts/IGeocodingService";
 import type {
   UserLocationWithProfile,
@@ -13,7 +12,7 @@ import type {
 } from "../../domain/models/user-location";
 import { Timestamp } from "firebase/firestore";
 
-export class LocationSharingOrchestrator implements ILocationSharingOrchestrator {
+export class LocationSharingOrchestrator {
   constructor(
     private locationProvider: ILocationProvider,
     private repository: IUserLocationRepository,

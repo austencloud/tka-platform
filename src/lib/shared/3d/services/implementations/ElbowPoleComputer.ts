@@ -12,7 +12,6 @@
  */
 
 import { Vector3 } from "three";
-import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
 import { Plane } from "../../domain/enums/Plane";
 
 /**
@@ -22,7 +21,7 @@ import { Plane } from "../../domain/enums/Plane";
  */
 const SHOULDER_HALF_WIDTH = 0.2;
 
-export class ElbowPoleComputer implements IElbowPoleComputer {
+export class ElbowPoleComputer {
   computePoleVector(
     handTarget: Vector3,
     plane: Plane,

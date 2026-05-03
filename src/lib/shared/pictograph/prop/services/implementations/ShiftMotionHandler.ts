@@ -11,12 +11,12 @@ import {
   SHIFT_RADIAL_MAP,
 } from "../../domain/direction/DirectionMaps";
 import type { IDirectionCalculator } from "../contracts/IDirectionCalculator";
-import type { IOrientationChecker } from "../contracts/IOrientationChecker";
+import type { OrientationChecker } from "./OrientationChecker";
 import { getEndLocation } from "./DirectionUtils";
 import type { VectorDirection } from "../../../shared/domain/enums/pictograph-enums";
 
 export class ShiftMotionHandler implements IDirectionCalculator {
-  constructor(private orientationChecker: IOrientationChecker) {}
+  constructor(private orientationChecker: OrientationChecker) {}
 
   /**
    * Calculate direction for shift motions based on start→end transition.

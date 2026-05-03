@@ -10,9 +10,7 @@ import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/Filt
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { ActiveFilter } from "../../../../shared/domain/models/multi-filter-models";
 import type { IBrowseFilter } from "../contracts/IBrowseFilter";
-import type { IMultiFilter } from "../contracts/IMultiFilter";
-
-export class MultiFilter implements IMultiFilter {
+export class MultiFilter {
   constructor(private readonly browseFilter: IBrowseFilter) {}
 
   applyFilters(

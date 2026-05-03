@@ -5,14 +5,12 @@
  * Uses aggressive caching and parallel loading for optimal performance.
  */
 
-import type { ISvgPreloader } from "../contracts/ISvgPreloader";
-
 interface PreloadProgress {
   loaded: number;
   total: number;
 }
 
-export class SvgPreloader implements ISvgPreloader {
+export class SvgPreloader {
   private svgCache = new Map<string, string>();
   private loadingPromises = new Map<string, Promise<string>>();
   private progress: PreloadProgress = { loaded: 0, total: 0 };

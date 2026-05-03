@@ -5,7 +5,6 @@
  * and Firestore (post-signup).
  */
 
-import type { IAttributionPersister } from "../contracts/IAttributionPersister";
 import type {
   AnonymousAttributionSession,
   UserAttribution,
@@ -13,13 +12,13 @@ import type {
   SelfReportedAttribution,
   SignupContext,
 } from "../../domain/types";
-import type { IAttributionCapture } from "../contracts/IAttributionCapture";
+import type { AttributionCapture } from "./AttributionCapture";
 
 const STORAGE_KEY = "tka-attribution-session";
 const MAX_TOUCHES = 20; // Cap to prevent unbounded growth
 
-export class AttributionPersister implements IAttributionPersister {
-  constructor(private capture: IAttributionCapture) {}
+export class AttributionPersister {
+  constructor(private capture: AttributionCapture) {}
 
   /**
    * Get or create an anonymous session for tracking before signup

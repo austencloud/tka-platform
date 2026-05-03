@@ -1,7 +1,6 @@
-import type { IDeviceIdService } from './services/contracts/IDeviceIdService';
 import { DeviceIdService } from './services/implementations/DeviceIdService';
 
-let instance: IDeviceIdService | null = null;
-export function getDeviceIdService(): IDeviceIdService {
+let instance: DeviceIdService | null = null;
+export function getDeviceIdService(): DeviceIdService {
   return instance ??= new DeviceIdService();
 }

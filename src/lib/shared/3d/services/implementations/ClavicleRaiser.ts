@@ -18,7 +18,6 @@
  */
 
 import { Vector3, Quaternion } from "three";
-import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
 
 /** Maximum clavicle elevation in radians (~15 degrees) */
 const MAX_CLAVICLE_ELEVATION = (15 * Math.PI) / 180;
@@ -30,7 +29,7 @@ const MAX_CLAVICLE_ELEVATION = (15 * Math.PI) / 180;
  */
 const ACTIVATION_THRESHOLD = 0.2;
 
-export class ClavicleRaiser implements IClavicleRaiser {
+export class ClavicleRaiser {
   computeClavicleRotation(
     handTarget: Vector3,
     side: "left" | "right",

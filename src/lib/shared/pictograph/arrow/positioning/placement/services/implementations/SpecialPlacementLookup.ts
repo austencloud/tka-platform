@@ -8,11 +8,10 @@
 import { Point } from "fabric";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { ILetterClassifier } from "../contracts/ILetterClassifier";
-import type { ISpecialPlacementLookup } from "../contracts/ISpecialPlacementLookup";
+import type { LetterClassifier } from "./LetterClassifier";
 
-export class SpecialPlacementLookup implements ISpecialPlacementLookup {
-  constructor(private readonly letterClassifier: ILetterClassifier) {}
+export class SpecialPlacementLookup {
+  constructor(private readonly letterClassifier: LetterClassifier) {}
 
   /**
    * Look up special placement adjustment from placement data.

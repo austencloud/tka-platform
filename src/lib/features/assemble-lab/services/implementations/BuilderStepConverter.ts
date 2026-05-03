@@ -21,9 +21,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { HandPathMotionCalculator } from "$lib/features/create/assemble/services/HandPathMotionCalculator";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
 import type { BuilderStep } from "../../state/assemble-state.svelte";
-import type { IBuilderStepConverter } from "../contracts/IBuilderStepConverter";
-
-export class BuilderStepConverter implements IBuilderStepConverter {
+export class BuilderStepConverter {
   private readonly pathCalculator = new HandPathMotionCalculator();
 
   /** Derive MotionType (PRO/ANTI/DASH/STATIC) from step data */

@@ -16,10 +16,10 @@ import {
   DIAMOND_RADIAL_MAP,
 } from "../../domain/direction/DirectionMaps";
 import type { IDirectionCalculator } from "../contracts/IDirectionCalculator";
-import type { IOrientationChecker } from "../contracts/IOrientationChecker";
+import type { OrientationChecker } from "./OrientationChecker";
 
 export class StaticDashMotionHandler implements IDirectionCalculator {
-  constructor(private orientationChecker: IOrientationChecker) {}
+  constructor(private orientationChecker: OrientationChecker) {}
 
   calculate(motionData: MotionData): VectorDirection | null {
     const location = motionData.endLocation;

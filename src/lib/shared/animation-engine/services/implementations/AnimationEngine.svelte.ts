@@ -73,7 +73,7 @@ import { PropTypeChanger } from "./PropTypeChanger.svelte";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
 import { FireTipTracker } from "./FireTipTracker";
 import type { FireOverlayConfig } from "../../domain/types/FireTypes";
-import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
+import type { FireDefaultsLoader } from "./FireDefaultsLoader";
 import {
   BASE_FIRE_PHYSICS,
   BASE_COLOR_CURVE,
@@ -257,7 +257,7 @@ export class AnimationEngine {
   private canvasInitializer = new AnimatorCanvasInitializer();
   private frameBudgetMonitor: IFrameBudgetMonitor =
     new FrameBudgetMonitor(new DeviceTierDetector().detect());
-  private fireDefaultsLoader: IFireDefaultsLoader | null = null;
+  private fireDefaultsLoader: FireDefaultsLoader | null = null;
 
   // ============================================================================
   // PRIVATE STATE

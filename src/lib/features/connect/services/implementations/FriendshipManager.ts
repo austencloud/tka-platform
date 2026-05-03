@@ -24,7 +24,6 @@ import {
 	getAuthSync,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
-import type { IFriendshipManager } from '../contracts/IFriendshipManager';
 import type {
 	Friend,
 	UserSearchResult,
@@ -33,7 +32,7 @@ import type {
 import { FRIEND_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
 import type { IPresenceTracker } from '../contracts/IPresenceTracker';
 
-export class FriendshipManager implements IFriendshipManager {
+export class FriendshipManager {
 	private _friends: Friend[] = [];
 	private _isLoaded = false;
 

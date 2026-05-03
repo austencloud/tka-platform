@@ -9,7 +9,6 @@ import type { StepData } from "../../../create/shared/domain/models/StepData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
-import type { IPropInterpolator } from "../contracts/IPropInterpolator";
 import type { InterpolationResult } from "../contracts/IAnimationStateManager";
 import type { IAngleCalculator } from "../contracts/IAngleCalculator";
 import type { IEndpointCalculator } from "../contracts/IEndpointCalculator";
@@ -34,7 +33,7 @@ function shouldUseLinear(motionType: MotionType): boolean {
   return false;
 }
 
-export class PropInterpolator implements IPropInterpolator {
+export class PropInterpolator {
   constructor(
     private angleCalculator: IAngleCalculator,
     private endpointCalculator: IEndpointCalculator

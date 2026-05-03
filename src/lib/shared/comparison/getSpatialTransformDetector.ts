@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISpatialTransformDetector } from './services/contracts/ISpatialTransformDetector';
 import { SpatialTransformDetector } from './services/implementations/SpatialTransformDetector';
 
-let instance: ISpatialTransformDetector | null = null;
+let instance: SpatialTransformDetector | null = null;
 
-export function getSpatialTransformDetector(): ISpatialTransformDetector {
+export function getSpatialTransformDetector(): SpatialTransformDetector {
 	if (!browser) throw new Error('getSpatialTransformDetector() is browser-only');
 	return instance ??= new SpatialTransformDetector();
 }

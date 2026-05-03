@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IScreenshotInjector } from './services/contracts/IScreenshotInjector';
 import { ScreenshotInjector } from './services/implementations/ScreenshotInjector';
 
-let instance: IScreenshotInjector | null = null;
+let instance: ScreenshotInjector | null = null;
 
-export function getScreenshotInjector(): IScreenshotInjector {
+export function getScreenshotInjector(): ScreenshotInjector {
 	if (!browser) throw new Error('getScreenshotInjector() is browser-only');
 	return instance ??= new ScreenshotInjector();
 }

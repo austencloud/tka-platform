@@ -3,7 +3,6 @@ import type {
   PointRef,
   Junction,
 } from "$lib/shared/multi-grid/domain/models/GridTopology";
-import type { IJunctionOverlapDetector } from "../contracts/IJunctionOverlapDetector";
 import type { JunctionOverlap, PropPlacement } from "../../domain/types";
 
 /**
@@ -14,7 +13,7 @@ import type { JunctionOverlap, PropPlacement } from "../../domain/types";
  * This generalizes to N junctions across arbitrary topologies: 2-grid chains,
  * 3-grid chains, 2x2 grids, mixed mode arrangements, etc.
  */
-export class JunctionOverlapDetector implements IJunctionOverlapDetector {
+export class JunctionOverlapDetector {
   detectOverlaps(topology: GridTopology, placement: PropPlacement): JunctionOverlap[] {
     const overlaps: JunctionOverlap[] = [];
 

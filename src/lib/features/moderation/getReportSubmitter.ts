@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IReportSubmitter } from './services/contracts/IReportSubmitter';
 import { ReportSubmitter } from './services/implementations/ReportSubmitter';
 
-let instance: IReportSubmitter | null = null;
+let instance: ReportSubmitter | null = null;
 
-export function getReportSubmitter(): IReportSubmitter {
+export function getReportSubmitter(): ReportSubmitter {
 	if (!browser) throw new Error('getReportSubmitter() is browser-only');
 	return instance ??= new ReportSubmitter();
 }

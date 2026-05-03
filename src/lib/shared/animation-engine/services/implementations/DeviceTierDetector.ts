@@ -5,10 +5,9 @@
  * Wraps the existing DeviceDetector infrastructure.
  */
 
-import type { IDeviceTierDetector } from "../contracts/IDeviceTierDetector";
 import { DeviceTier } from "../../domain/types/QualityTypes";
 
-export class DeviceTierDetector implements IDeviceTierDetector {
+export class DeviceTierDetector {
   detect(): DeviceTier {
     const cores = navigator.hardwareConcurrency ?? 4;
     const isMobile = this.isMobileDevice();

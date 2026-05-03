@@ -12,7 +12,6 @@
  * and convert internally.
  */
 
-import type { IRatingCalculator } from "../contracts/IRatingCalculator";
 import type { RatingUpdate } from "../../domain/models/arena-models";
 import {
   GLICKO2_TAU,
@@ -21,7 +20,7 @@ import {
 
 const SCALE = 173.7178;
 
-export class RatingCalculator implements IRatingCalculator {
+export class RatingCalculator {
   computeUpdate(
     winnerMu: number,
     winnerPhi: number,

@@ -6,7 +6,6 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { ISpatialTransformDetector } from "../contracts/ISpatialTransformDetector";
 import type { SpatialTransform, SpatialTransformResult } from "../../domain/models/signatures";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -49,7 +48,7 @@ const ALL_TRANSFORMS: readonly SpatialTransform[] = Array.from({ length: 8 }, (_
   gridModeToggled: i % 2 === 1,
 }));
 
-export class SpatialTransformDetector implements ISpatialTransformDetector {
+export class SpatialTransformDetector {
   findTransform(beatA: StepData, beatB: StepData): SpatialTransformResult {
     // Try all 8 possible rotations
     for (const transform of ALL_TRANSFORMS) {

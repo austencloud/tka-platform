@@ -5,12 +5,10 @@
  */
 
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IAngleMathCalculator } from "../contracts/IAngleMathCalculator";
-
 const TWO_PI = Math.PI * 2;
 const PI = Math.PI;
 
-export class AngleMathCalculator implements IAngleMathCalculator {
+export class AngleMathCalculator {
   /**
    * Normalize angle to [0, 2π)
    */

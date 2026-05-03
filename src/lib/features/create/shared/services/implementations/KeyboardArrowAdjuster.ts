@@ -27,10 +27,9 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/createArrowPlacementData";
-import type { IKeyboardArrowAdjuster } from "../contracts/IKeyboardArrowAdjuster";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
-export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
+export class KeyboardArrowAdjuster {
   private logger = createComponentLogger("KeyboardArrowAdjustment");
 
   /**

@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IStepMotionDeriver } from './services/contracts/IStepMotionDeriver';
 import { StepMotionDeriver } from './services/implementations/StepMotionDeriver';
 
-let instance: IStepMotionDeriver | null = null;
+let instance: StepMotionDeriver | null = null;
 
-export function getStepMotionDeriver(): IStepMotionDeriver {
+export function getStepMotionDeriver(): StepMotionDeriver {
 	if (!browser) throw new Error('getStepMotionDeriver() is browser-only');
 	return instance ??= new StepMotionDeriver();
 }

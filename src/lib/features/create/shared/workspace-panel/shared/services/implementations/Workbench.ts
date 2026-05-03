@@ -14,9 +14,7 @@ import type { StepData } from "../../../../domain/models/StepData";
 import type { StartPositionData } from "../../../../domain/models/StartPositionData";
 import type { IPersistenceService } from "../../../../services/contracts/IPersister";
 import type { ISequenceRepository } from "../../../../services/contracts/ISequenceRepository";
-import type { IWorkbench } from "../contracts/IWorkbench";
-
-export class Workbench implements IWorkbench {
+export class Workbench {
   constructor(
     private sequenceService: ISequenceRepository,
     private persistenceService: IPersistenceService

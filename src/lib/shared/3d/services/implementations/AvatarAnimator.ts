@@ -17,8 +17,8 @@ import type {
 import type { IIKSolver, IKTarget } from "../contracts/IIKSolver";
 import type { IAvatarSkeletonBuilder, BoneName } from "../contracts/IAvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
-import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
-import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
+import type { ElbowPoleComputer } from "./ElbowPoleComputer";
+import type { ClavicleRaiser } from "./ClavicleRaiser";
 import type { ISpineTwister } from "../contracts/ISpineTwister";
 
 export class AvatarAnimator implements IAvatarAnimator {
@@ -37,12 +37,12 @@ export class AvatarAnimator implements IAvatarAnimator {
   private transitionEnd: BodyPose | null = null;
   private transitionProgress = 0;
   private transitionConfig: TransitionConfig | null = null;
-  private poleComputer: IElbowPoleComputer | null;
+  private poleComputer: ElbowPoleComputer | null;
   private leftPoleVector = new Vector3(0, 0, 1);
   private rightPoleVector = new Vector3(0, 0, 1);
   private _poleVectorsEnabled = true;
 
-  private clavicleRaiser: IClavicleRaiser | null;
+  private clavicleRaiser: ClavicleRaiser | null;
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
   // The bone's original rest quaternion - we COMPOSE with this, never replace it
@@ -88,8 +88,8 @@ export class AvatarAnimator implements IAvatarAnimator {
   constructor(
     private ikSolver: IIKSolver,
     private skeleton: IAvatarSkeletonBuilder,
-    poleComputer?: IElbowPoleComputer,
-    clavicleRaiser?: IClavicleRaiser,
+    poleComputer?: ElbowPoleComputer,
+    clavicleRaiser?: ClavicleRaiser,
     spineTwister?: ISpineTwister
   ) {
     this.poleComputer = poleComputer ?? null;

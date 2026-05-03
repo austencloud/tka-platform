@@ -5,12 +5,11 @@
  */
 
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IOrientationMapper } from "../contracts/IOrientationMapper";
 
 const PI = Math.PI;
 const HALF_PI = PI / 2;
 
-export class OrientationMapper implements IOrientationMapper {
+export class OrientationMapper {
   /**
    * Map orientation to angle relative to center path
    */

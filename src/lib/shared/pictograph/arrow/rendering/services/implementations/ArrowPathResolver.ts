@@ -5,7 +5,6 @@
  * Extracted from ArrowRenderer to improve modularity and reusability.
  */
 
-import type { IArrowPathResolver } from "../contracts/IArrowPathResolver";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import {
   MotionType,
@@ -14,7 +13,7 @@ import {
 } from "../../../../shared/domain/enums/pictograph-enums";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 
-export class ArrowPathResolver implements IArrowPathResolver {
+export class ArrowPathResolver {
   /**
    * Get arrow SVG path based on motion type and properties (extracted from Arrow.svelte)
    */

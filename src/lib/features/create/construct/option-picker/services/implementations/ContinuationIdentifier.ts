@@ -11,8 +11,6 @@ import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enum
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { IContinuationIdentifier } from "../contracts/IContinuationIdentifier";
-
 type ShiftDirection = "cw" | "ccw" | null;
 
 /**
@@ -87,7 +85,7 @@ function deriveShiftDirection(motion: MotionData): ShiftDirection {
   return null;
 }
 
-export class ContinuationIdentifier implements IContinuationIdentifier {
+export class ContinuationIdentifier {
   identifyContinuation(
     referenceBeat: PictographData,
     candidates: PictographData[]

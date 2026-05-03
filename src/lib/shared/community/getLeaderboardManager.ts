@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ILeaderboardManager } from './services/contracts/ILeaderboardManager';
 import { LeaderboardManager } from './services/implementations/LeaderboardManager';
 
-let instance: ILeaderboardManager | null = null;
+let instance: LeaderboardManager | null = null;
 
-export function getLeaderboardManager(): ILeaderboardManager {
+export function getLeaderboardManager(): LeaderboardManager {
 	if (!browser) throw new Error('getLeaderboardManager() is browser-only');
 	return instance ??= new LeaderboardManager();
 }

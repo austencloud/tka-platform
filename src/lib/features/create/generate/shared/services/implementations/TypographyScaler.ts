@@ -1,10 +1,8 @@
-import type { ITypographyScaler } from "../contracts/ITypographyScaler";
-
 /**
  * Implementation of ITypographyScaler
  * Provides responsive typography calculations with smooth easing
  */
-export class TypographyScaler implements ITypographyScaler {
+export class TypographyScaler {
   /**
    * Calculate responsive font size with smooth easing curve
    * Applies a gentle easing function to reduce abrupt jumps at rounding thresholds

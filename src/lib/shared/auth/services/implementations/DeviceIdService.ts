@@ -1,10 +1,9 @@
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getFirestoreInstance } from "../../firebase";
-import type { IDeviceIdService } from "../contracts/IDeviceIdService";
 
 const STORAGE_KEY = "tka:deviceId";
 
-export class DeviceIdService implements IDeviceIdService {
+export class DeviceIdService {
   getDeviceId(): string {
     const existing = localStorage.getItem(STORAGE_KEY);
     if (existing) return existing;

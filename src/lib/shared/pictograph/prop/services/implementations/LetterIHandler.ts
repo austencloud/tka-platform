@@ -11,7 +11,7 @@ import {
   LETTER_I_RADIAL_MAP,
 } from "../../domain/direction/DirectionMaps";
 import type { IDirectionCalculator } from "../contracts/IDirectionCalculator";
-import type { IOrientationChecker } from "../contracts/IOrientationChecker";
+import type { OrientationChecker } from "./OrientationChecker";
 import { getEndLocation } from "./DirectionUtils";
 import type {
   MotionColor,
@@ -19,7 +19,7 @@ import type {
 } from "../../../shared/domain/enums/pictograph-enums";
 
 export class LetterIHandler implements IDirectionCalculator {
-  constructor(private orientationChecker: IOrientationChecker) {}
+  constructor(private orientationChecker: OrientationChecker) {}
 
   /**
    * Calculate direction using Letter I's special maps.

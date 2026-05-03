@@ -3,10 +3,9 @@
  */
 
 import type { MotionData } from "../../../shared/domain/models/MotionData";
-import type { IOrientationChecker } from "../contracts/IOrientationChecker";
 import { Orientation } from "../../../shared/domain/enums/pictograph-enums";
 
-export class OrientationChecker implements IOrientationChecker {
+export class OrientationChecker {
   constructor(private motionDataSet: { red: MotionData; blue: MotionData }) {}
 
   isRadial(): boolean {

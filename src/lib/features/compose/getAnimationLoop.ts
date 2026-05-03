@@ -1,7 +1,6 @@
-import type { IAnimationLoop } from './services/contracts/IAnimationLoop';
 import { AnimationLoop } from './services/implementations/AnimationLoop';
 
-let instance: IAnimationLoop | null = null;
-export function getAnimationLoop(): IAnimationLoop {
+let instance: AnimationLoop | null = null;
+export function getAnimationLoop(): AnimationLoop {
   return instance ??= new AnimationLoop();
 }

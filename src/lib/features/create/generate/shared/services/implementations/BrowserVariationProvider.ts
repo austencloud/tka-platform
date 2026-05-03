@@ -10,7 +10,6 @@
  * motion essentials only).
  */
 
-import type { IBrowserVariationProvider } from "../contracts/IBrowserVariationProvider";
 import type { PictographData as EnginePictographData } from "@tka/sequence-engine/generation";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData as AppPictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -19,7 +18,7 @@ import type { MotionData as EngineMotionData } from "@tka/sequence-engine/genera
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-export class BrowserVariationProvider implements IBrowserVariationProvider {
+export class BrowserVariationProvider {
   private readonly index = new Map<string, EnginePictographData[]>();
   private allVariationsList: EnginePictographData[] = [];
   private initialized = false;

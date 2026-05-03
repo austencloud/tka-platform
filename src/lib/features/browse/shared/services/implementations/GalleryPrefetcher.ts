@@ -9,7 +9,6 @@
  * No skeleton loaders. No Firestore wait.
  */
 
-import type { IGalleryPrefetcher } from "../contracts/IGalleryPrefetcher";
 import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
 import type { IGalleryOfflineCache } from "$lib/shared/offline/services/contracts/IGalleryOfflineCache";
 import {
@@ -21,7 +20,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { GalleryCacheEntry } from "$lib/shared/offline/domain/offline-cache-types";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
 
-export class GalleryPrefetcher implements IGalleryPrefetcher {
+export class GalleryPrefetcher {
   private _isWarmed = false;
   private _isSyncing = false;
   private _prefetchPromise: Promise<void> | null = null;

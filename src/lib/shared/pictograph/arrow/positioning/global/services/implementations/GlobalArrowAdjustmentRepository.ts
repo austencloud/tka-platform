@@ -18,7 +18,7 @@ import type {
   IGlobalArrowAdjustmentRepository,
   CascadingLookupResult,
 } from "../contracts/IGlobalArrowAdjustmentRepository";
-import type { IGlobalArrowAdjustmentPersister } from "../contracts/IGlobalArrowAdjustmentPersister";
+import type { GlobalArrowAdjustmentPersister } from "./GlobalArrowAdjustmentPersister";
 import {
   createGlobalArrowAdjustmentState,
   type GlobalArrowAdjustmentState,
@@ -38,7 +38,7 @@ export class GlobalArrowAdjustmentRepository
   private unsubscribe: (() => void) | null = null;
   private initializePromise: Promise<void> | null = null;
 
-  constructor(private readonly persister: IGlobalArrowAdjustmentPersister) {
+  constructor(private readonly persister: GlobalArrowAdjustmentPersister) {
     this.state = createGlobalArrowAdjustmentState();
   }
 

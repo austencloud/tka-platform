@@ -8,13 +8,12 @@
  * 4. Door alignment - doors land on wall tiles (not void or floor interior)
  */
 
-import type { ILayoutValidator } from "../contracts/ILayoutValidator";
 import type { MuseumGrid } from "../../domain/museum-grid-types";
 import type { PlacedRoom, ValidationResult } from "../../domain/layout-types";
 import { tileKey } from "../../domain/museum-grid-types";
 import { isWalkable } from "../../domain/tile-registry";
 
-export class LayoutValidator implements ILayoutValidator {
+export class LayoutValidator {
   validate(grid: MuseumGrid, rooms: PlacedRoom[]): ValidationResult {
     const errors: string[] = [];
 

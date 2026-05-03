@@ -1,6 +1,5 @@
 import type { GridTopology } from "$lib/shared/multi-grid/domain/models/GridTopology";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { IPictographTopologyMapper } from "../contracts/IPictographTopologyMapper";
 import type { PropPlacement } from "../../domain/types";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "$lib/shared/render/core/types";
@@ -16,7 +15,7 @@ import type { GridLocation } from "$lib/shared/render/core/types";
  * Returns null when the pictograph lacks motion data for either hand or the
  * topology doesn't have at least two grids.
  */
-export class PictographTopologyMapper implements IPictographTopologyMapper {
+export class PictographTopologyMapper {
   mapToTopology(
     pictograph: PictographData,
     topology: GridTopology,

@@ -22,7 +22,6 @@ import {
 	getAuthSync,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
-import type { ISessionManager } from '../contracts/ISessionManager';
 import type {
 	SyncSession,
 	SessionParticipant,
@@ -32,7 +31,7 @@ import type {
 } from '../../domain/models/connect-models';
 import { SESSION_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
 
-export class SessionManager implements ISessionManager {
+export class SessionManager {
 	private _currentSession: SyncSession | null = null;
 	private _participants: SessionParticipant[] = [];
 	private _isHost = false;

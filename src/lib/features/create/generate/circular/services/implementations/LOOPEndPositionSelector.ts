@@ -7,8 +7,7 @@ import {
 } from "../../domain/constants/strict-loop-position-maps";
 import type { Period } from "../../domain/models/circular-models";
 import { LOOPType } from "../../domain/models/circular-models";
-import type { ILOOPEndPositionSelector } from "../contracts/ILOOPEndPositionSelector";
-import type { IRotatedEndPositionSelector } from "../contracts/IRotatedEndPositionSelector";
+import type { RotatedEndPositionSelector } from "./RotatedEndPositionSelector";
 
 /**
  * Service for determining required end positions for different LOOP types
@@ -26,9 +25,9 @@ import type { IRotatedEndPositionSelector } from "../contracts/IRotatedEndPositi
  * 3. INVERTED (return to start takes precedence over swapped)
  * 4. SWAPPED (only for strict swapped)
  */
-export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
+export class LOOPEndPositionSelector {
   constructor(
-    private readonly rotatedEndPositionSelector: IRotatedEndPositionSelector
+    private readonly rotatedEndPositionSelector: RotatedEndPositionSelector
   ) {}
 
   /**

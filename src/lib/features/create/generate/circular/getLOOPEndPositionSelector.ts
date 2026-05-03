@@ -1,11 +1,10 @@
 import { browser } from '$app/environment';
-import type { ILOOPEndPositionSelector } from './services/contracts/ILOOPEndPositionSelector';
 import { LOOPEndPositionSelector } from './services/implementations/LOOPEndPositionSelector';
 import { getRotatedEndPositionSelector } from './getRotatedEndPositionSelector';
 
-let instance: ILOOPEndPositionSelector | null = null;
+let instance: LOOPEndPositionSelector | null = null;
 
-export function getLOOPEndPositionSelector(): ILOOPEndPositionSelector {
+export function getLOOPEndPositionSelector(): LOOPEndPositionSelector {
 	if (!browser) throw new Error('getLOOPEndPositionSelector() is browser-only');
 	return instance ??= new LOOPEndPositionSelector(getRotatedEndPositionSelector());
 }

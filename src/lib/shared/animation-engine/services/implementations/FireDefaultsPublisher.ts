@@ -17,11 +17,9 @@ import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { FirePhysicsParams } from "../../domain/types/FireTypes";
 import type { PropTipConfig } from "../../domain/types/PropTipPoints";
-import type { IFireDefaultsPublisher } from "../contracts/IFireDefaultsPublisher";
-
 const FIRESTORE_DOC_PATH = "config/fireDefaults";
 
-export class FireDefaultsPublisher implements IFireDefaultsPublisher {
+export class FireDefaultsPublisher {
 	// ------------------------------------------------------------------
 	// Firestore document reference
 	// ------------------------------------------------------------------

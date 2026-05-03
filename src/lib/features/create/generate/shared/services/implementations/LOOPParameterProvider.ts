@@ -21,11 +21,11 @@ import {
   DifficultyLevel,
   PropContinuity,
 } from "../../domain/models/generate-models";
-import type { IPictographFilter } from "../contracts/IPictographFilter";
+import type { PictographFilter } from "./PictographFilter";
 import type { ILOOPParameterProvider } from "../contracts/ILOOPParameterProvider";
 
 export class LOOPParameterProvider implements ILOOPParameterProvider {
-  constructor(private PictographFilter: IPictographFilter) {}
+  constructor(private PictographFilter: PictographFilter) {}
 
   // ============================================================================
   // INVERTED LETTER OPERATIONS

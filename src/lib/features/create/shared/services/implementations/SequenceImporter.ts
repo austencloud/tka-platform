@@ -14,13 +14,13 @@ import type { IEnumMapper } from "$lib/shared/foundation/services/contracts/data
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { ISequenceImporter } from "../contracts/ISequenceImporter";
+
 import { parseStrict } from "../../../../../shared/validation/validation-utils";
 import { PngMetadataArraySchema } from "$lib/shared/foundation/domain/schemas";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
-export class SequenceImporter implements ISequenceImporter {
+export class SequenceImporter {
   constructor(private readonly enumMapper: IEnumMapper) {}
   /**
    * Import sequence from PNG metadata

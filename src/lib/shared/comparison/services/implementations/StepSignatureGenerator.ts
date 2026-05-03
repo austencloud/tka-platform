@@ -6,8 +6,7 @@
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { IStepSignatureGenerator } from "../contracts/IStepSignatureGenerator";
-import type { IMotionSignatureGenerator } from "../contracts/IMotionSignatureGenerator";
+import type { MotionSignatureGenerator } from "./MotionSignatureGenerator";
 import type {
   StepSignature,
   StepComparisonResult,
@@ -46,8 +45,8 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
   [GridLocation.CENTER]: 0,
 };
 
-export class StepSignatureGenerator implements IStepSignatureGenerator {
-  constructor(private readonly motionSignatureGenerator: IMotionSignatureGenerator) {}
+export class StepSignatureGenerator {
+  constructor(private readonly motionSignatureGenerator: MotionSignatureGenerator) {}
 
   generateSignature(step: StepData): StepSignature {
     const blueMotion = step.motions[MotionColor.BLUE];

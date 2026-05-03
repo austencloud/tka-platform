@@ -22,7 +22,7 @@ import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/service
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
-import type { ILOOPEndPositionResolver } from "../contracts/ILOOPEndPositionResolver";
+import type { LOOPEndPositionResolver } from "./LOOPEndPositionResolver";
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
@@ -52,7 +52,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     private sequenceExtender: ISequenceExtender,
     private stepConverter: IStepConverter,
     private reversalDetector: IReversalDetector,
-    private loopEndPositionResolver: ILOOPEndPositionResolver
+    private loopEndPositionResolver: LOOPEndPositionResolver
   ) {}
 
   async generateRandomSequence(

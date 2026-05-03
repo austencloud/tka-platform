@@ -40,7 +40,7 @@ export interface ISequenceMetadataManager {
   }): Record<string, unknown>;
 }
 
-export class SequenceMetadataManager implements ISequenceMetadataManager {
+export class SequenceMetadataManager {
   /**
    * Generate sequence name based on options - matches legacy pattern
    */

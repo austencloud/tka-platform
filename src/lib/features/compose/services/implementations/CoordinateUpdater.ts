@@ -7,12 +7,10 @@
 
 import type { PropState } from "../../shared/domain/types/PropState";
 import { ANIMATION_CONSTANTS } from "../../shared/domain/constants";
-import type { ICoordinateUpdater } from "../contracts/ICoordinateUpdater";
-
 // Grid constants from domain constants
 const { GRID_CENTER, GRID_HALFWAY_POINT_OFFSET } = ANIMATION_CONSTANTS;
 
-export class CoordinateUpdater implements ICoordinateUpdater {
+export class CoordinateUpdater {
   /**
    * Update x,y coordinates from center path angle
    * Uses exact same logic as standalone animator with grid center offset

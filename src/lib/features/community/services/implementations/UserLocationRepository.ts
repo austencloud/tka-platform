@@ -22,9 +22,7 @@ import type {
   UserLocationWithProfile,
   LocationSharingPreferences,
 } from "../../domain/models/user-location";
-import type { IUserLocationRepository } from "../contracts/IUserLocationRepository";
-
-export class UserLocationRepository implements IUserLocationRepository {
+export class UserLocationRepository {
   /**
    * Get Firestore document reference for a user's location
    */

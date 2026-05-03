@@ -1,8 +1,7 @@
-import type { IFriendshipManager } from './services/contracts/IFriendshipManager';
 import { FriendshipManager } from './services/implementations/FriendshipManager';
 import { getConnectPresenceTracker } from './getConnectPresenceTracker';
 
-let instance: IFriendshipManager | null = null;
-export function getConnectFriendshipManager(): IFriendshipManager {
+let instance: FriendshipManager | null = null;
+export function getConnectFriendshipManager(): FriendshipManager {
   return instance ??= new FriendshipManager(getConnectPresenceTracker());
 }

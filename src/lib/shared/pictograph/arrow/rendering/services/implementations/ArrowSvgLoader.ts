@@ -15,9 +15,9 @@
  * Extracted from ArrowRenderer to improve modularity and reusability.
  */
 
-import type { IArrowPathResolver } from "../contracts/IArrowPathResolver";
-import type { IArrowSvgParser } from "../contracts/IArrowSvgParser";
-import type { ISvgColorTransformer } from "../contracts/IArrowSvgColorTransformer";
+import type { ArrowPathResolver } from "./ArrowPathResolver";
+import type { ArrowSvgParser } from "./ArrowSvgParser";
+import type { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 import type { ArrowSvgData } from "../../../../shared/domain/models/svg-models";
 import type {
@@ -90,9 +90,9 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
   private cacheMisses = 0;
 
   constructor(
-    private pathResolver: IArrowPathResolver,
-    private svgParser: IArrowSvgParser,
-    private colorTransformer: ISvgColorTransformer
+    private pathResolver: ArrowPathResolver,
+    private svgParser: ArrowSvgParser,
+    private colorTransformer: ArrowSvgColorTransformer
   ) {}
 
   /**

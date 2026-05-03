@@ -15,7 +15,7 @@ import type {
   CircularizationOption,
   OrientationAlignment,
 } from "../contracts/ISequenceExtender";
-import type { IBridgeFinder } from "../contracts/IBridgeFinder";
+
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IPositionAnalyzer } from "$lib/features/create/construct/option-picker/services/contracts/IPositionAnalyzer";
@@ -33,7 +33,7 @@ import {
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
 import type { LOOPOption } from "../contracts/ISequenceExtender";
 
-export class BridgeFinder implements IBridgeFinder {
+export class BridgeFinder {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
     private positionAnalyzer: IPositionAnalyzer,

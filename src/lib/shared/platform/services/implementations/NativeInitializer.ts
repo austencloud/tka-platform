@@ -1,7 +1,6 @@
 import type { IPlatformDetector } from "../contracts/IPlatformDetector";
-import type { INativeInitializer } from "../contracts/INativeInitializer";
 
-export class NativeInitializer implements INativeInitializer {
+export class NativeInitializer {
 	constructor(private readonly platformDetector: IPlatformDetector) {}
 
 	async initialize(): Promise<void> {

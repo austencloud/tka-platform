@@ -1,7 +1,6 @@
-import type { IInviteHandler } from './services/contracts/IInviteHandler';
 import { InviteHandler } from './services/implementations/InviteHandler';
 
-let instance: IInviteHandler | null = null;
-export function getConnectInviteHandler(): IInviteHandler {
+let instance: InviteHandler | null = null;
+export function getConnectInviteHandler(): InviteHandler {
   return instance ??= new InviteHandler();
 }

@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { ISequenceDomainManager } from './services/contracts/ISequenceDomainManager';
 import { SequenceDomainManager } from './services/implementations/SequenceDomainManager';
 
-let instance: ISequenceDomainManager | null = null;
+let instance: SequenceDomainManager | null = null;
 
-export function getSequenceDomainManager(): ISequenceDomainManager {
+export function getSequenceDomainManager(): SequenceDomainManager {
 	if (!browser) throw new Error('getSequenceDomainManager() is browser-only');
 	return instance ??= new SequenceDomainManager();
 }

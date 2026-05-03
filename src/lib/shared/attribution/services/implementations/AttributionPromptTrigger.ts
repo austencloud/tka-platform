@@ -6,7 +6,6 @@
  */
 
 import { browser } from "$app/environment";
-import type { IAttributionPromptTrigger } from "../contracts/IAttributionPromptTrigger";
 import type {
   AttributionPromptState,
   AttributionPromptConfig,
@@ -27,7 +26,7 @@ interface StoredMetrics {
   firstSeen: string;
 }
 
-export class AttributionPromptTrigger implements IAttributionPromptTrigger {
+export class AttributionPromptTrigger {
   private config: AttributionPromptConfig;
 
   constructor(config: AttributionPromptConfig = DEFAULT_PROMPT_CONFIG) {

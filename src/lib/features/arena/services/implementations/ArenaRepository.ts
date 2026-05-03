@@ -8,7 +8,6 @@
  *   arenaSnapshots/{YYYY-MM-DD}  - Daily rank snapshots
  */
 
-import type { IArenaRepository } from "../contracts/IArenaRepository";
 import type {
   ArenaRating,
   ArenaVote,
@@ -46,7 +45,7 @@ const VOTES_COLLECTION = "arenaVotes";
 const SNAPSHOTS_COLLECTION = "arenaSnapshots";
 const PUBLIC_SEQUENCES_COLLECTION = "publicSequences";
 
-export class ArenaRepository implements IArenaRepository {
+export class ArenaRepository {
   async loadPool(): Promise<MatchupCandidate[]> {
     const firestore = await getFirestoreInstance();
     const publicSnap = await getDocs(collection(firestore, PUBLIC_SEQUENCES_COLLECTION));

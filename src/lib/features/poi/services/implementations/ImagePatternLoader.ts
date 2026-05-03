@@ -1,4 +1,3 @@
-import type { IImagePatternLoader } from "../contracts/IImagePatternLoader";
 import type { StripPattern, StripFrame } from "../../domain/StripPattern";
 
 /**
@@ -13,7 +12,7 @@ import type { StripPattern, StripFrame } from "../../domain/StripPattern";
  * - **Strip mode**: Raw import - each column = one frame, each row = one LED.
  *   For pre-made POV strip images from other tools.
  */
-export class ImagePatternLoader implements IImagePatternLoader {
+export class ImagePatternLoader {
   /**
    * Hub fraction - must match the disc renderer's innerRadius ratio.
    */

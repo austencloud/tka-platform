@@ -16,7 +16,6 @@
  * 5. Delegating metadata, reversal detection, and cycle detection to existing services
  */
 
-import type { IBuildResultTransformer } from "../contracts/IBuildResultTransformer";
 import type { BuildResult } from "@tka/sequence-engine/generation";
 import type {
   SequenceStep,
@@ -26,7 +25,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { GenerationOptions } from "../../domain/models/generate-models";
-import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataManager";
+import type { SequenceMetadataManager } from "./SequenceMetadataManager";
 import type { IReversalDetector } from "../../../../shared/services/contracts/IReversalDetector";
 import type { IOrientationCycleDetector } from "../../../circular/services/contracts/IOrientationCycleDetector";
 import { PropContinuity } from "../../domain/models/generate-models";
@@ -46,9 +45,9 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { MotionData as AppMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { LOOPType as AppLOOPType } from "../../../circular/domain/models/circular-models";
 
-export class BuildResultTransformer implements IBuildResultTransformer {
+export class BuildResultTransformer {
   constructor(
-    private readonly metadataManager: ISequenceMetadataManager,
+    private readonly metadataManager: SequenceMetadataManager,
     private readonly reversalDetector: IReversalDetector,
     private readonly orientationCycleDetector: IOrientationCycleDetector
   ) {}

@@ -1,6 +1,5 @@
 import { Quaternion } from "three";
 import type { Bone } from "three";
-import type { IFingerAnimator } from "../contracts/IFingerAnimator";
 import {
   GripType,
   FINGER_BONES,
@@ -15,7 +14,7 @@ interface HandState {
   bones: Bone[];
 }
 
-export class FingerAnimator implements IFingerAnimator {
+export class FingerAnimator {
   private leftHand: HandState | null = null;
   private rightHand: HandState | null = null;
   private blendSpeed = 6.0;

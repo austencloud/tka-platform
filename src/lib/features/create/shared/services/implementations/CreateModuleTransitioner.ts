@@ -10,9 +10,7 @@ import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
 // Simplified transition service without complex fade orchestrator
 
-import type { ICreateModuleTransitioner } from "../contracts/ICreateModuleTransitioner";
-
-export class CreateModuleTransitioner implements ICreateModuleTransitioner {
+export class CreateModuleTransitioner {
   /**
    * Handle main tab transitions with fade animations
    * @param targetTab - The tab to transition to

@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IBuilderStepConverter } from './services/contracts/IBuilderStepConverter';
 import { BuilderStepConverter } from './services/implementations/BuilderStepConverter';
 
-let instance: IBuilderStepConverter | null = null;
+let instance: BuilderStepConverter | null = null;
 
-export function getBuilderStepConverter(): IBuilderStepConverter {
+export function getBuilderStepConverter(): BuilderStepConverter {
 	if (!browser) throw new Error('getBuilderStepConverter() is browser-only');
 	return instance ??= new BuilderStepConverter();
 }

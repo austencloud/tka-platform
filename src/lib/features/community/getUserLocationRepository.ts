@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IUserLocationRepository } from './services/contracts/IUserLocationRepository';
 import { UserLocationRepository } from './services/implementations/UserLocationRepository';
 
-let instance: IUserLocationRepository | null = null;
+let instance: UserLocationRepository | null = null;
 
-export function getUserLocationRepository(): IUserLocationRepository {
+export function getUserLocationRepository(): UserLocationRepository {
 	if (!browser) throw new Error('getUserLocationRepository() is browser-only');
 	return instance ??= new UserLocationRepository();
 }

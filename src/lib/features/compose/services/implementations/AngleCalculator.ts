@@ -14,8 +14,6 @@ import {
   PI,
   TWO_PI,
 } from "../../shared/domain/math-constants.js";
-import type { IAngleCalculator } from "../contracts/IAngleCalculator";
-
 // ============================================================================
 // Standalone utility functions (exported for use by domain layer)
 // ============================================================================
@@ -58,7 +56,7 @@ export function mapOrientationToAngle(
 // Service class (uses standalone functions internally)
 // ============================================================================
 
-export class AngleCalculator implements IAngleCalculator {
+export class AngleCalculator {
   /**
    * Normalize angle to positive range [0, 2π)
    */

@@ -1,7 +1,6 @@
-import type { IAttributionPromptTrigger } from './services/contracts/IAttributionPromptTrigger';
 import { AttributionPromptTrigger } from './services/implementations/AttributionPromptTrigger';
 
-let instance: IAttributionPromptTrigger | null = null;
-export function getAttributionPromptTrigger(): IAttributionPromptTrigger {
+let instance: AttributionPromptTrigger | null = null;
+export function getAttributionPromptTrigger(): AttributionPromptTrigger {
   return instance ??= new AttributionPromptTrigger();
 }

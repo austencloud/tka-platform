@@ -6,12 +6,11 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IPoiOptionFilterDecorator } from "../contracts/IPoiOptionFilterDecorator";
-import type { IPoiConstraintValidator } from "../contracts/IPoiConstraintValidator";
+import type { PoiConstraintValidator } from "./PoiConstraintValidator";
 
-export class PoiOptionFilterDecorator implements IPoiOptionFilterDecorator {
+export class PoiOptionFilterDecorator {
   constructor(
-    private readonly constraintValidator: IPoiConstraintValidator
+    private readonly constraintValidator: PoiConstraintValidator
   ) {}
 
   filterPoiLegalOptions(

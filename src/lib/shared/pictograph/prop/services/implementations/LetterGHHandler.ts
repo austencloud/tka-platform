@@ -20,11 +20,11 @@ import {
   BOX_RADIAL_MAP,
 } from "../../domain/direction/DirectionMaps";
 import type { IDirectionCalculator } from "../contracts/IDirectionCalculator";
-import type { IOrientationChecker } from "../contracts/IOrientationChecker";
+import type { OrientationChecker } from "./OrientationChecker";
 import { getEndLocation, getOppositeDirection } from "./DirectionUtils";
 
 export class LetterGHHandler implements IDirectionCalculator {
-  constructor(private orientationChecker: IOrientationChecker) {}
+  constructor(private orientationChecker: OrientationChecker) {}
 
   /**
    * Calculate direction using G/H override logic.

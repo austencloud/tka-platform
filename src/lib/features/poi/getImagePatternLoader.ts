@@ -1,7 +1,6 @@
-import type { IImagePatternLoader } from './services/contracts/IImagePatternLoader';
 import { ImagePatternLoader } from './services/implementations/ImagePatternLoader';
 
-let instance: IImagePatternLoader | null = null;
-export function getImagePatternLoader(): IImagePatternLoader {
+let instance: ImagePatternLoader | null = null;
+export function getImagePatternLoader(): ImagePatternLoader {
   return instance ??= new ImagePatternLoader();
 }

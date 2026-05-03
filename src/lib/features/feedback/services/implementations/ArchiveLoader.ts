@@ -1,4 +1,3 @@
-import type { IArchiveLoader } from "../contracts/IArchiveLoader";
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
@@ -6,7 +5,7 @@ import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 /**
  * Loads archived feedback items from Firestore
  */
-class ArchiveLoaderImpl implements IArchiveLoader {
+class ArchiveLoaderImpl {
   async loadAllArchived(): Promise<FeedbackItem[]> {
     try {
       const firestore = await getFirestoreInstance();
@@ -37,4 +36,4 @@ class ArchiveLoaderImpl implements IArchiveLoader {
 }
 
 // Singleton instance
-export const archiveLoader: IArchiveLoader = new ArchiveLoaderImpl();
+export const archiveLoader = new ArchiveLoaderImpl();

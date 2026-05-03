@@ -1,7 +1,6 @@
-import type { ICanvasRenderer } from './services/contracts/ICanvasRenderer';
 import { CanvasRenderer } from './services/implementations/CanvasRenderer';
 
-let instance: ICanvasRenderer | null = null;
-export function getCanvasRenderer(): ICanvasRenderer {
+let instance: CanvasRenderer | null = null;
+export function getCanvasRenderer(): CanvasRenderer {
   return instance ??= new CanvasRenderer();
 }

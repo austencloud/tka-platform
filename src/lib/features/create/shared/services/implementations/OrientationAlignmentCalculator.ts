@@ -9,9 +9,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { OrientationAlignment } from "../contracts/ISequenceExtender";
-import type { IOrientationAlignmentCalculator } from "../contracts/IOrientationAlignmentCalculator";
-
-export class OrientationAlignmentCalculator implements IOrientationAlignmentCalculator {
+export class OrientationAlignmentCalculator {
   /**
    * Get the starting orientations from a sequence's start position.
    */

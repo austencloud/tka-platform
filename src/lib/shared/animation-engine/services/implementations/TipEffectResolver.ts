@@ -5,7 +5,6 @@
  * Map mutation methods return new objects so callers can treat maps as immutable.
  */
 
-import type { ITipEffectResolver } from "../contracts/ITipEffectResolver";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 import {
   type EffectType,
@@ -15,7 +14,7 @@ import {
   resolveEffort,
 } from "../../domain/types/TipEffectTypes";
 
-export class TipEffectResolver implements ITipEffectResolver {
+export class TipEffectResolver {
   resolveEffect(
     propIndex: number,
     tipIndex: number,

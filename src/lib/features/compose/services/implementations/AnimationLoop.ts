@@ -5,9 +5,7 @@
  * Provides clean abstraction over browser animation APIs.
  */
 
-import type { IAnimationLoop } from "../contracts/IAnimationLoop";
-
-export class AnimationLoop implements IAnimationLoop {
+export class AnimationLoop {
   private animationFrameId: number | null = null;
   private lastTimestamp: number | null = null;
   private speed: number = 1.0;

@@ -74,7 +74,7 @@ export interface IPictographFilter {
   selectRandom<T>(array: T[]): T;
 }
 
-export class PictographFilter implements IPictographFilter {
+export class PictographFilter {
   /**
    * Filter by continuity - next beat's start position must match last beat's end position
    */

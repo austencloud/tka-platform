@@ -1,6 +1,4 @@
-import type { IProximityGrid } from "../contracts/IProximityGrid";
-
-export class ProximityGrid<T> implements IProximityGrid<T> {
+export class ProximityGrid<T> {
   private readonly cells = new Map<string, { item: T; tileX: number; tileY: number }[]>();
   private readonly cellSize: number;
   private count = 0;

@@ -8,7 +8,6 @@
  * reading from AnimationVisibilityStateManager (for live display).
  */
 
-import type { ISvgColorTransformer as IArrowSvgColorTransformer } from "../contracts/IArrowSvgColorTransformer";
 import type { MotionColor } from "../../../../shared/domain/enums/pictograph-enums";
 import {
   getMotionColor,
@@ -16,7 +15,7 @@ import {
 } from "../../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../../animation-engine/state/animation-visibility-state.svelte";
 
-export class ArrowSvgColorTransformer implements IArrowSvgColorTransformer {
+export class ArrowSvgColorTransformer {
   /**
    * Get the current theme mode based on dark mode setting
    * Dark mode (Dark Mode) = "dark" theme, Light mode = "light" theme

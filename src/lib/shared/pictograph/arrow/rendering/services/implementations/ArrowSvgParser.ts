@@ -5,10 +5,9 @@
  * Extracted from ArrowRenderer to improve modularity and reusability.
  */
 
-import type { IArrowSvgParser } from "../contracts/IArrowSvgParser";
 import type { SVGDimensions } from "../../../../shared/domain/models/svg-models";
 
-export class ArrowSvgParser implements IArrowSvgParser {
+export class ArrowSvgParser {
   /**
    * Parse SVG to get proper dimensions and center point (extracted from Arrow.svelte)
    */

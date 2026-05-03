@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IBrowseCache } from './services/contracts/IBrowseCache';
 import { BrowseCache } from './services/implementations/BrowseCache';
 
-let instance: IBrowseCache | null = null;
+let instance: BrowseCache | null = null;
 
-export function getBrowseCache(): IBrowseCache {
+export function getBrowseCache(): BrowseCache {
 	if (!browser) throw new Error('getBrowseCache() is browser-only');
 	return instance ??= new BrowseCache();
 }

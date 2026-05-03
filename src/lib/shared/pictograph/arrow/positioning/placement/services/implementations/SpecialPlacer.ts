@@ -21,18 +21,18 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
 import type { ISpecialPlacer } from "../contracts/ISpecialPlacer";
-import type { ISpecialPlacementDataProvider } from "../contracts/ISpecialPlacementDataProvider";
+import type { SpecialPlacementDataProvider } from "./SpecialPlacementDataProvider";
 import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
-import type { ISpecialPlacementLookup } from "../contracts/ISpecialPlacementLookup";
+import type { SpecialPlacementLookup } from "./SpecialPlacementLookup";
 import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
 
 export class SpecialPlacer implements ISpecialPlacer {
   private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
 
   constructor(
-    private readonly dataService: ISpecialPlacementDataProvider,
+    private readonly dataService: SpecialPlacementDataProvider,
     private readonly tupleGenerator: ITurnsTupleGenerator,
-    private readonly lookupService: ISpecialPlacementLookup,
+    private readonly lookupService: SpecialPlacementLookup,
     private readonly gridModeService: IGridModeDeriver
   ) {
     this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();

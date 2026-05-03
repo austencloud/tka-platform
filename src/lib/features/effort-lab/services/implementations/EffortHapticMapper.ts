@@ -19,7 +19,6 @@
 
 import type { EffortId, EffortParams } from "../../domain/effort-types";
 import { applyEffort } from "../../domain/effort-easing-unified";
-import type { IEffortHapticMapper } from "../contracts/IEffortHapticMapper";
 
 const DEFAULT_DURATION_MS = 400;
 const SAMPLE_COUNT = 100;
@@ -33,7 +32,7 @@ const OSCILLATING_EFFORTS: ReadonlySet<EffortId> = new Set([
 	"anticipation",
 ]);
 
-export class EffortHapticMapper implements IEffortHapticMapper {
+export class EffortHapticMapper {
 	generatePattern(
 		effortId: EffortId,
 		params?: EffortParams,

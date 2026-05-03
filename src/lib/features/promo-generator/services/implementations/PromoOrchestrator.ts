@@ -6,8 +6,8 @@
  */
 
 import type { IPromoOrchestrator } from "../contracts/IPromoOrchestrator";
-import type { IPromoSceneManager } from "../contracts/IPromoSceneManager";
-import type { IScreenshotInjector } from "../contracts/IScreenshotInjector";
+import type { PromoSceneManager } from "./PromoSceneManager";
+import type { ScreenshotInjector } from "./ScreenshotInjector";
 import type {
   IPromoAnimationController,
   AnimationProgressCallback,
@@ -43,8 +43,8 @@ export class PromoOrchestrator implements IPromoOrchestrator {
   };
 
   constructor(
-    private readonly sceneManager: IPromoSceneManager,
-    private readonly screenshotInjector: IScreenshotInjector,
+    private readonly sceneManager: PromoSceneManager,
+    private readonly screenshotInjector: ScreenshotInjector,
     private readonly animationController: IPromoAnimationController,
     private readonly videoExporter: IPromoVideoExporter
   ) {}

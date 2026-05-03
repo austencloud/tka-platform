@@ -6,11 +6,10 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IVTGTerminologyMapper } from "../contracts/IVTGTerminologyMapper";
 import { PoiTimingDirection, PoiPatternRatio } from "../../domain/poi-enums";
 import type { VTGTerminologyMapping } from "../../domain/poi-models";
 
-export class VTGTerminologyMapper implements IVTGTerminologyMapper {
+export class VTGTerminologyMapper {
   deriveVTGTerminology(pictograph: PictographData): VTGTerminologyMapping | null {
     const blue = pictograph.motions?.blue;
     const red = pictograph.motions?.red;

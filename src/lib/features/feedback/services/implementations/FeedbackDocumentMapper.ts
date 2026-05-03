@@ -6,7 +6,7 @@
  */
 
 import type { Timestamp } from "firebase/firestore";
-import type { IFeedbackDocumentMapper } from "../contracts/IFeedbackDocumentMapper";
+
 import type {
   FeedbackItem,
   AdminResponse,
@@ -20,7 +20,7 @@ import {
   isFeedbackType,
 } from "../../domain/models/feedback-models";
 
-export class FeedbackDocumentMapper implements IFeedbackDocumentMapper {
+export class FeedbackDocumentMapper {
   mapDocToFeedbackItem(
     id: string,
     data: Record<string, unknown>

@@ -13,11 +13,9 @@ import type {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-// Behavioral contracts
-import type { ISequenceDomainManager } from "../contracts/ISequenceDomainManager";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 
-export class SequenceDomainManager implements ISequenceDomainManager {
+export class SequenceDomainManager {
   /**
    * Validate a sequence according to business rules
    * Implements ISequenceDomainManager interface

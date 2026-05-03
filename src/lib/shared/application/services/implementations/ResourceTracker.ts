@@ -1,5 +1,3 @@
-import type { IResourceTracker } from "../contracts/IResourceTracker";
-
 interface Disposable {
   dispose?(): void;
   close?(): void;
@@ -20,7 +18,7 @@ type TrackedResource =
   | Map<unknown, TrackedResource>
   | unknown;
 
-export class ResourceTracker implements IResourceTracker {
+export class ResourceTracker {
   private resources: Set<TrackedResource>;
   private active: boolean;
   private tracking: boolean = false;

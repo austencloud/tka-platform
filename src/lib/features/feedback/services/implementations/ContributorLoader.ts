@@ -19,7 +19,6 @@ import {
   documentId,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { IContributorLoader } from "../contracts/IContributorLoader";
 import type { Contributor } from "../../domain/models/contributor-models";
 
 const CONTRIBUTORS_COLLECTION = "contributors";
@@ -28,7 +27,7 @@ const USERS_COLLECTION = "users";
 /** Firestore `in` queries cap out at 30 items per clause */
 const FIRESTORE_IN_LIMIT = 30;
 
-export class ContributorLoader implements IContributorLoader {
+export class ContributorLoader {
   async getAll(): Promise<Contributor[]> {
     const firestore = await getFirestoreInstance();
     const q = query(

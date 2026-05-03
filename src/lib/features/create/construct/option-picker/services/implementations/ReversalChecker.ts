@@ -7,8 +7,6 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { IReversalChecker } from "../contracts/IReversalChecker";
-
 /**
  * Coordinate point in a motion path
  */
@@ -28,7 +26,7 @@ function isPathPoint(value: unknown): value is PathPoint {
   return typeof point.x === "number" && typeof point.y === "number";
 }
 
-export class ReversalChecker implements IReversalChecker {
+export class ReversalChecker {
   /**
    * Calculate the number of reversals found in a pictograph. We look at both the
    * intrinsic motion data (paths, motion types, turns) and, when available, the

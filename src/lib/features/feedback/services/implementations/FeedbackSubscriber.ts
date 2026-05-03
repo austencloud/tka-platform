@@ -22,14 +22,13 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type { IFeedbackSubscriptionService } from "../contracts/IFeedbackSubscriptionService";
 import type { FeedbackItem } from "../../domain/models/feedback-models";
-import type { IFeedbackDocumentMapper } from "../contracts/IFeedbackDocumentMapper";
-import { feedbackDocumentMapper } from "./FeedbackDocumentMapper";
+import { type FeedbackDocumentMapper, feedbackDocumentMapper } from "./FeedbackDocumentMapper";
 
 const COLLECTION_NAME = "feedback";
 
 export class FeedbackSubscriptionService implements IFeedbackSubscriptionService {
   constructor(
-    private readonly mapper: IFeedbackDocumentMapper = feedbackDocumentMapper
+    private readonly mapper: FeedbackDocumentMapper = feedbackDocumentMapper
   ) {}
 
   subscribeToFeedback(

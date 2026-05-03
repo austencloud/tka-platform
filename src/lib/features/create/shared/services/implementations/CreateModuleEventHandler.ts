@@ -10,7 +10,7 @@ import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
-import type { ICreateModuleEventHandler } from "../contracts/ICreateModuleEventHandler";
+
 import type { IBuildConstructSectionCoordinator } from "../contracts/IConstructCoordinator";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { IOrientationCalculator } from "../../../../../shared/pictograph/prop/services/contracts/IOrientationCalculator";
@@ -21,7 +21,7 @@ import { createStepData } from "../../domain/factories/createStepData";
 
 import { getConstructCoordinator } from "$lib/features/create/shared/getConstructCoordinator";
 
-export class CreateModuleEventHandler implements ICreateModuleEventHandler {
+export class CreateModuleEventHandler {
   private constructCoordinator: IBuildConstructSectionCoordinator | null = null;
   private OrientationCalculator: IOrientationCalculator | null = null;
   private ReversalDetector: IReversalDetector | null = null;

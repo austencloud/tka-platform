@@ -6,12 +6,10 @@
  */
 
 import { LOOPComponent } from "../../domain/models/generate-models";
-import type { ILOOPExplanationTextGenerator } from "../contracts/ILOOPExplanationTextGenerator";
-
 /**
  * Service for generating user-friendly explanation text for LOOP transformations
  */
-export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerator {
+export class LOOPExplanationTextGenerator {
   /**
    * Detailed descriptions for individual LOOP components.
    * Reserved orientation primitives (ZONE_HOLD_INVERT / FLIP / CROSS) are

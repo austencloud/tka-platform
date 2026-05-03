@@ -6,9 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IBrowseCache } from "../contracts/IBrowseCache";
-
-export class BrowseCache implements IBrowseCache {
+export class BrowseCache {
   private cachedSequences: SequenceData[] | null = null;
 
   getCached(): SequenceData[] | null {

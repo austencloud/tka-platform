@@ -6,12 +6,12 @@ import type {
   CompositionProgressCallback,
   IImageComposer,
 } from "../contracts/IImageComposer";
-import type { IImageFormatConverter } from "../contracts/IImageFormatConverter";
+import type { ImageFormatConverter } from "./ImageFormatConverter";
 
 export class SequenceRenderer implements ISequenceRenderer {
   constructor(
     private compositionService: IImageComposer,
-    private formatService: IImageFormatConverter
+    private formatService: ImageFormatConverter
   ) {}
 
   async renderSequenceToCanvas(

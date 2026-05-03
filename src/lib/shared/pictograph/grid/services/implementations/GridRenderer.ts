@@ -5,11 +5,10 @@
  * Extracted from PictographRenderer.
  */
 
-import type { IGridRenderer } from "../contracts/IGridRenderer";
 import { GridMode } from "../../domain/enums/grid-enums";
 import type { ISvgConfig } from "../../../shared/domain/models/svg-models";
 
-export class GridRenderer implements IGridRenderer {
+export class GridRenderer {
   constructor(private config: ISvgConfig) {}
 
   /**

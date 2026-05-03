@@ -6,10 +6,9 @@
  */
 
 import * as THREE from "three";
-import type { IScreenshotInjector } from "../contracts/IScreenshotInjector";
 import type { ScreenshotContent } from "../../domain/promo-models";
 
-export class ScreenshotInjector implements IScreenshotInjector {
+export class ScreenshotInjector {
   private screenMesh: THREE.Mesh | null = null;
   private currentTexture: THREE.Texture | null = null;
   private textureCache: Map<string, THREE.Texture> = new Map();

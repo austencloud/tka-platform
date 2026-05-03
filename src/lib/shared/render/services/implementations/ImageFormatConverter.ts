@@ -1,5 +1,4 @@
 import type { IFileDownloader } from "../../../foundation/services/contracts/IFileDownloader";
-import type { IImageFormatConverter } from "../contracts/IImageFormatConverter";
 
 interface ImageFormatOptions {
   format: "png" | "jpeg" | "webp";
@@ -13,7 +12,7 @@ interface OptimizationSettings {
   progressive?: boolean;
 }
 
-export class ImageFormatConverter implements IImageFormatConverter {
+export class ImageFormatConverter {
   constructor(private fileDownloadService: IFileDownloader) {}
 
   async canvasToBlob(

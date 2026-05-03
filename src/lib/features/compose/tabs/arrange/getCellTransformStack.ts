@@ -1,8 +1,7 @@
-import type { ICellTransformStack } from './services/contracts/ICellTransformStack';
 import { CellTransformStack } from './services/implementations/CellTransformStack';
 import { getArrangeLayerTransformer } from './getArrangeLayerTransformer';
 
-let instance: ICellTransformStack | null = null;
-export function getCellTransformStack(): ICellTransformStack {
+let instance: CellTransformStack | null = null;
+export function getCellTransformStack(): CellTransformStack {
   return instance ??= new CellTransformStack(getArrangeLayerTransformer());
 }

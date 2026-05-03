@@ -5,7 +5,6 @@
  * Start positions must have startPosition === endPosition (no movement).
  */
 
-import type { IStartPositionValidator } from "../contracts/IStartPositionValidator";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -14,7 +13,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
 
-export class StartPositionValidator implements IStartPositionValidator {
+export class StartPositionValidator {
   constructor(
     private readonly letterTransitionGraph: ILetterTransitionGraph,
     private readonly letterQueryHandler: ILetterQueryHandler

@@ -24,7 +24,6 @@ import {
   type GlobalArrowAdjustment,
   type GlobalArrowAdjustmentInput,
 } from "../../domain/GlobalArrowAdjustment";
-import type { IGlobalArrowAdjustmentPersister } from "../contracts/IGlobalArrowAdjustmentPersister";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("GlobalArrowAdjustmentPersister");
@@ -34,9 +33,7 @@ const HISTORY_COLLECTION_NAME = "global_arrow_adjustment_history";
 
 export type AdjustmentHistoryAction = "save" | "delete" | "reset" | "undo";
 
-export class GlobalArrowAdjustmentPersister
-  implements IGlobalArrowAdjustmentPersister
-{
+export class GlobalArrowAdjustmentPersister {
   private unsubscribe: Unsubscribe | null = null;
 
   /**

@@ -9,7 +9,6 @@
  * using the midpoint between doors as the elbow.
  */
 
-import type { ICorridorRouter } from "../contracts/ICorridorRouter";
 import type { PlacedRoom, RoomEdge, CorridorSegment } from "../../domain/layout-types";
 
 interface DoorPosition {
@@ -17,7 +16,7 @@ interface DoorPosition {
   y: number;
 }
 
-export class CorridorRouter implements ICorridorRouter {
+export class CorridorRouter {
   routeCorridor(
     fromRoom: PlacedRoom,
     toRoom: PlacedRoom,

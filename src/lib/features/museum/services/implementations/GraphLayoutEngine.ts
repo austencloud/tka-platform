@@ -11,7 +11,6 @@
  * gets exactly the space it needs.
  */
 
-import type { ILayoutEngine } from "../contracts/ILayoutEngine";
 import type {
   RoomNode,
   RoomEdge,
@@ -29,7 +28,7 @@ const DIR_VECTORS: Record<string, { dx: number; dy: number }> = {
   west: { dx: -1, dy: 0 },
 };
 
-export class GraphLayoutEngine implements ILayoutEngine {
+export class GraphLayoutEngine {
   computeLayout(rooms: RoomNode[], edges: RoomEdge[], config: GridConfig): LayoutResult {
     const mainPath = this.extractMainPath(rooms, edges);
     const sideEdges = edges.filter((e) => e.type !== "main-path");

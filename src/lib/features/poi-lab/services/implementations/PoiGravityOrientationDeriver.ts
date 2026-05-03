@@ -6,7 +6,6 @@
 
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IPoiGravityOrientationDeriver } from "../contracts/IPoiGravityOrientationDeriver";
 
 /**
  * Static mapping of grid locations to gravity orientations.
@@ -32,7 +31,7 @@ const GRAVITY_ORIENTATION_MAP: Record<GridLocation, Orientation> = {
   [GridLocation.CENTER]: Orientation.CENTER_S,
 };
 
-export class PoiGravityOrientationDeriver implements IPoiGravityOrientationDeriver {
+export class PoiGravityOrientationDeriver {
   getGravityOrientation(location: GridLocation): Orientation {
     return GRAVITY_ORIENTATION_MAP[location];
   }

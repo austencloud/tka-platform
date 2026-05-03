@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IKeyboardArrowAdjuster } from './services/contracts/IKeyboardArrowAdjuster';
 import { KeyboardArrowAdjuster } from './services/implementations/KeyboardArrowAdjuster';
 
-let instance: IKeyboardArrowAdjuster | null = null;
+let instance: KeyboardArrowAdjuster | null = null;
 
-export function getKeyboardArrowAdjuster(): IKeyboardArrowAdjuster {
+export function getKeyboardArrowAdjuster(): KeyboardArrowAdjuster {
 	if (!browser) throw new Error('getKeyboardArrowAdjuster() is browser-only');
 	return instance ??= new KeyboardArrowAdjuster();
 }

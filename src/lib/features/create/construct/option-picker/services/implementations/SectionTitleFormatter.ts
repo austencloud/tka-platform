@@ -6,9 +6,7 @@
  */
 
 import { LetterTypeTextPainter } from "../../utils/letter-type-text-painter";
-import type { ISectionTitleFormatter } from "../contracts/ISectionTitleFormatter";
-
-export class SectionTitleFormatter implements ISectionTitleFormatter {
+export class SectionTitleFormatter {
   private readonly typeDescriptions = {
     Type1: { description: "Dual-Shift", typeName: "Type 1" },
     Type2: { description: "Shift", typeName: "Type 2" },

@@ -11,11 +11,10 @@ import type {
   SectionConfig,
   SequenceSection,
 } from "$lib/features/browse/shared/domain/models/browse-models";
-import type { IBrowseSectionManager } from "../contracts/IBrowseSectionManager";
 import { sortSequencesByKineticAlphabet } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
 import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
 
-export class BrowseSectionManager implements IBrowseSectionManager {
+export class BrowseSectionManager {
   constructor(
     private wordDeriver: IWordDeriver
   ) {}

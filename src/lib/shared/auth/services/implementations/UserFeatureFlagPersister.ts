@@ -37,12 +37,10 @@ import { auth, getFirestoreInstance } from "../../firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { isValidFeatureId } from "../../domain/models/FeatureFlag";
 import type { FeatureId, UserFeatureOverrides } from "../../domain/models/FeatureFlag";
-import type { IUserFeatureFlagPersister } from "../contracts/IUserFeatureFlagPersister";
-
 const LOG_PREFIX = "[UserFeatureFlagPersister]";
 const LOCAL_STORAGE_PREFIX = "tka_feature_overrides_";
 
-export class UserFeatureFlagPersister implements IUserFeatureFlagPersister {
+export class UserFeatureFlagPersister {
   private unsubscribe: Unsubscribe | null = null;
 
   // ------------------------------------------------------------------

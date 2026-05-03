@@ -7,10 +7,8 @@
 
 import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
 import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
-import type { ISpecialPlacementDataProvider } from "../contracts/ISpecialPlacementDataProvider";
 
-
-export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvider {
+export class SpecialPlacementDataProvider {
   // Structure: [gridMode][oriKey][letter] -> Record<string, unknown>
   private cache: Record<
     string,

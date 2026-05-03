@@ -5,8 +5,6 @@
  * Common culprits: Messenger, Instagram, Facebook, Twitter, TikTok, Line, etc.
  */
 
-import type { IInAppBrowserDetector } from "../contracts/IInAppBrowserDetector";
-
 interface BrowserPattern {
   pattern: RegExp;
   name: string;
@@ -36,7 +34,7 @@ const IN_APP_BROWSER_PATTERNS: BrowserPattern[] = [
   { pattern: /WebView/i, name: "WebView" },
 ];
 
-export class InAppBrowserDetector implements IInAppBrowserDetector {
+export class InAppBrowserDetector {
   private cachedResult: { isInApp: boolean; name: string | null } | null = null;
 
   isInAppBrowser(): boolean {

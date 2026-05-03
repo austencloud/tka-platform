@@ -26,9 +26,7 @@ import {
   HORIZONTAL_MIRROR_POSITION_MAP,
   SWAPPED_POSITION_MAP,
 } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
-import type { ILOOPEndPositionResolver } from "../contracts/ILOOPEndPositionResolver";
-
-export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
+export class LOOPEndPositionResolver {
   getValidEndPositions(
     startPosition: GridPosition,
     loopType: LOOPType,
