@@ -21,6 +21,7 @@ import type {
   LOOPComponent,
   LOOPDomain,
 } from "../../../../features/create/generate/shared/domain/models/generate-models";
+import type { LOOPSpec } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./SoloPropData";
 import type { StepPairingData } from "./StepPairingData";
 
@@ -107,6 +108,7 @@ export interface SequenceData {
    * "both" = detected in both spaces.
    */
   readonly componentDomains?: Partial<Record<LOOPComponent, LOOPDomain>>;
+  readonly loopSpec?: LOOPSpec;
   readonly difficultyLevel?: string;
   readonly tags: readonly string[];
   /**

@@ -12,6 +12,7 @@ import type {
   LOOPType,
   Period,
 } from "../../../circular/domain/models/circular-models";
+import type { LOOPSpec } from "@tka/sequence-engine/loop";
 
 // Re-export LOOPType for convenience
 export type { LOOPType };
@@ -42,6 +43,7 @@ export interface GenerationOptions {
   turnIntensity?: number | undefined;
   period?: Period | undefined; // For circular generation
   loopType?: LOOPType | undefined; // LOOP type for circular generation
+  loopSpec?: LOOPSpec | undefined;
 
   // 3-axis constraint system
   constraintPreset?: "smooth" | "mixed" | "choppy" | undefined;
