@@ -1,0 +1,33 @@
+import { z } from "zod";
+import { firestoreDate } from "$lib/shared/firestore";
+import { HandPathDataSchema } from "./hand-path-schemas";
+
+const SoloPropStepSchema = z
+  .object({
+    location: z.string(),
+    orientation: z.string(),
+  })
+  .passthrough();
+
+export const SoloPropDataSchema = z
+  .object({
+    id: z.string(),
+    steps: z.array(SoloPropStepSchema),
+    startLocation: z.string(),
+    startOrientation: z.string(),
+    contentHash: z.string(),
+    handPath: HandPathDataSchema,
+    length: z.number(),
+    bigrams: z.array(z.string()),
+    impliedGridMode: z.string(),
+    name: z.string().optional(),
+    author: z.string().optional(),
+    notes: z.string().optional(),
+    thumbnails: z.array(z.string()).optional(),
+    dateCreated: firestoreDate.optional(),
+    ownerId: z.string().optional(),
+    ownerDisplayName: z.string().optional(),
+  })
+  .passthrough();
+
+export type SoloPropDataParsed = z.infer<typeof SoloPropDataSchema>;

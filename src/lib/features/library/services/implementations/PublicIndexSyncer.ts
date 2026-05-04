@@ -23,6 +23,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { stripUndefined } from "$lib/shared/firestore";
 import { getPublicSequencePath, getPublicSequencesPath } from "../../data/firestore-paths";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 import type { FlaggedTerm } from "$lib/features/moderation/domain/models/content-moderation-models";
@@ -45,24 +46,6 @@ import { periodToNumber } from "$lib/features/create/generate/circular/domain/mo
 import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
-function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value === undefined) continue;
-    if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
-      result[key] = stripUndefined(value as Record<string, unknown>);
-    } else if (Array.isArray(value)) {
-      result[key] = value.map((item) =>
-        item !== null && typeof item === "object" && !Array.isArray(item)
-          ? stripUndefined(item as Record<string, unknown>)
-          : item
-      );
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
 
 export class PublicIndexSyncer {
 

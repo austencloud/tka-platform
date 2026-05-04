@@ -4,8 +4,6 @@
  * Manages tester notifications for feedback updates.
  */
 
-import type {
-  Timestamp} from "firebase/firestore";
 import {
   collection,
   query,
@@ -14,15 +12,17 @@ import {
   getDocs,
   doc,
   updateDoc,
-  deleteDoc,
   where,
   onSnapshot,
   serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreList, firestoreDelete } from "$lib/shared/firestore";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type { UserNotification } from "../../domain/models/notification-models";
+import { UserNotificationSchema } from "../../domain/models/feedback-schemas";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
@@ -35,18 +35,13 @@ export class NotificationService {
    */
   async getUnreadCount(userId: string): Promise<number> {
     try {
-      const firestore = await getFirestoreInstance();
-      const notificationsRef = collection(
-        firestore,
-        USERS_COLLECTION,
-        userId,
-        NOTIFICATIONS_SUBCOLLECTION
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+        { where: [{ field: "read", op: "==", value: false }] },
       );
-
-      const q = query(notificationsRef, where("read", "==", false));
-      const snapshot = await getDocs(q);
-
-      return snapshot.size;
+      return items.length;
     } catch (error) {
       console.error("[Notifier] Failed to get unread count:", error);
       return 0;
@@ -61,25 +56,17 @@ export class NotificationService {
     maxCount: number = 20
   ): Promise<UserNotification[]> {
     try {
-      const firestore = await getFirestoreInstance();
-      const notificationsRef = collection(
-        firestore,
-        USERS_COLLECTION,
-        userId,
-        NOTIFICATIONS_SUBCOLLECTION
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+        {
+          orderBy: [{ field: "createdAt", direction: "desc" }],
+          limit: maxCount,
+        },
       );
-
-      const q = query(
-        notificationsRef,
-        orderBy("createdAt", "desc"),
-        limit(maxCount)
-      );
-
-      const snapshot = await getDocs(q);
-
-      return snapshot.docs.map((docSnap) =>
-        this.mapDocToNotification(docSnap.id, docSnap.data())
-      );
+      // Cast validated Zod output to UserNotification union
+      return items as unknown as UserNotification[];
     } catch (error) {
       console.error("[Notifier] Failed to get notifications:", error);
       toast.error("Failed to load notifications.");
@@ -240,16 +227,8 @@ export class NotificationService {
     notificationId: string
   ): Promise<void> {
     try {
-      const firestore = await getFirestoreInstance();
-      const notificationRef = doc(
-        firestore,
-        USERS_COLLECTION,
-        userId,
-        NOTIFICATIONS_SUBCOLLECTION,
-        notificationId
-      );
-
-      await deleteDoc(notificationRef);
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      await firestoreDelete(subcollectionPath, notificationId);
     } catch (error) {
       console.error("[Notifier] Failed to delete notification:", error);
       toast.error("Failed to delete notification.");
@@ -261,19 +240,16 @@ export class NotificationService {
    */
   async deleteAllReadNotifications(userId: string): Promise<void> {
     try {
-      const firestore = await getFirestoreInstance();
-      const notificationsRef = collection(
-        firestore,
-        USERS_COLLECTION,
-        userId,
-        NOTIFICATIONS_SUBCOLLECTION
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+        { where: [{ field: "read", op: "==", value: true }] },
       );
 
-      const q = query(notificationsRef, where("read", "==", true));
-      const snapshot = await getDocs(q);
-
-      const deletes = snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
-
+      const deletes = items.map((item) =>
+        firestoreDelete(subcollectionPath, item.id),
+      );
       await Promise.all(deletes);
     } catch (error) {
       console.error("[Notifier] Failed to delete read notifications:", error);
@@ -286,18 +262,15 @@ export class NotificationService {
    */
   async deleteAllNotifications(userId: string): Promise<void> {
     try {
-      const firestore = await getFirestoreInstance();
-      const notificationsRef = collection(
-        firestore,
-        USERS_COLLECTION,
-        userId,
-        NOTIFICATIONS_SUBCOLLECTION
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
       );
 
-      const snapshot = await getDocs(notificationsRef);
-
-      const deletes = snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
-
+      const deletes = items.map((item) =>
+        firestoreDelete(subcollectionPath, item.id),
+      );
       await Promise.all(deletes);
     } catch (error) {
       console.error("[Notifier] Failed to delete all notifications:", error);

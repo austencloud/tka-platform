@@ -1,6 +1,6 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { firestoreList } from "$lib/shared/firestore";
+import { FeedbackItemSchema } from "../../domain/models/feedback-schemas";
 
 /**
  * Loads archived feedback items from Firestore
@@ -8,26 +8,14 @@ import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 class ArchiveLoaderImpl {
   async loadAllArchived(): Promise<FeedbackItem[]> {
     try {
-      const firestore = await getFirestoreInstance();
-      const q = query(
-        collection(firestore, "feedback"),
-        where("status", "==", "archived"),
-        orderBy("archivedAt", "desc")
+      return await firestoreList<FeedbackItem>(
+        "feedback",
+        FeedbackItemSchema,
+        {
+          where: [{ field: "status", op: "==", value: "archived" }],
+          orderBy: [{ field: "archivedAt", direction: "desc" }],
+        },
       );
-
-      const snapshot = await getDocs(q);
-
-      return snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-          updatedAt: data.updatedAt?.toDate?.() || new Date(),
-          archivedAt: data.archivedAt?.toDate?.() || undefined,
-          deferredUntil: data.deferredUntil?.toDate?.() || undefined,
-        } as FeedbackItem;
-      });
     } catch (e) {
       console.error("Failed to load archived items:", e);
       return [];

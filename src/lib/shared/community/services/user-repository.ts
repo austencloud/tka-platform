@@ -22,13 +22,13 @@ import {
 } from "firebase/firestore";
 import type { Timestamp, DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreGet, firestoreList } from "$lib/shared/firestore";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { getUserAchievementsPath } from "$lib/shared/gamification/data/firestore-collections";
 import { ALL_ACHIEVEMENTS } from "$lib/shared/gamification/domain/constants/achievement-definitions";
 import type {
   Achievement,
-  UserAchievement,
 } from "$lib/shared/gamification/domain/models/achievement-models";
 import type { PaginatedUsersResult, PaginatedQueryOptions } from "./contracts/types";
 import type {
@@ -38,6 +38,12 @@ import type {
   CreatorSortCriteria,
 } from "../domain/models/enhanced-user-profile";
 import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+import {
+  UserFirestoreDataSchema,
+  UserAchievementFirestoreSchema,
+  FollowDocSchema,
+} from "../domain/models/user-firestore-schemas";
+import type { UserFirestoreDataParsed } from "../domain/models/user-firestore-schemas";
 
 // ============================================================================
 // INTERNAL TYPES
@@ -95,14 +101,12 @@ const SORT_FIELD_MAP: Record<CreatorSortCriteria, string> = {
 
 async function getFollowingIds(userId: string): Promise<Set<string>> {
   try {
-    const firestore = await getFirestoreInstance();
-    const followingRef = collection(
-      firestore,
-      `${USERS_COLLECTION}/${userId}/following`
+    const docs = await firestoreList(
+      `${USERS_COLLECTION}/${userId}/following`,
+      FollowDocSchema,
+      { limit: 500 },
     );
-    const q = query(followingRef, firestoreLimit(500));
-    const querySnapshot = await getDocs(q);
-    return new Set(querySnapshot.docs.map((docSnap) => docSnap.id));
+    return new Set(docs.map((d) => d.id));
   } catch (error) {
     console.error(`[UserRepository] Error getting following IDs:`, error);
     return new Set();
@@ -111,22 +115,21 @@ async function getFollowingIds(userId: string): Promise<Set<string>> {
 
 async function fetchUserTopAchievements(userId: string): Promise<Achievement[]> {
   try {
-    const firestore = await getFirestoreInstance();
     const achievementsPath = getUserAchievementsPath(userId);
-    const achievementsRef = collection(firestore, achievementsPath);
 
-    const q = query(
-      achievementsRef,
-      where("isCompleted", "==", true),
-      orderBy("unlockedAt", "desc"),
-      firestoreLimit(5)
+    const userAchievements = await firestoreList(
+      achievementsPath,
+      UserAchievementFirestoreSchema,
+      {
+        where: [{ field: "isCompleted", op: "==", value: true }],
+        orderBy: [{ field: "unlockedAt", direction: "desc" }],
+        limit: 5,
+      },
     );
 
-    const querySnapshot = await getDocs(q);
     const achievements: Achievement[] = [];
 
-    for (const docSnap of querySnapshot.docs) {
-      const userAch = docSnap.data() as UserAchievement;
+    for (const userAch of userAchievements) {
       const fullAchievement = ALL_ACHIEVEMENTS.find(
         (ach) => ach.id === userAch.achievementId
       );
@@ -147,7 +150,7 @@ async function fetchUserTopAchievements(userId: string): Promise<Achievement[]> 
 
 async function mapFirestoreToEnhancedProfile(
   userId: string,
-  data: FirestoreUserData,
+  data: FirestoreUserData | UserFirestoreDataParsed,
   isFollowing = false,
   skipAchievements = false
 ): Promise<EnhancedUserProfile | null> {
@@ -162,8 +165,20 @@ async function mapFirestoreToEnhancedProfile(
     const followerCount = data.followerCount ?? 0;
     const followingCount = data.followingCount ?? 0;
 
-    const joinedDate = data.createdAt?.toDate() ?? new Date();
-    const lastActiveAt = data.lastActivityDate?.toDate() ?? joinedDate;
+    const rawCreatedAt = data.createdAt;
+    const joinedDate =
+      rawCreatedAt instanceof Date
+        ? rawCreatedAt
+        : rawCreatedAt && typeof rawCreatedAt === "object" && "toDate" in rawCreatedAt
+          ? (rawCreatedAt as Timestamp).toDate()
+          : new Date();
+    const rawLastActivity = data.lastActivityDate;
+    const lastActiveAt =
+      rawLastActivity instanceof Date
+        ? rawLastActivity
+        : rawLastActivity && typeof rawLastActivity === "object" && "toDate" in rawLastActivity
+          ? (rawLastActivity as Timestamp).toDate()
+          : joinedDate;
 
     const totalXP = data.totalXP ?? 0;
     const currentLevel = data.currentLevel ?? 1;
@@ -309,11 +324,13 @@ export async function getUserProfile(
   currentUserId?: string
 ): Promise<EnhancedUserProfile | null> {
   try {
-    const firestore = await getFirestoreInstance();
-    const userDocRef = doc(firestore, USERS_COLLECTION, userId);
-    const userDoc = await getDoc(userDocRef);
+    const userData = await firestoreGet(
+      USERS_COLLECTION,
+      userId,
+      UserFirestoreDataSchema,
+    );
 
-    if (!userDoc.exists()) {
+    if (!userData) {
       return null;
     }
 
@@ -323,8 +340,8 @@ export async function getUserProfile(
     }
 
     return mapFirestoreToEnhancedProfile(
-      userDoc.id,
-      userDoc.data() as FirestoreUserData,
+      userId,
+      userData,
       isFollowing
     );
   } catch (error) {
@@ -445,27 +462,25 @@ export async function getUsersPaginated(
 }
 
 export async function getFeaturedCreators(
-  limit = 10
+  limitCount = 10
 ): Promise<EnhancedUserProfile[]> {
   try {
-    const firestore = await getFirestoreInstance();
-    const usersRef = collection(firestore, USERS_COLLECTION);
-
-    const q = query(
-      usersRef,
-      where("isFeatured", "==", true),
-      orderBy("followerCount", "desc"),
-      firestoreLimit(limit)
+    const results = await firestoreList(
+      USERS_COLLECTION,
+      UserFirestoreDataSchema,
+      {
+        where: [{ field: "isFeatured", op: "==", value: true }],
+        orderBy: [{ field: "followerCount", direction: "desc" }],
+        limit: limitCount,
+      },
     );
 
-    const querySnapshot = await getDocs(q);
     const users: EnhancedUserProfile[] = [];
 
-    for (const docSnap of querySnapshot.docs) {
-      const data = docSnap.data() as FirestoreUserData;
+    for (const data of results) {
       if (data.isHidden) continue;
       const user = await mapFirestoreToEnhancedProfile(
-        docSnap.id,
+        data.id,
         data,
         false,
         true

@@ -12,14 +12,14 @@ import {
   doc,
   getDoc,
   addDoc,
-  deleteDoc,
   query,
-  orderBy,
   where,
   documentId,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreGet, firestoreList, firestoreDelete } from "$lib/shared/firestore";
 import type { Contributor } from "../domain/models/contributor-models";
+import { ContributorSchema } from "../domain/models/feedback-schemas";
 
 const CONTRIBUTORS_COLLECTION = "contributors";
 const USERS_COLLECTION = "users";
@@ -28,29 +28,15 @@ const USERS_COLLECTION = "users";
 const FIRESTORE_IN_LIMIT = 30;
 
 export async function getAll(): Promise<Contributor[]> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, CONTRIBUTORS_COLLECTION),
-    orderBy("displayName", "asc")
-  );
-
-  const snapshot = await getDocs(q);
-
-  return snapshot.docs.map((docSnap) =>
-    mapDocToContributor(docSnap.id, docSnap.data())
+  return firestoreList<Contributor>(
+    CONTRIBUTORS_COLLECTION,
+    ContributorSchema,
+    { orderBy: [{ field: "displayName", direction: "asc" }] },
   );
 }
 
 export async function getById(id: string): Promise<Contributor | null> {
-  const firestore = await getFirestoreInstance();
-  const docRef = doc(firestore, CONTRIBUTORS_COLLECTION, id);
-  const docSnap = await getDoc(docRef);
-
-  if (!docSnap.exists()) {
-    return null;
-  }
-
-  return mapDocToContributor(docSnap.id, docSnap.data());
+  return firestoreGet<Contributor>(CONTRIBUTORS_COLLECTION, id, ContributorSchema);
 }
 
 export async function getByIds(ids: string[]): Promise<Contributor[]> {
@@ -129,9 +115,7 @@ export async function addByUserId(userId: string): Promise<string> {
 }
 
 export async function deleteContributor(id: string): Promise<void> {
-  const firestore = await getFirestoreInstance();
-  const docRef = doc(firestore, CONTRIBUTORS_COLLECTION, id);
-  await deleteDoc(docRef);
+  await firestoreDelete(CONTRIBUTORS_COLLECTION, id);
 }
 
 function mapDocToContributor(

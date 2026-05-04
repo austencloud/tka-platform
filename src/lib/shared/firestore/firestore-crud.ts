@@ -47,8 +47,12 @@ function buildQuery(
   return query(collection(db, collectionPath), ...constraints);
 }
 
+interface SchemaLike<T> {
+  safeParse(data: unknown): { success: true; data: T } | { success: false; error: { issues: unknown[] } };
+}
+
 function parseDoc<T>(
-  schema: z.ZodType<T>,
+  schema: SchemaLike<T>,
   id: string,
   data: Record<string, unknown>,
   collectionPath: string,
@@ -65,7 +69,7 @@ function parseDoc<T>(
 export async function firestoreGet<T>(
   collectionPath: string,
   id: string,
-  schema: z.ZodType<T>,
+  schema: SchemaLike<T>,
 ): Promise<T | null> {
   const db = await getFirestoreInstance();
   const snap = await getDoc(doc(db, collectionPath, id));
@@ -75,7 +79,7 @@ export async function firestoreGet<T>(
 
 export async function firestoreList<T>(
   collectionPath: string,
-  schema: z.ZodType<T>,
+  schema: SchemaLike<T>,
   options?: ListOptions,
 ): Promise<T[]> {
   const db = await getFirestoreInstance();
@@ -147,7 +151,7 @@ export async function firestoreDelete(
 
 export function firestoreListen<T>(
   collectionPath: string,
-  schema: z.ZodType<T>,
+  schema: SchemaLike<T>,
   callback: (items: T[]) => void,
   options?: ListOptions,
   onError?: (error: Error) => void,

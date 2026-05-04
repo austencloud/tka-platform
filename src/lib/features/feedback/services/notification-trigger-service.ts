@@ -40,17 +40,9 @@
  */
 
 import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
   Timestamp,
 } from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreSet, firestoreList } from "$lib/shared/firestore";
 import type {
   NotificationType,
   FeedbackNotification,
@@ -62,6 +54,7 @@ import type {
 } from "../domain/models/notification-models";
 import { getPreferenceKeyForType } from "../domain/models/notification-models";
 import { getPreferences } from "./notification-preferences-manager";
+import { UserNotificationSchema } from "../domain/models/feedback-schemas";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
@@ -129,14 +122,8 @@ async function isDuplicateFeedbackNotification(
   type: NotificationType
 ): Promise<boolean> {
   try {
-    const firestore = await getFirestoreInstance();
     const cutoffTime = new Date(Date.now() - DEDUP_WINDOW_MS);
-    const userNotificationsRef = collection(
-      firestore,
-      USERS_COLLECTION,
-      userId,
-      NOTIFICATIONS_SUBCOLLECTION
-    );
+    const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
 
     // Types that are considered equivalent for deduplication purposes
     // (sending both response and resolved for same feedback is redundant)
@@ -144,17 +131,21 @@ async function isDuplicateFeedbackNotification(
 
     // Check for each equivalent type
     for (const checkType of equivalentTypes) {
-      const q = query(
-        userNotificationsRef,
-        where("feedbackId", "==", feedbackId),
-        where("type", "==", checkType),
-        where("createdAt", ">=", Timestamp.fromDate(cutoffTime)),
-        orderBy("createdAt", "desc"),
-        limit(1)
+      const results = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+        {
+          where: [
+            { field: "feedbackId", op: "==", value: feedbackId },
+            { field: "type", op: "==", value: checkType },
+            { field: "createdAt", op: ">=", value: Timestamp.fromDate(cutoffTime) },
+          ],
+          orderBy: [{ field: "createdAt", direction: "desc" }],
+          limit: 1,
+        },
       );
 
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
+      if (results.length > 0) {
         return true;
       }
     }
@@ -388,18 +379,13 @@ async function createNotification(
     "id"
   >
 ): Promise<string> {
-  const firestore = await getFirestoreInstance();
-  const userNotificationsRef = collection(
-    firestore,
-    USERS_COLLECTION,
-    userId,
-    NOTIFICATIONS_SUBCOLLECTION
+  const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+
+  // firestoreSet with null id performs an addDoc (auto-generated id)
+  // It also auto-sets createdAt and updatedAt via serverTimestamp
+  return firestoreSet(
+    subcollectionPath,
+    null,
+    notification as Record<string, unknown>,
   );
-
-  const docRef = await addDoc(userNotificationsRef, {
-    ...notification,
-    createdAt: serverTimestamp(),
-  });
-
-  return docRef.id;
 }

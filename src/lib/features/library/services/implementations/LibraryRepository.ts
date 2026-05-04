@@ -32,6 +32,15 @@ import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
+import {
+  firestoreGet,
+  firestoreList,
+  stripUndefined,
+} from "$lib/shared/firestore";
+import {
+  LibrarySequenceDocSchema,
+  UserProfileDocSchema,
+} from "../../domain/models/library-schemas";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
@@ -58,28 +67,6 @@ import {
   notifyLibrarySequenceAdded,
   notifyLibrarySequenceUpdated,
 } from "$lib/shared/library/library-events";
-
-/**
- * Error class for library operations
- */
-function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value === undefined) continue;
-    if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
-      result[key] = stripUndefined(value as Record<string, unknown>);
-    } else if (Array.isArray(value)) {
-      result[key] = value.map((item) =>
-        item !== null && typeof item === "object" && !Array.isArray(item)
-          ? stripUndefined(item as Record<string, unknown>)
-          : item
-      );
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
 
 export class LibraryError extends Error {
   constructor(

@@ -1,0 +1,27 @@
+import { z } from "zod";
+import { firestoreDate } from "$lib/shared/firestore";
+
+const CellConfigSchema = z
+  .object({
+    id: z.string(),
+    type: z.string(),
+    sequences: z.array(z.record(z.string(), z.unknown())),
+    trailSettings: z.record(z.string(), z.unknown()),
+  })
+  .passthrough();
+
+export const CompositionSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    layout: z.object({ rows: z.number(), cols: z.number() }),
+    cells: z.array(CellConfigSchema),
+    createdAt: firestoreDate,
+    updatedAt: firestoreDate,
+    creator: z.string(),
+    isFavorite: z.boolean(),
+    thumbnailUrl: z.string().optional(),
+  })
+  .passthrough();
+
+export type CompositionParsed = z.infer<typeof CompositionSchema>;

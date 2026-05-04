@@ -4,7 +4,6 @@
  * Firestore operations for app versioning and release tracking.
  */
 
-import type { Timestamp } from "firebase/firestore";
 import {
   collection,
   query,
@@ -19,6 +18,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreList } from "$lib/shared/firestore";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 import type {
@@ -28,24 +28,30 @@ import type {
   ChangelogEntry,
 } from "../domain/models/version-models";
 import { PRE_RELEASE_VERSION } from "../domain/models/version-models";
+import type { FeedbackItem } from "../domain/models/feedback-models";
 import { isFeedbackType } from "../domain/models/feedback-models";
+import { AppVersionSchema, FeedbackItemSchema } from "../domain/models/feedback-schemas";
 
 const VERSIONS_COLLECTION = "versions";
 const FEEDBACK_COLLECTION = "feedback";
 
 export async function getVersions(): Promise<AppVersion[]> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, VERSIONS_COLLECTION),
-    orderBy("releasedAt", "desc")
+  const raw = await firestoreList(
+    VERSIONS_COLLECTION,
+    AppVersionSchema,
+    { orderBy: [{ field: "releasedAt", direction: "desc" }] },
   );
-
-  const snapshot = await getDocs(q);
-
-  return snapshot.docs.map((docSnap) => {
-    const data = docSnap.data();
-    return mapDocToAppVersion(data);
-  });
+  // Map to AppVersion interface (strip Zod `id` that was injected by parseDoc)
+  return raw.map((v) => ({
+    version: v.version,
+    releasedAt: v.releasedAt,
+    releaseNotes: v.releaseNotes,
+    feedbackCount: v.feedbackCount,
+    feedbackSummary: v.feedbackSummary,
+    changelogEntries: v.changelogEntries,
+    highlights: v.highlights,
+    contributorIds: v.contributorIds,
+  }));
 }
 
 export async function getVersionFeedback(version: string): Promise<VersionFeedbackItem[]> {
@@ -81,21 +87,16 @@ export async function getVersionFeedback(version: string): Promise<VersionFeedba
 }
 
 export async function getLatestVersion(): Promise<string | null> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, VERSIONS_COLLECTION),
-    orderBy("releasedAt", "desc"),
-    limit(1)
+  const results = await firestoreList(
+    VERSIONS_COLLECTION,
+    AppVersionSchema,
+    {
+      orderBy: [{ field: "releasedAt", direction: "desc" }],
+      limit: 1,
+    },
   );
 
-  const snapshot = await getDocs(q);
-
-  if (snapshot.empty) {
-    return null;
-  }
-
-  const firstDoc = snapshot.docs[0];
-  return firstDoc ? (firstDoc.data()["version"] as string) : null;
+  return results[0]?.version ?? null;
 }
 
 export async function prepareRelease(
@@ -410,44 +411,30 @@ export async function seedV010Changelog(): Promise<void> {
 }
 
 export async function getCompletedCount(): Promise<number> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, FEEDBACK_COLLECTION),
-    where("status", "==", "completed")
+  const items = await firestoreList<FeedbackItem>(
+    FEEDBACK_COLLECTION,
+    FeedbackItemSchema,
+    { where: [{ field: "status", op: "==", value: "completed" }] },
   );
-
-  const snapshot = await getDocs(q);
-  return snapshot.docs.length;
+  return items.length;
 }
 
 export async function getCompletedFeedback(): Promise<VersionFeedbackItem[]> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, FEEDBACK_COLLECTION),
-    where("status", "==", "completed")
+  const items = await firestoreList<FeedbackItem>(
+    FEEDBACK_COLLECTION,
+    FeedbackItemSchema,
+    { where: [{ field: "status", op: "==", value: "completed" }] },
   );
 
-  const snapshot = await getDocs(q);
+  // Sort by createdAt descending (Zod already converted timestamps to Dates)
+  items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  const items = snapshot.docs.map((docSnap) => {
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      type: isFeedbackType(data["type"]) ? data["type"] : "general",
-      title: data["title"] as string,
-      description: truncateDescription(data["description"] as string),
-      createdAt: data["createdAt"],
-    };
-  });
-
-  // Sort by createdAt descending
-  items.sort((a, b) => {
-    const aTime = a.createdAt?.toMillis?.() || 0;
-    const bTime = b.createdAt?.toMillis?.() || 0;
-    return bTime - aTime;
-  });
-
-  return items.map(({ createdAt: _createdAt, ...rest }) => rest);
+  return items.map((item) => ({
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    description: truncateDescription(item.description),
+  }));
 }
 
 // Legacy alias
@@ -535,31 +522,3 @@ function truncateDescription(
   return truncated + "...";
 }
 
-function mapDocToAppVersion(data: Record<string, unknown>): AppVersion {
-  const summaryData = data["feedbackSummary"] as
-    | Record<string, number>
-    | undefined;
-  const changelogData = data["changelogEntries"] as
-    | ChangelogEntry[]
-    | undefined;
-  const contributorIds = data["contributorIds"] as string[] | undefined;
-  const releaseNotes = data["releaseNotes"] as string | undefined;
-  const highlightsData = data["highlights"] as string[] | undefined;
-
-  return {
-    version: data["version"] as string,
-    releasedAt: (data["releasedAt"] as Timestamp)?.toDate() || new Date(),
-    releaseNotes: releaseNotes || undefined,
-    feedbackCount: data["feedbackCount"] as number,
-    feedbackSummary: summaryData
-      ? {
-          bugs: summaryData["bugs"] || 0,
-          features: summaryData["features"] || 0,
-          general: summaryData["general"] || 0,
-        }
-      : { bugs: 0, features: 0, general: 0 },
-    changelogEntries: changelogData,
-    contributorIds: contributorIds || undefined,
-    highlights: highlightsData,
-  };
-}

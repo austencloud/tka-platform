@@ -1,7 +1,7 @@
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreGet, firestoreSet } from "$lib/shared/firestore";
 import type { NotificationPreferences } from "../domain/models/notification-models";
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "../domain/models/notification-models";
+import { NotificationPreferencesDocSchema } from "../domain/models/feedback-schemas";
 
 const USERS_COLLECTION = "users";
 const PREFERENCES_FIELD = "notificationPreferences";
@@ -14,16 +14,17 @@ export async function getPreferences(
   userId: string
 ): Promise<NotificationPreferences> {
   try {
-    const firestore = await getFirestoreInstance();
-    const userRef = doc(firestore, USERS_COLLECTION, userId);
-    const userDoc = await getDoc(userRef);
+    const userDoc = await firestoreGet(
+      USERS_COLLECTION,
+      userId,
+      NotificationPreferencesDocSchema,
+    );
 
-    if (!userDoc.exists()) {
+    if (!userDoc) {
       return DEFAULT_NOTIFICATION_PREFERENCES;
     }
 
-    const data = userDoc.data();
-    const prefs = data[PREFERENCES_FIELD];
+    const prefs = userDoc.notificationPreferences;
 
     if (!prefs) {
       return DEFAULT_NOTIFICATION_PREFERENCES;
@@ -48,21 +49,12 @@ export async function savePreferences(
   preferences: NotificationPreferences
 ): Promise<void> {
   try {
-    const firestore = await getFirestoreInstance();
-    const userRef = doc(firestore, USERS_COLLECTION, userId);
-    const userDoc = await getDoc(userRef);
-
-    if (userDoc.exists()) {
-      // Update existing document
-      await updateDoc(userRef, {
-        [PREFERENCES_FIELD]: preferences,
-      });
-    } else {
-      // Create new document
-      await setDoc(userRef, {
-        [PREFERENCES_FIELD]: preferences,
-      });
-    }
+    await firestoreSet(
+      USERS_COLLECTION,
+      userId,
+      { [PREFERENCES_FIELD]: preferences } as Record<string, unknown>,
+      { merge: true },
+    );
   } catch (error) {
     console.error("Error saving notification preferences:", error);
     throw error;
