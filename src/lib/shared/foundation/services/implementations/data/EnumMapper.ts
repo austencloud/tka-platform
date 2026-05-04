@@ -8,17 +8,7 @@ import {
   RotationDirection,
 } from "../../../../pictograph/shared/domain/enums/pictograph-enums";
 
-export interface IEnumMapper {
-  mapMotionType(motionType: string): MotionType;
-  mapLocation(location: string): GridLocation;
-  mapOrientation(orientation: string): Orientation;
-  mapRotationDirection(rotationDirection: string): RotationDirection;
-  convertToGridPosition(
-    positionString: string | null | undefined
-  ): GridPosition | null;
-}
-
-export class EnumMapper implements IEnumMapper {
+export class EnumMapper {
   mapMotionType(motionType: string): MotionType {
     if (!motionType) return MotionType.STATIC;
 

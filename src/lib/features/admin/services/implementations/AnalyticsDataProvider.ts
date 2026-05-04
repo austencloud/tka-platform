@@ -11,8 +11,8 @@
  */
 
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { IUserMetricsAnalyzer } from "./UserMetricsAnalyzer";
-import type { IEventActivityAnalyzer } from "./EventActivityAnalyzer";
+import type { UserMetricsAnalyzer } from "./UserMetricsAnalyzer";
+import type { EventActivityAnalyzer } from "./EventActivityAnalyzer";
 import { getTopSequences } from "$lib/features/admin/services/content-query-analyzer";
 import type { SummaryMetrics, UserActivityPoint, ContentStatistics, TopSequenceData, EngagementMetrics, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "../contracts/types";
 
@@ -32,8 +32,8 @@ const EMPTY_SUMMARY_METRICS: SummaryMetrics = {
 
 export class AnalyticsDataProvider {
   constructor(
-    private readonly userMetricsAnalyzer: IUserMetricsAnalyzer,
-    private readonly eventActivityAnalyzer: IEventActivityAnalyzer
+    private readonly userMetricsAnalyzer: UserMetricsAnalyzer,
+    private readonly eventActivityAnalyzer: EventActivityAnalyzer
   ) {}
 
   /**

@@ -9,9 +9,7 @@ import type { ViewportManager } from '$lib/shared/device/services/implementation
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type { LayoutConfiguration } from "../../orchestration/types";
 import { LAYOUT_BREAKPOINTS } from "../models/LayoutState";
-import type { ICreateModuleLayoutManager } from "./ICreateModuleLayoutManager";
-
-export class CreateModuleLayoutManager implements ICreateModuleLayoutManager {
+export class CreateModuleLayoutManager {
   constructor(
     private deviceDetector: DeviceDetector,
     private viewportService: ViewportManager

@@ -37,19 +37,7 @@ function withTimeout<T>(
   ]);
 }
 
-/**
- * Interface for the EventActivityAnalyzer
- */
-export interface IEventActivityAnalyzer {
-  getUserActivity(timeRange: AnalyticsTimeRange): Promise<UserActivityPoint[]>;
-  getEventTypeBreakdown(
-    timeRange: AnalyticsTimeRange
-  ): Promise<EventTypeBreakdown[]>;
-  getModuleUsage(timeRange: AnalyticsTimeRange): Promise<ModuleUsageData[]>;
-  getRecentActivity(limit: number): Promise<RecentActivityEvent[]>;
-}
-
-export class EventActivityAnalyzer implements IEventActivityAnalyzer {
+export class EventActivityAnalyzer {
 
   /**
    * Get user activity over time

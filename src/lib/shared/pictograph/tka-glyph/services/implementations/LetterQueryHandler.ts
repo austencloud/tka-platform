@@ -17,8 +17,8 @@ import type {
   ICSVPictographParser,
 } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
+import type { CsvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
 import type {
-  ICSVLoader,
   ILetterQueryHandler,
 } from "../../../../foundation/services/contracts/data/data-contracts";
 
@@ -44,7 +44,7 @@ export class LetterQueryHandler implements ILetterQueryHandler {
   private isInitialized = false;
 
   constructor(
-    private csvLoader: ICSVLoader,
+    private csvLoader: CsvLoader,
     private CSVParser: ICSVParser,
     private csvPictographParser: ICSVPictographParser,
     // OPTIONAL: Only needed for Codex-specific methods (getPictographByLetter, getAllCodexPictographs)

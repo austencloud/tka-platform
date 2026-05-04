@@ -10,7 +10,7 @@ import type { StepData } from "../../domain/models/StepData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IEnumMapper } from "$lib/shared/foundation/services/contracts/data/IEnumMapper";
+import type { EnumMapper } from "$lib/shared/foundation/services/implementations/data/EnumMapper";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -21,7 +21,7 @@ import { createPictographData } from "$lib/shared/pictograph/shared/domain/facto
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
 export class SequenceImporter {
-  constructor(private readonly enumMapper: IEnumMapper) {}
+  constructor(private readonly enumMapper: EnumMapper) {}
   /**
    * Import sequence from PNG metadata
    */

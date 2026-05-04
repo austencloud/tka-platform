@@ -18,15 +18,7 @@ type VTGType = "QO" | "QS" | "SO" | "SS" | "TO" | "TS";
 
 type AdditionalImageType = "arrow" | "blank" | "dash" | "same_opp_dot";
 
-export interface IGlyphCache {
-  initialize(): Promise<void>;
-  getGlyphDataUrl(letter: string): string | null;
-  getOrLoadSvg(path: string): Promise<string | null>;
-  isReady(): boolean;
-  getStats(): { total: number; loaded: number; failed: number };
-}
-
-export class GlyphCache implements IGlyphCache {
+export class GlyphCache {
   private cache = hmrGlyphCache;
   private ready = false;
   private loadedCount = 0;

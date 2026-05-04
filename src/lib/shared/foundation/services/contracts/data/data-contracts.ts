@@ -99,7 +99,3 @@ export interface IMotionQueryHandler {
 }
 
 // ICSVPictographParser moved to dedicated contract file
-
-// Re-export from data interfaces for backward compatibility
-export type { ICSVLoader } from "./ICSVLoader";
-// ICSVParser moved to application/ICSVParser.ts

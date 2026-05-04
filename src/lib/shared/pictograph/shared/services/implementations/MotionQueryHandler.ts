@@ -6,7 +6,7 @@ import type { PictographData } from "../../domain/models/PictographData";
 import type { ICSVPictographParser as ICSVPictographParser } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
 import type { CSVRow } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
 import type { ParsedCsvRow } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
-import type { ICSVLoader } from "../../../../foundation/services/contracts/data/ICSVLoader";
+import type { CsvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
 import type { IMotionQueryHandler } from "../../../../foundation/services/contracts/data/data-contracts";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { Orientation } from "../../domain/enums/pictograph-enums";
@@ -20,7 +20,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
   private isInitialized = false;
 
   constructor(
-    private csvLoader: ICSVLoader,
+    private csvLoader: CsvLoader,
     private CSVParser: ICSVParser,
     private csvPictographParser: ICSVPictographParser,
     private OrientationCalculator: OrientationCalculator

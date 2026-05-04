@@ -1,7 +1,5 @@
 import type { CsvDataSet } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { ICSVLoader } from "../../contracts/data/ICSVLoader";
-
 // Module-level cache shared across all instances (defense against non-singleton usage)
 let sharedCsvCache: CsvDataSet | null = null;
 let sharedIsLoaded = false;
@@ -11,7 +9,7 @@ const IDB_VERSION = 1;
 const IDB_STORE = "csv-data";
 const IDB_KEY = "pictograph-csv";
 
-export class CsvLoader implements ICSVLoader {
+export class CsvLoader {
   async loadCSVFile(filename: string): Promise<{
     success: boolean;
     data?: string;
@@ -63,7 +61,7 @@ export class CsvLoader implements ICSVLoader {
 
   async loadCSVDataSet(): Promise<{
     success: boolean;
-    data?: { diamondData: string; boxData: string };
+    data?: { diamondData: string; boxData: string; skewedData?: string; trigridData?: string };
     error?: string;
     sources: {
       diamond: "fetch" | "window" | "cache";

@@ -9,15 +9,6 @@ import type { SystemStateManager } from "./SystemStateManager";
 
 
 /**
- * Interface for the UserMetricsAnalyzer
- */
-export interface IUserMetricsAnalyzer {
-  getSummaryMetrics(timeRange: AnalyticsTimeRange): Promise<SummaryMetrics>;
-  getContentStatistics(): Promise<ContentStatistics>;
-  getEngagementMetrics(): Promise<EngagementMetrics>;
-}
-
-/**
  * Empty metrics for error/unavailable states
  */
 const EMPTY_SUMMARY_METRICS: SummaryMetrics = {

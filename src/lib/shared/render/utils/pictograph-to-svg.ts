@@ -15,7 +15,7 @@ import type { StepData } from "../../../features/create/shared/domain/models/Ste
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import PictographContainer from "../../pictograph/shared/components/PictographContainer.svelte";
 import { mount, tick, unmount } from "svelte";
-import type { IGlyphCache } from "../services/implementations/GlyphCache";
+import type { GlyphCache } from "../services/implementations/GlyphCache";
 
 /**
  * Visibility settings for pictograph rendering
