@@ -19,11 +19,8 @@ import {
   limit as firestoreLimit,
   onSnapshot,
   serverTimestamp,
-  writeBatch,
   increment,
   getCountFromServer,
-  arrayUnion,
-  documentId,
   type Unsubscribe,
   type DocumentData,
 } from "firebase/firestore";
@@ -55,18 +52,19 @@ import type {
 import type {
   LibrarySequence,
   SequenceVisibility,
-} from "../../domain/models/LibrarySequence";
-import { createLibrarySequence } from "../../domain/models/LibrarySequence";
+} from "$lib/shared/library/domain/models/LibrarySequence";
+import { createLibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import {
   getUserSequencesPath,
   getUserSequencePath,
-  getPublicSequencePath,
 } from "../../data/firestore-paths";
 import {
   notifyLibraryMutated,
   notifyLibrarySequenceAdded,
   notifyLibrarySequenceUpdated,
 } from "$lib/shared/library/library-events";
+import { LibraryRecycleBin } from "./library-recycle-bin";
+import { LibraryBatchOperations } from "./library-batch-operations";
 
 export class LibraryError extends Error {
   constructor(
@@ -92,13 +90,30 @@ export class LibraryRepository {
    * a server snapshot arrives with a higher _version than expected.
    */
   private localSequenceCache = new Map<string, LibrarySequence>();
+  private recycleBin: LibraryRecycleBin;
+  private batchOps: LibraryBatchOperations;
 
   constructor(
     private achievementService: AchievementManager,
     private orientationCycleDetector: OrientationCycleDetector,
     private publicIndexSyncer: PublicIndexSyncer,
     private conflictResolver?: ConflictResolver
-  ) {}
+  ) {
+    this.recycleBin = new LibraryRecycleBin(
+      () => getFirestoreInstance(),
+      () => this.getUserId(),
+      (id) => this.getSequence(id),
+      this.publicIndexSyncer,
+      (msg, err, action, data, severity) => this.reportError(msg, err, action, data, severity)
+    );
+    this.batchOps = new LibraryBatchOperations(
+      () => getFirestoreInstance(),
+      () => this.getUserId(),
+      (d, id) => this.mapDocToLibrarySequence(d, id),
+      this.publicIndexSyncer,
+      (msg, err, action, data, severity) => this.reportError(msg, err, action, data, severity)
+    );
+  }
 
   /**
    * Surface an error to the user via the ErrorHandler modal (which includes
@@ -1110,402 +1125,56 @@ export class LibraryRepository {
   }
 
   // ============================================================
-  // BATCH OPERATIONS
+  // BATCH OPERATIONS (delegated to LibraryBatchOperations)
   // ============================================================
 
   async deleteSequences(sequenceIds: string[]): Promise<void> {
-    if (sequenceIds.length === 0) return;
-
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-    const batch = writeBatch(firestore);
-
-    // Batch fetch all sequences to check visibility (avoid N+1 reads)
-    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
-    const BATCH_SIZE = 30; // Firestore 'in' query limit
-    const existingSequences = new Map<string, LibrarySequence>();
-
-    // Process in chunks of 30
-    for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
-      const chunk = sequenceIds.slice(i, i + BATCH_SIZE);
-      const batchQuery = query(sequencesRef, where(documentId(), "in", chunk));
-      const batchSnapshot = await getDocs(batchQuery);
-
-      for (const docSnap of batchSnapshot.docs) {
-        existingSequences.set(
-          docSnap.id,
-          this.mapDocToLibrarySequence(docSnap.data(), docSnap.id)
-        );
-      }
-    }
-
-    let deletedCount = 0;
-    for (const sequenceId of sequenceIds) {
-      const existing = existingSequences.get(sequenceId);
-      if (existing) {
-        if (existing.visibility === "public") {
-          batch.delete(doc(firestore, getPublicSequencePath(sequenceId)));
-        }
-        batch.delete(doc(firestore, getUserSequencePath(userId, sequenceId)));
-        deletedCount++;
-      }
-    }
-
-    // Decrement user's sequenceCount by the number of deleted sequences (clamped to 0)
-    const userDocRef = deletedCount > 0 ? doc(firestore, `users/${userId}`) : null;
-    if (deletedCount > 0 && userDocRef) {
-      batch.update(userDocRef, {
-        sequenceCount: increment(-deletedCount),
-      });
-    }
-
-    try {
-      await trackWrite(() => batch.commit(), "library");
-
-      // Notify listeners so caches can remove all deleted entries immediately
-      for (const sequenceId of sequenceIds) {
-        if (existingSequences.has(sequenceId)) {
-          notifyLibraryMutated(sequenceId);
-        }
-      }
-
-      // Clamp sequenceCount to 0 if it went negative
-      if (userDocRef) {
-        const userSnap = await getDoc(userDocRef);
-        const count = (userSnap.data()?.["sequenceCount"] as number) ?? 0;
-        if (count < 0) {
-          await updateDoc(userDocRef, { sequenceCount: 0 });
-        }
-      }
-    } catch (error) {
-      this.reportError(
-        "Failed to delete sequences. Please try again.",
-        error,
-        "delete-sequences-batch"
-      );
-      throw new LibraryError("Failed to delete sequences", "NETWORK");
-    }
+    return this.batchOps.deleteSequences(sequenceIds);
   }
 
   async moveToCollection(
     sequenceIds: string[],
     collectionId: string
   ): Promise<void> {
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-    const batch = writeBatch(firestore);
-
-    for (const sequenceId of sequenceIds) {
-      const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-      // Use arrayUnion to append to existing collections without data loss
-      batch.update(docRef, {
-        collectionIds: arrayUnion(collectionId),
-        updatedAt: serverTimestamp(),
-      });
-    }
-
-    try {
-      await trackWrite(() => batch.commit(), "library");
-    } catch (error) {
-      console.error("[LibraryRepository] Failed to move to collection:", error);
-      toast.error("Failed to move sequences. Please try again.");
-      throw new LibraryError(
-        "Failed to move sequences to collection",
-        "NETWORK"
-      );
-    }
+    return this.batchOps.moveToCollection(sequenceIds, collectionId);
   }
 
   async addTagsToSequences(
     sequenceIds: string[],
     tagIds: string[]
   ): Promise<void> {
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-    const batch = writeBatch(firestore);
-
-    for (const sequenceId of sequenceIds) {
-      const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-      // Use arrayUnion to append tags without overwriting existing ones
-      batch.update(docRef, {
-        tagIds: arrayUnion(...tagIds),
-        updatedAt: serverTimestamp(),
-      });
-    }
-
-    try {
-      await trackWrite(() => batch.commit(), "library");
-    } catch (error) {
-      console.error("[LibraryRepository] Failed to add tags:", error);
-      toast.error("Failed to add tags. Please try again.");
-      throw new LibraryError("Failed to add tags to sequences", "NETWORK");
-    }
+    return this.batchOps.addTagsToSequences(sequenceIds, tagIds);
   }
 
   async setVisibilityBatch(
     sequenceIds: string[],
     visibility: SequenceVisibility
   ): Promise<void> {
-    if (sequenceIds.length === 0) return;
-
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-    const batch = writeBatch(firestore);
-    const now = serverTimestamp();
-
-    // Track which sequences need public index updates
-    const toPublish: LibrarySequence[] = [];
-    const toUnpublish: string[] = [];
-
-    // Batch fetch all sequences to check current visibility (avoid N+1)
-    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
-    const BATCH_SIZE = 30;
-
-    for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
-      const chunk = sequenceIds.slice(i, i + BATCH_SIZE);
-      const batchQuery = query(sequencesRef, where(documentId(), "in", chunk));
-      const batchSnapshot = await getDocs(batchQuery);
-
-      for (const docSnap of batchSnapshot.docs) {
-        const existing = this.mapDocToLibrarySequence(
-          docSnap.data(),
-          docSnap.id
-        );
-        const docRef = doc(firestore, getUserSequencePath(userId, docSnap.id));
-
-        // Update visibility in batch
-        batch.update(docRef, {
-          visibility,
-          visibilityChangedAt: now,
-          updatedAt: now,
-        });
-
-        // Track public index changes
-        if (visibility === "public" && existing.visibility !== "public") {
-          const hydrator = getSequenceHydrator();
-          const withComposition = hydrator.ensureComposition(existing);
-          toPublish.push({ ...existing, ...withComposition, visibility });
-        } else if (
-          visibility !== "public" &&
-          existing.visibility === "public"
-        ) {
-          toUnpublish.push(docSnap.id);
-        }
-      }
-    }
-
-    // Commit all visibility updates in one batch
-    try {
-      await trackWrite(() => batch.commit(), "library");
-    } catch (error) {
-      console.error("[LibraryRepository] Failed to update visibility:", error);
-      toast.error("Failed to update visibility. Please try again.");
-      throw new LibraryError("Failed to update sequence visibility", "NETWORK");
-    }
-
-    // Handle public index updates (these can run in parallel)
-    // Wrap in try/catch but don't throw - visibility was already updated
-    try {
-      await Promise.all([
-        ...toPublish.map((seq) =>
-          this.publicIndexSyncer.syncToPublicIndex(seq, userId)
-        ),
-        ...toUnpublish.map((id) =>
-          this.publicIndexSyncer.removeFromPublicIndex(id)
-        ),
-      ]);
-    } catch (error) {
-      console.error("[LibraryRepository] Failed to sync public index:", error);
-      toast.warning("Visibility updated, but public index sync failed.");
-      // Don't throw - visibility was already successfully updated
-    }
+    return this.batchOps.setVisibilityBatch(sequenceIds, visibility);
   }
 
   // ============================================================
-  // SOFT DELETE (RECYCLE BIN)
+  // SOFT DELETE / RECYCLE BIN (delegated to LibraryRecycleBin)
   // ============================================================
 
   async softDeleteSequence(sequenceId: string): Promise<void> {
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-    const existing = await this.getSequence(sequenceId);
-
-    if (!existing) {
-      throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
-    }
-
-    // Remove from public index first if the sequence is public.
-    // This ensures the card disappears from the community gallery immediately.
-    if (existing.visibility === "public" && this.publicIndexSyncer) {
-      try {
-        await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
-      } catch (error) {
-        this.reportError(
-          "Sequence moved to recycle bin, but it may still appear in the community gallery.",
-          error,
-          "soft-delete-public-index-remove",
-          { sequenceId },
-          "warning"
-        );
-      }
-    }
-
-    try {
-      await trackWrite(
-        () =>
-          updateDoc(doc(firestore, getUserSequencePath(userId, sequenceId)), {
-            isDeleted: true,
-            deletedAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          }),
-        "library"
-      );
-      notifyLibraryMutated(sequenceId);
-    } catch (error) {
-      this.reportError(
-        "Failed to move sequence to recycle bin.",
-        error,
-        "soft-delete-sequence",
-        { sequenceId }
-      );
-      throw new LibraryError("Failed to soft-delete sequence", "NETWORK", sequenceId);
-    }
+    return this.recycleBin.softDeleteSequence(sequenceId);
   }
 
   async restoreSequence(sequenceId: string): Promise<void> {
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-
-    try {
-      await trackWrite(
-        () =>
-          updateDoc(doc(firestore, getUserSequencePath(userId, sequenceId)), {
-            isDeleted: false,
-            deletedAt: null,
-            updatedAt: serverTimestamp(),
-          }),
-        "library"
-      );
-      notifyLibraryMutated(sequenceId);
-    } catch (error) {
-      this.reportError(
-        "Failed to restore sequence from recycle bin.",
-        error,
-        "restore-sequence",
-        { sequenceId }
-      );
-      throw new LibraryError("Failed to restore sequence", "NETWORK", sequenceId);
-    }
+    return this.recycleBin.restoreSequence(sequenceId);
   }
 
   async purgeSequence(sequenceId: string): Promise<void> {
-    const existing = await this.getSequence(sequenceId);
-
-    // getSequence filters out soft-deleted sequences, so we need to fetch
-    // the raw document to check the isDeleted flag.
-    if (existing) {
-      // Document exists but is NOT soft-deleted - refuse to purge.
-      // Use softDeleteSequence first, or deleteSequence for an immediate hard delete.
-      throw new LibraryError(
-        "Cannot purge a sequence that is not in the recycle bin. Soft-delete it first.",
-        "INVALID_DATA",
-        sequenceId
-      );
-    }
-
-    // Fetch the raw document to confirm it exists and is soft-deleted
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-    const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return; // Already gone
-    }
-
-    const data = docSnap.data();
-    if (!data?.["isDeleted"]) {
-      throw new LibraryError(
-        "Cannot purge a sequence that is not in the recycle bin.",
-        "INVALID_DATA",
-        sequenceId
-      );
-    }
-
-    // Hard-delete the document directly. We can't delegate to deleteSequence()
-    // because it calls getSequence() which filters out soft-deleted items.
-    try {
-      await trackWrite(() => deleteDoc(docRef), "library");
-      notifyLibraryMutated(sequenceId);
-    } catch (error) {
-      this.reportError(
-        "Failed to permanently delete sequence.",
-        error,
-        "purge-sequence",
-        { sequenceId }
-      );
-      throw new LibraryError("Failed to purge sequence", "NETWORK", sequenceId);
-    }
+    return this.recycleBin.purgeSequence(sequenceId);
   }
 
   async getDeletedSequences(): Promise<LibrarySequence[]> {
-    const userId = this.getUserId();
-    const docs = await firestoreList(
-      getUserSequencesPath(userId),
-      LibrarySequenceDocSchema,
-      {
-        where: [{ field: "isDeleted", op: "==", value: true }],
-        orderBy: [{ field: "deletedAt", direction: "desc" }],
-      },
-    );
-
-    return docs.map((d) =>
-      this.mapDocToLibrarySequence(d as DocumentData, d.id),
-    );
+    return this.recycleBin.getDeletedSequences();
   }
 
   async emptyRecycleBin(): Promise<void> {
-    const deleted = await this.getDeletedSequences();
-    if (deleted.length === 0) return;
-
-    const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
-
-    // Firestore batches are limited to 500 operations. For most users the
-    // recycle bin will be small, but we chunk to be safe.
-    const BATCH_LIMIT = 500;
-
-    for (let i = 0; i < deleted.length; i += BATCH_LIMIT) {
-      const chunk = deleted.slice(i, i + BATCH_LIMIT);
-      const batch = writeBatch(firestore);
-
-      for (const seq of chunk) {
-        batch.delete(doc(firestore, getUserSequencePath(userId, seq.id)));
-
-        // Also remove from public index if it was public before soft-deletion.
-        // This is a safety net - softDeleteSequence already removes it, but
-        // the removal may have failed silently.
-        if (seq.visibility === "public") {
-          batch.delete(doc(firestore, getPublicSequencePath(seq.id)));
-        }
-      }
-
-      try {
-        await trackWrite(() => batch.commit(), "library");
-      } catch (error) {
-        this.reportError(
-          "Failed to empty recycle bin. Some sequences may remain.",
-          error,
-          "empty-recycle-bin"
-        );
-        throw new LibraryError("Failed to empty recycle bin", "NETWORK");
-      }
-    }
-
-    // Notify listeners for each purged sequence
-    for (const seq of deleted) {
-      notifyLibraryMutated(seq.id);
-    }
+    return this.recycleBin.emptyRecycleBin();
   }
 
   // ============================================================

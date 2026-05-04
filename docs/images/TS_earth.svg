@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+
+  <path d="M253 74
+           C321 78, 393 124, 420 205
+           C448 292, 409 387, 315 425
+           C224 461, 124 429, 78 348
+           C32 267, 53 160, 135 107
+           C174 82, 213 72, 253 74Z"
+        fill="#4EA91A" stroke="#226D10" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M259 95
+           C317 101, 374 140, 397 208
+           C420 279, 388 357, 312 390
+           C238 423, 158 399, 118 336
+           C78 274, 94 189, 157 142
+           C189 118, 221 103, 259 95Z"
+        fill="#7CCB2F"/>
+  <path d="M129 339 C176 383, 247 399, 315 372 C280 405, 207 421, 145 388 C132 372, 123 356, 129 339Z" fill="#3C8A1A"/>
+  <path d="M168 470 C198 395, 229 320, 252 247 C276 171, 304 122, 343 94" stroke="#2D6E17" stroke-width="16" stroke-linecap="round"/>
+  <path d="M238 190 C201 174, 172 163, 145 146" stroke="#2D6E17" stroke-width="8" stroke-linecap="round"/>
+  <path d="M218 244 C174 235, 143 232, 108 227" stroke="#2D6E17" stroke-width="8" stroke-linecap="round"/>
+  <path d="M200 301 C162 306, 132 317, 102 333" stroke="#2D6E17" stroke-width="8" stroke-linecap="round"/>
+  <path d="M275 174 C306 155, 336 138, 364 123" stroke="#2D6E17" stroke-width="8" stroke-linecap="round"/>
+  <path d="M290 227 C330 217, 357 212, 389 210" stroke="#2D6E17" stroke-width="8" stroke-linecap="round"/>
+  <path d="M283 289 C324 288, 355 294, 383 305" stroke="#2D6E17" stroke-width="8" stroke-linecap="round"/>
+  <text x="256" y="302" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="136" font-weight="800" letter-spacing="0" fill="#F7F1CF" stroke="#45601A" stroke-width="10" paint-order="stroke fill" stroke-linejoin="round">TS</text>
+
+</svg>
