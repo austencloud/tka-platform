@@ -20,15 +20,15 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { animationSettings as animationSettingsState } from "../../state/animation-settings-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator as SVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { ISVGGenerator as SVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { PropState } from "../../domain/PropState";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { type TrailSettings } from "../../domain/types/TrailTypes";
-import type { AdditionalLayerProps } from "$lib/features/compose/services/implementations/TrailCapturer";
+import type { AdditionalLayerProps } from "../../domain/types/TrailCaptureTypes";
 import type { AnimationVisibilityState } from "./AnimationVisibilitySynchronizer";
 import type { PreRenderProgress } from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
 
@@ -38,7 +38,7 @@ import { TrailCapturer } from "$lib/features/compose/services/implementations/Tr
 import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
-import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
 
 // Services
@@ -1246,94 +1246,7 @@ export class AnimationEngine {
     // Sync effect toggles - use the effective map (cell-level override
     // takes priority over global VM map) so per-cell assignments properly
     // spin up / tear down overlay renderers.
-    const hasFireTips = erm.hasEffectInEffectiveMap("fire");
-    if (hasFireTips !== erm.prevHasFireTips) {
-      erm.prevHasFireTips = hasFireTips;
-      erm.syncFireOverlay();
-      if (this.renderLoopService && this.lastPropsRef) {
-        this.renderLoopService.triggerRender(() =>
-          this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
-        );
-      }
-    }
-
-    const hasCharcoalTips = erm.hasEffectInEffectiveMap("charcoal");
-    if (hasCharcoalTips !== erm.prevHasCharcoalTips) {
-      erm.prevHasCharcoalTips = hasCharcoalTips;
-      erm.syncCharcoalOverlay();
-    }
-
-    const hasZapTips = erm.hasEffectInEffectiveMap("zap");
-    if (hasZapTips !== erm.prevHasZapTips) {
-      erm.prevHasZapTips = hasZapTips;
-      erm.syncZapOverlay();
-    }
-
-    const hasSparklesTips = erm.hasEffectInEffectiveMap("sparkles");
-    if (hasSparklesTips !== erm.prevHasSparklesTips) {
-      erm.prevHasSparklesTips = hasSparklesTips;
-      erm.syncSparklesOverlay();
-    }
-
-    const hasEchoTips = erm.hasEffectInEffectiveMap("echo");
-    if (hasEchoTips !== erm.prevHasEchoTips) {
-      erm.prevHasEchoTips = hasEchoTips;
-      erm.syncEchoOverlay();
-    }
-
-    const hasBloomTips = erm.hasEffectInEffectiveMap("bloom");
-    if (hasBloomTips !== erm.prevHasBloomTips) {
-      erm.prevHasBloomTips = hasBloomTips;
-      erm.syncBloomOverlay();
-    }
-
-    const hasWaterTips = erm.hasEffectInEffectiveMap("water");
-    if (hasWaterTips !== erm.prevHasWaterTips) {
-      erm.prevHasWaterTips = hasWaterTips;
-      erm.syncWaterOverlay();
-    }
-
-    const hasBubblesTips = erm.hasEffectInEffectiveMap("bubbles");
-    if (hasBubblesTips !== erm.prevHasBubblesTips) {
-      erm.prevHasBubblesTips = hasBubblesTips;
-      erm.syncBubblesOverlay();
-    }
-
-    const hasPetalsTips = erm.hasEffectInEffectiveMap("petals");
-    if (hasPetalsTips !== erm.prevHasPetalsTips) {
-      erm.prevHasPetalsTips = hasPetalsTips;
-      erm.syncPetalsOverlay();
-    }
-
-    const hasSmokeTips = erm.hasEffectInEffectiveMap("smoke");
-    if (hasSmokeTips !== erm.prevHasSmokeTips) {
-      erm.prevHasSmokeTips = hasSmokeTips;
-      erm.syncSmokeOverlay();
-    }
-
-    const hasInkTips = erm.hasEffectInEffectiveMap("ink");
-    if (hasInkTips !== erm.prevHasInkTips) {
-      erm.prevHasInkTips = hasInkTips;
-      erm.syncInkOverlay();
-    }
-
-    const hasFrostTips = erm.hasEffectInEffectiveMap("frost");
-    if (hasFrostTips !== erm.prevHasFrostTips) {
-      erm.prevHasFrostTips = hasFrostTips;
-      erm.syncFrostOverlay();
-    }
-
-    const hasSilkTips = erm.hasEffectInEffectiveMap("silk");
-    if (hasSilkTips !== erm.prevHasSilkTips) {
-      erm.prevHasSilkTips = hasSilkTips;
-      erm.syncSilkOverlay();
-    }
-
-    const hasPulseTips = erm.hasEffectInEffectiveMap("pulse");
-    if (hasPulseTips !== erm.prevHasPulseTips) {
-      erm.prevHasPulseTips = hasPulseTips;
-      erm.syncPulseOverlay();
-    }
+    erm.syncEffectFlagsFromEffectiveMap();
 
     // Sync fire slider values + color curve -> physics
     const colorBlend = vm.getFireColorBlend();
@@ -1435,7 +1348,7 @@ export class AnimationEngine {
     }
 
     // Sync charcoal params independently
-    if (hasCharcoalTips && erm.charcoalRenderer?.isInitialized()) {
+    if (erm.prevHasCharcoalTips && erm.charcoalRenderer?.isInitialized()) {
       const currentCharcoalJson = JSON.stringify(vm.getCharcoalParams());
       if (currentCharcoalJson !== this.prevCharcoalParamsJson) {
         this.prevCharcoalParamsJson = currentCharcoalJson;

@@ -80,11 +80,10 @@ const OVERLAY_REGISTRY: readonly OverlayEffectEntry[] = [
     configKey: "fireRenderer",
     RendererClass: WebGLFireRenderer,
     onDisable: (mgr) => {
-      if (!mgr.prevEffectEnabled.get("charcoal")) {
+      if (!mgr.isEffectEnabled("charcoal")) {
         mgr.fireTipTracker?.reset();
       }
     },
-    triggerRender: false,
   },
   {
     effect: "charcoal",
@@ -92,11 +91,11 @@ const OVERLAY_REGISTRY: readonly OverlayEffectEntry[] = [
     configKey: "charcoalRenderer",
     RendererClass: CharcoalSparkRenderer,
     onInit: (mgr, renderer) => {
-      const charcoalParams = mgr["getVM"]?.().getCharcoalParams();
+      const charcoalParams = mgr.getCharcoalParamsFromVM();
       if (charcoalParams) (renderer as CharcoalSparkRenderer).setParams(charcoalParams);
     },
     onDisable: (mgr) => {
-      if (!mgr.prevEffectEnabled.get("fire")) {
+      if (!mgr.isEffectEnabled("fire")) {
         mgr.fireTipTracker?.reset();
       }
     },
@@ -173,7 +172,7 @@ const OVERLAY_REGISTRY: readonly OverlayEffectEntry[] = [
     configKey: "pulseRenderer",
     RendererClass: PulseOverlayRenderer,
   },
-] as const;
+];
 
 export class EffectRendererManager {
   // ── Renderer instances ──────────────────────────────────────────────
@@ -207,7 +206,7 @@ export class EffectRendererManager {
 
   // ── Previous-frame flags for change detection ───────────────────────
   /** Map from effect name to whether tips are currently enabled. LED uses ledConfig.enabled instead. */
-  prevEffectEnabled: Map<OverlayEffectEntry["effect"], boolean> = new Map(
+  private prevEffectEnabled: Map<OverlayEffectEntry["effect"], boolean> = new Map(
     OVERLAY_REGISTRY.map(e => [e.effect, false])
   );
 
@@ -248,6 +247,16 @@ export class EffectRendererManager {
   private getFrameParams: FrameParamsProvider | null = null;
   private getVM: (() => AnimationVisibilityStateManager) | null = null;
 
+  // ── Registry helpers (consolidate dynamic property access) ──────────
+  private getOverlayRenderer(field: OverlayEffectEntry["rendererField"]): OverlayRenderer | null {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (this as any)[field] as OverlayRenderer | null;
+  }
+  private setOverlayRenderer(field: OverlayEffectEntry["rendererField"], value: OverlayRenderer | null): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this as any)[field] = value;
+  }
+
   /**
    * Wire dependencies after construction. Called once from AnimationEngine.initialize().
    */
@@ -274,6 +283,16 @@ export class EffectRendererManager {
     if (refs.canvasSize !== undefined) this.canvasSize = refs.canvasSize;
   }
 
+  /** Expose charcoal params from VM for the registry onInit hook. */
+  getCharcoalParamsFromVM(): ReturnType<AnimationVisibilityStateManager["getCharcoalParams"]> | undefined {
+    return this.getVM?.().getCharcoalParams();
+  }
+
+  /** Check whether a given overlay effect is currently enabled. */
+  isEffectEnabled(effect: OverlayEffectEntry["effect"]): boolean {
+    return this.prevEffectEnabled.get(effect) ?? false;
+  }
+
   // ── Generic Overlay Sync ────────────────────────────────────────────
 
   /**
@@ -281,11 +300,9 @@ export class EffectRendererManager {
    */
   private syncOverlay(entry: OverlayEffectEntry): void {
     const enabled = this.prevEffectEnabled.get(entry.effect) ?? false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const self = this as any;
 
     if (enabled) {
-      const current: OverlayRenderer | null = self[entry.rendererField];
+      const current = this.getOverlayRenderer(entry.rendererField);
       if (!current?.isInitialized()) {
         if (!this.containerElement) return;
         const renderer: OverlayRenderer = new entry.RendererClass();
@@ -295,20 +312,20 @@ export class EffectRendererManager {
           this.canvasSize,
         );
         if (success) {
-          self[entry.rendererField] = renderer;
+          this.setOverlayRenderer(entry.rendererField, renderer);
           this.renderLoopService?.updateConfig({
             [entry.configKey]: renderer,
           } as Partial<RenderLoopConfig>);
           entry.onInit?.(this, renderer);
         } else {
-          self[entry.rendererField] = null;
+          this.setOverlayRenderer(entry.rendererField, null);
         }
       }
     } else {
-      const current: OverlayRenderer | null = self[entry.rendererField];
+      const current = this.getOverlayRenderer(entry.rendererField);
       if (current?.isInitialized()) {
         current.dispose();
-        self[entry.rendererField] = null;
+        this.setOverlayRenderer(entry.rendererField, null);
       }
       this.renderLoopService?.updateConfig({
         [entry.configKey]: null,
@@ -337,23 +354,6 @@ export class EffectRendererManager {
       this.syncOverlay(entry);
     }
   }
-
-  // ── Legacy named methods (thin wrappers for AnimationEngine callers) ─
-
-  syncFireOverlay(): void { this.syncEffectOverlay("fire"); }
-  syncCharcoalOverlay(): void { this.syncEffectOverlay("charcoal"); }
-  syncZapOverlay(): void { this.syncEffectOverlay("zap"); }
-  syncSparklesOverlay(): void { this.syncEffectOverlay("sparkles"); }
-  syncEchoOverlay(): void { this.syncEffectOverlay("echo"); }
-  syncBloomOverlay(): void { this.syncEffectOverlay("bloom"); }
-  syncWaterOverlay(): void { this.syncEffectOverlay("water"); }
-  syncBubblesOverlay(): void { this.syncEffectOverlay("bubbles"); }
-  syncPetalsOverlay(): void { this.syncEffectOverlay("petals"); }
-  syncSmokeOverlay(): void { this.syncEffectOverlay("smoke"); }
-  syncInkOverlay(): void { this.syncEffectOverlay("ink"); }
-  syncFrostOverlay(): void { this.syncEffectOverlay("frost"); }
-  syncSilkOverlay(): void { this.syncEffectOverlay("silk"); }
-  syncPulseOverlay(): void { this.syncEffectOverlay("pulse"); }
 
   /**
    * Initialize or destroy the LED overlay based on config.enabled.
@@ -416,7 +416,7 @@ export class EffectRendererManager {
     if (config.quality !== undefined && this.fireRenderer) {
       this.fireRenderer.setQuality(config.quality);
     }
-    this.syncFireOverlay();
+    this.syncEffectOverlay("fire");
 
     // Trigger a render to start/stop fire loop
     this.triggerRender();
@@ -515,8 +515,7 @@ export class EffectRendererManager {
     apply("trails", this.trailOverlay);
     apply("led", this.ledRenderer);
     for (const entry of OVERLAY_REGISTRY) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      apply(entry.effect, (this as any)[entry.rendererField]);
+      apply(entry.effect, this.getOverlayRenderer(entry.rendererField));
     }
   }
 
@@ -545,9 +544,7 @@ export class EffectRendererManager {
     this.canvasSize = newSize;
     // Resize all registry-driven renderers
     for (const entry of OVERLAY_REGISTRY) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
-      renderer?.resize?.(newSize, newSize);
+      this.getOverlayRenderer(entry.rendererField)?.resize?.(newSize, newSize);
     }
     // LED + trail handled separately
     this.ledRenderer?.resize(newSize, newSize);
@@ -566,8 +563,7 @@ export class EffectRendererManager {
    */
   wirePostInitOverlays(): void {
     for (const entry of OVERLAY_REGISTRY) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
+      const renderer = this.getOverlayRenderer(entry.rendererField);
       if (renderer?.isInitialized() && this.renderLoopService) {
         this.renderLoopService.updateConfig({
           [entry.configKey]: renderer,
@@ -588,9 +584,7 @@ export class EffectRendererManager {
   ensureEnabledOverlays(): void {
     for (const entry of OVERLAY_REGISTRY) {
       const enabled = this.prevEffectEnabled.get(entry.effect) ?? false;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
-      if (enabled && !renderer?.isInitialized()) {
+      if (enabled && !this.getOverlayRenderer(entry.rendererField)?.isInitialized()) {
         this.syncOverlay(entry);
       }
     }
@@ -638,11 +632,8 @@ export class EffectRendererManager {
   dispose(): void {
     // Dispose all registry-driven renderers
     for (const entry of OVERLAY_REGISTRY) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
-      renderer?.dispose();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (this as any)[entry.rendererField] = null;
+      this.getOverlayRenderer(entry.rendererField)?.dispose();
+      this.setOverlayRenderer(entry.rendererField, null);
     }
     this.fireTipTracker = null;
 
