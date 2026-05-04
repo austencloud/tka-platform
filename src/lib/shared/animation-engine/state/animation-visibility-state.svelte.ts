@@ -12,6 +12,8 @@ import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
 import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
 import type { EffectLayerMode } from "../services/effect-layer";
+import { migrateStoredSettings } from "../services/animation-visibility-migrations";
+import type { LedSettingsAccessor } from "../services/led-settings-section";
 
 type VisibilityObserver = () => void;
 
