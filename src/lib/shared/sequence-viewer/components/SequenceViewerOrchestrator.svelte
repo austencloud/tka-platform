@@ -1,7 +1,6 @@
 <script lang="ts" module>
 import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
-import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/features/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
 import { getViewer3DUndoManager } from "$lib/shared/3d/getViewer3DUndoManager";
@@ -10,10 +9,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type {
@@ -101,8 +100,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handlePublishAction: () => Promise<void>;
     handleUnpublishAction: () => Promise<void>;
 
-    playbackMode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode;
-    handlePlaybackModeChange: (mode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode) => void;
+    playbackMode: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
+    handlePlaybackModeChange: (mode: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode) => void;
 
     handlePlaybackToggle: () => void;
     handleBpmChange: (bpm: number) => void;
@@ -165,7 +164,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/implementations/SequenceDataProvider";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -188,7 +187,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/types";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
-  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+  import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
@@ -202,7 +201,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { createPropContextResolver } from "./PropContextResolver.svelte";
   import { createImageCompositionSync } from "./ImageCompositionSync.svelte";
   import { createAuthActionQueue } from "./AuthActionQueue.svelte";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+  import { createFullscreenController } from "../state/fullscreen-controller.svelte";
+  import { createLibraryActionHandler } from "../state/library-action-handler.svelte";
+  import { loadRecentEditingPane, persistEditingPane } from "../services/editing-pane-persistence";
 
   interface Props {
     sequence: SequenceData | null;
@@ -271,47 +272,11 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
   let viewMode = $state<ViewMode>(loadViewMode());
   $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
 
-  let isFullscreen = $state(false);
-  let fullscreenControlsVisible = $state(false);
-  let controlsHideTimeout: ReturnType<typeof setTimeout> | null = null;
+  const fullscreen = createFullscreenController({
+    getHapticService: () => hapticService,
+    announce: (msg, priority) => accessibilityHelper.announce(msg, priority),
+  });
 
-  const EDITING_PANE_SESSION_KEY = "tka-viewer-editing-pane";
-  const EDITING_PANE_TTL_MS = 2000;
-  type PersistedEditingPane = {
-    pane: 'animation' | 'image' | 'video-upload';
-    ts: number;
-    sequenceId: string | null;
-  };
-  function loadRecentEditingPane(currentSequenceId: string | null): 'animation' | 'image' | 'video-upload' | null {
-    if (typeof sessionStorage === "undefined") return null;
-    try {
-      const raw = sessionStorage.getItem(EDITING_PANE_SESSION_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as PersistedEditingPane;
-      const fresh = Date.now() - parsed.ts <= EDITING_PANE_TTL_MS;
-      const sameSequence = parsed.sequenceId === currentSequenceId;
-      if (!fresh || !sameSequence) {
-        sessionStorage.removeItem(EDITING_PANE_SESSION_KEY);
-        return null;
-      }
-      return parsed.pane ?? null;
-    } catch {
-      return null;
-    }
-  }
-  function persistEditingPane(pane: 'animation' | 'image' | 'video-upload' | null, sequenceId: string | null) {
-    if (typeof sessionStorage === "undefined") return;
-    try {
-      if (pane === null) {
-        sessionStorage.removeItem(EDITING_PANE_SESSION_KEY);
-      } else {
-        const payload: PersistedEditingPane = { pane, ts: Date.now(), sequenceId };
-        sessionStorage.setItem(EDITING_PANE_SESSION_KEY, JSON.stringify(payload));
-      }
-    } catch {
-      // ignore
-    }
-  }
   let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(
     untrack(() => loadRecentEditingPane(sequence?.id ?? null))
   );
@@ -418,64 +383,20 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     sequence.ownerId === authState.user.uid
   );
 
-  let isSaved = $state(true);
-  let isFavorite = $state(false);
+  const libraryActions = createLibraryActionHandler({
+    getSequence: () => sequence,
+    getIsOwned: () => isOwned,
+    getBluePropType: () => bluePropType,
+    getRedPropType: () => redPropType,
+    getCatDogModeEnabled: () => catDogModeEnabled,
+    getHapticService: () => hapticService,
+    onDeleteSuccess: () => handleBackInternal(),
+  });
+
   const isPublished = $derived((sequence as LibrarySequence | null)?.visibility === "public");
 
-  const savedHashCache = new Map<string, boolean>();
-
-  $effect(() => {
-    const seq = sequence as LibrarySequence | null;
-    if (!seq?.contentHash || !authState.user?.uid) {
-      isSaved = !(isOwned && seq && !seq.contentHash);
-      return;
-    }
-
-    const hash = seq.contentHash;
-    if (savedHashCache.has(hash)) {
-      isSaved = savedHashCache.get(hash)!;
-      return;
-    }
-
-    const repo = getLibraryRepository() as LibraryRepository;
-    repo.hasMatchingContent(hash)
-      .then((found) => {
-        savedHashCache.set(hash, found);
-        if (sequence?.id === seq.id) isSaved = found;
-      })
-      .catch(() => {});
-  });
-
-  $effect(() => {
-    const seq = sequence;
-    if (!seq) { isFavorite = false; return; }
-
-    checkIsFavorite(seq.id)
-      .then((fav) => { if (sequence?.id === seq.id) isFavorite = fav; })
-      .catch(() => {});
-  });
-
-  function handleFavoriteToggle() {
-    if (!sequence) return;
-    isFavorite = !isFavorite;
-    doToggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
-  }
-
-  async function handlePublishAction() {
-    if (!sequence) return;
-    try {
-      const repo = getLibraryRepository() as LibraryRepository;
-      await repo.publishSequence(sequence.id);
-    } catch (e) {
-      console.error("[Orchestrator] publishSequence FAILED:", e);
-    }
-  }
-
-  async function handleUnpublishAction() {
-    if (!sequence) return;
-    const repo = getLibraryRepository() as LibraryRepository;
-    await repo.unpublishSequence(sequence.id);
-  }
+  $effect(() => { libraryActions.syncSavedState(sequence); });
+  $effect(() => { libraryActions.syncFavoriteState(sequence); });
 
   const showPreviousBeat = $derived(
     playback.arrivedViaStepping &&
@@ -558,7 +479,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     modalAnimationState.dispose();
     exportCoord.dispose();
     viewer3DState.dispose();
-    clearControlsTimeout();
+    fullscreen.clearControlsTimeout();
   });
 
   $effect(() => {
@@ -627,9 +548,9 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
 
   $effect(() => {
     authQueue.replayPendingAction({
-      handleSave,
-      handleFavoriteToggle,
-      handlePublishAction,
+      handleSave: libraryActions.handleSave,
+      handleFavoriteToggle: libraryActions.handleFavoriteToggle,
+      handlePublishAction: libraryActions.handlePublishAction,
       handleEdit,
       handleShare,
       handleOpenInBrowser,
@@ -749,46 +670,6 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     accessibilityHelper.announce("Split view restored");
   }
 
-  function enterFullscreen() {
-    hapticService?.trigger("selection");
-    isFullscreen = true;
-    showFullscreenControls();
-    accessibilityHelper.announce("Fullscreen mode. Tap to show controls, press Escape to exit.", "assertive");
-  }
-
-  function exitFullscreen() {
-    hapticService?.trigger("selection");
-    isFullscreen = false;
-    fullscreenControlsVisible = false;
-    clearControlsTimeout();
-    accessibilityHelper.announce("Exited fullscreen");
-  }
-
-  function showFullscreenControls() {
-    fullscreenControlsVisible = true;
-    scheduleControlsHide();
-  }
-
-  function scheduleControlsHide() {
-    clearControlsTimeout();
-    controlsHideTimeout = setTimeout(() => {
-      fullscreenControlsVisible = false;
-    }, 3000);
-  }
-
-  function clearControlsTimeout() {
-    if (controlsHideTimeout) {
-      clearTimeout(controlsHideTimeout);
-      controlsHideTimeout = null;
-    }
-  }
-
-  function handleFullscreenTap() {
-    if (isFullscreen && !fullscreenControlsVisible) {
-      showFullscreenControls();
-    }
-  }
-
   async function handleExport() {
     await exportCoord.handleExport(
       editingPane,
@@ -884,48 +765,6 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     void handleModuleChange("create", "construct");
   }
 
-  async function handleSave() {
-    hapticService?.trigger("selection");
-    if (!authState.isAuthenticated) {
-      showToast("Sign in to save sequences", "info");
-      return;
-    }
-    if (!sequence) {
-      showToast("No sequence to save", "info");
-      return;
-    }
-    try {
-      const libraryRepo = getLibraryRepository();
-      const currentPathShape = getAnimationVisibilityManager().getPathShape();
-      const pathShapeMetadata = currentPathShape !== "arc"
-        ? { ...sequence.metadata, pathShape: currentPathShape }
-        : sequence.metadata;
-      const sequenceWithIntent = createSequenceData({
-        ...sequence,
-        metadata: pathShapeMetadata,
-        creatorIntent: {
-          propConfig: {
-            bluePropType: bluePropType ?? PropType.STAFF,
-            redPropType: redPropType ?? PropType.STAFF,
-            catDogMode: catDogModeEnabled ?? false,
-          },
-          ...(sequence?.creatorIntent?.effortTimeline && { effortTimeline: sequence.creatorIntent.effortTimeline }),
-          ...(sequence?.effortTimeline && { effortTimeline: sequence.effortTimeline }),
-        },
-        intendedProp: {
-          bluePropType: bluePropType ?? PropType.STAFF,
-          redPropType: redPropType ?? PropType.STAFF,
-          catDogMode: catDogModeEnabled ?? false,
-        },
-      });
-      await libraryRepo.saveSequence(sequenceWithIntent);
-      showToast("Saved to library", "success");
-    } catch (error) {
-      console.error("Failed to save sequence:", error);
-      showToast("Failed to save sequence", "error");
-    }
-  }
-
   async function handleVideoUpload() {
     if (!authState.isAuthenticated) {
       showToast("Sign in to upload videos", "info");
@@ -974,20 +813,6 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     } catch (error) {
       console.error("Failed to update intended prop:", error);
       showToast("Failed to update intended prop", "error");
-    }
-  }
-
-  async function handleDelete() {
-    if (!sequence) return;
-    hapticService?.trigger("warning");
-    try {
-      const libraryRepo = getLibraryRepository();
-      await libraryRepo.deleteSequence(sequence.id);
-      showToast("Sequence deleted", "success");
-      handleBackInternal();
-    } catch (error) {
-      console.error("Failed to delete sequence:", error);
-      showToast("Failed to delete sequence", "error");
     }
   }
 
@@ -1069,8 +894,8 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
       event.preventDefault();
-      if (isFullscreen) {
-        exitFullscreen();
+      if (fullscreen.isFullscreen) {
+        fullscreen.exitFullscreen();
       } else if (editingPane) {
         exitEditMode();
       } else {
@@ -1156,8 +981,8 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
 
     viewMode,
     isMobile,
-    isFullscreen,
-    fullscreenControlsVisible,
+    isFullscreen: fullscreen.isFullscreen,
+    fullscreenControlsVisible: fullscreen.fullscreenControlsVisible,
     fullscreenStackVertical,
     editingPane,
 
@@ -1212,12 +1037,12 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     isLoggedIn: forceGuest ? false : authState.isAuthenticated,
     userName: authState.user?.displayName || "",
     isOwned,
-    isSaved,
+    isSaved: libraryActions.isSaved,
     isPublished,
-    isFavorite,
-    handleFavoriteToggle,
-    handlePublishAction,
-    handleUnpublishAction,
+    isFavorite: libraryActions.isFavorite,
+    handleFavoriteToggle: libraryActions.handleFavoriteToggle,
+    handlePublishAction: libraryActions.handlePublishAction,
+    handleUnpublishAction: libraryActions.handleUnpublishAction,
 
     playbackMode: modalAnimationState.playbackMode,
     handlePlaybackModeChange: playback.handlePlaybackModeChange,
@@ -1230,18 +1055,18 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     handleStepClick: (stepIndex: number) => playback.handleStepClick(stepIndex, blockClicks, editingPane),
     enterEditMode,
     exitEditMode,
-    enterFullscreen,
-    exitFullscreen,
-    handleFullscreenTap,
+    enterFullscreen: fullscreen.enterFullscreen,
+    exitFullscreen: fullscreen.exitFullscreen,
+    handleFullscreenTap: fullscreen.handleFullscreenTap,
     handleExport,
     handleCanvasReady: exportCoord.handleCanvasReady,
     handleSyncToggle,
     handleOpenInCompose,
     handleEdit,
-    handleSave,
+    handleSave: libraryActions.handleSave,
     handleVideoUpload,
     handleShare,
-    handleDelete,
+    handleDelete: libraryActions.handleDelete,
     handleOpenInBrowser,
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) =>
       authQueue.invokeGatedAction(type, realHandler, sequence),
