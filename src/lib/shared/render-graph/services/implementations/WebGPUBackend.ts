@@ -1,25 +1,10 @@
-/**
- * WebGPU render backend — Phase 4.
- *
- * Implements the same RenderBackend interface as WebGL2Backend but targets
- * WebGPU. Structure mirrors WebGL2Backend for maintainability:
- *
- *   initialize → acquire device, compile pipelines, allocate textures
- *   executeFrame → sort passes by z-order, dispatch each
- *   resize → recreate display-sized textures
- *   dispose → destroy all GPU resources
- *
- * Shader source is WGSL (inlined). Each GLSL program in ShaderLibrary has
- * a corresponding WGSL pipeline here.
- */
-
 import type { RenderBackend, BackendStats } from "../../domain/Backend";
 import type { FrameGraph } from "../../domain/FrameGraph";
 import type {
   RenderPassDescriptor,
   RenderPassKind,
 } from "../../domain/RenderPass";
-import type { TrailPassPayload, TrailTipState } from "../../domain/TrailPass";
+import type { TrailPassPayload } from "../../domain/TrailPass";
 import type { FirePassPayload } from "../../domain/FirePass";
 import type { LedPassPayload } from "../../domain/LedPass";
 import type { ParticlePassPayload } from "../../domain/ParticlePass";
@@ -32,190 +17,28 @@ import type {
   FrostPassPayload,
   SilkPassPayload,
 } from "../../domain/EffectPasses";
-import {
-  adaptiveSubdivisions,
-  buildTaperedMesh,
-  createSmoothCurve,
-  TRAIL_VERTEX_STRIDE,
-  type Point2D,
-  type MeshBuildOptions,
-} from "../../math/trail-mesh";
+import { TRAIL_VERTEX_STRIDE } from "../../math/trail-mesh";
 import { WebGPUFireExecutor } from "./WebGPUFireExecutor";
 import { WebGPULedExecutor } from "./WebGPULedExecutor";
 import { WebGPUOverlayEffectsExecutor } from "./WebGPUOverlayEffectsExecutor";
 import { WebGPUParticleExecutor } from "./WebGPUParticleExecutor";
+import {
+  WebGPUTrailExecutor,
+  type GPUTextureEntry,
+  type PingPongPair,
+  type CompiledPipeline,
+} from "./webgpu-trail-executor";
+import {
+  FULLSCREEN_VERT_WGSL,
+  DECAY_FRAG_WGSL,
+  COMPOSITE_FRAG_WGSL,
+  TRAIL_MESH_VERT_WGSL,
+  TRAIL_MESH_FRAG_WGSL,
+  GAUSSIAN_BLUR_FRAG_WGSL,
+} from "./webgpu-backend-shaders";
 
-const TRAIL_KEY_PREFIX = "trail-tip-";
 const DT_CLAMP_SECONDS = 0.1;
-const MAX_UNUSED_FRAMES_BEFORE_GC = 30;
-const AA_WIDTH = 0.05;
-const ALPHA_SUBTRACT = 1.0 / 255.0;
-const GLOW_MIX = 1.0;
 const BLOOM_DOWNSAMPLE = 2;
-const SIGMA_PER_PASS = 2.0;
-const MAX_BLUR_ITERATIONS = 8;
-
-// ─── WGSL Shaders ───────────────────────────────────────────────────
-
-const FULLSCREEN_VERT_WGSL = /* wgsl */ `
-struct VertexOutput {
-  @builtin(position) position: vec4f,
-  @location(0) uv: vec2f,
-};
-
-@vertex
-fn main(@builtin(vertex_index) vid: u32) -> VertexOutput {
-  var out: VertexOutput;
-  let x = select(-1.0, 3.0, vid == 1u);
-  let y = select(-1.0, 3.0, vid == 2u);
-  out.uv = vec2f((x + 1.0) * 0.5, (y + 1.0) * 0.5);
-  out.position = vec4f(x, y, 0.0, 1.0);
-  return out;
-}
-`;
-
-const DECAY_FRAG_WGSL = /* wgsl */ `
-@group(0) @binding(0) var src: texture_2d<f32>;
-@group(0) @binding(1) var srcSampler: sampler;
-@group(0) @binding(2) var<uniform> params: DecayParams;
-
-struct DecayParams {
-  alphaFactor: f32,
-  alphaSubtract: f32,
-};
-
-@fragment
-fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let c = textureSample(src, srcSampler, uv) * params.alphaFactor;
-  return max(c - vec4f(params.alphaSubtract), vec4f(0.0));
-}
-`;
-
-const COMPOSITE_FRAG_WGSL = /* wgsl */ `
-@group(0) @binding(0) var src: texture_2d<f32>;
-@group(0) @binding(1) var srcSampler: sampler;
-@group(0) @binding(2) var<uniform> tint: vec4f;
-
-@fragment
-fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  return textureSample(src, srcSampler, uv) * tint;
-}
-`;
-
-const TRAIL_MESH_VERT_WGSL = /* wgsl */ `
-struct VertexInput {
-  @location(0) position: vec2f,
-  @location(1) z: f32,
-  @location(2) edge_t: f32,
-  @location(3) alpha: f32,
-};
-
-struct VertexOutput {
-  @builtin(position) position: vec4f,
-  @location(0) edge_t: f32,
-  @location(1) alpha: f32,
-};
-
-@vertex
-fn main(input: VertexInput) -> VertexOutput {
-  var out: VertexOutput;
-  out.edge_t = input.edge_t;
-  out.alpha = input.alpha;
-  let zClip = input.z * 2.0 - 1.0;
-  out.position = vec4f(input.position, zClip, 1.0);
-  return out;
-}
-`;
-
-const TRAIL_MESH_FRAG_WGSL = /* wgsl */ `
-@group(0) @binding(0) var<uniform> params: TrailMeshParams;
-
-struct TrailMeshParams {
-  color: vec4f,
-  aaWidth: f32,
-};
-
-struct FragInput {
-  @location(0) edge_t: f32,
-  @location(1) alpha: f32,
-};
-
-@fragment
-fn main(input: FragInput) -> @location(0) vec4f {
-  let edge = smoothstep(1.0, 1.0 - params.aaWidth, abs(input.edge_t));
-  let a = input.alpha * edge;
-  return params.color * a;
-}
-`;
-
-const GAUSSIAN_BLUR_FRAG_WGSL = /* wgsl */ `
-@group(0) @binding(0) var src: texture_2d<f32>;
-@group(0) @binding(1) var srcSampler: sampler;
-@group(0) @binding(2) var<uniform> params: BlurParams;
-
-struct BlurParams {
-  direction: vec2f,
-  texelSize: vec2f,
-};
-
-@fragment
-fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let offsets = array<f32, 4>(1.3846153846, 3.2307692308, 5.0769230769, 6.9230769231);
-  let weights = array<f32, 4>(0.2270270270, 0.3162162162, 0.0702702703, 0.0031311312);
-
-  var result = textureSample(src, srcSampler, uv) * 0.2270270270;
-  let step = params.direction * params.texelSize;
-  for (var i = 0u; i < 4u; i = i + 1u) {
-    let offset = step * offsets[i];
-    result += textureSample(src, srcSampler, uv + offset) * weights[i];
-    result += textureSample(src, srcSampler, uv - offset) * weights[i];
-  }
-  return result;
-}
-`;
-
-const TRAIL_COMPOSITE_FRAG_WGSL = /* wgsl */ `
-@group(0) @binding(0) var accumTex: texture_2d<f32>;
-@group(0) @binding(1) var blurTex: texture_2d<f32>;
-@group(0) @binding(2) var texSampler: sampler;
-@group(0) @binding(3) var<uniform> params: TrailCompositeParams;
-
-struct TrailCompositeParams {
-  glowMix: f32,
-};
-
-@fragment
-fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let accum = textureSample(accumTex, texSampler, uv);
-  let blur = textureSample(blurTex, texSampler, uv);
-  return accum + blur * params.glowMix;
-}
-`;
-
-// ─── Types ──────────────────────────────────────────────────────────
-
-interface GPUTextureEntry {
-  texture: GPUTexture;
-  view: GPUTextureView;
-  width: number;
-  height: number;
-}
-
-interface PingPongPair {
-  read: GPUTextureEntry;
-  write: GPUTextureEntry;
-}
-
-interface TipLiveness {
-  lastSeenFrame: number;
-}
-
-interface CompiledPipeline {
-  pipeline: GPURenderPipeline;
-  bindGroupLayout: GPUBindGroupLayout;
-}
-
-// ─── Backend ────────────────────────────────────────────────────────
 
 export class WebGPUBackend implements RenderBackend {
   readonly kind = "webgpu" as const;
@@ -229,12 +52,12 @@ export class WebGPUBackend implements RenderBackend {
   private pipelines = new Map<string, CompiledPipeline>();
   private textures = new Map<string, GPUTextureEntry>();
   private pingPongs = new Map<string, PingPongPair>();
-  private tipLiveness = new Map<string, TipLiveness>();
   private unsupportedKindsWarned = new Set<RenderPassKind>();
 
   private meshBuffer: GPUBuffer | null = null;
   private meshBufferSize = 0;
 
+  private trailExecutor: WebGPUTrailExecutor | null = null;
   private fireExecutor: WebGPUFireExecutor | null = null;
   private ledExecutor: WebGPULedExecutor | null = null;
   private overlayExecutor: WebGPUOverlayEffectsExecutor | null = null;
@@ -289,6 +112,19 @@ export class WebGPUBackend implements RenderBackend {
 
     this.compilePipelines();
     this.allocateScratchTextures(canvas.width, canvas.height);
+
+    this.trailExecutor = new WebGPUTrailExecutor(
+      device,
+      this.linearSampler,
+      this.pipelines,
+      this.textures,
+      this.pingPongs,
+      () => this.meshBuffer,
+      (byteLength) => this.ensureMeshBuffer(byteLength),
+      (key, w, h) => this.ensureTexture(key, w, h),
+      (key, w, h) => this.ensurePingPong(key, w, h),
+      () => this.context!,
+    );
   }
 
   executeFrame(graph: FrameGraph, time: number): void {
@@ -311,7 +147,7 @@ export class WebGPUBackend implements RenderBackend {
       if (passMs > this.longestPassMs) this.longestPassMs = passMs;
     }
 
-    this.garbageCollectTips();
+    this.trailExecutor!.garbageCollect(this.frameCount);
     this.lastFrameMs = performance.now() - frameStart;
   }
 
@@ -340,6 +176,7 @@ export class WebGPUBackend implements RenderBackend {
     this.pingPongs.clear();
     this.meshBuffer?.destroy();
     this.meshBuffer = null;
+    this.trailExecutor = null;
     this.fireExecutor?.dispose();
     this.fireExecutor = null;
     this.ledExecutor?.dispose();
@@ -376,7 +213,13 @@ export class WebGPUBackend implements RenderBackend {
   private dispatch(pass: RenderPassDescriptor, dt: number): void {
     switch (pass.kind) {
       case "trail":
-        this.executeTrailPass(pass.payload as TrailPassPayload, dt);
+        this.trailExecutor!.execute(
+          pass.payload as TrailPassPayload,
+          dt,
+          this.canvas!.width,
+          this.canvas!.height,
+          this.frameCount,
+        );
         return;
       case "fire":
         this.executeFirePass(pass.payload as FirePassPayload, dt);
@@ -425,326 +268,7 @@ export class WebGPUBackend implements RenderBackend {
     }
   }
 
-  // ─── Trail Pass ─────────────────────────────────────────────────
-
-  private executeTrailPass(payload: TrailPassPayload, dt: number): void {
-    const canvas = this.canvas!;
-    const w = canvas.width;
-    const h = canvas.height;
-
-    for (const tip of payload.tips) {
-      if (tip.path.length < 2) continue;
-
-      const tipKey = TRAIL_KEY_PREFIX + tip.tipId;
-      this.tipLiveness.set(tipKey, { lastSeenFrame: this.frameCount });
-
-      const pp = this.ensurePingPong(tipKey, w, h);
-
-      // 1. Decay: read → write with multiplicative fade
-      this.runDecayPass(pp, tip.decayPerSecond, dt);
-
-      // 2. Stamp: draw trail mesh into scratch texture
-      this.runTrailStampPass(tip, w, h);
-
-      // 3. Blur (if glow > 0)
-      if (tip.glow > 0) {
-        this.runBlurPass(tip.glow, w, h);
-      }
-
-      // 4. Composite stamp + blur onto accumulator
-      this.runTrailCompositePass(pp, tip.glow > 0);
-
-      // 5. Display: composite accumulator to screen
-      this.runDisplayPass(pp, tip.blendMode);
-    }
-  }
-
-  private runDecayPass(pp: PingPongPair, decayPerSecond: number, dt: number): void {
-    const device = this.device!;
-    const factor = Math.exp(-decayPerSecond * dt);
-    const pipeline = this.pipelines.get("decay");
-    if (!pipeline) return;
-
-    const uniformBuf = device.createBuffer({
-      size: 8,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(
-      uniformBuf,
-      0,
-      new Float32Array([factor, ALPHA_SUBTRACT]),
-    );
-
-    const bindGroup = device.createBindGroup({
-      layout: pipeline.bindGroupLayout,
-      entries: [
-        { binding: 0, resource: pp.read.view },
-        { binding: 1, resource: this.linearSampler! },
-        { binding: 2, resource: { buffer: uniformBuf } },
-      ],
-    });
-
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: pp.write.view,
-          loadOp: "clear",
-          storeOp: "store",
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        },
-      ],
-    });
-    pass.setPipeline(pipeline.pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.draw(3);
-    pass.end();
-    device.queue.submit([encoder.finish()]);
-    uniformBuf.destroy();
-
-    // Swap ping-pong
-    const tmp = pp.read;
-    pp.read = pp.write;
-    pp.write = tmp;
-  }
-
-  private runTrailStampPass(
-    tip: TrailTipState,
-    w: number,
-    h: number,
-  ): void {
-    const device = this.device!;
-    const pipeline = this.pipelines.get("trail-mesh");
-    if (!pipeline) return;
-
-    const stamp = this.ensureTexture("stamp", w, h);
-
-    const controlPoints: Point2D[] = tip.path.map(([x, y]) => ({ x, y }));
-    const subdivs = adaptiveSubdivisions(controlPoints.length);
-
-    const smoothPath = createSmoothCurve(controlPoints, {
-      subdivisionsPerSegment: subdivs,
-    });
-    if (smoothPath.length < 2) return;
-
-    const meshOpts: MeshBuildOptions = {
-      thickness: tip.thickness,
-      taperTailRatio: tip.taperTailRatio,
-      maxAlpha: tip.color[3],
-      fadeExponent: tip.fadeExponent,
-    };
-    const mesh = buildTaperedMesh(smoothPath, meshOpts);
-    if (mesh.vertexCount === 0) return;
-
-    this.ensureMeshBuffer(mesh.vertices.byteLength);
-    device.queue.writeBuffer(
-      this.meshBuffer!,
-      0,
-      mesh.vertices.buffer,
-      mesh.vertices.byteOffset,
-      mesh.vertices.byteLength,
-    );
-
-    const [r, g, b, a] = tip.color;
-    const uniformBuf = device.createBuffer({
-      size: 32,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(
-      uniformBuf,
-      0,
-      new Float32Array([r, g, b, a, AA_WIDTH, 0, 0, 0]),
-    );
-
-    const bindGroup = device.createBindGroup({
-      layout: pipeline.bindGroupLayout,
-      entries: [{ binding: 0, resource: { buffer: uniformBuf } }],
-    });
-
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: stamp.view,
-          loadOp: "clear",
-          storeOp: "store",
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        },
-      ],
-    });
-    pass.setPipeline(pipeline.pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.setVertexBuffer(0, this.meshBuffer!);
-    pass.draw(mesh.vertexCount);
-    pass.end();
-    device.queue.submit([encoder.finish()]);
-    uniformBuf.destroy();
-  }
-
-  private runBlurPass(radius: number, w: number, h: number): void {
-    const device = this.device!;
-    const pipeline = this.pipelines.get("gaussian-blur");
-    if (!pipeline) return;
-
-    const halfW = Math.max(1, Math.floor(w / BLOOM_DOWNSAMPLE));
-    const halfH = Math.max(1, Math.floor(h / BLOOM_DOWNSAMPLE));
-    const blurTemp = this.ensureTexture("blur-temp", halfW, halfH);
-    const blurResult = this.ensureTexture("blur-result", halfW, halfH);
-    const stamp = this.textures.get("stamp");
-    if (!stamp) return;
-
-    const effectiveSigma = radius * 0.5;
-    const passes = Math.min(
-      Math.ceil(effectiveSigma / SIGMA_PER_PASS),
-      MAX_BLUR_ITERATIONS,
-    );
-
-    let readTex = stamp;
-    let writeTex = blurTemp;
-
-    for (let i = 0; i < passes * 2; i++) {
-      const horizontal = i % 2 === 0;
-      const tw = horizontal ? 1.0 / readTex.width : 0;
-      const th = horizontal ? 0 : 1.0 / readTex.height;
-
-      const uniformBuf = device.createBuffer({
-        size: 16,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-      device.queue.writeBuffer(
-        uniformBuf,
-        0,
-        new Float32Array([
-          horizontal ? 1 : 0,
-          horizontal ? 0 : 1,
-          tw || 1.0 / readTex.width,
-          th || 1.0 / readTex.height,
-        ]),
-      );
-
-      const bindGroup = device.createBindGroup({
-        layout: pipeline.bindGroupLayout,
-        entries: [
-          { binding: 0, resource: readTex.view },
-          { binding: 1, resource: this.linearSampler! },
-          { binding: 2, resource: { buffer: uniformBuf } },
-        ],
-      });
-
-      const encoder = device.createCommandEncoder();
-      const pass = encoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: writeTex.view,
-            loadOp: "clear",
-            storeOp: "store",
-            clearValue: { r: 0, g: 0, b: 0, a: 0 },
-          },
-        ],
-      });
-      pass.setPipeline(pipeline.pipeline);
-      pass.setBindGroup(0, bindGroup);
-      pass.draw(3);
-      pass.end();
-      device.queue.submit([encoder.finish()]);
-      uniformBuf.destroy();
-
-      // Alternate read/write between temp and result
-      const swap = readTex;
-      readTex = writeTex;
-      writeTex = i === 0 ? blurResult : swap;
-    }
-  }
-
-  private runTrailCompositePass(
-    pp: PingPongPair,
-    hasBlur: boolean,
-  ): void {
-    // Composite stamp (+ optional blur) onto the accumulator
-    // For now, use a simple additive blit of the stamp onto pp.write
-    const device = this.device!;
-    const pipeline = this.pipelines.get("composite");
-    if (!pipeline) return;
-
-    const stamp = this.textures.get("stamp");
-    if (!stamp) return;
-
-    const uniformBuf = device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(uniformBuf, 0, new Float32Array([1, 1, 1, 1]));
-
-    const bindGroup = device.createBindGroup({
-      layout: pipeline.bindGroupLayout,
-      entries: [
-        { binding: 0, resource: stamp.view },
-        { binding: 1, resource: this.linearSampler! },
-        { binding: 2, resource: { buffer: uniformBuf } },
-      ],
-    });
-
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: pp.read.view,
-          loadOp: "load",
-          storeOp: "store",
-        },
-      ],
-    });
-    pass.setPipeline(pipeline.pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.draw(3);
-    pass.end();
-    device.queue.submit([encoder.finish()]);
-    uniformBuf.destroy();
-  }
-
-  private runDisplayPass(
-    pp: PingPongPair,
-    _blendMode: string,
-  ): void {
-    const device = this.device!;
-    const ctx = this.context!;
-    const pipeline = this.pipelines.get("display");
-    if (!pipeline) return;
-
-    const uniformBuf = device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(uniformBuf, 0, new Float32Array([1, 1, 1, 1]));
-
-    const bindGroup = device.createBindGroup({
-      layout: pipeline.bindGroupLayout,
-      entries: [
-        { binding: 0, resource: pp.read.view },
-        { binding: 1, resource: this.linearSampler! },
-        { binding: 2, resource: { buffer: uniformBuf } },
-      ],
-    });
-
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: ctx.getCurrentTexture().createView(),
-          loadOp: "load",
-          storeOp: "store",
-        },
-      ],
-    });
-    pass.setPipeline(pipeline.pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.draw(3);
-    pass.end();
-    device.queue.submit([encoder.finish()]);
-    uniformBuf.destroy();
-  }
-
-  // ─── Effect Stubs (implemented in follow-up commits) ────────────
+  // ─── Effect Executors ───────────────────────────────────────────
 
   private executeFirePass(payload: FirePassPayload, dt: number): void {
     if (!this.fireExecutor) {
@@ -825,8 +349,6 @@ export class WebGPUBackend implements RenderBackend {
   // ─── Pipeline Compilation ───────────────────────────────────────
 
   private compilePipelines(): void {
-    const device = this.device!;
-
     this.compileFullscreenPipeline(
       "decay",
       FULLSCREEN_VERT_WGSL,
@@ -1102,21 +624,6 @@ export class WebGPUBackend implements RenderBackend {
   }
 
   // ─── Utilities ──────────────────────────────────────────────────
-
-  private garbageCollectTips(): void {
-    const cutoff = this.frameCount - MAX_UNUSED_FRAMES_BEFORE_GC;
-    for (const [key, liveness] of this.tipLiveness) {
-      if (liveness.lastSeenFrame < cutoff) {
-        const pp = this.pingPongs.get(key);
-        if (pp) {
-          pp.read.texture.destroy();
-          pp.write.texture.destroy();
-          this.pingPongs.delete(key);
-        }
-        this.tipLiveness.delete(key);
-      }
-    }
-  }
 
   private warnUnsupportedOnce(kind: RenderPassKind): void {
     if (this.unsupportedKindsWarned.has(kind)) return;
