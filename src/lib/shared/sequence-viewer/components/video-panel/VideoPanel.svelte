@@ -2,7 +2,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { fade } from "svelte/transition";
   import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
-  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
+  import { getVideosForSequence, saveVideo, deleteVideo, updateStepMap } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -61,7 +61,6 @@
   let beatMappingVideo = $state<CollaborativeVideo | null>(null);
 
   const uploadService = getVideoUploader();
-  const videoManager = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback() as
     | HapticFeedback
     | undefined;
@@ -81,7 +80,7 @@
   async function loadVideos() {
     panelState = "loading";
     try {
-      const result = await videoManager.getVideosForSequence(sequence.id);
+      const result = await getVideosForSequence(sequence.id);
       videos = result;
       panelState = videos.length > 0 ? "gallery" : "empty";
     } catch {
@@ -223,7 +222,7 @@
         thumbnailUrl,
       });
 
-      await videoManager.saveVideo(video);
+      await saveVideo(video);
 
       hapticService?.trigger("success");
       toast.success("Video uploaded");
@@ -252,7 +251,7 @@
 
   async function handleDeleteVideo(videoId: string) {
     try {
-      await videoManager.deleteVideo(videoId);
+      await deleteVideo(videoId);
       hapticService?.trigger("selection");
       await loadVideos();
     } catch (e) {
@@ -264,7 +263,7 @@
   async function handleStepMapSave(beatMap: StepMap) {
     if (!beatMappingVideo) return;
 
-    await videoManager.updateStepMap(beatMappingVideo.id, beatMap);
+    await updateStepMap(beatMappingVideo.id, beatMap);
 
     videos = videos.map((v) =>
       v.id === beatMappingVideo!.id ? { ...v, beatMap, updatedAt: new Date() } : v,

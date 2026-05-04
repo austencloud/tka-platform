@@ -10,7 +10,6 @@ import { getLOOPValidator } from './getLOOPValidator';
 import { getSequenceAnalyzer } from './getSequenceAnalyzer';
 import { getBridgeFinder } from './getBridgeFinder';
 import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
-import { gridModeDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridModeDeriver';
 
 let instance: SequenceExtender | null = null;
 
@@ -25,7 +24,6 @@ export function getSequenceExtender(): SequenceExtender {
 		getLOOPValidator(),
 		getSequenceAnalyzer(),
 		getBridgeFinder(),
-		motionQueryHandler,
-		gridModeDeriver
+		motionQueryHandler
 	);
 }

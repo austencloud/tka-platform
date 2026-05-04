@@ -1,6 +1,5 @@
 <!-- FeedbackKanbanBoard - Kanban board layout for feedback management -->
 <script lang="ts">
-  import { getStorageManager } from "$lib/shared/foundation/getStorageManager";
   import { onMount } from "svelte";
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import type { KanbanBoardState } from "../../state/kanban-board-state.svelte";
@@ -22,7 +21,6 @@
   // Resolve services
   let boardState = $state<KanbanBoardState | null>(null);
   const sortingService = getFeedbackSorter();
-  const storageService = getStorageManager();
 
   // Get claim status deriver for UI indicators
   import { FeedbackSorter } from "../../services/implementations/FeedbackSorter";
@@ -139,7 +137,6 @@
         boardState = createKanbanBoardState(
           manageState,
           sortingService,
-          storageService
         );
 
         // Set up ResizeObserver to detect mobile view (< 652px container width)

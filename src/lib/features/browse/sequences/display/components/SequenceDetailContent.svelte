@@ -24,13 +24,12 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
-  import type { PresentationResolver } from "$lib/shared/sequence-viewer/services/implementations/PresentationResolver";
+  import { resolvePresentation } from "$lib/shared/sequence-viewer/services/presentation-resolver";
 import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/types";
   import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
   import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
   import { getVideoCountManager } from "../getVideoCountManager";
   import { getClaudeCodeCopier } from "../getClaudeCodeCopier";
-  import { getPresentationResolver } from "$lib/shared/sequence-viewer/getPresentationResolver";
   import { onMount } from "svelte";
   import { untrack } from "svelte";
   import { getAuthSync } from "$lib/shared/auth/firebase";
@@ -124,12 +123,11 @@ import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contra
   const activeContext = $derived(contextOverride ?? viewingContext);
 
   const presentation = $derived.by(() => {
-    const resolver = getPresentationResolver();
     const viewerBlue = settingsService.settings.bluePropType as PropType;
     const viewerRed = settingsService.settings.redPropType as PropType;
     const viewerCatDog = settingsService.settings.catDogMode ?? false;
 
-    return resolver.resolve(
+    return resolvePresentation(
       sequence,
       activeContext,
       viewerBlue,

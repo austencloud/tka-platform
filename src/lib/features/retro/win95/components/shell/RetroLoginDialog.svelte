@@ -9,8 +9,7 @@
   Domain: Retro Desktop Shell
 -->
 <script lang="ts">
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
-  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
+  import { signInWithEmail, signInWithGoogle } from "$lib/shared/auth/services/authenticator";
   import { desktopState } from "../../state/desktop-state.svelte";
   import RetroButton from "../primitives/RetroButton.svelte";
 
@@ -57,8 +56,7 @@
     errorMessage = "";
 
     try {
-      const authenticator = getAuthenticator();
-      await authenticator.signInWithEmail(email.trim(), password);
+      await signInWithEmail(email.trim(), password);
       handleSuccess();
     } catch (error) {
       errorMessage =
@@ -80,8 +78,7 @@
     errorMessage = "";
 
     try {
-      const authenticator = getAuthenticator();
-      await authenticator.signInWithGoogle();
+      await signInWithGoogle();
       handleSuccess();
     } catch (error) {
       errorMessage =

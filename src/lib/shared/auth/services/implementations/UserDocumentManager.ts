@@ -8,8 +8,8 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { getFirestoreInstance } from "../../firebase";
-import type { ProfilePictureManager } from "../implementations/ProfilePictureManager";
-import type { UsernameValidator } from '$lib/shared/auth/services/implementations/UsernameValidator'
+import { getProviderIds } from '../profile-picture-manager';
+import { generateUniqueUsername, claimUsername } from '../username-validator';
 import { formatUsername } from "../../domain/models/UsernameValidation";
 
 import { getAttributionPersister } from "$lib/shared/attribution/getAttributionPersister";
@@ -45,10 +45,7 @@ function capitalizeName(name: string): string {
 }
 
 export class UserDocumentManager {
-  constructor(
-    private readonly profilePictureService: ProfilePictureManager,
-    private readonly usernameValidator: UsernameValidator
-  ) {}
+  constructor() {}
 
   /**
    * Create or update a user document in Firestore.
@@ -70,7 +67,7 @@ export class UserDocumentManager {
       const displayName = capitalizeName(rawName);
 
       // Get provider IDs for reliable profile picture URLs
-      const providerIds = this.profilePictureService.getProviderIds(user);
+      const providerIds = getProviderIds(user);
 
       // Capture the Google provider's photo URL separately so we can
       // always offer "Use Google Photo" even after the user switches to
@@ -81,7 +78,7 @@ export class UserDocumentManager {
       if (!userDoc.exists()) {
         // NEW USER: Generate unique username and claim it
         const baseUsername = user.email?.split("@")[0] || user.uid.substring(0, 8);
-        const username = await this.usernameValidator.generateUniqueUsername(baseUsername);
+        const username = await generateUniqueUsername(baseUsername);
         const usernameLowercase = formatUsername(username);
 
         // Create user document first
@@ -117,7 +114,7 @@ export class UserDocumentManager {
         });
 
         // Claim username in /usernames collection (non-blocking)
-        void this.usernameValidator.claimUsername(user.uid, username).catch((err) => {
+        void claimUsername(user.uid, username).catch((err) => {
           console.warn(`[UserDocumentManager] Failed to claim username: ${err.message}`);
         });
 

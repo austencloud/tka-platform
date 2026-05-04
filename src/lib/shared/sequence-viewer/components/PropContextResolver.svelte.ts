@@ -11,7 +11,7 @@
  */
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { getPresentationResolver } from "../getPresentationResolver";
+import { resolvePresentation as resolvePresentationFn } from "../services/presentation-resolver";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -40,8 +40,7 @@ export function createPropContextResolver(deps: PropContextResolverDeps) {
         source: "viewer-settings",
       };
     }
-    const resolver = getPresentationResolver();
-    return resolver.resolve(
+    return resolvePresentationFn(
       sequence,
       activeCtx,
       bluePropType ?? PropType.STAFF,

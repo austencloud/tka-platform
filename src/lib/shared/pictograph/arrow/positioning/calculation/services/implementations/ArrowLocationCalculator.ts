@@ -16,7 +16,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import { DashLocationCalculator, dashLocationCalculator } from "./DashLocationCalculator";
+import { calculateDashLocationFromPictographData } from "../dash-location-calculator";
 
 
 export class ArrowLocationCalculator {
@@ -96,7 +96,6 @@ export class ArrowLocationCalculator {
       GridLocation.WEST, // W→NW or NW→W
   };
 
-  constructor(private dashLocationService: DashLocationCalculator) {}
 
   calculateLocation(
     motion: MotionData,
@@ -188,10 +187,7 @@ export class ArrowLocationCalculator {
      */
     const isBlueArrow = this.isBlueArrowMotion(motion, pictographData);
 
-    return this.dashLocationService.calculateDashLocationFromPictographData(
-      pictographData,
-      isBlueArrow
-    );
+    return calculateDashLocationFromPictographData(pictographData, isBlueArrow);
   }
 
   getSupportedMotionTypes(): MotionType[] {
@@ -262,4 +258,4 @@ export class ArrowLocationCalculator {
 // Use this instead of arrowLocationCalculator to avoid DI container rebuilds.
 // ============================================================================
 
-export const arrowLocationCalculator = new ArrowLocationCalculator(dashLocationCalculator);
+export const arrowLocationCalculator = new ArrowLocationCalculator();

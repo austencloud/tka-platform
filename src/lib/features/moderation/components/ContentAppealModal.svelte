@@ -5,7 +5,7 @@
   Shows what was flagged, why, and allows user to submit an appeal.
 -->
 <script lang="ts">
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { getAuth } from "firebase/auth";
   import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
@@ -60,7 +60,7 @@
 
 		try {
 			const appealManager = getContentAppealManager();
-			const userId = (getAuthenticator() as any)?.currentUser?.uid;
+			const userId = getAuth().currentUser?.uid;
 
 			if (!userId) {
 				throw new Error(t('moderation_sign_in_required'));

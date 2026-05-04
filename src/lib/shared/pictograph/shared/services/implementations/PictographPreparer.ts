@@ -8,7 +8,7 @@ import type { PrepareOptions } from "../contracts/types";
 import type { ArrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
 import type { PropSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
 import type { PropPlacer } from "../../../prop/services/implementations/PropPlacer";
-import type { GridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
+import { deriveGridMode as _deriveGridMode } from "../../../grid/services/grid-mode-deriver";
 import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
@@ -25,8 +25,7 @@ export class PictographPreparer {
   constructor(
     private arrowManager: ArrowLifecycleManager,
     private propLoader: PropSvgLoader,
-    private propPlacer: PropPlacer,
-    private gridModeDeriver: GridModeDeriver
+    private propPlacer: PropPlacer
   ) {}
 
   async prepareBatch(
@@ -164,7 +163,7 @@ export class PictographPreparer {
       return GridMode.DIAMOND;
     }
     try {
-      return this.gridModeDeriver.deriveGridMode(
+      return _deriveGridMode(
         pictograph.motions.blue,
         pictograph.motions.red
       );
@@ -341,11 +340,9 @@ export class PictographPreparer {
 import { arrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
 import { propSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
 import { propPlacer } from "../../../prop/services/implementations/PropPlacer";
-import { gridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
 
 export const pictographPreparer = new PictographPreparer(
   arrowLifecycleManager,
   propSvgLoader,
-  propPlacer,
-  gridModeDeriver
+  propPlacer
 );

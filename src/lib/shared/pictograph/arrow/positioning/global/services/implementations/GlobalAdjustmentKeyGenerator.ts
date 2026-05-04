@@ -6,23 +6,21 @@
  */
 
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
-import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { GlobalAdjustmentKey } from "../../domain/GlobalArrowAdjustment";
 import type { KeyGeneratorPropOptions } from "../contracts/types";
 import type { TurnsTupleGenerator } from "../../../placement/services/implementations/TurnsTupleGenerator";
-import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
+import {
+  generateOrientationKey,
+  resolveEffectiveOriKey,
+} from "../../../key-generation/services/special-placement-ori-key-generator";
 
 export class GlobalAdjustmentKeyGenerator {
-  private readonly oriKeyGenerator: SpecialPlacementOriKeyGenerator;
-
   constructor(
-    private readonly gridModeDeriver: GridModeDeriver,
     private readonly turnsTupleGenerator: TurnsTupleGenerator
-  ) {
-    this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
-  }
+  ) {}
 
   /**
    * Generate a global adjustment key from motion and pictograph data.
@@ -41,14 +39,8 @@ export class GlobalAdjustmentKeyGenerator {
 
     // Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
-    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
-      motionData,
-      pictographData
-    );
-    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
-      rawOriKey,
-      pictographData
-    );
+    const rawOriKey = generateOrientationKey(motionData, pictographData);
+    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
 
     // Get letter
     const letter = pictographData.letter || "";
@@ -82,7 +74,7 @@ export class GlobalAdjustmentKeyGenerator {
    */
   private getGridMode(pictographData: PictographData): string {
     if (pictographData.motions.blue && pictographData.motions.red) {
-      return this.gridModeDeriver.deriveGridMode(
+      return _deriveGridMode(
         pictographData.motions.blue,
         pictographData.motions.red
       );

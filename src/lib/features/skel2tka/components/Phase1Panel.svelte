@@ -21,7 +21,7 @@
   import { checkPhase1 } from "../services/sanity-checker";
   import type { TrainingDataPersister } from "../services/implementations/TrainingDataPersister";
   import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";
-  import { getVideoFrameExtractor } from "$lib/features/skel2tka/getVideoFrameExtractor";
+  import { extractFrames } from "$lib/features/skel2tka/services/video-frame-extractor";
   import { getVideoHandAnalyzer } from "$lib/features/skel2tka/getVideoHandAnalyzer";
   import { detectBeats } from "$lib/features/skel2tka/services/step-boundary-detector";
   import { getPhase1OverlayRenderer } from "$lib/features/skel2tka/getPhase1OverlayRenderer";
@@ -54,7 +54,6 @@
   let verificationMessage = $state("");
 
   const landmarker = getImageModeHandLandmarker();
-  const frameExtractor = getVideoFrameExtractor();
   const handAnalyzer = getVideoHandAnalyzer();
   const overlayRenderer = getPhase1OverlayRenderer() as Phase1OverlayRenderer;
   const trainingPersister = getTrainingDataPersister() as TrainingDataPersister;
@@ -86,7 +85,7 @@
       // Step 1: Extract frames
       pipelineState = "extracting";
       progressLabel = t('skel2tka_extracting_frames');
-      const frames = await frameExtractor.extractFrames(
+      const frames = await extractFrames(
         file,
         { fps: 15 },
         onProgress

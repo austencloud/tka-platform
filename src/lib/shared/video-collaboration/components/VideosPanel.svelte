@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
+  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import { onMount } from "svelte";
@@ -25,7 +25,6 @@
     onInviteCollaborators?: (video: CollaborativeVideo) => void;
   } = $props();
 
-  const videoService = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback();
   let videos = $state<CollaborativeVideo[]>([]);
   let loading = $state(true);
@@ -38,13 +37,8 @@
   });
 
   async function loadVideos() {
-    if (!videoService) {
-      loading = false;
-      return;
-    }
-
     try {
-      videos = await videoService.getVideosForSequence(sequence.id);
+      videos = await getVideosForSequence(sequence.id);
     } catch (e) {
       console.error("Failed to load videos:", e);
       error = e instanceof Error ? e.message : "Failed to load";

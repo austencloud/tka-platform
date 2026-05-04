@@ -10,10 +10,9 @@ import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
 import type { ArrowLocationCalculator } from "../../../positioning/calculation/services/implementations/ArrowLocationCalculator";
-import type { ArrowQuadrantCalculator } from "./ArrowQuadrantCalculator";
+import { calculateQuadrantIndex } from "../arrow-quadrant-calculator";
 
 export class ArrowAdjustmentProcessor {
-  constructor(private quadrantCalculator: ArrowQuadrantCalculator) {}
 
   getBasicAdjustment(
     motion: MotionData,
@@ -107,10 +106,7 @@ export class ArrowAdjustmentProcessor {
       );
 
       // Calculate quadrant index for the arrow location
-      const quadrantIndex = this.quadrantCalculator.calculateQuadrantIndex(
-        motion,
-        location
-      );
+      const quadrantIndex = calculateQuadrantIndex(motion, location);
 
       // Apply the appropriate directional tuple
       if (quadrantIndex >= 0 && quadrantIndex < directionalTuples.length) {
@@ -188,7 +184,4 @@ export class ArrowAdjustmentProcessor {
 // Use this instead of arrowAdjustmentProcessor to avoid DI container rebuilds.
 // ============================================================================
 
-import { arrowQuadrantCalculator } from "./ArrowQuadrantCalculator";
-
-
-export const arrowAdjustmentProcessor = new ArrowAdjustmentProcessor(arrowQuadrantCalculator);
+export const arrowAdjustmentProcessor = new ArrowAdjustmentProcessor();

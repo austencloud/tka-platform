@@ -1,10 +1,8 @@
-import type { PlatformDetector } from "./PlatformDetector";
+import { isNative, isAndroid } from "../platform-detector";
 
 export class NativeInitializer {
-	constructor(private readonly platformDetector: PlatformDetector) {}
-
 	async initialize(): Promise<void> {
-		if (!this.platformDetector.isNative) return;
+		if (!isNative()) return;
 
 		await Promise.all([
 			this.initStatusBar(),
@@ -18,7 +16,7 @@ export class NativeInitializer {
 		const { StatusBar, Style } = await import("@capacitor/status-bar");
 		await StatusBar.setStyle({ style: Style.Dark });
 
-		if (this.platformDetector.isAndroid) {
+		if (isAndroid()) {
 			// Don't overlay on Android - let the system handle status bar space.
 			// The WebView's env(safe-area-inset-top) isn't reliable in Android WebView.
 			await StatusBar.setOverlaysWebView({ overlay: false });
@@ -43,7 +41,7 @@ export class NativeInitializer {
 	private async initAppLifecycle(): Promise<void> {
 		const { App } = await import("@capacitor/app");
 
-		if (this.platformDetector.isAndroid) {
+		if (isAndroid()) {
 			await App.addListener("backButton", ({ canGoBack }) => {
 				if (canGoBack) {
 					window.history.back();

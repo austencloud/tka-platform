@@ -10,7 +10,7 @@
  */
 
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
+import { loadColumnCount } from "$lib/shared/sequence-viewer/services/sequence-modal-persistence";
 
 export function createImageCompositionSync() {
   const imageComposition = getImageCompositionManager();
@@ -27,7 +27,7 @@ export function createImageCompositionSync() {
   let imgShowMandala = $state(imageComposition.showMandala);
   let imgShowLoopGlyph = $state(imageComposition.showLoopGlyph);
   let imgDarkMode = $state(imageComposition.darkMode);
-  let imgColumnCount = $state<number | null>(sequenceModalPersistence.loadColumnCount());
+  let imgColumnCount = $state<number | null>(loadColumnCount());
 
   /** Observer callback that syncs manager → local state. */
   function syncFromManager() {

@@ -1,7 +1,6 @@
 <script lang="ts">
 
-import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
-import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+// propInterpolator and sequenceConverter are now module-level functions
   /**
    * TelekineticFormation3D
    *
@@ -118,29 +117,22 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   }
 
   // Initialize all avatar instances
-  if (getPropStateInterpolator() && getSequenceConverter()) {
-    const deps = {
-      propInterpolator: getPropStateInterpolator(),
-      sequenceConverter: getSequenceConverter(),
-    };
+  try {
+    centerInstances = CENTER_PLANES.map((cfg, i) =>
+      createAvatarInstanceState(
+        { id: `formation-${stationId}-center-${cfg.plane}-${cfg.mirror ? 'mirror' : 'orig'}`, positionX: 0, positionZ: 0 },
+        {}
+      )
+    );
 
-    try {
-      centerInstances = CENTER_PLANES.map((cfg, i) =>
-        createAvatarInstanceState(
-          { id: `formation-${stationId}-center-${cfg.plane}-${cfg.mirror ? 'mirror' : 'orig'}`, positionX: 0, positionZ: 0 },
-          deps
-        )
-      );
-
-      acolyteInstances = ACOLYTE_POSITIONS.map((_, i) =>
-        createAvatarInstanceState(
-          { id: `formation-${stationId}-acolyte-${i}`, positionX: 0, positionZ: 0 },
-          deps
-        )
-      );
-    } catch (err) {
-      console.warn(`[TelekineticFormation] Failed to init ${stationId}:`, err);
-    }
+    acolyteInstances = ACOLYTE_POSITIONS.map((_, i) =>
+      createAvatarInstanceState(
+        { id: `formation-${stationId}-acolyte-${i}`, positionX: 0, positionZ: 0 },
+        {}
+      )
+    );
+  } catch (err) {
+    console.warn(`[TelekineticFormation] Failed to init ${stationId}:`, err);
   }
 
   // Load sequence into center instances and set planes

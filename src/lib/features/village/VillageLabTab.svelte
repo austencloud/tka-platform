@@ -4,8 +4,7 @@
 -->
 <script lang="ts">
 
-import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
-import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+// propInterpolator and sequenceConverter are now module-level functions
 	import { onDestroy } from "svelte";
 	import { Canvas } from "@threlte/core";
 	import VillageScene from "./components/VillageScene.svelte";
@@ -30,16 +29,13 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
 		} as SequenceData));
 	}
 
-	const propInterpolator = getPropStateInterpolator();
-	const sequenceConverter = getSequenceConverter();
-
 	// Create state synchronously during component init - required for setContext
 	let villageState: VillageState | null = null;
 	let visualState: VillageVisualState | null = null;
-	if (propInterpolator && sequenceConverter) {
+	{
 		const seeds = buildSeedSequences();
 		villageState = createVillageState(
-			{ propInterpolator, sequenceConverter },
+			{},
 			seeds,
 			{ targetPopulation: 6 },
 		);

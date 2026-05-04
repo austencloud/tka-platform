@@ -1,6 +1,12 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { CameraConfig } from "../contracts/types";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+
+export interface CameraConfig {
+  facingMode: "user" | "environment";
+  width: number;
+  height: number;
+  frameRate: number;
+}
 
 const DEFAULT_CONFIG: CameraConfig = {
   facingMode: "user",

@@ -8,7 +8,7 @@
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { LibraryCollection } from "$lib/features/library/domain/models/Collection";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+import { getUsers } from "$lib/shared/community/services/user-repository";
 import { getUserPublicCollections } from "$lib/features/library/services/public-collection-loader";
 import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 
@@ -45,7 +45,6 @@ function createCollectionsBrowseState() {
    * Load creator libraries data if not already cached
    */
   async function loadCreatorLibraries(
-    userService: UserRepository,
     libraryService: LibraryRepository,
     currentUserId?: string
   ): Promise<void> {
@@ -57,7 +56,7 @@ function createCollectionsBrowseState() {
 
     try {
       // Get all creators
-      const creators = await userService.getUsers(undefined, currentUserId);
+      const creators = await getUsers(undefined, currentUserId);
 
       // For each creator, fetch their public content
       const librariesPromises = creators.map(async (creator) => {
@@ -121,13 +120,11 @@ function createCollectionsBrowseState() {
    * Force reload (bypasses cache)
    */
   async function refresh(
-    userService: UserRepository,
     libraryService: LibraryRepository,
     currentUserId?: string
   ): Promise<void> {
     isLoaded = false;
     await loadCreatorLibraries(
-      userService,
       libraryService,
       currentUserId
     );
@@ -238,22 +235,18 @@ export const collectionsBrowseState = {
 
   // Actions
   loadCreatorLibraries: (
-    userService: UserRepository,
     libraryService: LibraryRepository,
     currentUserId?: string
   ) =>
     getState().loadCreatorLibraries(
-      userService,
       libraryService,
       currentUserId
     ),
   refresh: (
-    userService: UserRepository,
     libraryService: LibraryRepository,
     currentUserId?: string
   ) =>
     getState().refresh(
-      userService,
       libraryService,
       currentUserId
     ),

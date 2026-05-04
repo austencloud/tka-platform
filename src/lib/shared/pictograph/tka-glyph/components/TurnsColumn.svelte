@@ -22,7 +22,7 @@ Props:
     getTurnNumberWidth,
   } from "../utils/turn-tuple-parser";
   import { calculateTurnPositions } from "../utils/turn-position-calculator";
-  import { TurnColorInterpreter } from "../services/implementations/TurnColorInterpreter";
+  import { interpretTurnColors } from "../services/turn-color-interpreter";
   import {
     getLetterDimensions,
     preloadLetterDimensions,
@@ -113,9 +113,6 @@ Props:
       : cachedColors.red
   );
 
-  // Service instance for color interpretation
-  const colorInterpreter = new TurnColorInterpreter();
-
   // Track loaded letter dimensions with $state for reactivity
   // This allows async loading to trigger re-renders when dimensions become available
   let loadedLetterDimensions = $state<Dimensions>({ width: 100, height: 100 });
@@ -177,7 +174,7 @@ Props:
 
   // Determine colors based on letter type and motion data
   const turnColors = $derived.by(() =>
-    colorInterpreter.interpretTurnColors(letter, pictographData)
+    interpretTurnColors(letter, pictographData)
   );
 
   // Number height is constant across all turn numbers

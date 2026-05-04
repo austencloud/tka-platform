@@ -13,7 +13,6 @@ import type {
   BatchEditChanges,
 } from "../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { StepData } from "../../domain/models/StepData";
 
 // Import handlers
@@ -34,8 +33,7 @@ import { updateStepDuration } from "./step-operations/DurationHandler";
 
 export class StepOperator {
   constructor(
-    private motionQueryHandler: IMotionQueryHandler | null,
-    private gridModeDeriver: GridModeDeriver | null
+    private motionQueryHandler: IMotionQueryHandler | null
   ) {}
 
   removeStep(stepIndex: number, createModuleState: ICreateModuleState): void {
@@ -100,7 +98,6 @@ export class StepOperator {
       rotationDirection,
       createModuleState,
       this.motionQueryHandler,
-      this.gridModeDeriver
     );
   }
 
@@ -141,6 +138,5 @@ export class StepOperator {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
-import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 
-export const stepOperator = new StepOperator(motionQueryHandler, gridModeDeriver);
+export const stepOperator = new StepOperator(motionQueryHandler);

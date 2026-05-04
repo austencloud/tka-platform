@@ -14,7 +14,7 @@
   import { fly, fade } from "svelte/transition";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import { LetterDomainService } from "../../pictograph/tka-glyph/services/implementations/LetterDomainService";
+  import { getLastLetter, getValidNextLetters, getLetterType } from "../../pictograph/tka-glyph/services/letter-domain-service";
 
   interface Props {
     isOpen: boolean;
@@ -53,10 +53,10 @@
   const validNextLetters = $derived.by(() => {
     if (searchMode === "spelled") return null; // All valid in spelled mode
     
-    const lastLetter = LetterDomainService.getLastLetter(value);
+    const lastLetter = getLastLetter(value);
     if (!lastLetter) return null; // All valid for first entry
-    
-    return LetterDomainService.getValidNextLetters(lastLetter);
+
+    return getValidNextLetters(lastLetter);
   });
 
   function isKeyDisabled(char: string): boolean {
@@ -172,7 +172,7 @@
         {#each ALPHA_ROWS as row}
           <div class="keyboard-row">
             {#each row as char}
-              {@const type = LetterDomainService.getLetterType(char)}
+              {@const type = getLetterType(char)}
               {@const disabled = isKeyDisabled(char)}
               <button
                 type="button"

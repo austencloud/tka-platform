@@ -1,8 +1,2 @@
-import { MotionCalculator } from './services/implementations/MotionCalculator';
-import { getAngleMathCalculator } from './getAngleMathCalculator';
-import { getOrientationMapper } from './getOrientationMapper';
-
-let instance: MotionCalculator | null = null;
-export function getMotionCalculator3D(): MotionCalculator {
-  return instance ??= new MotionCalculator(getAngleMathCalculator(), getOrientationMapper());
-}
+import * as motionCalculator from './services/motion-calculator';
+export function getMotionCalculator3D() { return motionCalculator; }

@@ -13,7 +13,7 @@
  */
 
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
-import { WorkerSceneRenderer } from "../services/WorkerSceneRenderer";
+import { renderScene } from "../services/worker-scene-renderer";
 import { loadAssets } from "../services/WorkerAssetLoader";
 import type {
   WorkerInMessage,
@@ -73,7 +73,6 @@ async function handleRender(msg: RenderRequest): Promise<void> {
     return;
   }
 
-  const sceneRenderer = new WorkerSceneRenderer();
   const totalFrames = frames.length;
 
   if (totalFrames === 0) {
@@ -159,7 +158,7 @@ async function handleRender(msg: RenderRequest): Promise<void> {
   for (let i = 0; i < totalFrames; i++) {
     const frame = frames[i]!;
 
-    sceneRenderer.renderScene(
+    renderScene(
       ctx,
       canvasSize,
       assets.gridImage,

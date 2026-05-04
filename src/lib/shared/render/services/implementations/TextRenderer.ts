@@ -1,6 +1,5 @@
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import type { DimensionCalculator } from "./DimensionCalculator";
-import type { LOOPIconStripRenderer } from "./LOOPIconStripRenderer";
+import { getTextScalingFactors } from "../dimension-calculator";
 import type {
   TextRenderOptions,
   UserExportInfo,
@@ -26,10 +25,7 @@ export class TextRenderer {
   private readonly fallbackFontFamily =
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
-  constructor(
-    private dimensionService: DimensionCalculator,
-    private loopIconStripRenderer?: LOOPIconStripRenderer
-  ) {}
+  constructor() {}
 
   private glyphImageCache = new Map<string, GlyphImageData>();
 
@@ -95,7 +91,7 @@ export class TextRenderer {
     }
 
     const scalingFactors =
-      this.dimensionService.getTextScalingFactors(stepCount);
+      getTextScalingFactors(stepCount);
 
     const titleHeight = this.calculateTitleHeight(
       stepCount,
@@ -502,10 +498,4 @@ export class TextRenderer {
   }
 }
 
-import { dimensionCalculator } from "./DimensionCalculator";
-import { loopIconStripRenderer } from "./LOOPIconStripRenderer";
-
-export const textRenderer = new TextRenderer(
-  dimensionCalculator,
-  loopIconStripRenderer
-);
+export const textRenderer = new TextRenderer();

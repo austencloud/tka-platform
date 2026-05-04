@@ -21,7 +21,7 @@ import { auth } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { getPendingActionQueue } from "../getPendingActionQueue";
-import { getWebviewDetector } from "../getWebviewDetector";
+import { isInAppWebview } from "../services/webview-detector";
 import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -36,7 +36,6 @@ export interface AuthActionQueueCallbacks {
 
 export function createAuthActionQueue() {
   const pendingActionQueue = getPendingActionQueue();
-  const webviewDetector = getWebviewDetector();
 
   let signInSheetOpen = $state(false);
   let signInSheetReason = $state<PendingActionType | null>(null);
@@ -86,7 +85,7 @@ export function createAuthActionQueue() {
   }
 
   async function onSignInSheetPrimary(handleOpenInBrowser: (pendingType?: PendingActionType | null) => void) {
-    if (webviewDetector.isInAppWebview) {
+    if (isInAppWebview()) {
       handleOpenInBrowser(signInSheetReason);
       return;
     }
@@ -179,7 +178,7 @@ export function createAuthActionQueue() {
     get signInSheetOpen() { return signInSheetOpen; },
     set signInSheetOpen(v: boolean) { signInSheetOpen = v; },
     get signInSheetReason() { return signInSheetReason; },
-    get isInAppWebview() { return webviewDetector.isInAppWebview; },
+    get isInAppWebview() { return isInAppWebview(); },
     openSignInSheet,
     closeSignInSheet,
     invokeGatedAction,

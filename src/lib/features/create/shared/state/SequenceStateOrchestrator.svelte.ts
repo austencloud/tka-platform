@@ -25,7 +25,7 @@ import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
-import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
+import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
@@ -209,8 +209,7 @@ export function createSequenceState(services: SequenceStateServices) {
 
       // Log sequence creation for analytics
       try {
-        const activityLogger = getActivityLogger();
-        void activityLogger.logSequenceAction("create", sequence.id, {
+        void logSequenceAction("create", sequence.id, {
           sequenceWord: sequence.word,
           sequenceLength: sequence.steps.length,
         });

@@ -15,7 +15,7 @@ import type { SvgImageConverter } from '$lib/shared/foundation/services/implemen
 import type { GlyphAsset } from "../contracts/types";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import { TurnColorInterpreter } from "$lib/shared/pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
+import { interpretTurnColors } from "$lib/shared/pictograph/tka-glyph/services/turn-color-interpreter";
 import {
   getLetterImagePath,
   isDashLetter,
@@ -63,7 +63,6 @@ export class ExportGlyphPrerenderer {
   private cache = new Map<string, GlyphAsset>();
   private stepKeyMap = new Map<number, string>();
   private tupleGenerator = new TurnsTupleGenerator();
-  private colorInterpreter = new TurnColorInterpreter();
 
   constructor(private readonly svgImageConverter: SvgImageConverter) {}
 
@@ -81,7 +80,7 @@ export class ExportGlyphPrerenderer {
       if (!step.letter) continue;
 
       const turnsTuple = this.tupleGenerator.generateTurnsTuple(step);
-      const interpreterColors = this.colorInterpreter.interpretTurnColors(
+      const interpreterColors = interpretTurnColors(
         step.letter,
         step
       );

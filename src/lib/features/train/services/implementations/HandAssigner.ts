@@ -6,12 +6,20 @@
  * single-hand detection. Also handles hand persistence.
  */
 
-import type {
-  DetectedHandData,
-  HandAssignmentResult,
-} from "../contracts/types";
 import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
 import type { DetectedPosition } from "../../domain/models/DetectionFrame";
+
+export interface DetectedHandData {
+  position: DetectedPosition;
+  wristX: number;
+  isUserLeftHand: boolean;
+  confidence: number;
+}
+
+export interface HandAssignmentResult {
+  blue: DetectedPosition | null;
+  red: DetectedPosition | null;
+}
 import { mapToQuadrant } from "../quadrant-mapper";
 
 // How many frames to persist a hand after it disappears

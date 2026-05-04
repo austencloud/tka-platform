@@ -1,5 +1,5 @@
-import type { HandPathFactory } from "./HandPathFactory";
-import type { ContentHasher } from "./ContentHasher";
+import { HandPathFactory } from "./HandPathFactory";
+import { hashSoloProp } from "$lib/shared/foundation/services/content-hasher";
 import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -18,10 +18,7 @@ function extractHandPathLocations(
 }
 
 export class SoloPropFactory {
-  constructor(
-    private readonly handPathFactory: HandPathFactory,
-    private readonly hasher: ContentHasher
-  ) {}
+  private readonly handPathFactory = new HandPathFactory();
 
   create(
     steps: readonly SoloPropStepData[],
@@ -36,7 +33,7 @@ export class SoloPropFactory {
     const handPathLocations = extractHandPathLocations(steps);
     const handPath = this.handPathFactory.create(handPathLocations, metadata);
 
-    const contentHash = this.hasher.hashSoloProp({
+    const contentHash = hashSoloProp({
       startLocation,
       startOrientation,
       steps,

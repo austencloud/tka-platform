@@ -18,7 +18,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PreviewCellRenderOptions } from "../services/contracts/types";
   import { onMount, onDestroy, untrack } from "svelte";
-  import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
+  import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -31,7 +31,7 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
-  import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
+  import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
   import { cellCacheKeyDeriver } from "../services/implementations/CellCacheKeyDeriver";
   import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -552,7 +552,7 @@
       return 5;
     }
     // Use the layout service directly for an instant column count
-    const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, spl);
+    const [cols] = calculateLayout(stepCount, includeStartPosition, spl);
     return cols;
   });
 
@@ -597,7 +597,7 @@
       return 1 + Math.ceil(remainingSteps / stepsPerRow);
     }
 
-    const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, spl);
+    const [, rws] = calculateLayout(stepCount, includeStartPosition, spl);
 
     // Column layout only: mandala fill needs at least one col-1 empty between
     // start and QR. 6-count naturally lays out as 4×2 (packed); when mandala
@@ -943,8 +943,6 @@
     isRendering = true;
 
     try {
-      const layoutService = layoutCalculator;
-
       // Calculate layout
       const stepCount = sequence.steps.length;
       let cols: number;
@@ -986,7 +984,7 @@
           rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
         }
       } else {
-        [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition, spl);
+        [cols, rws] = calculateLayout(stepCount, includeStartPosition, spl);
       }
 
       columns = cols;
@@ -1179,7 +1177,7 @@
         const scheduleRender = async (task: CellTask, cellArrayIndex: number) => {
           const run = async () => {
             try {
-              const imageUrl = await previewCellRenderer.renderCell(task.data, task.stepNumber, isDark, task.options);
+              const imageUrl = await renderCell(task.data, task.stepNumber, isDark, task.options);
               // Only apply if the cell is still the placeholder we queued - a
               // later renderAllCells() may have replaced it with a newer render.
               const current = cells[cellArrayIndex];
@@ -1286,7 +1284,7 @@
 
         if (sequence.startPosition || firstStep) {
           const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
-          const imageUrl = await previewCellRenderer.renderCell(startData, undefined, isDark, renderOptions);
+          const imageUrl = await renderCell(startData, undefined, isDark, renderOptions);
           newUrls.set(-1, imageUrl);
         }
 
@@ -1298,7 +1296,7 @@
           const cellRenderOptions = (mixed && stepDuration !== 1)
             ? { ...renderOptions, widthMultiplier: stepDuration }
             : renderOptions;
-          const imageUrl = await previewCellRenderer.renderCell(step, i + 1, isDark, cellRenderOptions);
+          const imageUrl = await renderCell(step, i + 1, isDark, cellRenderOptions);
           newUrls.set(i, imageUrl);
         }
 
@@ -1496,12 +1494,12 @@
     const firstStep = sequence.steps[0];
     if (sequence.startPosition || firstStep) {
       const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
-      await previewCellRenderer.deleteCellCache(startData, undefined, isDark, renderOptions);
+      await deleteCellCache(startData, undefined, isDark, renderOptions);
     }
     for (let i = 0; i < sequence.steps.length; i++) {
       const step = sequence.steps[i];
       if (step) {
-        await previewCellRenderer.deleteCellCache(step, i + 1, isDark, renderOptions);
+        await deleteCellCache(step, i + 1, isDark, renderOptions);
       }
     }
 

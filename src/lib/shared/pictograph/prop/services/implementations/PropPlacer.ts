@@ -7,7 +7,7 @@
  */
 
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
-import type { GridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
+import { deriveGridMode as _deriveGridMode } from "../../../grid/services/grid-mode-deriver";
 import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
@@ -36,7 +36,6 @@ import {
 
 export class PropPlacer {
   constructor(
-    private gridModeService: GridModeDeriver,
     private BetaDetector: BetaDetector,
     private settings?: PropPlacerSettings
   ) {}
@@ -53,7 +52,7 @@ export class PropPlacer {
     // before falling back to DIAMOND.
     const gridMode =
       pictographData.motions.blue && pictographData.motions.red
-        ? this.gridModeService.deriveGridMode(
+        ? _deriveGridMode(
             pictographData.motions.blue,
             pictographData.motions.red
           )
@@ -214,8 +213,6 @@ export class PropPlacer {
 // Use this instead of propPlacer to avoid DI container rebuilds.
 // ============================================================================
 
-import { gridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
 import { betaDetector } from "./BetaDetector";
 
-
-export const propPlacer = new PropPlacer(gridModeDeriver, betaDetector);
+export const propPlacer = new PropPlacer(betaDetector);

@@ -7,53 +7,39 @@
  * Path: userFestivalTracking/{userId}/tracked/{festivalId}
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreGet, firestoreList, firestoreSet, firestoreDelete } from "$lib/shared/firestore";
+import { UserFestivalTrackerSchema } from "../domain/models/festival-tracker-schemas";
 import type { UserFestivalTracker } from "../domain/models/festival-tracker";
 
+function trackedPath(userId: string): string {
+  return `userFestivalTracking/${userId}/tracked`;
+}
+
 export async function get(userId: string, festivalId: string): Promise<UserFestivalTracker | null> {
-  const db = await getFirestoreInstance();
-  const ref = doc(db, "userFestivalTracking", userId, "tracked", festivalId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return null;
-  return snap.data() as UserFestivalTracker;
+  return firestoreGet(trackedPath(userId), festivalId, UserFestivalTrackerSchema) as Promise<UserFestivalTracker | null>;
 }
 
 export async function getAllForUser(userId: string): Promise<Map<string, UserFestivalTracker>> {
-  const db = await getFirestoreInstance();
-  const ref = collection(db, "userFestivalTracking", userId, "tracked");
-  const snap = await getDocs(ref);
+  const items = await firestoreList(trackedPath(userId), UserFestivalTrackerSchema);
   const result = new Map<string, UserFestivalTracker>();
-  for (const d of snap.docs) {
-    result.set(d.id, d.data() as UserFestivalTracker);
+  for (const item of items) {
+    result.set(item.festivalId, item as unknown as UserFestivalTracker);
   }
   return result;
 }
 
-export async function set(userId: string, festivalId: string, data: Partial<UserFestivalTracker>): Promise<void> {
-  const db = await getFirestoreInstance();
-  const ref = doc(db, "userFestivalTracking", userId, "tracked", festivalId);
-  await setDoc(
-    ref,
-    {
-      ...data,
-      userId,
-      festivalId,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
+export async function set(
+  userId: string,
+  festivalId: string,
+  data: Partial<UserFestivalTracker>,
+): Promise<void> {
+  await firestoreSet(trackedPath(userId), festivalId, {
+    ...data,
+    userId,
+    festivalId,
+  } as Record<string, unknown>, { merge: true });
 }
 
 export async function deleteTracker(userId: string, festivalId: string): Promise<void> {
-  const db = await getFirestoreInstance();
-  await deleteDoc(doc(db, "userFestivalTracking", userId, "tracked", festivalId));
+  await firestoreDelete(trackedPath(userId), festivalId);
 }

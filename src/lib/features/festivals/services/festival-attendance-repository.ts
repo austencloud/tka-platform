@@ -7,48 +7,35 @@
  * Path: festivals/{festivalId}/attendance/{userId}
  */
 
-import {
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-  getCountFromServer,
-  serverTimestamp,
-} from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreList, firestoreSet, firestoreDelete } from "$lib/shared/firestore";
+import { FestivalAttendanceSchema } from "../domain/models/festival-schemas";
 import type { FestivalAttendance } from "../domain/models/festival";
 
+function attendancePath(festivalId: string): string {
+  return `festivals/${festivalId}/attendance`;
+}
+
 export async function getCount(festivalId: string): Promise<number> {
-  const db = await getFirestoreInstance();
-  const ref = collection(db, "festivals", festivalId, "attendance");
-  const result = await getCountFromServer(ref);
-  return result.data().count;
+  const items = await firestoreList(attendancePath(festivalId), FestivalAttendanceSchema);
+  return items.length;
 }
 
 export async function getAttendees(festivalId: string): Promise<FestivalAttendance[]> {
-  const db = await getFirestoreInstance();
-  const ref = collection(db, "festivals", festivalId, "attendance");
-  const snap = await getDocs(ref);
-  return snap.docs.map((d) => d.data() as FestivalAttendance);
+  return firestoreList(attendancePath(festivalId), FestivalAttendanceSchema) as unknown as Promise<FestivalAttendance[]>;
 }
 
 export async function setAttendance(
   festivalId: string,
   userId: string,
-  data: Omit<FestivalAttendance, "festivalId" | "userId">
+  data: Omit<FestivalAttendance, "festivalId" | "userId">,
 ): Promise<void> {
-  const db = await getFirestoreInstance();
-  const ref = doc(db, "festivals", festivalId, "attendance", userId);
-  await setDoc(ref, {
+  await firestoreSet(attendancePath(festivalId), userId, {
     ...data,
     festivalId,
     userId,
-    createdAt: serverTimestamp(),
-  });
+  } as Record<string, unknown>);
 }
 
 export async function removeAttendance(festivalId: string, userId: string): Promise<void> {
-  const db = await getFirestoreInstance();
-  await deleteDoc(doc(db, "festivals", festivalId, "attendance", userId));
+  await firestoreDelete(attendancePath(festivalId), userId);
 }

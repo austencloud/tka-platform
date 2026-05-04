@@ -13,7 +13,7 @@ import { goto, replaceState } from "$app/navigation";
 import { navigationState } from "../../state/navigation-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { DeepLinkResult, DeepLinkData, ModuleMapping } from "../contracts/types";
-import type { SequenceEncoder } from "../implementations/SequenceEncoder";
+import { parseDeepLink } from "../sequence-encoder";
 
 /**
  * Internal storage structure for deep link data
@@ -58,8 +58,6 @@ export class DeepLinker {
 
   /** Stale data threshold in milliseconds */
   private static readonly STALE_THRESHOLD_MS = 5000;
-
-  constructor(private SequenceEncoder: SequenceEncoder) {}
 
   initialize(): void {
     if (!browser) {
@@ -227,17 +225,13 @@ export class DeepLinker {
   /**
    * Parse a deep link URL and extract module + sequence data
    */
-  private parseDeepLinkURL(url: string): {
-    module: string;
-    sequence: ReturnType<SequenceEncoder["decode"]>;
-  } | null {
-    return this.SequenceEncoder.parseDeepLink(url);
+  private parseDeepLinkURL(url: string): ReturnType<typeof parseDeepLink> {
+    return parseDeepLink(url);
   }
 }
 
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceEncoder } from "./SequenceEncoder";
 
-export const deepLinker = new DeepLinker(sequenceEncoder);
+export const deepLinker = new DeepLinker();

@@ -3,12 +3,11 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { doc, setDoc } from "firebase/firestore";
-  import { getUserRepository } from "$lib/shared/community/getUserRepository";
+  import { getUserProfile, followUser, unfollowUser, getFollowers, getFollowing } from "$lib/shared/community/services/user-repository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -49,7 +48,6 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
   let followingLoaded = $state(false);
 
   // Services
-  let userService: UserRepository;
   let libraryService: LibraryRepository;
   let hapticService: HapticFeedback;
 
@@ -81,11 +79,10 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
 
   onMount(async () => {
     try {
-      userService = getUserRepository();
       libraryService = getLibraryRepository();
       hapticService = getHapticFeedback();
 
-      userProfile = await userService.getUserProfile(userId, currentUserId);
+      userProfile = await getUserProfile(userId, currentUserId);
 
       if (!userProfile) {
         error = "User not found";
@@ -137,14 +134,14 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
 
     try {
       if (userProfile.isFollowing) {
-        await userService.unfollowUser(currentUserId, userId);
+        await unfollowUser(currentUserId, userId);
         userProfile = {
           ...userProfile,
           isFollowing: false,
           followerCount: Math.max(0, userProfile.followerCount - 1),
         };
       } else {
-        await userService.followUser(currentUserId, userId);
+        await followUser(currentUserId, userId);
         userProfile = {
           ...userProfile,
           isFollowing: true,
@@ -154,7 +151,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     } catch (err) {
       console.error("[UserProfilePanel] Error toggling follow:", err);
       error = "Failed to update follow status";
-      userProfile = await userService.getUserProfile(userId, currentUserId);
+      userProfile = await getUserProfile(userId, currentUserId);
     } finally {
       followInProgress = false;
     }
@@ -173,7 +170,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     if (followersLoaded || followersLoading) return;
     followersLoading = true;
     try {
-      followerUsers = await userService.getFollowers(userId, 50);
+      followerUsers = await getFollowers(userId, 50);
       followersLoaded = true;
     } catch (err) {
       console.error("[UserProfilePanel] Error loading followers:", err);
@@ -186,7 +183,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     if (followingLoaded || followingLoading) return;
     followingLoading = true;
     try {
-      followingUsers = await userService.getFollowing(userId, 50);
+      followingUsers = await getFollowing(userId, 50);
       followingLoaded = true;
     } catch (err) {
       console.error("[UserProfilePanel] Error loading following:", err);

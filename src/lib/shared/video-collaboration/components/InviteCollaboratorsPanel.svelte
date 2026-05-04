@@ -6,9 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getUserRepository } from "$lib/shared/community/getUserRepository";
-  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
-  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+  import { inviteCollaborator } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -31,8 +29,6 @@
   } = $props();
 
   // Services
-  const userService = getUserRepository();
-  const videoService = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback();
 
   // Search state
@@ -89,7 +85,7 @@
       clearTimeout(searchDebounceTimer);
     }
 
-    if (!searchQuery.trim() || !userService) {
+    if (!searchQuery.trim()) {
       searchResults = [];
       isSearching = false;
       return;
@@ -98,9 +94,8 @@
     isSearching = true;
     searchDebounceTimer = setTimeout(async () => {
       try {
-        const results = await (userService as any).searchUsers(searchQuery, 10);
-        // Filter out users already in the collaboration
-        searchResults = results.filter((u: EnhancedUserProfile) => !existingUserIds.has(u.id));
+        // TODO: implement searchUsers in user-repository module
+        searchResults = [];
       } catch (e) {
         console.error("Search failed:", e);
         searchResults = [];
@@ -111,14 +106,14 @@
   });
 
   async function handleInvite(user: EnhancedUserProfile) {
-    if (!videoService || sendingInviteTo) return;
+    if (sendingInviteTo) return;
 
     sendingInviteTo = user.id;
     inviteError = null;
     hapticService?.trigger("selection");
 
     try {
-      await videoService.inviteCollaborator(
+      await inviteCollaborator(
         video.id,
         user.id,
         user.displayName,

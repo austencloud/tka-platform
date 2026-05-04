@@ -27,8 +27,12 @@ import type {
 } from "../contracts/types";
 import { LocomotionState } from "../contracts/types";
 import type { AvatarSkeletonBuilder } from "./AvatarSkeletonBuilder";
-import type { HingeConstrainedLegIKSolver } from "./HingeConstrainedLegIKSolver";
-import type { ContactCurveCache } from "./ContactCurveCache";
+import { solveLegIK } from "../hinge-constrained-leg-ik-solver";
+import {
+  type ContactCurveCacheState,
+  hasCurve,
+  getContactAt,
+} from "../contact-curve-cache";
 import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
 
 // ── Defaults ──
@@ -73,8 +77,7 @@ function createFootState(): FootState {
 
 export class FootPlanter {
   private skeleton: AvatarSkeletonBuilder | null = null;
-  private legIKSolver: HingeConstrainedLegIKSolver | null = null;
-  private contactCurveCache: ContactCurveCache | null = null;
+  private contactCurveCache: ContactCurveCacheState | null = null;
   private config: Required<FootPlanterConfig> = { ...DEFAULT_CONFIG };
 
   private leftFoot: FootState = createFootState();
@@ -100,11 +103,9 @@ export class FootPlanter {
 
   initialize(
     skeleton: AvatarSkeletonBuilder,
-    legIKSolver: HingeConstrainedLegIKSolver,
-    contactCurveCache: ContactCurveCache
+    contactCurveCache: ContactCurveCacheState
   ): void {
     this.skeleton = skeleton;
-    this.legIKSolver = legIKSolver;
     this.contactCurveCache = contactCurveCache;
     this.leftLegChain = skeleton.getLeftLegChain();
     this.rightLegChain = skeleton.getRightLegChain();
@@ -130,7 +131,7 @@ export class FootPlanter {
   }
 
   update(delta: number, input: FootPlanterInput): void {
-    if (!this.initialized || !this.skeleton || !this.legIKSolver) return;
+    if (!this.initialized || !this.skeleton) return;
     if (!this.leftLegChain || !this.rightLegChain) return;
 
     // Skip foot planting during airborne states - let the animation play freely
@@ -216,7 +217,6 @@ export class FootPlanter {
 
   dispose(): void {
     this.skeleton = null;
-    this.legIKSolver = null;
     this.contactCurveCache = null;
     this.leftLegChain = null;
     this.rightLegChain = null;
@@ -268,9 +268,10 @@ export class FootPlanter {
       this.contactCurveCache &&
       input.currentClipName &&
       input.currentClipPhase !== undefined &&
-      this.contactCurveCache.has(input.currentClipName)
+      hasCurve(this.contactCurveCache, input.currentClipName)
     ) {
-      const sample = this.contactCurveCache.getContactAt(
+      const sample = getContactAt(
+        this.contactCurveCache,
         input.currentClipName,
         input.currentClipPhase
       );
@@ -421,7 +422,7 @@ export class FootPlanter {
     groundY: number,
     hingeAxis: Vector3
   ): void {
-    if (foot.ikWeight < 0.001 || !this.legIKSolver) return;
+    if (foot.ikWeight < 0.001) return;
 
     // Build IK target: the locked ground position, snapped to ground Y
     this.tempTarget.copy(foot.lockTarget);
@@ -437,7 +438,7 @@ export class FootPlanter {
       weight: foot.ikWeight,
     };
 
-    this.legIKSolver.solve(input);
+    solveLegIK(input);
 
     // HingeConstrainedLegIKSolver does its own weight blending, so no slerp here.
     // Update matrices from hip down so foot world position reflects the solve.

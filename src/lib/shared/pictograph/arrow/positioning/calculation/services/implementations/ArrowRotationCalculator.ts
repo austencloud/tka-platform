@@ -6,12 +6,18 @@ import {
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { SpecialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
-import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
+import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
 import { dashNoRotationMap } from "../../config/DashRotationMaps";
-import { RotationMapSelector } from "../../utils/RotationMapSelector";
-import { RotationOverrideChecker } from "../../utils/RotationOverrideChecker";
+import {
+  selectStaticMap,
+  selectProMap,
+  selectAntiMap,
+  selectDashMap,
+  selectFloatMap,
+} from "../../utils/rotation-map-selector";
+import { checkAndApplyOverride } from "../../utils/rotation-override-checker";
 import { isNoRotation } from "../../utils/RotationDirectionUtils";
-import type { HandpathDirectionCalculator } from "../implementations/HandpathDirectionCalculator";
+import { calculateHandpathDirection } from "../handpath-direction-calculator";
 
 export class ArrowRotationCalculator {
   /**
@@ -35,8 +41,7 @@ export class ArrowRotationCalculator {
 
   constructor(
     private SpecialPlacer?: SpecialPlacer,
-    private rotationOverrideKeyGenerator?: IRotationAngleOverrideKeyGenerator,
-    private handpathDirectionCalculator?: HandpathDirectionCalculator
+    private rotationOverrideKeyGenerator?: IRotationAngleOverrideKeyGenerator
   ) {}
 
   async calculateRotation(
@@ -114,7 +119,7 @@ export class ArrowRotationCalculator {
       return overrideRotation;
     }
 
-    const rotationMap = RotationMapSelector.selectStaticMap(
+    const rotationMap = selectStaticMap(
       isStartRadial,
       rotationDirection
     );
@@ -129,7 +134,7 @@ export class ArrowRotationCalculator {
     location: GridLocation
   ): number {
     /**Calculate rotation for PRO arrows based on rotation direction.*/
-    const rotationMap = RotationMapSelector.selectProMap(
+    const rotationMap = selectProMap(
       motion.rotationDirection.toLowerCase()
     );
     return rotationMap[location] || 0.0;
@@ -140,7 +145,7 @@ export class ArrowRotationCalculator {
     location: GridLocation
   ): number {
     /**Calculate rotation for ANTI arrows based on rotation direction.*/
-    const rotationMap = RotationMapSelector.selectAntiMap(
+    const rotationMap = selectAntiMap(
       motion.rotationDirection.toLowerCase()
     );
     return rotationMap[location] || 0.0;
@@ -183,7 +188,7 @@ export class ArrowRotationCalculator {
       return dashNoRotationMap[key] || 0.0;
     }
 
-    const rotationMap = RotationMapSelector.selectDashMap(rotationDirection);
+    const rotationMap = selectDashMap(rotationDirection);
     return rotationMap[location] || 0.0;
   }
 
@@ -197,20 +202,14 @@ export class ArrowRotationCalculator {
      * IMPORTANT: Float rotation is based on HANDPATH DIRECTION, not prop rotation direction!
      * Handpath direction is determined by the motion from start location to end location.
      */
-    if (!this.handpathDirectionCalculator) {
-      console.warn("HandpathDirectionCalculator not available, returning 0.0");
-      return 0.0;
-    }
-
-    const handpathDirection =
-      this.handpathDirectionCalculator.calculateDirection(
-        motion.startLocation,
-        motion.endLocation
-      );
+    const handpathDirection = calculateHandpathDirection(
+      motion.startLocation,
+      motion.endLocation
+    );
 
     // Use handpath direction to select the correct rotation map
     if (handpathDirection === "cw" || handpathDirection === "ccw") {
-      const rotationMap = RotationMapSelector.selectFloatMap(handpathDirection);
+      const rotationMap = selectFloatMap(handpathDirection);
       return rotationMap[location] || 0.0;
     }
 
@@ -243,7 +242,7 @@ export class ArrowRotationCalculator {
       return null;
     }
 
-    return RotationOverrideChecker.checkAndApplyOverride(
+    return checkAndApplyOverride(
       motion,
       location,
       pictographData,
@@ -290,12 +289,9 @@ export class ArrowRotationCalculator {
 // ============================================================================
 
 import { specialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
-import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
-import { handpathDirectionCalculator } from "./HandpathDirectionCalculator";
-
+import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
 
 export const arrowRotationCalculator = new ArrowRotationCalculator(
   specialPlacer,
-  rotationAngleOverrideKeyGenerator,
-  handpathDirectionCalculator
+  rotationAngleOverrideKeyGenerator
 );

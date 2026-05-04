@@ -8,19 +8,15 @@
 -->
 <script lang="ts">
 
-import { getPlaneCoordinateMapper } from "$lib/shared/3d/getPlaneCoordinateMapper";
+import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/services/plane-coordinate-mapper";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
-  import type { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-
-  // ── DI services ──────────────────────────────────────────────────────
-  const mapper = getPlaneCoordinateMapper() as PlaneCoordinateMapper;
 
   // ── State ────────────────────────────────────────────────────────────
 
@@ -55,8 +51,8 @@ import { getPlaneCoordinateMapper } from "$lib/shared/3d/getPlaneCoordinateMappe
       centerPathAngle: angle,
       staffRotationAngle: staffAngle,
       plane,
-      worldPosition: mapper.gridLocationToPosition3D(plane, location),
-      worldRotation: mapper.calculatePropRotation(plane, staffAngle),
+      worldPosition: gridLocationToPosition3D(plane, location),
+      worldRotation: calculatePropRotation(plane, staffAngle),
     };
   }
 

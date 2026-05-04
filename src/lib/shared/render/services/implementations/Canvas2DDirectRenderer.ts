@@ -72,7 +72,7 @@ import { LetterType } from "../../../foundation/domain/models/LetterType";
 import type { PictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
-import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
+import { interpretTurnColors } from "../../../pictograph/tka-glyph/services/turn-color-interpreter";
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
 import { calculateReversalPositions } from "../../core";
@@ -158,7 +158,6 @@ const GRID_POINT_COLOR_DARK = "#ffffff"; // White for dark mode
 export class Canvas2DDirectRenderer implements IDirectRenderer {
   private initialized = false;
   private memoryUsage = 0;
-  private turnColorInterpreter = new TurnColorInterpreter();
   private preparer?: PictographPreparer;
 
   // Global preparer function that can be set at app initialization
@@ -943,7 +942,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     if (!showTop && !showBottom) return;
 
     // Get turn colors (based on letter type)
-    const turnColors = this.turnColorInterpreter.interpretTurnColors(
+    const turnColors = interpretTurnColors(
       pictograph.letter,
       pictograph
     );

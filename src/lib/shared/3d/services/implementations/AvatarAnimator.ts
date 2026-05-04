@@ -18,9 +18,9 @@ import type {
 import type { IKSolver } from "./IKSolver";
 import type { AvatarSkeletonBuilder } from "./AvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
-import type { ElbowPoleComputer } from "./ElbowPoleComputer";
-import type { ClavicleRaiser } from "./ClavicleRaiser";
-import type { SpineTwister } from "./SpineTwister";
+import { computePoleVector } from "../elbow-pole-computer";
+import { computeClavicleRotation } from "../clavicle-raiser";
+import { computeSpineTwist } from "../spine-twister";
 
 export class AvatarAnimator {
   private currentPose: BodyPose;
@@ -38,12 +38,11 @@ export class AvatarAnimator {
   private transitionEnd: BodyPose | null = null;
   private transitionProgress = 0;
   private transitionConfig: TransitionConfig | null = null;
-  private poleComputer: ElbowPoleComputer | null;
+  // computePoleVector, computeClavicleRotation, computeSpineTwist are module-level functions
   private leftPoleVector = new Vector3(0, 0, 1);
   private rightPoleVector = new Vector3(0, 0, 1);
   private _poleVectorsEnabled = true;
 
-  private clavicleRaiser: ClavicleRaiser | null;
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
   // The bone's original rest quaternion - we COMPOSE with this, never replace it
@@ -56,7 +55,6 @@ export class AvatarAnimator {
   private leftShoulderRestY = 0;
   private rightShoulderRestY = 0;
   private shoulderRestCached = false;
-  private spineTwister: SpineTwister | null;
   private spineTwistQuats = {
     spine1: new Quaternion(),
     spine2: new Quaternion(),
@@ -88,15 +86,8 @@ export class AvatarAnimator {
 
   constructor(
     private ikSolver: IKSolver,
-    private skeleton: AvatarSkeletonBuilder,
-    poleComputer?: ElbowPoleComputer,
-    clavicleRaiser?: ClavicleRaiser,
-    spineTwister?: SpineTwister
+    private skeleton: AvatarSkeletonBuilder
   ) {
-    this.poleComputer = poleComputer ?? null;
-    this.clavicleRaiser = clavicleRaiser ?? null;
-    this.spineTwister = spineTwister ?? null;
-
     // Default pose: no props in either hand. Hands become non-null once
     // setPropsAndBlend / setHandTargetsFromProps is called with a prop.
     this.currentPose = {
@@ -438,11 +429,11 @@ export class AvatarAnimator {
     // Scale twist by max IK weight so it fades out when both arms are in animation mode.
     const maxIKWeight = Math.max(this.leftArmIK.weight, this.rightArmIK.weight);
 
-    if (this._spineTwistEnabled && this.spineTwister && this.spineRestCached && maxIKWeight > 0.001) {
-      // Nullable hands are first-class: SpineTwister handles the
+    if (this._spineTwistEnabled && this.spineRestCached && maxIKWeight > 0.001) {
+      // Nullable hands are first-class: computeSpineTwist handles the
       // single-hand-gaze branch and the no-hand identity branch
       // internally, so we pass pose hands through as-is.
-      const twistResult = this.spineTwister.computeSpineTwist(
+      const twistResult = computeSpineTwist(
         pose.leftHand?.targetPosition ?? null,
         pose.rightHand?.targetPosition ?? null,
         bodyCenter,
@@ -497,7 +488,6 @@ export class AvatarAnimator {
         // from the previous frame's rotation.
         const twistRan =
           this._spineTwistEnabled &&
-          this.spineTwister !== null &&
           maxIKWeight > 0.001;
         if (!twistRan) {
           spine1Bone.quaternion.copy(this.spineTwistRestQuats.spine1);
@@ -524,10 +514,10 @@ export class AvatarAnimator {
         const animEffectorQuat = leftChain.effector.quaternion.clone();
 
         // Clavicle raise: elevate shoulder bone before IK solve
-        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
+        if (this._clavicleRaiseEnabled && this.shoulderRestCached) {
           const leftShoulder = state.bones.get("LeftShoulder");
           if (leftShoulder) {
-            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
+            const targetQuat = computeClavicleRotation(
               leftTarget,
               "left",
               this.leftShoulderRestY,
@@ -547,8 +537,8 @@ export class AvatarAnimator {
           weight: leftHand.weight,
         };
 
-        if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
-          const idealPole = this.poleComputer.computePoleVector(
+        if (this._poleVectorsEnabled && leftHand.plane) {
+          const idealPole = computePoleVector(
             leftTarget,
             leftHand.plane,
             "left",
@@ -586,10 +576,10 @@ export class AvatarAnimator {
         const animEffectorQuat = rightChain.effector.quaternion.clone();
 
         // Clavicle raise: elevate shoulder bone before IK solve
-        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
+        if (this._clavicleRaiseEnabled && this.shoulderRestCached) {
           const rightShoulder = state.bones.get("RightShoulder");
           if (rightShoulder) {
-            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
+            const targetQuat = computeClavicleRotation(
               rightTarget,
               "right",
               this.rightShoulderRestY,
@@ -609,8 +599,8 @@ export class AvatarAnimator {
           weight: rightHand.weight,
         };
 
-        if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
-          const idealPole = this.poleComputer.computePoleVector(
+        if (this._poleVectorsEnabled && rightHand.plane) {
+          const idealPole = computePoleVector(
             rightTarget,
             rightHand.plane,
             "right",

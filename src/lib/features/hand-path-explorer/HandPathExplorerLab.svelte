@@ -6,7 +6,6 @@
   which paths are reused most across your library.
 -->
 <script lang="ts">
-  import { getHandPathNamer } from "$lib/shared/foundation/getHandPathNamer";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import { createExplorerState } from "./state/explorer-state.svelte";
@@ -15,9 +14,8 @@
   import HandPathDetail from "./components/HandPathDetail.svelte";
 
   const sequenceRepository = getSequenceRepository();
-  const handPathNamer = getHandPathNamer();
 
-  const state = createExplorerState(sequenceRepository, handPathNamer);
+  const state = createExplorerState(sequenceRepository);
   setExplorerContext({ state });
 </script>
 

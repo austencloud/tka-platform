@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getProfilePictureManager } from "$lib/shared/auth/getProfilePictureManager";
+  import { getProviderIds } from "$lib/shared/auth/services/profile-picture-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -42,9 +42,8 @@
   let wizardStep = $state<"style" | "shade" | "prop" | "confirm">("style");
 
   const user = $derived(authState.user);
-  const profilePictureManager = getProfilePictureManager();
   const providerIds = $derived(
-    user ? profilePictureManager.getProviderIds(user) : {}
+    user ? getProviderIds(user) : {}
   );
 
   const googlePhotoUrl = $derived.by(() => {

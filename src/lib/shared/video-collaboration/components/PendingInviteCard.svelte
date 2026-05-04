@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
+  import { acceptInvite, declineInvite } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
 
@@ -20,7 +20,6 @@
     onDeclined?: () => void;
   } = $props();
 
-  const videoService = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback();
 
   let isProcessing = $state(false);
@@ -32,14 +31,14 @@
   );
 
   async function handleAccept() {
-    if (!videoService || isProcessing) return;
+    if (isProcessing) return;
 
     isProcessing = true;
     error = null;
     hapticService?.trigger("selection");
 
     try {
-      await videoService.acceptInvite(video.id);
+      await acceptInvite(video.id);
       hapticService?.trigger("success");
       onAccepted?.();
     } catch (e) {
@@ -52,14 +51,14 @@
   }
 
   async function handleDecline() {
-    if (!videoService || isProcessing) return;
+    if (isProcessing) return;
 
     isProcessing = true;
     error = null;
     hapticService?.trigger("selection");
 
     try {
-      await videoService.declineInvite(video.id);
+      await declineInvite(video.id);
       hapticService?.trigger("warning");
       onDeclined?.();
     } catch (e) {

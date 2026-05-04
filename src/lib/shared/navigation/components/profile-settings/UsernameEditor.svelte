@@ -5,7 +5,7 @@
   Extracted from AccountSettingsSection for single responsibility.
 -->
 <script lang="ts">
-  import { getUsernameValidator } from "$lib/shared/auth/getUsernameValidator";
+  import { checkUsernameAvailability } from "$lib/shared/auth/services/username-validator";
   import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/authState.svelte";
@@ -31,9 +31,6 @@
   let isAvailable = $state(false);
   let suggestions = $state<string[]>([]);
   let checkTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  // Get username validator service
-  const usernameValidator = getUsernameValidator();
 
   // Load current username from Firestore on mount
   onMount(async () => {
@@ -98,11 +95,6 @@
   }
 
   async function checkAvailability(username: string) {
-    if (!usernameValidator) {
-      error = "Username validation unavailable";
-      return;
-    }
-
     // Skip check if unchanged
     if (username.toLowerCase() === currentUsername.toLowerCase()) {
       isAvailable = true;
@@ -111,7 +103,7 @@
 
     isChecking = true;
     try {
-      const result = await usernameValidator.checkAvailability(username, user.uid);
+      const result = await checkUsernameAvailability(username, user.uid);
       if (result.isValid) {
         isAvailable = true;
         error = "";

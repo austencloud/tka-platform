@@ -15,7 +15,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getVariationGrouper } from "../getVariationGrouper";
-  import { getLayoutCalculator } from "$lib/shared/render/getLayoutCalculator";
+  import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
 
 
@@ -47,7 +47,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     onGridReady?: (api: VirtualGridApi) => void;
   }>();
 
-  const layoutCalculator = getLayoutCalculator();
   const variationGrouper = getVariationGrouper();
   const sequenceDataProvider = getSequenceDataProvider();
 
@@ -129,7 +128,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       if (steps > maxSteps) maxSteps = steps;
     }
 
-    const aspectRatio = layoutCalculator.calculateGalleryAspectRatio(maxSteps);
+    const aspectRatio = calculateGalleryAspectRatio(maxSteps);
     return cardWidth / aspectRatio;
   }
 

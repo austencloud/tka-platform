@@ -11,8 +11,11 @@
 
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { ArrowPositioningOrchestrator } from "./ArrowPositioningOrchestrator";
 import type { ArrowSvgLoader } from "../../../rendering/services/implementations/ArrowSvgLoader";
+import {
+  calculateArrowPoint,
+  shouldMirrorArrow,
+} from "../arrow-positioning-orchestrator";
 import type {
   ArrowAssets,
   ArrowLifecycleResult,
@@ -28,10 +31,7 @@ import {
 import type { ArrowLifecycleOptions } from "../contracts/types";
 
 export class ArrowLifecycleManager {
-  constructor(
-    private svgLoader: ArrowSvgLoader,
-    private positioningOrchestrator: ArrowPositioningOrchestrator
-  ) {}
+  constructor(private svgLoader: ArrowSvgLoader) {}
 
   /**
    * Load arrow assets for a single motion
@@ -76,7 +76,7 @@ export class ArrowLifecycleManager {
     options?: ArrowLifecycleOptions
   ): Promise<ArrowPosition> {
     const [x, y, rotation] =
-      await this.positioningOrchestrator.calculateArrowPoint(
+      await calculateArrowPoint(
         pictographData,
         motionData,
         options?.gridMode
@@ -110,7 +110,7 @@ export class ArrowLifecycleManager {
       return false;
     }
 
-    return this.positioningOrchestrator.shouldMirrorArrow(
+    return shouldMirrorArrow(
       motionData.arrowPlacementData,
       pictographData,
       motionData
@@ -234,10 +234,8 @@ export class ArrowLifecycleManager {
 // ============================================================================
 
 import { arrowSvgLoader } from "../../../rendering/services/implementations/ArrowSvgLoader";
-import { arrowPositioningOrchestrator } from "./ArrowPositioningOrchestrator";
 
 
 export const arrowLifecycleManager = new ArrowLifecycleManager(
-  arrowSvgLoader,
-  arrowPositioningOrchestrator
+  arrowSvgLoader
 );

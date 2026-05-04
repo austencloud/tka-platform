@@ -32,8 +32,11 @@
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
-  import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
+  import {
+    gridLocationToPosition3D,
+    calculatePropRotation,
+  } from "$lib/shared/3d/services/plane-coordinate-mapper";
+  import { mapOrientationToAngle } from "$lib/shared/3d/services/orientation-mapper";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
@@ -55,8 +58,6 @@
   const labCtx = getCollisionLabContext();
   const sceneFeatureState = createSceneFeatureState({ audience: true });
   setSceneFeatureContext(sceneFeatureState);
-  const planeMapper = new PlaneCoordinateMapper();
-  const orientationMapper = new OrientationMapper();
 
   /**
    * Wall-plane grid sits 30cm forward of the performer's body. This is the
@@ -91,12 +92,12 @@
   ): PropState3D {
     const loc = POSITION_TO_GRID[position];
     const centerPathAngle = LOCATION_ANGLES[loc];
-    const staffAngle = orientationMapper.mapOrientationToAngle(
+    const staffAngle = mapOrientationToAngle(
       orientation === "in" ? Orientation.IN : Orientation.OUT,
       centerPathAngle
     );
-    const worldPosition = planeMapper.gridLocationToPosition3D(plane, loc);
-    const worldRotation = planeMapper.calculatePropRotation(plane, staffAngle);
+    const worldPosition = gridLocationToPosition3D(plane, loc);
+    const worldRotation = calculatePropRotation(plane, staffAngle);
     return {
       centerPathAngle,
       staffRotationAngle: staffAngle,

@@ -1,10 +1,10 @@
-import type { StepDeriver } from "../implementations/StepDeriver";
+import { deriveSteps } from "$lib/shared/foundation/services/step-deriver";
 import type { SequenceDecomposer } from "./SequenceDecomposer";
 import type { SequenceData } from "../../domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { MotionColor, MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { handpathDirectionCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
+import { calculateHandpathDirection } from "$lib/shared/pictograph/arrow/positioning/calculation/services/handpath-direction-calculator";
 import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
 
 // Legacy sequences saved before SoloPropStepData carried prefloatMotionType
@@ -41,7 +41,7 @@ function backfillPrefloatFromLegacySteps(
 		const patched = { ...step, motions: { ...step.motions } };
 
 		if (needsBlueBackfill && blue && origBlue) {
-			const handpath = handpathDirectionCalculator.calculateDirection(
+			const handpath = calculateHandpathDirection(
 				blue.startLocation,
 				blue.endLocation
 			);
@@ -64,7 +64,7 @@ function backfillPrefloatFromLegacySteps(
 		}
 
 		if (needsRedBackfill && red && origRed) {
-			const handpath = handpathDirectionCalculator.calculateDirection(
+			const handpath = calculateHandpathDirection(
 				red.startLocation,
 				red.endLocation
 			);
@@ -92,7 +92,6 @@ function backfillPrefloatFromLegacySteps(
 
 export class SequenceHydrator {
 	constructor(
-		private readonly stepDeriver: StepDeriver,
 		private readonly sequenceDecomposer: SequenceDecomposer
 	) {}
 
@@ -129,7 +128,7 @@ export class SequenceHydrator {
 			sequence.stepPairings &&
 			sequence.stepPairings.length > 0
 		) {
-			const derived = this.stepDeriver.deriveSteps(
+			const derived = deriveSteps(
 				sequence.blueSoloProp,
 				sequence.redSoloProp,
 				sequence.stepPairings,

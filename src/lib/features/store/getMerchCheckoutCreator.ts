@@ -1,6 +1,5 @@
-import { MerchCheckoutCreator } from './services/implementations/MerchCheckoutCreator';
+import * as merchCheckoutCreator from './services/merch-checkout-creator';
 
-let instance: MerchCheckoutCreator | null = null;
-export function getMerchCheckoutCreator(): MerchCheckoutCreator {
-  return instance ??= new MerchCheckoutCreator();
+export function getMerchCheckoutCreator() {
+  return merchCheckoutCreator;
 }

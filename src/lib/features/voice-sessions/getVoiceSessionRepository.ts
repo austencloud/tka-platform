@@ -1,6 +1,5 @@
-import { VoiceSessionRepository } from './services/implementations/VoiceSessionRepository';
+import * as voiceSessionRepository from './services/voice-session-repository';
 
-let instance: VoiceSessionRepository | null = null;
-export function getVoiceSessionRepository(): VoiceSessionRepository {
-  return instance ??= new VoiceSessionRepository();
+export function getVoiceSessionRepository(): typeof voiceSessionRepository {
+  return voiceSessionRepository;
 }

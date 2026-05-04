@@ -4,10 +4,9 @@ Styled to match Generate module's card aesthetic
 Supports Alpha, Beta, Gamma positions with Greek symbol pills
 -->
 <script lang="ts">
-  import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
+  import { attachRipple } from "$lib/shared/application/services/ripple-effect";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { RippleEffect } from "$lib/shared/application/services/implementations/RippleEffect";
   import { onMount } from "svelte";
   import {
     type StartingPosition,
@@ -31,15 +30,13 @@ Supports Alpha, Beta, Gamma positions with Greek symbol pills
   } = $props();
 
   let hapticService: HapticFeedback | null = null;
-  let rippleService: RippleEffect | null = null;
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {
     hapticService = getHapticFeedback() ?? null;
-    rippleService = getRippleEffect() ?? null;
 
-    if (cardElement && rippleService) {
-      return rippleService.attachRipple(cardElement, {
+    if (cardElement) {
+      return attachRipple(cardElement, {
         color: "rgba(255, 255, 255, 0.25)",
         duration: 350,
         opacity: 0.15,

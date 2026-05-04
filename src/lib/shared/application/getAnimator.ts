@@ -1,6 +1,2 @@
-import { Animator } from './services/implementations/Animator';
-
-let instance: Animator | null = null;
-export function getAnimator(): Animator {
-  return instance ??= new Animator();
-}
+import * as animator from './services/animator';
+export function getAnimator() { return animator; }

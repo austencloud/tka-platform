@@ -41,9 +41,8 @@
    * See: https://developers.google.com/identity/gsi/web/guides/fedcm-migration
    */
 
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { signInWithGoogleCredential } from "$lib/shared/auth/services/authenticator";
   import { onMount, onDestroy } from "svelte";
-import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import { GOOGLE_CLIENT_ID } from "../config/google-oauth";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { isAutomatedBrowser } from "$lib/shared/environment/environment-features";
@@ -72,7 +71,6 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
   }: Props = $props();
 
   let scriptLoaded = $state(false);
-  let authService: Authenticator | null = null;
 
   function loadGoogleScript(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -108,15 +106,9 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
     debug.info("Received Google credential, signing in...");
 
     try {
-      if (!authService) {
-        authService = getAuthenticator();
-      }
-
-      if (authService) {
-        await authService.signInWithGoogleCredential(credential);
-        debug.success("Google One Tap sign-in successful!");
-        onSuccess?.();
-      }
+      await signInWithGoogleCredential(credential);
+      debug.success("Google One Tap sign-in successful!");
+      onSuccess?.();
     } catch (error) {
       debug.error("Google One Tap sign-in failed:", error);
       onError?.(error instanceof Error ? error : new Error("Sign-in failed"));
@@ -193,7 +185,6 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   onMount(async () => {
     try {
-      authService = getAuthenticator();
       await loadGoogleScript();
       scriptLoaded = true;
       initializeOneTap();

@@ -12,12 +12,13 @@ import { updateSequenceData } from "$lib/shared/foundation/domain/models/Sequenc
 import { createStepData } from "../../../../domain/factories/createStepData";
 import type { StepData } from "../../../../domain/models/StepData";
 import type { StartPositionData } from "../../../../domain/models/StartPositionData";
-import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+import {
+  saveSequence as persistSaveSequence,
+} from "$lib/shared/persistence/services/dexie-persistence-service";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 export class Workbench {
   constructor(
     private sequenceService: SequenceRepository,
-    private persistenceService: DexiePersistenceService
   ) {}
 
   // ============================================================================
@@ -96,7 +97,7 @@ export class Workbench {
         steps: [...sequence.steps, newStep],
       });
 
-      await this.persistenceService.saveSequence(updatedSequence);
+      await persistSaveSequence(updatedSequence);
       return updatedSequence;
     } catch (error) {
       console.error("Failed to add beat:", error);
@@ -124,7 +125,7 @@ export class Workbench {
         startingPosition: startPosition, // CRITICAL: Set both fields for compatibility
       });
 
-      await this.persistenceService.saveSequence(updatedSequence);
+      await persistSaveSequence(updatedSequence);
       return updatedSequence;
     } catch (error) {
       console.error("Failed to set construction start position:", error);
@@ -153,9 +154,5 @@ export class Workbench {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { sequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-import { dexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
 
-export const workbench = new Workbench(
-  sequenceRepository,
-  dexiePersistenceService
-);
+export const workbench = new Workbench(sequenceRepository);

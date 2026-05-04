@@ -19,12 +19,12 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { RecordingResult } from "$lib/shared/video-record/services/contracts/types";
   import type { R2VideoUploader } from "$lib/shared/share/services/implementations/R2VideoUploader";
-  import { RecordingPersister } from "$lib/shared/video-record/services/implementations/RecordingPersister";
+  import { saveRecording } from "$lib/shared/video-record/services/recording-persister";
   import {
     createRecordingMetadata,
     detectDeviceType,
   } from "$lib/shared/video-record/domain/RecordingMetadata";
-  import { onMount } from "svelte";
+
 
   const logger = createComponentLogger("VideoRecordCoordinator");
 
@@ -34,16 +34,11 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
 
   // Services
   const uploadService = getVideoUploader() as R2VideoUploader;
-  let persistenceService: RecordingPersister | null = $state(null);
 
   // UI State
   let showSavePrompt = $state(false);
   let showSaveDialog = $state(false);
   let pendingRecording: RecordingResult | null = $state(null);
-
-  onMount(() => {
-    persistenceService = new RecordingPersister();
-  });
 
   // Event handlers
   function handleClose() {
@@ -158,11 +153,6 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
     recording: RecordingResult,
     sequenceId: string
   ) {
-    if (!persistenceService) {
-      logger.error("Services not initialized");
-      return;
-    }
-
     try {
       logger.log("📤 Uploading recording to Firebase...");
 
@@ -192,7 +182,7 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
       });
 
       // Save metadata to Firestore
-      await persistenceService.saveRecording(metadata);
+      await saveRecording(metadata);
 
       logger.log("✅ Recording saved successfully:", metadata.id);
       panelState.closeVideoRecordPanel();

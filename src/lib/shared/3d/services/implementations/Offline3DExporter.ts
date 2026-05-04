@@ -46,7 +46,7 @@ import {
   calculateBitrate,
 } from "$lib/features/compose/shared/domain/video-export-calculations";
 import type { CanvasFrameCapturer } from "$lib/shared/video-export/services/implementations/CanvasFrameCapturer";
-import type { CameraKeyframeInterpolator } from "$lib/shared/video-export/services/implementations/CameraKeyframeInterpolator";
+import { interpolateKeyframes } from "$lib/shared/video-export/services/camera-keyframe-interpolator";
 import { ExportDiagnostics } from "$lib/shared/video-export/domain/ExportDiagnostics";
 
 const KEYFRAME_INTERVAL = 30;
@@ -64,8 +64,7 @@ export class Offline3DExporter {
 
   constructor(
     private readonly backgroundEncoder: BackgroundVideoEncoder,
-    private readonly capturer: CanvasFrameCapturer,
-    private readonly cameraInterpolator: CameraKeyframeInterpolator
+    private readonly capturer: CanvasFrameCapturer
   ) {}
 
   async exportOffline(
@@ -195,7 +194,7 @@ export class Offline3DExporter {
           deps.setExportCurrentStep(subStep);
 
           // 2. Interpolate camera at sub-frame time.
-          const cam = this.cameraInterpolator.interpolate(keyframes, subTime);
+          const cam = interpolateKeyframes(keyframes, subTime);
           deps.camera.position.set(cam.position[0], cam.position[1], cam.position[2]);
           deps.camera.quaternion.set(
             cam.quaternion[0],

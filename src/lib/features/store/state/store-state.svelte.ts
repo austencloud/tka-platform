@@ -1,4 +1,3 @@
-import type { MerchCheckoutCreator } from "../services/implementations/MerchCheckoutCreator";
 import type { Product } from "../domain/models/Product";
 
 interface ProductLoader {
@@ -6,9 +5,13 @@ interface ProductLoader {
   loadProduct(productId: string): Promise<Product | null>;
 }
 
+interface CheckoutCreator {
+  createCheckoutSession(productId: string): Promise<string>;
+}
+
 export function createStoreState(
   productLoader: ProductLoader,
-  checkoutCreator: MerchCheckoutCreator
+  checkoutCreator: CheckoutCreator
 ) {
   let products = $state<Product[]>([]);
   let selectedProduct = $state<Product | null>(null);

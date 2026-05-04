@@ -5,7 +5,7 @@
  * Separate from core sequence CRUD operations and focused on data transformation.
  */
 
-import { PngMetadataExtractor } from "$lib/shared/pictograph/shared/utils/png-metadata-extractor";
+import { extractSequenceMetadata } from "$lib/shared/pictograph/shared/utils/png-metadata-extractor";
 import type { StepData } from "../../domain/models/StepData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -31,7 +31,7 @@ export class SequenceImporter {
       // NOTE: Don't uppercase the ID - Greek letters like Θ would become Θ,
       // which won't match the filesystem directory names
       const pngMetadata =
-        await PngMetadataExtractor.extractSequenceMetadata(id);
+        await extractSequenceMetadata(id);
 
       if (pngMetadata.length === 0) {
         console.error(`No metadata found in PNG for sequence: ${id}`);

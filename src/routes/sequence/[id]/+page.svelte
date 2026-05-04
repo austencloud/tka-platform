@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
-import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
+import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { page } from "$app/stores";
   import { goto, replaceState } from "$app/navigation";
@@ -13,7 +13,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
+  import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
@@ -27,7 +27,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     type SequenceRouteHandoff
   } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
-  import { playbackTimeCalculator } from "$lib/shared/sequence-viewer/services/implementations/PlaybackTimeCalculator";
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
 
@@ -201,8 +200,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   function applyUrlPropPreferences() {
     if (!urlBlueProp && !urlRedProp) return;
 
-    const encoderService = getSequenceEncoder();
-    const parsed = encoderService.parsePropsFromURL($page.url.searchParams);
+    const parsed = parsePropsFromURL($page.url.searchParams);
 
     if (parsed.bluePropType || parsed.redPropType) {
       const updates: { bluePropType?: PropType; redPropType?: PropType } = {};
@@ -254,12 +252,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       applyUrlPropPreferences();
       isLoading = false;
     } else if (sequenceId) {
-      const encoderService = getSequenceEncoder();
-      const parsed = encoderService.parseSequenceRouteId(sequenceId);
+      const parsed = parseSequenceRouteId(sequenceId);
 
       if (parsed.encoded) {
         try {
-          let decoded = encoderService.decodeWithCompression(parsed.encoded);
+          let decoded = decodeSequenceWithCompression(parsed.encoded);
 
           decoded = await hydrateSequence(decoded, {
             letterDeriver: getLetterDeriver(),
@@ -310,11 +307,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     loadError = null;
 
     try {
-      const encoderService = getSequenceEncoder();
-
-      if (encoderService.isInlineEncoded(id)) {
+      if (isInlineEncoded(id)) {
         try {
-          const decoded = encoderService.decodeWithCompression(decodeURIComponent(id));
+          const decoded = decodeSequenceWithCompression(decodeURIComponent(id));
           if (decoded) {
             sequence = await hydrateSequence(decoded, {
               letterDeriver: getLetterDeriver(),
@@ -338,7 +333,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
       if (
         resolvedSequence &&
-        !encoderService.isInlineEncoded(id) &&
+        !isInlineEncoded(id) &&
         typeof window !== "undefined" &&
         isGenuineScan(id)
       ) {
@@ -352,7 +347,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
-          deviceId: getDeviceIdService().getDeviceId(),
+          deviceId: getDeviceId(),
         }).catch(() => {});
       }
 

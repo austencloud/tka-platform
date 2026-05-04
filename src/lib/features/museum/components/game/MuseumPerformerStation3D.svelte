@@ -1,7 +1,6 @@
 <script lang="ts">
 
-import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
-import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+// propInterpolator and sequenceConverter are now module-level functions
   /**
    * MuseumPerformerStation3D
    *
@@ -71,23 +70,18 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   // Resolved sequence data (from hardcoded exhibits or Firestore)
   let resolvedSequence = $state<SequenceData | null>(null);
 
-  // One-time init: create the avatar instance with DI services
-  if (getPropStateInterpolator() && getSequenceConverter()) {
-    try {
-      performerState = createAvatarInstanceState(
-        {
-          id: `museum-station-${stationId}`,
-          positionX: worldX,
-          positionZ: worldZ,
-        },
-        {
-          propInterpolator: getPropStateInterpolator(),
-          sequenceConverter: getSequenceConverter(),
-        }
-      );
-    } catch (err) {
-      console.warn(`[MuseumPerformer] Failed to init ${stationId}:`, err);
-    }
+  // One-time init: create the avatar instance
+  try {
+    performerState = createAvatarInstanceState(
+      {
+        id: `museum-station-${stationId}`,
+        positionX: worldX,
+        positionZ: worldZ,
+      },
+      {}
+    );
+  } catch (err) {
+    console.warn(`[MuseumPerformer] Failed to init ${stationId}:`, err);
   }
 
   // Resolve sequence whenever sequenceId changes - checks hardcoded

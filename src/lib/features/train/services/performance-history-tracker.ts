@@ -6,8 +6,26 @@
  */
 
 import { db } from "$lib/shared/persistence/database/TKADatabase";
-import type { PersonalBest, StatsOverview } from "./contracts/types";
 import type { StoredPerformance } from "../domain/models/TrainDatabaseModels";
+import type { PerformanceScore } from "../domain/models/PerformanceData";
+
+export interface PersonalBest {
+  sequenceId: string;
+  sequenceName: string;
+  bestScore: PerformanceScore;
+  bestAccuracy: number;
+  bestGrade: string;
+  bestCombo: number;
+  performanceId: string;
+  achievedAt: Date;
+}
+
+export interface StatsOverview {
+  totalSessions: number;
+  totalPracticeTime: number;
+  averageAccuracy: number;
+  maxCombo: number;
+}
 
 /**
  * Save a completed performance session to IndexedDB

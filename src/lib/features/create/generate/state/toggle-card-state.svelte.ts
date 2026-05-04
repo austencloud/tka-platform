@@ -10,11 +10,10 @@
  */
 
 import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-import { getRippleEffect } from "$lib/shared/application/getRippleEffect";
+import { attachRipple } from "$lib/shared/application/services/ripple-effect";
 import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-import type { RippleEffect } from "$lib/shared/application/services/implementations/RippleEffect";
 
 // Touch tolerance constants
 // 75px is very generous for lazy/casual taps on mobile
@@ -38,7 +37,6 @@ export function createToggleCardState<T>(props: {
 }) {
   // Services
   let hapticService = $state<HapticFeedback | null>(null);
-  let rippleService = $state<RippleEffect | null>(null);
   let deviceDetector = $state<DeviceDetector | null>(null);
 
   // Reactive state
@@ -63,7 +61,6 @@ export function createToggleCardState<T>(props: {
     try {
       // Resolve services from DI container
       hapticService = getHapticFeedback();
-      rippleService = getRippleEffect();
       deviceDetector = getDeviceDetector();
 
       // Set initial layout state
@@ -92,9 +89,8 @@ export function createToggleCardState<T>(props: {
       }
 
       // Attach subtle ripple effect to card
-      const cleanupRipple =
-        cardElement && rippleService
-          ? rippleService.attachRipple(cardElement, {
+      const cleanupRipple = cardElement
+          ? attachRipple(cardElement, {
               color: "rgba(255, 255, 255, 0.25)",
               duration: 350,
               opacity: 0.15,

@@ -9,8 +9,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getSidebarTabToggler } from "../../getSidebarTabToggler";
-  import type { SidebarTabToggler } from "../../services/implementations/SidebarTabToggler";
+  import { getAllTabsForModule, hideTab, showTab } from "../../getSidebarTabToggler";
 import type { TabVisibilityInfo } from "../../services/contracts/types";
   import type { ModuleId } from "../../domain/types";
   import { translateTab } from "$lib/shared/i18n/translate";
@@ -38,7 +37,6 @@ import type { TabVisibilityInfo } from "../../services/contracts/types";
     onClose: () => void;
   }>();
 
-  let sidebarTabToggler: SidebarTabToggler | null = null;
   let tabInfos: TabVisibilityInfo[] = $state([]);
 
   // Reactive locale for translations
@@ -66,8 +64,8 @@ import type { TabVisibilityInfo } from "../../services/contracts/types";
 
   // Load tab infos when opening in module mode
   $effect(() => {
-    if (menuState.mode === "module" && sidebarTabToggler) {
-      tabInfos = sidebarTabToggler.getAllTabsForModule(menuState.moduleId);
+    if (menuState.mode === "module") {
+      tabInfos = getAllTabsForModule(menuState.moduleId);
     }
   });
 
@@ -89,8 +87,7 @@ import type { TabVisibilityInfo } from "../../services/contracts/types";
           label: `Hide ${menuState.tabLabel}`,
           icon: "fa-eye-slash",
           action: async () => {
-            if (!sidebarTabToggler) return;
-            await sidebarTabToggler.hideTab(menuState.moduleId, menuState.tabId);
+            await hideTab(menuState.moduleId, menuState.tabId);
           },
         },
       ];
@@ -111,14 +108,14 @@ import type { TabVisibilityInfo } from "../../services/contracts/types";
           disabled: info.isRoleLocked,
           keepOpen: true,
           action: async () => {
-            if (!sidebarTabToggler || info.isRoleLocked) return;
+            if (info.isRoleLocked) return;
             const moduleId = (menuState as { moduleId: ModuleId }).moduleId;
             if (info.isVisible) {
-              await sidebarTabToggler.hideTab(moduleId, info.section.id);
+              await hideTab(moduleId, info.section.id);
             } else {
-              await sidebarTabToggler.showTab(moduleId, info.section.id);
+              await showTab(moduleId, info.section.id);
             }
-            tabInfos = sidebarTabToggler.getAllTabsForModule(moduleId);
+            tabInfos = getAllTabsForModule(moduleId);
           },
         });
       }
@@ -197,10 +194,8 @@ import type { TabVisibilityInfo } from "../../services/contracts/types";
   });
 
   onMount(() => {
-    sidebarTabToggler = getSidebarTabToggler();
-
     if (menuState.mode === "module") {
-      tabInfos = sidebarTabToggler.getAllTabsForModule(menuState.moduleId);
+      tabInfos = getAllTabsForModule(menuState.moduleId);
     }
   });
 </script>

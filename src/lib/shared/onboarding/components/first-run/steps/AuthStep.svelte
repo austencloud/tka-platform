@@ -5,11 +5,10 @@
   emphasizes saving the preferences they just configured.
 -->
 <script lang="ts">
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import { fly, fade } from "svelte/transition";
   import SocialAuthCompact from "$lib/shared/auth/components/SocialAuthCompact.svelte";
   import EmailAuthTabs from "$lib/shared/auth/components/EmailAuthTabs.svelte";
-  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { onMount } from "svelte";
 
@@ -22,18 +21,11 @@
 
   let authMode = $state<"signin" | "signup">("signup");
   let showEmailAuth = $state(false);
-  let authService: Authenticator | null = null;
 
   // Watch for authentication to complete
   const isAuthenticated = $derived(authState.isAuthenticated);
 
-  onMount(() => {
-    try {
-      authService = getAuthenticator();
-    } catch (error) {
-      console.error("Failed to get auth service:", error);
-    }
-  });
+  onMount(() => {});
 
   // When user authenticates, complete the wizard
   $effect(() => {
@@ -44,7 +36,7 @@
 
   async function handleFacebookAuth() {
     try {
-      await authService?.signInWithFacebook();
+      await signInWithFacebook();
     } catch (error: any) {
       console.error("Facebook auth failed:", error);
     }

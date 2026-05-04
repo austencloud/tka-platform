@@ -11,7 +11,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { fade } from "svelte/transition";
   import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
-  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
+  import { saveVideo } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -50,7 +50,6 @@
 
   // Services
   const uploadService = getVideoUploader();
-  const videoService = getCollaborativeVideoManager();
   const hapticService = getHapticFeedback() as HapticFeedback | undefined;
 
   // File state
@@ -185,7 +184,7 @@
         thumbnailUrl,
       });
 
-      await videoService.saveVideo(video);
+      await saveVideo(video);
 
       hapticService?.trigger("success");
       uploadSuccess = true;

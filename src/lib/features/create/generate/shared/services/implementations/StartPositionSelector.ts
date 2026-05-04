@@ -7,7 +7,7 @@
  *
  * MIGRATION NOTE: Now returns StartPositionData instead of StepData with stepNumber===0
  */
-import type { ArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+import { calculateAllArrowPoints } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
 import type {
   GridMode,
   GridPosition,
@@ -24,8 +24,7 @@ export class StartPositionSelector {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
     private PictographFilter: PictographFilter,
-    private StepConverter: StepConverter,
-    private arrowPositioningOrchestrator: ArrowPositioningOrchestrator
+    private StepConverter: StepConverter
   ) {}
 
   /**
@@ -69,9 +68,7 @@ export class StartPositionSelector {
     // 🎯 CRITICAL FIX: Calculate arrow placements for start position
     // This ensures start position arrows have correct positions instead of default (0, 0)
     const updatedPictographData =
-      await this.arrowPositioningOrchestrator.calculateAllArrowPoints(
-        startPosition
-      );
+      await calculateAllArrowPoints(startPosition);
     startPosition = { ...startPosition, ...updatedPictographData };
 
     return startPosition;
@@ -84,11 +81,9 @@ export class StartPositionSelector {
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 import { pictographFilter } from "../pictograph-filter";
 import { stepConverter } from "../step-converter";
-import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
 
 export const startPositionSelector = new StartPositionSelector(
   letterQueryHandler,
   pictographFilter,
-  stepConverter,
-  arrowPositioningOrchestrator
+  stepConverter
 );

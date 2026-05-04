@@ -10,7 +10,6 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import AchievementNotificationToast from "../../gamification/components/AchievementNotificationToast.svelte";
   import XPToast from "../../gamification/components/XPToast.svelte";
   import QuickFeedbackPanel from "$lib/features/feedback/components/quick/QuickFeedbackPanel.svelte";
@@ -42,16 +41,19 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
   import MainInterface from "../../MainInterface.svelte";
   import AuthSheet from "../../navigation/components/AuthSheet.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
-  import type { SheetRouter } from "../../navigation/services/implementations/SheetRouter";
+  import {
+    getCurrentSheet,
+    closeSheet,
+    onRouteChange,
+  } from "../../navigation/services/sheet-router";
 import type { SheetType } from "../../navigation/services/contracts/types";
   import { authState } from "../../auth/state/authState.svelte";
   import LandingPage from "../../auth/components/LandingPage.svelte";
   import AuthDrawer from "../../auth/components/AuthDrawer.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
-  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { ThemeService } from "../../theme/services/ThemeService";
+  import { initializeTheme, updateTheme as updateThemeService } from "../../theme/services/theme-service";
   import type { ApplicationInitializer } from '$lib/shared/application/services/implementations/ApplicationInitializer'
   import {
     getSettings,
@@ -79,7 +81,6 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   import type { ModuleId } from "../../navigation/domain/types";
   import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
-import { getSheetRouter } from "../../navigation/getSheetRouter";
   import { getAttributionPromptTrigger } from "../../attribution/getAttributionPromptTrigger";
   import { isModuleAccessible } from "../../auth/domain/guest-access-config";
   import { resolveAccessTier } from "../../auth/domain/AccessTier";
@@ -89,8 +90,6 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
   let initService: ApplicationInitializer | null = $state(null);
   let settingsService: SettingsState | null = $state(null);
   let deviceService: DeviceDetector | null = $state(null);
-  let sheetRouterService: SheetRouter | null = $state(null);
-  let authService: Authenticator | null = $state(null);
   let servicesResolved = $state(false);
 
   // App state
@@ -192,8 +191,6 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
         initService = getApplicationInitializer();
         settingsService = settingsServiceSingleton;
         deviceService = getDeviceDetector();
-        sheetRouterService = getSheetRouter();
-        authService = getAuthenticator();
         servicesResolved = true;
       } catch (error) {
         console.error("Failed to resolve services:", error);
@@ -214,19 +211,17 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
         // redo auth, Firestore, settings, theme, or gamification.
         if (getIsInitialized()) {
           // Re-attach sheet router listener (old one was cleaned up on unmount)
-          if (sheetRouterService) {
-            currentSheetType = sheetRouterService.getCurrentSheet();
-            cleanupSheetListener = sheetRouterService.onRouteChange(
-              async (state) => {
-                if (state.sheet === "settings") {
-                  sheetRouterService?.closeSheet();
-                  await handleModuleChange("settings" as ModuleId);
-                  return;
-                }
-                currentSheetType = state.sheet ?? null;
+          currentSheetType = getCurrentSheet();
+          cleanupSheetListener = onRouteChange(
+            async (state) => {
+              if (state.sheet === "settings") {
+                closeSheet();
+                await handleModuleChange("settings" as ModuleId);
+                return;
               }
-            );
-          }
+              currentSheetType = state.sheet ?? null;
+            }
+          );
           return;
         }
 
@@ -249,8 +244,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
         if (
           !initService ||
           !settingsService ||
-          !deviceService ||
-          !sheetRouterService
+          !deviceService
         ) {
           console.error("Services not properly resolved");
           setInitializationError("Services not properly resolved");
@@ -261,19 +255,19 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
         (window as any).__tkaLoadProgress?.(88, "Loading settings...");
 
         // Initialize sheet router state (now that service is resolved)
-        currentSheetType = sheetRouterService.getCurrentSheet();
+        currentSheetType = getCurrentSheet();
 
         // Check for legacy ?sheet=settings URL and redirect to settings module
         if (currentSheetType === "settings") {
-          sheetRouterService.closeSheet();
+          closeSheet();
           await handleModuleChange("settings" as ModuleId);
         }
 
-        cleanupSheetListener = sheetRouterService.onRouteChange(
+        cleanupSheetListener = onRouteChange(
           async (state) => {
             // Redirect legacy ?sheet=settings to settings module
             if (state.sheet === "settings") {
-              sheetRouterService?.closeSheet();
+              closeSheet();
               await handleModuleChange("settings" as ModuleId);
               return;
             }
@@ -288,7 +282,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
 
         await settingsService.loadSettings();
         updateSettings(settingsService.currentSettings);
-        ThemeService.initialize();
+        initializeTheme();
 
         // Progress: Settings loaded, applying theme
         (window as any).__tkaLoadProgress?.(95, "Applying your theme...");
@@ -466,7 +460,7 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
             applyThemeForBackground(parsed.type);
           }
           // Still call legacy dropdown vars update
-          ThemeService.updateTheme(parsed.type);
+          updateThemeService(parsed.type);
         }
       );
     }
@@ -579,14 +573,14 @@ import { getSheetRouter } from "../../navigation/getSheetRouter";
     <!-- Auth sheet (route-based) -->
     <AuthSheet
       isOpen={showAuthSheet}
-      onClose={() => sheetRouterService?.closeSheet()}
+      onClose={() => closeSheet()}
     />
 
     <!-- Legal sheets (terms/privacy - route-based) -->
     <LegalSheet
       isOpen={showTermsSheet || showPrivacySheet}
       type={showPrivacySheet ? "privacy" : "terms"}
-      onClose={() => sheetRouterService?.closeSheet()}
+      onClose={() => closeSheet()}
     />
 
     <!-- Gamification Toast Notifications -->

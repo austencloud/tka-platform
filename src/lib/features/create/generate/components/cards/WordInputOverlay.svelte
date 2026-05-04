@@ -8,9 +8,8 @@
 <script lang="ts">
   import { pushState as svelteKitPushState } from "$app/navigation";
   import { onMount } from "svelte";
-  import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
+  import { getGreekSymbol } from "$lib/shared/keyboard/services/greek-key-mapper";
   import MobileInputToolbar from "$lib/shared/components/MobileInputToolbar.svelte";
-  import type { GreekKeyMapper } from "$lib/shared/keyboard/services/implementations/GreekKeyMapper";
   import {
     uppercasePreservingGreek,
     insertAtCursor,
@@ -27,11 +26,9 @@
   }>();
 
   let inputElement = $state<HTMLInputElement | null>(null);
-  let greekKeyMapper: GreekKeyMapper | null = null;
-  let isInputFocused = $state(false);
+let isInputFocused = $state(false);
 
   onMount(() => {
-    greekKeyMapper = getGreekKeyMapper();
 
     // Auto-focus after a brief delay to let the overlay animate in
     requestAnimationFrame(() => {
@@ -76,7 +73,7 @@
     if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
     if (event.code.startsWith("Numpad") && !event.getModifierState("NumLock")) return;
 
-    const symbol = greekKeyMapper?.getSymbol(event.code);
+    const symbol = getGreekSymbol(event.code);
     if (!symbol) return;
 
     event.preventDefault();

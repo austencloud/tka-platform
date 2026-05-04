@@ -6,8 +6,13 @@
  * center calculation based on hand state.
  */
 
-import type { HandStateAnalysisResult, HandLandmark } from "./contracts/types";
+import type { HandLandmark } from "./implementations/HandLandmarker";
 import type { HandState } from "../domain/models/DetectionFrame";
+
+export interface HandStateAnalysisResult {
+  state: HandState;
+  extendedFingerCount: number;
+}
 
 // Finger landmark indices
 const FINGER_LANDMARKS = [

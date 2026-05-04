@@ -1,17 +1,16 @@
 <!-- ProfileTab.svelte - User Profile & Account Settings (Refactored) -->
 <script lang="ts">
   import { getUserDocumentManager } from "$lib/shared/auth/getUserDocumentManager";
-  import { getProfilePictureManager } from "$lib/shared/auth/getProfilePictureManager";
+  import { generateAndUploadAvatar } from "$lib/shared/auth/services/profile-picture-manager";
   import { getAccountManager } from "$lib/shared/auth/getAccountManager";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import {
     userPreviewState,
     loadPreviewSection,
     isSectionLoaded,
   } from "../../../debug/state/user-preview-state.svelte";
-  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import type { AccountManager } from '$lib/shared/auth/services/implementations/AccountManager'
   import { onMount } from "svelte";
   import {
@@ -83,7 +82,6 @@
 
   // Services
   let hapticService = $state<HapticFeedback | null>(null);
-  let authService = $state<Authenticator | null>(null);
   let accountManager = $state<AccountManager | null>(null);
 
   // Cache clearing state
@@ -124,7 +122,6 @@
 
   onMount(async () => {
     hapticService = getHapticFeedback();
-    authService = getAuthenticator();
     accountManager = getAccountManager();
 
     setTimeout(() => (isVisible = true), 30);
@@ -164,7 +161,7 @@
   async function handleFacebookAuth() {
     hapticService?.trigger("selection");
     try {
-      await authService?.signInWithFacebook();
+      await signInWithFacebook();
     } catch (error: any) {
       console.error("❌ Facebook auth failed:", error);
       hapticService?.trigger("error");
@@ -273,7 +270,6 @@
 
     hapticService?.trigger("selection");
 
-    const profilePictureManager = getProfilePictureManager();
     const userDocumentManager = getUserDocumentManager();
 
     try {
@@ -298,7 +294,7 @@
 
         case "generated":
           if (selection.generatedData) {
-            newPhotoURL = await profilePictureManager.generateAndUploadAvatar(
+            newPhotoURL = await generateAndUploadAvatar(
               user,
               selection.generatedData
             );

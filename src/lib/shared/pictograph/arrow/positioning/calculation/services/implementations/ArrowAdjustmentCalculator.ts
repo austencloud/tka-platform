@@ -13,16 +13,20 @@
 
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
-import type { ArrowPlacementKeyGenerator } from "../../../key-generation/services/implementations/ArrowPlacementKeyGenerator";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { AttributeKeyGenerator } from "../../../key-generation/services/implementations/AttributeKeyGenerator";
 import type { DefaultPlacer } from "../../../placement/services/implementations/DefaultPlacer";
 import type { DirectionalTupleProcessor } from "./DirectionalTupleProcessor";
-import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
-import type { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
+import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
 import type { SpecialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
-import type { TurnsTupleKeyGenerator } from "../../../key-generation/services/implementations/TurnsTupleKeyGenerator";
+import {
+  generateOrientationKey,
+  resolveEffectiveOriKey,
+  mapToLegacyBucket,
+} from "../../../key-generation/services/special-placement-ori-key-generator";
+import { generatePlacementKey } from "../../../key-generation/services/arrow-placement-key-generator";
+import { generateTurnsTuple } from "../../../key-generation/services/turns-tuple-key-generator";
+import { getKeyFromArrow } from "../../../key-generation/services/attribute-key-generator";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
 import { getPropGeometryRepository } from "../../../prop-geometry/services/prop-geometry-singleton";
@@ -41,13 +45,8 @@ export class ArrowAdjustmentCalculator {
    */
 
   constructor(
-    private gridModeService: GridModeDeriver,
     private SpecialPlacer: SpecialPlacer,
     private DefaultPlacer: DefaultPlacer,
-    private orientationKeyService: SpecialPlacementOriKeyGenerator,
-    private placementKeyService: ArrowPlacementKeyGenerator,
-    private turnsTupleService: TurnsTupleKeyGenerator,
-    private attributeKeyService: AttributeKeyGenerator,
     private tupleProcessor: DirectionalTupleProcessor
   ) {}
 
@@ -178,18 +177,18 @@ export class ArrowAdjustmentCalculator {
           const otherMotion = pictographData.motions?.[otherColor];
           const otherPropType = otherMotion?.propType?.toLowerCase() || "staff";
 
-          const rawOriKey = this.orientationKeyService.generateOrientationKey(
+          const rawOriKey = generateOrientationKey(
             motionData,
             pictographData
           );
-          const oriKey = this.orientationKeyService.resolveEffectiveOriKey(
+          const oriKey = resolveEffectiveOriKey(
             rawOriKey,
             pictographData
           );
           const gridMode =
             motionData.gridMode ||
             (pictographData.motions.blue && pictographData.motions.red
-              ? this.gridModeService.deriveGridMode(
+              ? _deriveGridMode(
                   pictographData.motions.blue,
                   pictographData.motions.red
                 )
@@ -216,16 +215,12 @@ export class ArrowAdjustmentCalculator {
               );
             turnsTupleString = jsonResult?.turnsTupleKey
               ? String(jsonResult.turnsTupleKey)
-              : this.turnsTupleService
-                  .generateTurnsTuple(pictographData)
-                  .join(",");
+              : generateTurnsTuple(pictographData).join(",");
           } catch {
-            turnsTupleString = this.turnsTupleService
-              .generateTurnsTuple(pictographData)
-              .join(",");
+            turnsTupleString = generateTurnsTuple(pictographData).join(",");
           }
 
-          const legacyOriKey = this.orientationKeyService.mapToLegacyBucket(oriKey);
+          const legacyOriKey = mapToLegacyBucket(oriKey);
           const baseKey = {
             gridMode,
             oriKey,
@@ -435,12 +430,12 @@ export class ArrowAdjustmentCalculator {
   ): [string, string, string] {
     /**Generate all required keys for special placement lookup.*/
     try {
-      const oriKey = this.orientationKeyService.generateOrientationKey(
+      const oriKey = generateOrientationKey(
         motionData,
         pictographData
       );
       const turnsTuple =
-        this.turnsTupleService.generateTurnsTuple(pictographData);
+        generateTurnsTuple(pictographData);
 
       const color = motionData.color;
       const tempArrow = {
@@ -456,7 +451,7 @@ export class ArrowAdjustmentCalculator {
         isSelected: false,
       };
 
-      const attrKey = this.attributeKeyService.getKeyFromArrow(
+      const attrKey = getKeyFromArrow(
         tempArrow,
         pictographData,
         color
@@ -524,7 +519,7 @@ export class ArrowAdjustmentCalculator {
     // Derive grid mode
     const gridMode =
       motionData.gridMode ||
-      this.gridModeService.deriveGridMode(blueMotion, redMotion);
+      _deriveGridMode(blueMotion, redMotion);
 
     // Derive position type from endPosition (e.g., "beta7" → "beta")
     const endPosition = pictographData.endPosition;
@@ -569,7 +564,7 @@ export class ArrowAdjustmentCalculator {
       const gridMode =
         motionData.gridMode ||
         (pictographData.motions.blue && pictographData.motions.red
-          ? this.gridModeService.deriveGridMode(
+          ? _deriveGridMode(
               pictographData.motions.blue,
               pictographData.motions.red
             )
@@ -585,7 +580,7 @@ export class ArrowAdjustmentCalculator {
 
       const availableKeys = Object.keys(defaultPlacements || []);
 
-      const placementKey = this.placementKeyService.generatePlacementKey(
+      const placementKey = generatePlacementKey(
         motionData,
         pictographData,
         availableKeys
@@ -612,23 +607,12 @@ export class ArrowAdjustmentCalculator {
 // Use this instead of arrowAdjustmentCalculator to avoid DI container rebuilds.
 // ============================================================================
 
-import { gridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
 import { specialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
 import { defaultPlacer } from "../../../placement/services/implementations/DefaultPlacer";
-import { specialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
-import { arrowPlacementKeyGenerator } from "../../../key-generation/services/implementations/ArrowPlacementKeyGenerator";
-import { turnsTupleKeyGenerator } from "../../../key-generation/services/implementations/TurnsTupleKeyGenerator";
-import { attributeKeyGenerator } from "../../../key-generation/services/implementations/AttributeKeyGenerator";
 import { directionalTupleProcessor } from "./DirectionalTupleProcessor";
 
-
 export const arrowAdjustmentCalculator = new ArrowAdjustmentCalculator(
-  gridModeDeriver,
   specialPlacer,
   defaultPlacer,
-  specialPlacementOriKeyGenerator,
-  arrowPlacementKeyGenerator,
-  turnsTupleKeyGenerator,
-  attributeKeyGenerator,
   directionalTupleProcessor
 );

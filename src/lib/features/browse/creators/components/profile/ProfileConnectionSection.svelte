@@ -8,9 +8,8 @@
    */
 
   import { onMount } from "svelte";
-  import { getConnectionManager } from "$lib/shared/community/getConnectionManager";
-  import type { ConnectionManager } from "$lib/shared/community/services/implementations/ConnectionManager";
-import type { ConnectionInfo } from "$lib/shared/community/services/contracts/types";
+  import { getConnectionInfo } from "$lib/shared/community/services/connection-manager";
+  import type { ConnectionInfo } from "$lib/shared/community/services/contracts/types";
   import ConnectionNotes from "./ConnectionNotes.svelte";
   import ConnectionMutualStatus from "./ConnectionMutualStatus.svelte";
   import ConnectionSharedSequences from "./ConnectionSharedSequences.svelte";
@@ -28,9 +27,6 @@ import type { ConnectionInfo } from "$lib/shared/community/services/contracts/ty
   let error = $state<string | null>(null);
   let isExpanded = $state(false);
   let isMobile = $state(false);
-
-  // Service
-  let connectionManager: ConnectionManager;
 
   // Check screen size
   function checkMobile() {
@@ -55,8 +51,7 @@ import type { ConnectionInfo } from "$lib/shared/community/services/contracts/ty
 
   async function loadConnectionInfo() {
     try {
-      connectionManager = getConnectionManager();
-      connectionInfo = await connectionManager.getConnectionInfo(targetUserId);
+      connectionInfo = await getConnectionInfo(targetUserId);
     } catch (err) {
       console.error("[ProfileConnectionSection] Error loading connection:", err);
       error = "Failed to load connection info";

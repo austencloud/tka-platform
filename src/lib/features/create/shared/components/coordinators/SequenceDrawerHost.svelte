@@ -23,17 +23,15 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
    * - Services lazy-loaded when Animation format selected
    */
 
-  import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
+  import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/export-panel/domain/models/ExportSettings";
   import type { ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { PlatformDetector } from "$lib/shared/mobile/services/implementations/PlatformDetector";
   import type { ExportOrchestrator } from "$lib/shared/export-panel/services/implementations/ExportOrchestrator";
 
-  import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
@@ -49,7 +47,6 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-  import type { SheetRouter } from "$lib/shared/navigation/services/implementations/SheetRouter";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
   import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import {
@@ -70,8 +67,6 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
   // Core services (resolved immediately)
   let hapticService: HapticFeedback | null = null;
   let exportOrchestrator: ExportOrchestrator | null = null;
-  let platformService: PlatformDetector | null = null;
-  let sheetRouterService: SheetRouter | null = null;
   let sequenceService: SequenceRepository | null = null;
 
   // Animation services (lazy-loaded when Animation format selected)
@@ -110,29 +105,17 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
   }
 
   try {
-    platformService = getPlatformDetector();
-  } catch (error) {
-    console.warn("⚠️ Failed to resolve platform detection service:", error);
-  }
-
-  try {
-    sheetRouterService = getSheetRouter();
-  } catch (error) {
-    console.warn("⚠️ Failed to resolve sheet router service:", error);
-  }
-
-  try {
     sequenceService = getSequenceRepository();
   } catch (error) {
     console.warn("⚠️ Failed to resolve sequence repository:", error);
   }
 
   // Detect if we're on mobile (for share vs download behavior)
-  const platform = platformService?.detectPlatform() ?? "desktop";
+  const platform = detectPlatform();
   const isMobile = platform === "ios" || platform === "android";
 
   // URL state manager for deep linking and history
-  const urlManager = new ExportUrlManager(sheetRouterService);
+  const urlManager = new ExportUrlManager();
   let cleanupUrlManager: (() => void) | undefined;
 
   // State

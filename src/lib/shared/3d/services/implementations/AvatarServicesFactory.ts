@@ -5,11 +5,12 @@ import { LocomotionAnimator } from "./LocomotionAnimator";
 import { AnimationStateMachine } from "./AnimationStateMachine";
 import { RootMotionExtractor } from "./RootMotionExtractor";
 import { FootPlanter } from "./FootPlanter";
-import { HingeConstrainedLegIKSolver } from "./HingeConstrainedLegIKSolver";
-import { ContactCurveCache } from "./ContactCurveCache";
-import { ElbowPoleComputer } from "./ElbowPoleComputer";
-import { ClavicleRaiser } from "./ClavicleRaiser";
-import { SpineTwister } from "./SpineTwister";
+import {
+  createContactCurveCache,
+  type ContactCurveCacheState,
+} from "../contact-curve-cache";
+// HingeConstrainedLegIKSolver is now solveLegIK — used directly by FootPlanter
+// ElbowPoleComputer, ClavicleRaiser, SpineTwister are now module-level functions used directly by AvatarAnimator
 import { ClipBasedTurnAnimator } from "./ClipBasedTurnAnimator";
 import { FingerAnimator } from "./FingerAnimator";
 
@@ -27,8 +28,7 @@ export interface AvatarServices {
   fingers: FingerAnimator;
   stateMachine: AnimationStateMachine | null;
   footPlanter: FootPlanter | null;
-  legIKSolver: HingeConstrainedLegIKSolver | null;
-  contactCurveCache: ContactCurveCache | null;
+  contactCurveCache: ContactCurveCacheState | null;
   turnAnimator: ClipBasedTurnAnimator | null;
   rootMotionExtractor: RootMotionExtractor | null;
 }
@@ -50,16 +50,7 @@ export function createAvatarServices(
 
   const skeleton = new AvatarSkeletonBuilder();
   const ikSolver = new IKSolver();
-  const poleComputer = new ElbowPoleComputer();
-  const clavicleRaiser = new ClavicleRaiser();
-  const spineTwister = new SpineTwister();
-  const animator = new AvatarAnimator(
-    ikSolver,
-    skeleton,
-    poleComputer,
-    clavicleRaiser,
-    spineTwister,
-  );
+  const animator = new AvatarAnimator(ikSolver, skeleton);
   const locomotion = new LocomotionAnimator();
   const fingers = new FingerAnimator();
 
@@ -69,10 +60,7 @@ export function createAvatarServices(
 
   const stateMachine = enableLocomotion ? new AnimationStateMachine() : null;
   const footPlanter = enableLocomotion ? new FootPlanter() : null;
-  const legIKSolver = enableLocomotion
-    ? new HingeConstrainedLegIKSolver()
-    : null;
-  const contactCurveCache = enableLocomotion ? new ContactCurveCache() : null;
+  const contactCurveCache = enableLocomotion ? createContactCurveCache() : null;
   const turnAnimator = enableLocomotion ? new ClipBasedTurnAnimator() : null;
   const rootMotionExtractor =
     enableLocomotion && enableRootMotion ? new RootMotionExtractor() : null;
@@ -85,7 +73,6 @@ export function createAvatarServices(
     fingers,
     stateMachine,
     footPlanter,
-    legIKSolver,
     contactCurveCache,
     turnAnimator,
     rootMotionExtractor,

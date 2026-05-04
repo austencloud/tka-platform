@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import { StartPositionSelector } from './services/implementations/StartPositionSelector';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
-import { arrowPositioningOrchestrator } from '$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator';
 import { getPictographFilter } from './getPictographFilter';
 import { getStepConverter } from './getStepConverter';
 
@@ -12,7 +11,6 @@ export function getStartPositionSelector(): StartPositionSelector {
 	return instance ??= new StartPositionSelector(
 		letterQueryHandler,
 		getPictographFilter(),
-		getStepConverter(),
-		arrowPositioningOrchestrator
+		getStepConverter()
 	);
 }

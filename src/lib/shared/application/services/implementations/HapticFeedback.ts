@@ -2,7 +2,7 @@ import { browser } from "$app/environment";
 import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/effort-types";
 import * as effortHapticMapper from "$lib/features/effort-lab/services/effort-haptic-mapper";
 import type { HapticFeedbackConfig, HapticFeedbackType, HapticImpactStyle, HapticNotificationType } from "../contracts/types";
-import type { PlatformDetector } from "$lib/shared/platform/services/implementations/PlatformDetector";
+import { isNative as isNativePlatform } from "$lib/shared/platform/services/platform-detector";
 
 // Single short pulses for web Vibration API fallback (mobile browsers).
 // Kept minimal to avoid the "buzzy" feel of complex patterns.
@@ -25,11 +25,9 @@ export class HapticFeedback {
   private lastFeedbackTime: number = 0;
   private config: HapticFeedbackConfig = { ...DEFAULT_CONFIG };
   private _effortMapper = effortHapticMapper;
-  private nativePlatformDetector: PlatformDetector | null;
   private hasVibrate: boolean = false;
 
-  constructor(nativePlatformDetector?: PlatformDetector) {
-    this.nativePlatformDetector = nativePlatformDetector ?? null;
+  constructor() {
     if (browser) {
       // eslint-disable-next-line no-restricted-properties
       this.hasVibrate =
@@ -127,7 +125,7 @@ export class HapticFeedback {
   }
 
   private isNative(): boolean {
-    return this.nativePlatformDetector?.isNative === true;
+    return isNativePlatform();
   }
 
   private nativeImpact(style: HapticImpactStyle): boolean {

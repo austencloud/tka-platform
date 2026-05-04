@@ -11,7 +11,6 @@ import type {
 import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
 import { browseScrollState } from "../../state/BrowseScrollState.svelte";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type { SheetRouter } from "../../../../../shared/navigation/services/implementations/SheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 import { openVariationPicker } from "../../state/variation-picker-state.svelte";
@@ -23,7 +22,6 @@ export class BrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
 
   constructor(
-    private sheetRouterService: SheetRouter | null,
     private loaderService: PublicSequencesLoader | null
   ) {}
 

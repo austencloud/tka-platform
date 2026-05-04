@@ -12,9 +12,9 @@ import {
   RotationDirection,
 } from "../../../../shared/domain/enums/pictograph-enums";
 import type { ArrowSvgLoader } from "../implementations/ArrowSvgLoader";
-import type { ArrowPathResolver } from "./ArrowPathResolver";
-import type { ArrowSvgParser } from "./ArrowSvgParser";
-import type { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
+import { getArrowPath, getArrowSvgPath } from "../arrow-path-resolver";
+import { parseArrowSvg } from "../arrow-svg-parser";
+import { applyColorToSvg } from "../arrow-svg-color-transformer";
 
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
@@ -23,12 +23,7 @@ import type { ArrowPosition } from "../../../orchestration/domain/arrow-models";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 
 export class ArrowRenderer {
-  constructor(
-    private pathResolver: ArrowPathResolver,
-    private svgParser: ArrowSvgParser,
-    private colorTransformer: ArrowSvgColorTransformer,
-    private svgLoader: ArrowSvgLoader
-  ) {}
+  constructor(private svgLoader: ArrowSvgLoader) {}
 
   /**
    * Render arrow at sophisticated calculated position using real SVG assets
@@ -57,7 +52,7 @@ export class ArrowRenderer {
 
     try {
       // Get the correct arrow SVG path
-      const arrowSvgPath = this.pathResolver.getArrowSvgPath(safeMotionData);
+      const arrowSvgPath = getArrowSvgPath(safeMotionData);
 
       // Load the arrow SVG
       const response = await fetch(arrowSvgPath);
@@ -82,10 +77,7 @@ export class ArrowRenderer {
       arrowGroup.setAttribute("transform", transform);
 
       // Apply color transformation
-      const coloredSvg = this.colorTransformer.applyColorToSvg(
-        svgContent,
-        color
-      );
+      const coloredSvg = applyColorToSvg(svgContent, color);
       arrowGroup.innerHTML = coloredSvg;
 
       // Add to parent SVG
@@ -106,7 +98,7 @@ export class ArrowRenderer {
     arrowData: ArrowPlacementData,
     motionData: MotionData
   ): string | null {
-    return this.pathResolver.getArrowPath(arrowData, motionData);
+    return getArrowPath(arrowData, motionData);
   }
 
   /**
@@ -117,7 +109,7 @@ export class ArrowRenderer {
     viewBox: { width: number; height: number };
     center: { x: number; y: number };
   } {
-    const parsed = this.svgParser.parseArrowSvg(svgText);
+    const parsed = parseArrowSvg(svgText);
 
     // Convert string viewBox to object format
     let viewBox = { width: 100, height: 100 };
@@ -137,7 +129,7 @@ export class ArrowRenderer {
    * Delegates to SvgColorTransformer
    */
   applyColorToSvg(svgText: string, color: MotionColor): string {
-    return this.colorTransformer.applyColorToSvg(svgText, color);
+    return applyColorToSvg(svgText, color);
   }
 
   /**
@@ -171,14 +163,6 @@ export class ArrowRenderer {
 }
 
 // Direct singleton export for HMR-friendly imports
-import { arrowPathResolver } from "./ArrowPathResolver";
-import { arrowSvgParser } from "./ArrowSvgParser";
-import { arrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
 import { arrowSvgLoader } from "./ArrowSvgLoader";
 
-export const arrowRenderer = new ArrowRenderer(
-  arrowPathResolver,
-  arrowSvgParser,
-  arrowSvgColorTransformer,
-  arrowSvgLoader
-);
+export const arrowRenderer = new ArrowRenderer(arrowSvgLoader);

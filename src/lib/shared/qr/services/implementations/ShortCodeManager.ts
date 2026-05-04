@@ -30,7 +30,11 @@ import {
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import {
+  encodeSequenceForQR,
+  isInlineEncoded,
+  decodeSequenceFromQR,
+} from "$lib/shared/navigation/services/sequence-encoder";
 import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/implementations/PublicSequenceHashMatcher";
 import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "../contracts/types";
 
@@ -70,7 +74,6 @@ export class ShortCodeManager {
 
   constructor(
     private readonly browseLoader: PublicSequencesLoader,
-    private readonly sequenceEncoder: SequenceEncoder,
     private readonly hashMatcher?: PublicSequenceHashMatcher
   ) {}
 
@@ -233,7 +236,7 @@ export class ShortCodeManager {
     }
 
     if (sequence.steps && sequence.steps.length > 0) {
-      record.encoded = await this.sequenceEncoder.encodeForQR(sequence);
+      record.encoded = await encodeSequenceForQR(sequence);
     }
 
     if (!record.encoded && !record.sequenceData) {
@@ -291,7 +294,7 @@ export class ShortCodeManager {
    * Embeds all sequence data in the URL, no Firebase lookup needed.
    */
   async createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
-    const code = await this.sequenceEncoder.encodeForQR(sequence);
+    const code = await encodeSequenceForQR(sequence);
     return {
       code,
       url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
@@ -337,10 +340,10 @@ export class ShortCodeManager {
 
   async resolveShortCode(code: string): Promise<SequenceData | null> {
     // Check if this is an inline-encoded offline code (s~...)
-    if (this.sequenceEncoder.isInlineEncoded(code)) {
+    if (isInlineEncoded(code)) {
       try {
         // Decode directly - no Firebase needed, works offline!
-        return await this.sequenceEncoder.decodeFromQR(code);
+        return await decodeSequenceFromQR(code);
       } catch (error) {
         console.error("Failed to decode inline sequence:", error);
         return null;
@@ -468,7 +471,7 @@ export class ShortCodeManager {
     // Firestore outage when resolving from the static snapshot.
     if (data.encoded) {
       try {
-        const decoded = await this.sequenceEncoder.decodeFromQR(data.encoded);
+        const decoded = await decodeSequenceFromQR(data.encoded);
         console.log(`[ShortCode] ✓ Resolved "${code}" via encoded blob`);
         return { ...decoded, id: code } as SequenceData;
       } catch (err) {

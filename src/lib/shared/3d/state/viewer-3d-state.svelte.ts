@@ -10,8 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
-import type { SequenceConverter } from "../services/implementations/SequenceConverter";
+// propInterpolator / sequenceConverter are now module-level functions; no type imports needed
 import type { Viewer3DUndoManager } from "../services/implementations/Viewer3DUndoManager";
 import type {
   PerformerSnapshot,
@@ -249,8 +248,6 @@ function migrateLegacyPlanesIfNeeded(): void {
 // ============================================
 
 export function createViewer3DState(deps: {
-  propInterpolator: PropStateInterpolator;
-  sequenceConverter: SequenceConverter;
   viewer3DUndoManager: Viewer3DUndoManager;
 }) {
   const _webgl2Available = isWebGL2Available();
@@ -280,8 +277,6 @@ export function createViewer3DState(deps: {
   // The viewer passes its viewer-specific cap (8) while realm/museum/duet
   // keep their shared cap (4) by not passing maxPerformers at all.
   const performerManager: PerformerManager = createPerformerManager({
-    propInterpolator: deps.propInterpolator,
-    sequenceConverter: deps.sequenceConverter,
     initialAvatarId: DEFAULT_AVATAR_ID,
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
   });

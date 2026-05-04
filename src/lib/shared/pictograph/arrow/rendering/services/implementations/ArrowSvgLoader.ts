@@ -22,6 +22,9 @@ import type { ArrowSvgLoadOptions } from "../contracts/types";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { ThemeMode } from "../../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../../animation-engine/state/animation-visibility-state.svelte";
+import { getArrowPath } from "../arrow-path-resolver";
+import { parseArrowSvg, extractSvgContent } from "../arrow-svg-parser";
+import { applyColorToSvg } from "../arrow-svg-color-transformer";
 
 // ============================================================================
 // HMR-AWARE MODULE-LEVEL CACHE STORAGE
@@ -84,11 +87,7 @@ export class ArrowSvgLoader {
   private cacheHits = 0;
   private cacheMisses = 0;
 
-  constructor(
-    private pathResolver: ArrowPathResolver,
-    private svgParser: ArrowSvgParser,
-    private colorTransformer: ArrowSvgColorTransformer
-  ) {}
+  constructor() {}
 
   /**
    * Get the current theme mode based on dark mode setting
@@ -114,7 +113,7 @@ export class ArrowSvgLoader {
     motionData: MotionData,
     options?: ArrowSvgLoadOptions
   ): Promise<ArrowSvgData> {
-    const path = this.pathResolver.getArrowPath(arrowData, motionData);
+    const path = getArrowPath(arrowData, motionData);
 
     if (!path) {
       console.error(
@@ -141,17 +140,17 @@ export class ArrowSvgLoader {
     // Fetch raw SVG (uses raw cache + deduplication)
     const originalSvgText = await this.fetchSvgContentCached(path);
 
-    const parsedSvg = this.svgParser.parseArrowSvg(originalSvgText);
+    const parsedSvg = parseArrowSvg(originalSvgText);
 
     // Apply color transformation to the SVG, passing theme mode
-    const coloredSvgText = this.colorTransformer.applyColorToSvg(
+    const coloredSvgText = applyColorToSvg(
       originalSvgText,
       motionData.color,
       themeMode
     );
 
     // Extract just the inner SVG content (no scaling needed - arrows are already correctly sized)
-    const svgContent = this.svgParser.extractSvgContent(coloredSvgText);
+    const svgContent = extractSvgContent(coloredSvgText);
 
     const result: ArrowSvgData = {
       id: `arrow-${Date.now()}`,
@@ -175,12 +174,12 @@ export class ArrowSvgLoader {
       const splitData = hmrSplitManifest[manifestKey];
       if (splitData) {
         // Apply color transformation to split paths too
-        result.shaftSrc = this.colorTransformer.applyColorToSvg(
+        result.shaftSrc = applyColorToSvg(
           splitData.shaftPath,
           motionData.color,
           themeMode
         );
-        result.tipSrc = this.colorTransformer.applyColorToSvg(
+        result.tipSrc = applyColorToSvg(
           splitData.tipPath,
           motionData.color,
           themeMode
@@ -281,22 +280,13 @@ export class ArrowSvgLoader {
 // Dependencies are created inline since they're all stateless.
 // ============================================================================
 
-import { ArrowPathResolver } from "./ArrowPathResolver";
-import { ArrowSvgParser } from "./ArrowSvgParser";
-import { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
-
-
 // HMR-aware singleton instance
 let hmrArrowSvgLoader: ArrowSvgLoader | null =
   import.meta.hot?.data?.arrowSvgLoaderInstance ?? null;
 
 function getArrowSvgLoader(): ArrowSvgLoader {
   if (!hmrArrowSvgLoader) {
-    hmrArrowSvgLoader = new ArrowSvgLoader(
-      new ArrowPathResolver(),
-      new ArrowSvgParser(),
-      new ArrowSvgColorTransformer()
-    );
+    hmrArrowSvgLoader = new ArrowSvgLoader();
   }
   return hmrArrowSvgLoader;
 }

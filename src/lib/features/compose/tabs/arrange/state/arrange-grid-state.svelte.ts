@@ -108,7 +108,7 @@ export function createInitialGrid(): GridCell[] {
 }
 
 function deepCloneCells(source: GridCell[]): GridCell[] {
-  return structuredClone($state.snapshot(source));
+  return structuredClone($state.snapshot(source)) as GridCell[];
 }
 
 function clampDimension(n: number): number {
@@ -805,7 +805,7 @@ function createArrangeGridState() {
         clipboard = {
           layers: [
             {
-              sequence: structuredClone($state.snapshot(layer.sequence)),
+              sequence: structuredClone($state.snapshot(layer.sequence)) as SequenceData,
               transformStack: [...(layer.transformStack ?? [])],
             },
           ],
@@ -819,7 +819,7 @@ function createArrangeGridState() {
       if (cell && cell.layers.length > 0) {
         clipboard = {
           layers: cell.layers.map((layer) => ({
-            sequence: structuredClone($state.snapshot(layer.sequence)),
+            sequence: structuredClone($state.snapshot(layer.sequence)) as SequenceData,
             transformStack: [...(layer.transformStack ?? [])],
           })),
           mediaType: cell.mediaType,
@@ -857,7 +857,7 @@ function createArrangeGridState() {
 
       withUndo("PASTE_SEQUENCE", label, () => {
         const newLayers: TunnelLayerConfig[] = layersToPaste.map((clipLayer, i) => ({
-          sequence: structuredClone($state.snapshot(clipLayer.sequence)),
+          sequence: structuredClone($state.snapshot(clipLayer.sequence)) as SequenceData,
           beatOffset: 0,
           propColors: getTunnelLayerColors(cell.layers.length + i),
           transformStack: [...(clipLayer.transformStack ?? [])],

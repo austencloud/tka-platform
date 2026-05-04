@@ -20,8 +20,8 @@
  */
 
 import { getUserDocumentManager } from "$lib/shared/auth/getUserDocumentManager";
-import { getUsernameValidator } from "$lib/shared/auth/getUsernameValidator";
-import { getProfilePictureManager } from "$lib/shared/auth/getProfilePictureManager";
+import { claimUsername, releaseUsername } from "$lib/shared/auth/services/username-validator";
+import { updateFacebookProfilePictureIfNeeded, updateGoogleProfilePictureIfNeeded } from "$lib/shared/auth/services/profile-picture-manager";
 import {
   onAuthStateChanged,
   signOut as firebaseSignOut,
@@ -32,7 +32,7 @@ import {
   EmailAuthProvider,
   type User,
 } from "firebase/auth";
-import { getActivityLogger } from "../../analytics/getActivityLogger";
+import { logSessionStart } from "../../analytics/services/posthog-activity-logger";
 import { getPresenceTracker } from "../../presence/getPresenceTracker";
 
 // Service imports
@@ -51,7 +51,7 @@ import type { UserRole } from "../domain/models/UserRole";
 import { identifyUser, resetUser } from "../../analytics/services/posthog";
 
 import { ensureSystemCollections } from "$lib/features/library/services/collection-manager";
-import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
+import { linkDeviceToUser } from "$lib/shared/auth/services/device-id-service";
 
 import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
 
@@ -365,25 +365,18 @@ export async function initializeAuthListener() {
           }
 
           // Update profile pictures from OAuth providers (non-blocking)
-          const profilePictureService = getProfilePictureManager();
-          if (profilePictureService) {
-            profilePictureService
-              .updateFacebookProfilePictureIfNeeded(user)
-              .catch((error: unknown) => {
-                console.warn(
-                  "⚠️ [authState] Facebook profile picture update failed:",
-                  error
-                );
-              });
-            profilePictureService
-              .updateGoogleProfilePictureIfNeeded(user)
-              .catch((error: unknown) => {
-                console.warn(
-                  "⚠️ [authState] Google profile picture update failed:",
-                  error
-                );
-              });
-          }
+          updateFacebookProfilePictureIfNeeded(user).catch((error: unknown) => {
+            console.warn(
+              "⚠️ [authState] Facebook profile picture update failed:",
+              error
+            );
+          });
+          updateGoogleProfilePictureIfNeeded(user).catch((error: unknown) => {
+            console.warn(
+              "⚠️ [authState] Google profile picture update failed:",
+              error
+            );
+          });
 
           // Initialize feature flags for this user
           // Pass the role from auth token to prevent race condition with Firestore
@@ -397,8 +390,7 @@ export async function initializeAuthListener() {
           }
 
           // Link this device to the signed-in user (fire-and-forget)
-          getDeviceIdService()
-            .linkDeviceToUser(user.uid)
+          linkDeviceToUser(user.uid)
             .catch((err: unknown) => {
               console.warn("⚠️ [authState] Failed to link device to user", err);
             });
@@ -465,15 +457,12 @@ export async function initializeAuthListener() {
       if (user && !childServicesInitialized) {
         childServicesInitialized = true;
         try {
-          const activityService = getActivityLogger();
-          if (activityService) {
-            activityService.logSessionStart().catch((error: unknown) => {
-              console.warn(
-                "⚠️ [authState] Session start logging failed:",
-                error
-              );
-            });
-          }
+          logSessionStart().catch((error: unknown) => {
+            console.warn(
+              "⚠️ [authState] Session start logging failed:",
+              error
+            );
+          });
         } catch {
           // Silently fail - activity logging is non-critical
         }
@@ -869,12 +858,6 @@ export async function updateUsername(newUsername: string) {
   }
 
   try {
-    const usernameValidator = getUsernameValidator();
-
-    if (!usernameValidator) {
-      throw new Error("Username validation service not available");
-    }
-
     // Get current username to release it later
     const firestore = await getFirestoreInstance();
     const userDocRef = doc(firestore, "users", user.uid);
@@ -882,14 +865,14 @@ export async function updateUsername(newUsername: string) {
     const currentUsername = userDoc.data()?.username;
 
     // Claim new username (this validates and updates Firestore atomically)
-    await usernameValidator.claimUsername(user.uid, newUsername.trim());
+    await claimUsername(user.uid, newUsername.trim());
 
     // Release old username if different
     if (
       currentUsername &&
       currentUsername.toLowerCase() !== newUsername.toLowerCase()
     ) {
-      await usernameValidator.releaseUsername(currentUsername);
+      await releaseUsername(currentUsername);
     }
 
     return {

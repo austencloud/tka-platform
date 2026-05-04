@@ -7,7 +7,7 @@
 
 import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { PostHogActivityLogger } from "$lib/shared/analytics/services/implementations/PostHogActivityLogger";
+import { getDailyActiveUsers, getEventCounts, queryEvents } from "$lib/shared/analytics/services/posthog-activity-logger";
 import {
   getEventTypeDisplay,
   getModuleDisplay,
@@ -50,7 +50,6 @@ export interface IEventActivityAnalyzer {
 }
 
 export class EventActivityAnalyzer implements IEventActivityAnalyzer {
-  constructor(private readonly activityLogService: PostHogActivityLogger) {}
 
   /**
    * Get user activity over time
@@ -66,7 +65,7 @@ export class EventActivityAnalyzer implements IEventActivityAnalyzer {
     try {
       // Try to get activity from the activity log service first
       const dailyActiveUsers =
-        await this.activityLogService.getDailyActiveUsers(startDate, days);
+        await getDailyActiveUsers(startDate, days);
 
       // If we got data from activity logs, use it
       if (dailyActiveUsers.size > 0) {
@@ -190,7 +189,7 @@ export class EventActivityAnalyzer implements IEventActivityAnalyzer {
     timeRange: AnalyticsTimeRange
   ): Promise<EventTypeBreakdown[]> {
     try {
-      const eventCounts = await this.activityLogService.getEventCounts(
+      const eventCounts = await getEventCounts(
         timeRange.startDate,
         timeRange.endDate
       );
@@ -226,7 +225,7 @@ export class EventActivityAnalyzer implements IEventActivityAnalyzer {
     try {
       // Query for module_view events in the time range
       // Firestore max limit is 10000, but we use 5000 for safety
-      const events = await this.activityLogService.queryEvents({
+      const events = await queryEvents({
         eventType: "module_view",
         startDate: timeRange.startDate,
         endDate: timeRange.endDate,
@@ -269,7 +268,7 @@ export class EventActivityAnalyzer implements IEventActivityAnalyzer {
    */
   async getRecentActivity(limitCount: number): Promise<RecentActivityEvent[]> {
     try {
-      const events = await this.activityLogService.queryEvents({
+      const events = await queryEvents({
         limit: limitCount,
         orderDirection: "desc",
       });

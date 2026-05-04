@@ -16,8 +16,7 @@ import type {
 } from "../contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ImageComposer } from "../../../../shared/render/services/implementations/ImageComposer";
-import type { DimensionCalculator } from "../../../../shared/render/services/implementations/DimensionCalculator";
-import type { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
+import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
 
 export class CompositeVideoRenderer {
   private sequence: SequenceData | null = null;
@@ -25,12 +24,10 @@ export class CompositeVideoRenderer {
   private cachedGridCanvas: HTMLCanvasElement | null = null;
   private dimensions: CompositeDimensions | null = null;
   private gridDimensions: { width: number; height: number } | null = null;
-  private gridLayout: [number, number] | null = null; // [columns, rows] from LayoutCalculator
+  private gridLayout: [number, number] | null = null; // [columns, rows] from layout-calculator
 
   constructor(
-    private imageComposer: ImageComposer,
-    private dimensionService: DimensionCalculator,
-    private layoutCalculator: LayoutCalculator
+    private imageComposer: ImageComposer
   ) {}
 
   async initialize(
@@ -46,7 +43,7 @@ export class CompositeVideoRenderer {
     const cellSize = options.gridStepSize;
 
     // Use LayoutCalculator to get exact same [columns, rows] as ImageComposer
-    const [cols, rows] = this.layoutCalculator.calculateLayout(
+    const [cols, rows] = calculateLayout(
       stepCount,
       options.includeStartPosition
     );

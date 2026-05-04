@@ -5,25 +5,24 @@
  * Call this when your app starts up to ensure the database is ready.
  */
 
-import type { DexiePersistenceService } from "./DexiePersistenceService";
+import {
+  isAvailable as persistenceIsAvailable,
+  initialize as persistenceInitialize,
+  getActiveTab,
+  getStorageInfo,
+} from "../dexie-persistence-service";
 
 export class PersistenceInitializationService {
   private isInitialized = false;
   private initializationError?: string;
 
-  constructor(private persistenceService: DexiePersistenceService) {}
-
   async initialize(): Promise<void> {
     try {
-      // Check if IndexedDB is available
-      if (!this.persistenceService.isAvailable()) {
+      if (!persistenceIsAvailable()) {
         throw new Error("IndexedDB is not available in this environment");
       }
 
-      // Initialize the persistence service
-      await this.persistenceService.initialize();
-
-      // Restore the last active tab
+      await persistenceInitialize();
       await this.restoreApplicationState();
 
       this.isInitialized = true;
@@ -42,23 +41,18 @@ export class PersistenceInitializationService {
   getStatus() {
     return {
       isInitialized: this.isInitialized,
-      isAvailable: this.persistenceService.isAvailable(),
+      isAvailable: persistenceIsAvailable(),
       ...(this.initializationError !== undefined && {
         error: this.initializationError,
       }),
     };
   }
 
-  /**
-   * Restore application state from persistence
-   */
   private async restoreApplicationState(): Promise<void> {
     try {
-      // Get the last active tab to prepare state restoration
-      await this.persistenceService.getActiveTab();
-      // Get storage info for potential future use
-      await this.persistenceService.getStorageInfo();
-    } catch (error) {
+      await getActiveTab();
+      await getStorageInfo();
+    } catch {
       // Don't throw here - this is not critical for app startup
     }
   }

@@ -1,6 +1,7 @@
-import { Scene3DPersister } from './services/implementations/Scene3DPersister';
-
-let instance: Scene3DPersister | null = null;
-export function getScene3DPersister(): Scene3DPersister {
-  return instance ??= new Scene3DPersister();
-}
+export type { AvatarProportions, Scene3DPersistedState } from './services/scene3d-persister';
+export {
+  saveScene3DState,
+  loadScene3DState,
+  clearScene3DState,
+  parsePlanes,
+} from './services/scene3d-persister';

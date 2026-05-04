@@ -9,8 +9,7 @@ Features:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
-  import type { GreekKeyMapper } from "$lib/shared/keyboard/services/implementations/GreekKeyMapper";
+  import { getGreekSymbol } from "$lib/shared/keyboard/services/greek-key-mapper";
   import {
     uppercasePreservingGreek,
     insertAtCursor,
@@ -33,7 +32,6 @@ Features:
   } = $props();
 
   const haptic = getHapticFeedback();
-  const greekKeyMapper = getGreekKeyMapper();
 
   function handleFocus() {
     onFocusChange?.(true);
@@ -81,7 +79,7 @@ Features:
     // Skip numpad keys when NumLock is off
     if (event.code.startsWith("Numpad") && !event.getModifierState("NumLock")) return;
 
-    const symbol = greekKeyMapper.getSymbol(event.code);
+    const symbol = getGreekSymbol(event.code);
     if (!symbol) return;
 
     event.preventDefault();

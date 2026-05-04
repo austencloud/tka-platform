@@ -16,11 +16,10 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { getPropPreferencePersister } from "$lib/shared/community/getPropPreferencePersister";
+  import { savePropPreferences } from "$lib/shared/community/services/prop-preference-persister";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { FirstRunStep } from "../../domain/first-run-types";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { PropPreferencePersister } from "$lib/shared/community/services/implementations/PropPreferencePersister";
 
   import WelcomeStep from "./steps/WelcomeStep.svelte";
   import DisplayNameStep from "./steps/DisplayNameStep.svelte";
@@ -213,8 +212,7 @@
     try {
       const userId = authState.user?.uid;
       if (userId) {
-        const persister = getPropPreferencePersister();
-        await persister.save(userId, {
+        await savePropPreferences(userId, {
           propsISpinWith: [prop],
           favoriteProp: prop,
           favoriteCatdog: null,

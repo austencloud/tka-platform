@@ -5,7 +5,7 @@
  * Handles form validation, verification polling, and resend cooldown.
  */
 
-import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
+import { reloadUser, linkEmailPassword, resendVerificationEmail } from '../services/authenticator';
 import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
 
 export type EmailLinkingStep = "form" | "verifying" | "success";
@@ -49,7 +49,7 @@ export interface EmailLinkingState {
 }
 
 export function createEmailLinkingState(
-  authService: Authenticator,
+  _authService: unknown,
   hapticService: HapticFeedback | null,
   initialEmail: string,
   onSuccess?: () => void,
@@ -108,7 +108,7 @@ export function createEmailLinkingState(
 
     verificationInterval = setInterval(async () => {
       try {
-        const isVerified = await authService.reloadUser();
+        const isVerified = await reloadUser();
 
         if (isVerified) {
           stopVerificationPolling();
@@ -169,7 +169,7 @@ export function createEmailLinkingState(
     hapticService?.trigger("selection");
 
     try {
-      await authService.linkEmailPassword(email, password);
+      await linkEmailPassword(email, password);
       hapticService?.trigger("success");
 
       currentStep = "verifying";
@@ -190,7 +190,7 @@ export function createEmailLinkingState(
     hapticService?.trigger("selection");
 
     try {
-      await authService.resendVerificationEmail();
+      await resendVerificationEmail();
       startResendCooldown();
       hapticService?.trigger("success");
     } catch (error: unknown) {

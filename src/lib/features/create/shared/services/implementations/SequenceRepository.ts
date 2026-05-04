@@ -14,7 +14,11 @@ import type { SequenceHydrator } from '$lib/shared/foundation/services/implement
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
-import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+import {
+  saveSequence as persistSaveSequence,
+  loadSequence as persistLoadSequence,
+  loadAllSequences as persistLoadAllSequences,
+} from "$lib/shared/persistence/services/dexie-persistence-service";
 import type { SequenceImporter } from "./SequenceImporter";
 type ReversalDetector = { processReversals: (sequence: SequenceData) => SequenceData };
 import { separateStepsFromStartPosition } from "$lib/features/compose/services/sequence-normalizer";
@@ -38,7 +42,6 @@ import {
 export class SequenceRepository {
   constructor(
     private readonly sequenceDomainManager: SequenceDomainManager,
-    private readonly persistenceService: DexiePersistenceService,
     private readonly reversalDetector: ReversalDetector,
     private readonly sequenceImportService?: SequenceImporter
   ) {}
@@ -61,7 +64,7 @@ export class SequenceRepository {
     try {
       // Use domain service to create the sequence
       const sequence = this.sequenceDomainManager.createSequence(request);
-      await this.persistenceService.saveSequence(sequence);
+      await persistSaveSequence(sequence);
       return sequence;
     } catch (error) {
       console.error("Failed to create sequence:", error);
@@ -81,8 +84,7 @@ export class SequenceRepository {
   ): Promise<void> {
     try {
       // Load the current sequence
-      const currentSequence =
-        await this.persistenceService.loadSequence(sequenceId);
+      const currentSequence = await persistLoadSequence(sequenceId);
       if (!currentSequence) {
         throw new Error(`Sequence ${sequenceId} not found`);
       }
@@ -94,7 +96,7 @@ export class SequenceRepository {
         stepData
       );
 
-      await this.persistenceService.saveSequence(updatedSequence);
+      await persistSaveSequence(updatedSequence);
     } catch (error) {
       console.error("Failed to update beat:", error);
       throw new Error(
@@ -108,7 +110,7 @@ export class SequenceRepository {
    */
   async getSequence(id: string): Promise<SequenceData | null> {
     try {
-      let sequence = await this.persistenceService.loadSequence(id);
+      let sequence = await persistLoadSequence(id);
       if (sequence) sequence = this.hydrateSequence(sequence);
 
       // If sequence not found, try to import from PNG metadata if import service is available
@@ -117,7 +119,7 @@ export class SequenceRepository {
           sequence = await this.sequenceImportService.importFromPNG(id);
           // Save it to persistence for future use
           if (sequence) {
-            await this.persistenceService.saveSequence(sequence);
+            await persistSaveSequence(sequence);
           }
         } catch {
           // PNG import failed - sequence not available locally
@@ -152,7 +154,7 @@ export class SequenceRepository {
    */
   async getAllSequences(): Promise<SequenceData[]> {
     try {
-      const sequences = await this.persistenceService.loadAllSequences();
+      const sequences = await persistLoadAllSequences();
 
       // Hydrate (derive steps from compositional model) then apply post-processing
       return sequences.map((raw) => {
@@ -244,7 +246,6 @@ const sequenceDomainManager: SequenceDomainManager = {
   createSequence: sequenceDomainManagerModule.createSequence as SequenceDomainManager['createSequence'],
   updateStep: sequenceDomainManagerModule.updateStep as SequenceDomainManager['updateStep'],
 };
-import { dexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
 import * as reversalDetectorModule from "../reversal-detector";
 const reversalDetector: ReversalDetector = {
   processReversals: reversalDetectorModule.processReversals,
@@ -252,7 +253,6 @@ const reversalDetector: ReversalDetector = {
 
 export const sequenceRepository = new SequenceRepository(
   sequenceDomainManager,
-  dexiePersistenceService,
   reversalDetector,
   undefined // sequenceImportService is optional
 );

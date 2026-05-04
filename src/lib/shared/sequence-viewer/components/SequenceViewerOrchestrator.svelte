@@ -3,8 +3,7 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
 import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/features/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
-import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
-import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+// propInterpolator and sequenceConverter are now module-level functions injected directly
 import { getViewer3DUndoManager } from "$lib/shared/3d/getViewer3DUndoManager";
 import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinator";
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
@@ -160,7 +159,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
-  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
+  import { generateViewerURL } from "$lib/shared/navigation/services/sequence-encoder";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
@@ -182,8 +181,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
-  import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
+  import { calculateThumbnailAspectRatio } from "$lib/shared/render/services/layout-calculator";
+  import { loadViewMode } from "$lib/shared/sequence-viewer/services/sequence-modal-persistence";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
@@ -249,8 +248,6 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
   $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = initialBpm; });
 
   const viewer3DState = createViewer3DState({
-    propInterpolator: getPropStateInterpolator(),
-    sequenceConverter: getSequenceConverter(),
     viewer3DUndoManager: getViewer3DUndoManager(),
   });
   setViewer3DContext(viewer3DState);
@@ -271,7 +268,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  let viewMode = $state<ViewMode>(sequenceModalPersistence.loadViewMode());
+  let viewMode = $state<ViewMode>(loadViewMode());
   $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
 
   let isFullscreen = $state(false);
@@ -528,7 +525,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
   const previewAspectRatio = $derived.by(() => {
     if (!sequence?.steps?.length) return 1;
     const stepCount = sequence.steps.length;
-    return layoutCalculator.calculateThumbnailAspectRatio(stepCount, {
+    return calculateThumbnailAspectRatio(stepCount, {
       includeStartPosition: imgComp.imgShowStartPos,
       hasHeader: imgComp.imgShowWord,
       hasFooter: imgComp.imgShowCreatorName || imgComp.imgShowNotes,
@@ -1001,7 +998,6 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
 
     if (sequence) {
       try {
-        const encoder = getSequenceEncoder();
         const metadata: ShareURLMetadata = {};
 
         if (sequence.word) metadata.word = sequence.word;
@@ -1018,7 +1014,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
         metadata.bpm = playback.bpmLocal;
         metadata.darkMode = imgComp.imgDarkMode;
 
-        const result = encoder.generateViewerURL(sequence, {
+        const result = generateViewerURL(sequence, {
           compress: true,
           metadata,
         });

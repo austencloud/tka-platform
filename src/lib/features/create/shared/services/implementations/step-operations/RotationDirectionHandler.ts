@@ -15,7 +15,7 @@ import type { StartPositionData } from "../../../domain/models/StartPositionData
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   createMotionData,
@@ -46,8 +46,7 @@ export function updateRotationDirection(
   color: string,
   rotationDirection: string,
   createModuleState: ICreateModuleState,
-  motionQueryHandler: IMotionQueryHandler | null,
-  gridModeDeriver: GridModeDeriver | null
+  motionQueryHandler: IMotionQueryHandler | null
 ): void {
   const stepData = getStepDataFromState(stepNumber, createModuleState);
 
@@ -184,7 +183,7 @@ export function updateRotationDirection(
 
   // CRITICAL: Derive the new letter BEFORE setting the sequence
   // The PRO ↔ ANTI flip may change the pictograph's letter
-  if (motionQueryHandler && gridModeDeriver) {
+  if (motionQueryHandler) {
     const stepToCheck =
       stepNumber === START_POSITION_BEAT_NUMBER
         ? updatedStartPosition
@@ -195,8 +194,7 @@ export function updateRotationDirection(
         stepNumber,
         stepToCheck,
         createModuleState,
-        motionQueryHandler,
-        gridModeDeriver
+        motionQueryHandler
       );
     }
   }
@@ -219,8 +217,7 @@ async function recalculateLetterAsync(
   stepNumber: number,
   stepToCheck: StepData | StartPositionData,
   createModuleState: ICreateModuleState,
-  motionQueryHandler: IMotionQueryHandler,
-  gridModeDeriver: GridModeDeriver
+  motionQueryHandler: IMotionQueryHandler
 ): Promise<void> {
   const blueMotion = stepToCheck.motions?.[MotionColor.BLUE];
   const redMotion = stepToCheck.motions?.[MotionColor.RED];
@@ -228,7 +225,7 @@ async function recalculateLetterAsync(
   if (!blueMotion || !redMotion) return;
 
   try {
-    const gridMode = gridModeDeriver.deriveGridMode(blueMotion, redMotion);
+    const gridMode = _deriveGridMode(blueMotion, redMotion);
     const newLetter = await motionQueryHandler.findLetterByMotionConfiguration(
       blueMotion,
       redMotion,
@@ -284,10 +281,9 @@ async function recalculateLetterAsync(
 export async function recalculateLetterForBeat(
   stepNumber: number,
   createModuleState: ICreateModuleState,
-  motionQueryHandler: IMotionQueryHandler | null,
-  gridModeDeriver: GridModeDeriver | null
+  motionQueryHandler: IMotionQueryHandler | null
 ): Promise<void> {
-  if (!motionQueryHandler || !gridModeDeriver) {
+  if (!motionQueryHandler) {
     return;
   }
 
@@ -305,7 +301,7 @@ export async function recalculateLetterForBeat(
   }
 
   try {
-    const gridMode = gridModeDeriver.deriveGridMode(blueMotion, redMotion);
+    const gridMode = _deriveGridMode(blueMotion, redMotion);
 
     const newLetter = (await motionQueryHandler.findLetterByMotionConfiguration(
       blueMotion,

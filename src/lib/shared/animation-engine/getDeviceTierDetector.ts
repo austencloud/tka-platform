@@ -1,6 +1,2 @@
-import { DeviceTierDetector } from './services/implementations/DeviceTierDetector';
-
-let instance: DeviceTierDetector | null = null;
-export function getDeviceTierDetector(): DeviceTierDetector {
-  return instance ??= new DeviceTierDetector();
-}
+import * as deviceTierDetector from './services/device-tier-detector';
+export function getDeviceTierDetector() { return deviceTierDetector; }

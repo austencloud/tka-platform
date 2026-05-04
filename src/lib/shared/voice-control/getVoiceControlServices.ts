@@ -1,7 +1,6 @@
 import { WakeWordDetector } from './services/implementations/WakeWordDetector';
 import { CommandInterpreter } from './services/implementations/CommandInterpreter';
 import { CommandDispatcher } from './services/implementations/CommandDispatcher';
-import { LLMIntentResolver } from './services/implementations/LLMIntentResolver';
 import { WebSpeechTTSProvider } from './services/implementations/WebSpeechTTSProvider';
 import { NavigationCommandHandler } from './services/implementations/NavigationCommandHandler';
 import { SettingsCommandHandler } from './services/implementations/handlers/SettingsCommandHandler';
@@ -26,15 +25,10 @@ import { NavigationSubInterpreter } from './services/implementations/interpreter
 let wakeWordDetector: WakeWordDetector | null = null;
 let commandInterpreter: CommandInterpreter | null = null;
 let commandDispatcher: CommandDispatcher | null = null;
-let intentResolver: LLMIntentResolver | null = null;
 let ttsProvider: WebSpeechTTSProvider | null = null;
 
 export function getWakeWordDetector(): WakeWordDetector {
   return wakeWordDetector ??= new WakeWordDetector();
-}
-
-export function getIntentResolver(): LLMIntentResolver {
-  return intentResolver ??= new LLMIntentResolver();
 }
 
 export function getTTSProvider(): WebSpeechTTSProvider {

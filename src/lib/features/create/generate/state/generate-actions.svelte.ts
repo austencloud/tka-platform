@@ -8,8 +8,8 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
-import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/components/ArrowSvg.svelte";
-import { clearPropPositionCache } from "$lib/shared/pictograph/prop/components/PropSvg.svelte";
+import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/arrow-position-cache";
+import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import { GenerationMode } from "../shared/domain/models/generate-models";

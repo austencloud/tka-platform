@@ -40,15 +40,14 @@ import type {
   XPGainEvent,
   XPEventMetadata,
 } from "../../domain/models/achievement-models";
-import type { GamificationNotifier } from "./GamificationNotifier";
+import {
+  showXPGain,
+  showLevelUp,
+  showAchievementUnlock,
+} from "$lib/shared/gamification/services/gamification-notifier";
 
 export class AchievementManager {
   private _initialized = false;
-  private _notificationService: GamificationNotifier | null = null;
-
-  constructor(notificationService: GamificationNotifier) {
-    this._notificationService = notificationService;
-  }
 
   // ============================================================================
   // INITIALIZATION
@@ -219,8 +218,8 @@ export class AchievementManager {
       );
 
       // Show quick XP toast (non-blocking)
-      if (this._notificationService) {
-        this._notificationService.showXPGain(xpGained);
+      {
+        showXPGain(xpGained);
       }
 
       // Check for achievement progress
@@ -383,8 +382,8 @@ export class AchievementManager {
       });
 
       // Show level up notification if applicable
-      if (leveledUp && this._notificationService) {
-        await this._notificationService.showLevelUp(newLevel.currentLevel);
+      if (leveledUp) {
+        await showLevelUp(newLevel.currentLevel);
       }
 
       const result: { newLevel?: number } = {};
@@ -478,14 +477,12 @@ export class AchievementManager {
           unlockedAchievements.push(achievement);
 
           // Show unlock notification
-          if (this._notificationService) {
-            await this._notificationService.showAchievementUnlock(
-              achievement.id,
-              achievement.title,
-              achievement.icon,
-              achievement.xpReward
-            );
-          }
+          await showAchievementUnlock(
+            achievement.id,
+            achievement.title,
+            achievement.icon,
+            achievement.xpReward
+          );
 
           // Award bonus XP for unlocking achievement
           await this.awardXPInternal(

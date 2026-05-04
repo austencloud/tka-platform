@@ -13,7 +13,6 @@ import type { KeyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
 import type { ScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
 import type { ArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
 import type { ArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
-import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { GlobalAdjustmentKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/global/services/implementations/GlobalAdjustmentKeyGenerator";
@@ -65,10 +64,9 @@ export class ArrowAdjustmentOrchestrator {
     private arrowAdjustmentCalculator: ArrowAdjustmentCalculator,
     private arrowLocationCalculator: ArrowLocationCalculator,
     private pictographPreparer: PictographPreparer,
-    gridModeDeriver: GridModeDeriver,
     turnsTupleGenerator: TurnsTupleGenerator
   ) {
-    this.keyGenerator = new GlobalAdjustmentKeyGenerator(gridModeDeriver, turnsTupleGenerator);
+    this.keyGenerator = new GlobalAdjustmentKeyGenerator(turnsTupleGenerator);
   }
 
   getDefaultSaveLayer(thisPropType: string, otherPropType: string): 1 | 2 | 3 {
@@ -334,7 +332,6 @@ import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/p
 import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 
 export const arrowAdjustmentOrchestrator = new ArrowAdjustmentOrchestrator(
@@ -343,6 +340,5 @@ export const arrowAdjustmentOrchestrator = new ArrowAdjustmentOrchestrator(
   arrowAdjustmentCalculator,
   arrowLocationCalculator,
   pictographPreparer,
-  gridModeDeriver,
   turnsTupleGenerator
 );

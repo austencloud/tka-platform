@@ -23,15 +23,10 @@ import { Point } from "fabric";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import type { DirectionalTupleCalculator } from "./DirectionalTupleProcessor";
-import type { ArrowQuadrantCalculator } from "../../../../orchestration/services/implementations/ArrowQuadrantCalculator";
+import { calculateQuadrantIndex } from "../../../../orchestration/services/arrow-quadrant-calculator";
 
-export class ScreenSpaceAdjustmentTransformer
- 
-{
-  constructor(
-    private tupleCalculator: DirectionalTupleCalculator,
-    private quadrantCalculator: ArrowQuadrantCalculator
-  ) {}
+export class ScreenSpaceAdjustmentTransformer {
+  constructor(private tupleCalculator: DirectionalTupleCalculator) {}
 
   /**
    * Transform screen-space adjustment to reference value using the INVERSE transformation.
@@ -49,10 +44,7 @@ export class ScreenSpaceAdjustmentTransformer
       const y = screenSpaceAdjustment.y;
 
       // Get quadrant index for this arrow
-      const quadrantIndex = this.quadrantCalculator.calculateQuadrantIndex(
-        motionData,
-        location
-      );
+      const quadrantIndex = calculateQuadrantIndex(motionData, location);
 
       // Generate the forward transformation tuples to understand the matrix
       // We use (1, 0) and (0, 1) as basis vectors to extract the matrix coefficients
@@ -95,10 +87,7 @@ export class ScreenSpaceAdjustmentTransformer
 // ============================================================================
 
 import { directionalTupleCalculator } from "./DirectionalTupleProcessor";
-import { arrowQuadrantCalculator } from "../../../../orchestration/services/implementations/ArrowQuadrantCalculator";
-
 
 export const screenSpaceAdjustmentTransformer = new ScreenSpaceAdjustmentTransformer(
-  directionalTupleCalculator,
-  arrowQuadrantCalculator
+  directionalTupleCalculator
 );

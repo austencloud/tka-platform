@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import Drawer from "../../foundation/ui/Drawer.svelte";
 import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
@@ -15,7 +15,6 @@ import type { HapticFeedback } from "../../application/services/implementations/
   import EmailAuthTabs from "../../auth/components/EmailAuthTabs.svelte";
   import SocialAuthCompact from "../../auth/components/SocialAuthCompact.svelte";
   import { authState } from "../../auth/state/authState.svelte";
-  import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
 
   // Props
   let { isOpen = false, onClose } = $props<{
@@ -25,7 +24,6 @@ import type { HapticFeedback } from "../../application/services/implementations/
 
   // Services
   let hapticService: HapticFeedback | null = null;
-  let authService: Authenticator | null = null;
 
   // Track auth mode to update UI accordingly
   let authMode = $state<"signin" | "signup">("signin");
@@ -33,7 +31,6 @@ import type { HapticFeedback } from "../../application/services/implementations/
   onMount(async () => {
     try {
       hapticService = getHapticFeedback();
-      authService = getAuthenticator();
     } catch (error) {
       console.error("❌ [AuthSheet] Failed to resolve services:", error);
     }
@@ -56,7 +53,7 @@ import type { HapticFeedback } from "../../application/services/implementations/
   async function handleFacebookAuth() {
     hapticService?.trigger("selection");
     try {
-      await authService?.signInWithFacebook();
+      await signInWithFacebook();
     } catch (error: any) {
       console.error("❌ Facebook auth failed:", error);
       hapticService?.trigger("error");

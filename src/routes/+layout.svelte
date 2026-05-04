@@ -293,18 +293,14 @@
 
       // Creators: load creator profiles so the Creators tab is instant
       import("$lib/features/browse/creators/state/creators-data-state.svelte")
-        .then(async ({ creatorsDataState }) => {
+        .then(({ creatorsDataState }) => {
           if (!creatorsDataState.isInitialized) {
-            const { getUserRepository } = await import("$lib/shared/community/getUserRepository");
-            const userRepo = getUserRepository();
-            if (userRepo) {
-              Promise.all([
-                creatorsDataState.loadCreators(userRepo),
-                creatorsDataState.loadFeaturedCreators(userRepo),
-              ]).catch((err: unknown) =>
-                console.warn("[Layout] Creators prefetch failed:", err)
-              );
-            }
+            Promise.all([
+              creatorsDataState.loadCreators(),
+              creatorsDataState.loadFeaturedCreators(),
+            ]).catch((err: unknown) =>
+              console.warn("[Layout] Creators prefetch failed:", err)
+            );
           }
         })
         .catch((err: unknown) =>

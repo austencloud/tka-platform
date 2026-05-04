@@ -1,5 +1,5 @@
 import type { ModuleDefinition, ModuleId, Section } from "../domain/types";
-import { getActivityLogger } from "../../analytics/getActivityLogger";
+import { logModuleView } from "../../analytics/services/posthog-activity-logger";
 
 let _containerRef: { items: Record<string, unknown> } | null = null;
 
@@ -324,9 +324,8 @@ export function createNavigationState() {
 
       if (previousModuleLocal !== moduleId) {
         try {
-          const activityLogger = getActivityLogger();
           const moduleWithTab = nextTab ? `${moduleId}:${nextTab}` : moduleId;
-          void activityLogger.logModuleView(
+          void logModuleView(
             moduleWithTab,
             previousModuleLocal
           );
@@ -401,10 +400,9 @@ export function createNavigationState() {
     }
 
     try {
-      const activityLogger = getActivityLogger();
       const moduleWithTab = `${currentModule}:${tabId}`;
       const previousModuleWithTab = `${currentModule}:${previousTab}`;
-      void activityLogger.logModuleView(
+      void logModuleView(
         moduleWithTab,
         previousModuleWithTab
       );

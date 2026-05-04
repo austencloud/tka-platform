@@ -1,4 +1,4 @@
-import type { FileDownloader } from "../../../foundation/services/implementations/FileDownloader";
+import { downloadBlob } from "$lib/shared/foundation/services/file-downloader";
 
 interface ImageFormatOptions {
   format: "png" | "jpeg" | "webp";
@@ -13,7 +13,6 @@ interface OptimizationSettings {
 }
 
 export class ImageFormatConverter {
-  constructor(private fileDownloadService: FileDownloader) {}
 
   async canvasToBlob(
     canvas: HTMLCanvasElement,
@@ -107,7 +106,7 @@ export class ImageFormatConverter {
         quality,
       });
 
-      await this.fileDownloadService.downloadBlob(blob, filename);
+      await downloadBlob(blob, filename);
     } catch (error) {
       throw new Error(
         `Download failed: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -154,6 +153,4 @@ export class ImageFormatConverter {
   }
 }
 
-import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
-
-export const imageFormatConverter = new ImageFormatConverter(fileDownloader);
+export const imageFormatConverter = new ImageFormatConverter();

@@ -1,0 +1,70 @@
+/**
+ * Handles lazy loading of animator-related services.
+ * Provides access to core animation dependencies.
+ */
+
+import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import {
+  generateGridSvg,
+  generatePropSvg,
+  generateBluePropSvg,
+  generateRedPropSvg,
+  generateBlueStaffSvg,
+  generateRedStaffSvg,
+} from "$lib/features/compose/services/svg-generator";
+import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
+import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+import { getTrailCapturer } from "$lib/features/compose/getTrailCapturer";
+
+import type {
+  AnimatorServices,
+  AnimatorServiceLoadResult,
+  AnimationRendererLoadResult,
+} from "./contracts/IAnimatorLoader";
+
+export function loadAnimatorServices(): AnimatorServiceLoadResult {
+  try {
+    const svgGeneratorAdapter: ISVGGenerator = {
+      generateGridSvg,
+      generatePropSvg,
+      generateBluePropSvg,
+      generateRedPropSvg,
+      generateBlueStaffSvg,
+      generateRedStaffSvg,
+    };
+    const services: AnimatorServices = {
+      svgGenerator: svgGeneratorAdapter,
+      settingsService: settingsService,
+      orchestrator: getSequenceAnimationOrchestrator(),
+      TrailCapturer: getTrailCapturer(),
+      turnsTupleGenerator: turnsTupleGenerator,
+    };
+
+    return { success: true, services };
+  } catch (err) {
+    console.error("[animator-loader] Failed to load animator services:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+}
+
+export function loadAnimationRenderer(): AnimationRendererLoadResult {
+  try {
+    const renderer: AnimationRenderer = new Canvas2DAnimationRenderer();
+    return { success: true, renderer };
+  } catch (err) {
+    console.error("Failed to load animation renderer:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to load animation renderer",
+    };
+  }
+}
+
+/** @deprecated Use loadAnimationRenderer() instead */
+export const loadPixiRenderer = loadAnimationRenderer;

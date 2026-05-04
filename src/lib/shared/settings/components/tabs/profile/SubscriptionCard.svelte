@@ -3,10 +3,9 @@
   Single $10/mo tier
 -->
 <script lang="ts">
-  import { getSubscriptionManager } from "$lib/shared/subscription/getSubscriptionManager";
+  import { getSubscriptionInfo, onSubscriptionChange, createPortalSession } from "$lib/shared/subscription/services/subscription-manager";
   import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  import type { SubscriptionManager } from "../../../../subscription/services/implementations/SubscriptionManager";
   import type { SubscriptionInfo } from "../../../../subscription/services/contracts/types";
   import type { HapticFeedback } from "../../../../application/services/implementations/HapticFeedback";
 
@@ -15,9 +14,6 @@
   }
 
   let { hapticService = null }: Props = $props();
-
-  // Services
-  let subscriptionService: SubscriptionManager | null = $state(null);
 
   // State
   let subscriptionInfo = $state<SubscriptionInfo | null>(null);
@@ -41,17 +37,13 @@
   );
 
   onMount(async () => {
-    subscriptionService = getSubscriptionManager();
+    // Initial load
+    subscriptionInfo = await getSubscriptionInfo();
 
-    if (subscriptionService) {
-      // Initial load
-      subscriptionInfo = await subscriptionService.getSubscriptionInfo();
-
-      // Subscribe to changes
-      unsubscribeListener = subscriptionService.onSubscriptionChange((info) => {
-        subscriptionInfo = info;
-      });
-    }
+    // Subscribe to changes
+    unsubscribeListener = onSubscriptionChange((info) => {
+      subscriptionInfo = info;
+    });
   });
 
   onDestroy(() => {
@@ -65,13 +57,13 @@
   }
 
   async function handleManageSubscription() {
-    if (!subscriptionService || isLoading) return;
+    if (isLoading) return;
 
     hapticService?.trigger("selection");
     isLoading = true;
 
     try {
-      const portalUrl = await subscriptionService.createPortalSession();
+      const portalUrl = await createPortalSession();
       window.location.href = portalUrl;
     } catch (error) {
       console.error("Failed to open subscription portal:", error);

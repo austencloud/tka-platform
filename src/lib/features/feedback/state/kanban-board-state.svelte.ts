@@ -4,7 +4,7 @@ import type {
   FeedbackStatus,
 } from "../domain/models/feedback-models";
 import { STATUS_CONFIG } from "../domain/models/feedback-models";
-import type { StorageManager } from '$lib/shared/foundation/services/implementations/StorageManager';
+import { safeLocalStorageGet, safeLocalStorageSet } from '$lib/shared/foundation/services/storage-manager';
 import { FeedbackSorter } from "../services/implementations/FeedbackSorter";
 
 type KanbanStatus = "new" | "in-progress" | "in-review" | "completed";
@@ -79,11 +79,10 @@ export interface KanbanBoardState {
 export function createKanbanBoardState(
   manageState: FeedbackManageState,
   sortingService: FeedbackSorter,
-  storageService: StorageManager | null
 ): KanbanBoardState {
   // Load saved active status or default to "new"
   const loadSavedStatus = (): FeedbackStatus => {
-    const saved = storageService?.safeLocalStorageGet<FeedbackStatus>(
+    const saved = safeLocalStorageGet<FeedbackStatus>(
       STORAGE_KEY,
       "new"
     );
@@ -355,7 +354,7 @@ export function createKanbanBoardState(
     setActiveStatus(status: FeedbackStatus) {
       activeStatus = status;
       // Persist immediately (since we can't use $effect in factory functions)
-      storageService?.safeLocalStorageSet(STORAGE_KEY, status);
+      safeLocalStorageSet(STORAGE_KEY, status);
     },
     setDraggedItem(item: FeedbackItem | null) {
       draggedItem = item;

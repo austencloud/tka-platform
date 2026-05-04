@@ -16,7 +16,7 @@ import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { handpathDirectionCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
+import { calculateHandpathDirection } from "$lib/shared/pictograph/arrow/positioning/calculation/services/handpath-direction-calculator";
 
 const CARDINAL = new Set<GridLocation>([
   GridLocation.NORTH,
@@ -79,10 +79,7 @@ function derivePrefloatRotation(
   endLocation: GridLocation
 ): RotationDirection | undefined {
   if (!prefloatMotionType) return undefined;
-  const handpath = handpathDirectionCalculator.calculateDirection(
-    startLocation,
-    endLocation
-  );
+  const handpath = calculateHandpathDirection(startLocation, endLocation);
   if (handpath === "cw") {
     return prefloatMotionType === MotionType.PRO
       ? RotationDirection.CLOCKWISE

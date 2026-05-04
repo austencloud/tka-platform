@@ -5,7 +5,7 @@ import {
   updateBodyBackground,
   type CustomBackgroundOptions,
 } from "../utils/background-preloader";
-import { ThemeService } from "../../theme/services/ThemeService";
+import { updateTheme as updateThemeService } from "../../theme/services/theme-service";
 import {
   applyThemeFromColors,
   applyThemeForBackground,
@@ -13,7 +13,7 @@ import {
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { AppSettings, PropPreset } from "../domain/AppSettings";
-import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
+import { logSettingChange } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type { FirebaseSettingsPersister } from "../services/implementations/FirebaseSettingsPersister";
 import { auth } from "../../auth/firebase";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -159,7 +159,7 @@ class SettingsState {
               delete settingsState.backgroundColor;
               updateBodyBackground(BackgroundType.NIGHT_SKY);
               applyThemeForBackground(BackgroundType.NIGHT_SKY);
-              ThemeService.updateTheme(BackgroundType.NIGHT_SKY);
+              updateThemeService(BackgroundType.NIGHT_SKY);
               this.saveSettingsToStorage(settingsState);
               await this.firebasePersistence.saveSettings(
                 this.getSettingsForPersistence()
@@ -193,7 +193,7 @@ class SettingsState {
               } else {
                 applyThemeForBackground(firebaseSettings.backgroundType);
               }
-              ThemeService.updateTheme(firebaseSettings.backgroundType);
+              updateThemeService(firebaseSettings.backgroundType);
               this.saveSettingsToStorage(settingsState);
               debug.success("Applied background from Firebase on initial login");
             }
@@ -321,20 +321,17 @@ class SettingsState {
       } else {
         applyThemeForBackground(bgType);
       }
-      ThemeService.updateTheme(bgType);
+      updateThemeService(bgType);
     }
 
     this.saveSettings();
 
     try {
-      const activityService = getActivityLogger();
-      if (activityService) {
-        void activityService.logSettingChange(
-          key,
-          String(previousValue),
-          String(value)
-        );
-      }
+      void logSettingChange(
+        key,
+        String(previousValue),
+        String(value)
+      );
     } catch {
       // Silent
     }
@@ -370,7 +367,7 @@ class SettingsState {
       } else {
         applyThemeForBackground(newBackgroundType);
       }
-      ThemeService.updateTheme(newBackgroundType);
+      updateThemeService(newBackgroundType);
     }
 
     this.saveSettings();

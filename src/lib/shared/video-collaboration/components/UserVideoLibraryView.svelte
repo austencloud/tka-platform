@@ -9,7 +9,7 @@
   Also shows pending invites badge.
 -->
 <script lang="ts">
-  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
+  import { getUserVideoLibrary } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { UserVideoLibrary } from "../services/contracts/types";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import { onMount } from "svelte";
@@ -24,7 +24,6 @@
 
   type Tab = "all" | "created" | "collaborations" | "invites";
 
-  const videoService = getCollaborativeVideoManager();
   let library = $state<UserVideoLibrary | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -35,13 +34,11 @@
   });
 
   async function loadLibrary() {
-    if (!videoService) return;
-
     loading = true;
     error = null;
 
     try {
-      library = await videoService.getUserVideoLibrary();
+      library = await getUserVideoLibrary();
     } catch (e) {
       console.error("Failed to load video library:", e);
       error = e instanceof Error ? e.message : "Failed to load videos";

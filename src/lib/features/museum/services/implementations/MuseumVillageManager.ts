@@ -18,8 +18,7 @@ import { getAvatarModelPath } from "$lib/shared/3d/config/avatar-definitions";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
-import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
-import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+// propInterpolator / sequenceConverter are now module-level functions
 
 // Avatar model IDs used by the village - preload these in background
 const VILLAGE_AVATAR_MODELS = [
@@ -83,13 +82,9 @@ export function getMuseumVillageManager() {
 	// Start preloading avatar models immediately
 	preloadVillageAvatarModels();
 
-	const propInterpolator = getPropStateInterpolator();
-	const sequenceConverter = getSequenceConverter();
-	if (!propInterpolator || !sequenceConverter) return null;
-
 	const seeds = buildSeedSequences();
 	const villageState = createVillageState(
-		{ propInterpolator, sequenceConverter },
+		{},
 		seeds,
 		{
 			targetPopulation: 8,

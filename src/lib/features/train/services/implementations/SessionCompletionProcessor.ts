@@ -8,13 +8,48 @@
  * - Processes challenge progression
  */
 
-import type {
-  SessionCompletionParams,
-  SessionCompletionResult,
-  XPBreakdown,
-  ChallengeProgressResult,
-} from "../contracts/types";
-import type { PerformanceHistoryTracker } from "./PerformanceHistoryTracker";
+import type { PracticeMode } from "../../domain/enums/TrainEnums";
+
+export interface SessionCompletionParams {
+  totalSteps: number;
+  totalHits: number;
+  totalMisses: number;
+  maxCombo: number;
+  currentScore: number;
+  bpm: number;
+  practiceMode: PracticeMode;
+  sequenceId?: string;
+  sequenceName?: string;
+  sessionDuration: number;
+  activeChallengeId?: string;
+}
+
+export interface XPBreakdown {
+  baseXP: number;
+  accuracyBonus: number;
+  comboBonus: number;
+  totalXP: number;
+}
+
+export interface ChallengeProgressResult {
+  challenge: {
+    id: string;
+    title: string;
+    requirement: { target: number };
+    xpReward: number;
+  };
+  currentProgress: number;
+  isComplete: boolean;
+  xpAwarded?: number;
+}
+
+export interface SessionCompletionResult {
+  xpBreakdown: XPBreakdown;
+  grade: "S" | "A" | "B" | "C" | "D" | "F";
+  accuracy: number;
+  challengeProgress?: ChallengeProgressResult;
+}
+import type * as performanceHistoryTrackerModule from "../performance-history-tracker";
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import type { TrainChallengeManager } from "./TrainChallengeManager";
 import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
@@ -31,7 +66,7 @@ import { addNotification } from "$lib/shared/gamification/state/notification-sta
 
 export class SessionCompletionProcessor {
   constructor(
-    private historyTracker: PerformanceHistoryTracker,
+    private historyTracker: typeof performanceHistoryTrackerModule,
     private achievementManager: AchievementManager,
     private challengeManager: TrainChallengeManager
   ) {}

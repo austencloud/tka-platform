@@ -12,7 +12,7 @@
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
-import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
+import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
 export interface PersistenceState {
@@ -128,8 +128,7 @@ export function createSequencePersistenceCoordinator(
         // Log sequence save for analytics (non-blocking)
         if (currentSequence) {
           try {
-            const activityLogger = getActivityLogger();
-            void activityLogger.logSequenceAction(
+            void logSequenceAction(
               "save",
               currentSequence.id,
               {

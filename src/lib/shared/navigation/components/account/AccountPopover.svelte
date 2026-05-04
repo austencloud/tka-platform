@@ -2,12 +2,10 @@
 <script lang="ts">
 
 import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { signInWithGoogle } from "$lib/shared/auth/services/authenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
-  import { getPropPreferencePersister } from "../../../community/getPropPreferencePersister";
   import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
-  import type { PropPreferencePersister } from "../../../community/services/implementations/PropPreferencePersister";
   import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import {
@@ -113,8 +111,7 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
     // app on return - no double-update flash.
     onClose();
     try {
-      const authenticator = getAuthenticator();
-      await authenticator.signInWithGoogle();
+      await signInWithGoogle();
     } catch {
       // Sign-in failure handled by auth UI
     }
@@ -130,8 +127,7 @@ import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   const userId = $derived(authState.user?.uid);
   const propState = $derived.by(() => {
     if (!userId) return null;
-    const persister = getPropPreferencePersister();
-    return createPropPreferenceState(persister, userId);
+    return createPropPreferenceState(userId);
   });
 
   // Profile completeness nudges - each disappears once the user completes the action

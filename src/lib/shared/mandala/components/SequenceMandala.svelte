@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getMandalaGeometryCalculator } from "../getMandalaGeometryCalculator";
-	import { getMandalaRenderer } from "../getMandalaRenderer";
+	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 	import { onMount } from "svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import type {
@@ -25,7 +25,6 @@
 		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
 	import type { MandalaGeometryCalculator } from "../services/implementations/MandalaGeometryCalculator";
-	import type { MandalaRenderer } from '$lib/shared/mandala/services/implementations/MandalaRenderer'
 
 	interface Props {
 		// SequenceData - typed as any to avoid circular import issues across module boundaries
@@ -82,11 +81,9 @@
 	};
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);
-	let renderer: MandalaRenderer | null = $state(null);
 
 	onMount(() => {
 		calculator = getMandalaGeometryCalculator();
-		renderer = getMandalaRenderer();
 	});
 
 	// Derive geometry from sequence steps - recomputes whenever sequence or
@@ -119,8 +116,8 @@
 
 	// Generate SVG markup string from geometry + options
 	const svgString = $derived.by((): string => {
-		if (!renderer || !paths) return "";
-		return renderer.renderSVG(paths, renderOptions);
+		if (!paths) return "";
+		return renderMandalaSVG(paths, renderOptions);
 	});
 </script>
 

@@ -22,8 +22,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
-import type { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import { decodeSequenceFromQR } from "$lib/shared/navigation/services/sequence-encoder";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export interface CodeEntry {
@@ -114,7 +113,6 @@ class ScanActivityState {
     this.teardown();
 
     const firestore = await getFirestoreInstance();
-    const encoder = getSequenceEncoder() as SequenceEncoder;
 
     const codesRef = collection(firestore, "shortcodes");
     const codesQ =
@@ -125,7 +123,7 @@ class ScanActivityState {
     try {
       const initial = await getDocsFromServer(codesQ);
       for (const doc of initial.docs) {
-        this.ingestCodeDoc(doc.id, doc.data(), encoder);
+        this.ingestCodeDoc(doc.id, doc.data());
       }
       this.resort();
       this.loading = false;
@@ -136,7 +134,7 @@ class ScanActivityState {
         (snap) => {
           for (const change of snap.docChanges()) {
             if (change.type === "added" || change.type === "modified") {
-              this.ingestCodeDoc(change.doc.id, change.doc.data(), encoder);
+              this.ingestCodeDoc(change.doc.id, change.doc.data());
             } else if (change.type === "removed") {
               this.byCode.delete(change.doc.id);
             }
@@ -197,7 +195,6 @@ class ScanActivityState {
   private ingestCodeDoc(
     code: string,
     data: DocumentData,
-    encoder: SequenceEncoder
   ): void {
     const encoded: string = data.encoded ?? "";
     const entry: CodeEntry = {
@@ -229,16 +226,15 @@ class ScanActivityState {
       return;
     }
 
-    void this.decodeAsync(entry, encoded, encoder);
+    void this.decodeAsync(entry, encoded);
   }
 
   private async decodeAsync(
     entry: CodeEntry,
     encoded: string,
-    encoder: SequenceEncoder
   ): Promise<void> {
     try {
-      const decoded = await encoder.decodeFromQR(encoded);
+      const decoded = await decodeSequenceFromQR(encoded);
       const enriched = await this.enrichDecoded(decoded, entry);
       this.decodeCache.set(encoded, { decoded: enriched });
       const current = this.byCode.get(entry.code);

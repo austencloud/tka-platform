@@ -1,5 +1,5 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { R2Presigner } from "./R2Presigner";
+import { getUploadUrl, startMultipart, getPartUrl, completeMultipart, listParts, deleteByPrefix } from "../r2-presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { VideoUploadResult, UploadOptions, MultipartUploadState } from "../contracts/types";
@@ -161,11 +161,7 @@ async function xhrPut(
 }
 
 export class R2VideoUploader {
-  private readonly presigner: R2Presigner;
-
-  constructor(presigner: R2Presigner) {
-    this.presigner = presigner;
-
+  constructor() {
     if (typeof window !== "undefined") {
       purgeStaleEntries();
     }
@@ -205,7 +201,7 @@ export class R2VideoUploader {
     sequenceId: string,
     options?: UploadOptions
   ): Promise<VideoUploadResult> {
-    const { presignedUrl, publicUrl, key } = await this.presigner.getUploadUrl({
+    const { presignedUrl, publicUrl, key } = await getUploadUrl({
       fileName,
       contentType,
       contentLength: file.size,
@@ -247,14 +243,14 @@ export class R2VideoUploader {
     }
 
     if (savedState) {
-      const { parts: confirmedParts, expired } = await this.presigner.listParts({
+      const { parts: confirmedParts, expired } = await listParts({
         key: savedState.key,
         uploadId: savedState.uploadId,
       });
 
       if (expired) {
         removeMultipartState(fingerprint);
-        const startResult = await this.presigner.startMultipart({ fileName, contentType, userId, category, sequenceId });
+        const startResult = await startMultipart({ fileName, contentType, userId, category, sequenceId });
         uploadId = startResult.uploadId;
         key = startResult.key;
       } else {
@@ -266,7 +262,7 @@ export class R2VideoUploader {
         }));
       }
     } else {
-      const startResult = await this.presigner.startMultipart({
+      const startResult = await startMultipart({
         fileName,
         contentType,
         userId,
@@ -307,7 +303,7 @@ export class R2VideoUploader {
       const end = Math.min(start + PART_SIZE, file.size);
       const chunk = file.slice(start, end);
 
-      const { presignedUrl } = await this.presigner.getPartUrl({
+      const { presignedUrl } = await getPartUrl({
         key,
         uploadId,
         partNumber,
@@ -357,7 +353,7 @@ export class R2VideoUploader {
 
     completedParts.sort((a, b) => a.PartNumber - b.PartNumber);
 
-    const { publicUrl } = await this.presigner.completeMultipart({
+    const { publicUrl } = await completeMultipart({
       key,
       uploadId,
       parts: completedParts,
@@ -426,7 +422,7 @@ export class R2VideoUploader {
         `users/${userId}/thumbnails/${sequenceId}/`,
       ];
       await Promise.all(
-        prefixes.map((prefix) => this.presigner.deleteByPrefix(prefix))
+        prefixes.map((prefix) => deleteByPrefix(prefix))
       );
     } catch (error) {
       return this.handleError(error, "delete-assets", { sequenceId });

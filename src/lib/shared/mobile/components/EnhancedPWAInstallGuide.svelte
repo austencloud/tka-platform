@@ -17,10 +17,9 @@
   - Measurement logic isolated to utility
 -->
 <script lang="ts">
-  import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
+  import { detectPlatformAndBrowser } from "$lib/shared/mobile/services/platform-detector";
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
-import type { PlatformDetector } from "../services/implementations/PlatformDetector";
   import type { Platform, Browser } from "../config/pwa-install-instructions";
   import { getInstallInstructions } from "../config/pwa-install-instructions";
   import { createViewportMeasurement } from "../utils/viewport-measurement.svelte";
@@ -42,8 +41,7 @@ import type { PlatformDetector } from "../services/implementations/PlatformDetec
 
   // Detect platform and browser on mount
   onMount(() => {
-    const platformService = getPlatformDetector();
-    const detected = platformService.detectPlatformAndBrowser();
+    const detected = detectPlatformAndBrowser();
     platform = detected.platform;
     browser = detected.browser;
   });

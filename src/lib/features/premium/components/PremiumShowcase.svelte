@@ -4,10 +4,9 @@
   Composed from small, focused primitives for effective AI-assisted development.
 -->
 <script lang="ts">
-  import { getSubscriptionManager } from "$lib/shared/subscription/getSubscriptionManager";
+  import { createCheckoutSession } from "$lib/shared/subscription/services/subscription-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
-  import type { SubscriptionManager } from "../../../shared/subscription/services/implementations/SubscriptionManager";
   import type { HapticFeedback } from "../../../shared/application/services/implementations/HapticFeedback";
   import PremiumHero from "./PremiumHero.svelte";
   import PremiumCTA from "./PremiumCTA.svelte";
@@ -26,7 +25,6 @@
 
   let { onClose, hapticService = null }: Props = $props();
 
-  let subscriptionService: SubscriptionManager | null = $state(null);
   let isLoading = $state(false);
 
   const PRICE_ID =
@@ -38,17 +36,9 @@
   }
 
   $effect(() => {
-    // Try to get subscription manager - may not be available
-    try {
-      subscriptionService = getSubscriptionManager() ?? null;
-    } catch {
-      subscriptionService = null;
-    }
-
     // Track page view
     trackEvent("premium_page_viewed", {
       priceId: PRICE_ID,
-      hasSubscriptionService: !!subscriptionService,
     });
 
     return () => {
@@ -57,7 +47,7 @@
   });
 
   async function handleSubscribe(source: "desktop" | "mobile" = "desktop") {
-    if (!subscriptionService || isLoading || !PRICE_ID) return;
+    if (isLoading || !PRICE_ID) return;
 
     trackEvent("premium_cta_clicked", {
       source,
@@ -74,7 +64,7 @@
       });
 
       const checkoutUrl =
-        await subscriptionService.createCheckoutSession(PRICE_ID);
+        await createCheckoutSession(PRICE_ID);
 
       trackEvent("checkout_redirect", {
         source,

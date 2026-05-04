@@ -19,10 +19,9 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
-import type { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import { encodeSequence } from "$lib/shared/navigation/services/sequence-encoder";
 import type { SequenceMatchResult } from "../contracts/types";
 export class PublicSequenceHashMatcher {
-	constructor(private readonly encoder: SequenceEncoder) {}
 
 	async findPublicMatch(
 		sequence: SequenceData
@@ -50,7 +49,7 @@ export class PublicSequenceHashMatcher {
 	}
 
 	async computeEncoderHash(sequence: SequenceData): Promise<string> {
-		const pipeString = this.encoder.encode(sequence);
+		const pipeString = encodeSequence(sequence);
 		return this.sha256(pipeString);
 	}
 

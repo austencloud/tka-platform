@@ -17,8 +17,7 @@ import {
   getDefaultPositions,
   MAX_PERFORMERS,
 } from "../domain/constants/performer-positions";
-import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
-import type { SequenceConverter } from "../services/implementations/SequenceConverter";
+// propInterpolator / sequenceConverter injected as module functions; no imports needed here
 import type { AvatarId } from "../config/avatar-definitions";
 import type { FormationPreset } from "../domain/formation";
 import {
@@ -30,8 +29,6 @@ import {
  * Dependencies for performer manager
  */
 export interface PerformerManagerDeps {
-  propInterpolator: PropStateInterpolator;
-  sequenceConverter: SequenceConverter;
   initialAvatarId: AvatarId;
   /**
    * Optional cap override. Defaults to the shared STAGE.MAX_PERFORMERS (4).
@@ -44,7 +41,7 @@ export interface PerformerManagerDeps {
  * Create performer manager state
  */
 export function createPerformerManager(deps: PerformerManagerDeps) {
-  const { propInterpolator, sequenceConverter, initialAvatarId } = deps;
+  const { initialAvatarId } = deps;
   const maxPerformers = deps.maxPerformers ?? MAX_PERFORMERS;
 
   // Performer states (1-4 performers)
@@ -79,7 +76,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         positionZ: pos.z,
         avatarModelId: initialAvatarId,
       },
-      { propInterpolator, sequenceConverter }
+      {}
     );
   }
 
@@ -95,7 +92,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         positionZ: initialPosition.z,
         avatarModelId: initialAvatarId,
       },
-      { propInterpolator, sequenceConverter }
+      {}
     );
 
     performerStates = [initialPerformer];

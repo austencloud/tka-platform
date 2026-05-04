@@ -5,11 +5,22 @@
  * apply temporal smoothing to reduce jitter, and track hand identity.
  */
 
-import type {
-  HandHistory,
-  SmoothedPosition,
-  StabilizerConfig,
-} from "../contracts/types";
+export interface HandHistory {
+  positions: Array<{ x: number; y: number; timestamp: number }>;
+  assignedHand: "left" | "right";
+  confidenceFrames: number;
+}
+
+export interface SmoothedPosition {
+  x: number;
+  y: number;
+}
+
+export interface StabilizerConfig {
+  smoothingWindow: number;
+  persistenceFrames: number;
+  handednessSwitchThreshold: number;
+}
 
 const DEFAULT_CONFIG: StabilizerConfig = {
   smoothingWindow: 3,

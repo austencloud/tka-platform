@@ -8,7 +8,7 @@
 import type { DocumentSnapshot } from "firebase/firestore";
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
-import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+import { getUsersPaginated, getFeaturedCreators } from "$lib/shared/community/services/user-repository";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 const DEFAULT_PAGE_SIZE = 30;
@@ -45,9 +45,8 @@ function createCreatorsDataState() {
   // Prop filter state (multi-select)
   let selectedPropFilters = $state<PropType[]>([]);
 
-  // Cached repository reference so togglePropFilter can reload without needing
-  // the caller to pass repository/userId again on every filter change.
-  let cachedRepository: UserRepository | null = null;
+  // Cached userId so togglePropFilter can reload without needing the caller
+  // to pass userId again on every filter change.
   let cachedCurrentUserId: string | undefined = undefined;
 
   // Track if initial load has happened
@@ -89,15 +88,13 @@ function createCreatorsDataState() {
    * loads the full set and disables the "load more" path.
    */
   async function loadCreators(
-    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // If already loading, skip
     if (isLoading) return;
 
     // Cache for use by togglePropFilter, which needs to reload without
-    // requiring the caller to pass repository/userId again.
-    cachedRepository = repository;
+    // requiring the caller to pass userId again.
     cachedCurrentUserId = currentUserId;
 
     isLoading = true;
@@ -112,7 +109,7 @@ function createCreatorsDataState() {
         // Fetch all creators with a neutral sort, then group client-side.
         // We use a generous limit (1000) - typical creator counts are well
         // below this, and grouping only makes sense when you can see all groups.
-        const result = await repository.getUsersPaginated(
+        const result = await getUsersPaginated(
           {
             sortBy: "lastActive",
             sortDirection: "desc",
@@ -127,7 +124,7 @@ function createCreatorsDataState() {
         lastDocSnapshot = null;
         hasMore = false; // Pagination disabled for grouped view
       } else {
-        const result = await repository.getUsersPaginated(
+        const result = await getUsersPaginated(
           {
             sortBy,
             sortDirection,
@@ -161,7 +158,6 @@ function createCreatorsDataState() {
    * Not used when sortBy is "favoriteProp" - that view loads all at once.
    */
   async function loadMoreCreators(
-    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // Don't load more if: already loading, no more to load, no cursor,
@@ -171,7 +167,7 @@ function createCreatorsDataState() {
     isLoadingMore = true;
 
     try {
-      const result = await repository.getUsersPaginated(
+      const result = await getUsersPaginated(
         {
           sortBy,
           sortDirection,
@@ -199,7 +195,6 @@ function createCreatorsDataState() {
   async function changeSortOrder(
     newSortBy: CreatorSortCriteria,
     newDirection: SortDirection,
-    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // Update sort state
@@ -212,7 +207,7 @@ function createCreatorsDataState() {
     hasMore = true;
 
     // Reload with new sort
-    await loadCreators(repository, currentUserId);
+    await loadCreators(currentUserId);
   }
 
   /**
@@ -233,16 +228,13 @@ function createCreatorsDataState() {
     lastDocSnapshot = null;
     hasMore = true;
 
-    if (cachedRepository) {
-      await loadCreators(cachedRepository, cachedCurrentUserId);
-    }
+    await loadCreators(cachedCurrentUserId);
   }
 
   /**
    * Load featured creators (separate from main list)
    */
   async function loadFeaturedCreators(
-    repository: UserRepository,
     limit = 8
   ): Promise<void> {
     if (isLoadingFeatured) return;
@@ -250,7 +242,7 @@ function createCreatorsDataState() {
     isLoadingFeatured = true;
 
     try {
-      featuredUsers = await repository.getFeaturedCreators(limit);
+      featuredUsers = await getFeaturedCreators(limit);
     } catch (err) {
       console.error("[CreatorsDataState] Failed to load featured creators:", err);
       // Don't set error state - featured section is optional
@@ -304,7 +296,6 @@ function createCreatorsDataState() {
    * Force refresh all data
    */
   async function refreshCreators(
-    repository: UserRepository,
     currentUserId?: string
   ): Promise<void> {
     // Reset all state
@@ -315,8 +306,8 @@ function createCreatorsDataState() {
 
     // Reload
     await Promise.all([
-      loadCreators(repository, currentUserId),
-      loadFeaturedCreators(repository),
+      loadCreators(currentUserId),
+      loadFeaturedCreators(),
     ]);
   }
 
@@ -531,30 +522,28 @@ export const creatorsDataState = {
   },
 
   // Actions
-  loadCreators(repository: UserRepository, currentUserId?: string) {
-    return getCreatorsDataState().loadCreators(repository, currentUserId);
+  loadCreators(currentUserId?: string) {
+    return getCreatorsDataState().loadCreators(currentUserId);
   },
-  loadMoreCreators(repository: UserRepository, currentUserId?: string) {
-    return getCreatorsDataState().loadMoreCreators(repository, currentUserId);
+  loadMoreCreators(currentUserId?: string) {
+    return getCreatorsDataState().loadMoreCreators(currentUserId);
   },
   changeSortOrder(
     sortBy: CreatorSortCriteria,
     direction: SortDirection,
-    repository: UserRepository,
     currentUserId?: string
   ) {
     return getCreatorsDataState().changeSortOrder(
       sortBy,
       direction,
-      repository,
       currentUserId
     );
   },
   togglePropFilter(prop: PropType) {
     return getCreatorsDataState().togglePropFilter(prop);
   },
-  loadFeaturedCreators(repository: UserRepository, limit?: number) {
-    return getCreatorsDataState().loadFeaturedCreators(repository, limit);
+  loadFeaturedCreators(limit?: number) {
+    return getCreatorsDataState().loadFeaturedCreators(limit);
   },
   setSearchQuery(query: string) {
     return getCreatorsDataState().setSearchQuery(query);
@@ -562,8 +551,8 @@ export const creatorsDataState = {
   clearSearch() {
     return getCreatorsDataState().clearSearch();
   },
-  refreshCreators(repository: UserRepository, currentUserId?: string) {
-    return getCreatorsDataState().refreshCreators(repository, currentUserId);
+  refreshCreators(currentUserId?: string) {
+    return getCreatorsDataState().refreshCreators(currentUserId);
   },
   updateUserFollowStatus(
     userId: string,

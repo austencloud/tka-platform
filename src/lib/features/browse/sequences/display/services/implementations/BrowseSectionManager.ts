@@ -12,12 +12,9 @@ import type {
   SequenceSection,
 } from "$lib/features/browse/shared/domain/models/browse-models";
 import { sortSequencesByKineticAlphabet } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
-import type { WordDeriver } from '$lib/shared/foundation/services/implementations/WordDeriver'
+import { deriveWord } from '$lib/shared/foundation/services/word-deriver';
 
 export class BrowseSectionManager {
-  constructor(
-    private wordDeriver: WordDeriver
-  ) {}
   organizeSections(
     sequences: SequenceData[],
     config: SectionConfig
@@ -121,7 +118,7 @@ export class BrowseSectionManager {
         // Sub-group by letter AND beat count for consistent row heights
         // Handle letter types: "W" vs "W-" (type 3 letters)
         // Type 6 letters: α, β, γ, ζ, η, τ, ⊕
-        const word = this.wordDeriver.derive(sequence);
+        const word = deriveWord(sequence);
         const firstChar = word.charAt(0);
         const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
 
@@ -143,7 +140,7 @@ export class BrowseSectionManager {
       }
 
       case "length": {
-        const word = this.wordDeriver.derive(sequence);
+        const word = deriveWord(sequence);
         const length = sequence.sequenceLength ?? word.length;
         return `${length} steps`;
       }

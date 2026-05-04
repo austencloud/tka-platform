@@ -1,9 +1,3 @@
-import { browser } from '$app/environment';
-import { SidebarTabToggler } from './services/implementations/SidebarTabToggler';
-
-let instance: SidebarTabToggler | null = null;
-
-export function getSidebarTabToggler(): SidebarTabToggler {
-	if (!browser) throw new Error('getSidebarTabToggler() is browser-only');
-	return instance ??= new SidebarTabToggler();
-}
+import * as sidebarTabToggler from './services/sidebar-tab-toggler';
+export function getSidebarTabToggler() { return sidebarTabToggler; }
+export { getAllTabsForModule, hideTab, showTab } from './services/sidebar-tab-toggler';

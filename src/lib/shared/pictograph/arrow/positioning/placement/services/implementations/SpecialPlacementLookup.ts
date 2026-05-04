@@ -8,10 +8,13 @@
 import { Point } from "fabric";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { LetterClassifier } from "./LetterClassifier";
+import {
+  isHybridLetter,
+  startsFromStandardOrientation,
+} from "../letter-classifier";
 
 export class SpecialPlacementLookup {
-  constructor(private readonly letterClassifier: LetterClassifier) {}
+  constructor() {}
 
   /**
    * Look up special placement adjustment from placement data.
@@ -142,14 +145,13 @@ export class SpecialPlacementLookup {
     pictographData: PictographData,
     arrowColor?: string
   ): Point | null {
-    const isHybridLetter = this.letterClassifier.isHybridLetter(
+    const isHybridLetterVal = isHybridLetter(
       pictographData.letter ?? ""
     );
-    const startsFromStandardOrientation =
-      this.letterClassifier.startsFromStandardOrientation(pictographData);
+    const standardOrientation = startsFromStandardOrientation(pictographData);
 
     // For HYBRID letters with standard orientation, use motion type as PRIMARY key
-    if (isHybridLetter && startsFromStandardOrientation) {
+    if (isHybridLetterVal && standardOrientation) {
       const result = this.lookupByMotionType(turnData, motionData);
       if (result) {
         return result;
@@ -241,7 +243,4 @@ export class SpecialPlacementLookup {
 // Use this instead of specialPlacementLookup to avoid DI container rebuilds.
 // ============================================================================
 
-import { letterClassifier } from "./LetterClassifier";
-
-
-export const specialPlacementLookup = new SpecialPlacementLookup(letterClassifier);
+export const specialPlacementLookup = new SpecialPlacementLookup();

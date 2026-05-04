@@ -1,5 +1,3 @@
-import type { DexiePersistenceService } from "../../persistence/services/implementations/DexiePersistenceService";
-import { getPersistenceService as getPersistenceServiceSingleton } from "../../persistence/getPersistenceService";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import { settingsService as settingsServiceSingleton } from "../../settings/state/SettingsState.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
@@ -7,22 +5,17 @@ import { getAnimationVisibilityManager } from "../../animation-engine/state/anim
 // ============================================================================
 // HMR STATE PRESERVATION
 // ============================================================================
-// Without this, every HMR update resets isInitialized to false, which triggers
-// the full initialization cascade (auth → Firestore → settings → theme).
 const hmrData = import.meta.hot?.data as
-  | { isInitialized?: boolean; settingsService?: SettingsState | null; persistenceService?: DexiePersistenceService | null }
+  | { isInitialized?: boolean; settingsService?: SettingsState | null }
   | undefined;
 
-// Make isInitialized reactive so components using getSettings() will re-evaluate
 let isInitialized = $state(hmrData?.isInitialized ?? false);
 let settingsService: SettingsState | null = hmrData?.settingsService ?? null;
-let persistenceService: DexiePersistenceService | null = hmrData?.persistenceService ?? null;
 
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.isInitialized = isInitialized;
     data.settingsService = settingsService;
-    data.persistenceService = persistenceService;
   });
 }
 
@@ -51,7 +44,6 @@ function syncDarkModeToAnimationManager(): void {
 export function clearAppServicesCache(): void {
   isInitialized = false;
   settingsService = null;
-  persistenceService = null;
 }
 
 export function getSettingsServiceSync(): SettingsState {
@@ -71,16 +63,6 @@ export async function getSettingsService(): Promise<SettingsState> {
     throw new Error("Settings service is null after resolution");
   }
   return settingsService;
-}
-
-export async function getPersistenceService(): Promise<DexiePersistenceService> {
-  if (!persistenceService) {
-    persistenceService = getPersistenceServiceSingleton();
-  }
-  if (!persistenceService) {
-    throw new Error("Persistence service is null after resolution");
-  }
-  return persistenceService;
 }
 
 export function areServicesInitialized(): boolean {

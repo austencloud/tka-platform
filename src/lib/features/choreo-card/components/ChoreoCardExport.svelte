@@ -13,7 +13,7 @@
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import { onMount } from "svelte";
-  import { getPlatformDetector } from "$lib/shared/mobile/getPlatformDetector";
+  import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
 
   interface Props {
     sequences: SequenceData[];
@@ -143,7 +143,7 @@
   }
 
   async function downloadBlob(blob: Blob, filename: string) {
-    const platform = getPlatformDetector().detectPlatform();
+    const platform = detectPlatform();
     if (platform !== "desktop" && navigator.share) {
       const file = new File([blob], filename, { type: blob.type });
       if (navigator.canShare?.({ files: [file] })) {

@@ -11,8 +11,11 @@ import { Plane } from "../domain/enums/Plane";
 import { PlaneMode } from "../domain/enums/PlaneMode";
 import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "../domain/constants/plane-mode-configs";
 import { createPlaybackState } from "./playback-state.svelte";
-import type { PropStateInterpolator } from "../services/implementations/PropStateInterpolator";
-import type { SequenceConverter } from "../services/implementations/SequenceConverter";
+import { calculatePropState } from "../services/prop-state-interpolator";
+import {
+  sequenceToMotionConfigs,
+  getStartPositionConfigs,
+} from "../services/sequence-converter";
 import type { StepMotionConfigs } from "../services/contracts/types";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
@@ -112,8 +115,8 @@ export interface AvatarInstanceConfig {
  * Dependencies for avatar instance state
  */
 export interface AvatarInstanceDeps {
-  propInterpolator: PropStateInterpolator;
-  sequenceConverter: SequenceConverter;
+  // propInterpolator and sequenceConverter are now module-level functions
+  // — no injection needed; retained as empty interface for future deps
 }
 
 /**
@@ -123,7 +126,7 @@ export function createAvatarInstanceState(
   config: AvatarInstanceConfig,
   deps: AvatarInstanceDeps
 ) {
-  const { propInterpolator, sequenceConverter } = deps;
+  void deps; // deps retained for signature compatibility
 
   // Avatar identity
   const id = config.id;
@@ -330,12 +333,12 @@ export function createAvatarInstanceState(
   // Computed prop states
   const bluePropState = $derived(
     easedFrame.blue
-      ? propInterpolator.calculatePropState(easedFrame.blue, easedFrame.progress)
+      ? calculatePropState(easedFrame.blue, easedFrame.progress)
       : null
   );
   const redPropState = $derived(
     easedFrame.red
-      ? propInterpolator.calculatePropState(easedFrame.red, easedFrame.progress)
+      ? calculatePropState(easedFrame.red, easedFrame.progress)
       : null
   );
 
@@ -350,12 +353,12 @@ export function createAvatarInstanceState(
 
     // Get motion configs (beats 1+) and prepend start position (beat 0)
     // so the full sequence including initial orientation is available.
-    const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
+    const motionConfigs = sequenceToMotionConfigs(
       sequence,
       Plane.WALL,
       modeConfig
     );
-    const startConfig = sequenceConverter.getStartPositionConfigs(
+    const startConfig = getStartPositionConfigs(
       sequence,
       Plane.WALL,
       modeConfig
@@ -510,11 +513,11 @@ export function createAvatarInstanceState(
   function applyBeatPlaneOverrides() {
     if (!loadedSequence) return;
 
-    const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
+    const motionConfigs = sequenceToMotionConfigs(
       loadedSequence,
       Plane.WALL
     );
-    const startConfig = sequenceConverter.getStartPositionConfigs(
+    const startConfig = getStartPositionConfigs(
       loadedSequence,
       Plane.WALL
     );
@@ -565,12 +568,12 @@ export function createAvatarInstanceState(
   /** Re-convert the loaded sequence with the given mode config */
   function reconvertWithConfig(modeConfig: PlaneModeConfig) {
     if (!loadedSequence) return;
-    const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
+    const motionConfigs = sequenceToMotionConfigs(
       loadedSequence,
       Plane.WALL,
       modeConfig
     );
-    const startConfig = sequenceConverter.getStartPositionConfigs(
+    const startConfig = getStartPositionConfigs(
       loadedSequence,
       Plane.WALL,
       modeConfig

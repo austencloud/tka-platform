@@ -15,27 +15,26 @@
  */
 
 import type { Point as FabricPoint } from "fabric";
-import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
+import {
+  generateOrientationKey,
+  resolveEffectiveOriKey,
+  mapToLegacyBucket,
+} from "../../../key-generation/services/special-placement-ori-key-generator";
 import type { SpecialPlacementDataProvider } from "./SpecialPlacementDataProvider";
 import type { TurnsTupleGenerator } from "./TurnsTupleGenerator";
 import type { SpecialPlacementLookup } from "./SpecialPlacementLookup";
 import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
 
 export class SpecialPlacer {
-  private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
-
   constructor(
     private readonly dataService: SpecialPlacementDataProvider,
     private readonly tupleGenerator: TurnsTupleGenerator,
-    private readonly lookupService: SpecialPlacementLookup,
-    private readonly gridModeService: GridModeDeriver
-  ) {
-    this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
-  }
+    private readonly lookupService: SpecialPlacementLookup
+  ) {}
 
   /**
    * Get special adjustment for arrow based on special placement logic.
@@ -68,11 +67,11 @@ export class SpecialPlacer {
 
     // Step 1: Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
-    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
+    const rawOriKey = generateOrientationKey(
       motionData,
       pictographData
     );
-    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+    const oriKey = resolveEffectiveOriKey(
       rawOriKey,
       pictographData
     );
@@ -98,7 +97,7 @@ export class SpecialPlacer {
     // CRITICAL: Compute legacy bucket from rawOriKey, not oriKey. For staff+staff,
     // oriKey is already "from_layer1" - mapToLegacyBucket would parse the underscores
     // as orientation separators, producing "from_layer2" (wrong layer entirely).
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
+    const legacyOriKey = mapToLegacyBucket(rawOriKey);
     const globalAdjustmentRepo = getGlobalAdjustmentRepository();
     if (globalAdjustmentRepo?.isInitialized) {
       const baseKey = {
@@ -184,16 +183,16 @@ export class SpecialPlacer {
 
     // Step 1: Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
-    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
+    const rawOriKey = generateOrientationKey(
       motionData,
       pictographData
     );
-    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+    const oriKey = resolveEffectiveOriKey(
       rawOriKey,
       pictographData
     );
     // Compute legacy bucket from rawOriKey, not oriKey (same fix as getSpecialAdjustment)
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
+    const legacyOriKey = mapToLegacyBucket(rawOriKey);
 
     // Step 2: Determine grid mode
     const gridMode = this.getGridMode(pictographData);
@@ -294,16 +293,16 @@ export class SpecialPlacer {
 
     // Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
-    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
+    const rawOriKey = generateOrientationKey(
       motionData,
       pictographData
     );
-    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+    const oriKey = resolveEffectiveOriKey(
       rawOriKey,
       pictographData
     );
     // Compute legacy bucket from rawOriKey, not oriKey (same fix as getSpecialAdjustment)
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
+    const legacyOriKey = mapToLegacyBucket(rawOriKey);
 
     // Determine grid mode
     const gridMode = this.getGridMode(pictographData);
@@ -388,19 +387,12 @@ export class SpecialPlacer {
    */
   private getGridMode(pictographData: PictographData): string {
     if (pictographData.motions.blue && pictographData.motions.red) {
-      return this.getGridModeService().deriveGridMode(
+      return _deriveGridMode(
         pictographData.motions.blue,
         pictographData.motions.red
       );
     }
     return GridMode.DIAMOND;
-  }
-
-  /**
-   * Get grid mode service
-   */
-  private getGridModeService(): GridModeDeriver {
-    return this.gridModeService;
   }
 }
 
@@ -413,12 +405,9 @@ export class SpecialPlacer {
 import { specialPlacementDataProvider } from "./SpecialPlacementDataProvider";
 import { turnsTupleGenerator } from "./TurnsTupleGenerator";
 import { specialPlacementLookup } from "./SpecialPlacementLookup";
-import { gridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
-
 
 export const specialPlacer = new SpecialPlacer(
   specialPlacementDataProvider,
   turnsTupleGenerator,
-  specialPlacementLookup,
-  gridModeDeriver
+  specialPlacementLookup
 );

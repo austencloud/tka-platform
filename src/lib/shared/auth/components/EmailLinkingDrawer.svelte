@@ -11,10 +11,8 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { authState } from "../state/authState.svelte";
-import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import {
@@ -36,12 +34,10 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
   } = $props();
 
   // Services
-  let authService = $state<Authenticator | null>(null);
   let hapticService = $state<HapticFeedback | null>(null);
   let linkingState = $state<EmailLinkingState | null>(null);
 
   onMount(() => {
-    authService = getAuthenticator();
     hapticService = getHapticFeedback();
   });
 
@@ -51,10 +47,10 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   // Create state when services are ready and dialog opens
   $effect(() => {
-    if (isOpen && authService && !linkingState) {
+    if (isOpen && !linkingState) {
       const initialEmail = authState.user?.email ?? "";
       linkingState = createEmailLinkingState(
-        authService,
+        null,
         hapticService,
         initialEmail,
         onSuccess,

@@ -18,7 +18,6 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 import type { LOOPValidator } from "./LOOPValidator";
 import type { SequenceAnalyzer } from "./SequenceAnalyzer";
 import type { BridgeFinder } from "./BridgeFinder";
-import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { recalculateAllOrientations } from "./sequence-transforms/orientation-propagation";
 import {
@@ -41,8 +40,7 @@ export class SequenceExtender {
     private loopValidator: LOOPValidator,
     private sequenceAnalyzer: SequenceAnalyzer,
     private bridgeFinder: BridgeFinder,
-    private motionQueryHandler: IMotionQueryHandler,
-    private gridModeDeriver: GridModeDeriver
+    private motionQueryHandler: IMotionQueryHandler
   ) {}
 
   /**
@@ -407,7 +405,6 @@ import { loopValidator } from "./LOOPValidator";
 import { sequenceAnalyzer } from "./SequenceAnalyzer";
 import { bridgeFinder } from "./BridgeFinder";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
-import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 
 export const sequenceExtender = new SequenceExtender(
   loopExecutorSelector,
@@ -418,6 +415,5 @@ export const sequenceExtender = new SequenceExtender(
   loopValidator,
   sequenceAnalyzer,
   bridgeFinder,
-  motionQueryHandler,
-  gridModeDeriver
+  motionQueryHandler
 );

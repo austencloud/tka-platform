@@ -17,7 +17,10 @@ import {
   VIDEO_INITIAL_CAPTURE_DELAY_MS,
 } from "../../shared/domain/constants/timing";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
-import type { FileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
+import {
+  downloadBlob,
+  generateTimestampedFilename,
+} from "$lib/shared/foundation/services/file-downloader";
 import type { AnimationPlaybackController } from "../implementations/AnimationPlaybackController";
 import {
   getHeaderHeight,
@@ -53,7 +56,6 @@ export class VideoExportOrchestrator {
 
   constructor(
     private readonly VideoExporter: VideoExporter,
-    private readonly fileDownloadService: FileDownloader,
     private readonly compositeRenderer: CompositeVideoRenderer,
     private readonly glyphPrerenderer: ExportGlyphPrerenderer,
     private readonly backgroundEncoder: BackgroundVideoEncoder
@@ -807,7 +809,7 @@ export class VideoExportOrchestrator {
         throw new Error("No encoder was initialized");
       }
 
-      await this.fileDownloadService.downloadBlob(outputBlob, filename);
+      await downloadBlob(outputBlob, filename);
 
       onProgress({ progress: 1, stage: "complete" });
 
@@ -896,7 +898,7 @@ export class VideoExportOrchestrator {
       mp4: "mp4",
     };
     const extension = extensionMap[format] || "mp4";
-    return this.fileDownloadService.generateTimestampedFilename(
+    return generateTimestampedFilename(
       baseName,
       extension
     );

@@ -33,8 +33,11 @@ import type {
   CandidateSet,
 } from "../domain/types";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
-import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
-import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
+import {
+  gridLocationToPosition3D,
+  calculatePropRotation,
+} from "$lib/shared/3d/services/plane-coordinate-mapper";
+import { mapOrientationToAngle } from "$lib/shared/3d/services/orientation-mapper";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
@@ -84,8 +87,7 @@ const POSITION_TO_GRID: Record<DiamondPosition, GridLocation> = {
   W: GridLocation.WEST,
 };
 
-const reachMapper = new PlaneCoordinateMapper();
-const reachOrientationMapper = new OrientationMapper();
+// reachMapper and reachOrientationMapper replaced by direct module function calls
 
 // Half a standard staff length in scene units - used to place the tip
 // points of the prop when building optimizer targets. 43 cm each side
@@ -114,12 +116,12 @@ function handToPropTarget(
 ): SimPropTarget {
   const loc = POSITION_TO_GRID[position];
   const centerPathAngle = LOCATION_ANGLES[loc];
-  const staffAngle = reachOrientationMapper.mapOrientationToAngle(
+  const staffAngle = mapOrientationToAngle(
     orientation === "in" ? Orientation.IN : Orientation.OUT,
     centerPathAngle
   );
-  const local = reachMapper.gridLocationToPosition3D(plane, loc);
-  const worldRotation = reachMapper.calculatePropRotation(plane, staffAngle);
+  const local = gridLocationToPosition3D(plane, loc);
+  const worldRotation = calculatePropRotation(plane, staffAngle);
 
   // Compute the staff axis direction by applying the horizontal quat +
   // world rotation to +Y, matching Staff3D.computePropRotation's pipeline.

@@ -12,9 +12,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { getUserRepository } from "$lib/shared/community/getUserRepository";
+  import { getUserProfile } from "$lib/shared/community/services/user-repository";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "$lib/features/browse/creators/components/profile/AvatarImage.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -30,9 +29,6 @@
   }
 
   let { open = $bindable(false), userId, onclose, onUserDeleted }: Props = $props();
-
-  // Services
-  let userService: UserRepository | null = null;
 
   // Profile state
   let userProfile = $state<EnhancedUserProfile | null>(null);
@@ -59,13 +55,7 @@
     userProfile = null;
 
     try {
-      userService = getUserRepository();
-
-      if (!userService) {
-        throw new Error("User service not available");
-      }
-
-      userProfile = await userService.getUserProfile(uid, currentUserId);
+      userProfile = await getUserProfile(uid, currentUserId);
     } catch (err) {
       console.error("[UserDetailModal] Error loading user data:", err);
       profileError = err instanceof Error ? err.message : "Failed to load user";

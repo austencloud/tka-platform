@@ -21,16 +21,15 @@ import { cellCacheKeyDeriver } from "../../../sequence-viewer/services/implement
 import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/contracts/types";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
-import type { DimensionCalculator } from "./DimensionCalculator";
 import type { CompositionProgressCallback } from "../contracts/types";
-import type { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
 import type { TextRenderer } from "./TextRenderer";
 import type { PictographBlobCache } from "./PictographBlobCache";
 import type { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
-import type { StepNumberRenderer } from "./StepNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
 import type { LayerCompositor } from "./LayerCompositor";
+import { calculateLayout } from "../layout-calculator";
+import { drawStepNumber } from "../step-number-renderer";
 import type { QRCodeGenerator } from "../../../qr/services/implementations/QRCodeGenerator";
 import {
   calculateHeaderHeight as sharedHeaderHeight,
@@ -57,13 +56,10 @@ export class ImageComposer {
   private useCompositionalCaching = true;
 
   constructor(
-    private readonly layoutService: LayoutCalculator,
     private readonly TextRenderer: TextRenderer,
-    private readonly DimensionCalculator: DimensionCalculator,
     private readonly blobCache: PictographBlobCache,
     private readonly keyHasher: PictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
-    private readonly stepNumberRenderer: StepNumberRenderer,
     private readonly canvas2DRenderer: Canvas2DDirectRenderer,
     private readonly layerCompositor?: LayerCompositor,
     private qrCodeGenerator?: QRCodeGenerator
@@ -188,7 +184,7 @@ export class ImageComposer {
       const remaining = stepCount - firstRowSteps;
       rows = 1 + (remaining > 0 ? Math.ceil(remaining / stepsPerRow) : 0);
     } else {
-      [columns, rows] = this.layoutService.calculateLayout(
+      [columns, rows] = calculateLayout(
         stepCount,
         options.includeStartPosition ?? false,
         options.startPositionLayout ?? "column"
@@ -633,7 +629,7 @@ export class ImageComposer {
 
       if (stepNumber !== undefined) {
         const isDarkMode = finalVisibilitySettings.darkMode ?? false;
-        this.stepNumberRenderer.drawStepNumber(ctx, stepNumber, x, y, stepSize, isDarkMode);
+        drawStepNumber(ctx, stepNumber, x, y, stepSize, isDarkMode);
       }
     } catch (error) {
       console.error(`❌ Failed to render beat at (${column}, ${row}):`, error);
@@ -1147,7 +1143,7 @@ export class ImageComposer {
     ctx.fillRect(0, 0, cardWidth, cardHeight);
 
     const stepCount = sequence.steps?.length ?? 0;
-    const layout = this.layoutService.calculateLayout(
+    const layout = calculateLayout(
       stepCount,
       options.includeStartPosition ?? false,
       options.startPositionLayout ?? "column"
@@ -1221,24 +1217,18 @@ export class ImageComposer {
   }
 }
 
-import { layoutCalculator } from "./LayoutCalculator";
 import { textRenderer } from "./TextRenderer";
-import { dimensionCalculator } from "./DimensionCalculator";
 import { pictographBlobCache } from "./PictographBlobCache";
 import { pictographKeyHasher } from "./PictographKeyHasher";
 import { pictographMemoryCache } from "./PictographMemoryCache";
-import { stepNumberRenderer } from "./StepNumberRenderer";
 import { canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
 import { layerCompositor } from "./LayerCompositor";
 
 export const imageComposer = new ImageComposer(
-  layoutCalculator,
   textRenderer,
-  dimensionCalculator,
   pictographBlobCache,
   pictographKeyHasher,
   pictographMemoryCache,
-  stepNumberRenderer,
   canvas2DDirectRenderer,
   layerCompositor
 );

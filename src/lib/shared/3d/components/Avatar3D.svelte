@@ -44,8 +44,10 @@
   import type { RootMotionExtractor } from "../services/implementations/RootMotionExtractor";
   import type { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import type { FootPlanter } from "../services/implementations/FootPlanter";
-  import type { HingeConstrainedLegIKSolver } from "../services/implementations/HingeConstrainedLegIKSolver";
-  import type { ContactCurveCache } from "../services/implementations/ContactCurveCache";
+  import {
+    type ContactCurveCacheState,
+    registerCurve,
+  } from "../services/contact-curve-cache";
   import type { ClipBasedTurnAnimator } from "../services/implementations/ClipBasedTurnAnimator";
   import type { TurnRequest } from "../services/contracts/types";
   import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
@@ -192,8 +194,7 @@
   let stateMachine: AnimationStateMachine | null = null;
   let rootMotionExtractor: RootMotionExtractor | null = null;
   let footPlanter: FootPlanter | null = null;
-  let legIKSolver: HingeConstrainedLegIKSolver | null = null;
-  let contactCurveCache: ContactCurveCache | null = null;
+  let contactCurveCache: ContactCurveCacheState | null = null;
   let turnAnimator: ClipBasedTurnAnimator | null = null;
   let fingerAnimator: FingerAnimator | null = null;
   let debugHandle: AvatarDebugHandle | null = null;
@@ -449,7 +450,7 @@
                 // Register turn clip contact curves so FootPlanter can query them
                 if (contactCurveCache && turnAnimator) {
                   for (const curve of turnAnimator.getContactCurves()) {
-                    contactCurveCache.register(curve);
+                    registerCurve(contactCurveCache, curve);
                   }
                 }
               });
@@ -464,8 +465,8 @@
       // ikSolver, which is still used by arm IK elsewhere in this file).
       // Gated on enableFootPlanting - off by default so the museum FPS player
       // (which wants responsive code-driven movement) isn't affected.
-      if (enableFootPlanting && footPlanter && skeletonService && legIKSolver && contactCurveCache) {
-        footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
+      if (enableFootPlanting && footPlanter && skeletonService && contactCurveCache) {
+        footPlanter.initialize(skeletonService, contactCurveCache);
       }
 
       // Initialize finger animator with mapped finger chains
@@ -514,7 +515,6 @@
       locomotionAnimator = services.locomotion;
       stateMachine = services.stateMachine;
       footPlanter = services.footPlanter;
-      legIKSolver = services.legIKSolver;
       contactCurveCache = services.contactCurveCache;
       turnAnimator = services.turnAnimator;
       rootMotionExtractor = services.rootMotionExtractor;

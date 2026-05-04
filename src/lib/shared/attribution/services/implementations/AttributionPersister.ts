@@ -12,13 +12,12 @@ import type {
   SelfReportedAttribution,
   SignupContext,
 } from "../../domain/types";
-import type { AttributionCapture } from "./AttributionCapture";
+import { captureTouchData, isDifferentTouch } from "../attribution-capture";
 
 const STORAGE_KEY = "tka-attribution-session";
-const MAX_TOUCHES = 20; // Cap to prevent unbounded growth
+const MAX_TOUCHES = 20;
 
 export class AttributionPersister {
-  constructor(private capture: AttributionCapture) {}
 
   /**
    * Get or create an anonymous session for tracking before signup
@@ -30,7 +29,7 @@ export class AttributionPersister {
     }
 
     // Create new session with current touch data
-    const touch = this.capture.captureTouchData();
+    const touch = captureTouchData();
     const session: AnonymousAttributionSession = {
       sessionId: this.generateSessionId(),
       firstTouch: touch,
@@ -84,7 +83,7 @@ export class AttributionPersister {
     }
 
     // Check if this touch is meaningfully different
-    if (!this.capture.isDifferentTouch(session.lastTouch, touch)) {
+    if (!isDifferentTouch(session.lastTouch, touch)) {
       // Same attribution, just update the timestamp and session count
       session.sessionCount += 1;
       session.updatedAt = new Date().toISOString();
@@ -152,7 +151,7 @@ export class AttributionPersister {
     );
 
     // Build user attribution
-    const currentTouch = this.capture.captureTouchData();
+    const currentTouch = captureTouchData();
     const attribution: UserAttribution = {
       firstTouch: session?.firstTouch || currentTouch,
       lastTouch: session?.lastTouch || currentTouch,

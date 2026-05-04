@@ -4,10 +4,9 @@ Empty = random generation. Typed word = spell that word.
 Replaces the old GenerationModeCard (Freeform/Spell toggle).
 -->
 <script lang="ts">
-  import { getGreekKeyMapper } from "$lib/shared/keyboard/getGreekKeyMapper";
+  import { getGreekSymbol } from "$lib/shared/keyboard/services/greek-key-mapper";
   import { onMount } from "svelte";
   import CardHeader from "./shared/CardHeader.svelte";
-  import type { GreekKeyMapper } from "$lib/shared/keyboard/services/implementations/GreekKeyMapper";
   import {
     uppercasePreservingGreek,
     insertAtCursor,
@@ -39,10 +38,8 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     onOpenOverlay?: () => void;
   }>();
 
-  let greekKeyMapper: GreekKeyMapper | null = $state(null);
 
   onMount(() => {
-    greekKeyMapper = getGreekKeyMapper();
   });
 
   const hasWord = $derived(wordValue.trim().length > 0);
@@ -80,7 +77,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
     if (event.code.startsWith("Numpad") && !event.getModifierState("NumLock")) return;
 
-    const symbol = greekKeyMapper?.getSymbol(event.code);
+    const symbol = getGreekSymbol(event.code);
     if (!symbol) return;
 
     event.preventDefault();

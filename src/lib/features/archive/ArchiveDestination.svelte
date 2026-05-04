@@ -6,15 +6,14 @@
 	 * with Rapier collision detection and grid-snapped room geometry.
 	 */
 	import IndoorScene from "$lib/shared/3d/indoor/IndoorScene.svelte";
-	import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/implementations/RoomGeometryBuilder";
+	import { buildRoom } from "$lib/shared/3d/indoor/services/room-geometry-builder";
 	import { DISCOVERY_CHAMBER } from "./domain/wing-definitions";
 	import { createArchiveState } from "./state/archive-state.svelte";
 	import DiscoveryChamber from "./components/DiscoveryChamber.svelte";
 	import PlaqueOverlay from "./components/PlaqueOverlay.svelte";
 
 	const archiveState = createArchiveState();
-	const builder = new RoomGeometryBuilder();
-	const solvedRoom = builder.build(DISCOVERY_CHAMBER);
+	const solvedRoom = buildRoom(DISCOVERY_CHAMBER);
 
 	// World offset: existing archive uses groundY = 8
 	solvedRoom.worldOffset = { x: 0, y: 8, z: 0 };

@@ -8,9 +8,8 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { linkGoogleAccount, linkFacebookAccount, unlinkProvider } from "$lib/shared/auth/services/authenticator";
   import { authState } from "../../../auth/state/authState.svelte";
-import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
@@ -18,7 +17,6 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
   import ConfirmDialog from "../../../foundation/ui/ConfirmDialog.svelte";
 
   // Services
-  let authService = $state<Authenticator | null>(null);
   let hapticService = $state<HapticFeedback | null>(null);
 
   // UI State
@@ -34,7 +32,6 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
   let providerToUnlink = $state<ProviderId | null>(null);
 
   onMount(() => {
-    authService = getAuthenticator();
     hapticService = getHapticFeedback();
   });
 
@@ -61,15 +58,6 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   // Link a new provider
   async function linkProvider(providerId: ProviderId) {
-    // Check if authService is available
-    if (!authService) {
-      console.error("Auth service not available - cannot link provider");
-      errorMessage =
-        "Unable to connect. Please refresh the page and try again.";
-      hapticService?.trigger("error");
-      return;
-    }
-
     // Prevent double-clicking
     if (linkingProvider) return;
 
@@ -79,9 +67,9 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
     try {
       if (providerId === "google.com") {
-        await authService.linkGoogleAccount();
+        await linkGoogleAccount();
       } else if (providerId === "facebook.com") {
-        await authService.linkFacebookAccount();
+        await linkFacebookAccount();
       }
       // Note: Email/password linking requires a separate flow with password input
 
@@ -111,14 +99,14 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   // Request to unlink a provider (shows confirmation dialog)
   function requestUnlinkProvider(providerId: ProviderId) {
-    if (!authService || unlinkingProvider || !canUnlink) return;
+    if (unlinkingProvider || !canUnlink) return;
     providerToUnlink = providerId;
     showUnlinkConfirm = true;
   }
 
   // Actually unlink the provider (called after confirmation)
   async function confirmUnlinkProvider() {
-    if (!authService || !providerToUnlink) return;
+    if (!providerToUnlink) return;
 
     const providerId = providerToUnlink;
     const providerName = PROVIDERS[providerId].name;
@@ -127,7 +115,7 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
     errorMessage = null;
 
     try {
-      await authService.unlinkProvider(providerId);
+      await unlinkProvider(providerId);
       hapticService?.trigger("success");
     } catch (error: unknown) {
       console.error(`Failed to unlink ${providerId}:`, error);

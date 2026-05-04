@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getUserSearcher } from "./getUserSearcher";
+  import { searchUsers as searchUsersService } from "./services/user-searcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { UserSearchResult } from "./services/contracts/types";
 
@@ -48,7 +48,6 @@
 
   // Services
   const hapticService = getHapticFeedback();
-  const userSearcher = getUserSearcher();
 
   // Auto-focus when requested
   $effect(() => {
@@ -71,7 +70,7 @@
    * Search users using the UserSearcher service
    */
   async function searchUsers(queryText: string): Promise<UserResult[]> {
-    return userSearcher.searchUsers(queryText, {
+    return searchUsersService(queryText, {
       excludeUserIds,
       limit: 10,
     });

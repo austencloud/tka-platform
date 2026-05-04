@@ -6,8 +6,7 @@
  */
 
 import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-import type { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
-import type { SequenceConverter } from "$lib/shared/3d/services/implementations/SequenceConverter";
+// propInterpolator / sequenceConverter are now module-level functions
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { VillageOrchestrator } from "../engine/VillageOrchestrator";
@@ -20,8 +19,7 @@ import type {
 } from "../domain/village-types";
 
 export interface RendererDeps {
-	propInterpolator: PropStateInterpolator;
-	sequenceConverter: SequenceConverter;
+	// propInterpolator and sequenceConverter are now module-level functions
 }
 
 export interface AvatarRenderState {
@@ -130,10 +128,7 @@ export function createVillageState(
 						positionX: entity.transform.x,
 						positionZ: entity.transform.z,
 					},
-					{
-						propInterpolator: deps.propInterpolator,
-						sequenceConverter: deps.sequenceConverter,
-					},
+					{},
 				);
 
 				renderState = {

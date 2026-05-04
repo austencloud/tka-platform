@@ -12,7 +12,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+import { calculateAllArrowPoints } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
 
 export type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
 
@@ -124,7 +124,7 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
 
   // Recalculate arrow placement for the enhanced pictograph
   try {
-    return await arrowPositioningOrchestrator.calculateAllArrowPoints(enhancedPictograph);
+    return await calculateAllArrowPoints(enhancedPictograph);
   } catch (error) {
     console.warn("Failed to recalculate arrow placement for invert demo:", error);
     return enhancedPictograph; // Return without recalculated placement as fallback

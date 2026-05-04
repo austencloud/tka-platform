@@ -21,7 +21,7 @@
 import { getVoiceSessionRepository } from "$lib/features/voice-sessions/getVoiceSessionRepository";
 import { getCommandDispatcher } from "$lib/shared/voice-control/getCommandDispatcher";
 import { getCommandInterpreter } from "$lib/shared/voice-control/getCommandInterpreter";
-import { getIntentResolver } from "$lib/shared/voice-control/getIntentResolver";
+import { resolveIntent } from "$lib/shared/voice-control/services/llm-intent-resolver";
 import { getTTSProvider } from "$lib/shared/voice-control/getTTSProvider";
 import { getVoiceSessionRecorder } from "$lib/shared/voice-control/getVoiceSessionRecorder";
 import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetector";
@@ -29,10 +29,9 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import type { WakeWordDetector } from "$lib/shared/voice-control/services/implementations/WakeWordDetector";
   import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
   import type { CommandDispatcher } from "../services/implementations/CommandDispatcher";
-  import type { LLMIntentResolver } from "$lib/shared/voice-control/services/implementations/LLMIntentResolver";
   import type { WebSpeechTTSProvider } from "$lib/shared/voice-control/services/implementations/WebSpeechTTSProvider";
   import type { VoiceSessionRecorder } from "../services/implementations/VoiceSessionRecorder";
-  import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
+  import type * as VoiceSessionRepositoryModule from "$lib/features/voice-sessions/services/voice-session-repository";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import { voiceControlState } from "../state/voice-control-state.svelte";
   import { classifyTier } from "../ai/tier-classifier";
@@ -41,10 +40,9 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   let wakeWordDetector: WakeWordDetector | null = null;
   let commandInterpreter: CommandInterpreter | null = null;
   let commandDispatcher: CommandDispatcher | null = null;
-  let intentResolver: LLMIntentResolver | null = null;
   let ttsProvider: WebSpeechTTSProvider | null = null;
   let sessionRecorder: VoiceSessionRecorder | null = null;
-  let sessionRepository: VoiceSessionRepository | null = null;
+  let sessionRepository: typeof VoiceSessionRepositoryModule | null = null;
 
   function getContext() {
     return {
@@ -82,7 +80,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
    * Called when regex chain returns "unknown" and tier classifier says "action".
    */
   async function resolveTier2(rawText: string, rawEvent: string, startMs: number) {
-    if (!intentResolver || !commandDispatcher) return;
+    if (!commandDispatcher) return;
 
     const context = {
       currentModule: navigationState.currentModule,
@@ -97,7 +95,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
     const previousCommand = lastCommands.length > 0 ? lastCommands[lastCommands.length - 1] : undefined;
 
     console.log(`[HeyTika] Tier 2: Resolving "${rawText}" via LLM`);
-    const resolution = await intentResolver.resolve(rawText, context, previousCommand);
+    const resolution = await resolveIntent(rawText, context, previousCommand);
 
     // If LLM says this is a question, route to Tier 3 (voice-to-chat)
     if (resolution.escalateToChat) {
@@ -316,7 +314,6 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
       wakeWordDetector = getWakeWordDetector();
       commandInterpreter = getCommandInterpreter();
       commandDispatcher = getCommandDispatcher();
-      intentResolver = getIntentResolver();
       ttsProvider = getTTSProvider();
       sessionRecorder = getVoiceSessionRecorder();
       sessionRepository = getVoiceSessionRepository();

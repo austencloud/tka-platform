@@ -9,7 +9,12 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+import {
+  initialize as persistenceInitialize,
+  saveCurrentSequenceState,
+  loadCurrentSequenceState,
+  clearCurrentSequenceState,
+} from "$lib/shared/persistence/services/dexie-persistence-service";
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
@@ -17,8 +22,6 @@ import { navigationState } from "$lib/shared/navigation/state/navigation-state.s
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 export class SequencePersister {
-  constructor(private persistenceService: DexiePersistenceService) {}
-
   /**
    * Get the current active mode from navigation state
    * Dynamically imported to avoid circular dependencies
@@ -37,8 +40,7 @@ export class SequencePersister {
 
   async initialize(): Promise<void> {
     try {
-      // Ensure the persistence service is initialized
-      await this.persistenceService.initialize();
+      await persistenceInitialize();
     } catch (error) {
       console.error("❌ SequencePersister: Failed to initialize:", error);
       throw error;
@@ -52,7 +54,7 @@ export class SequencePersister {
     activeBuildSection: ActiveCreateModule;
   }): Promise<void> {
     try {
-      await this.persistenceService.saveCurrentSequenceState(state);
+      await saveCurrentSequenceState(state);
     } catch (error) {
       console.error(
         "❌ SequencePersister: Failed to save current state:",
@@ -80,14 +82,11 @@ export class SequencePersister {
     activeBuildSection: ActiveCreateModule;
   } | null> {
     try {
-      // Get current mode if not provided
       const targetMode = mode ?? (await this.getCurrentMode());
 
-      const state =
-        await this.persistenceService.loadCurrentSequenceState(targetMode);
+      const state = await loadCurrentSequenceState(targetMode);
       if (state) {
-        // Type guard for activeBuildSection
-        const activeBuildSection = this.isActiveCreateModule(
+        const activeBuildSection = isActiveCreateModule(
           state.activeBuildSection
         )
           ? state.activeBuildSection
@@ -121,22 +120,9 @@ export class SequencePersister {
     }
   }
 
-  /**
-   * Type guard to check if a value is a valid ActiveCreateModule
-   */
-  private isActiveCreateModule(value: unknown): value is ActiveCreateModule {
-    return (
-      typeof value === "string" &&
-      (value === "construct" ||
-        value === "generate" ||
-        value === "assemble" ||
-        value === "spell")
-    );
-  }
-
   async clearCurrentState(mode?: string): Promise<void> {
     try {
-      await this.persistenceService.clearCurrentSequenceState(mode);
+      await clearCurrentSequenceState(mode);
     } catch (error) {
       console.error(
         "❌ SequencePersister: Failed to clear current state:",
@@ -149,8 +135,7 @@ export class SequencePersister {
   async hasSavedState(mode?: string): Promise<boolean> {
     try {
       const targetMode = mode ?? (await this.getCurrentMode());
-      const state =
-        await this.persistenceService.loadCurrentSequenceState(targetMode);
+      const state = await loadCurrentSequenceState(targetMode);
       return state !== null;
     } catch (error) {
       console.error(
@@ -164,8 +149,7 @@ export class SequencePersister {
   async getLastSaveTimestamp(mode?: string): Promise<number | null> {
     try {
       const targetMode = mode ?? (await this.getCurrentMode());
-      const state =
-        await this.persistenceService.loadCurrentSequenceState(targetMode);
+      const state = await loadCurrentSequenceState(targetMode);
       if (state && "timestamp" in state) {
         const stateWithTimestamp = state as Record<string, unknown>;
         const timestamp = stateWithTimestamp["timestamp"];
@@ -182,9 +166,14 @@ export class SequencePersister {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { dexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+function isActiveCreateModule(value: unknown): value is ActiveCreateModule {
+  return (
+    typeof value === "string" &&
+    (value === "construct" ||
+      value === "generate" ||
+      value === "assemble" ||
+      value === "spell")
+  );
+}
 
-export const sequencePersister = new SequencePersister(dexiePersistenceService);
+export const sequencePersister = new SequencePersister();

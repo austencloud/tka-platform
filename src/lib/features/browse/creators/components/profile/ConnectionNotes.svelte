@@ -6,9 +6,8 @@
    * Only visible to the current user viewing another profile.
    */
 
-  import { getConnectionManager } from "$lib/shared/community/getConnectionManager";
+  import { saveNotes as saveNotesService } from "$lib/shared/community/services/connection-manager";
   import { onDestroy } from "svelte";
-  import type { ConnectionManager } from "$lib/shared/community/services/implementations/ConnectionManager";
 
   interface Props {
     targetUserId: string;
@@ -29,13 +28,6 @@
     if (statusResetTimer) clearTimeout(statusResetTimer);
   });
 
-  // Service
-  let connectionManager: ConnectionManager;
-
-  $effect(() => {
-    connectionManager = getConnectionManager();
-  });
-
   // Sync with initial notes if they change
   $effect.pre(() => {
     if (initialNotes !== notes && saveStatus === "idle") {
@@ -44,12 +36,12 @@
   });
 
   async function saveNotes() {
-    if (!connectionManager || saveStatus === "saving") return;
+    if (saveStatus === "saving") return;
 
     saveStatus = "saving";
 
     try {
-      await connectionManager.saveNotes(targetUserId, notes);
+      await saveNotesService(targetUserId, notes);
       onNotesChange?.(notes);
       saveStatus = "saved";
       if (statusResetTimer) clearTimeout(statusResetTimer);

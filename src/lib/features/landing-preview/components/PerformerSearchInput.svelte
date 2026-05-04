@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getUserSearcher } from "$lib/shared/user-search/getUserSearcher";
+  import { searchUsers } from "$lib/shared/user-search/services/user-searcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { UserSearchResult } from "$lib/shared/user-search/services/contracts/types";
   import type { VideoPerformer } from "../types";
@@ -40,7 +40,6 @@
 
   // Services
   const hapticService = getHapticFeedback();
-  const userSearcher = getUserSearcher();
 
   // Auto-focus when requested
   $effect(() => {
@@ -75,7 +74,7 @@
     searchTimeout = window.setTimeout(async () => {
       isSearching = true;
       try {
-        searchResults = await userSearcher.searchUsers(q, {
+        searchResults = await searchUsers(q, {
           excludeUserIds,
           limit: 10,
         });

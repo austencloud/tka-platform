@@ -12,15 +12,27 @@
  * while internally using decomposed, single-responsibility services.
  */
 
-import type { DetectionCapabilities, HandLandmark, DetectedHandData } from "../contracts/types";
+import type { HandLandmark } from "./HandLandmarker";
+import type { DetectedHandData } from "./HandAssigner";
+
+export interface DetectionCapabilities {
+  supportsRealtime: boolean;
+  supportsPostRecording: boolean;
+  requiresCalibration: boolean;
+}
+
+export interface DetectionOptions {
+  mirrored?: boolean;
+  gridMode?: GridMode;
+}
 import type {
   DetectionFrame,
   DetectedPosition,
 } from "../../domain/models/DetectionFrame";
 import type { HandLandmarker } from "./HandLandmarker";
-import type { HandednessAnalyzer } from "./HandednessAnalyzer";
-import type { HandStateAnalyzer } from "./HandStateAnalyzer";
 import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
+import { analyzeHandedness } from "../handedness-analyzer";
+import { analyzeHandState, calculatePalmCenter, getReferencePoint } from "../hand-state-analyzer";
 import { mapToQuadrant, isValidForMode } from "../quadrant-mapper";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
@@ -28,10 +40,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 const HAND_PERSISTENCE_FRAMES = 5;
 
 export class MediaPipeDetector {
-  // Sub-services (injected via DI)
   private _landmarker: HandLandmarker;
-  private _handednessAnalyzer: HandednessAnalyzer;
-  private _stateAnalyzer: HandStateAnalyzer;
   private _stabilizer: HandTrackingStabilizer;
 
   // State
@@ -56,13 +65,9 @@ export class MediaPipeDetector {
 
   constructor(
     landmarker: HandLandmarker,
-    handednessAnalyzer: HandednessAnalyzer,
-    stateAnalyzer: HandStateAnalyzer,
     stabilizer: HandTrackingStabilizer
   ) {
     this._landmarker = landmarker;
-    this._handednessAnalyzer = handednessAnalyzer;
-    this._stateAnalyzer = stateAnalyzer;
     this._stabilizer = stabilizer;
   }
 
@@ -170,15 +175,15 @@ export class MediaPipeDetector {
         if (!wrist) continue;
 
         // Use HandStateAnalyzer to detect hand state
-        const stateResult = this._stateAnalyzer.analyzeHandState(landmarks);
+        const stateResult = analyzeHandState(landmarks);
         const handState = stateResult.state;
 
         // Use HandStateAnalyzer to calculate palm center
-        const palmCenter = this._stateAnalyzer.calculatePalmCenter(
+        const palmCenter = calculatePalmCenter(
           landmarks,
           handState
         );
-        const referencePoint = this._stateAnalyzer.getReferencePoint(
+        const referencePoint = getReferencePoint(
           landmarks,
           handState
         );
@@ -215,7 +220,7 @@ export class MediaPipeDetector {
 
         // Use HandednessAnalyzer for anatomical detection
         const handednessResult =
-          this._handednessAnalyzer.analyzeHandedness(landmarks);
+          analyzeHandedness(landmarks);
         const anatomicalHandedness = handednessResult.anatomicalHandedness;
 
         // Determine final handedness

@@ -1,6 +1,6 @@
 import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { HandPathNamer } from '$lib/shared/foundation/services/implementations/HandPathNamer'
+import { handPathToName } from '$lib/shared/foundation/services/hand-path-namer';
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 
 export type HandSide = "blue" | "red";
@@ -29,7 +29,6 @@ export interface ExplorerState {
 
 export function createExplorerState(
   sequenceRepository: SequenceRepository,
-  handPathNamer: HandPathNamer
 ): ExplorerState {
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);
@@ -79,7 +78,7 @@ export function createExplorerState(
             groupMap.set(hash, {
               hash,
               handPath,
-              name: handPathNamer.toName(handPath.locations),
+              name: handPathToName(handPath.locations),
               sequences: [seq],
               sides: new Set<HandSide>([side]),
             });

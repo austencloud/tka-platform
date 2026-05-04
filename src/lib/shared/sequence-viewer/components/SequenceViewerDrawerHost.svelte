@@ -1,5 +1,5 @@
 <script lang="ts">
-import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
+import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { onMount } from "svelte";
   import { goto, replaceState } from "$app/navigation";
   import { fly } from "svelte/transition";
@@ -20,10 +20,10 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
   import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
-  import { getCollaborativeVideoManager } from "$lib/shared/video-collaboration/getCollaborativeVideoManager";
+  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
-  import { getSequenceEncoder } from "$lib/shared/navigation/getSequenceEncoder";
+  import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -65,8 +65,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
       return;
     }
 
-    const videoManager = getCollaborativeVideoManager();
-    videoManager.getVideosForSequence(seq.id).then((videos) => {
+    getVideosForSequence(seq.id).then((videos) => {
       videoCount = videos.length;
     }).catch(() => {
       videoCount = 0;
@@ -175,10 +174,9 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
         return;
       }
 
-      const encoder = getSequenceEncoder();
       const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
       if (
-        !encoder.isInlineEncoded(code) &&
+        !isInlineEncoded(code) &&
         typeof window !== "undefined" &&
         isGenuineScan(code)
       ) {
@@ -192,7 +190,7 @@ import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
-          deviceId: getDeviceIdService().getDeviceId(),
+          deviceId: getDeviceId(),
         }).catch(() => {});
       }
 

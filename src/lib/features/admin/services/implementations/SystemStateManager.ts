@@ -11,7 +11,6 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { PostHogActivityLogger } from "$lib/shared/analytics/services/implementations/PostHogActivityLogger";
 import type { UserAttribution } from "$lib/shared/attribution/domain/types";
 import type { SystemState, CachedUserMetadata, CachedChallenge, CachedAnnouncement } from "../contracts/types";
 
@@ -40,7 +39,7 @@ function withTimeout<T>(
 export class SystemStateManager {
   private cachedState: SystemState | null = null;
 
-  constructor(private readonly activityLogService: PostHogActivityLogger) {}
+  constructor() {}
 
   /**
    * Check if Firestore is available

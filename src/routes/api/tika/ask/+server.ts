@@ -56,7 +56,7 @@ import {
   filterQuiz,
 } from "$lib/features/tika/validation/output-filter";
 import { getTikaServerContainer } from "$lib/features/tika/services/server/tika-server-container";
-import { TikaCapabilityLookup } from "$lib/features/tika/services/implementations/TikaCapabilityLookup";
+import { findCapabilities } from "$lib/features/tika/services/tika-capability-lookup";
 import {
   validateResponse,
   formatValidationReport,
@@ -508,8 +508,7 @@ function createTikaTools(userId: string, completedConcepts: string[], masteryCtx
         required: ["query"],
       }),
       execute: async ({ query }) => {
-        const lookup = new TikaCapabilityLookup();
-        const matches = lookup.findCapabilities(query, 3);
+        const matches = findCapabilities(query, 3);
 
         if (matches.length === 0) {
           return {

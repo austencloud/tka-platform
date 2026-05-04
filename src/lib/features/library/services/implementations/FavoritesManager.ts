@@ -5,7 +5,7 @@
  * CollectionManager for the underlying collection membership.
  */
 
-import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
+import { logActivity } from "$lib/shared/analytics/services/posthog-activity-logger";
 import {
   getFavoritesCollection,
   removeSequenceFromCollection,
@@ -48,13 +48,10 @@ export class FavoritesManager {
   }
 
   private logFavoriteAction(sequenceId: string, isFavorite: boolean): void {
-    const activityService = getActivityLogger();
-    if (activityService) {
-      activityService.log(
-        isFavorite ? "sequence_favorite" : "sequence_unfavorite",
-        "social",
-        { sequenceId }
-      );
-    }
+    void logActivity(
+      isFavorite ? "sequence_favorite" : "sequence_unfavorite",
+      "social",
+      { sequenceId }
+    );
   }
 }

@@ -16,7 +16,7 @@
    * - Is SEO-focused with feature sections
    * - Uses shared utilities from src/styles/landing-utilities.css
    */
-  import { getAuthenticator } from "$lib/shared/auth/getAuthenticator";
+  import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import { fly, fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { onMount } from "svelte";
@@ -25,7 +25,6 @@
   import AuthFooter from "./AuthFooter.svelte";
   import GoogleOneTap from "./GoogleOneTap.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
-import type { Authenticator } from '$lib/shared/auth/services/implementations/Authenticator'
   import { settingsService } from "../../settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "../../settings/utils/background-theme-calculator";
@@ -33,7 +32,6 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   let authMode = $state<"signin" | "signup">("signin");
   let showEmailAuth = $state(false);
-  let authService: Authenticator | null = null;
 
   // Legal sheet state (lifted here so it renders outside backdrop-filter container)
   let sheetOpen = $state(false);
@@ -65,12 +63,6 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
   let currentBgIndex = $state(0);
 
   onMount(async () => {
-    try {
-      authService = getAuthenticator();
-    } catch (error) {
-      console.error("Failed to resolve auth service:", error);
-    }
-
     // Find current background index and apply its theme
     const current = settingsService.currentSettings?.backgroundType;
     const idx = backgrounds.findIndex((b) => b.type === current);
@@ -85,7 +77,7 @@ import type { Authenticator } from '$lib/shared/auth/services/implementations/Au
 
   async function handleFacebookAuth() {
     try {
-      await authService?.signInWithFacebook();
+      await signInWithFacebook();
     } catch (error: any) {
       console.error("Facebook auth failed:", error);
     }

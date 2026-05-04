@@ -14,7 +14,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import { doc, getDoc } from "firebase/firestore";
-  import { getUserRepository } from "$lib/shared/community/getUserRepository";
+  import { followUser, unfollowUser } from "$lib/shared/community/services/user-repository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
@@ -22,7 +22,6 @@
   import { creatorsDataState } from "../state/creators-data-state.svelte";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
@@ -39,7 +38,6 @@
   let initError = $state<string | null>(null);
 
   // Service instances
-  let userRepository: UserRepository;
   let hapticService: HapticFeedback;
 
   // Get current user ID
@@ -91,21 +89,19 @@
 
   onMount(async () => {
     try {
-      // Resolve services from DI container
-      userRepository = getUserRepository();
       hapticService = getHapticFeedback();
 
       // Load creators data if not already initialized
       if (!creatorsDataState.isInitialized) {
         await Promise.all([
-          creatorsDataState.loadCreators(userRepository, currentUserId),
-          creatorsDataState.loadFeaturedCreators(userRepository),
+          creatorsDataState.loadCreators(currentUserId),
+          creatorsDataState.loadFeaturedCreators(),
         ]);
       } else if (currentUserId && !creatorsDataState.hasFollowState) {
         // The prefetch at app boot loaded creators before auth was ready,
         // so all isFollowing flags are false. Reload with the real userId
         // to get accurate follow state.
-        await creatorsDataState.refreshCreators(userRepository, currentUserId);
+        await creatorsDataState.refreshCreators(currentUserId);
       }
 
       // Patch the current user's sequenceCount from the latest Firestore cache.
@@ -162,11 +158,11 @@
 
     try {
       if (user.isFollowing) {
-        await userRepository.unfollowUser(currentUserId, user.id);
+        await unfollowUser(currentUserId, user.id);
         // Optimistic update via cached state
         creatorsDataState.updateUserFollowStatus(user.id, false, -1);
       } else {
-        await userRepository.followUser(currentUserId, user.id);
+        await followUser(currentUserId, user.id);
         // Optimistic update via cached state
         creatorsDataState.updateUserFollowStatus(user.id, true, 1);
       }
@@ -203,13 +199,12 @@
     await creatorsDataState.changeSortOrder(
       newSortBy,
       "desc",
-      userRepository,
       currentUserId
     );
   }
 
   function handleLoadMore() {
-    creatorsDataState.loadMoreCreators(userRepository, currentUserId);
+    creatorsDataState.loadMoreCreators(currentUserId);
   }
 </script>
 

@@ -1,6 +1,2 @@
-import { SequenceConverter } from './services/implementations/SequenceConverter';
-
-let instance: SequenceConverter | null = null;
-export function getSequenceConverter(): SequenceConverter {
-  return instance ??= new SequenceConverter();
-}
+import * as sequenceConverter from './services/sequence-converter';
+export function getSequenceConverter() { return sequenceConverter; }

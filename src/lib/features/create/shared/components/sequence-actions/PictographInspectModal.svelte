@@ -8,11 +8,11 @@
   import type { StepData } from "../../domain/models/StepData";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { SpecialPlacementOriKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
+  import { generateOrientationKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-  import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+  import { calculateAllArrowPoints } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
   import { specialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer";
-  import { rotationAngleOverrideKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
+  import { generateRotationAngleOverrideKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/rotation-angle-override-key-generator";
   import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 
   import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
@@ -88,7 +88,7 @@
       pictographDataState = pictographData;
 
       const calculated =
-        await arrowPositioningOrchestrator.calculateAllArrowPoints(pictographData);
+        await calculateAllArrowPoints(pictographData);
 
       calculatedData = {
         ...stepData,
@@ -143,8 +143,6 @@
 
   function calculateLookupKeys(pictographData: PictographData) {
     try {
-      const oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
-
       const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
       const redMotionData = pictographData.motions?.[MotionColor.RED];
 
@@ -158,10 +156,7 @@
 
       let oriKey = "unknown";
       if (blueMotionData) {
-        oriKey = oriKeyGenerator.generateOrientationKey(
-          blueMotionData,
-          pictographData
-        );
+        oriKey = generateOrientationKey(blueMotionData, pictographData);
       }
 
       const turnsTuple = turnsTupleGenerator.generateTurnsTuple(pictographData);
@@ -173,7 +168,7 @@
         const motionType = blueMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
           blueRotationOverrideKey =
-            rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
+            generateRotationAngleOverrideKey(
               blueMotionData,
               pictographData
             );
@@ -184,7 +179,7 @@
         const motionType = redMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
           redRotationOverrideKey =
-            rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
+            generateRotationAngleOverrideKey(
               redMotionData,
               pictographData
             );
@@ -210,7 +205,7 @@
       if (blueMotionData) {
         const motionType = blueMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          const blueKey = rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
+          const blueKey = generateRotationAngleOverrideKey(
             blueMotionData,
             pictographData
           );
@@ -229,7 +224,7 @@
       if (redMotionData) {
         const motionType = redMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          const redKey = rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
+          const redKey = generateRotationAngleOverrideKey(
             redMotionData,
             pictographData
           );

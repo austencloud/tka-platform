@@ -12,9 +12,13 @@
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { TurnsTupleGenerator } from "./TurnsTupleGenerator";
-import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
-import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
-import type { GridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+import {
+  generateOrientationKey,
+  resolveEffectiveOriKey,
+  mapToLegacyBucket,
+} from "../../../key-generation/services/special-placement-ori-key-generator";
+import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
+import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
 const STORAGE_KEY = "tka_rotation_overrides";
 
 interface RotationOverrideData {
@@ -64,15 +68,10 @@ export interface IRotationOverrideManager {
 }
 
 export class RotationOverrideManager implements IRotationOverrideManager {
-  private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
-
   constructor(
     private readonly tupleGenerator: TurnsTupleGenerator,
-    private readonly rotationKeyGenerator: IRotationAngleOverrideKeyGenerator,
-    private readonly gridModeService: GridModeDeriver
-  ) {
-    this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
-  }
+    private readonly rotationKeyGenerator: IRotationAngleOverrideKeyGenerator
+  ) {}
 
   async toggleRotationOverride(
     motion: MotionData,
@@ -96,14 +95,8 @@ export class RotationOverrideManager implements IRotationOverrideManager {
     // must save under it or the reader never sees the override. For staff+staff
     // this collapses to the legacy bucket (e.g. "from_layer1"); for other props
     // it preserves the specific orientation (e.g. "clock_counter").
-    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
-      motion,
-      pictographData
-    );
-    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
-      rawOriKey,
-      pictographData
-    );
+    const rawOriKey = generateOrientationKey(motion, pictographData);
+    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
     const gridMode = this.getGridMode(pictographData);
     const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
     const rotationKey =
@@ -159,14 +152,8 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 
     // Use the same effective oriKey SpecialPlacer uses when reading,
     // so the state shown in the UI matches what the renderer applies.
-    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
-      motion,
-      pictographData
-    );
-    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
-      rawOriKey,
-      pictographData
-    );
+    const rawOriKey = generateOrientationKey(motion, pictographData);
+    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
     const gridMode = this.getGridMode(pictographData);
     const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
     const rotationKey =
@@ -188,7 +175,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       return true;
     }
 
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
+    const legacyOriKey = mapToLegacyBucket(rawOriKey);
     if (legacyOriKey !== oriKey) {
       return (
         overrides[gridMode]?.[legacyOriKey]?.[letter]?.[turnsTuple]?.[rotationKey] ===
@@ -249,7 +236,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 
   private getGridMode(pictographData: PictographData): string {
     if (pictographData.motions.blue && pictographData.motions.red) {
-      return this.gridModeService.deriveGridMode(
+      return _deriveGridMode(
         pictographData.motions.blue,
         pictographData.motions.red
       );
@@ -266,8 +253,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 // ============================================================================
 
 import { turnsTupleGenerator } from "./TurnsTupleGenerator";
-import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
-import { gridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
 
 
 // HMR-aware singleton instance (persists localStorage state across HMR)
@@ -284,8 +270,7 @@ function getRotationOverrideManager(): RotationOverrideManager {
   if (!hmrRotationOverrideManager) {
     hmrRotationOverrideManager = new RotationOverrideManager(
       turnsTupleGenerator,
-      rotationAngleOverrideKeyGenerator,
-      gridModeDeriver
+      rotationAngleOverrideKeyGenerator
     );
   }
   return hmrRotationOverrideManager;

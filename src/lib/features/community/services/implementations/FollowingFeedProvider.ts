@@ -6,32 +6,14 @@
  */
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import { getUserRepository } from "$lib/shared/community/getUserRepository";
-import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
-import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
-import type { PostHogActivityLogger } from "$lib/shared/analytics/services/implementations/PostHogActivityLogger";
+import { getFollowing } from "$lib/shared/community/services/user-repository";
+import { queryEvents } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type {
   FollowingFeedItem, FollowingFeedOptions } from "../contracts/types";
 import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
 export class FollowingFeedProvider {
-  private userService: UserRepository | null = null;
-  private activityLogService: PostHogActivityLogger | null = null;
-
-  private getServices(): boolean {
-    if (!this.userService) {
-      this.userService = getUserRepository();
-    }
-    if (!this.activityLogService) {
-      this.activityLogService = getActivityLogger();
-    }
-    return !!(
-      this.userService &&
-      this.activityLogService
-    );
-  }
-
   async getFollowingFeed(
     options: FollowingFeedOptions = {}
   ): Promise<FollowingFeedItem[]> {
@@ -40,16 +22,13 @@ export class FollowingFeedProvider {
     // Use provided userId (for preview mode) or fall back to authenticated user
     const effectiveUserId = userId || authState.user?.uid;
 
-    if (!this.getServices() || !effectiveUserId) {
+    if (!effectiveUserId) {
       return [];
     }
 
     try {
       // Get followed users
-      const followedUsers = await this.userService!.getFollowing(
-        effectiveUserId,
-        100
-      );
+      const followedUsers = await getFollowing(effectiveUserId, 100);
 
       if (followedUsers.length === 0) {
         return [];
@@ -70,7 +49,7 @@ export class FollowingFeedProvider {
 
       // Query activity events from each followed user in parallel
       const activityPromises = followedUsers.map(async (user) => {
-        const events = await this.activityLogService!.queryEvents({
+        const events = await queryEvents({
           userId: user.id,
           startDate,
           limit: 20, // Get more than we need for filtering
@@ -129,21 +108,8 @@ export class FollowingFeedProvider {
       return 0;
     }
 
-    // Only need UserRepository for this check
-    if (!this.userService) {
-      this.userService = getUserRepository();
-    }
-
-    if (!this.userService) {
-      console.warn("[FollowingFeedProvider] UserRepository not available");
-      return 0;
-    }
-
     try {
-      const followedUsers = await this.userService.getFollowing(
-        effectiveUserId,
-        1
-      );
+      const followedUsers = await getFollowing(effectiveUserId, 1);
       return followedUsers.length;
     } catch (error) {
       console.error(

@@ -1,4 +1,4 @@
-import type { ContentHasher } from "./ContentHasher";
+import { hashHandPath } from "$lib/shared/foundation/services/content-hasher";
 import type { HandPathData } from "../../domain/models/HandPathData";
 import {
   GridLocation,
@@ -64,7 +64,6 @@ function deduplicateLocations(
 }
 
 export class HandPathFactory {
-  constructor(private readonly hasher: ContentHasher) {}
 
   create(
     locations: readonly GridLocation[],
@@ -81,7 +80,7 @@ export class HandPathFactory {
     const uniqueLocations = deduplicateLocations(locations);
     const impliedGridMode = deriveGridMode(locations);
     const isClosed = startLocation === endLocation;
-    const contentHash = this.hasher.hashHandPath(locations);
+    const contentHash = hashHandPath(locations);
     const id = crypto.randomUUID();
 
     return {

@@ -5,7 +5,21 @@
  * provide raw landmark detection for video frames and images.
  */
 
-import type { HandLandmarkerResult } from "../contracts/types";
+export interface HandLandmark {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface HandednessResult {
+  categoryName: string;
+  score: number;
+}
+
+export interface HandLandmarkerResult {
+  landmarks: HandLandmark[][];
+  handedness: HandednessResult[][];
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MediaPipeHandLandmarker = any;

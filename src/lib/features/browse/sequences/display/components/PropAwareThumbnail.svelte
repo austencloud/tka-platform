@@ -27,7 +27,7 @@
   import type { ThumbnailLocalCache } from "../services/implementations/ThumbnailLocalCache";
   import { deriveKey } from "../services/thumbnail-key-deriver";
   import { invalidateUrl as invalidateCloudUrl } from "../services/cloud-thumbnail-cache";
-  import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
+  import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
 
@@ -121,7 +121,7 @@
     if (variant === "wordcard") {
       return undefined; // Choreo card uses natural image aspect ratio
     }
-    return layoutCalculator.calculateGalleryAspectRatio(stepCount);
+    return calculateGalleryAspectRatio(stepCount);
   });
 
   // Derived: Build render input from props

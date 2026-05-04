@@ -1,22 +1,25 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { DexiePersistenceService } from "../../../persistence/services/implementations/DexiePersistenceService";
-import type { SequenceEncoder } from "../../../navigation/services/implementations/SequenceEncoder";
+import {
+  loadSequence as persistLoadSequence,
+  saveSequence as persistSaveSequence,
+} from "../../../persistence/services/dexie-persistence-service";
+import {
+  decodeSequenceWithCompression,
+  encodeSequenceWithCompression,
+  generateViewerURL,
+} from "../../../navigation/services/sequence-encoder";
 import {
   updateSequenceData,
   removeStepFromSequence,
 } from "../../../foundation/domain/models/SequenceData";
 
 export class SequenceViewer {
-  constructor(
-    private persistenceService: DexiePersistenceService,
-    private SequenceEncoder: SequenceEncoder
-  ) {}
 
   async loadSequence(sequenceId: string): Promise<SequenceData | null> {
     try {
-      return await this.persistenceService.loadSequence(sequenceId);
+      return await persistLoadSequence(sequenceId);
     } catch (error) {
       console.error(
         `[SequenceViewer] Failed to load sequence ${sequenceId}:`,
@@ -28,7 +31,7 @@ export class SequenceViewer {
 
   decodeSequence(encodedSequence: string): SequenceData | null {
     try {
-      return this.SequenceEncoder.decodeWithCompression(encodedSequence);
+      return decodeSequenceWithCompression(encodedSequence);
     } catch (error) {
       console.error("[SequenceViewer] Failed to decode sequence:", error);
       return null;
@@ -113,7 +116,7 @@ export class SequenceViewer {
 
   async saveSequence(sequence: SequenceData): Promise<void> {
     try {
-      await this.persistenceService.saveSequence(sequence);
+      await persistSaveSequence(sequence);
     } catch (error) {
       console.error("[SequenceViewer] Failed to save sequence:", error);
       throw error;
@@ -130,12 +133,12 @@ export class SequenceViewer {
   }
 
   encodeForUrl(sequence: SequenceData): string {
-    const result = this.SequenceEncoder.encodeWithCompression(sequence);
+    const result = encodeSequenceWithCompression(sequence);
     return result.encoded;
   }
 
   generateShareUrl(sequence: SequenceData): string {
-    const result = this.SequenceEncoder.generateViewerURL(sequence, {
+    const result = generateViewerURL(sequence, {
       compress: true,
     });
     return result.url;

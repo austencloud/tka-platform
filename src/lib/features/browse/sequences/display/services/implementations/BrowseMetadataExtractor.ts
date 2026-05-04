@@ -21,7 +21,7 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { UniversalMetadataExtractor } from "$lib/shared/services/UniversalMetadataExtractor";
+import { extractMetadata as extractUniversalMetadata } from "$lib/shared/services/universal-metadata-extractor";
 import type { SequenceMetadata } from "../contracts/types";
 import * as difficultyCalculator from "../sequence-difficulty-calculator";
 // Constants for metadata extraction
@@ -59,7 +59,7 @@ export class BrowseMetadataExtractor {
       );
 
       const result =
-        await UniversalMetadataExtractor.extractMetadata(sequenceWithVersion);
+        await extractUniversalMetadata(sequenceWithVersion);
 
       if (!result.success || !result.data) {
         return getDefaultMetadata();

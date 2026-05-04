@@ -20,7 +20,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+  import { encodeSequence, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -62,8 +62,6 @@
 
   let state = $state<PageState>({ kind: "loading" });
 
-  const encoder = new SequenceEncoder();
-
   const stubBrowseLoader = {
     loadSequenceMetadata: async () => [],
     loadFullSequenceData: async () => null,
@@ -73,10 +71,10 @@
     refreshFromFirestore: async () => [],
   } as unknown as PublicSequencesLoader;
 
-  const shortCodeManager = new ShortCodeManager(stubBrowseLoader, encoder);
+  const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
 
   async function computeHash(seq: SequenceData): Promise<string> {
-    const pipeString = encoder.encode(seq);
+    const pipeString = encodeSequence(seq);
     const buffer = new TextEncoder().encode(pipeString);
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
     return Array.from(new Uint8Array(hashBuffer), (b) =>
@@ -264,7 +262,7 @@
       const word = seq.word || seq.name || "Sequence";
 
       if (
-        !encoder.isInlineEncoded(shortCode) &&
+        !isInlineEncoded(shortCode) &&
         isGenuineScan(shortCode)
       ) {
         captureEvent("qr_video_scanned", {

@@ -15,8 +15,7 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import { getUserRepository } from "$lib/shared/community/getUserRepository";
-  import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+  import { getFollowing } from "$lib/shared/community/services/user-repository";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
@@ -51,7 +50,6 @@
   let isLoadingSuggestions = $state(true);
 
   // Services
-  let userService: UserRepository | undefined;
   let hapticService: HapticFeedback | undefined;
 
   // Current user
@@ -78,7 +76,6 @@
 
   onMount(async () => {
     hapticService = getHapticFeedback();
-    userService = getUserRepository();
     await loadSuggestions();
   });
 
@@ -92,9 +89,8 @@
 
     try {
       // Load followed users
-      if (userService) {
-        const following = await userService.getFollowing(currentUserId, 20);
-        followedUsers = following;
+      if (currentUserId) {
+        followedUsers = await getFollowing(currentUserId, 20);
       }
 
       // Get recent conversation participants

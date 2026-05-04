@@ -385,10 +385,10 @@ export class DirectionalTupleProcessor {
 // Direct singleton exports - no DI container needed.
 // ============================================================================
 
-import { arrowQuadrantCalculator } from "../../../../orchestration/services/implementations/ArrowQuadrantCalculator";
+import { calculateQuadrantIndex } from "../../../../orchestration/services/arrow-quadrant-calculator";
 
 export const directionalTupleCalculator = new DirectionalTupleCalculator();
-export const quadrantIndexCalculator = new QuadrantIndexCalculator(arrowQuadrantCalculator);
+export const quadrantIndexCalculator = new QuadrantIndexCalculator({ calculateQuadrantIndex });
 export const directionalTupleProcessor = new DirectionalTupleProcessor(
   directionalTupleCalculator,
   quadrantIndexCalculator

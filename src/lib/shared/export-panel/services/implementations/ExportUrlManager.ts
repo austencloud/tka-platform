@@ -8,7 +8,12 @@
  */
 
 import { replaceState } from "$app/navigation";
-import type { SheetRouter } from "$lib/shared/navigation/services/implementations/SheetRouter";
+import {
+  onRouteChange,
+  getCurrentAnimationPanelState,
+  openAnimationPanel,
+  updateAnimationPanelState,
+} from "$lib/shared/navigation/services/sheet-router";
 import type { ExportUrlCallbacks, ExportAnimationUrlState } from "../contracts/types";
 import { browser } from "$app/environment";
 
@@ -16,18 +21,11 @@ export class ExportUrlManager {
   private cleanupRouteListener: (() => void) | undefined;
   private callbacks: ExportUrlCallbacks | null = null;
 
-  constructor(private readonly sheetRouter: SheetRouter | null) {}
-
   initialize(callbacks: ExportUrlCallbacks): () => void {
-    if (!this.sheetRouter) {
-      console.warn("ExportUrlManager: No sheet router available");
-      return () => {};
-    }
-
     this.callbacks = callbacks;
 
     // Listen for route changes (back button, programmatic navigation)
-    this.cleanupRouteListener = this.sheetRouter.onRouteChange((state) => {
+    this.cleanupRouteListener = onRouteChange((state) => {
       if (state.sheet === "animation") {
         // Notify that animation panel should open
         this.callbacks?.onAnimationPanelOpen();
@@ -40,7 +38,7 @@ export class ExportUrlManager {
     });
 
     // Check initial URL state
-    const initialState = this.sheetRouter.getCurrentAnimationPanelState();
+    const initialState = getCurrentAnimationPanelState();
     if (initialState) {
       this.callbacks?.onAnimationPanelOpen();
       this.callbacks?.onStateRestore(initialState);
@@ -50,9 +48,7 @@ export class ExportUrlManager {
   }
 
   pushAnimationPanelOpen(state: ExportAnimationUrlState): void {
-    if (!this.sheetRouter) return;
-
-    this.sheetRouter.openAnimationPanel({
+    openAnimationPanel({
       sequenceId: state.sequenceId,
       speed: state.speed,
       isPlaying: state.isPlaying,
@@ -62,13 +58,11 @@ export class ExportUrlManager {
   }
 
   updateAnimationState(state: Partial<ExportAnimationUrlState>): void {
-    if (!this.sheetRouter) return;
-
     // Only update if animation panel is currently open in URL
-    const currentState = this.sheetRouter.getCurrentAnimationPanelState();
+    const currentState = getCurrentAnimationPanelState();
     if (currentState === null) return;
 
-    this.sheetRouter.updateAnimationPanelState({
+    updateAnimationPanelState({
       speed: state.speed,
       isPlaying: state.isPlaying,
       currentStep: state.currentStep,
@@ -92,14 +86,11 @@ export class ExportUrlManager {
   }
 
   shouldAnimationPanelBeOpen(): boolean {
-    if (!this.sheetRouter) return false;
-    return this.sheetRouter.getCurrentAnimationPanelState() !== null;
+    return getCurrentAnimationPanelState() !== null;
   }
 
   getCurrentUrlState(): ExportAnimationUrlState | null {
-    if (!this.sheetRouter) return null;
-
-    const state = this.sheetRouter.getCurrentAnimationPanelState();
+    const state = getCurrentAnimationPanelState();
     if (!state) return null;
 
     return {

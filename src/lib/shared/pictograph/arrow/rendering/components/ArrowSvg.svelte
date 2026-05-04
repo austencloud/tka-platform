@@ -10,17 +10,9 @@ at the cached position and animate to the new one, enabling smooth transitions
 even when Svelte recreates the component instance.
 -->
 <script module lang="ts">
-  // Module-level position cache - persists across component instance recreation
-  // Key format: `${cellIndex}-${color}`
-  const arrowPositionCache = new Map<string, { x: number; y: number }>();
-
-  /**
-   * Clear the arrow position cache. Call this when clearing a sequence to ensure
-   * fresh generation doesn't animate from stale positions.
-   */
-  export function clearArrowPositionCache(): void {
-    arrowPositionCache.clear();
-  }
+  import { getArrowPositionCache, clearArrowPositionCache } from "../arrow-position-cache";
+  const arrowPositionCache = getArrowPositionCache();
+  export { clearArrowPositionCache };
 </script>
 
 <script lang="ts">

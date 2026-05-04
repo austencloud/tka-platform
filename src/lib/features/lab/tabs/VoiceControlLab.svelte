@@ -20,7 +20,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import type { CommandDispatcher } from "$lib/shared/voice-control/services/implementations/CommandDispatcher";
   import type { VoiceSessionRecorder } from "$lib/shared/voice-control/services/implementations/VoiceSessionRecorder";
   import type * as VoiceSessionFormatterModule from "$lib/features/voice-sessions/services/voice-session-formatter";
-  import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
+  import type * as VoiceSessionRepositoryModule from "$lib/features/voice-sessions/services/voice-session-repository";
   import type * as VoiceSessionAnalyzerModule from "$lib/features/voice-sessions/services/voice-session-analyzer";
   import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
@@ -35,7 +35,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   let dispatcher: CommandDispatcher | null = null;
   let sessionRecorder: VoiceSessionRecorder | null = null;
   let sessionFormatter = $state<typeof VoiceSessionFormatterModule | null>(null);
-  let sessionRepository = $state<VoiceSessionRepository | null>(null);
+  let sessionRepository = $state<typeof VoiceSessionRepositoryModule | null>(null);
   let sessionAnalyzer = $state<typeof VoiceSessionAnalyzerModule | null>(null);
   let sessionReplayer = $state<VoiceSessionReplayer | null>(null);
 

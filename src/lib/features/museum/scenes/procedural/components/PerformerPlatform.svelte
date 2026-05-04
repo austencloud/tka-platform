@@ -1,7 +1,6 @@
 <script lang="ts">
 
-import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
-import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+// propInterpolator and sequenceConverter are now module-level functions
   /**
    * PerformerPlatform - Museum exhibit slot with animated performer.
    *
@@ -49,10 +48,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
         positionX: slot.position.x,
         positionZ: slot.position.z,
       },
-      {
-        propInterpolator: getPropStateInterpolator(),
-        sequenceConverter: getSequenceConverter(),
-      }
+      {}
     )
   );
 

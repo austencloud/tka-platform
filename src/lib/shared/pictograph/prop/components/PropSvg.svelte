@@ -9,17 +9,9 @@ at the cached position and animate to the new one, enabling smooth transitions
 even when Svelte recreates the component instance.
 -->
 <script module lang="ts">
-  // Module-level position cache - persists across component instance recreation
-  // Key format: `${cellIndex}-${color}`
-  const positionCache = new Map<string, { x: number; y: number }>();
-
-  /**
-   * Clear the position cache. Call this when clearing a sequence to ensure
-   * fresh generation doesn't animate from stale positions.
-   */
-  export function clearPropPositionCache(): void {
-    positionCache.clear();
-  }
+  import { getPropPositionCache, clearPropPositionCache } from "../prop-position-cache";
+  const positionCache = getPropPositionCache();
+  export { clearPropPositionCache };
 </script>
 
 <script lang="ts">

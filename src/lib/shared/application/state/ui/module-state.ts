@@ -4,7 +4,11 @@ import type { ModuleId } from "../../../navigation/domain/types";
 import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
 import { normalizeModuleId } from "../../../navigation/config/module-definitions";
-import { getPersistenceService } from "../services.svelte";
+import {
+  saveActiveTab as persistSaveActiveTab,
+  getActiveTab as persistGetActiveTab,
+  initialize as persistInitialize,
+} from "../../../persistence/services/dexie-persistence-service";
 import {
   getActiveModule,
   setActiveModule,
@@ -93,9 +97,7 @@ export async function revalidateCurrentModule(): Promise<void> {
                 JSON.stringify({ moduleId: cachedModuleId })
               );
             }
-            // Sync Firestore to match localStorage (with normalized value)
-            const persistence = await getPersistenceService();
-            await persistence.saveActiveTab(cachedModuleId);
+            await persistSaveActiveTab(cachedModuleId);
             return;
           }
         } catch {
@@ -104,8 +106,7 @@ export async function revalidateCurrentModule(): Promise<void> {
       }
 
       // If localStorage doesn't have a valid module, check Firestore as fallback
-      const persistence = await getPersistenceService();
-      const savedFromFirestore = await persistence.getActiveTab();
+      const savedFromFirestore = await persistGetActiveTab();
       // Normalize module ID from Firestore (may have stale data like "TIKA" -> "tika")
       const normalizedFirestoreModule = savedFromFirestore
         ? normalizeModuleId(savedFromFirestore)
@@ -131,7 +132,7 @@ export async function revalidateCurrentModule(): Promise<void> {
         }
         // Also update Firestore if we normalized the value
         if (normalizedFirestoreModule !== savedFromFirestore) {
-          await persistence.saveActiveTab(normalizedFirestoreModule);
+          await persistSaveActiveTab(normalizedFirestoreModule);
         }
         return;
       }
@@ -239,8 +240,7 @@ export async function switchModule(module: ModuleId): Promise<void> {
 
     setActiveModule(module);
 
-    const persistence = await getPersistenceService();
-    await persistence.saveActiveTab(module);
+    await persistSaveActiveTab(module);
 
     if (browser) {
       localStorage.setItem(
@@ -303,9 +303,8 @@ export async function initializeModulePersistence(): Promise<void> {
 
     // Fallback to Firestore if not in localStorage
     if (!savedModule) {
-      const persistence = await getPersistenceService();
-      await persistence.initialize();
-      savedModule = await persistence.getActiveTab();
+      await persistInitialize();
+      savedModule = await persistGetActiveTab();
     }
 
     // Determine which module to use:
@@ -353,9 +352,8 @@ export async function initializeModulePersistence(): Promise<void> {
       // Sync BOTH ui state and navigation state to ensure nav bar matches content
       syncBothStateSystems(defaultModule);
 
-      const persistence = await getPersistenceService();
-      await persistence.initialize();
-      await persistence.saveActiveTab(defaultModule);
+      await persistInitialize();
+      await persistSaveActiveTab(defaultModule);
       if (browser) {
         localStorage.setItem(
           LOCAL_STORAGE_KEY,

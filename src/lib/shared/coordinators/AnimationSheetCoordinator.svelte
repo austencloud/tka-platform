@@ -34,7 +34,13 @@ import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compo
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-  import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
+  import {
+    getCurrentAnimationPanelState,
+    updateAnimationPanelState,
+    openAnimationPanel,
+    closeSheet,
+    onRouteChange,
+  } from "$lib/shared/navigation/services/sheet-router";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
   import type { HapticFeedback } from "../application/services/implementations/HapticFeedback";
   import { onMount, onDestroy } from "svelte";
@@ -43,7 +49,6 @@ import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compo
     ANIMATION_AUTO_START_DELAY_MS,
     VIDEO_EXPORT_SUCCESS_DELAY_MS,
   } from "$lib/features/compose/shared/domain/constants/timing";
-  import type { SheetRouter } from "../navigation/services/implementations/SheetRouter";
 import type { AnimationPanelState } from "../navigation/services/contracts/types";
   import { createComponentLogger } from "../utils/debug-logger";
   import { setAnimationPlaybackRef } from "./animation-playback-ref.svelte";
@@ -69,7 +74,6 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
   let hapticService: HapticFeedback | null = null;
   let videoExportOrchestrator: VideoExportOrchestrator | null = null;
   let VideoExporter: VideoExporter | null = null;
-  let sheetRouterService: SheetRouter | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 
   // State to track service readiness
@@ -216,7 +220,6 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
     // Resolve core services via ITI container
     try {
       hapticService = getHapticFeedback();
-      sheetRouterService = getSheetRouter();
       debug.success("Core services resolved");
     } catch (error) {
       console.error("Failed to resolve core services:", error);
@@ -245,7 +248,7 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
     }
 
     // Listen for route changes to restore animation panel from URL
-    cleanupRouteListener = sheetRouterService?.onRouteChange((state) => {
+    cleanupRouteListener = onRouteChange((state) => {
       isRespondingToRouteChange = true;
 
       const sheetType = state.sheet;
@@ -282,7 +285,7 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
     });
 
     // Check if animation panel should be open on initial load
-    const initialState = sheetRouterService?.getCurrentAnimationPanelState();
+    const initialState = getCurrentAnimationPanelState();
     if (initialState) {
       isOpen = true;
     }
@@ -484,7 +487,7 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
     if (!isRespondingToRouteChange) {
       if (isOpen && !previousIsOpen && sequence) {
         // Opening: Push new history entry with animation panel
-        sheetRouterService?.openAnimationPanel({
+        openAnimationPanel({
           sequenceId: sequence.id,
           speed: animationPanelState.speed,
           isPlaying: animationPanelState.isPlaying,
@@ -542,9 +545,9 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
         // Double-check that the current route is actually showing animation sheet
         // This prevents "Cannot update animation panel state when animation sheet is not open" errors
         const currentState =
-          sheetRouterService?.getCurrentAnimationPanelState();
+          getCurrentAnimationPanelState();
         if (currentState !== null) {
-          sheetRouterService?.updateAnimationPanelState({
+          updateAnimationPanelState({
             speed: currentSpeed,
             isPlaying: currentPlaying,
           });
@@ -592,7 +595,7 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
     lastLoadedSequenceId = null;
 
     // Close the sheet route (this will trigger the route change listener which will set isOpen = false)
-    sheetRouterService?.closeSheet();
+    closeSheet();
     _animatingBeatNumber = null;
   }
 

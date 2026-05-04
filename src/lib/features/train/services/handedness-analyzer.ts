@@ -6,12 +6,16 @@
  * MediaPipe's handedness classification.
  */
 
-import type {
-  HandednessAnalysisResult,
-  PalmOrientation,
-  AnatomicalHandedness,
-  HandLandmark,
-} from "./contracts/types";
+import type { HandLandmark } from "./implementations/HandLandmarker";
+
+export type PalmOrientation = "facing" | "away" | "unknown";
+export type AnatomicalHandedness = "left" | "right" | null;
+
+export interface HandednessAnalysisResult {
+  anatomicalHandedness: AnatomicalHandedness;
+  palmOrientation: PalmOrientation;
+  confidence: number;
+}
 
 /**
  * Detect if palm is facing the camera or facing away

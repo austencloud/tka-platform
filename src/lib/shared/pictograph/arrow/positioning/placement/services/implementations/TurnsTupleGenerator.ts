@@ -7,7 +7,12 @@
 
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import { PropRotationStateTracker } from "./PropRotationStateTracker";
+import {
+  getBlueState,
+  getRedState,
+  getDashState,
+  getStaticState,
+} from "../prop-rotation-state-tracker";
 
 
 type LetterType =
@@ -20,11 +25,7 @@ type LetterType =
   | "TYPE6";
 
 export class TurnsTupleGenerator {
-  private propRotationService: PropRotationStateTracker;
-
-  constructor() {
-    this.propRotationService = new PropRotationStateTracker();
-  }
+  constructor() {}
 
   /**
    * Generate turns tuple string matching the legacy turns_tuple_generator logic.
@@ -364,7 +365,7 @@ export class TurnsTupleGenerator {
       typeof staticTurns === "number" &&
       staticTurns > 0
     ) {
-      const staticOpenClose = this.propRotationService.getStaticState(
+      const staticOpenClose = getStaticState(
         dashMotion.endLocation,
         staticMotion.endLocation,
         staticMotion.rotationDirection
@@ -375,7 +376,7 @@ export class TurnsTupleGenerator {
       dashTurns > 0 &&
       staticTurns === 0
     ) {
-      const dashOpenClose = this.propRotationService.getDashState(
+      const dashOpenClose = getDashState(
         dashMotion.endLocation,
         staticMotion.endLocation,
         dashMotion.rotationDirection
@@ -387,12 +388,12 @@ export class TurnsTupleGenerator {
       typeof dashTurns === "number" &&
       dashTurns > 0
     ) {
-      const staticOpenClose = this.propRotationService.getStaticState(
+      const staticOpenClose = getStaticState(
         dashMotion.endLocation,
         staticMotion.endLocation,
         staticMotion.rotationDirection
       );
-      const dashOpenClose = this.propRotationService.getDashState(
+      const dashOpenClose = getDashState(
         dashMotion.endLocation,
         staticMotion.endLocation,
         dashMotion.rotationDirection
@@ -471,7 +472,7 @@ export class TurnsTupleGenerator {
       typeof redTurns === "number" &&
       redTurns > 0
     ) {
-      const redOpenClose = this.propRotationService.getRedState(
+      const redOpenClose = getRedState(
         blueMotion.endLocation,
         redMotion.endLocation,
         redMotion.rotationDirection
@@ -482,7 +483,7 @@ export class TurnsTupleGenerator {
       blueTurns > 0 &&
       redTurns === 0
     ) {
-      const blueOpenClose = this.propRotationService.getBlueState(
+      const blueOpenClose = getBlueState(
         blueMotion.endLocation,
         redMotion.endLocation,
         blueMotion.rotationDirection
@@ -494,12 +495,12 @@ export class TurnsTupleGenerator {
       typeof blueTurns === "number" &&
       blueTurns > 0
     ) {
-      const redOpenClose = this.propRotationService.getRedState(
+      const redOpenClose = getRedState(
         blueMotion.endLocation,
         redMotion.endLocation,
         redMotion.rotationDirection
       );
-      const blueOpenClose = this.propRotationService.getBlueState(
+      const blueOpenClose = getBlueState(
         blueMotion.endLocation,
         redMotion.endLocation,
         blueMotion.rotationDirection
@@ -574,7 +575,7 @@ export class TurnsTupleGenerator {
       typeof redTurns === "number" &&
       redTurns > 0
     ) {
-      const redOpenClose = this.propRotationService.getRedState(
+      const redOpenClose = getRedState(
         blueMotion.endLocation,
         redMotion.endLocation,
         redMotion.rotationDirection
@@ -585,7 +586,7 @@ export class TurnsTupleGenerator {
       blueTurns > 0 &&
       redTurns === 0
     ) {
-      const blueOpenClose = this.propRotationService.getBlueState(
+      const blueOpenClose = getBlueState(
         blueMotion.endLocation,
         redMotion.endLocation,
         blueMotion.rotationDirection
@@ -597,12 +598,12 @@ export class TurnsTupleGenerator {
       typeof blueTurns === "number" &&
       blueTurns > 0
     ) {
-      const redOpenClose = this.propRotationService.getRedState(
+      const redOpenClose = getRedState(
         blueMotion.endLocation,
         redMotion.endLocation,
         redMotion.rotationDirection
       );
-      const blueOpenClose = this.propRotationService.getBlueState(
+      const blueOpenClose = getBlueState(
         blueMotion.endLocation,
         redMotion.endLocation,
         blueMotion.rotationDirection

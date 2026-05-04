@@ -1,11 +1,11 @@
 import type { LayerType, LayerRenderOptions, LayerVisibility, LayerRenderResult, CompositionResult, LayerCacheStats, RenderCanvas, RenderContext2D } from "../contracts/types";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
-import { LayerKeyDeriver } from "./LayerKeyDeriver";
+import { deriveBaseLayerKey, deriveGridPointsLayerKey, deriveTKALayerKey, deriveReversalLayerKey } from "../layer-key-deriver";
 import { turnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { Letter } from "../../../foundation/domain/models/Letter";
 import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
-import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
+import { interpretTurnColors } from "../../../pictograph/tka-glyph/services/turn-color-interpreter";
 import {
   parseTurnsTuple,
   shouldDisplayTurn,
@@ -84,8 +84,6 @@ function createCanvas(width: number, height: number): RenderCanvas {
 }
 
 export class LayerCompositor {
-  private keyDeriver = new LayerKeyDeriver();
-  private turnColorInterpreter = new TurnColorInterpreter();
 
   private baseCache = new Map<string, RenderCanvas>();
   private gridPointsCache = new Map<string, RenderCanvas>();
@@ -203,7 +201,7 @@ export class LayerCompositor {
     options: LayerRenderOptions
   ): Promise<LayerRenderResult> {
     const startTime = performance.now();
-    const cacheKey = this.keyDeriver.deriveBaseLayerKey(pictograph, options);
+    const cacheKey = deriveBaseLayerKey(pictograph, options);
 
     const cached = this.baseCache.get(cacheKey);
     if (cached) {
@@ -241,7 +239,7 @@ export class LayerCompositor {
     options: LayerRenderOptions
   ): Promise<LayerRenderResult> {
     const startTime = performance.now();
-    const cacheKey = this.keyDeriver.deriveGridPointsLayerKey(pictograph, options);
+    const cacheKey = deriveGridPointsLayerKey(pictograph, options);
 
     const cached = this.gridPointsCache.get(cacheKey);
     if (cached) {
@@ -283,7 +281,7 @@ export class LayerCompositor {
     const startTime = performance.now();
 
     const turnsTuple = this.getTurnsTuple(pictograph);
-    const cacheKey = this.keyDeriver.deriveTKALayerKey(pictograph, turnsTuple, options);
+    const cacheKey = deriveTKALayerKey(pictograph, turnsTuple, options);
 
     const cached = this.tkaCache.get(cacheKey);
     if (cached) {
@@ -324,7 +322,7 @@ export class LayerCompositor {
     if (!stepData.blueReversal && !stepData.redReversal) return null;
 
     const startTime = performance.now();
-    const cacheKey = `${this.keyDeriver.deriveReversalLayerKey(stepData, size)}:${darkMode ? "dark" : "light"}`;
+    const cacheKey = `${deriveReversalLayerKey(stepData, size)}:${darkMode ? "dark" : "light"}`;
 
     const cached = this.reversalCache.get(cacheKey);
     if (cached) {
@@ -683,7 +681,7 @@ export class LayerCompositor {
 
     if (!showTop && !showBottom) return;
 
-    const turnColors = this.turnColorInterpreter.interpretTurnColors(
+    const turnColors = interpretTurnColors(
       pictograph.letter,
       pictograph
     );

@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import { SequenceRepository } from './services/implementations/SequenceRepository';
 import { getSequenceDomainManager } from './getSequenceDomainManager';
-import { getPersistenceService } from '$lib/shared/persistence/getPersistenceService';
 import { getReversalDetector } from './getReversalDetector';
 import { getSequenceImporter } from './getSequenceImporter';
 
@@ -11,7 +10,6 @@ export function getSequenceRepository(): SequenceRepository {
 	if (!browser) throw new Error('getSequenceRepository() is browser-only');
 	return instance ??= new SequenceRepository(
 		getSequenceDomainManager(),
-		getPersistenceService() as any,
 		getReversalDetector(),
 		getSequenceImporter(),
 	);

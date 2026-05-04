@@ -1,5 +1,5 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import { LayoutCalculator } from "./LayoutCalculator";
+import { getBaseBeatSize } from "../layout-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { ImageComposer } from "./ImageComposer";
 import type { CompositionProgressCallback } from "../contracts/types";
@@ -170,7 +170,7 @@ export class SequenceRenderer {
       addDifficultyLevel: true,
 
       stepScale: 1.0,
-      stepSize: LayoutCalculator.getBaseBeatSize(), 
+      stepSize: getBaseBeatSize(),
       margin: 0, 
 
       redVisible: true,

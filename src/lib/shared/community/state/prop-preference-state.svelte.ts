@@ -1,9 +1,14 @@
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { PropPreferencePersister } from "../services/implementations/PropPreferencePersister";
+import {
+  loadPropPreferences,
+  addPropPreference,
+  removePropPreference,
+  setFavoriteProp,
+  setCatdogFavorite as persistCatdogFavorite,
+} from "../services/prop-preference-persister";
 import type { CatdogCombo } from "../services/contracts/types";
 
 export function createPropPreferenceState(
-  persister: PropPreferencePersister,
   userId: string
 ) {
   let propsISpinWith = $state<PropType[]>([]);
@@ -15,7 +20,7 @@ export function createPropPreferenceState(
   async function load() {
     loading = true;
     try {
-      const prefs = await persister.load(userId);
+      const prefs = await loadPropPreferences(userId);
       propsISpinWith = prefs.propsISpinWith;
       favoriteProp = prefs.favoriteProp;
       favoriteCatdog = prefs.favoriteCatdog;
@@ -36,10 +41,10 @@ export function createPropPreferenceState(
       ) {
         favoriteCatdog = null;
       }
-      await persister.removeProp(userId, prop);
+      await removePropPreference(userId, prop);
     } else {
       propsISpinWith = [...propsISpinWith, prop];
-      await persister.addProp(userId, prop);
+      await addPropPreference(userId, prop);
     }
   }
 
@@ -50,7 +55,7 @@ export function createPropPreferenceState(
         propsISpinWith = [...propsISpinWith, prop];
       }
       favoriteProp = prop;
-      await persister.setFavorite(userId, prop);
+      await setFavoriteProp(userId, prop);
     } finally {
       saving = false;
     }
@@ -68,7 +73,7 @@ export function createPropPreferenceState(
         }
       }
       favoriteCatdog = combo;
-      await persister.setCatdogFavorite(userId, combo);
+      await persistCatdogFavorite(userId, combo);
     } finally {
       saving = false;
     }

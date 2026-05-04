@@ -1,9 +1,9 @@
-import { browser } from '$app/environment';
-import { ComponentManager } from './services/implementations/ComponentManager';
-
-let instance: ComponentManager | null = null;
-
-export function getComponentManager(): ComponentManager {
-	if (!browser) throw new Error('getComponentManager() is browser-only');
-	return instance ??= new ComponentManager();
-}
+export type { ComponentLoadingState } from './services/component-manager';
+export {
+  getRequiredComponents,
+  createLoadingState,
+  updateComponentLoadingState,
+  areAllComponentsLoaded,
+  getLoadingProgress,
+  clearLoadingState,
+} from './services/component-manager';

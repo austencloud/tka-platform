@@ -1,7 +1,6 @@
 <script lang="ts">
 
-import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
-import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
+// propInterpolator and sequenceConverter are now module-level functions
   /**
    * WorldScene
    *
@@ -241,12 +240,7 @@ import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
   // Initialize performer manager on mount
   $effect(() => {
     if (browser && !performerManager) {
-      const propInterpolator = getPropStateInterpolator();
-      const sequenceConverter = getSequenceConverter();
-
       performerManager = createPerformerManager({
-        propInterpolator,
-        sequenceConverter,
         initialAvatarId: DEFAULT_AVATAR_ID,
       });
 
