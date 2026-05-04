@@ -22,7 +22,7 @@ import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import { DEFAULT_LED_CONFIG, ledBrightnessToFloat } from "../../domain/types/LedTypes";
 import { resolveEffectZ } from "../effect-layer";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
-import type { RenderFrameParams } from "../contracts/IAnimationRenderLoop";
+import type { RenderFrameParams, RenderLoopConfig } from "../contracts/IAnimationRenderLoop";
 
 import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
 import { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
@@ -44,6 +44,136 @@ import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
 
 /** Callback to obtain current frame params (used to trigger re-renders). */
 export type FrameParamsProvider = () => RenderFrameParams;
+
+/** Minimal renderer interface shared by all overlay renderers. */
+interface OverlayRenderer {
+  initialize(container: HTMLElement, w: number, h: number): boolean;
+  dispose(): void;
+  isInitialized(): boolean;
+  resize?(w: number, h: number): void;
+  setCanvasZIndex?(z: number): void;
+}
+
+/** Registry entry describing one overlay effect's lifecycle. */
+interface OverlayEffectEntry {
+  /** Effect type name (matches EffectType union member). */
+  effect: Exclude<EffectType, "none" | "led" | "trails">;
+  /** Key on `this` where the renderer instance lives. */
+  rendererField: keyof EffectRendererManager & string;
+  /** Key on RenderLoopConfig for updateConfig(). */
+  configKey: keyof RenderLoopConfig & string;
+  /** Constructor to create the renderer. */
+  RendererClass: new () => OverlayRenderer;
+  /** Optional hook called after successful initialization. */
+  onInit?: (mgr: EffectRendererManager, renderer: OverlayRenderer) => void;
+  /** Optional hook called on disable (after dispose). */
+  onDisable?: (mgr: EffectRendererManager) => void;
+  /** If false, skip triggerRender() at end. Default true. */
+  triggerRender?: boolean;
+}
+
+/** The 14 registry-driven overlay effects (LED excluded — unique lifecycle). */
+const OVERLAY_REGISTRY: readonly OverlayEffectEntry[] = [
+  {
+    effect: "fire",
+    rendererField: "fireRenderer",
+    configKey: "fireRenderer",
+    RendererClass: WebGLFireRenderer,
+    onDisable: (mgr) => {
+      if (!mgr.prevEffectEnabled.get("charcoal")) {
+        mgr.fireTipTracker?.reset();
+      }
+    },
+    triggerRender: false,
+  },
+  {
+    effect: "charcoal",
+    rendererField: "charcoalRenderer",
+    configKey: "charcoalRenderer",
+    RendererClass: CharcoalSparkRenderer,
+    onInit: (mgr, renderer) => {
+      const charcoalParams = mgr["getVM"]?.().getCharcoalParams();
+      if (charcoalParams) (renderer as CharcoalSparkRenderer).setParams(charcoalParams);
+    },
+    onDisable: (mgr) => {
+      if (!mgr.prevEffectEnabled.get("fire")) {
+        mgr.fireTipTracker?.reset();
+      }
+    },
+  },
+  {
+    effect: "zap",
+    rendererField: "zapRenderer",
+    configKey: "zapRenderer",
+    RendererClass: ZapOverlayRenderer,
+  },
+  {
+    effect: "sparkles",
+    rendererField: "sparklesRenderer",
+    configKey: "sparklesRenderer",
+    RendererClass: SparklesOverlayRenderer,
+  },
+  {
+    effect: "echo",
+    rendererField: "echoRenderer",
+    configKey: "echoRenderer",
+    RendererClass: EchoOverlayRenderer,
+  },
+  {
+    effect: "bloom",
+    rendererField: "bloomRenderer",
+    configKey: "bloomRenderer",
+    RendererClass: BloomOverlayRenderer,
+  },
+  {
+    effect: "water",
+    rendererField: "waterRenderer",
+    configKey: "waterRenderer",
+    RendererClass: WaterOverlayRenderer,
+  },
+  {
+    effect: "bubbles",
+    rendererField: "bubblesRenderer",
+    configKey: "bubblesRenderer",
+    RendererClass: BubblesOverlayRenderer,
+  },
+  {
+    effect: "petals",
+    rendererField: "petalsRenderer",
+    configKey: "petalsRenderer",
+    RendererClass: PetalsOverlayRenderer,
+  },
+  {
+    effect: "smoke",
+    rendererField: "smokeRenderer",
+    configKey: "smokeRenderer",
+    RendererClass: SmokeOverlayRenderer,
+  },
+  {
+    effect: "ink",
+    rendererField: "inkRenderer",
+    configKey: "inkRenderer",
+    RendererClass: InkOverlayRenderer,
+  },
+  {
+    effect: "frost",
+    rendererField: "frostRenderer",
+    configKey: "frostRenderer",
+    RendererClass: FrostOverlayRenderer,
+  },
+  {
+    effect: "silk",
+    rendererField: "silkRenderer",
+    configKey: "silkRenderer",
+    RendererClass: SilkOverlayRenderer,
+  },
+  {
+    effect: "pulse",
+    rendererField: "pulseRenderer",
+    configKey: "pulseRenderer",
+    RendererClass: PulseOverlayRenderer,
+  },
+] as const;
 
 export class EffectRendererManager {
   // ── Renderer instances ──────────────────────────────────────────────
@@ -76,20 +206,40 @@ export class EffectRendererManager {
   cellTipEffortMap: TipEffortMap | undefined = undefined;
 
   // ── Previous-frame flags for change detection ───────────────────────
-  prevHasFireTips = false;
-  prevHasCharcoalTips = false;
-  prevHasZapTips = false;
-  prevHasSparklesTips = false;
-  prevHasEchoTips = false;
-  prevHasBloomTips = false;
-  prevHasWaterTips = false;
-  prevHasBubblesTips = false;
-  prevHasPetalsTips = false;
-  prevHasSmokeTips = false;
-  prevHasInkTips = false;
-  prevHasFrostTips = false;
-  prevHasSilkTips = false;
-  prevHasPulseTips = false;
+  /** Map from effect name to whether tips are currently enabled. LED uses ledConfig.enabled instead. */
+  prevEffectEnabled: Map<OverlayEffectEntry["effect"], boolean> = new Map(
+    OVERLAY_REGISTRY.map(e => [e.effect, false])
+  );
+
+  // Legacy accessors for external callers that read these flags directly
+  get prevHasFireTips(): boolean { return this.prevEffectEnabled.get("fire") ?? false; }
+  set prevHasFireTips(v: boolean) { this.prevEffectEnabled.set("fire", v); }
+  get prevHasCharcoalTips(): boolean { return this.prevEffectEnabled.get("charcoal") ?? false; }
+  set prevHasCharcoalTips(v: boolean) { this.prevEffectEnabled.set("charcoal", v); }
+  get prevHasZapTips(): boolean { return this.prevEffectEnabled.get("zap") ?? false; }
+  set prevHasZapTips(v: boolean) { this.prevEffectEnabled.set("zap", v); }
+  get prevHasSparklesTips(): boolean { return this.prevEffectEnabled.get("sparkles") ?? false; }
+  set prevHasSparklesTips(v: boolean) { this.prevEffectEnabled.set("sparkles", v); }
+  get prevHasEchoTips(): boolean { return this.prevEffectEnabled.get("echo") ?? false; }
+  set prevHasEchoTips(v: boolean) { this.prevEffectEnabled.set("echo", v); }
+  get prevHasBloomTips(): boolean { return this.prevEffectEnabled.get("bloom") ?? false; }
+  set prevHasBloomTips(v: boolean) { this.prevEffectEnabled.set("bloom", v); }
+  get prevHasWaterTips(): boolean { return this.prevEffectEnabled.get("water") ?? false; }
+  set prevHasWaterTips(v: boolean) { this.prevEffectEnabled.set("water", v); }
+  get prevHasBubblesTips(): boolean { return this.prevEffectEnabled.get("bubbles") ?? false; }
+  set prevHasBubblesTips(v: boolean) { this.prevEffectEnabled.set("bubbles", v); }
+  get prevHasPetalsTips(): boolean { return this.prevEffectEnabled.get("petals") ?? false; }
+  set prevHasPetalsTips(v: boolean) { this.prevEffectEnabled.set("petals", v); }
+  get prevHasSmokeTips(): boolean { return this.prevEffectEnabled.get("smoke") ?? false; }
+  set prevHasSmokeTips(v: boolean) { this.prevEffectEnabled.set("smoke", v); }
+  get prevHasInkTips(): boolean { return this.prevEffectEnabled.get("ink") ?? false; }
+  set prevHasInkTips(v: boolean) { this.prevEffectEnabled.set("ink", v); }
+  get prevHasFrostTips(): boolean { return this.prevEffectEnabled.get("frost") ?? false; }
+  set prevHasFrostTips(v: boolean) { this.prevEffectEnabled.set("frost", v); }
+  get prevHasSilkTips(): boolean { return this.prevEffectEnabled.get("silk") ?? false; }
+  set prevHasSilkTips(v: boolean) { this.prevEffectEnabled.set("silk", v); }
+  get prevHasPulseTips(): boolean { return this.prevEffectEnabled.get("pulse") ?? false; }
+  set prevHasPulseTips(v: boolean) { this.prevEffectEnabled.set("pulse", v); }
 
   // ── Dependencies (injected) ─────────────────────────────────────────
   private containerElement: HTMLDivElement | null = null;
@@ -124,486 +274,86 @@ export class EffectRendererManager {
     if (refs.canvasSize !== undefined) this.canvasSize = refs.canvasSize;
   }
 
-  // ── Sync Overlay Methods ────────────────────────────────────────────
+  // ── Generic Overlay Sync ────────────────────────────────────────────
 
   /**
-   * Initialize or destroy the fire overlay based on prevHasFireTips.
-   * Fire and charcoal are independent effects with independent renderers.
+   * Generic init/destroy lifecycle for a single registry-driven overlay effect.
    */
-  syncFireOverlay(): void {
-    const enabled = this.prevHasFireTips;
+  private syncOverlay(entry: OverlayEffectEntry): void {
+    const enabled = this.prevEffectEnabled.get(entry.effect) ?? false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const self = this as any;
 
     if (enabled) {
-      if (!this.fireRenderer?.isInitialized()) {
+      const current: OverlayRenderer | null = self[entry.rendererField];
+      if (!current?.isInitialized()) {
         if (!this.containerElement) return;
-        this.fireRenderer = new WebGLFireRenderer();
-        const success = this.fireRenderer.initialize(
+        const renderer: OverlayRenderer = new entry.RendererClass();
+        const success = renderer.initialize(
           this.containerElement,
           this.canvasSize,
-          this.canvasSize
+          this.canvasSize,
         );
         if (success) {
+          self[entry.rendererField] = renderer;
           this.renderLoopService?.updateConfig({
-            fireRenderer: this.fireRenderer,
-          });
+            [entry.configKey]: renderer,
+          } as Partial<RenderLoopConfig>);
+          entry.onInit?.(this, renderer);
         } else {
-          this.fireRenderer = null;
+          self[entry.rendererField] = null;
         }
       }
     } else {
-      if (this.fireRenderer?.isInitialized()) {
-        this.fireRenderer.dispose();
-        this.fireRenderer = null;
+      const current: OverlayRenderer | null = self[entry.rendererField];
+      if (current?.isInitialized()) {
+        current.dispose();
+        self[entry.rendererField] = null;
       }
-      this.renderLoopService?.updateConfig({ fireRenderer: null });
-      if (!this.prevHasCharcoalTips) {
-        this.fireTipTracker?.reset();
-      }
-    }
-  }
-
-  /**
-   * Initialize or destroy the charcoal overlay based on prevHasCharcoalTips.
-   * Charcoal is an independent effect with its own particle renderer.
-   */
-  syncCharcoalOverlay(): void {
-    const enabled = this.prevHasCharcoalTips;
-
-    if (enabled) {
-      if (!this.charcoalRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.charcoalRenderer = new CharcoalSparkRenderer();
-        const success = this.charcoalRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          const charcoalParams = this.getVM?.().getCharcoalParams();
-          if (charcoalParams) this.charcoalRenderer.setParams(charcoalParams);
-          this.renderLoopService?.updateConfig({
-            charcoalRenderer: this.charcoalRenderer,
-          });
-        } else {
-          this.charcoalRenderer = null;
-        }
-      }
-    } else {
-      if (this.charcoalRenderer?.isInitialized()) {
-        this.charcoalRenderer.dispose();
-        this.charcoalRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ charcoalRenderer: null });
-      if (!this.prevHasFireTips) {
-        this.fireTipTracker?.reset();
-      }
+      this.renderLoopService?.updateConfig({
+        [entry.configKey]: null,
+      } as Partial<RenderLoopConfig>);
+      entry.onDisable?.(this);
     }
 
-    // Trigger a render to start/stop charcoal loop
-    this.triggerRender();
+    if (entry.triggerRender !== false) {
+      this.triggerRender();
+    }
   }
 
   /**
-   * Initialize or destroy the zap (lightning) overlay based on prevHasZapTips.
-   * Mirrors syncCharcoalOverlay - the zap overlay is a Canvas2D layer that
-   * draws procedural arcs between prop tips on top of fire/trails.
+   * Sync a single effect overlay by name. Finds the registry entry and delegates.
    */
-  syncZapOverlay(): void {
-    const enabled = this.prevHasZapTips;
-
-    if (enabled) {
-      if (!this.zapRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.zapRenderer = new ZapOverlayRenderer();
-        const success = this.zapRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            zapRenderer: this.zapRenderer,
-          });
-        } else {
-          this.zapRenderer = null;
-        }
-      }
-    } else {
-      if (this.zapRenderer?.isInitialized()) {
-        this.zapRenderer.dispose();
-        this.zapRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ zapRenderer: null });
-    }
-
-    // Trigger a render to start/stop the zap loop
-    this.triggerRender();
+  syncEffectOverlay(effect: OverlayEffectEntry["effect"]): void {
+    const entry = OVERLAY_REGISTRY.find(e => e.effect === effect);
+    if (entry) this.syncOverlay(entry);
   }
 
   /**
-   * Initialize or destroy the sparkles overlay based on prevHasSparklesTips.
+   * Sync all 14 registry-driven overlay effects.
    */
-  syncSparklesOverlay(): void {
-    const enabled = this.prevHasSparklesTips;
-
-    if (enabled) {
-      if (!this.sparklesRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.sparklesRenderer = new SparklesOverlayRenderer();
-        const success = this.sparklesRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            sparklesRenderer: this.sparklesRenderer,
-          });
-        } else {
-          this.sparklesRenderer = null;
-        }
-      }
-    } else {
-      if (this.sparklesRenderer?.isInitialized()) {
-        this.sparklesRenderer.dispose();
-        this.sparklesRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ sparklesRenderer: null });
+  syncAllOverlays(): void {
+    for (const entry of OVERLAY_REGISTRY) {
+      this.syncOverlay(entry);
     }
-
-    this.triggerRender();
   }
 
-  /**
-   * Initialize or destroy the echo overlay based on prevHasEchoTips.
-   */
-  syncEchoOverlay(): void {
-    const enabled = this.prevHasEchoTips;
+  // ── Legacy named methods (thin wrappers for AnimationEngine callers) ─
 
-    if (enabled) {
-      if (!this.echoRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.echoRenderer = new EchoOverlayRenderer();
-        const success = this.echoRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            echoRenderer: this.echoRenderer,
-          });
-        } else {
-          this.echoRenderer = null;
-        }
-      }
-    } else {
-      if (this.echoRenderer?.isInitialized()) {
-        this.echoRenderer.dispose();
-        this.echoRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ echoRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  /**
-   * Initialize or destroy the bloom overlay based on prevHasBloomTips.
-   */
-  syncBloomOverlay(): void {
-    const enabled = this.prevHasBloomTips;
-
-    if (enabled) {
-      if (!this.bloomRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.bloomRenderer = new BloomOverlayRenderer();
-        const success = this.bloomRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            bloomRenderer: this.bloomRenderer,
-          });
-        } else {
-          this.bloomRenderer = null;
-        }
-      }
-    } else {
-      if (this.bloomRenderer?.isInitialized()) {
-        this.bloomRenderer.dispose();
-        this.bloomRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ bloomRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  /**
-   * Initialize or destroy the water overlay based on prevHasWaterTips.
-   */
-  syncWaterOverlay(): void {
-    const enabled = this.prevHasWaterTips;
-
-    if (enabled) {
-      if (!this.waterRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.waterRenderer = new WaterOverlayRenderer();
-        const success = this.waterRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            waterRenderer: this.waterRenderer,
-          });
-        } else {
-          this.waterRenderer = null;
-        }
-      }
-    } else {
-      if (this.waterRenderer?.isInitialized()) {
-        this.waterRenderer.dispose();
-        this.waterRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ waterRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  /**
-   * Initialize or destroy the bubbles overlay based on prevHasBubblesTips.
-   */
-  syncBubblesOverlay(): void {
-    const enabled = this.prevHasBubblesTips;
-
-    if (enabled) {
-      if (!this.bubblesRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.bubblesRenderer = new BubblesOverlayRenderer();
-        const success = this.bubblesRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            bubblesRenderer: this.bubblesRenderer,
-          });
-        } else {
-          this.bubblesRenderer = null;
-        }
-      }
-    } else {
-      if (this.bubblesRenderer?.isInitialized()) {
-        this.bubblesRenderer.dispose();
-        this.bubblesRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ bubblesRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  /**
-   * Initialize or destroy the petals overlay based on prevHasPetalsTips.
-   */
-  syncPetalsOverlay(): void {
-    const enabled = this.prevHasPetalsTips;
-
-    if (enabled) {
-      if (!this.petalsRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.petalsRenderer = new PetalsOverlayRenderer();
-        const success = this.petalsRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            petalsRenderer: this.petalsRenderer,
-          });
-        } else {
-          this.petalsRenderer = null;
-        }
-      }
-    } else {
-      if (this.petalsRenderer?.isInitialized()) {
-        this.petalsRenderer.dispose();
-        this.petalsRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ petalsRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  /**
-   * Initialize or destroy the smoke overlay based on prevHasSmokeTips.
-   */
-  syncSmokeOverlay(): void {
-    const enabled = this.prevHasSmokeTips;
-
-    if (enabled) {
-      if (!this.smokeRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.smokeRenderer = new SmokeOverlayRenderer();
-        const success = this.smokeRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            smokeRenderer: this.smokeRenderer,
-          });
-        } else {
-          this.smokeRenderer = null;
-        }
-      }
-    } else {
-      if (this.smokeRenderer?.isInitialized()) {
-        this.smokeRenderer.dispose();
-        this.smokeRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ smokeRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  /**
-   * Initialize or destroy the ink overlay based on prevHasInkTips.
-   */
-  syncInkOverlay(): void {
-    const enabled = this.prevHasInkTips;
-
-    if (enabled) {
-      if (!this.inkRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.inkRenderer = new InkOverlayRenderer();
-        const success = this.inkRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            inkRenderer: this.inkRenderer,
-          });
-        } else {
-          this.inkRenderer = null;
-        }
-      }
-    } else {
-      if (this.inkRenderer?.isInitialized()) {
-        this.inkRenderer.dispose();
-        this.inkRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ inkRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  syncFrostOverlay(): void {
-    const enabled = this.prevHasFrostTips;
-
-    if (enabled) {
-      if (!this.frostRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.frostRenderer = new FrostOverlayRenderer();
-        const success = this.frostRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            frostRenderer: this.frostRenderer,
-          });
-        } else {
-          this.frostRenderer = null;
-        }
-      }
-    } else {
-      if (this.frostRenderer?.isInitialized()) {
-        this.frostRenderer.dispose();
-        this.frostRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ frostRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  syncSilkOverlay(): void {
-    const enabled = this.prevHasSilkTips;
-
-    if (enabled) {
-      if (!this.silkRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.silkRenderer = new SilkOverlayRenderer();
-        const success = this.silkRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            silkRenderer: this.silkRenderer,
-          });
-        } else {
-          this.silkRenderer = null;
-        }
-      }
-    } else {
-      if (this.silkRenderer?.isInitialized()) {
-        this.silkRenderer.dispose();
-        this.silkRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ silkRenderer: null });
-    }
-
-    this.triggerRender();
-  }
-
-  syncPulseOverlay(): void {
-    const enabled = this.prevHasPulseTips;
-
-    if (enabled) {
-      if (!this.pulseRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.pulseRenderer = new PulseOverlayRenderer();
-        const success = this.pulseRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize,
-        );
-        if (success) {
-          this.renderLoopService?.updateConfig({
-            pulseRenderer: this.pulseRenderer,
-          });
-        } else {
-          this.pulseRenderer = null;
-        }
-      }
-    } else {
-      if (this.pulseRenderer?.isInitialized()) {
-        this.pulseRenderer.dispose();
-        this.pulseRenderer = null;
-      }
-      this.renderLoopService?.updateConfig({ pulseRenderer: null });
-    }
-
-    this.triggerRender();
-  }
+  syncFireOverlay(): void { this.syncEffectOverlay("fire"); }
+  syncCharcoalOverlay(): void { this.syncEffectOverlay("charcoal"); }
+  syncZapOverlay(): void { this.syncEffectOverlay("zap"); }
+  syncSparklesOverlay(): void { this.syncEffectOverlay("sparkles"); }
+  syncEchoOverlay(): void { this.syncEffectOverlay("echo"); }
+  syncBloomOverlay(): void { this.syncEffectOverlay("bloom"); }
+  syncWaterOverlay(): void { this.syncEffectOverlay("water"); }
+  syncBubblesOverlay(): void { this.syncEffectOverlay("bubbles"); }
+  syncPetalsOverlay(): void { this.syncEffectOverlay("petals"); }
+  syncSmokeOverlay(): void { this.syncEffectOverlay("smoke"); }
+  syncInkOverlay(): void { this.syncEffectOverlay("ink"); }
+  syncFrostOverlay(): void { this.syncEffectOverlay("frost"); }
+  syncSilkOverlay(): void { this.syncEffectOverlay("silk"); }
+  syncPulseOverlay(): void { this.syncEffectOverlay("pulse"); }
 
   /**
    * Initialize or destroy the LED overlay based on config.enabled.
@@ -733,34 +483,15 @@ export class EffectRendererManager {
    * effective tipEffectMap. Called when the cell-level map changes so that
    * per-cell assignments correctly spin up / tear down overlay renderers.
    */
-  private syncEffectFlagsFromEffectiveMap(): void {
-    const syncFlag = (
-      effect: EffectType,
-      prev: boolean,
-      set: (v: boolean) => void,
-      sync: () => void,
-    ): void => {
-      const has = this.hasEffectInEffectiveMap(effect);
+  syncEffectFlagsFromEffectiveMap(): void {
+    for (const entry of OVERLAY_REGISTRY) {
+      const has = this.hasEffectInEffectiveMap(entry.effect);
+      const prev = this.prevEffectEnabled.get(entry.effect) ?? false;
       if (has !== prev) {
-        set(has);
-        sync();
+        this.prevEffectEnabled.set(entry.effect, has);
+        this.syncOverlay(entry);
       }
-    };
-
-    syncFlag("fire", this.prevHasFireTips, v => { this.prevHasFireTips = v; }, () => this.syncFireOverlay());
-    syncFlag("charcoal", this.prevHasCharcoalTips, v => { this.prevHasCharcoalTips = v; }, () => this.syncCharcoalOverlay());
-    syncFlag("zap", this.prevHasZapTips, v => { this.prevHasZapTips = v; }, () => this.syncZapOverlay());
-    syncFlag("sparkles", this.prevHasSparklesTips, v => { this.prevHasSparklesTips = v; }, () => this.syncSparklesOverlay());
-    syncFlag("echo", this.prevHasEchoTips, v => { this.prevHasEchoTips = v; }, () => this.syncEchoOverlay());
-    syncFlag("bloom", this.prevHasBloomTips, v => { this.prevHasBloomTips = v; }, () => this.syncBloomOverlay());
-    syncFlag("water", this.prevHasWaterTips, v => { this.prevHasWaterTips = v; }, () => this.syncWaterOverlay());
-    syncFlag("bubbles", this.prevHasBubblesTips, v => { this.prevHasBubblesTips = v; }, () => this.syncBubblesOverlay());
-    syncFlag("petals", this.prevHasPetalsTips, v => { this.prevHasPetalsTips = v; }, () => this.syncPetalsOverlay());
-    syncFlag("smoke", this.prevHasSmokeTips, v => { this.prevHasSmokeTips = v; }, () => this.syncSmokeOverlay());
-    syncFlag("ink", this.prevHasInkTips, v => { this.prevHasInkTips = v; }, () => this.syncInkOverlay());
-    syncFlag("frost", this.prevHasFrostTips, v => { this.prevHasFrostTips = v; }, () => this.syncFrostOverlay());
-    syncFlag("silk", this.prevHasSilkTips, v => { this.prevHasSilkTips = v; }, () => this.syncSilkOverlay());
-    syncFlag("pulse", this.prevHasPulseTips, v => { this.prevHasPulseTips = v; }, () => this.syncPulseOverlay());
+    }
 
     const hasLed = this.hasEffectInEffectiveMap("led");
     if (hasLed !== this.ledConfig.enabled) {
@@ -782,21 +513,11 @@ export class EffectRendererManager {
       renderer.setCanvasZIndex(resolveEffectZ(id, vm.getEffectLayer(id)));
     };
     apply("trails", this.trailOverlay);
-    apply("fire", this.fireRenderer);
-    apply("charcoal", this.charcoalRenderer);
     apply("led", this.ledRenderer);
-    apply("zap", this.zapRenderer);
-    apply("sparkles", this.sparklesRenderer);
-    apply("echo", this.echoRenderer);
-    apply("bloom", this.bloomRenderer);
-    apply("water", this.waterRenderer);
-    apply("bubbles", this.bubblesRenderer);
-    apply("petals", this.petalsRenderer);
-    apply("smoke", this.smokeRenderer);
-    apply("ink", this.inkRenderer);
-    apply("frost", this.frostRenderer);
-    apply("silk", this.silkRenderer);
-    apply("pulse", this.pulseRenderer);
+    for (const entry of OVERLAY_REGISTRY) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      apply(entry.effect, (this as any)[entry.rendererField]);
+    }
   }
 
   // ── Trail Overlay Factory ───────────────────────────────────────────
@@ -822,22 +543,15 @@ export class EffectRendererManager {
   /** Resize all effect overlay canvases to the new canvas size. */
   resizeAll(newSize: number): void {
     this.canvasSize = newSize;
-    this.fireRenderer?.resize(newSize, newSize);
+    // Resize all registry-driven renderers
+    for (const entry of OVERLAY_REGISTRY) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
+      renderer?.resize?.(newSize, newSize);
+    }
+    // LED + trail handled separately
     this.ledRenderer?.resize(newSize, newSize);
     this.trailOverlay?.resize(newSize, newSize);
-    this.zapRenderer?.resize(newSize, newSize);
-    this.sparklesRenderer?.resize(newSize, newSize);
-    this.echoRenderer?.resize(newSize, newSize);
-    this.bloomRenderer?.resize(newSize, newSize);
-    this.waterRenderer?.resize(newSize, newSize);
-    this.bubblesRenderer?.resize(newSize, newSize);
-    this.petalsRenderer?.resize(newSize, newSize);
-    this.smokeRenderer?.resize(newSize, newSize);
-    this.inkRenderer?.resize(newSize, newSize);
-    this.frostRenderer?.resize(newSize, newSize);
-    this.silkRenderer?.resize(newSize, newSize);
-    this.pulseRenderer?.resize(newSize, newSize);
-    this.charcoalRenderer?.resize(newSize, newSize);
     // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
     // Without this, after HMR the tracker uses stale positions from the old size.
     this.fireTipTracker?.reset();
@@ -851,23 +565,18 @@ export class EffectRendererManager {
    * initializeCanvas gap. Called after renderLoopService is ready.
    */
   wirePostInitOverlays(): void {
-    if (this.fireRenderer?.isInitialized() && this.renderLoopService) {
-      this.renderLoopService.updateConfig({
-        fireRenderer: this.fireRenderer,
-      });
-    } else if (this.charcoalRenderer?.isInitialized() && this.renderLoopService) {
-      this.renderLoopService.updateConfig({
-        charcoalRenderer: this.charcoalRenderer,
-      });
+    for (const entry of OVERLAY_REGISTRY) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
+      if (renderer?.isInitialized() && this.renderLoopService) {
+        this.renderLoopService.updateConfig({
+          [entry.configKey]: renderer,
+        } as Partial<RenderLoopConfig>);
+      }
     }
     if (this.ledRenderer?.isInitialized() && this.renderLoopService) {
       this.renderLoopService.updateConfig({
         ledRenderer: this.ledRenderer,
-      });
-    }
-    if (this.zapRenderer?.isInitialized() && this.renderLoopService) {
-      this.renderLoopService.updateConfig({
-        zapRenderer: this.zapRenderer,
       });
     }
   }
@@ -877,50 +586,16 @@ export class EffectRendererManager {
    * Called at end of initialize() in case $effects haven't triggered yet.
    */
   ensureEnabledOverlays(): void {
-    if (this.prevHasFireTips && !this.fireRenderer?.isInitialized()) {
-      this.syncFireOverlay();
-    }
-    if (this.prevHasCharcoalTips && !this.charcoalRenderer?.isInitialized()) {
-      this.syncCharcoalOverlay();
+    for (const entry of OVERLAY_REGISTRY) {
+      const enabled = this.prevEffectEnabled.get(entry.effect) ?? false;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
+      if (enabled && !renderer?.isInitialized()) {
+        this.syncOverlay(entry);
+      }
     }
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
       this.syncLedOverlay();
-    }
-    if (this.prevHasZapTips && !this.zapRenderer?.isInitialized()) {
-      this.syncZapOverlay();
-    }
-    if (this.prevHasSparklesTips && !this.sparklesRenderer?.isInitialized()) {
-      this.syncSparklesOverlay();
-    }
-    if (this.prevHasEchoTips && !this.echoRenderer?.isInitialized()) {
-      this.syncEchoOverlay();
-    }
-    if (this.prevHasBloomTips && !this.bloomRenderer?.isInitialized()) {
-      this.syncBloomOverlay();
-    }
-    if (this.prevHasWaterTips && !this.waterRenderer?.isInitialized()) {
-      this.syncWaterOverlay();
-    }
-    if (this.prevHasBubblesTips && !this.bubblesRenderer?.isInitialized()) {
-      this.syncBubblesOverlay();
-    }
-    if (this.prevHasPetalsTips && !this.petalsRenderer?.isInitialized()) {
-      this.syncPetalsOverlay();
-    }
-    if (this.prevHasSmokeTips && !this.smokeRenderer?.isInitialized()) {
-      this.syncSmokeOverlay();
-    }
-    if (this.prevHasInkTips && !this.inkRenderer?.isInitialized()) {
-      this.syncInkOverlay();
-    }
-    if (this.prevHasFrostTips && !this.frostRenderer?.isInitialized()) {
-      this.syncFrostOverlay();
-    }
-    if (this.prevHasSilkTips && !this.silkRenderer?.isInitialized()) {
-      this.syncSilkOverlay();
-    }
-    if (this.prevHasPulseTips && !this.pulseRenderer?.isInitialized()) {
-      this.syncPulseOverlay();
     }
   }
 
@@ -961,11 +636,14 @@ export class EffectRendererManager {
   // ── Dispose ─────────────────────────────────────────────────────────
 
   dispose(): void {
-    // Dispose fire overlay
-    this.fireRenderer?.dispose();
-    this.fireRenderer = null;
-    this.charcoalRenderer?.dispose();
-    this.charcoalRenderer = null;
+    // Dispose all registry-driven renderers
+    for (const entry of OVERLAY_REGISTRY) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const renderer: OverlayRenderer | null = (this as any)[entry.rendererField];
+      renderer?.dispose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this as any)[entry.rendererField] = null;
+    }
     this.fireTipTracker = null;
 
     // Dispose LED overlay (also prevent any pending deferred init from running)
@@ -977,32 +655,6 @@ export class EffectRendererManager {
     // Dispose trail overlay
     this.trailOverlay?.dispose();
     this.trailOverlay = null;
-
-    // Dispose zap overlay
-    this.zapRenderer?.dispose();
-    this.zapRenderer = null;
-    this.sparklesRenderer?.dispose();
-    this.sparklesRenderer = null;
-    this.echoRenderer?.dispose();
-    this.echoRenderer = null;
-    this.bloomRenderer?.dispose();
-    this.bloomRenderer = null;
-    this.waterRenderer?.dispose();
-    this.waterRenderer = null;
-    this.bubblesRenderer?.dispose();
-    this.bubblesRenderer = null;
-    this.petalsRenderer?.dispose();
-    this.petalsRenderer = null;
-    this.smokeRenderer?.dispose();
-    this.smokeRenderer = null;
-    this.inkRenderer?.dispose();
-    this.inkRenderer = null;
-    this.frostRenderer?.dispose();
-    this.frostRenderer = null;
-    this.silkRenderer?.dispose();
-    this.silkRenderer = null;
-    this.pulseRenderer?.dispose();
-    this.pulseRenderer = null;
   }
 
   // ── Private helpers ─────────────────────────────────────────────────
