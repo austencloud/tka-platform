@@ -9,15 +9,10 @@
 # Debug artifacts
 debug-screenshots/
 
-# Unprocessed 3D asset packs (too large to track, not served)
-assets-staging/
-
-# Unity projects (on hiatus, local-only)
-tka-worlds/
-Assets/
-
-# FlowTrails research (pre-integration, local-only)
-flowtrails/
+# Moved out of repo — kept as comments for reference
+# assets-staging/ → E:\tka-assets-staging\
+# tka-worlds/ + Assets/ → E:\tka-worlds\
+# flowtrails/ → E:\flowtrails\
 
 # Audit/tracker session artifacts
 .audit-evidence*.json
@@ -157,8 +152,7 @@ parse-errors.py
 # Motion primitives (generated, do not commit)
 src/lib/data/motion-primitives.json
 
-# Feedback images (downloaded for review, not committed)
-feedback-images/
+# Feedback images (deleted — screenshots live at D:\PICTURES2\Screenshots)
 test-image.png
 find-image-feedback.js
 
@@ -214,11 +208,9 @@ stderr.txt
 # Audit pipeline artifacts
 .audit-evidence.json
 
-# Large asset directories (tutorials, guides, Unity project)
+# Large asset directories (tutorials, guides)
 _ARCHIVE/
 _GUIDE/
-tka-worlds/
-Assets/
 
 # MCP server test/debug files
 mcp-server/*.txt
@@ -226,11 +218,9 @@ mcp-server/test-*.ts
 mcp-server/basic-test.ts
 mcp-server/quick-test.mjs
 
-# Unity project artifacts (if not using tka-worlds exclusion)
+# Unity project artifacts (safety net if Unity files appear)
 /Library/
 Temp/
-Logs/
-UserSettings/
 *.cginc
 *.unitypackage
 
@@ -259,9 +249,10 @@ flow-arts-transcripts/instagram/
 flow-arts-transcripts/*-done.txt
 
 # Search interest tracking data
-# /data/ excluded except the sequences bundle directory (for Tauri desktop bundling)
+# /data/ excluded except tracked subdirectories
 /data/*
 !/data/sequences/
+!/data/decks/
 /data/sequences/*.json
 firebase-service-account.json
 .mcp.json
@@ -302,9 +293,6 @@ packages/render-composition/test-render.ts
 
 # Script debug screenshots
 scripts/card-designer-screenshot.png
-
-# Flowtrails prototype (reference for video feature migration)
-flowtrails/
 
 # Superpowers brainstorm sessions (ephemeral design explorations)
 .superpowers/brainstorm/

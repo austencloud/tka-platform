@@ -1,0 +1,105 @@
+import type { User } from "firebase/auth";
+import { logSessionStart } from "../../analytics/services/posthog-activity-logger";
+import { getPresenceTracker } from "../../presence/getPresenceTracker";
+import { ensureSystemCollections } from "$lib/shared/library/services/collection-manager";
+
+export async function initializeChildServices(
+  user: User,
+  getUserFromState: () => User | null
+): Promise<void> {
+  try {
+    logSessionStart().catch((error: unknown) => {
+      console.warn("⚠️ [authState] Session start logging failed:", error);
+    });
+  } catch {
+    // Silently fail - activity logging is non-critical
+  }
+
+  // Initialize presence tracking (non-blocking)
+  (async () => {
+    try {
+      const presenceService = getPresenceTracker();
+      if (presenceService) {
+        await presenceService.initialize();
+      }
+    } catch (error) {
+      console.warn("⚠️ [authState] Presence initialization failed:", error);
+    }
+  })();
+
+  // Initialize settings Firebase sync (non-blocking)
+  import("$lib/shared/settings/state/SettingsState.svelte")
+    .then(async (settingsModule) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await settingsModule.settingsService.initializeFirebaseSync();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Settings sync initialization failed:", error);
+    });
+
+  // Initialize global arrow adjustments (non-blocking)
+  import("$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton")
+    .then(async ({ initializeGlobalAdjustments }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await initializeGlobalAdjustments();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Global arrow adjustments initialization failed:", error);
+    });
+
+  // Initialize prop geometry adjustments (non-blocking)
+  import("$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton")
+    .then(async ({ initializePropGeometryAdjustments }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await initializePropGeometryAdjustments();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Prop geometry adjustments initialization failed:", error);
+    });
+
+  // Sync first-run status FROM cloud
+  import("$lib/shared/onboarding/state/first-run-state.svelte")
+    .then(async ({ firstRunState }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await firstRunState.syncFromCloud();
+    })
+    .catch(async (error) => {
+      console.warn("⚠️ [authState] First-run sync failed:", error);
+      try {
+        const { firstRunState } = await import("$lib/shared/onboarding/state/first-run-state.svelte");
+        firstRunState.markCloudSyncComplete();
+      } catch {
+        // If even the import fails, app is in a very bad state
+      }
+    });
+
+  // Initialize onboarding Firebase sync (non-blocking)
+  import("$lib/shared/onboarding/config/storage-keys")
+    .then(async (onboardingModule) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await onboardingModule.syncOnboardingToCloud();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Onboarding sync failed:", error);
+    });
+
+  // Initialize system collections (Favorites, etc.) - non-blocking
+  (async () => {
+    try {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+
+      // Re-check auth after async gap
+      if (!getUserFromState()) return;
+
+      await ensureSystemCollections();
+    } catch (error) {
+      console.warn("⚠️ [authState] System collections init failed:", error);
+    }
+  })();
+}

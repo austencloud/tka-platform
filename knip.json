@@ -30,7 +30,6 @@
     "**/*.d.ts",
     "src/stories/**",
     "docs/**",
-    "deployment/**",
     "**/node_modules/**",
     "scripts/temp/**"
   ],
