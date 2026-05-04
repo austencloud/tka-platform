@@ -69,6 +69,18 @@
         <span class="chip-label">+ Center</span>
         <span class="chip-desc">Adds a 9th point</span>
       </button>
+
+      <button
+        class="center-chip"
+        class:active={builderState.keyboardMode}
+        role="switch"
+        aria-checked={builderState.keyboardMode}
+        aria-label="Keyboard mode (use numpad)"
+        onclick={() => builderState.toggleKeyboardMode()}
+      >
+        <span class="chip-label"><i class="fas fa-keyboard" aria-hidden="true"></i> Keyboard</span>
+        <span class="chip-desc">Build with numpad</span>
+      </button>
     </div>
   </div>
 </aside>

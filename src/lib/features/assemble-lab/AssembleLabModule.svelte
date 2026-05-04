@@ -11,8 +11,20 @@
   import StepStrip from "./components/StepStrip.svelte";
   import AssembleIdlePanel from "./components/AssembleIdlePanel.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { createTimingState } from "./state/timing-state.svelte";
+  import { handleAssembleKeyDown } from "./services/assemble-keyboard-handler";
+  import type { KeyboardAction } from "./services/assemble-keyboard-handler";
+  import KeyboardHintStrip from "./components/KeyboardHintStrip.svelte";
+  import TimingControlsPanel from "./components/TimingControlsPanel.svelte";
+  import ReplayTransport from "./components/ReplayTransport.svelte";
+  import {
+    MotionColor,
+    Orientation,
+    RotationDirection,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const builderState = createAssembleState();
+  const timingState = createTimingState();
 
   let isIdle = $state(true);
   let prevPhaseIdle = true;
@@ -51,6 +63,106 @@
       void settingsState.updateSetting("preferredShowCenter", center);
     }
   });
+
+  const TURN_SEQUENCE = [-0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
+  const ORIENTATION_SEQUENCE = [
+    Orientation.IN, Orientation.OUT, Orientation.CLOCK, Orientation.COUNTER,
+  ] as const;
+
+  function dispatchKeyboardAction(action: KeyboardAction): void {
+    switch (action.type) {
+      case "position":
+        if (action.location) {
+          if (builderState.keyboardMode) {
+            timingState.recordKeydown();
+          }
+          builderState.handlePointClick(action.location);
+        }
+        break;
+      case "turnUp": {
+        const idx = TURN_SEQUENCE.indexOf(builderState.turnCount as any);
+        const next = idx < TURN_SEQUENCE.length - 1 ? idx + 1 : 1;
+        builderState.setTurnCount(TURN_SEQUENCE[next]!);
+        break;
+      }
+      case "turnDown": {
+        const idx = TURN_SEQUENCE.indexOf(builderState.turnCount as any);
+        const next = idx > 0 ? idx - 1 : TURN_SEQUENCE.length - 1;
+        builderState.setTurnCount(TURN_SEQUENCE[next]!);
+        break;
+      }
+      case "toggleRotation":
+        builderState.setRotationDirection(
+          builderState.rotationDirection === RotationDirection.CLOCKWISE
+            ? RotationDirection.COUNTER_CLOCKWISE
+            : RotationDirection.CLOCKWISE,
+        );
+        break;
+      case "cycleOrientation": {
+        const oriIdx = ORIENTATION_SEQUENCE.indexOf(builderState.currentOrientation as any);
+        const nextOri = (oriIdx + 1) % ORIENTATION_SEQUENCE.length;
+        builderState.setOrientation(ORIENTATION_SEQUENCE[nextOri]!);
+        break;
+      }
+      case "switchHand":
+        builderState.switchToHand(
+          builderState.activeHand === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE,
+        );
+        break;
+      case "undo":
+        builderState.undoStep();
+        break;
+      case "finish":
+        builderState.finishHand();
+        break;
+    }
+  }
+
+  $effect(() => {
+    if (!builderState.keyboardMode) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isInputFocused =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      const action = handleAssembleKeyDown(e, {
+        gridMode: builderState.gridMode,
+        showCenter: builderState.showCenter,
+        isModalOpen: false,
+        isInputFocused,
+      });
+
+      if (action) {
+        e.preventDefault();
+        dispatchKeyboardAction(action);
+      }
+    }
+
+    function onKeyUp(e: KeyboardEvent) {
+      if (e.code.startsWith("Numpad")) {
+        timingState.recordKeyup();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  });
+
+  function handleReplay(): void {
+    console.log("Replay durations:", timingState.durations);
+  }
+
+  function handleReRecord(): void {
+    const totalSteps = Math.max(builderState.blueSteps.length, builderState.redSteps.length);
+    timingState.startReRecord(totalSteps);
+  }
 </script>
 
 <div class="assemble">
@@ -72,7 +184,17 @@
   </div>
 
   <div class="footer-section" class:hidden={isIdle}>
+    {#if builderState.keyboardMode}
+      <TimingControlsPanel {timingState} />
+      <KeyboardHintStrip {builderState} />
+    {/if}
     <BuilderTurnBar {builderState} />
+    <ReplayTransport
+      {builderState}
+      {timingState}
+      onReplay={handleReplay}
+      onReRecord={handleReRecord}
+    />
     <StepStrip {builderState} />
   </div>
 </div>

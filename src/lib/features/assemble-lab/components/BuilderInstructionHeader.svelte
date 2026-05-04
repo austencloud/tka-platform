@@ -138,6 +138,17 @@
       <span class="step-count">{builderState.redSteps.length}</span>
     </button>
   </div>
+
+  <button
+    class="keyboard-toggle"
+    class:active={builderState.keyboardMode}
+    role="switch"
+    aria-checked={builderState.keyboardMode}
+    aria-label="Toggle keyboard mode"
+    onclick={() => builderState.toggleKeyboardMode()}
+  >
+    <i class="fas fa-keyboard" aria-hidden="true"></i>
+  </button>
 </div>
 
 <style>
@@ -149,6 +160,7 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
+    position: relative;
   }
 
   .other-hand-hint {
@@ -282,6 +294,40 @@
 
   .hand-switch-btn:focus-visible {
     outline: 2px solid var(--theme-text, #ffffff);
+    outline-offset: 2px;
+  }
+
+  .keyboard-toggle {
+    position: absolute;
+    right: 16px;
+    top: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .keyboard-toggle:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, #fff);
+  }
+
+  .keyboard-toggle.active {
+    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.12));
+    border-color: var(--theme-accent-border, rgba(99, 102, 241, 0.3));
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .keyboard-toggle:focus-visible {
+    outline: 2px solid var(--theme-text, #fff);
     outline-offset: 2px;
   }
 
