@@ -73,7 +73,45 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       solo: true,
     },
   ],
-  acts: [],
+  acts: [
+    {
+      id: "fire-ensemble",
+      title: "Fire Ensemble",
+      description:
+        "A synchronized fire staff performance featuring 3 performers executing TKA-notated choreography. The act builds from unison fundamentals through call-and-response patterns to a finale of interlocking sequences.",
+      duration: "8 min",
+      performerCount: 3,
+      solo: false,
+      props: ["fire-staves"],
+      fire: true,
+      requirements: "Fire safety perimeter (15ft radius), fire extinguisher, safety blanket, fuel dump station",
+      videoUrl: "https://youtu.be/aTV3rtOIshU",
+    },
+    {
+      id: "solo-staff-manipulation",
+      title: "Solo Staff Manipulation",
+      description:
+        "A solo performance blending contact staff technique with TKA-choreographed double staff sequences. Transitions between gripped manipulation and body rolls create a continuous flow that highlights both systems.",
+      duration: "5 min",
+      performerCount: 1,
+      solo: true,
+      props: ["double-staves"],
+      fire: false,
+      requirements: "10ft x 10ft clear stage area, flat non-slip surface",
+    },
+    {
+      id: "contact-juggling-ambient",
+      title: "Contact Juggling Ambient",
+      description:
+        "A roaming ambient performance with acrylic contact balls. Designed for festival walkways, vendor areas, or pre-show atmospherics. Performer moves through crowds with slow, meditative isolations and body rolls.",
+      duration: "30 min",
+      performerCount: 1,
+      solo: true,
+      props: ["contact-ball"],
+      fire: false,
+      requirements: "No stage needed — roaming performance. Well-lit area preferred.",
+    },
+  ],
   bios: [
     {
       id: "teaching-bio",

@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 2
 effort: S
-remaining: "Verify CW/CCW to clock/counter label fix, mobile positioning"
+remaining: ""
 depends_on: ""
 plan_path: plans/backlog/2026-03-19-orientation-selector-ux.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Orientation Selector UX Improvements
 

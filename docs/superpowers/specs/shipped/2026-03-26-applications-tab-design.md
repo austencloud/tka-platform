@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 2
 effort: S
-remaining: "Act editing modal, performer portfolio completion"
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Applications Tab: Expanding "My Workshops" to Cover Teaching + Performance
 

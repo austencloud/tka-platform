@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 2
 effort: S
-remaining: Visual QA — all 5 sections redesigned
+remaining: ""
 depends_on: ""
 plan_path: plans/backlog/2026-03-26-portfolio-lower-sections-redesign.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Portfolio Lower Sections Redesign
 

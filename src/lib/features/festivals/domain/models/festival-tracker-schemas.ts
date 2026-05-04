@@ -8,6 +8,7 @@ export const UserFestivalTrackerSchema = z
     status: z.enum(["interested", "applying", "applied", "accepted", "declined", "attending"]),
     appliedAs: z.array(z.enum(["instructor", "performer"])),
     workshopsSubmitted: z.array(z.string()),
+    actsSubmitted: z.array(z.string()),
     stipendRequested: z.number().optional(),
     notes: z.string(),
     applicationDate: firestoreDate.optional(),

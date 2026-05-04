@@ -8,6 +8,7 @@ export interface UserFestivalTracker {
   status: TrackerStatus;
   appliedAs: ("instructor" | "performer")[];
   workshopsSubmitted: string[];
+  actsSubmitted: string[];
   stipendRequested?: number;
   notes: string;
   applicationDate?: Timestamp;

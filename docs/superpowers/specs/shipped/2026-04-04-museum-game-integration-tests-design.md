@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 2
 effort: S
-remaining: "Suites 2-4: RoomGraph, GameBridge, ResourceDisposal"
+remaining: ""
 depends_on: ""
 plan_path: plans/backlog/2026-04-04-museum-game-integration-tests.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Museum Game Integration Tests
 
