@@ -16,9 +16,8 @@
  */
 
 import type { LocalPoseLabelRepository } from "../services/implementations/LocalPoseLabelRepository";
-import type {
-  OptimizerBounds, OptimizerInput, OptimizerResult } from "../services/contracts/types";
-import type { SimPropTarget, SimResult } from "../services/contracts/types";
+import type { OptimizerResult } from "../services/contracts/types";
+import type { SimResult } from "../services/contracts/types";
 import type { CandidateGenerator } from "../services/implementations/CandidateGenerator";
 import type { StanceOptimizer } from "../services/implementations/StanceOptimizer";
 import { REACH_FEASIBILITY_TOLERANCE } from "../services/implementations/StanceSimulator";
@@ -29,21 +28,11 @@ import type {
   HandOrientation,
   CollisionSnapshot,
   StancePose,
-  DiamondPosition,
   CandidateSet,
 } from "../domain/types";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
-import {
-  gridLocationToPosition3D,
-  calculatePropRotation,
-} from "$lib/shared/3d/services/plane-coordinate-mapper";
-import { mapOrientationToAngle } from "$lib/shared/3d/services/orientation-mapper";
-import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
-import { STAGE } from "$lib/shared/3d/scale/scale-constants";
-import { STANCE_BOUNDS } from "../domain/types";
-import { Vector3, Quaternion, Euler } from "three";
+import { poseToOptimizerInput, OPTIMIZER_BOUNDS } from "../services/pose-target-mapper";
+import { buildDiagnosticReport } from "../services/collision-lab-diagnostic";
 type PlaneFilter = Plane | "all";
 type OrientationFilter = HandOrientation | "all";
 type StatusFilter = LabelStatus | "all" | "unlabeled-only";
@@ -76,109 +65,6 @@ const CENTER_STANCE: StancePose = {
   spinePitchRad: 0,
 };
 
-// ──────────────────────────────────────────────────────────────────────
-// Reachability check
-// ──────────────────────────────────────────────────────────────────────
-
-const POSITION_TO_GRID: Record<DiamondPosition, GridLocation> = {
-  N: GridLocation.NORTH,
-  E: GridLocation.EAST,
-  S: GridLocation.SOUTH,
-  W: GridLocation.WEST,
-};
-
-// reachMapper and reachOrientationMapper replaced by direct module function calls
-
-// Half a standard staff length in scene units - used to place the tip
-// points of the prop when building optimizer targets. 43 cm each side
-// of the grip for an 86 cm staff, which matches Austen's default props.
-const STAFF_HALF_LENGTH = 0.43;
-const STAFF_RADIUS = 0.012;
-
-// Base horizontal quaternion - same one prop3d-transforms uses to lay a
-// +Y cylinder along the horizontal axis before worldRotation is applied.
-// We need this so the simulator's prop tip positions match where the live
-// rig actually renders the staff.
-const STAFF_HORIZONTAL_QUAT = new Quaternion().setFromEuler(
-  new Euler(0, 0, Math.PI / 2)
-);
-
-/**
- * Convert one hand of a PoseDefinition into a SimPropTarget the optimizer
- * can consume. Matches PoseViewport's buildPropState pipeline so the
- * simulator and the live 3D rig see the same grip positions and staff
- * orientations.
- */
-function handToPropTarget(
-  plane: Plane,
-  position: DiamondPosition,
-  orientation: HandOrientation
-): SimPropTarget {
-  const loc = POSITION_TO_GRID[position];
-  const centerPathAngle = LOCATION_ANGLES[loc];
-  const staffAngle = mapOrientationToAngle(
-    orientation === "in" ? Orientation.IN : Orientation.OUT,
-    centerPathAngle
-  );
-  const local = gridLocationToPosition3D(plane, loc);
-  const worldRotation = calculatePropRotation(plane, staffAngle);
-
-  // Compute the staff axis direction by applying the horizontal quat +
-  // world rotation to +Y, matching Staff3D.computePropRotation's pipeline.
-  const axis = new Vector3(0, 1, 0)
-    .applyQuaternion(STAFF_HORIZONTAL_QUAT)
-    .applyQuaternion(worldRotation)
-    .multiplyScalar(STAFF_HALF_LENGTH);
-
-  const grip = new Vector3(
-    local.x,
-    local.y,
-    local.z + STAGE.AVATAR_GRID_OFFSET
-  );
-  return {
-    gripWorld: grip,
-    tipAWorld: grip.clone().add(axis),
-    tipBWorld: grip.clone().sub(axis),
-    radius: STAFF_RADIUS,
-  };
-}
-
-/** Build the optimizer input for a full pose (both hands). */
-function poseToOptimizerInput(pose: PoseDefinition): OptimizerInput {
-  return {
-    blue: handToPropTarget(
-      pose.blueHand.plane,
-      pose.blueHand.position,
-      pose.blueHand.orientation
-    ),
-    red: handToPropTarget(
-      pose.redHand.plane,
-      pose.redHand.position,
-      pose.redHand.orientation
-    ),
-  };
-}
-
-/** Bounds passed to the optimizer - mirrors the slider ranges exactly so
- *  the optimizer can't propose a stance the reviewer couldn't set manually. */
-const OPTIMIZER_BOUNDS: OptimizerBounds = {
-  footOffsetX: {
-    min: STANCE_BOUNDS.footOffset.min,
-    max: STANCE_BOUNDS.footOffset.max,
-  },
-  footOffsetZ: {
-    min: STANCE_BOUNDS.footOffset.min,
-    max: STANCE_BOUNDS.footOffset.max,
-  },
-  rootYawRad: {
-    min: (STANCE_BOUNDS.rootYawDeg.min * Math.PI) / 180,
-    max: (STANCE_BOUNDS.rootYawDeg.max * Math.PI) / 180,
-  },
-  spinePitchRad: {
-    min: (STANCE_BOUNDS.spinePitchDeg.min * Math.PI) / 180,
-    max: (STANCE_BOUNDS.spinePitchDeg.max * Math.PI) / 180,
-  },
-};
 
 export interface ReachabilityInfo {
   reachable: boolean;
@@ -932,93 +818,16 @@ export async function createCollisionLabState(
      * to the clipboard.
      */
     buildDiagnosticReport() {
-      const pose = currentPose;
-      if (!pose) return { error: "no-current-pose" };
-      const simInput = poseToOptimizerInput(pose);
-      const fresh = optimizer
-        ? optimizer.optimize(simInput, CENTER_STANCE, OPTIMIZER_BOUNDS)
-        : null;
-      const currentSimResult = optimizer
-        ? optimizer.simulator.evaluate(currentStance, simInput.blue, simInput.red)
-        : null;
-      return {
-        schemaVersion: 1,
-        timestamp: Date.now(),
-        poseId: pose.id,
-        poseIndex: allPoses.findIndex((p) => p.id === pose.id),
-        totalPoses: allPoses.length,
-        poseDefinition: {
-          blueHand: pose.blueHand,
-          redHand: pose.redHand,
-        },
-        propTargets: {
-          blue: {
-            grip: vec3ToPlain(simInput.blue.gripWorld),
-            tipA: vec3ToPlain(simInput.blue.tipAWorld),
-            tipB: vec3ToPlain(simInput.blue.tipBWorld),
-          },
-          red: {
-            grip: vec3ToPlain(simInput.red.gripWorld),
-            tipA: vec3ToPlain(simInput.red.tipAWorld),
-            tipB: vec3ToPlain(simInput.red.tipBWorld),
-          },
-        },
-        currentStance: {
-          footOffsetX,
-          footOffsetZ,
-          rootYawRad,
-          rootYawDeg: (rootYawRad * 180) / Math.PI,
-          spinePitchRad,
-          spinePitchDeg: (spinePitchRad * 180) / Math.PI,
-        },
-        currentReachability: { ...currentReachability },
-        currentSimResult: currentSimResult
-          ? {
-              feasible: currentSimResult.feasible,
-              reachShortfall: currentSimResult.reachShortfall,
-              reachStretch: currentSimResult.reachStretch,
-              balanceMargin: currentSimResult.balanceMargin,
-              jointViolationRad: currentSimResult.jointViolationRad,
-              totalCollisionDepth: currentSimResult.totalCollisionDepth,
-              collisions: currentSimResult.collisions.map((c) => ({
-                zone: c.zone,
-                depthCm: c.depth * 100,
-                description: c.description,
-              })),
-            }
-          : null,
-        freshOptimizerRun: fresh
-          ? {
-              feasible: fresh.feasible,
-              loss: fresh.loss,
-              evaluations: fresh.evaluations,
-              stance: {
-                footOffsetX: fresh.stance.footOffsetX,
-                footOffsetZ: fresh.stance.footOffsetZ,
-                rootYawRad: fresh.stance.rootYawRad,
-                rootYawDeg: (fresh.stance.rootYawRad * 180) / Math.PI,
-                spinePitchRad: fresh.stance.spinePitchRad,
-                spinePitchDeg: (fresh.stance.spinePitchRad * 180) / Math.PI,
-              },
-              reachShortfall: fresh.simResult.reachShortfall,
-              balanceMargin: fresh.simResult.balanceMargin,
-              totalCollisionDepth: fresh.simResult.totalCollisionDepth,
-              collisions: fresh.simResult.collisions.map((c) => ({
-                zone: c.zone,
-                depthCm: c.depth * 100,
-                description: c.description,
-              })),
-            }
-          : null,
-        priorLabel: labels[pose.id] ?? null,
-        bounds: OPTIMIZER_BOUNDS,
-      };
+      return buildDiagnosticReport(
+        currentPose,
+        allPoses,
+        currentStance,
+        currentReachability,
+        optimizer,
+        labels
+      );
     },
   };
-}
-
-function vec3ToPlain(v: Vector3): { x: number; y: number; z: number } {
-  return { x: v.x, y: v.y, z: v.z };
 }
 
 export type CollisionLabState = Awaited<ReturnType<typeof createCollisionLabState>>;
