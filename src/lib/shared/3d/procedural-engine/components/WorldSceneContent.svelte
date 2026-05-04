@@ -29,8 +29,6 @@
     createPlayerController,
     disposePlayerController,
     teleportPlayer,
-    getPlayerPosition,
-    snapToGround,
   } from "$lib/shared/3d/physics/player-controller";
   import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d/physics/RapierPhysicsProvider";
   import type { PhysicsProvider, AvatarState } from "$lib/shared/3d/camera/types";
@@ -50,8 +48,8 @@
   // World systems
   import { type ChunkState } from "../core/chunk-manager";
   import { createHybridChunkManager, type HybridChunkManager } from "../core/hybrid-chunk-manager";
-  import { SeededNoise, getBiome } from "../generation/seed-generator";
-  import { type ImportedTerrainData, isPointInPolygon } from "../generation/real-terrain-zone";
+  import { SeededNoise } from "../generation/seed-generator";
+  import { type ImportedTerrainData } from "../generation/real-terrain-zone";
   import { VegetationManager } from "../rendering/instanced-vegetation";
   import { AtmosphereManager } from "../rendering/atmosphere";
   import { WaterManager } from "../rendering/water";
@@ -61,36 +59,23 @@
   // Museum
   import MuseumGrounds from "$lib/features/museum/scenes/procedural/components/MuseumGrounds.svelte";
   import { createMuseumState } from "$lib/shared/museum/state/museum-state.svelte";
-  import { findInteractableSlot } from "$lib/shared/museum/services/interaction-detector";
   import { setActiveMuseumState } from "$lib/shared/museum/state/museum-state-bridge.svelte";
 
   // Archive (The Kinetic Archive) - standalone via ArchiveDestination + IndoorScene
 
   import {
-    BufferGeometry,
-    BufferAttribute,
     Mesh,
     MeshStandardMaterial,
     DirectionalLight,
     AmbientLight,
     HemisphereLight,
-    Group,
     Object3D,
-    Vector3,
-    PerspectiveCamera,
     type Scene,
-    type Material,
   } from "three";
 
-  // Terrain texturing system
-  // Texture-based approach using real PBR textures from AmbientCG
-  import {
-    loadTerrainTextures,
-    createTerrainTextureMaterial,
-    createTerrainFallbackMaterial,
-    disposeTerrainTextures,
-    type TerrainTextureConfig,
-  } from "../rendering/terrain-texture-material";
+  // Terrain material + game loop services
+  import { createTerrainMaterialFactory } from "../services/terrain-material-factory";
+  import { tickWorldGameLoop, type GameLoopContext, type GameLoopState } from "../services/world-game-loop";
 
   // Feature flag for terrain texturing system
   // Set to true to enable PBR terrain textures (grass, rock, dirt, sand)
@@ -568,8 +553,8 @@
     waterManager?.dispose();
     drainageWaterManager?.dispose();
 
-    // Dispose terrain textures
-    disposeTerrainTextures();
+    // Dispose terrain material factory
+    terrainMaterialFactory.dispose();
 
     // Dispose physics-related resources
     // Wrapped in try-catch because during HMR, Rapier's WASM module may already
@@ -762,101 +747,29 @@
   // CHUNK MESH CREATION
   // ============================================================================
 
-  // Shared terrain materials (one textured, one fallback)
-  let texturedTerrainMaterial: Material | null = null;
-  let fallbackTerrainMaterial: Material | null = null;
-  let terrainTexturesLoaded = false;
+  const terrainMaterialFactory = createTerrainMaterialFactory();
 
-  // Get the appropriate material based on texture toggle
-  function getCurrentTerrainMaterial(): Material {
-    if (terrainTexturesEnabled && texturedTerrainMaterial) {
-      return texturedTerrainMaterial;
-    }
-    if (!fallbackTerrainMaterial) {
-      fallbackTerrainMaterial = createTerrainFallbackMaterial();
-    }
-    return fallbackTerrainMaterial;
-  }
-
-  // Initialize terrain textures on mount (async)
   async function initTerrainMaterial(): Promise<void> {
-    if (!USE_TERRAIN_TEXTURING || terrainTexturesLoaded) return;
-
-    try {
-      const textures = await loadTerrainTextures();
-      texturedTerrainMaterial = createTerrainTextureMaterial(textures, {
-        textureScale: 0.05, // 20m texture repeat
-        triplanarSharpness: 4.0,
-        normalStrength: 1.0,
-      });
-      terrainTexturesLoaded = true;
-
-      // Update existing chunk meshes with the new material if textures are enabled
-      if (terrainTexturesEnabled) {
-        for (const mesh of chunkMeshes.values()) {
-          mesh.material = texturedTerrainMaterial;
-        }
-      }
-    } catch (error) {
-      console.warn("[WorldScene] Failed to load terrain textures, using vertex colors:", error);
-      terrainTexturesLoaded = true;
+    await terrainMaterialFactory.init(USE_TERRAIN_TEXTURING);
+    if (terrainTexturesEnabled) {
+      terrainMaterialFactory.updateAllMeshes(chunkMeshes, true);
     }
   }
 
   // React to texture toggle changes
   $effect(() => {
-    const enabled = terrainTexturesEnabled;
-    const material = getCurrentTerrainMaterial();
-
-    // Update all existing chunk meshes
-    for (const mesh of chunkMeshes.values()) {
-      mesh.material = material;
-    }
+    terrainMaterialFactory.updateAllMeshes(chunkMeshes, terrainTexturesEnabled);
   });
 
   function createChunkMesh(state: ChunkState, key: string): void {
-    if (!state.meshData) return;
-
-    const { vertices, normals, colors, indices, blendWeights1, blendWeights2 } = state.meshData;
-
-    const geometry = new BufferGeometry();
-    geometry.setAttribute("position", new BufferAttribute(vertices, 3));
-    geometry.setAttribute("normal", new BufferAttribute(normals, 3));
-    geometry.setAttribute("color", new BufferAttribute(colors, 3));
-    geometry.setIndex(new BufferAttribute(indices, 1));
-
-    // Add blend weight attributes for terrain splatting
-    if (blendWeights1 && blendWeights2) {
-      geometry.setAttribute("blendWeights1", new BufferAttribute(blendWeights1, 3));
-      geometry.setAttribute("blendWeights2", new BufferAttribute(blendWeights2, 3));
-    }
-
-    const chunk = state.entity.chunk;
-    // Use Math.round to match the worker's integer math - prevents floating point drift at chunk boundaries
-    const chunkWorldX = chunk ? Math.round(chunk.chunkX * activeConfig.chunks.size) : 0;
-    const chunkWorldZ = chunk ? Math.round(chunk.chunkZ * activeConfig.chunks.size) : 0;
-
-    // Get the appropriate material based on current texture toggle state
-    const material = getCurrentTerrainMaterial();
-
-    const mesh = new Mesh(geometry, material);
-    mesh.receiveShadow = true;
-    mesh.castShadow = true;
-
-    if (chunk) {
-      mesh.position.set(chunkWorldX, 0, chunkWorldZ);
-    }
-
-    rawScene.add(mesh);
-    chunkMeshes.set(key, mesh);
-
-    // Store mesh reference in entity
-    state.entity.mesh = {
-      object3D: mesh,
-      visible: true,
-      castShadow: true,
-      receiveShadow: true,
-    };
+    terrainMaterialFactory.createChunkMesh(
+      state,
+      key,
+      activeConfig.chunks.size,
+      rawScene,
+      chunkMeshes,
+      terrainTexturesEnabled
+    );
   }
 
   // ============================================================================
@@ -904,190 +817,62 @@
   // ============================================================================
 
   useTask((delta) => {
-    // Early exit if disposed or not ready - prevents Rapier WASM errors during HMR cleanup
-    if (isDisposed || !isInitialized || !physicsState || !playerController) return;
+    if (!physicsState || !playerController) return;
 
-    // Update FPS counter
-    frameCount++;
-    fpsTime += delta;
-    if (fpsTime >= 1) {
-      fps = Math.round(frameCount / fpsTime);
-      frameCount = 0;
-      fpsTime = 0;
+    const loopCtx: GameLoopContext = {
+      physicsState,
+      playerController,
+      terrainPhysics,
+      chunkManager,
+      vegetationManager,
+      atmosphereManager,
+      waterManager,
+      drainageWaterManager,
+      sunLight,
+      camera,
+      activeConfig,
+      worldNoise,
+      inputCapabilities,
+      museumState,
+      isMuseumRealm,
+    };
 
-      // Update stats
-      if (chunkManager) {
-        const stats = chunkManager.getStats();
-        chunkStats = {
-          loaded: stats.loadedChunks,
-          pending: stats.pendingChunks,
-          loading: stats.loadingChunks,
-        };
-      }
-      if (terrainPhysics) {
-        colliderCount = terrainPhysics.getColliderCount();
-      }
-      if (vegetationManager) {
-        vegetationCount = vegetationManager.getStats();
-      }
-    }
+    const loopState: GameLoopState = {
+      isDisposed,
+      isInitialized,
+      needsGroundSnap,
+      groundSnapAttempts,
+      isReadyToRender,
+      frameCount,
+      fpsTime,
+      fps,
+      chunkStats,
+      colliderCount,
+      vegetationCount,
+      showTouchUI,
+      playerPosition,
+      currentBiome,
+      isInsideZone,
+      zoneBoundary,
+    };
 
-    // Check touch UI
-    showTouchUI = inputCapabilities.shouldShowTouchUI();
+    tickWorldGameLoop(delta, loopCtx, loopState);
 
-    // Step physics - wrapped in try-catch for HMR scenarios where WASM may be freed
-    if (physicsState.isInitialized && physicsState.world) {
-      try {
-        physicsState.world.timestep = Math.min(delta, 0.1);
-        physicsState.world.step();
-      } catch (e) {
-        // Rapier WASM may be freed during HMR - mark as disposed to stop further operations
-        if (import.meta.hot) {
-          console.debug('[WorldSceneContent] Physics step failed (likely HMR):', e);
-          isDisposed = true;
-        }
-        return;
-      }
-    }
-
-    // Update shadow camera to follow player position
-    // This ensures shadows render around the player on infinite terrain
-    if (sunLight && camera.current) {
-      const camPos = camera.current.position;
-      // Move light and target to follow player horizontally
-      sunLight.position.set(camPos.x + 100, 200, camPos.z + 100);
-      sunLight.target.position.set(camPos.x, 0, camPos.z);
-      sunLight.target.updateMatrixWorld();
-    }
-
-    // Deferred ground snap: wait for terrain colliders to exist before snapping
-    // Wrapped in try-catch for HMR safety
-    if (needsGroundSnap && terrainPhysics && groundSnapAttempts < MAX_GROUND_SNAP_ATTEMPTS) {
-      groundSnapAttempts++;
-      try {
-        const colliderCount = terrainPhysics.getColliderCount();
-
-        // Only snap once we have terrain colliders (not just the player collider)
-        if (colliderCount > 0) {
-          const snapped = snapToGround(physicsState, playerController, 1000);
-          const pos = getPlayerPosition(playerController);
-          // Ground snap logging disabled
-
-          if (snapped && pos && pos.y < 500) {
-            // Successfully snapped to terrain
-            needsGroundSnap = false;
-            isReadyToRender = true; // Now safe to show camera/avatar
-          }
-        }
-      } catch (e) {
-        if (import.meta.hot) {
-          console.debug('[WorldSceneContent] Ground snap failed (likely HMR):', e);
-          isDisposed = true;
-        }
-        return;
-      }
-    }
-
-    // HMR safety check: if player somehow ended up underground, teleport them up
-    // This catches cases where HMR preserved a bad position
-    // Wrapped in try-catch for HMR safety
-    if (!needsGroundSnap && isReadyToRender && playerController) {
-      try {
-        const pos = getPlayerPosition(playerController);
-        const minSafeHeight = (activeConfig.terrain.waterLevel ?? 5) + 2; // Just above water
-        if (pos && pos.y < minSafeHeight) {
-          // Player is underground! Teleport to spawn position
-          const spawnPos = activeConfig.spawn.position;
-          teleportPlayer(playerController, { x: spawnPos[0], y: 500, z: spawnPos[2] });
-          needsGroundSnap = true;
-          groundSnapAttempts = 0;
-          isReadyToRender = false;
-          console.warn("[WorldSceneContent] Player was underground, teleporting to spawn");
-        }
-      } catch (e) {
-        if (import.meta.hot) {
-          console.debug('[WorldSceneContent] Position check failed (likely HMR):', e);
-          isDisposed = true;
-        }
-        return;
-      }
-    }
-
-    // Fallback: if ground snap times out, still render the avatar
-    // This prevents the avatar from being permanently hidden
-    if (needsGroundSnap && groundSnapAttempts >= MAX_GROUND_SNAP_ATTEMPTS) {
-      console.warn("[WorldSceneContent] Ground snap timed out, rendering anyway");
-      needsGroundSnap = false;
-      isReadyToRender = true;
-    }
-
-    // Update player position from physics (after camera controller moves player)
-    // Wrapped in try-catch for HMR safety
-    try {
-      const pos = getPlayerPosition(playerController);
-      if (pos) {
-        playerPosition = { x: pos.x, y: pos.y, z: pos.z };
-
-        // Update biome based on position
-        currentBiome = getBiome(worldNoise, pos.x, pos.z);
-
-        // Check if inside zone
-        if (zoneBoundary.length > 0) {
-          isInsideZone = isPointInPolygon(pos.x, pos.z, zoneBoundary);
-        }
-      }
-    } catch (e) {
-      if (import.meta.hot) {
-        console.debug('[WorldSceneContent] Position update failed (likely HMR):', e);
-        isDisposed = true;
-      }
-      return;
-    }
-
-    // Update chunks based on player position and camera direction
-    // Direction-aware loading prioritizes chunks in view frustum
-    if (camera.current) {
-      // Get camera forward direction (projected to XZ plane)
-      const forward = new Vector3(0, 0, -1);
-      forward.applyQuaternion(camera.current.quaternion);
-
-      chunkManager?.updateWithDirection(
-        camera.current.position.x,
-        camera.current.position.y,
-        camera.current.position.z,
-        forward.x,
-        forward.z
-      );
-    }
-
-    // Rebuild vegetation batches
-    vegetationManager?.rebuildDirtyBatches();
-
-    // Update atmosphere
-    if (camera.current && camera.current instanceof PerspectiveCamera) {
-      atmosphereManager?.update(camera.current);
-    }
-
-    // Update water
-    const time = performance.now() / 1000;
-    if (camera.current) {
-      waterManager?.update(time, camera.current.position.x, camera.current.position.z);
-      drainageWaterManager?.update(time, camera.current.position.x, camera.current.position.z);
-    }
-
-    // Museum interaction detection (only when museum realm is active)
-    if (isMuseumRealm && museumState.layout && camera.current && !museumState.isOverlayOpen) {
-      const forward = new Vector3(0, 0, -1);
-      forward.applyQuaternion(camera.current.quaternion);
-
-      const allSlots = museumState.layout.pavilions.flatMap((p) => p.slots);
-      const target = findInteractableSlot(
-        playerPosition,
-        { x: forward.x, y: forward.y, z: forward.z },
-        allSlots
-      );
-      museumState.setInteractionTarget(target?.slot.id ?? null);
-    }
+    // Write back mutated state
+    isDisposed = loopState.isDisposed;
+    needsGroundSnap = loopState.needsGroundSnap;
+    groundSnapAttempts = loopState.groundSnapAttempts;
+    isReadyToRender = loopState.isReadyToRender;
+    frameCount = loopState.frameCount;
+    fpsTime = loopState.fpsTime;
+    fps = loopState.fps;
+    chunkStats = loopState.chunkStats;
+    colliderCount = loopState.colliderCount;
+    vegetationCount = loopState.vegetationCount;
+    showTouchUI = loopState.showTouchUI;
+    playerPosition = loopState.playerPosition;
+    currentBiome = loopState.currentBiome;
+    isInsideZone = loopState.isInsideZone;
   });
 </script>
 
