@@ -17,7 +17,6 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
-  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
@@ -26,7 +25,6 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
   import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
   import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
   import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
-  import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
   // BPM/Speed conversion constant
   const DEFAULT_BPM = 60;
@@ -179,21 +177,17 @@ import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
 
       // Stateless services shared from container
       const propInterpolator = getPropInterpolator();
-      const loopabilityChecker = getSequenceLoopabilityChecker();
 
       // Stateful services - fresh instance per player
       const stateManager = new AnimationStateManager();
-      const stepCalculator = new StepCalculator();
       const loop = new AnimationLoop();
       const orchestrator = new SequenceAnimationOrchestrator(
         stateManager,
-        stepCalculator,
         propInterpolator
       );
       playbackController = new AnimationPlaybackController(
         orchestrator,
-        loop,
-        loopabilityChecker
+        loop
       );
 
       servicesReady = true;

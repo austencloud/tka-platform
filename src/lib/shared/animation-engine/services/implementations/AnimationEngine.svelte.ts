@@ -80,7 +80,6 @@ import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
-import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 
 // Extracted modules
 import { EffectRendererManager } from "./EffectRendererManager";
@@ -1037,7 +1036,6 @@ export class AnimationEngine {
     this.settingsService = services.settingsService;
     this.orchestrator = new SequenceAnimationOrchestrator(
       new AnimationStateManager(),
-      getStepCalculator(),
       getPropInterpolator()
     );
     if (this.visibilityManagerOverride) {

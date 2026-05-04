@@ -21,7 +21,7 @@ import type {
   LOOPDetectionResult,
   CompoundPattern,
 } from "../contracts/ILOOPDetector";
-import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
 import { generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import {
   QUARTER_POSITION_MAP_CW,
@@ -41,9 +41,6 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class LOOPDetector implements ILOOPDetector {
-  constructor(
-    private loopabilityChecker: SequenceLoopabilityChecker,
-  ) {}
 
   // ============ POSITION DERIVATION ============
 
@@ -209,7 +206,7 @@ export class LOOPDetector implements ILOOPDetector {
    * Quick check if a sequence is circular
    */
   isCircular(sequence: SequenceData): boolean {
-    return this.loopabilityChecker.isSeamlesslyLoopable(sequence);
+    return isSeamlesslyLoopable(sequence);
   }
 
   /**
@@ -802,8 +799,4 @@ export class LOOPDetector implements ILOOPDetector {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
-
-export const loopDetector = new LOOPDetector(
-  sequenceLoopabilityChecker,
-);
+export const loopDetector = new LOOPDetector();

@@ -34,11 +34,10 @@ import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
-import type { TagManager } from "./TagManager";
 import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import type { PublicIndexSyncer } from "./PublicIndexSyncer";
 import type { ConflictResolver } from "../../../../shared/offline/services/implementations/ConflictResolver";
-import type { SequenceContentHasher } from "./SequenceContentHasher";
+import { computeHash } from "../sequence-content-hasher";
 import { migrateSequenceTags } from "../migrations/tag-migration";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
@@ -109,11 +108,9 @@ export class LibraryRepository {
 
   constructor(
     private achievementService: AchievementManager,
-    private tagService: TagManager,
     private orientationCycleDetector: OrientationCycleDetector,
     private publicIndexSyncer: PublicIndexSyncer,
-    private conflictResolver?: ConflictResolver,
-    private contentHasher?: SequenceContentHasher
+    private conflictResolver?: ConflictResolver
   ) {}
 
   /**
@@ -278,9 +275,7 @@ export class LibraryRepository {
     let isNewSequence = !existingDoc.exists();
 
     // Compute content hash for the incoming sequence
-    const incomingHash = this.contentHasher
-      ? await this.contentHasher.computeHash(sequence)
-      : undefined;
+    const incomingHash = await computeHash(sequence).catch(() => undefined);
 
     let libSeq: LibrarySequence;
 
@@ -479,7 +474,7 @@ export class LibraryRepository {
     // Post-write: Tag migration (async, non-blocking)
     let finalSequence = libSeq;
     if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
-      migrateSequenceTags(libSeq, this.tagService)
+      migrateSequenceTags(libSeq)
         .then((migrationResult) => {
           finalSequence = {
             ...libSeq,

@@ -3,7 +3,6 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { mandalaState } from "../state/mandala-state.svelte";
   import { MandalaController } from "../state/mandala-controller";
-  import { MandalaTransformer } from "../services/implementations/MandalaTransformer";
   import type { Point } from "../domain/models/mandala-element";
   import { CANVAS_CENTER } from "../domain/constants/symmetry-constants";
   import MandalaCanvas from "./canvas/MandalaCanvas.svelte";
@@ -12,7 +11,6 @@
 
   // Initialize controller
   const controller = new MandalaController(mandalaState);
-  const transformer = new MandalaTransformer();
 
   // Viewport detection
   let innerWidth = $state(
@@ -104,7 +102,7 @@
     <div class="mobile-layout">
       <!-- Canvas -->
       <div class="canvas-wrapper">
-        <MandalaCanvas {transformer} />
+        <MandalaCanvas />
       </div>
 
       <!-- Action bar -->
@@ -207,7 +205,7 @@
           </div>
         </div>
         <div class="canvas-wrapper">
-          <MandalaCanvas {transformer} />
+          <MandalaCanvas />
         </div>
       </main>
 

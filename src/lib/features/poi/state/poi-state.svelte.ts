@@ -1,6 +1,6 @@
 import type { StripPatternEngine } from "../services/implementations/StripPatternEngine";
 import type { PoiDeviceManager } from "../services/implementations/PoiDeviceManager";
-import type { PoiImageLibrary } from "../services/implementations/PoiImageLibrary";
+import * as poiImageLibrary from "../services/poi-image-library";
 import type { StripPattern, PatternParams, RGBColor } from "../domain/StripPattern";
 import type { PoiDeviceInfo } from "../domain/DeviceTypes";
 import type { IPatternPreset } from "../domain/PatternPreset";
@@ -249,7 +249,6 @@ async function dataUrlToImageData(dataUrl: string): Promise<ImageData> {
 export function createPoiState(
   patternEngine: StripPatternEngine,
   deviceManager: PoiDeviceManager,
-  imageLibrary: PoiImageLibrary,
 ) {
   const saved = loadSettings();
 
@@ -350,7 +349,7 @@ export function createPoiState(
   // entry the user can re-apply later. The list streams from Firestore
   // via onSnapshot, so changes from another device or tab show up live.
   let libraryEntries = $state<PoiImageLibraryEntry[]>([]);
-  const unsubscribeLibrary = imageLibrary.subscribe((entries) => {
+  const unsubscribeLibrary = poiImageLibrary.subscribe((entries) => {
     libraryEntries = entries;
   });
 
@@ -513,7 +512,7 @@ export function createPoiState(
     // Fire-and-forget: save a copy to the user's cloud image library.
     // Silent on failure - the in-memory pattern still works even if
     // the user is offline, signed out, or Firebase is unreachable.
-    imageLibrary.upload(file, "upload-zone").catch((err) => {
+    poiImageLibrary.upload(file, "upload-zone").catch((err) => {
       // Non-blocking: the in-memory pattern still works. We log so
       // rules/network/auth issues are visible in devtools - the most
       // common cause of "my image didn't show up in the library" is a
@@ -647,7 +646,7 @@ export function createPoiState(
     patternTimeline = insertPatternClip(patternTimeline, clip);
 
     // Fire-and-forget: save a copy to the user's cloud image library.
-    imageLibrary.upload(file, "timeline-drop").catch((err) => {
+    poiImageLibrary.upload(file, "timeline-drop").catch((err) => {
       console.warn("[poi] Library upload (timeline-drop) failed:", err);
     });
 
@@ -820,7 +819,7 @@ export function createPoiState(
    * for the binary (we already have a URL).
    */
   async function loadFromLibrary(entry: PoiImageLibraryEntry): Promise<void> {
-    const imgData = await imageLibrary.loadAsImageData(entry);
+    const imgData = await poiImageLibrary.loadAsImageData(entry);
     activePattern = patternEngine.fromImage(imgData, ledCount);
     if (activePattern) {
       activePattern.metadata.name = entry.name;
@@ -843,7 +842,7 @@ export function createPoiState(
     startStep: number,
     endStep: number,
   ): Promise<PatternClip | null> {
-    const imgData = await imageLibrary.loadAsImageData(entry);
+    const imgData = await poiImageLibrary.loadAsImageData(entry);
     const pattern = patternEngine.fromImage(imgData, ledCount);
     pattern.metadata.name = entry.name;
     pattern.metadata.source = "image-upload";
@@ -868,11 +867,11 @@ export function createPoiState(
   }
 
   async function renameLibraryEntry(id: string, name: string): Promise<void> {
-    await imageLibrary.rename(id, name);
+    await poiImageLibrary.rename(id, name);
   }
 
   async function deleteLibraryEntry(id: string): Promise<void> {
-    await imageLibrary.delete(id);
+    await poiImageLibrary.deleteEntry(id);
   }
 
   /**

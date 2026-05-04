@@ -25,18 +25,24 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencePath, getPublicSequencesPath } from "../../data/firestore-paths";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
-import type { ContentModerator } from "$lib/features/moderation/services/implementations/ContentModerator";
-import type { ContentAppealManager } from "$lib/features/moderation/services/implementations/ContentAppealManager";
+import type { FlaggedTerm } from "$lib/features/moderation/domain/models/content-moderation-models";
+
+interface ContentModerator {
+  checkWord(word: string): { isAllowed: boolean; flaggedTerms: FlaggedTerm[] };
+}
+interface ContentAppealManager {
+  isWhitelisted(contentType: 'sequence' | 'act', contentId: string): Promise<boolean>;
+}
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
-import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { periodToNumber } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
 function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
@@ -59,7 +65,6 @@ function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
 }
 
 export class PublicIndexSyncer {
-  private readonly difficultyCalculator = new SequenceDifficultyCalculator();
 
   constructor(
     private readonly contentModerator?: ContentModerator,
@@ -127,7 +132,7 @@ export class PublicIndexSyncer {
 
       // Calculate numeric level from steps if available
       const level = sequence.steps?.length > 0
-        ? this.difficultyCalculator.calculateDifficultyLevel([...sequence.steps])
+        ? calculateSequenceDifficultyLevel([...sequence.steps])
         : undefined;
 
       // Compute encoder hash for URL-to-library matching.
@@ -409,7 +414,7 @@ export class PublicIndexSyncer {
     }
 
     // Layer 3: Run live algorithmic detection
-    const isCircular = sequenceLoopabilityChecker.isSeamlesslyLoopable(sequence);
+    const isCircular = isSeamlesslyLoopable(sequence);
     if (!isCircular) {
       return { isCircular: false, loopType: null };
     }

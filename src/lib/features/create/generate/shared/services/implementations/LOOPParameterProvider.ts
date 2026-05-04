@@ -21,7 +21,8 @@ import {
   DifficultyLevel,
   PropContinuity,
 } from "../../domain/models/generate-models";
-import type { PictographFilter } from "./PictographFilter";
+import type { pictographFilter as PictographFilterSingleton } from "../pictograph-filter";
+type PictographFilter = typeof PictographFilterSingleton;
 
 export class LOOPParameterProvider {
   constructor(private PictographFilter: PictographFilter) {}
@@ -230,6 +231,6 @@ export class LOOPParameterProvider {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { pictographFilter } from "./PictographFilter";
+import { pictographFilter } from "../pictograph-filter";
 
 export const loopParameterProvider = new LOOPParameterProvider(pictographFilter);

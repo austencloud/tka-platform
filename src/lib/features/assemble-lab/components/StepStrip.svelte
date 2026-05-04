@@ -27,17 +27,15 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { HandPathMotionCalculator } from "$lib/features/create/assemble/services/HandPathMotionCalculator";
+  import { calculateMotionType, calculateRotationDirection } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
-  const pathCalculator = new HandPathMotionCalculator();
-
   /** Derive MotionType (PRO/ANTI/DASH/STATIC) from step data */
   function resolveMotionType(step: BuilderStep): MotionType {
-    const handMotionType = pathCalculator.calculateMotionType(
+    const handMotionType = calculateMotionType(
       step.startPosition, step.endPosition, builderState.gridMode,
     );
     switch (handMotionType) {
@@ -46,7 +44,7 @@
       case HandMotionType.DASH:
         return MotionType.DASH;
       case HandMotionType.SHIFT: {
-        const handPathDir = pathCalculator.calculateRotationDirection(
+        const handPathDir = calculateRotationDirection(
           step.startPosition, step.endPosition, builderState.gridMode,
         );
         return handPathDir === step.rotationDirection ? MotionType.PRO : MotionType.ANTI;

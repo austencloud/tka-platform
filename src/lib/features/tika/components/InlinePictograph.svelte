@@ -20,7 +20,7 @@
     saveStaticPictograph,
     type PictographFileKey,
   } from "../services/implementations/StaticPictographWriter";
-  import { SvgSanitizer } from "../services/implementations/SvgSanitizer";
+  import { sanitizeSvg } from "../services/svg-sanitizer";
 
   /**
    * Module-level SVG cache shared across all InlinePictograph instances.
@@ -28,7 +28,6 @@
    * Themeable SVGs work in both light/dark mode, so one cache entry serves all themes.
    */
   const svgCache = new Map<string, string>();
-  const svgSanitizer = new SvgSanitizer();
 
   function buildSvgCacheKey(p: InlinePictograph): string {
     const parts = [p.letter, String(p.variation ?? 0), p.gridMode ?? "diamond"];
@@ -134,7 +133,7 @@
       const data = await response.json();
       if (!data.svgMarkup) return false;
 
-      const sanitized = svgSanitizer.sanitize(data.svgMarkup);
+      const sanitized = sanitizeSvg(data.svgMarkup);
       svgCache.set(cacheKey, sanitized);
       svgMarkup = sanitized;
       return true;

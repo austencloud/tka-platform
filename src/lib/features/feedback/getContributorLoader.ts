@@ -1,9 +1,12 @@
 import { browser } from '$app/environment';
-import { ContributorLoader } from './services/implementations/ContributorLoader';
+import * as contributorLoader from './services/contributor-loader';
 
-let instance: ContributorLoader | null = null;
+const api = {
+	...contributorLoader,
+	delete: contributorLoader.deleteContributor,
+};
 
-export function getContributorLoader(): ContributorLoader {
+export function getContributorLoader() {
 	if (!browser) throw new Error('getContributorLoader() is browser-only');
-	return instance ??= new ContributorLoader();
+	return api;
 }

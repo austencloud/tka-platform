@@ -27,7 +27,7 @@
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { HandMove } from "./state/builder-state.svelte";
-  import { GridHitTargetCalculator } from "$lib/features/assemble-lab/services/implementations/GridHitTargetCalculator";
+  import { getHitTargets } from "$lib/features/assemble-lab/services/grid-hit-target-calculator";
   import PathPreview from "./components/PathPreview.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
   import GridModeSelector from "./components/GridModeSelector.svelte";
@@ -35,8 +35,7 @@
   const builder = createBuilderState();
   setBuilderContext(builder);
 
-  const gridCalculator = new GridHitTargetCalculator();
-  const gridHandPoints = $derived(gridCalculator.getHitTargets(builder.gridMode));
+  const gridHandPoints = $derived(getHitTargets(builder.gridMode));
 
   const blueAnimator = new HandPathAnimator();
   const redAnimator = new HandPathAnimator();

@@ -1,4 +1,4 @@
-import type { ImagePatternLoader } from "./ImagePatternLoader";
+import { fromImageData } from "../image-pattern-loader";
 import type { StripPattern, PatternParams, StripFrame } from "../../domain/StripPattern";
 import type { IPatternPreset } from "../../domain/PatternPreset";
 import { BUILT_IN_PRESETS } from "../../domain/PatternPreset";
@@ -10,7 +10,7 @@ import { BUILT_IN_PRESETS } from "../../domain/PatternPreset";
 export class StripPatternEngine {
   private presets: Map<string, IPatternPreset>;
 
-  constructor(private imageLoader: ImagePatternLoader) {
+  constructor() {
     this.presets = new Map();
     for (const preset of BUILT_IN_PRESETS) {
       this.presets.set(preset.id, preset);
@@ -31,7 +31,7 @@ export class StripPatternEngine {
   }
 
   fromImage(imageData: ImageData, ledCount: number): StripPattern {
-    return this.imageLoader.fromImageData(imageData, ledCount);
+    return fromImageData(imageData, ledCount);
   }
 
   toImageData(pattern: StripPattern): ImageData {

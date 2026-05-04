@@ -6,10 +6,10 @@ import type {
 	PopulationStats,
 } from "../domain/village-types";
 import type { VillageConfig } from "./VillageConfig";
-import type { SequenceMutator } from "../services/implementations/SequenceMutator";
+import type * as SequenceMutatorModule from "../services/sequence-mutator";
 import type { VillageEventEmitter } from "./VillageEventEmitter";
 import { createVillageWorld } from "./VillageWorld";
-import { PersonalityGenerator } from "../services/implementations/PersonalityGenerator";
+import * as personalityGenerator from "../services/personality-generator";
 import { LineageTracker } from "../services/implementations/LineageTracker";
 import { LifecycleSystem } from "./systems/LifecycleSystem";
 import { MovementSystem } from "./systems/MovementSystem";
@@ -47,7 +47,6 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	private seasonSys: SeasonSystem;
 	readonly decisionEngine: VillageDecisionEngine;
 	private lineageTracker: LineageTracker;
-	private personalityGenerator: PersonalityGenerator;
 
 	private listeners = new Map<string, Set<Function>>();
 	private intervalId: ReturnType<typeof setInterval> | null = null;
@@ -56,10 +55,9 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 	constructor(
 		private config: VillageConfig,
-		mutator: SequenceMutator,
+		mutator: typeof SequenceMutatorModule,
 	) {
 		this.world = createVillageWorld();
-		this.personalityGenerator = new PersonalityGenerator();
 		this.lineageTracker = new LineageTracker();
 
 		this.lifecycleSystem = new LifecycleSystem(config);
@@ -73,7 +71,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		);
 		this.populationSystem = new PopulationSystem(
 			config,
-			this.personalityGenerator,
+			personalityGenerator,
 			this.lineageTracker,
 			this,
 		);
@@ -158,7 +156,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.lineageTracker = new LineageTracker();
 		this.populationSystem = new PopulationSystem(
 			this.config,
-			this.personalityGenerator,
+			personalityGenerator,
 			this.lineageTracker,
 			this,
 		);

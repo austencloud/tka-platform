@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { LoopViabilityService } from './services/implementations/LoopViabilityService';
+import { loopViabilityService } from './services/loop-viability-service';
 
-let instance: LoopViabilityService | null = null;
-
-export function getLoopViabilityService(): LoopViabilityService {
+export function getLoopViabilityService(): typeof loopViabilityService {
 	if (!browser) throw new Error('getLoopViabilityService() is browser-only');
-	return instance ??= new LoopViabilityService();
+	return loopViabilityService;
 }

@@ -10,22 +10,19 @@ Matches the desktop version exactly:
 -->
 <script lang="ts">
 
-import { getAspectLayoutPlanner } from "$lib/features/create/construct/option-picker/getAspectLayoutPlanner";
+import { calculateOptimalLayout as calculateAspectLayout } from "$lib/features/create/construct/option-picker/services/aspect-layout-planner";
 import { getAnimator } from "$lib/shared/application/getAnimator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import {
     Letter,
     getLetterType,
   } from "$lib/shared/foundation/domain/models/Letter";
-  import type { IOptionGridFitCalculator } from "../../services/contracts/types";
-  import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
+  import { calculateFitSize as calculateGridFitSize } from "../../services/option-grid-fit-calculator";
   import type { TypeFilter } from "../../domain/option-picker-types";
   import OptionViewerSection from "./OptionViewerSection.svelte";
 
   // Services - resolve synchronously to ensure they're available for $derived computations
   const animationService = getAnimator();
-  const aspectLayoutPlanner = getAspectLayoutPlanner();
-  const gridFitCalculator = optionGridFitCalculator;
 
   // Animation functions following established app patterns
   const sectionFadeOut = (_node: Element) => {
@@ -233,11 +230,6 @@ import { getAnimator } from "$lib/shared/application/getAnimator";
 
   // Smart layout organization based on context and available space
   const layoutSections = $derived(() => {
-    // Service not ready yet
-    if (!aspectLayoutPlanner) {
-      return [];
-    }
-
     // Filter types based on typeFilter state
     const enabledTypes = groupableTypes.filter((type) => isTypeEnabled(type));
 
@@ -259,8 +251,8 @@ import { getAnimator } from "$lib/shared/application/getAnimator";
       return [];
     }
 
-    // Calculate optimal layout using service
-    return aspectLayoutPlanner.calculateOptimalLayout(
+    // Calculate optimal layout using module function
+    return calculateAspectLayout(
       typeCounts,
       effectiveContainerWidth(),
       effectiveContainerHeight()
@@ -284,7 +276,7 @@ import { getAnimator } from "$lib/shared/application/getAnimator";
   // This ensures Types 4, 5, 6 all use the same pictograph size
   const uniformPictographSize = $derived(() => {
     const rows = layoutSections();
-    if (rows.length === 0 || !gridFitCalculator) {
+    if (rows.length === 0) {
       return effectivePictographSize();
     }
 
@@ -313,7 +305,7 @@ import { getAnimator } from "$lib/shared/application/getAnimator";
           Math.floor(sectionWidth / (targetSize + gap))
         );
 
-        const result = gridFitCalculator.calculateFitSize({
+        const result = calculateGridFitSize({
           itemCount: numPictographs,
           columnCount: columnsAtTargetSize,
           availableWidth: sectionWidth,
@@ -390,38 +382,23 @@ import { getAnimator } from "$lib/shared/application/getAnimator";
       Math.floor(sectionWidth / (targetSize + gap))
     );
 
-    // Use service if available, otherwise fallback to inline calculation
-    if (gridFitCalculator) {
-      const result = gridFitCalculator.calculateFitSize({
-        itemCount: numPictographs,
-        columnCount: columnsAtTargetSize,
-        availableWidth: sectionWidth,
-        availableHeight,
-        gridGap: gap,
-        maxSize: targetSize,
-        minSize: 40,
-      });
+    const result = calculateGridFitSize({
+      itemCount: numPictographs,
+      columnCount: columnsAtTargetSize,
+      availableWidth: sectionWidth,
+      availableHeight,
+      gridGap: gap,
+      maxSize: targetSize,
+      minSize: 40,
+    });
 
-      return {
-        optionsPerRow: result.columns,
-        pictographSize: result.pictographSize,
-        spacing: gap,
-        containerWidth: sectionWidth,
-        containerHeight,
-        gridColumns: result.gridColumns,
-        gridGap,
-      };
-    }
-
-    // Fallback for SSR or before service is ready
-    const effectiveSize = Math.min(targetSize, 100);
     return {
-      optionsPerRow: columnsAtTargetSize,
-      pictographSize: effectiveSize,
+      optionsPerRow: result.columns,
+      pictographSize: result.pictographSize,
       spacing: gap,
       containerWidth: sectionWidth,
       containerHeight,
-      gridColumns: `repeat(${columnsAtTargetSize}, ${effectiveSize}px)`,
+      gridColumns: result.gridColumns,
       gridGap,
     };
   };

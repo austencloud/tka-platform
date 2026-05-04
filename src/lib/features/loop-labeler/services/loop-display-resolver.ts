@@ -12,7 +12,7 @@ import {
   type LOOPType,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { loopDetector } from "./implementations/LOOPDetector";
-import { sequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
+import { convert as convertSequenceToEntry } from "$lib/features/choreo-card/services/sequence-to-entry-converter";
 import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 
 export interface LoopDisplay {
@@ -85,7 +85,7 @@ function hasEnoughSteps(input: LoopDisplayInput): boolean {
 
 function toSequenceEntry(input: LoopDisplayInput): SequenceEntry {
   if (isSequenceData(input)) {
-    return sequenceToEntryConverter.convert(input);
+    return convertSequenceToEntry(input);
   }
   return input;
 }

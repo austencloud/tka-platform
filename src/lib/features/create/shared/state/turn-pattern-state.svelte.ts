@@ -6,7 +6,7 @@
  */
 
 import type { TurnPattern } from "../domain/models/TurnPatternData";
-import { turnPatternManager } from "../services/implementations/TurnPatternManager";
+import * as turnPatternManager from "../services/turn-pattern-manager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 

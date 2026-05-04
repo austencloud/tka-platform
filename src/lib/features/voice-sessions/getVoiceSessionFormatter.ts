@@ -1,6 +1,5 @@
-import { VoiceSessionFormatter } from './services/implementations/VoiceSessionFormatter';
+import * as voiceSessionFormatter from './services/voice-session-formatter';
 
-let instance: VoiceSessionFormatter | null = null;
-export function getVoiceSessionFormatter(): VoiceSessionFormatter {
-  return instance ??= new VoiceSessionFormatter();
+export function getVoiceSessionFormatter(): typeof voiceSessionFormatter {
+  return voiceSessionFormatter;
 }

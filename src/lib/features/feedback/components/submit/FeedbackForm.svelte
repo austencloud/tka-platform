@@ -7,7 +7,7 @@
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { VoiceRecordingResult } from "../../services/contracts/types";
   import { getVoiceRecorder } from "$lib/features/feedback/getVoiceRecorder";
-  import { getTranscriptionClient } from "$lib/features/feedback/getTranscriptionClient";
+  import * as transcriptionClient from "$lib/features/feedback/services/transcription-client";
   import { getFormDraftPersister } from "$lib/features/feedback/getFormDraftPersister";
   import { getFeedbackTypeResolver } from "$lib/features/feedback/getFeedbackTypeResolver";
   import { getAudioAnalyzer } from "$lib/features/feedback/getAudioAnalyzer";
@@ -42,7 +42,6 @@
   const hapticService = getHapticFeedback();
   const deviceDetector = getDeviceDetector();
   const voiceRecorder = getVoiceRecorder();
-  const transcriptionClient = getTranscriptionClient();
   const draftPersister = getFormDraftPersister();
   const typeResolver = getFeedbackTypeResolver();
   const audioAnalyzer = getAudioAnalyzer();

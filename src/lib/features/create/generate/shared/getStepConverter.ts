@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { StepConverter } from './services/implementations/StepConverter';
+import { stepConverter } from './services/step-converter';
 
-let instance: StepConverter | null = null;
-
-export function getStepConverter(): StepConverter {
+export function getStepConverter(): typeof stepConverter {
 	if (!browser) throw new Error('getStepConverter() is browser-only');
-	return instance ??= new StepConverter();
+	return stepConverter;
 }

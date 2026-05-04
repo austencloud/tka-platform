@@ -8,13 +8,11 @@ Renders a section with:
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { ReversalDetector } from "../../../../shared/services/implementations/ReversalDetector";
-import type { PictographWithReversals } from "../../../../shared/services/contracts/types";
+  import { reversalDetector as _reversalDetector, type ReversalDetector } from "../../../../shared/services/reversal-detector";
+  import type { PictographWithReversals } from "../../../../shared/services/contracts/types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { IOptionGridFitCalculator } from "../../services/contracts/types";
-  import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
-  import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
+  import { calculateFitSize as calculateGridFitSize, calculateOptimalColumnLayout } from "../../services/option-grid-fit-calculator";
   import { onMount } from "svelte";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
@@ -58,14 +56,11 @@ import type { PictographWithReversals } from "../../../../shared/services/contra
   }>();
 
   // Services - resolve synchronously to avoid first-render sizing issues
-  // gridFitCalculator must be available immediately for correct initial sizing
   let hapticService: HapticFeedback | null = null;
-  let reversalDetector: ReversalDetector | null = null;
-  const gridFitCalculator: IOptionGridFitCalculator | null = optionGridFitCalculator;
+  const reversalDetector: ReversalDetector = _reversalDetector;
 
   onMount(() => {
     hapticService = getHapticFeedback();
-    reversalDetector = getReversalDetector();
   });
 
   // Pictographs are already filtered when passed to this component
@@ -73,13 +68,6 @@ import type { PictographWithReversals } from "../../../../shared/services/contra
 
   // Get pictographs with reversal information - updates instantly when options change
   const displayedItems = $derived(() => {
-    if (!reversalDetector) {
-      return sectionPictographs().map((p: PictographData) => ({
-        ...p,
-        blueReversal: false,
-        redReversal: false,
-      })) as PictographWithReversals[];
-    }
     return reversalDetector.detectReversalsForOptions(
       currentSequence,
       sectionPictographs()
@@ -201,15 +189,6 @@ import type { PictographWithReversals } from "../../../../shared/services/contra
     const gridGapValue = parseInt(layoutConfig?.gridGap || "8px");
     const targetSize = forcedPictographSize ?? basePictographSize;
 
-    // Fallback when service not yet loaded
-    if (!gridFitCalculator) {
-      return {
-        columns,
-        pictographSize: targetSize,
-        gridColumns: `repeat(${columns}, ${targetSize}px)`,
-      };
-    }
-
     // When fitToViewport is true (mobile + continuous filter), calculate size
     // to ensure all options fit within the container without scrolling
     if (
@@ -229,7 +208,7 @@ import type { PictographWithReversals } from "../../../../shared/services/contra
         verticalPadding;
       const effectiveWidth = layoutConfig.containerWidth - horizontalPadding;
 
-      const result = gridFitCalculator.calculateOptimalColumnLayout({
+      const result = calculateOptimalColumnLayout({
         itemCount: rawItemCount,
         availableWidth: effectiveWidth,
         availableHeight: effectiveHeight,
@@ -263,7 +242,7 @@ import type { PictographWithReversals } from "../../../../shared/services/contra
       const containerWidth = layoutConfig?.containerWidth || 800;
       const estimatedAvailableWidth = Math.max(containerWidth - 80, 300);
 
-      const result = gridFitCalculator.calculateOptimalColumnLayout({
+      const result = calculateOptimalColumnLayout({
         itemCount: rawItemCount,
         availableWidth: estimatedAvailableWidth,
         availableHeight: effectiveHeight || 400,
@@ -281,7 +260,7 @@ import type { PictographWithReversals } from "../../../../shared/services/contra
 
     // Compare column layouts and pick whichever produces larger pictographs
     const adjustedHeight = effectiveHeight - actualHeaderHeight;
-    const result = gridFitCalculator.calculateOptimalColumnLayout({
+    const result = calculateOptimalColumnLayout({
       itemCount: rawItemCount,
       availableWidth: effectiveWidth,
       availableHeight: adjustedHeight,

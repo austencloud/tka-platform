@@ -10,7 +10,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-import type { SequenceFuser } from "../services/implementations/SequenceFuser";
+import type { fuseSequences } from "../services/sequence-fuser";
 export type FusePhase =
 	| "browse"
 	| "left-selected"
@@ -19,7 +19,7 @@ export type FusePhase =
 	| "result";
 
 export interface FuseStateDeps {
-	sequenceFuser: SequenceFuser;
+	sequenceFuser: { fuse: typeof fuseSequences };
 }
 
 const STORAGE_KEY = "fuse-tab-state";

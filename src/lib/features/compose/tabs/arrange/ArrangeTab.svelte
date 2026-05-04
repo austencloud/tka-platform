@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/getArrangeKeyboardHandler";
+import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/features/compose/tabs/arrange/services/arrange-keyboard-handler";
   /**
    * ArrangeTab - Grid-based composition builder
    *
@@ -34,9 +34,6 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
 
   // Use singleton grid state
   const gridState = arrangeGridState;
-
-  // Keyboard handler from DI
-  const keyboardHandler = getArrangeKeyboardHandler();
 
   // Mobile detection
   let isMobile = $state(false);
@@ -335,7 +332,7 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
     selectCell: (directionOrId: string) => {
       // When called from keyboard handler, directionOrId is an arrow key direction
       const direction = directionOrId as "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
-      const targetId = keyboardHandler.findAdjacentCell(
+      const targetId = findAdjacentCell(
         direction,
         selectedCell,
         gridState.visibleCells
@@ -365,7 +362,7 @@ import { getArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/ge
         hasClipboard: gridState.clipboard !== null,
         hasAnyLayers: gridState.hasAnyLayers,
       };
-      keyboardHandler.handleKeyDown(e, context, keyboardCallbacks);
+      arrangeHandleKeyDown(e, context, keyboardCallbacks);
     };
 
     window.addEventListener("keydown", onKeyDown);

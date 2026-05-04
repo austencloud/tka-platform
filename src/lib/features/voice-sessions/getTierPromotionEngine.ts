@@ -1,6 +1,5 @@
-import { TierPromotionEngine } from './services/implementations/TierPromotionEngine';
+import * as tierPromotionEngine from './services/tier-promotion-engine';
 
-let instance: TierPromotionEngine | null = null;
-export function getTierPromotionEngine(): TierPromotionEngine {
-  return instance ??= new TierPromotionEngine();
+export function getTierPromotionEngine(): typeof tierPromotionEngine {
+  return tierPromotionEngine;
 }

@@ -1,10 +1,8 @@
 import { browser } from '$app/environment';
 
-import { ScreenshotOrchestrator } from './services/implementations/ScreenshotOrchestrator';
+import * as screenshotOrchestrator from './services/screenshot-orchestrator';
 
-let instance: ScreenshotOrchestrator | null = null;
-
-export function getScreenshotOrchestrator(): ScreenshotOrchestrator {
+export function getScreenshotOrchestrator() {
 	if (!browser) throw new Error('getScreenshotOrchestrator() is browser-only');
-	return instance ??= new ScreenshotOrchestrator();
+	return screenshotOrchestrator;
 }

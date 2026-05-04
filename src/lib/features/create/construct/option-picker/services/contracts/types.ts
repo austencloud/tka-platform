@@ -92,52 +92,6 @@ export interface GridFitResult {
   gridColumns: string;
 }
 
-export interface IOptionGridFitCalculator {
-  /**
-   * Calculate the optimal pictograph size to fit all items
-   * within the given container dimensions.
-   *
-   * The algorithm:
-   * 1. Determines actual columns (min of requested and item count)
-   * 2. Calculates rows needed
-   * 3. Computes max size that fits width constraint
-   * 4. Computes max size that fits height constraint
-   * 5. Returns the smaller of the two (clamped to min/max bounds)
-   */
-  calculateFitSize(params: GridFitParams): GridFitResult;
-
-  /**
-   * Compare multiple column layouts and return whichever
-   * produces larger pictographs.
-   *
-   * Used when the goal is to maximize pictograph size regardless
-   * of column count.
-   */
-  calculateOptimalColumnLayout(params: {
-    itemCount: number;
-    availableWidth: number;
-    availableHeight: number;
-    gridGap: number;
-    maxSize: number;
-    minSize?: number;
-    /** Column counts to compare (default: [4, 8]) */
-    columnOptions?: number[];
-  }): GridFitResult;
-
-  /**
-   * Calculate pictograph size with device-specific constraints.
-   *
-   * Applies device-appropriate padding, gaps, and size limits.
-   * Used by desktop option picker (OptionPickerContent).
-   */
-  calculateDeviceAwareSize(params: DeviceAwareSizingParams): DeviceAwareSizingResult;
-
-  /**
-   * Get the device configuration for a device type.
-   */
-  getDeviceConfig(deviceType: "mobile" | "tablet" | "desktop"): DeviceConfig;
-}
-
 /**
  * Layout configuration object
  */

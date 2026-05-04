@@ -10,7 +10,7 @@ Animates forward in z-axis and expands to fill the container space
   import { generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
-  import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
+  import { generateExplanationText } from "$lib/features/create/generate/shared/services/loop-explanation-text-generator";
   import { LOOPType } from "../../circular/domain/models/circular-models";
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
   import LOOPModeSelector from "../modals/LOOPModeSelector.svelte";
@@ -32,7 +32,6 @@ Animates forward in z-axis and expands to fill the container space
   let hapticService: HapticFeedback | null = null;
   let isMultiSelectMode = $state(false);
   let localSelectedComponents = $state(new Set<LOOPComponent>());
-  const explanationGenerator = new LOOPExplanationTextGenerator();
 
   // Sync local state with prop changes
   $effect(() => {
@@ -45,7 +44,7 @@ Animates forward in z-axis and expands to fill the container space
 
   // Generate explanation text based on selected components
   const explanationText = $derived(
-    explanationGenerator.generateExplanationText(localSelectedComponents)
+    generateExplanationText(localSelectedComponents)
   );
 
   // All component combinations are now implemented

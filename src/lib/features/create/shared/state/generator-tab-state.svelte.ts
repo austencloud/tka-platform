@@ -13,11 +13,10 @@
 
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
-import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
-import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type { ReversalDetector } from "../services/implementations/ReversalDetector";
-import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
+import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
+import { reversalDetector, type ReversalDetector } from "../services/reversal-detector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { UndoMetadata } from "../services/contracts/types";
@@ -53,7 +52,7 @@ export function createGeneratorTabState(
 
   // Generator tab has its own independent sequence state
   // IMPORTANT: Pass tabId="generate" to ensure persistence loads/saves only generator's data
-  const ReversalDetector: ReversalDetector | undefined = getReversalDetector();
+  const ReversalDetector: ReversalDetector | undefined = reversalDetector;
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,

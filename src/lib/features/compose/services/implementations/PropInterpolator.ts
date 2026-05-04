@@ -10,7 +10,7 @@ import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograp
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
 import type { InterpolationResult } from "../contracts/types";
-import type { AngleCalculator } from "./AngleCalculator";
+import type { AngleCalculatorLike } from "../angle-calculator";
 import type { EndpointCalculator } from "./EndpointCalculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -35,7 +35,7 @@ function shouldUseLinear(motionType: MotionType): boolean {
 
 export class PropInterpolator {
   constructor(
-    private angleCalculator: AngleCalculator,
+    private angleCalculator: AngleCalculatorLike,
     private endpointCalculator: EndpointCalculator
   ) {}
 

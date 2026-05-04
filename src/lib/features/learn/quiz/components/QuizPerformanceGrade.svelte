@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PerformanceGrade } from "../QuizResultsAnalyzer";
+  import type { PerformanceGrade } from "../quiz-results-analyzer";
   import AnimatedScoreCounter from "./AnimatedScoreCounter.svelte";
 
   interface Props {

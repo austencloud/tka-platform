@@ -11,11 +11,18 @@ import { TikaSequenceGenerator } from "../implementations/TikaSequenceGenerator"
 import { TikaQuizGenerator } from "../implementations/TikaQuizGenerator";
 import { TikaToolExecutor } from "../implementations/TikaToolExecutor";
 import { TikaModelProvider } from "../implementations/TikaModelProvider";
-import { TikaProgressWriter } from "./TikaProgressWriter";
+import * as tikaProgressWriter from "./tika-progress-writer";
 
 export interface TikaServerContainerDeps {
   anthropicApiKey: string;
   deepseekApiKey: string;
+}
+
+import type { VerificationResult } from "../contracts/types";
+
+interface ProgressWriter {
+  validateConceptIds(conceptIds: string[], alreadyCompleted: string[]): { valid: string[]; rejected: Array<{ id: string; reason: string }> };
+  writeCompletions(userId: string, conceptIds: string[], alreadyCompleted: string[], summary: string): Promise<VerificationResult>;
 }
 
 export interface TikaServerContainer {
@@ -25,7 +32,7 @@ export interface TikaServerContainer {
   quizGenerator: TikaQuizGenerator;
   toolExecutor: TikaToolExecutor;
   modelProvider: TikaModelProvider;
-  progressWriter: TikaProgressWriter;
+  progressWriter: ProgressWriter;
 }
 
 let _container: TikaServerContainer | null = null;
@@ -55,8 +62,6 @@ export function getTikaServerContainer(
     deps.anthropicApiKey,
     deps.deepseekApiKey
   );
-  const progressWriter = new TikaProgressWriter();
-
   _container = {
     pictographLoader,
     sequenceValidator,
@@ -64,7 +69,7 @@ export function getTikaServerContainer(
     quizGenerator,
     toolExecutor,
     modelProvider,
-    progressWriter,
+    progressWriter: tikaProgressWriter,
   };
 
   return _container;

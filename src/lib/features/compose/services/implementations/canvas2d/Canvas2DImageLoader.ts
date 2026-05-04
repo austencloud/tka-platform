@@ -1,4 +1,9 @@
-import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
+import {
+  generateBluePropSvg,
+  generateRedPropSvg,
+  generatePropSvg,
+  generateGridSvg,
+} from "$lib/features/compose/services/svg-generator";
 
 /**
  * Canvas2D Image Loader
@@ -43,12 +48,10 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = getSVGGenerator();
-
       // Generate blue and red prop SVGs
       const [bluePropData, redPropData] = await Promise.all([
-        svgGenerator.generateBluePropSvg(propType),
-        svgGenerator.generateRedPropSvg(propType),
+        generateBluePropSvg(propType),
+        generateRedPropSvg(propType),
       ]);
 
       // Create new images BEFORE releasing old ones
@@ -98,13 +101,11 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = getSVGGenerator();
-
       // Generate blue and red prop SVGs with different types
       // Pass darkMode to use local preview state instead of global
       const [bluePropData, redPropData] = await Promise.all([
-        svgGenerator.generateBluePropSvg(bluePropType, darkMode),
-        svgGenerator.generateRedPropSvg(redPropType, darkMode),
+        generateBluePropSvg(bluePropType, darkMode),
+        generateRedPropSvg(redPropType, darkMode),
       ]);
 
       // Create new images
@@ -158,12 +159,10 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = getSVGGenerator();
-
       // Generate prop SVGs with custom colors for this layer
       const [bluePropData, redPropData] = await Promise.all([
-        svgGenerator.generatePropSvg(propType, blueColor),
-        svgGenerator.generatePropSvg(propType, redColor),
+        generatePropSvg(propType, blueColor),
+        generatePropSvg(propType, redColor),
       ]);
 
       // Create new images
@@ -208,7 +207,6 @@ export class Canvas2DImageLoader {
     try {
       const { GridMode } =
         await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
-      const svgGenerator = getSVGGenerator();
 
       // Convert gridMode string to GridMode enum
       // "8point" needs special handling since "8POINT" isn't a valid enum key
@@ -221,7 +219,7 @@ export class Canvas2DImageLoader {
           GridMode.DIAMOND;
       }
 
-      const gridSvg = svgGenerator.generateGridSvg(gridModeEnum);
+      const gridSvg = generateGridSvg(gridModeEnum);
 
       // Create new image
       const newImage = await this.createImageFromSVG(

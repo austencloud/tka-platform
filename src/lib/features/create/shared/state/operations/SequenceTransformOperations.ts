@@ -15,9 +15,9 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StartPositionData } from "../../domain/models/StartPositionData";
-import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
-import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
+import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
 import type { SequenceCoreState } from "../core/SequenceCoreState.svelte";
 import type { SequenceSelectionState } from "../selection/SequenceSelectionState.svelte";
 import type { ValidationResult } from "$lib/shared/validation/ValidationResult";

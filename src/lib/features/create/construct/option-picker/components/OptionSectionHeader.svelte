@@ -7,7 +7,7 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
   --option-header-bg, --option-header-border, --option-header-shadow, --option-header-text
 -->
 <script lang="ts">
-  import { LetterTypeTextPainter } from "../services/LetterTypeTextPainter";
+  import { formatSectionHeader } from "../services/letter-type-text-painter";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
@@ -35,7 +35,7 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
   });
 
   const formattedText = $derived(
-    LetterTypeTextPainter.formatSectionHeader(
+    formatSectionHeader(
       typeInfo.typeName,
       typeInfo.description
     )

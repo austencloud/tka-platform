@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { PictographFilter } from './services/implementations/PictographFilter';
+import { pictographFilter } from './services/pictograph-filter';
 
-let instance: PictographFilter | null = null;
-
-export function getPictographFilter(): PictographFilter {
+export function getPictographFilter(): typeof pictographFilter {
 	if (!browser) throw new Error('getPictographFilter() is browser-only');
-	return instance ??= new PictographFilter();
+	return pictographFilter;
 }

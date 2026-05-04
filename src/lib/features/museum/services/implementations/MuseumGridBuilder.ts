@@ -24,20 +24,16 @@ import type {
 } from "../../domain/museum-grid-types";
 import { tileKey } from "../../domain/museum-grid-types";
 import { isWalkable } from "../../domain/tile-registry";
-import { GraphLayoutEngine } from "./GraphLayoutEngine";
-import { CorridorRouter } from "./CorridorRouter";
-import { LayoutValidator } from "./LayoutValidator";
-import { WallSegmentStamper } from "./WallSegmentStamper";
+import { computeLayout } from "../graph-layout-engine";
+import { routeCorridor } from "../corridor-router";
+import { validate as validateLayout } from "../layout-validator";
+import { stampRoom } from "../wall-segment-stamper";
 import { ROOM_CONTENT } from "../../data/museum-room-content";
 
 export class MuseumGridBuilder {
-  private layoutEngine = new GraphLayoutEngine();
-  private corridorRouter = new CorridorRouter();
-  private validator = new LayoutValidator();
-
   build(rooms: RoomNode[], edges: RoomEdge[], config: GridConfig): MuseumGridBuildResult {
     // Step 1: Compute room positions
-    const layout = this.layoutEngine.computeLayout(rooms, edges, config);
+    const layout = computeLayout(rooms, edges, config);
     const roomLookup = new Map(layout.rooms.map((r) => [r.id, r]));
 
     const tiles = new Map<string, MuseumTile>();
@@ -55,11 +51,10 @@ export class MuseumGridBuilder {
     // Two rooms share the same edgeId for the same connection - without the
     // room prefix the second room's stamp would overwrite the first, and the
     // corridor router would get the same position for both endpoints.
-    const stamper = new WallSegmentStamper();
     const allDoorPositions = new Map<string, { x: number; y: number }>();
 
     for (const room of layout.rooms) {
-      const result = stamper.stampRoom(tiles, room, edges);
+      const result = stampRoom(tiles, room, edges);
       exhibits.push(...result.exhibits);
       for (const dp of result.doorPositions) {
         allDoorPositions.set(`${room.id}:${dp.edgeId}`, { x: dp.x, y: dp.y });
@@ -72,7 +67,7 @@ export class MuseumGridBuilder {
       const fromRoom = roomLookup.get(edge.from);
       const toRoom = roomLookup.get(edge.to);
       if (!fromRoom || !toRoom) continue;
-      const segments = this.corridorRouter.routeCorridor(fromRoom, toRoom, edge, allDoorPositions);
+      const segments = routeCorridor(fromRoom, toRoom, edge, allDoorPositions);
       corridorData.push({ edge, segments });
     }
 
@@ -117,7 +112,7 @@ export class MuseumGridBuilder {
     };
 
     // Step 9: Validate
-    const validation = this.validator.validate(grid, layout.rooms);
+    const validation = validateLayout(grid, layout.rooms);
 
     return { grid, validation };
   }

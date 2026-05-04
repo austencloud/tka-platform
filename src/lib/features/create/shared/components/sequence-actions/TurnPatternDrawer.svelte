@@ -22,7 +22,7 @@
     type PatternComplexity,
     type TurnValue,
   } from "../../domain/templates/turn-pattern-templates";
-  import { turnPatternManager } from "../../services/implementations/TurnPatternManager";
+  import * as turnPatternManager from "../../services/turn-pattern-manager";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
   import PatternItemCard from "./PatternItemCard.svelte";
 

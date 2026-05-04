@@ -19,14 +19,13 @@
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { getThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator';
-  import { getThumbnailKeyDeriver } from '$lib/features/browse/sequences/display/getThumbnailKeyDeriver';
+  import { deriveKey as deriveThumbnailKey } from '$lib/features/browse/sequences/display/services/thumbnail-key-deriver';
   import { getThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/getThumbnailMetricsCollector';
   import { getThumbnailLocalCache } from '$lib/features/browse/sequences/display/getThumbnailLocalCache';
   import { PublicSequencesLoader } from '$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import type { ThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator';
   import type { ThumbnailRenderInput } from '$lib/features/browse/sequences/display/services/contracts/types';
-import type { ThumbnailKeyDeriver } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailKeyDeriver';
   import type { ThumbnailMetricsSummary } from '$lib/features/browse/sequences/display/services/contracts/types';
 import type { ThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector';
   import type { ThumbnailLocalCache } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailLocalCache';
@@ -141,7 +140,6 @@ import type { ThumbnailMetricsCollector } from '$lib/features/browse/sequences/d
 
   // Services
   let orchestrator: ThumbnailRenderOrchestrator | null = null;
-  let keyDeriver: ThumbnailKeyDeriver | null = null;
   let metricsCollector: ThumbnailMetricsCollector | null = null;
   let localCache: ThumbnailLocalCache | null = null;
 
@@ -150,7 +148,6 @@ import type { ThumbnailMetricsCollector } from '$lib/features/browse/sequences/d
 
     // Resolve services
     orchestrator = getThumbnailRenderOrchestrator();
-    keyDeriver = getThumbnailKeyDeriver();
     metricsCollector = getThumbnailMetricsCollector();
     localCache = getThumbnailLocalCache();
 

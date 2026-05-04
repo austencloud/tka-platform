@@ -15,10 +15,10 @@
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ThumbnailRequest, ThumbnailResult } from "../contracts/types";
 import type { ThumbnailCacheKey } from "../contracts/types";
-import type { ThumbnailKeyDeriver } from "./ThumbnailKeyDeriver";
+import * as keyDeriverModule from "../thumbnail-key-deriver";
 import type { ThumbnailRenderQueue } from "./ThumbnailRenderQueue";
 import type { ThumbnailRenderer } from "./ThumbnailRenderer";
-import type { CloudThumbnailCache } from "./CloudThumbnailCache";
+import * as cloudCacheModule from "../cloud-thumbnail-cache";
 import type { ThumbnailLocalCache } from "./ThumbnailLocalCache";
 import type { ThumbnailMetricsCollector } from "./ThumbnailMetricsCollector";
 
@@ -94,6 +94,17 @@ async function getStaticManifest(): Promise<Set<string>> {
   return staticManifestLoading;
 }
 
+function uploadToCloud(orchestrator: ThumbnailRenderOrchestrator, key: ThumbnailCacheKey, blob: Blob): void {
+  cloudCacheModule.upload(orchestrator.buildCloudKey(key), blob)
+    .then(() => {
+      orchestrator['metrics']?.recordUpload(true);
+    })
+    .catch(() => {
+      // Non-fatal - image is displayed, just couldn't upload for others
+      orchestrator['metrics']?.recordUpload(false);
+    });
+}
+
 export class ThumbnailRenderOrchestrator {
   private completedCount = 0;
   private memoryCache = new MemoryUrlCache();
@@ -105,10 +116,8 @@ export class ThumbnailRenderOrchestrator {
   private renderedGenerations = new Map<string, number>();
 
   constructor(
-    private keyDeriver: ThumbnailKeyDeriver,
     private queue: ThumbnailRenderQueue,
     private renderer: ThumbnailRenderer,
-    private cloudCache: CloudThumbnailCache,
     private localCache: ThumbnailLocalCache,
     private metrics?: ThumbnailMetricsCollector
   ) {}
@@ -124,7 +133,7 @@ export class ThumbnailRenderOrchestrator {
     this.renderedGenerations.clear();
     this.memoryCache.clear();
     // Nuke in-memory URL cache + persistent "known exists" list
-    this.cloudCache.clearMemoryCache(true);
+    cloudCacheModule.clearMemoryCache(true);
     // Reset static manifest so stale bundled thumbnails aren't served
     staticManifest = new Set();
   }
@@ -136,7 +145,7 @@ export class ThumbnailRenderOrchestrator {
   }
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
-    const key = this.keyDeriver.deriveKey(request.input);
+    const key = keyDeriverModule.deriveKey(request.input);
     const cloudKey = this.buildCloudKey(key);
 
     // If all caches were nuked (admin clear), force skip for this key
@@ -193,7 +202,7 @@ export class ThumbnailRenderOrchestrator {
 
     // Step 3: Check cloud in-memory URL cache (instant, session-only)
     if (key.usesDefaults && !mustSkipCache) {
-      const memoryCached = this.cloudCache.getCachedUrl(cloudKey);
+      const memoryCached = cloudCacheModule.getCachedUrl(cloudKey);
       if (memoryCached) {
         this.memoryCache.set(key.hash, memoryCached);
         this.renderedGenerations.set(key.hash, this.cacheGeneration);
@@ -206,7 +215,7 @@ export class ThumbnailRenderOrchestrator {
       // Step 4: Check cloud cache (network request)
       if (memoryCached === undefined) {
         request.onStatusChange?.({ state: "checking-cache" });
-        const cloudUrl = await this.cloudCache.getUrl(cloudKey, request.priority);
+        const cloudUrl = await cloudCacheModule.getUrl(cloudKey, request.priority);
         if (cloudUrl) {
           this.saveCloudBlobToLocal(cloudUrl, key.hash);
           this.memoryCache.set(key.hash, cloudUrl);
@@ -262,7 +271,7 @@ export class ThumbnailRenderOrchestrator {
 
         // Upload to cloud (for default settings only - shared cache)
         if (key.usesDefaults) {
-          this.uploadToCloud(key, blob);
+          uploadToCloud(this, key, blob);
         }
 
         // Store in memory cache for instant revisits
@@ -322,7 +331,7 @@ export class ThumbnailRenderOrchestrator {
     };
   }
 
-  private buildCloudKey(key: ThumbnailCacheKey) {
+  buildCloudKey(key: ThumbnailCacheKey) {
     return {
       sequenceName: key.inputs.sequenceName,
       sequenceId: key.inputs.sequenceId,
@@ -338,25 +347,13 @@ export class ThumbnailRenderOrchestrator {
    * Static thumbnails use legacy format (no variant level) for backwards compatibility
    * Must match the keys in /static/thumbnails/manifest.json
    */
-  private buildStaticKey(key: ThumbnailCacheKey): string {
+  buildStaticKey(key: ThumbnailCacheKey): string {
     const modeSuffix = key.inputs.lightMode ? "_light" : "_dark";
     // Sanitize sequence name for Windows compatibility (colons from timestamps, etc.)
     const sanitizedName = key.inputs.sequenceName
       .replace(/:/g, "-")
       .replace(/[?<>"|*]/g, "_");
     return `${key.propKey}/${sanitizedName}${modeSuffix}`;
-  }
-
-  private uploadToCloud(key: ThumbnailCacheKey, blob: Blob): void {
-    this.cloudCache
-      .upload(this.buildCloudKey(key), blob)
-      .then(() => {
-        this.metrics?.recordUpload(true);
-      })
-      .catch(() => {
-        // Non-fatal - image is displayed, just couldn't upload for others
-        this.metrics?.recordUpload(false);
-      });
   }
 
   /**

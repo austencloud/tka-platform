@@ -12,11 +12,10 @@ import { createNavigationController } from "./create-module/navigation-controlle
 import { createOptionHistoryManager } from "./create-module/option-history-manager.svelte";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
-import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
-import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type { ReversalDetector } from "../services/implementations/ReversalDetector";
-import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
+import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
+import { reversalDetector, type ReversalDetector } from "../services/reversal-detector";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { StepData } from "../domain/models/StepData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
@@ -46,7 +45,7 @@ export function createCreateModuleState(
   sequenceValidationService?: SequenceValidator
 ) {
   // Create sequence state (shared/legacy - kept for backwards compatibility)
-  const ReversalDetector: ReversalDetector | undefined = getReversalDetector();
+  const ReversalDetector: ReversalDetector | undefined = reversalDetector;
   const sequenceState = createSequenceState({
     sequenceService,
     ...(SequencePersister && { SequencePersister }),

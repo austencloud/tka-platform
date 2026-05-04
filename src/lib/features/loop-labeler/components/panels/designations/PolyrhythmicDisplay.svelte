@@ -5,7 +5,7 @@
    * Visualizes polyrhythmic pattern detection results including
    * motion/spatial periods and zone coverage analysis.
    */
-  import type { PolyrhythmicLOOPResult } from "../../../services/implementations/PolyrhythmicDetector";
+  import type { PolyrhythmicLOOPResult } from "../../../services/polyrhythmic-detector";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {

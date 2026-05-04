@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { TriGridCalculator } from './services/implementations/TriGridCalculator';
+import * as triGridCalculator from './services/trigrid-calculator';
 
-let instance: TriGridCalculator | null = null;
-
-export function getTriGridCalculator(): TriGridCalculator {
+export function getTriGridCalculator(): typeof triGridCalculator {
 	if (!browser) throw new Error('getTriGridCalculator() is browser-only');
-	return instance ??= new TriGridCalculator();
+	return triGridCalculator;
 }

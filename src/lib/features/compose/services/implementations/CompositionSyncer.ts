@@ -15,8 +15,19 @@
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { Composition } from "../../compose/domain/types";
-import { dexieCompositionRepository } from "./DexieCompositionRepository";
-import { firebaseCompositionRepository } from "./FirebaseCompositionRepository";
+import {
+  saveComposition as dexieSaveComposition,
+  deleteComposition as dexieDeleteComposition,
+  toggleFavorite as dexieToggleFavorite,
+  getCompositions as dexieGetCompositions,
+} from "../dexie-composition-repository";
+import {
+  isAuthenticated as firebaseIsAuthenticated,
+  saveComposition as firebaseSaveComposition,
+  deleteComposition as firebaseDeleteComposition,
+  getCompositions as firebaseGetCompositions,
+  updateFavorite as firebaseUpdateFavorite,
+} from "../firebase-composition-repository";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 export class CompositionSyncer {
@@ -29,11 +40,11 @@ export class CompositionSyncer {
    */
   async saveComposition(composition: Composition): Promise<Composition> {
     // Local first - always succeeds
-    const saved = await dexieCompositionRepository.saveComposition(composition);
+    const saved = await dexieSaveComposition(composition);
 
     // Cloud in the background - fire and forget
-    if (firebaseCompositionRepository.isAuthenticated()) {
-      firebaseCompositionRepository.saveComposition(saved).catch((err) => {
+    if (firebaseIsAuthenticated()) {
+      firebaseSaveComposition(saved).catch((err) => {
         try {
           const errorHandler = getErrorHandler() as ErrorHandler;
           errorHandler.showWarning("Saved locally, but cloud sync failed. Changes may not appear on other devices.");
@@ -50,10 +61,10 @@ export class CompositionSyncer {
    * Delete a composition from both local and cloud.
    */
   async deleteComposition(compositionId: string): Promise<void> {
-    await dexieCompositionRepository.deleteComposition(compositionId);
+    await dexieDeleteComposition(compositionId);
 
-    if (firebaseCompositionRepository.isAuthenticated()) {
-      firebaseCompositionRepository.deleteComposition(compositionId).catch((err) => {
+    if (firebaseIsAuthenticated()) {
+      firebaseDeleteComposition(compositionId).catch((err) => {
         try {
           const errorHandler = getErrorHandler() as ErrorHandler;
           errorHandler.showWarning("Deleted locally, but cloud sync failed. It may reappear on other devices.");
@@ -69,11 +80,10 @@ export class CompositionSyncer {
    */
   async toggleFavorite(compositionId: string): Promise<boolean> {
     const newStatus =
-      await dexieCompositionRepository.toggleFavorite(compositionId);
+      await dexieToggleFavorite(compositionId);
 
-    if (firebaseCompositionRepository.isAuthenticated()) {
-      firebaseCompositionRepository
-        .updateFavorite(compositionId, newStatus)
+    if (firebaseIsAuthenticated()) {
+      firebaseUpdateFavorite(compositionId, newStatus)
         .catch((err) => {
           try {
             const errorHandler = getErrorHandler() as ErrorHandler;
@@ -94,7 +104,7 @@ export class CompositionSyncer {
   async getCompositions(): Promise<Composition[]> {
     // If authenticated and haven't synced yet, merge cloud data
     if (
-      firebaseCompositionRepository.isAuthenticated() &&
+      firebaseIsAuthenticated() &&
       !this.hasSynced
     ) {
       await this.syncFromCloud();
@@ -102,7 +112,7 @@ export class CompositionSyncer {
     }
 
     // Always read from local (which now includes merged cloud data)
-    return dexieCompositionRepository.getCompositions({
+    return dexieGetCompositions({
       sortBy: "updatedAt",
       sortDirection: "desc",
     });
@@ -117,8 +127,8 @@ export class CompositionSyncer {
   private async syncFromCloud(): Promise<void> {
     try {
       const [cloudCompositions, localCompositions] = await Promise.all([
-        firebaseCompositionRepository.getCompositions(),
-        dexieCompositionRepository.getCompositions(),
+        firebaseGetCompositions(),
+        dexieGetCompositions(),
       ]);
 
       if (cloudCompositions.length === 0 && localCompositions.length === 0) {
@@ -134,13 +144,13 @@ export class CompositionSyncer {
 
         if (!localComp) {
           // Cloud-only: add to local
-          await dexieCompositionRepository.saveComposition(cloudComp);
+          await dexieSaveComposition(cloudComp);
         } else {
           // Both exist: cloud wins if newer
           const cloudTime = cloudComp.updatedAt?.getTime() ?? 0;
           const localTime = localComp.updatedAt?.getTime() ?? 0;
           if (cloudTime > localTime) {
-            await dexieCompositionRepository.saveComposition(cloudComp);
+            await dexieSaveComposition(cloudComp);
           }
         }
       }
@@ -148,7 +158,7 @@ export class CompositionSyncer {
       // Push local-only compositions to cloud
       for (const localComp of localCompositions) {
         if (!cloudMap.has(localComp.id)) {
-          firebaseCompositionRepository.saveComposition(localComp).catch((err) => {
+          firebaseSaveComposition(localComp).catch((err) => {
             console.warn(`Failed to push local composition ${localComp.id} to cloud:`, err);
           });
         }

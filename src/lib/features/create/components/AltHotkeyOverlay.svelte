@@ -6,7 +6,7 @@
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { shiftStartPosition } from "../shared/services/implementations/sequence-transforms/sequence-transforms";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
-  import { subDrawerStatePersister } from "../shared/services/implementations/SubDrawerStatePersister";
+  import * as subDrawerStatePersister from "../shared/services/sub-drawer-state-persister";
   import type { PropPreset } from "$lib/shared/settings/domain/AppSettings";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 

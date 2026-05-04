@@ -11,7 +11,7 @@
   import TikaWelcome from "./TikaWelcome.svelte";
   import TikaAssistantMessage from "./TikaAssistantMessage.svelte";
   import TikaInputArea from "./TikaInputArea.svelte";
-  import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
+  import { getTextFromParts } from "../services/tika-message-extractor";
   import type { ModelOption } from "../types";
   import type { ReviewStatus, ReviewMetadata } from "../domain/models/tika-conversation-models";
   import type { WelcomeContext } from "../services/contracts/types";
@@ -124,7 +124,7 @@
           <!-- User Message -->
           <div class="message user-message">
             <div class="message-content">
-              <p>{tikaMessageExtractor.getTextFromParts(message.parts)}</p>
+              <p>{getTextFromParts(message.parts)}</p>
             </div>
           </div>
         {:else if message.role === "assistant"}

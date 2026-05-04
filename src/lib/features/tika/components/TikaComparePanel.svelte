@@ -5,7 +5,7 @@
 <script lang="ts">
   import type { UIMessage } from "@ai-sdk/svelte";
   import TikaAssistantMessage from "./TikaAssistantMessage.svelte";
-  import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
+  import { getTextFromParts } from "../services/tika-message-extractor";
 
   interface Props {
     modelLabel: string;
@@ -50,7 +50,7 @@
       {#each messages as message, index (message.id)}
         {#if message.role === "user"}
           <div class="user-message">
-            {tikaMessageExtractor.getTextFromParts(message.parts)}
+            {getTextFromParts(message.parts)}
           </div>
         {:else if message.role === "assistant"}
           <TikaAssistantMessage

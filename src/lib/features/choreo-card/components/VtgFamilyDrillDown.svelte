@@ -1,15 +1,12 @@
 <script lang="ts">
 
-import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExporter";
+import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
 import { getVtgFamilyAggregator } from "$lib/features/choreo-card/getVtgFamilyAggregator";
 
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { FamilyRatioGroup } from "../services/contracts/types";
-  import type { VtgFamilyAggregator } from "../services/implementations/VtgFamilyAggregator";
-  import type { PrintPDFExporter } from "../services/implementations/PrintPDFExporter";
 import type { CardPair } from "../services/contracts/types";
-  import type { PrintZipExporter } from "../services/implementations/PrintZipExporter";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
@@ -154,13 +151,12 @@ import type { CardPair } from "../services/contracts/types";
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
     try {
-      // Lazy-load PrintPDFExporter - it pulls pdf-lib (~400KB + CSP-violating
+      // Lazy-load print-pdf-exporter - it pulls pdf-lib (~400KB + CSP-violating
       // runtime codegen). Only loaded when the user actually exports.
-      const { PrintPDFExporter } = await import(
-        "$lib/features/choreo-card/services/implementations/PrintPDFExporter"
+      const { exportHomePrintPDF } = await import(
+        "$lib/features/choreo-card/services/print-pdf-exporter"
       );
-      const pdfExporter: PrintPDFExporter = new PrintPDFExporter();
-      const blob = await pdfExporter.exportHomePrintPDF(renderedPairs, familyLabel, cardSize);
+      const blob = await exportHomePrintPDF(renderedPairs, familyLabel, cardSize);
       downloadBlob(blob, `${familyLabel}-${cardSize}.pdf`);
     } finally {
       isExporting = false;
@@ -171,8 +167,7 @@ import type { CardPair } from "../services/contracts/types";
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
     try {
-      const zipExporter = getPrintZipExporter() as PrintZipExporter;
-      const blob = await zipExporter.exportDeckZIP(renderedPairs, familyLabel);
+      const blob = await exportDeckZIP(renderedPairs, familyLabel);
       downloadBlob(blob, `${familyLabel}-${cardSize}.zip`);
     } finally {
       isExporting = false;

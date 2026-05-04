@@ -25,10 +25,9 @@ import type {
   ChallengeScheduleEntry,
   ChallengeFormData,
 } from "../../domain/models/AdminModels";
-import type { AuditLogger } from "./AuditLogger";
+import { logAction } from "$lib/features/admin/services/audit-logger";
 
 export class AdminChallengeManager {
-  constructor(private readonly auditLogger: AuditLogger) {}
   /**
    * Get all scheduled challenges for a date range
    * Optimized: Single batch query instead of per-day requests
@@ -123,7 +122,7 @@ export class AdminChallengeManager {
       });
 
       // Log the action
-      await this.auditLogger.logAction(
+      await logAction(
         "challenge_created",
         `Created daily challenge: ${challenge.title} (${formData.date})`,
         undefined,

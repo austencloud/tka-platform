@@ -12,8 +12,8 @@
   import InlineStepGrid from "./InlineStepGrid.svelte";
   import InlineQuiz from "./InlineQuiz.svelte";
   import SanitizedHtml from "$lib/shared/foundation/ui/SanitizedHtml.svelte";
-  import { tikaMarkdownParser } from "../services/implementations/TikaMarkdownParser";
-  import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
+  import { parseMarkdown } from "../services/tika-markdown-parser";
+  import { getTextFromParts as _getTextFromParts, getToolOutputFromParts as _getToolOutputFromParts } from "../services/tika-message-extractor";
   import type {
     InlinePictograph as InlinePictographType,
     InlineGallery as InlineGalleryType,
@@ -43,14 +43,14 @@
     toolHtml: string | null;
     links: Array<{ text: string; url: string }>
   } {
-    const textContent = tikaMessageExtractor.getTextFromParts(parts);
+    const textContent = _getTextFromParts(parts);
     if (textContent) {
-      const parsed = tikaMarkdownParser.parse(textContent);
+      const parsed = parseMarkdown(textContent);
       return { textHtml: parsed.html, toolHtml: null, links: parsed.links };
     }
-    const toolOutput = tikaMessageExtractor.getToolOutputFromParts(parts);
+    const toolOutput = _getToolOutputFromParts(parts);
     if (toolOutput) {
-      const parsed = tikaMarkdownParser.parse(toolOutput);
+      const parsed = parseMarkdown(toolOutput);
       return { textHtml: null, toolHtml: parsed.html, links: parsed.links };
     }
     return { textHtml: null, toolHtml: null, links: [] };
@@ -173,7 +173,7 @@
       <!-- User Message -->
       <div class="message user-message">
         <div class="message-content">
-          <p>{tikaMessageExtractor.getTextFromParts(message.parts)}</p>
+          <p>{_getTextFromParts(message.parts)}</p>
         </div>
       </div>
     {:else if message.role === "assistant"}

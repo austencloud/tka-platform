@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
+import { analyzeDifficulty, calculateDifficultyLevel } from "../sequence-difficulty-calculator";
 import {
   MotionColor,
   Orientation,
@@ -36,26 +36,24 @@ function makeStep(
   } as unknown as StepData;
 }
 
-describe("SequenceDifficultyCalculator.analyzeDifficulty", () => {
-  const calc = new SequenceDifficultyCalculator();
-
+describe("analyzeDifficulty", () => {
   it("returns level 1 / trigger 'none' for an empty sequence", () => {
-    expect(calc.analyzeDifficulty([])).toEqual({ level: 1, trigger: "none" });
+    expect(analyzeDifficulty([])).toEqual({ level: 1, trigger: "none" });
   });
 
   it("returns level 1 / trigger 'none' when there are no turns and only radial orientations", () => {
     const steps = [makeStep(0, 0)];
-    expect(calc.analyzeDifficulty(steps)).toEqual({ level: 1, trigger: "none" });
+    expect(analyzeDifficulty(steps)).toEqual({ level: 1, trigger: "none" });
   });
 
   it("returns level 2 / trigger 'turns' when a whole turn is present with radial orientations", () => {
     const steps = [makeStep(1, 0)];
-    expect(calc.analyzeDifficulty(steps)).toEqual({ level: 2, trigger: "turns" });
+    expect(analyzeDifficulty(steps)).toEqual({ level: 2, trigger: "turns" });
   });
 
   it("returns level 3 / trigger 'nonRadial' when any orientation is CLOCK or COUNTER", () => {
     const steps = [makeStep(0, 0, Orientation.IN, Orientation.CLOCK)];
-    expect(calc.analyzeDifficulty(steps)).toEqual({
+    expect(analyzeDifficulty(steps)).toEqual({
       level: 3,
       trigger: "nonRadial",
     });
@@ -63,23 +61,21 @@ describe("SequenceDifficultyCalculator.analyzeDifficulty", () => {
 
   it("returns level 2 / trigger 'turns' for a float value", () => {
     const steps = [makeStep("fl", 0)];
-    expect(calc.analyzeDifficulty(steps)).toEqual({ level: 2, trigger: "turns" });
+    expect(analyzeDifficulty(steps)).toEqual({ level: 2, trigger: "turns" });
   });
 
   it("prefers nonRadial over turns when both are present (L3 wins)", () => {
     const steps = [makeStep(1, 0, Orientation.IN, Orientation.CLOCK)];
-    expect(calc.analyzeDifficulty(steps)).toEqual({
+    expect(analyzeDifficulty(steps)).toEqual({
       level: 3,
       trigger: "nonRadial",
     });
   });
 });
 
-describe("SequenceDifficultyCalculator.calculateDifficultyLevel (unchanged behavior)", () => {
-  const calc = new SequenceDifficultyCalculator();
-
+describe("calculateDifficultyLevel (unchanged behavior)", () => {
   it("still returns a plain number", () => {
-    expect(calc.calculateDifficultyLevel([])).toBe(1);
-    expect(calc.calculateDifficultyLevel([makeStep(1, 0)])).toBe(2);
+    expect(calculateDifficultyLevel([])).toBe(1);
+    expect(calculateDifficultyLevel([makeStep(1, 0)])).toBe(2);
   });
 });

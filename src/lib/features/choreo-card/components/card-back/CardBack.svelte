@@ -15,8 +15,6 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
-  import type { LOOPExplainer } from "../../services/implementations/LOOPExplainer";
 import { onMount } from "svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
   import { deriveCardBackData } from "./card-back-data";
@@ -26,20 +24,10 @@ import { onMount } from "svelte";
   import TurnPatternGlyph from "./TurnPatternGlyph.svelte";
   import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
-  import { getSequenceToEntryConverter } from "$lib/features/choreo-card/getSequenceToEntryConverter";
-  import { getLOOPExplainer } from "$lib/features/choreo-card/getLOOPExplainer";
-
   interface Props { sequence: SequenceData; }
   let { sequence }: Props = $props();
 
-  let converter: SequenceToEntryConverter | null = $state(null);
-  let explainer: LOOPExplainer | null = $state(null);
-  onMount(() => {
-    converter = getSequenceToEntryConverter();
-    explainer = getLOOPExplainer();
-  });
-
-  const d = $derived(deriveCardBackData(sequence, converter, explainer));
+  const d = $derived(deriveCardBackData(sequence));
 
   // Deck designation labels shown below the mandala
   const hasDesignation = $derived(!!d.tkaDesignation || !!d.vtgDesignation);

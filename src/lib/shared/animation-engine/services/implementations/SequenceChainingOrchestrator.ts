@@ -13,7 +13,7 @@ import type { EndState } from "$lib/features/landing/services/contracts/types";
 import type { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
 import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/types";
 
-import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
+import * as propTypeApplierModule from "$lib/features/landing/services/prop-type-applier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
@@ -23,7 +23,7 @@ import type { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/
 export class SequenceChainingOrchestrator {
   private playbackController: AnimationPlaybackController | null = null;
   private animationState: AnimationPanelState | null = null;
-  private readonly propTypeApplier = new PropTypeApplier();
+  private readonly propTypeApplier = propTypeApplierModule;
 
   private _isChainingNow = false;
   private _isPreloading = false;

@@ -6,9 +6,17 @@
 -->
 <script lang="ts">
 
-import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueManager";
+import {
+    getPendingQueue,
+    getPendingCount,
+    approveEntry,
+    rejectEntry,
+    setEntryFeatured,
+    setEntryHidden,
+    reportEntry,
+    getReportedEntries,
+  } from "$lib/features/hall-of-shame/services/shame-queue-manager";
   import { onMount } from "svelte";
-  import type { ShameQueueManager } from "$lib/features/hall-of-shame/services/implementations/ShameQueueManager";
   import type {
     HallOfShameEntry,
     ShameCategory,
@@ -37,14 +45,6 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
 
   const currentUser = $derived(authState.user);
 
-  // Get the queue manager service
-  let shameQueueManager: ShameQueueManager | null = null;
-  try {
-    shameQueueManager = getShameQueueManager();
-  } catch (error) {
-    console.warn("Failed to resolve shameQueueManager:", error);
-  }
-
   const categories: { value: ShameCategory; label: string }[] = [
     { value: "profanity", label: "Profanity" },
     { value: "sexual", label: "Crude" },
@@ -56,19 +56,13 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
   });
 
   async function loadQueues() {
-    if (!shameQueueManager) {
-      error = "Queue manager service unavailable";
-      isLoading = false;
-      return;
-    }
-
     isLoading = true;
     error = null;
 
     try {
       const [pending, reported] = await Promise.all([
-        shameQueueManager.getPendingQueue(),
-        shameQueueManager.getReportedEntries(),
+        getPendingQueue(),
+        getReportedEntries(),
       ]);
 
       pendingEntries = pending;
@@ -82,12 +76,12 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
   }
 
   async function handleApprove(entry: HallOfShameEntry) {
-    if (!shameQueueManager || !currentUser) return;
+    if (!currentUser) return;
 
     processingId = entry.id;
 
     try {
-      await shameQueueManager.approve(
+      await approveEntry(
         entry.id,
         currentUser.uid,
         categoryOverride || undefined
@@ -119,7 +113,7 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
   }
 
   async function handleReject() {
-    if (!shameQueueManager || !currentUser || !rejectingEntry) return;
+    if (!currentUser || !rejectingEntry) return;
 
     if (!rejectReason.trim()) {
       error = "Please provide a rejection reason";
@@ -129,7 +123,7 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
     processingId = rejectingEntry.id;
 
     try {
-      await shameQueueManager.reject(
+      await rejectEntry(
         rejectingEntry.id,
         currentUser.uid,
         rejectReason.trim()
@@ -149,12 +143,12 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
   }
 
   async function handleHide(entry: HallOfShameEntry) {
-    if (!shameQueueManager || !currentUser) return;
+    if (!currentUser) return;
 
     processingId = entry.id;
 
     try {
-      await shameQueueManager.setHidden(entry.id, currentUser.uid, true);
+      await setEntryHidden(entry.id, currentUser.uid, true);
 
       // Remove from reported list (it's now hidden)
       reportedEntries = reportedEntries.filter(
@@ -169,12 +163,12 @@ import { getShameQueueManager } from "$lib/features/hall-of-shame/getShameQueueM
   }
 
   async function handleFeature(entry: HallOfShameEntry, featured: boolean) {
-    if (!shameQueueManager || !currentUser) return;
+    if (!currentUser) return;
 
     processingId = entry.id;
 
     try {
-      await shameQueueManager.setFeatured(
+      await setEntryFeatured(
         entry.id,
         currentUser.uid,
         featured

@@ -13,7 +13,7 @@
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
   import type { QuizLayoutMode } from "../domain/enums/quiz-enums";
   import type { QuizResults, QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
-  import { QuizConfigurator } from "../services/implementations/QuizConfigurator";
+  import { getFormattedQuizTitle, getQuizModeName, getQuizTime } from "../services/quiz-configurator";
   import type { QuizSessionManager } from "../services/implementations/QuizSessionManager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
@@ -82,7 +82,7 @@
 
     // Set up timer for countdown mode
     if (isCountdownMode) {
-      timeRemaining = QuizConfigurator.getQuizTime(quizMode);
+      timeRemaining = getQuizTime(quizMode);
       if (timerComponent) {
         timerComponent.start();
       }
@@ -215,12 +215,12 @@
 
   function formatQuizTitle(): string {
     if (!quizType) return "Unknown Quiz";
-    return QuizConfigurator.getFormattedQuizTitle(quizType);
+    return getFormattedQuizTitle(quizType);
   }
 
   function getQuizModeDisplay(): string {
     if (!quizMode) return "Unknown Mode";
-    return QuizConfigurator.getQuizModeName(quizMode);
+    return getQuizModeName(quizMode);
   }
 </script>
 

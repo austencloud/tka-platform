@@ -65,7 +65,7 @@ import type {
   WaterIntent,
 } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
-import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
 import type { AnimationEngineProps } from "./AnimationEngine.svelte";
@@ -417,7 +417,7 @@ export class FrameParameterBuilder {
       const hash = this.lastSequenceContentHash;
       if (hash !== this.loopabilityCacheHash) {
         this.cachedIsSeamlesslyLoopable =
-          sequenceLoopabilityChecker.isSeamlesslyLoopable(props.sequenceData);
+          isSeamlesslyLoopable(props.sequenceData);
         this.loopabilityCacheHash = hash;
       }
       fp.isSeamlesslyLoopable = this.cachedIsSeamlesslyLoopable;

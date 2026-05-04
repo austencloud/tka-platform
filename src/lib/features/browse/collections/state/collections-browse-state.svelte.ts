@@ -9,7 +9,7 @@ import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/en
 import type { LibraryCollection } from "$lib/features/library/domain/models/Collection";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
 import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
-import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
+import { getUserPublicCollections } from "$lib/features/library/services/public-collection-loader";
 import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 
 /**
@@ -46,7 +46,6 @@ function createCollectionsBrowseState() {
    */
   async function loadCreatorLibraries(
     userService: UserRepository,
-    collectionService: CollectionManager,
     libraryService: LibraryRepository,
     currentUserId?: string
   ): Promise<void> {
@@ -65,7 +64,7 @@ function createCollectionsBrowseState() {
         try {
           // Get public collections
           const publicCollections =
-            await collectionService.getUserPublicCollections(creator.id);
+            await getUserPublicCollections(creator.id);
 
           // Get preview of their public sequences (first 6)
           const publicSequences = await libraryService.getUserSequences(
@@ -123,14 +122,12 @@ function createCollectionsBrowseState() {
    */
   async function refresh(
     userService: UserRepository,
-    collectionService: CollectionManager,
     libraryService: LibraryRepository,
     currentUserId?: string
   ): Promise<void> {
     isLoaded = false;
     await loadCreatorLibraries(
       userService,
-      collectionService,
       libraryService,
       currentUserId
     );
@@ -242,25 +239,21 @@ export const collectionsBrowseState = {
   // Actions
   loadCreatorLibraries: (
     userService: UserRepository,
-    collectionService: CollectionManager,
     libraryService: LibraryRepository,
     currentUserId?: string
   ) =>
     getState().loadCreatorLibraries(
       userService,
-      collectionService,
       libraryService,
       currentUserId
     ),
   refresh: (
     userService: UserRepository,
-    collectionService: CollectionManager,
     libraryService: LibraryRepository,
     currentUserId?: string
   ) =>
     getState().refresh(
       userService,
-      collectionService,
       libraryService,
       currentUserId
     ),

@@ -13,7 +13,7 @@ import type { PropState } from "../../shared/domain/types/PropState";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { AnimationLoop } from "./AnimationLoop";
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -51,8 +51,7 @@ export class AnimationPlaybackController {
 
   constructor(
     private readonly animationEngine: SequenceAnimationOrchestrator,
-    private readonly loopService: AnimationLoop,
-    private readonly loopabilityChecker: SequenceLoopabilityChecker
+    private readonly loopService: AnimationLoop
   ) {}
 
   /**
@@ -77,7 +76,7 @@ export class AnimationPlaybackController {
 
     // Check if sequence is seamlessly loopable
     this._isSeamlesslyLoopable =
-      this.loopabilityChecker.isSeamlesslyLoopable(sequenceData);
+      isSeamlesslyLoopable(sequenceData);
 
     // Initialize animation engine with sequence data
     const success = this.animationEngine.initializeWithDomainData(sequenceData);
@@ -122,7 +121,7 @@ export class AnimationPlaybackController {
 
     // Check if sequence is seamlessly loopable
     this._isSeamlesslyLoopable =
-      this.loopabilityChecker.isSeamlesslyLoopable(sequenceData);
+      isSeamlesslyLoopable(sequenceData);
 
     // Re-initialize animation engine with updated data
     const success = this.animationEngine.initializeWithDomainData(sequenceData);

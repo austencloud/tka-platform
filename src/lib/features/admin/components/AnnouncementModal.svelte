@@ -4,10 +4,8 @@
   Shows important announcements that require user dismissal.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
-  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
+  import { dismissAnnouncement } from "$lib/features/admin/services/announcement-manager";
   import type { Announcement } from "../domain/models/announcement-models";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -20,13 +18,6 @@
   }
 
   let { announcement, onDismiss }: Props = $props();
-
-  // Services (resolved lazily to avoid module initialization errors)
-  let announcementService: AnnouncementManager | null = null;
-
-  onMount(() => {
-    announcementService = getAnnouncementManager();
-  });
 
   // Check if URL is internal (starts with /)
   function isInternalUrl(url: string): boolean {
@@ -60,10 +51,10 @@
   }
 
   async function handleDismiss() {
-    if (!authState.user || !announcementService) return;
+    if (!authState.user) return;
 
     try {
-      await announcementService.dismissAnnouncement(
+      await dismissAnnouncement(
         authState.user.uid,
         announcement.id
       );

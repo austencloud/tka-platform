@@ -30,7 +30,7 @@
   // Start preloading village avatar models immediately - they'll be cached
   // by the time the player reaches the Room of Collaboration
   preloadVillageAvatarModels();
-  import { TorchMaterialCache } from "../../services/implementations/TorchMaterialCache";
+  import { createTorchInstance, disposeTorchMaterialCache, type TorchMaterials } from "../../services/torch-material-cache";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
@@ -44,7 +44,7 @@
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
   import { ProximityGrid } from "../../services/implementations/ProximityGrid";
-  import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
+  import { generateCanvas as generatePlaqueCanvas } from "../../services/plaque-texture-generator";
   import {
     bucketMuseumTilesByRoom,
     buildRoomChunk,
@@ -65,9 +65,8 @@
   import type { RoomBuiltResponse } from "../../workers/geometry-worker-protocol";
   import { MUSEUM_EDGES } from "../../data/museum-room-graph";
 
-  // Shared texture generator - one instance for all plaques (caches internally)
-  const plaqueGenerator = new PlaqueTextureGenerator();
-  const torchMaterialCache = new TorchMaterialCache();
+  // Plaque texture generation uses module-level cache (generatePlaqueCanvas)
+  // Torch materials use module-level template compiled once on first createTorchInstance call
   const atmosphere = new MuseumAtmosphere();
 
   const threlteCtx = useThrelte();
@@ -1580,7 +1579,7 @@
     content={plaque.content}
     size={plaque.size}
     refId={plaque.refId}
-    generator={plaqueGenerator}
+    generator={generatePlaqueCanvas}
   />
 {/each}
 {#each visibleExhibitLights as pos, i (`${pos.x},${pos.z},${i}`)}
@@ -1648,7 +1647,7 @@
     wallOffsetZ={torch.wallOffsetZ}
     wingTheme={torch.wingTheme}
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
-    materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
+    materials={createTorchInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
     castShadow={false}
     playerPosition={playerPosition}
   />

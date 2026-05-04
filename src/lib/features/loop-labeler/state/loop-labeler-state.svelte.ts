@@ -107,10 +107,7 @@ export class LOOPLabelerState {
 
   get filteredSequences(): SequenceEntry[] {
     const circular = this.circularSequences;
-    const loader = loopLabelerServices.sequenceLoader;
-    if (!loader) return circular;
-
-    return loader.filterSequences(
+    return loopLabelerServices.sequenceLoader.filterSequences(
       circular,
       this.data.labels,
       this.data.filterMode
@@ -143,15 +140,7 @@ export class LOOPLabelerState {
   }
 
   get stats() {
-    const loader = loopLabelerServices.sequenceLoader;
-    if (!loader) {
-      return {
-        total: this.circularSequences.length,
-        needsVerification: 0,
-        verified: 0,
-      };
-    }
-    return loader.calculateStats(this.circularSequences, this.data.labels);
+    return loopLabelerServices.sequenceLoader.calculateStats(this.circularSequences, this.data.labels);
   }
 
   setSequences(sequences: SequenceEntry[]) {

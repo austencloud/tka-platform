@@ -18,11 +18,11 @@
   import { getScreenshotUploadOrchestrator } from "../../getScreenshotUploadOrchestrator";
   import { getScreenshotTagController } from "../../getScreenshotTagController";
   import { getScreenshotLoader } from "../../getScreenshotLoader";
+  import { toMediaItems } from "../../services/gallery-item-adapter";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { MediaSpotlight, type MediaItem as SpotlightMediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
   import { TagCreatorModal, TagPickerPanel } from "@austencloud/media-tagging-ui";
-  import { GalleryItemAdapter } from "../../services/implementations/GalleryItemAdapter";
   import GalleryGrid from "./GalleryGrid.svelte";
   import CaptureProgress from "./CaptureProgress.svelte";
   import UploadProgressCard from "./UploadProgress.svelte";
@@ -35,7 +35,6 @@
 
   let hapticService: HapticFeedback | null = $state(null);
   let tagController: ScreenshotTagController | null = $state(null);
-  const adapter = new GalleryItemAdapter();
 
   // ─── State domains ──────────────────────────────────────────────────────────
 
@@ -201,11 +200,11 @@
     return result;
   });
 
-  const mediaItems = $derived(adapter.toMediaItems(galleryItems));
-  const filteredMediaItems = $derived(adapter.toMediaItems(flatItems));
+  const mediaItems = $derived(toMediaItems(galleryItems));
+  const filteredMediaItems = $derived(toMediaItems(flatItems));
 
   const selectedMediaItems = $derived(
-    adapter.toMediaItems(flatItems.filter((item) => selection.selectedIds.has(item.id)))
+    toMediaItems(flatItems.filter((item) => selection.selectedIds.has(item.id)))
   );
 
   const spotlightItems: SpotlightMediaItem[] = $derived(

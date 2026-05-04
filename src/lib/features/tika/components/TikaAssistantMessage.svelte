@@ -12,8 +12,8 @@
   import InlineStepGrid from "./InlineStepGrid.svelte";
   import InlineQuiz from "./InlineQuiz.svelte";
   import SanitizedHtml from "$lib/shared/foundation/ui/SanitizedHtml.svelte";
-  import { tikaMarkdownParser } from "../services/implementations/TikaMarkdownParser";
-  import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
+  import { parseMarkdown } from "../services/tika-markdown-parser";
+  import { getTextFromParts, getToolOutputFromParts, getToolsFromParts, getInlineContentFromParts } from "../services/tika-message-extractor";
 
   let {
     message,
@@ -33,14 +33,14 @@
     toolHtml: string | null;
     links: Array<{ text: string; url: string }>
   } {
-    const textContent = tikaMessageExtractor.getTextFromParts(parts);
+    const textContent = getTextFromParts(parts);
     if (textContent) {
-      const parsed = tikaMarkdownParser.parse(textContent);
+      const parsed = parseMarkdown(textContent);
       return { textHtml: parsed.html, toolHtml: null, links: parsed.links };
     }
-    const toolOutput = tikaMessageExtractor.getToolOutputFromParts(parts);
+    const toolOutput = getToolOutputFromParts(parts);
     if (toolOutput) {
-      const parsed = tikaMarkdownParser.parse(toolOutput);
+      const parsed = parseMarkdown(toolOutput);
       return { textHtml: null, toolHtml: parsed.html, links: parsed.links };
     }
     return { textHtml: null, toolHtml: null, links: [] };
@@ -84,7 +84,7 @@
       {/if}
 
       <!-- Thinking indicator during tool execution -->
-      {@const pendingTools = tikaMessageExtractor.getToolsFromParts(message.parts).filter(t => t.isPending)}
+      {@const pendingTools = getToolsFromParts(message.parts).filter(t => t.isPending)}
       {#if pendingTools.length > 0 && isStreaming}
         <div class="thinking-indicator">
           <i class="fas fa-brain fa-pulse" aria-hidden="true"></i>
@@ -93,8 +93,8 @@
       {/if}
 
       <!-- Inline Pictographs/Galleries/Sequence Players from tool outputs -->
-      {#if tikaMessageExtractor.getInlineContentFromParts(message.parts).length > 0}
-        {@const inlineContent = tikaMessageExtractor.getInlineContentFromParts(message.parts)}
+      {#if getInlineContentFromParts(message.parts).length > 0}
+        {@const inlineContent = getInlineContentFromParts(message.parts)}
         <div class="inline-content-container">
           {#each inlineContent as content}
             {#if content.pictograph}
@@ -123,7 +123,7 @@
 
       <!-- Tool Details (if enabled) -->
       {#if showToolDetails}
-        {@const tools = tikaMessageExtractor.getToolsFromParts(message.parts)}
+        {@const tools = getToolsFromParts(message.parts)}
         {#if tools.length > 0}
           <div class="tool-details">
             <div class="tool-header">

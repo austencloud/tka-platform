@@ -61,7 +61,7 @@
   // Museum
   import MuseumGrounds from "$lib/features/museum/scenes/procedural/components/MuseumGrounds.svelte";
   import { createMuseumState } from "$lib/features/museum/scenes/procedural/state/museum-state.svelte";
-  import { InteractionDetector } from "$lib/features/museum/scenes/procedural/services/implementations/InteractionDetector";
+  import { findInteractableSlot } from "$lib/features/museum/scenes/procedural/services/interaction-detector";
   import { setActiveMuseumState } from "$lib/features/museum/scenes/procedural/state/museum-state-bridge.svelte";
 
   // Archive (The Kinetic Archive) - standalone via ArchiveDestination + IndoorScene
@@ -235,7 +235,6 @@
   // Museum state (created once, only used when museum realm is active)
   const isMuseumRealm = $derived(activeConfig.id === "museum-grounds");
   const museumState = createMuseumState();
-  const museumInteractionDetector = new InteractionDetector();
 
   // Publish museum state to bridge so MuseumDestination can access it for HTML overlays
   $effect(() => {
@@ -1082,7 +1081,7 @@
       forward.applyQuaternion(camera.current.quaternion);
 
       const allSlots = museumState.layout.pavilions.flatMap((p) => p.slots);
-      const target = museumInteractionDetector.findInteractableSlot(
+      const target = findInteractableSlot(
         playerPosition,
         { x: forward.x, y: forward.y, z: forward.z },
         allSlots

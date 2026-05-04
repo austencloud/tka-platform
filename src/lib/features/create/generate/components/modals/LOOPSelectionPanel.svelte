@@ -12,8 +12,8 @@ with exported sequence cards.
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { LOOP_COMPONENTS } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
-  import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
-  import { loopFavoritesManager } from "$lib/features/create/generate/shared/services/implementations/LOOPFavoritesManager";
+  import { generateExplanationText } from "$lib/features/create/generate/shared/services/loop-explanation-text-generator";
+  import { loopFavoritesManager } from "$lib/features/create/generate/shared/services/loop-favorites-manager";
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
   import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
   import LOOPComponentGrid from "./LOOPComponentGrid.svelte";
@@ -37,7 +37,6 @@ with exported sequence cards.
   let isMultiSelectMode = $state(false);
   let showPresets = $state(false);
   let favorites = $state<string[]>([]);
-  const explanationGenerator = new LOOPExplanationTextGenerator();
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -46,7 +45,7 @@ with exported sequence cards.
 
   // Generate explanation text based on selected components
   const explanationText = $derived(
-    explanationGenerator.generateExplanationText(selectedComponents)
+    generateExplanationText(selectedComponents)
   );
 
   // All component combinations are now implemented

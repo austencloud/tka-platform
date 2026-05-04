@@ -17,7 +17,8 @@ import type {
   LinkingProgress,
   VideoStats,
 } from "../types";
-import type { VideoCuratorPersister } from "../services/implementations/VideoCuratorPersister";
+import type * as videoCuratorPersisterModule from "../services/video-curator-persister";
+type VideoCuratorPersister = typeof videoCuratorPersisterModule;
 import type { SequenceMatcher } from "../services/implementations/SequenceMatcher";
 import type { VideoCache } from "$lib/shared/video/services/implementations/VideoCache";
 

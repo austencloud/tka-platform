@@ -3,9 +3,8 @@ import type { ILOOPDetector } from './services/contracts/ILOOPDetector';
 import { LOOPDetector } from './services/implementations/LOOPDetector';
 import { getStepComparisonOrchestrator } from './getStepComparisonOrchestrator';
 import { getTransformationAnalyzer } from './getTransformationAnalyzer';
-import { getCandidateFormatter } from './getCandidateFormatter';
-import { getPolyrhythmicDetector } from './getPolyrhythmicDetector';
-import { getLayeredPathDetector } from './getLayeredPathDetector';
+import * as polyrhythmicDetectorModule from './services/polyrhythmic-detector';
+import * as layeredPathDetectorModule from './services/layered-path-detector';
 
 let instance: ILOOPDetector | null = null;
 
@@ -14,8 +13,7 @@ export function getLOOPDetector(): ILOOPDetector {
 	return instance ??= new LOOPDetector(
 		getStepComparisonOrchestrator(),
 		getTransformationAnalyzer(),
-		getCandidateFormatter(),
-		getPolyrhythmicDetector(),
-		getLayeredPathDetector(),
+		polyrhythmicDetectorModule,
+		layeredPathDetectorModule,
 	);
 }

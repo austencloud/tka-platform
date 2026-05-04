@@ -21,7 +21,7 @@ import type { HandLandmarker } from "./HandLandmarker";
 import type { HandednessAnalyzer } from "./HandednessAnalyzer";
 import type { HandStateAnalyzer } from "./HandStateAnalyzer";
 import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
-import { QuadrantMapper } from "./QuadrantMapper";
+import { mapToQuadrant, isValidForMode } from "../quadrant-mapper";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // How many frames to persist a hand after it disappears (for stability)
@@ -36,7 +36,6 @@ export class MediaPipeDetector {
 
   // State
   private _isDetecting = false;
-  private _quadrantMapper = new QuadrantMapper();
   private _frameCallback: ((frame: DetectionFrame) => void) | null = null;
   private _animationFrameId: number | null = null;
   private _videoElement: HTMLVideoElement | null = null;
@@ -432,7 +431,7 @@ export class MediaPipeDetector {
     return {
       ...position,
       rawPosition: smoothed,
-      quadrant: this._quadrantMapper.mapToQuadrant(smoothed.x, smoothed.y),
+      quadrant: mapToQuadrant(smoothed.x, smoothed.y),
     };
   }
 
@@ -557,10 +556,10 @@ export class MediaPipeDetector {
     const x = this._isMirrored ? 1 - transformed.x : transformed.x;
     const y = transformed.y;
 
-    const quadrant = this._quadrantMapper.mapToQuadrant(x, y);
+    const quadrant = mapToQuadrant(x, y);
 
     // Check if this quadrant is valid for the current grid mode
-    if (!this._quadrantMapper.isValidForMode(quadrant, this._gridMode)) {
+    if (!isValidForMode(quadrant, this._gridMode)) {
       // Position detected but not valid for current mode - reject it
       return null;
     }

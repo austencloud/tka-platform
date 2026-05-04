@@ -1,6 +1,6 @@
 import type { Deck } from "../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { DeckLoader } from "../services/implementations/DeckLoader";
+import { loadDeckSequences, loadSequencesByIds } from "../services/deck-loader";
 import type { PrintRenderOptions } from "../services/contracts/types";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
 
@@ -40,7 +40,6 @@ function persist(key: string, value: string | null) {
 }
 
 export function createCardPreviewState(
-  deckLoader: DeckLoader,
   allDecks: Deck[]
 ) {
   // ── Navigation ──────────────────────────────────────────────────────────────
@@ -112,11 +111,11 @@ export function createCardPreviewState(
 
   // ── Private helpers ──────────────────────────────────────────────────────────
 
-  async function loadDeckSequences(deck: Deck) {
+  async function loadDeckSequencesForDeck(deck: Deck) {
     isLoading = true;
     sequences = [];
     try {
-      const loaded = await deckLoader.loadDeckSequences(deck.id);
+      const loaded = await loadDeckSequences(deck.id);
       sequences = loaded;
     } finally {
       isLoading = false;
@@ -130,7 +129,7 @@ export function createCardPreviewState(
       const seqIds = deck.families
         .filter(f => familyIds.includes(f.id))
         .flatMap(f => [...f.sequenceIds]);
-      const loaded = await deckLoader.loadSequencesByIds(deck.id, seqIds);
+      const loaded = await loadSequencesByIds(deck.id, seqIds);
       const existingIds = new Set(sequences.map(s => s.id));
       const newSeqs = loaded.filter(s => !existingIds.has(s.id));
       sequences = [...sequences, ...newSeqs];
@@ -181,7 +180,7 @@ export function createCardPreviewState(
 
       // Small decks load eagerly; large decks wait until the user picks a family.
       if ((deck.totalSequences ?? 0) < LARGE_DECK_THRESHOLD) {
-        await loadDeckSequences(deck);
+        await loadDeckSequencesForDeck(deck);
       }
     },
 

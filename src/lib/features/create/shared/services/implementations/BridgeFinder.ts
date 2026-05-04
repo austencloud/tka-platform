@@ -18,7 +18,10 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contra
 import type { PositionAnalyzer } from "../../../construct/option-picker/services/implementations/PositionAnalyzer";
 import type { LOOPValidator } from "./LOOPValidator";
 import type { SequenceAnalyzer } from "./SequenceAnalyzer";
-import type { OrientationAlignmentCalculator } from "./OrientationAlignmentCalculator";
+type OrientationAlignmentCalculator = {
+  calculateOrientationAlignment: (sequence: SequenceData, bridgePictograph: PictographData) => OrientationAlignment | null;
+  calculateResultingLength: (currentLength: number, rotationRelation: "exact" | "half" | "quarter" | null, repetitionsNeeded?: 1 | 2 | 4) => number;
+};
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   LOOPType,
@@ -297,7 +300,11 @@ import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/im
 import { positionAnalyzer } from "$lib/features/create/construct/option-picker/services/implementations/PositionAnalyzer";
 import { loopValidator } from "./LOOPValidator";
 import { sequenceAnalyzer } from "./SequenceAnalyzer";
-import { orientationAlignmentCalculator } from "./OrientationAlignmentCalculator";
+import * as orientationAlignmentCalculatorModule from "../orientation-alignment-calculator";
+const orientationAlignmentCalculator: OrientationAlignmentCalculator = {
+  calculateOrientationAlignment: orientationAlignmentCalculatorModule.calculateOrientationAlignment,
+  calculateResultingLength: orientationAlignmentCalculatorModule.calculateResultingLength,
+};
 
 export const bridgeFinder = new BridgeFinder(
   letterQueryHandler,

@@ -6,10 +6,20 @@
  * recently uploaded screenshots to avoid re-uploading on consecutive captures.
  */
 
-import type { UploadProgress } from "../contracts/types";
-import type { ScreenshotLoader } from "./ScreenshotLoader";
-import type { ScreenshotOrchestrator } from "../implementations/ScreenshotOrchestrator";
-import type { ScreenshotUploader } from "../implementations/ScreenshotUploader";
+import type { UploadProgress, ScreenshotMetadata, UploadScreenshotParams, DeviceInfo, RouteNode } from "../contracts/types";
+
+interface ScreenshotUploaderLike {
+  upload(params: UploadScreenshotParams): Promise<ScreenshotMetadata>;
+}
+
+interface ScreenshotOrchestratorLike {
+  getDeviceBySlug(slug: string): DeviceInfo | null;
+  getRoutes(): RouteNode[];
+}
+
+interface ScreenshotLoaderLike {
+  loadAll(): Promise<ScreenshotMetadata[]>;
+}
 
 /** How recently a screenshot must have been uploaded to count as a duplicate (ms) */
 const DEDUP_WINDOW_MS = 60_000;
@@ -17,9 +27,9 @@ const DEDUP_WINDOW_MS = 60_000;
 export class ScreenshotUploadOrchestrator
 {
   constructor(
-    private readonly uploader: ScreenshotUploader,
-    private readonly orchestrator: ScreenshotOrchestrator,
-    private readonly loader: ScreenshotLoader
+    private readonly uploader: ScreenshotUploaderLike,
+    private readonly orchestrator: ScreenshotOrchestratorLike,
+    private readonly loader: ScreenshotLoaderLike
   ) {}
 
   async uploadCaptures(

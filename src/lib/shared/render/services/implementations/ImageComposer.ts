@@ -19,7 +19,7 @@ import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 import { cellCacheKeyDeriver } from "../../../sequence-viewer/services/implementations/CellCacheKeyDeriver";
 import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/contracts/types";
-import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { DimensionCalculator } from "./DimensionCalculator";
 import type { CompositionProgressCallback } from "../contracts/types";
@@ -43,7 +43,6 @@ const DECK_HEADER_BG = "rgba(245, 245, 245, 0.98)";
 const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.1)";
 
 export class ImageComposer {
-  private readonly difficultyCalculator = new SequenceDifficultyCalculator();
   private layer1Hits = 0;
   private layer1Misses = 0;
   private layer2Hits = 0;
@@ -1043,7 +1042,7 @@ export class ImageComposer {
 
   private getDifficultyLevel(sequence: SequenceData): number {
     if (sequence.steps && sequence.steps.length > 0) {
-      return this.difficultyCalculator.calculateDifficultyLevel([
+      return calculateSequenceDifficultyLevel([
         ...sequence.steps,
       ]);
     }

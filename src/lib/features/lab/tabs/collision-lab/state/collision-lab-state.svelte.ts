@@ -15,7 +15,6 @@
  * inside the factory. This matches the state-management rule.
  */
 
-import type { DiamondPoseEnumerator } from "../services/implementations/DiamondPoseEnumerator";
 import type { LocalPoseLabelRepository } from "../services/implementations/LocalPoseLabelRepository";
 import type {
   OptimizerBounds, OptimizerInput, OptimizerResult } from "../services/contracts/types";
@@ -255,8 +254,12 @@ function reachabilityFromSimResult(
   };
 }
 
+interface PoseEnumeratorLike {
+  enumerateDiamondInOut(): PoseDefinition[];
+}
+
 export async function createCollisionLabState(
-  poseEnumerator: DiamondPoseEnumerator,
+  poseEnumerator: PoseEnumeratorLike,
   labelRepo: LocalPoseLabelRepository,
   optimizer: StanceOptimizer | null = null,
   candidateGenerator: CandidateGenerator | null = null

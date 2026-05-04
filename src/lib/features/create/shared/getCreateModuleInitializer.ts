@@ -14,9 +14,9 @@ import { getCreateModuleHandlers } from './getCreateModuleHandlers';
 import { getCreateModuleEffectCoordinator } from './getCreateModuleEffectCoordinator';
 import { getSharer } from '$lib/shared/share/getSharer';
 import { getPanelPersister } from './getPanelPersister';
-import { getSequenceStatsCalculator } from './getSequenceStatsCalculator';
+import * as sequenceStatsCalculator from './services/sequence-stats-calculator';
 import { getSequenceTransformer } from './getSequenceTransformer';
-import { getSequenceValidator } from './getSequenceValidator';
+import * as sequenceValidator from './services/sequence-validator';
 
 let instance: CreateModuleInitializer | null = null;
 
@@ -36,8 +36,8 @@ export function getCreateModuleInitializer(): CreateModuleInitializer {
 		getCreateModuleEffectCoordinator(),
 		getSharer(),
 		getPanelPersister(),
-		getSequenceStatsCalculator(),
+		sequenceStatsCalculator,
 		getSequenceTransformer(),
-		getSequenceValidator()
+		sequenceValidator
 	);
 }

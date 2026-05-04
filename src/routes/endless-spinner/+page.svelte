@@ -42,21 +42,15 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   // Broadcast imports
   import type { BroadcastStateClient } from "$lib/features/landing/domain/models/broadcast-models";
   import { BroadcastRepository } from "$lib/features/landing/services/implementations/BroadcastRepository";
-  import { BroadcastSequenceConverter } from "$lib/features/landing/services/implementations/BroadcastSequenceConverter";
-  import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
+  import * as broadcastSequenceConverter from "$lib/features/landing/services/broadcast-sequence-converter";
+  import * as propTypeApplier from "$lib/features/landing/services/prop-type-applier";
 
   // Local extracted components
   import SpinnerControls from "./components/SpinnerControls.svelte";
   import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
   import SequenceHistoryPanel from "./components/SequenceHistoryPanel.svelte";
   import type { SequenceHistoryEntry } from "./components/SequenceHistoryPanel.svelte";
-  import { SequenceDataSerializer } from "$lib/features/landing/services/implementations/SequenceDataSerializer";
-
-  const sequenceDataSerializer = new SequenceDataSerializer();
-
-  // Data transformation services (instantiated once)
-  const broadcastSequenceConverter = new BroadcastSequenceConverter();
-  const propTypeApplier = new PropTypeApplier();
+  import * as sequenceDataSerializer from "$lib/features/landing/services/sequence-data-serializer";
 
   // Animation state
   const animationState = createAnimationPanelState();

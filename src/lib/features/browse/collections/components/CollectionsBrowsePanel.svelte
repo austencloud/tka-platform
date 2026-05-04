@@ -8,13 +8,11 @@ Uses singleton state for caching - data persists across tab switches.
 -->
 <script lang="ts">
 
-import { getCollectionManager } from "$lib/features/library/getCollectionManager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { getUserRepository } from "$lib/shared/community/getUserRepository";
   import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
-  import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
@@ -31,7 +29,6 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
 
   // Services
   let userService: UserRepository;
-  let collectionService: CollectionManager;
   let libraryService: LibraryRepository;
   let hapticService: HapticFeedback;
 
@@ -72,14 +69,12 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     try {
       // Resolve services (ITI containers are synchronous - no module loading needed)
       userService = getUserRepository();
-      collectionService = getCollectionManager();
       libraryService = getLibraryRepository();
       hapticService = getHapticFeedback();
 
       // Load data (uses cache if already loaded)
       await collectionsBrowseState.loadCreatorLibraries(
         userService,
-        collectionService,
         libraryService,
         currentUserId
       );

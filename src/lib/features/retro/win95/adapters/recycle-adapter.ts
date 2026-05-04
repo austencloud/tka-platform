@@ -7,7 +7,7 @@
  * Domain: Retro Recycle Bin
  */
 
-import { FileNameConverter } from "../services/implementations/FileNameConverter";
+import { convertFileName } from "../services/file-name-converter";
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
@@ -23,8 +23,6 @@ export interface RecycleBinItem {
 	/** Derived from beat count (128 bytes per beat) */
 	size: number;
 }
-
-const converter = new FileNameConverter();
 
 /**
  * Firestore timestamps come back with a .toDate() method, but after
@@ -60,7 +58,7 @@ export async function getDeletedItems(): Promise<RecycleBinItem[]> {
 	return deleted.map((seq) => {
 		const fullName =
 			seq.displayName || seq.name || seq.word || "Untitled";
-		const dosName = converter.convert(fullName, ".SEQ", dosNames);
+		const dosName = convertFileName(fullName, ".SEQ", dosNames);
 		dosNames.push(dosName);
 
 		return {

@@ -10,17 +10,14 @@ import { getUserRepository } from "$lib/shared/community/getUserRepository";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
 import type { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
 import type { PostHogActivityLogger } from "$lib/shared/analytics/services/implementations/PostHogActivityLogger";
-import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
 import type {
   FollowingFeedItem, FollowingFeedOptions } from "../contracts/types";
 import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
-import { getCollectionManager } from "$lib/features/library/getCollectionManager";
 export class FollowingFeedProvider {
   private userService: UserRepository | null = null;
   private activityLogService: PostHogActivityLogger | null = null;
-  private collectionService: CollectionManager | null = null;
 
   private getServices(): boolean {
     if (!this.userService) {
@@ -29,13 +26,9 @@ export class FollowingFeedProvider {
     if (!this.activityLogService) {
       this.activityLogService = getActivityLogger();
     }
-    if (!this.collectionService) {
-      this.collectionService = getCollectionManager();
-    }
     return !!(
       this.userService &&
-      this.activityLogService &&
-      this.collectionService
+      this.activityLogService
     );
   }
 

@@ -9,9 +9,7 @@
   import type { LabeledSequence } from "../../domain/models/label-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
-  import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
-  import type { LabelFormatter } from "../../services/implementations/LabelFormatter";
-  const labelFormatter = getLabelFormatter() as LabelFormatter;
+  import { formatDesignation } from "../../services/label-formatter";
 
   interface Props {
     sequences: SequenceEntry[];
@@ -86,7 +84,7 @@
 
     if (label.designations && label.designations.length > 0) {
       const first = label.designations[0];
-      return first ? labelFormatter.formatDesignation(first) : "Labeled";
+      return first ? formatDesignation(first) : "Labeled";
     }
 
     return "";

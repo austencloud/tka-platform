@@ -5,7 +5,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { MotionColor, MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { handpathDirectionCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
-import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
 
 // Legacy sequences saved before SoloPropStepData carried prefloatMotionType
 // will arrive here with derived float motions whose prefloat fields are

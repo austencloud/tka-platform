@@ -1,9 +1,18 @@
-import { browser } from '$app/environment';
-import { SequenceDomainManager } from './services/implementations/SequenceDomainManager';
+import {
+	createSequence,
+	updateStep,
+} from './services/sequence-domain-manager';
+import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 
-let instance: SequenceDomainManager | null = null;
+/** Structural type matching what SequenceRepository expects. */
+type SequenceDomainManager = {
+	createSequence: (request: unknown) => SequenceData;
+	updateStep: (sequence: SequenceData, stepIndex: number, stepData: unknown) => SequenceData;
+};
 
 export function getSequenceDomainManager(): SequenceDomainManager {
-	if (!browser) throw new Error('getSequenceDomainManager() is browser-only');
-	return instance ??= new SequenceDomainManager();
+	return {
+		createSequence: createSequence as SequenceDomainManager['createSequence'],
+		updateStep: updateStep as SequenceDomainManager['updateStep'],
+	};
 }

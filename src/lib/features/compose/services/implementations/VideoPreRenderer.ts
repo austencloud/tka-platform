@@ -25,7 +25,7 @@ import type {
   VideoRenderOptions,
 } from "../contracts/types";
 import { Canvas2DAnimationRenderer } from "./Canvas2DAnimationRenderer";
-import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
+import { generateBluePropSvg, generateRedPropSvg } from "$lib/features/compose/services/svg-generator";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
 
 import {
@@ -182,10 +182,9 @@ export class VideoPreRenderer {
       ]);
 
       // Get prop dimensions from SVG generator
-      const svgGenerator = getSVGGenerator();
       const [bluePropData, redPropData] = await Promise.all([
-        svgGenerator.generateBluePropSvg("staff"),
-        svgGenerator.generateRedPropSvg("staff"),
+        generateBluePropSvg("staff"),
+        generateRedPropSvg("staff"),
       ]);
 
       const bluePropDimensions = {

@@ -53,7 +53,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
 import type { KeyboardShortcutManager } from "$lib/shared/keyboard/services/implementations/KeyboardShortcutManager";
-import type { SVGGenerator } from "$lib/features/compose/services/implementations/SVGGenerator";
+import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
@@ -379,7 +379,7 @@ export interface InitializerDependencies {
  * Core animator services bundle
  */
 export interface AnimatorServices {
-  svgGenerator: SVGGenerator;
+  svgGenerator: ISVGGenerator;
   settingsService: SettingsState;
   orchestrator: SequenceAnimationOrchestrator;
   TrailCapturer: TrailCapturer;

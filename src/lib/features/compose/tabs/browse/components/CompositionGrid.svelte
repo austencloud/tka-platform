@@ -6,13 +6,12 @@
 -->
 <script lang="ts">
 
-import { getCompositionLayoutCalculator } from "$lib/features/compose/tabs/browse/getCompositionLayoutCalculator";
+import { calculateCardSizes } from "$lib/features/compose/tabs/browse/services/composition-layout-calculator";
   import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import type { CardSize } from "../services/contracts/types";
 	import CompositionCard from "./CompositionCard.svelte";
 	import CompositionHeroCard from "./CompositionHeroCard.svelte";
 	import { onMount } from "svelte";
-import type { CompositionLayoutCalculator } from "../services/implementations/CompositionLayoutCalculator";
 
 	const {
 		compositions,
@@ -33,16 +32,13 @@ import type { CompositionLayoutCalculator } from "../services/implementations/Co
 	let gridEl: HTMLDivElement | undefined = $state();
 	let columnCount = $state(3);
 
-	const layoutCalculator = getCompositionLayoutCalculator();
-
 	// Don't use more columns than compositions (avoids tiny cards when only 1-2 exist)
 	const effectiveColumns = $derived(
 		Math.min(columnCount, Math.max(1, compositions.length))
 	);
 
 	const cardSizes = $derived(
-		layoutCalculator?.calculateCardSizes(compositions, effectiveColumns) ??
-			new Map<string, CardSize>()
+		calculateCardSizes(compositions, effectiveColumns)
 	);
 
 	// Responsive column count

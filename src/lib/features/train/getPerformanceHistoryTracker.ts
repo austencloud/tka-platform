@@ -1,10 +1,7 @@
 import { browser } from '$app/environment';
+import * as performanceHistoryTracker from './services/performance-history-tracker';
 
-import { PerformanceHistoryTracker } from './services/implementations/PerformanceHistoryTracker';
-
-let instance: PerformanceHistoryTracker | null = null;
-
-export function getPerformanceHistoryTracker(): PerformanceHistoryTracker {
+export function getPerformanceHistoryTracker() {
 	if (!browser) throw new Error('getPerformanceHistoryTracker() is browser-only');
-	return instance ??= new PerformanceHistoryTracker();
+	return performanceHistoryTracker;
 }

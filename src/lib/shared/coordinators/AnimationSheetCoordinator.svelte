@@ -30,10 +30,9 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
   import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compose/services/contracts/types";
   import type { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
-  import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
+  import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
@@ -71,7 +70,6 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
   let videoExportOrchestrator: VideoExportOrchestrator | null = null;
   let VideoExporter: VideoExporter | null = null;
   let sheetRouterService: SheetRouter | null = null;
-  let loopabilityChecker: SequenceLoopabilityChecker | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 
   // State to track service readiness
@@ -189,8 +187,8 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
   // Check if sequence is seamlessly loopable (for loop count selector)
   let isCircular = $derived.by(() => {
     const seq = animationPanelState.sequenceData;
-    if (!seq || !loopabilityChecker) return false;
-    return loopabilityChecker.isSeamlesslyLoopable(seq);
+    if (!seq) return false;
+    return isSeamlesslyLoopable(seq);
   });
 
   // Export loop count from state
@@ -230,7 +228,6 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
       playbackController = getAnimationPlaybackController();
       videoExportOrchestrator = getVideoExportOrchestrator();
       VideoExporter = getVideoExporter();
-      loopabilityChecker = getSequenceLoopabilityChecker();
 
       // Expose playback controller for keyboard shortcuts
       setAnimationPlaybackRef(playbackController);

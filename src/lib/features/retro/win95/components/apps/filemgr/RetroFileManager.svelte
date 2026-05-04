@@ -23,7 +23,7 @@
   import RetroDataGrid from "../../primitives/RetroDataGrid.svelte";
   import RetroListBox from "../../primitives/RetroListBox.svelte";
   import type { RetroTreeNode } from "../../../domain/types/retro-types";
-  import { FileNameConverter } from "../../../services/implementations/FileNameConverter";
+  import { convertFileName } from "../../../services/file-name-converter";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
   import {
     listSequenceFiles,
@@ -62,7 +62,6 @@
   /** Pending delete confirmation */
   let pendingDeleteFile = $state<RetroFile | null>(null);
 
-  const converter = new FileNameConverter();
 
   /* ------------------------------------------------------------------ */
   /* Load real library data                                              */
@@ -179,13 +178,13 @@
       if (isSystemDir && hasExtension) {
         filename = name.toUpperCase();
       } else if (isSystemDir) {
-        filename = converter.convert(name, ".SYS", siblings);
+        filename = convertFileName(name, ".SYS", siblings);
       } else if (dirId === "a-root") {
-        filename = converter.convert(name, ".BAK", siblings);
+        filename = convertFileName(name, ".BAK", siblings);
       } else if (dirId === "d-root") {
-        filename = converter.convert(name, ".EXE", siblings);
+        filename = convertFileName(name, ".EXE", siblings);
       } else {
-        filename = converter.convert(name, ".SEQ", siblings);
+        filename = convertFileName(name, ".SEQ", siblings);
       }
 
       siblings.push(filename);

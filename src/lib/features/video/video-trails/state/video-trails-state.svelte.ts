@@ -1,5 +1,5 @@
 import type { VideoTrailsRepository } from "../services/implementations/VideoTrailsRepository";
-import type { DetectionCorrector } from "../services/implementations/DetectionCorrector";
+import type * as DetectionCorrectorModule from "../services/detection-corrector";
 import type { VideoTipAdapter } from "../services/implementations/VideoTipAdapter";
 import type {
   VideoTrailsView,
@@ -15,7 +15,7 @@ import { DEFAULT_DETECTION_CONFIG, DEFAULT_EFFECT_CONFIG } from "../domain/types
 
 export function createVideoTrailsState(
   repository: VideoTrailsRepository,
-  corrector: DetectionCorrector,
+  corrector: typeof DetectionCorrectorModule,
   tipAdapter: VideoTipAdapter,
 ) {
   const ACTIVE_VIEW_KEY = "video-trails-active-view";

@@ -1,10 +1,6 @@
-import { browser } from '$app/environment';
-
-import { CreateModuleEffectCoordinator } from './services/implementations/CreateModuleEffectCoordinator';
-
-let instance: CreateModuleEffectCoordinator | null = null;
+import { createModuleEffectCoordinator } from './services/create-module-effect-coordinator';
+import type { CreateModuleEffectCoordinator } from './services/contracts/types';
 
 export function getCreateModuleEffectCoordinator(): CreateModuleEffectCoordinator {
-	if (!browser) throw new Error('getCreateModuleEffectCoordinator() is browser-only');
-	return instance ??= new CreateModuleEffectCoordinator();
+	return createModuleEffectCoordinator;
 }

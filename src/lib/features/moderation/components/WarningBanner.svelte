@@ -3,7 +3,7 @@
   import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore';
   import { getFirestoreInstance } from '$lib/shared/auth/firebase';
   import { authState, getEffectiveUserId } from '$lib/shared/auth/state/authState.svelte';
-  import { warningAcknowledger } from '../services/implementations/WarningAcknowledger';
+  import { acknowledgeWarning } from '../services/warning-acknowledger';
   import { t } from '$lib/shared/i18n/i18n.svelte';
 
   let isAcknowledging = $state(false);
@@ -15,7 +15,7 @@
 
     isAcknowledging = true;
     try {
-      await warningAcknowledger.acknowledgeWarning();
+      await acknowledgeWarning();
       // The subscription will update hasActiveWarning automatically
     } catch (error) {
       console.error('Failed to acknowledge warning:', error);

@@ -25,7 +25,7 @@ import { createGeneratorTabState } from "$lib/features/create/shared/state/gener
 import { createAssembleTabState } from "$lib/features/create/shared/state/assemble-tab-state.svelte";
 import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
-import type { CreateModuleEffectCoordinator } from "./CreateModuleEffectCoordinator";
+import type { CreateModuleEffectCoordinator } from "../contracts/types";
 import type { CreateModuleHandlers } from "./CreateModuleHandlers";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
 import type { DeepLinkSequenceHandler } from "./DeepLinkSequenceHandler";
@@ -33,9 +33,9 @@ import type { NavigationSyncer } from "./NavigationSyncer";
 import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
-import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
+import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
 import type { CreateModuleInitializationResult, SequenceLoadResult } from "../contracts/types";
 import { getCreateModuleEventHandler } from "./CreateModuleEventHandler";
 import type { DeepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
@@ -290,12 +290,12 @@ import { stepOperator } from "./StepOperator";
 import { deepLinkSequenceHandler } from "./DeepLinkSequenceHandler";
 import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import { createModuleHandlers } from "./CreateModuleHandlers";
-import { createModuleEffectCoordinator } from "./CreateModuleEffectCoordinator";
+import { createModuleEffectCoordinator } from "../create-module-effect-coordinator";
 import { sharer } from "$lib/shared/share/services/implementations/Sharer";
 import { panelPersister } from "./PanelPersister.svelte";
-import { sequenceStatsCalculator } from "./SequenceStatsCalculator";
+import * as sequenceStatsCalculator from "../sequence-stats-calculator";
 import { sequenceTransformer } from "./sequence-transforms/SequenceTransformer";
-import { sequenceValidator } from "./SequenceValidator";
+import * as sequenceValidator from "../sequence-validator";
 import type { Sharer } from "../../../../../shared/share/services/implementations/Sharer";
 
 export const createModuleInitializer = new CreateModuleInitializer(

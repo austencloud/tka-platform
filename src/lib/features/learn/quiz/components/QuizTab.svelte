@@ -18,7 +18,7 @@ Provides quiz functionality for learning TKA notation:
   import type { QuizSessionManager } from "../services/implementations/QuizSessionManager";
   import type { DetectedGap } from "../../services/contracts/types";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
-  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
+  import * as QuestionGenerator from "../services/question-generator";
   import QuizResultsView from "./QuizResultsView.svelte";
   import QuizSelectorView from "./QuizSelectorView.svelte";
   import QuizWorkspaceView from "./QuizWorkspaceView.svelte";
@@ -28,8 +28,8 @@ Provides quiz functionality for learning TKA notation:
   import { getCodex } from "$lib/features/learn/codex/getCodex";
   import { getQuizRepoManager } from "$lib/features/learn/quiz/getQuizRepoManager";
   import { getQuizSessionManager } from "$lib/features/learn/quiz/getQuizSessionManager";
-  import { getQuizHistoryRecorder } from "$lib/features/learn/getQuizHistoryRecorder";
-  import { getLetterToConceptMapper } from "$lib/features/learn/getLetterToConceptMapper";
+  import * as quizHistoryRecorderModule from "$lib/features/learn/services/quiz-history-recorder";
+  import * as letterToConceptMapperModule from "$lib/features/learn/services/letter-to-concept-mapper";
   import { getGapDetector } from "$lib/features/learn/getGapDetector";
 
   // Import learn components
@@ -42,8 +42,8 @@ Provides quiz functionality for learning TKA notation:
   const quizRepo = getQuizRepoManager();
   const quizSessionService = getQuizSessionManager();
   const hapticService = getHapticFeedback();
-  const quizHistoryRecorder = getQuizHistoryRecorder();
-  const letterToConceptMapper = getLetterToConceptMapper();
+  const quizHistoryRecorder = quizHistoryRecorderModule;
+  const letterToConceptMapper = letterToConceptMapperModule;
   const gapDetector = getGapDetector();
   const delightOrchestrator = getDelightOrchestrator();
 

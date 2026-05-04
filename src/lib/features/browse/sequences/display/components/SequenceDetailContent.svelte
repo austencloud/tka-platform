@@ -10,7 +10,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 -->
 <script lang="ts">
 
-import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/features/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -26,7 +26,6 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
   import type { PresentationResolver } from "$lib/shared/sequence-viewer/services/implementations/PresentationResolver";
 import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/types";
-  import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
   import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
   import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
   import { getVideoCountManager } from "../getVideoCountManager";
@@ -70,7 +69,6 @@ import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contra
   let isSaved = $state(true); // Default: assume saved (hide Save button while checking)
   let isFavorite = $state(false);
   let libraryRepo = $state<LibraryRepository | null>(null);
-  let collectionManager = $state<CollectionManager | null>(null);
 
   // Content hash cache (avoids re-querying Firestore for same hash)
   const savedHashCache = new Map<string, boolean>();
@@ -171,7 +169,6 @@ import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contra
     imageSharer = getSequenceImageSharer();
     claudeCopier = getClaudeCodeCopier();
     libraryRepo = getLibraryRepository();
-    collectionManager = getCollectionManager();
   });
 
   // Load full sequence data when sequence changes
@@ -266,14 +263,13 @@ import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contra
   // Check if sequence is favorited
   $effect(() => {
     const currentSequence = sequence;
-    const cm = collectionManager;
 
     isFavorite = false;
 
-    if (!cm || !currentSequence) return;
+    if (!currentSequence) return;
 
     untrack(() => {
-      cm.isFavorite(currentSequence.id)
+      checkIsFavorite(currentSequence.id)
         .then((fav) => {
           if (sequence.id === currentSequence.id) {
             isFavorite = fav;
@@ -303,7 +299,7 @@ import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contra
     // Optimistic update
     isFavorite = !isFavorite;
     try {
-      await collectionManager?.toggleFavorite(sequence.id);
+      await doToggleFavorite(sequence.id);
     } catch {
       // Revert on error
       isFavorite = !isFavorite;

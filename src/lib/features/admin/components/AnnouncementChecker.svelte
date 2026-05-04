@@ -6,13 +6,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
-  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
+  import { getUndismissedModalAnnouncements } from "$lib/features/admin/services/announcement-manager";
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementModal from "./AnnouncementModal.svelte";
-
-  // Services
-  let announcementService: AnnouncementManager | null = null;
 
   // State
   let pendingAnnouncements = $state<Announcement[]>([]);
@@ -27,8 +23,6 @@
 
   onMount(async () => {
     try {
-      announcementService = getAnnouncementManager();
-
       if (authState.isAuthenticated) {
         checkForAnnouncements();
       }
@@ -38,11 +32,11 @@
   });
 
   async function checkForAnnouncements() {
-    if (!announcementService || !authState.user) return;
+    if (!authState.user) return;
 
     try {
       const undismissed =
-        await announcementService.getUndismissedModalAnnouncements(
+        await getUndismissedModalAnnouncements(
           authState.user.uid
         );
 

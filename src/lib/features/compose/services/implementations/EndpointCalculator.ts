@@ -13,8 +13,14 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { AngleCalculator } from "./AngleCalculator";
-import type { MotionCalculator } from "../implementations/MotionCalculator";
+import type { AngleCalculatorLike } from "../angle-calculator";
+import {
+  calculateProTargetAngle,
+  calculateAntispinTargetAngle,
+  calculateStaticStaffAngle,
+  calculateDashTargetAngle,
+  calculateFloatStaffAngle,
+} from "../motion-calculator";
 import { PI } from "../../shared/domain/math-constants.js";
 
 // ✅ ELIMINATED: StepEndpoints and StepDefinition - pointless reshuffling!
@@ -22,8 +28,7 @@ import { PI } from "../../shared/domain/math-constants.js";
 
 export class EndpointCalculator {
   constructor(
-    private angleCalculator: AngleCalculator,
-    private motionCalculator: MotionCalculator
+    private angleCalculator: AngleCalculatorLike
   ) {}
 
   /**
@@ -73,7 +78,7 @@ export class EndpointCalculator {
 
         // Calculate normalized target angle
         calculatedTargetStaffAngle =
-          this.motionCalculator.calculateProTargetAngle(
+          calculateProTargetAngle(
             startCenterAngle,
             targetCenterAngle,
             startStaffAngle,
@@ -98,7 +103,7 @@ export class EndpointCalculator {
 
         // Calculate normalized target angle
         calculatedTargetStaffAngle =
-          this.motionCalculator.calculateAntispinTargetAngle(
+          calculateAntispinTargetAngle(
             startCenterAngle,
             targetCenterAngle,
             startStaffAngle,
@@ -112,7 +117,7 @@ export class EndpointCalculator {
         const effectiveRotDir = rotationDirection;
 
         // Calculate base orientation angle (without turns)
-        const baseTargetAngle = this.motionCalculator.calculateStaticStaffAngle(
+        const baseTargetAngle = calculateStaticStaffAngle(
           startStaffAngle,
           endOrientation,
           targetCenterAngle
@@ -147,7 +152,7 @@ export class EndpointCalculator {
         const effectiveRotDir = rotationDirection;
 
         calculatedTargetStaffAngle =
-          this.motionCalculator.calculateDashTargetAngle(
+          calculateDashTargetAngle(
             startStaffAngle,
             endOrientation,
             targetCenterAngle,
@@ -164,7 +169,7 @@ export class EndpointCalculator {
           calculatedStaffRotationDelta = dir * numericTurns * PI; // 1 turn = 180° (π)
         } else {
           // No turns: calculate based on orientation change only
-          const baseAngle = this.motionCalculator.calculateDashTargetAngle(
+          const baseAngle = calculateDashTargetAngle(
             startStaffAngle,
             endOrientation,
             targetCenterAngle,
@@ -180,7 +185,7 @@ export class EndpointCalculator {
       }
       case MotionType.FLOAT: {
         calculatedTargetStaffAngle =
-          this.motionCalculator.calculateFloatStaffAngle(startStaffAngle);
+          calculateFloatStaffAngle(startStaffAngle);
         // For FLOAT, no rotation
         calculatedStaffRotationDelta = 0;
         break;

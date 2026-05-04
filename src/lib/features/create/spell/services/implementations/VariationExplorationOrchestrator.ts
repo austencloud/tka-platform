@@ -6,8 +6,9 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { LetterSource } from "../../domain/models/spell-models";
-import type { SpellServiceLoader } from "../implementations/SpellServiceLoader";
 import type { WordParseResult, WordParseOptions } from "../contracts/types";
+import type { LetterTransitionGraph } from "./LetterTransitionGraph";
+import type { WordSequenceGenerator } from "./WordSequenceGenerator";
 
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
@@ -19,8 +20,13 @@ const DASH_LETTERS: Set<string> = new Set([
   "Φ-", "Ψ-", "Λ-",
 ]);
 
+interface ServiceLoader {
+  getTransitionGraph(): Promise<LetterTransitionGraph>;
+  getWordGenerator(): Promise<WordSequenceGenerator>;
+}
+
 export class VariationExplorationOrchestrator {
-  constructor(private serviceLoader: SpellServiceLoader) {}
+  constructor(private serviceLoader: ServiceLoader) {}
 
   async parseWord(word: string, options?: WordParseOptions): Promise<WordParseResult> {
     try {
@@ -141,7 +147,7 @@ export class VariationExplorationOrchestrator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { spellServiceLoader } from "./SpellServiceLoader";
+import * as spellServiceLoader from "../spell-service-loader";
 
 export const variationExplorationOrchestrator = new VariationExplorationOrchestrator(
   spellServiceLoader

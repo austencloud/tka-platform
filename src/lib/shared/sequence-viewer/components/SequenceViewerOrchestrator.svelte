@@ -1,7 +1,7 @@
 <script lang="ts" module>
 import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
-import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/features/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 import { getPropStateInterpolator } from "$lib/shared/3d/getPropStateInterpolator";
 import { getSequenceConverter } from "$lib/shared/3d/getSequenceConverter";
@@ -189,7 +189,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/types";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
-  import type { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
@@ -454,8 +453,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
     const seq = sequence;
     if (!seq) { isFavorite = false; return; }
 
-    const cm = getCollectionManager() as CollectionManager;
-    cm.isFavorite(seq.id)
+    checkIsFavorite(seq.id)
       .then((fav) => { if (sequence?.id === seq.id) isFavorite = fav; })
       .catch(() => {});
   });
@@ -463,8 +461,7 @@ import type { LibraryRepository } from "$lib/features/library/services/implement
   function handleFavoriteToggle() {
     if (!sequence) return;
     isFavorite = !isFavorite;
-    const cm = getCollectionManager() as CollectionManager;
-    cm.toggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
+    doToggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
   }
 
   async function handlePublishAction() {

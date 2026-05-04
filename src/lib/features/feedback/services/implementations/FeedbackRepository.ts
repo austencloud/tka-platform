@@ -23,10 +23,7 @@ import type {
 } from "../../domain/models/feedback-models";
 
 // Import focused services
-import {
-  feedbackSubmissionService,
-  type FeedbackSubmissionService,
-} from "./FeedbackSubmitter";
+import * as feedbackSubmissionModule from "../feedback-submission-service";
 import {
   feedbackQueryService,
   type FeedbackQueryService,
@@ -46,7 +43,6 @@ import {
 
 export class FeedbackService {
   constructor(
-    private readonly submissionService: FeedbackSubmissionService = feedbackSubmissionService,
     private readonly queryService: FeedbackQueryService = feedbackQueryService,
     private readonly statusService: FeedbackStatusService = feedbackStatusService,
     private readonly testerWorkflowService: FeedbackTesterWorkflowService = feedbackTesterWorkflowService,
@@ -65,7 +61,7 @@ export class FeedbackService {
     onProgress?: FeedbackProgressCallback,
     preUploadedImageUrls?: string[]
   ): Promise<string> {
-    return this.submissionService.submitFeedback(
+    return feedbackSubmissionModule.submitFeedback(
       formData,
       capturedModule,
       capturedTab,

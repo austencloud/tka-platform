@@ -23,7 +23,7 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { UniversalMetadataExtractor } from "$lib/shared/services/UniversalMetadataExtractor";
 import type { SequenceMetadata } from "../contracts/types";
-import type { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
+import * as difficultyCalculator from "../sequence-difficulty-calculator";
 // Constants for metadata extraction
 // Using function to avoid module-level enum reference (fixes test initialization)
 const getDefaultMetadata = (): SequenceMetadata => ({
@@ -47,9 +47,6 @@ const DATE_FIELD_NAMES = [
 ] as const;
 
 export class BrowseMetadataExtractor {
-  constructor(
-    private readonly difficultyCalculator: SequenceDifficultyCalculator
-  ) {}
 
   async extractMetadata(
     sequenceName: string,
@@ -317,9 +314,8 @@ export class BrowseMetadataExtractor {
    * Replaces the old parseDifficultyLevel that just read a stored value
    */
   private calculateDifficultyLevel(steps: StepData[]): string {
-    const numericLevel =
-      this.difficultyCalculator.calculateDifficultyLevel(steps);
-    return this.difficultyCalculator.levelToString(numericLevel);
+    const numericLevel = difficultyCalculator.calculateDifficultyLevel(steps);
+    return difficultyCalculator.levelToString(numericLevel);
   }
 
   /**

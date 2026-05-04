@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { TurnManager } from './services/implementations/TurnManager';
+import { turnManager } from './services/turn-manager';
 
-let instance: TurnManager | null = null;
-
-export function getTurnManager(): TurnManager {
+export function getTurnManager(): typeof turnManager {
 	if (!browser) throw new Error('getTurnManager() is browser-only');
-	return instance ??= new TurnManager();
+	return turnManager;
 }

@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { SequenceMetadataManager } from './services/implementations/SequenceMetadataManager';
+import { sequenceMetadataManager } from './services/sequence-metadata-manager';
 
-let instance: SequenceMetadataManager | null = null;
-
-export function getSequenceMetadataManager(): SequenceMetadataManager {
+export function getSequenceMetadataManager(): typeof sequenceMetadataManager {
 	if (!browser) throw new Error('getSequenceMetadataManager() is browser-only');
-	return instance ??= new SequenceMetadataManager();
+	return sequenceMetadataManager;
 }

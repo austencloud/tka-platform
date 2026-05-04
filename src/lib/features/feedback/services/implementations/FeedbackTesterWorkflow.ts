@@ -18,7 +18,7 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 import type { AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "../../domain/models/feedback-models";
 import type { FeedbackNotification } from "../../domain/models/notification-models";
-import { notificationTriggerService } from "./NotificationTrigger";
+import * as notificationTriggerService from "$lib/features/feedback/services/notification-trigger-service";
 import { feedbackQueryService } from "./FeedbackQuerier";
 import type { FeedbackQueryService } from "../implementations/FeedbackQuerier";
 

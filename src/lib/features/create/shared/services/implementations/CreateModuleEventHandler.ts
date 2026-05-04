@@ -7,14 +7,14 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
+import { reversalDetector } from "../reversal-detector";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
 
 import type { ConstructCoordinator } from "./ConstructCoordinator";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { ReversalDetector } from "./ReversalDetector";
+import type { ReversalDetector } from "../reversal-detector";
 import { orientationCalculator as orientationCalculatorDirect } from "../../../../../shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { StepData } from "../../domain/models/StepData";
 import { createStepData } from "../../domain/factories/createStepData";
@@ -61,11 +61,7 @@ export class CreateModuleEventHandler {
     // Use direct import instead of container for HMR performance
     this.OrientationCalculator = orientationCalculatorDirect;
 
-    try {
-      this.ReversalDetector = getReversalDetector();
-    } catch {
-      this.ReversalDetector = null;
-    }
+    this.ReversalDetector = reversalDetector;
 
     // Only mark as initialized if at least one service resolved
     if (

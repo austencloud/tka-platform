@@ -1,8 +1,8 @@
 <script lang="ts">
 
 import { getSequenceMatcher } from "$lib/features/landing-preview/getSequenceMatcher";
-import { getVideoCuratorLoader } from "$lib/features/landing-preview/getVideoCuratorLoader";
-import { getVideoCuratorPersister } from "$lib/features/landing-preview/getVideoCuratorPersister";
+import * as videoCuratorLoader from "$lib/features/landing-preview/services/video-curator-loader";
+import * as videoCuratorPersister from "$lib/features/landing-preview/services/video-curator-persister";
   /**
    * VideoCurator
    *
@@ -22,8 +22,8 @@ import { getVideoCuratorPersister } from "$lib/features/landing-preview/getVideo
   import type { ShowcaseVideo, VideoCategory, UserProfile } from "../types";
 
   // Services from DI container
-  const loader = getVideoCuratorLoader();
-  const persister = getVideoCuratorPersister();
+  const loader = videoCuratorLoader;
+  const persister = videoCuratorPersister;
   const sequenceMatcher = getSequenceMatcher();
 
   // Video cache for instant playback

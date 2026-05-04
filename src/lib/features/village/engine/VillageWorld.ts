@@ -4,7 +4,7 @@ import type {
 	AvatarVisualTraits,
 	LearnedSequence,
 } from "../domain/village-types";
-import type { PersonalityGenerator } from "../services/implementations/PersonalityGenerator";
+import type * as PersonalityGeneratorModule from "../services/personality-generator";
 import { VILLAGE_PROP_TYPES, EFFECT_AFFINITIES } from "../domain/village-constants";
 
 const AVATAR_MODELS = ["x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12", "ch18", "ch21", "ch22", "ch24", "ch34", "ch41", "ch42", "ch44"];
@@ -19,7 +19,7 @@ export interface CreateAvatarOptions {
 	currentTick: number;
 	lifespanTicks: number;
 	arenaRadius: number;
-	personalityGenerator: PersonalityGenerator;
+	personalityGenerator: typeof PersonalityGeneratorModule;
 	traitMean: number;
 	traitStdDev: number;
 	seedSequences?: Map<string, LearnedSequence>;
@@ -38,7 +38,7 @@ export function createAvatarEntity(
 		heightScale: 0.9 + Math.random() * 0.2,
 	};
 
-	const personality = options.personalityGenerator.generate(
+	const personality = options.personalityGenerator.generatePersonality(
 		options.traitMean,
 		options.traitStdDev,
 	);

@@ -7,7 +7,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
 import type { BrowseFilter } from "$lib/features/browse/sequences/display/services/implementations/BrowseFilter";
-import type { BrowseSorter } from "$lib/features/browse/sequences/display/services/implementations/BrowseSorter";
+import { sortSequences as browseSortSequences } from "$lib/features/browse/sequences/display/services/browse-sorter";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
@@ -15,7 +15,6 @@ import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/brows
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
 import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
-import { getBrowseSorter } from "$lib/features/browse/sequences/display/getBrowseSorter";
 
 const BATCH_SIZE = 24;
 
@@ -29,7 +28,6 @@ export function createMediaBrowserState() {
   let loaderService = $state<PublicSequencesLoader | null>(null);
   let thumbnailService = $state<BrowseThumbnailProvider | null>(null);
   let filterService = $state<BrowseFilter | null>(null);
-  let sortService = $state<BrowseSorter | null>(null);
   let servicesReady = $state(false);
 
   // Core state
@@ -96,11 +94,9 @@ export function createMediaBrowserState() {
       );
     }
 
-    if (sortService) {
-      filtered = sortService.sortSequences(filtered, currentSortMethod);
-      if (sortDirection === "desc") {
-        filtered = [...filtered].reverse();
-      }
+    filtered = browseSortSequences(filtered, currentSortMethod);
+    if (sortDirection === "desc") {
+      filtered = [...filtered].reverse();
     }
 
     return filtered;
@@ -117,7 +113,6 @@ export function createMediaBrowserState() {
       loaderService = getBrowseLoader();
       thumbnailService = getBrowseThumbnailProvider();
       filterService = getBrowseFilter();
-      sortService = getBrowseSorter();
       servicesReady = !!(loaderService && thumbnailService);
       return servicesReady;
     } catch (err) {

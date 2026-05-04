@@ -18,14 +18,13 @@
   import type { PhaseVerdict, UserCorrection } from "../domain/verification-models";
   import type { TrainingPair, VerifiedStepPosition, VideoReference } from "../domain/training-models";
   import type { Phase1OverlayRenderer } from "../services/implementations/Phase1OverlayRenderer";
-  import type { SanityChecker } from "../services/implementations/SanityChecker";
+  import { checkPhase1 } from "../services/sanity-checker";
   import type { TrainingDataPersister } from "../services/implementations/TrainingDataPersister";
   import { getImageModeHandLandmarker } from "$lib/features/skel2tka/getImageModeHandLandmarker";
   import { getVideoFrameExtractor } from "$lib/features/skel2tka/getVideoFrameExtractor";
   import { getVideoHandAnalyzer } from "$lib/features/skel2tka/getVideoHandAnalyzer";
-  import { getStepBoundaryDetector } from "$lib/features/skel2tka/getStepBoundaryDetector";
+  import { detectBeats } from "$lib/features/skel2tka/services/step-boundary-detector";
   import { getPhase1OverlayRenderer } from "$lib/features/skel2tka/getPhase1OverlayRenderer";
-  import { getSanityChecker } from "$lib/features/skel2tka/getSanityChecker";
   import { getTrainingDataPersister } from "$lib/features/skel2tka/getTrainingDataPersister";
   import VideoUploadDropzone from "./VideoUploadDropzone.svelte";
   import TrajectoryTimeline from "./TrajectoryTimeline.svelte";
@@ -57,9 +56,7 @@
   const landmarker = getImageModeHandLandmarker();
   const frameExtractor = getVideoFrameExtractor();
   const handAnalyzer = getVideoHandAnalyzer();
-  const beatDetector = getStepBoundaryDetector();
   const overlayRenderer = getPhase1OverlayRenderer() as Phase1OverlayRenderer;
-  const sanityChecker = getSanityChecker() as SanityChecker;
   const trainingPersister = getTrainingDataPersister() as TrainingDataPersister;
 
   function onProgress(current: number, total: number, label?: string) {
@@ -111,14 +108,14 @@
       // Step 3: Detect beats
       pipelineState = "detecting-beats";
       progressLabel = t('skel2tka_detecting_beats');
-      const beats = beatDetector.detectBeats(timeline);
+      const beats = detectBeats(timeline);
 
       const processingTimeMs = performance.now() - startTime;
 
       result = { timeline, beats, processingTimeMs };
 
       // Step 4: Run sanity checks
-      sanityReport = sanityChecker.checkPhase1(result);
+      sanityReport = checkPhase1(result);
 
       pipelineState = "complete";
     } catch (err) {

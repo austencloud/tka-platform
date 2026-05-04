@@ -10,11 +10,10 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
+  import * as propTypeApplier from "$lib/features/landing/services/prop-type-applier";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 
   const animationState = createAnimationPanelState();
-  const propTypeApplier = new PropTypeApplier();
   const visibilityManager = getAnimationVisibilityManager();
 
   let playbackController: AnimationPlaybackController | null = null;

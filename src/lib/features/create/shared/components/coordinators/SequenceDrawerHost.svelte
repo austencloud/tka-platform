@@ -35,7 +35,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
 
   import { getSheetRouter } from "$lib/shared/navigation/getSheetRouter";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
-  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
+  import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -48,7 +48,6 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
-  import type { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import type { SheetRouter } from "$lib/shared/navigation/services/implementations/SheetRouter";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
@@ -78,7 +77,6 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
   // Animation services (lazy-loaded when Animation format selected)
   let playbackController: AnimationPlaybackController | null = null;
   let videoExportOrchestrator: VideoExportOrchestrator | null = null;
-  let loopabilityChecker: SequenceLoopabilityChecker | null = null;
   let layoutService: ResponsiveLayoutManager | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 
@@ -162,8 +160,8 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
   // Animation-specific derived values
   const isCircular = $derived.by(() => {
     const seq = animationPanelState.sequenceData;
-    if (!seq || !loopabilityChecker) return false;
-    return loopabilityChecker.isSeamlesslyLoopable(seq);
+    if (!seq) return false;
+    return isSeamlesslyLoopable(seq);
   });
 
   const exportLoopCount = $derived(animationPanelState.exportLoopCount);
@@ -258,7 +256,6 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
       // Animation services available synchronously via ITI
       playbackController = getAnimationPlaybackController();
       videoExportOrchestrator = getVideoExportOrchestrator();
-      loopabilityChecker = getSequenceLoopabilityChecker();
       layoutService = responsiveLayoutManager;
       setAnimationPlaybackRef(playbackController);
 

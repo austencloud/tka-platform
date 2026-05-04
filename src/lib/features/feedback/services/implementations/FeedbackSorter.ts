@@ -1,6 +1,6 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 import { ClaimStatusDeriver } from "./ClaimStatusDeriver";
-import { SwimLaneDeriver } from "./SwimLaneDeriver";
+import { groupByLane } from "../swim-lane-deriver";
 import type { SwimLane } from "../contracts/types";
 
 export class FeedbackSorter {
@@ -11,7 +11,6 @@ export class FeedbackSorter {
     low: 3,
   };
 
-  private readonly swimLaneDeriver = new SwimLaneDeriver();
   private readonly claimStatusDeriver: ClaimStatusDeriver;
 
   constructor(claimStatusDeriver?: ClaimStatusDeriver) {
@@ -88,10 +87,10 @@ export class FeedbackSorter {
     const byStatus = this.groupByStatus(items);
 
     return {
-      new: this.swimLaneDeriver.groupByLane(byStatus.new),
-      "in-progress": this.swimLaneDeriver.groupByLane(byStatus["in-progress"]),
-      "in-review": this.swimLaneDeriver.groupByLane(byStatus["in-review"]),
-      completed: this.swimLaneDeriver.groupByLane(byStatus.completed),
+      new: groupByLane(byStatus.new),
+      "in-progress": groupByLane(byStatus["in-progress"]),
+      "in-review": groupByLane(byStatus["in-review"]),
+      completed: groupByLane(byStatus.completed),
     };
   }
 

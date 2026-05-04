@@ -1,6 +1,5 @@
-import { EffectConfigMapper } from './services/implementations/EffectConfigMapper';
+import * as effectConfigMapper from './services/effect-config-mapper';
 
-let instance: EffectConfigMapper | null = null;
-export function getEffectConfigMapper(): EffectConfigMapper {
-  return instance ??= new EffectConfigMapper();
+export function getEffectConfigMapper(): typeof effectConfigMapper {
+  return effectConfigMapper;
 }

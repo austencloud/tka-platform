@@ -389,8 +389,8 @@
 
       // Cloud thumbnail manifest - only needed when user visits browse
       bootProfiler.mark("thumbnail-manifest");
-      import("$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache")
-        .then(({ CloudThumbnailCache }) => new CloudThumbnailCache().loadManifest())
+      import("$lib/features/browse/sequences/display/services/cloud-thumbnail-cache")
+        .then(({ loadManifest }) => loadManifest())
         .catch((error) => console.warn("Cloud thumbnail manifest failed:", error))
         .finally(() => bootProfiler.end("thumbnail-manifest"));
 

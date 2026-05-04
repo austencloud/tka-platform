@@ -9,7 +9,6 @@
 <script lang="ts">
 
 import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
-import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 	import { onMount, onDestroy } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
@@ -74,7 +73,6 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 
 	onMount(() => {
 		try {
-			const stepCalculationService = getStepCalculator();
 			const propInterpolationService = getPropInterpolator();
 
 			const states: CellAnimState[] = [];
@@ -85,7 +83,6 @@ import { getStepCalculator } from "$lib/features/compose/getStepCalculator";
 
 				const orchestrator = new SequenceAnimationOrchestrator(
 					new AnimationStateManager(),
-					stepCalculationService,
 					propInterpolationService,
 				);
 				const animState = createAnimationPanelState();

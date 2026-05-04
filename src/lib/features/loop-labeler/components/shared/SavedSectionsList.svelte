@@ -8,9 +8,7 @@
   import type { SectionDesignation } from "../../domain/models/section-models";
   import { SECTION_COLORS } from "../../domain/constants/section-colors";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
-  import type { LabelFormatter } from "../../services/implementations/LabelFormatter";
-  const labelFormatter = getLabelFormatter() as LabelFormatter;
+  import { formatSectionSteps, formatDesignation } from "../../services/label-formatter";
 
   interface Props {
     sections: SectionDesignation[];
@@ -30,8 +28,8 @@
           ?.border}"
       >
         <div class="section-info">
-          <span class="section-steps">{labelFormatter.formatSectionSteps(section.steps)}</span>
-          <span class="section-components">{labelFormatter.formatDesignation(section)}</span>
+          <span class="section-steps">{formatSectionSteps(section.steps)}</span>
+          <span class="section-components">{formatDesignation(section)}</span>
         </div>
         <button
           class="remove-btn"

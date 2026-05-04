@@ -156,7 +156,7 @@
   if (import.meta.env.DEV) {
     $effect(() => {
       const grid = generatedGrid; // subscribe to derived grid
-      import("./services/implementations/MuseumDesignValidator").then(({ MuseumDesignValidator }) => {
+      import("./services/museum-design-validator").then(({ validateAll }) => {
         // Reconstruct PlacedRoom-like objects from grid wings + original room data
         const roomMap = new Map(MUSEUM_ROOMS.map(r => [r.id, r]));
         const placedRooms = grid.wings.map(wing => {
@@ -175,8 +175,7 @@
           };
         });
 
-        const designValidator = new MuseumDesignValidator();
-        const violations = designValidator.validateAll(placedRooms as any, MUSEUM_EDGES, grid);
+        const violations = validateAll(placedRooms as any, MUSEUM_EDGES, grid);
         if (violations.length > 0) {
           console.group("%c🏛️ Museum Design Violations", "font-weight: bold; color: #d4b878");
           for (const v of violations) {

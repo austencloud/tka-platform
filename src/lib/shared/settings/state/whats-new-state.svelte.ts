@@ -15,7 +15,7 @@
 import { getOnboardingPersister } from "$lib/shared/onboarding/getOnboardingPersister";
 import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
 import type { OnboardingPersister } from "$lib/shared/onboarding/services/implementations/OnboardingPersister";
-import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
+import * as versionService from "$lib/features/feedback/services/version-service";
 
 const STORAGE_KEY = "tka-last-seen-version";
 

@@ -12,7 +12,7 @@ import {
   type QuizSession,
   type QuizTimerState,
 } from "../../domain/models/quiz-models";
-import { QuizConfigurator } from "./QuizConfigurator";
+import { getTotalQuestions, getQuizTime } from "../quiz-configurator";
 
 export class QuizSessionManager {
   private activeSessions: Map<string, QuizSession> = new Map();
@@ -24,8 +24,8 @@ export class QuizSessionManager {
    */
   createSession(lessonType: QuizType, quizMode: QuizMode): string {
     const sessionId = this.generateSessionId();
-    const totalQuestions = QuizConfigurator.getTotalQuestions(quizMode);
-    const quizTime = QuizConfigurator.getQuizTime(quizMode);
+    const totalQuestions = getTotalQuestions(quizMode);
+    const quizTime = getQuizTime(quizMode);
 
     const session: QuizSession = {
       sessionId,
@@ -261,7 +261,7 @@ export class QuizSessionManager {
     if (!session?.quizMode) return null;
 
     const isRunning = this.timers.has(sessionId);
-    const totalTime = QuizConfigurator.getQuizTime(session.quizMode);
+    const totalTime = getQuizTime(session.quizMode);
 
     return {
       timeRemaining: session.quizTime,

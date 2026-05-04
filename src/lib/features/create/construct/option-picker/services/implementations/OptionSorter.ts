@@ -8,11 +8,10 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SortMethod } from "../../domain/option-picker-types";
 import type { PositionAnalyzer } from "./PositionAnalyzer";
-import type { ReversalChecker } from "./ReversalChecker";
+import { hasReversals } from "../reversal-checker";
 
 export class OptionSorter {
   constructor(
-    private reversalChecker: ReversalChecker,
     private positionAnalyzer: PositionAnalyzer
   ) {}
 
@@ -43,8 +42,8 @@ export class OptionSorter {
 
       case "reversals":
         return sorted.sort((a, b) => {
-          const aHasRev = this.reversalChecker.hasReversals(a);
-          const bHasRev = this.reversalChecker.hasReversals(b);
+          const aHasRev = hasReversals(a);
+          const bHasRev = hasReversals(b);
           if (aHasRev === bHasRev) {
             // If both have or don't have reversals, sort by letter
             const aLetter = a.letter ?? "";
@@ -63,7 +62,6 @@ export class OptionSorter {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { reversalChecker } from "./ReversalChecker";
 import { positionAnalyzer } from "./PositionAnalyzer";
 
-export const optionSorter = new OptionSorter(reversalChecker, positionAnalyzer);
+export const optionSorter = new OptionSorter(positionAnalyzer);

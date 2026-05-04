@@ -22,7 +22,7 @@
   import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { changelogEditState } from "./state/changelog-edit-state.svelte";
-  import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
+  import * as versionService from "$lib/features/feedback/services/version-service";
 
   let {
     version,

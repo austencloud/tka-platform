@@ -7,7 +7,7 @@
  */
 
 
-import type { LetterTypeClassifier } from "./LetterTypeClassifier";
+import type { LetterTypeClassifier } from "../letter-type-classifier";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
   SpellPreferences,
@@ -51,7 +51,7 @@ export class VariationConstraintBuilder {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { letterTypeClassifier } from "./LetterTypeClassifier";
+import * as letterTypeClassifier from "../letter-type-classifier";
 
 export const variationConstraintBuilder = new VariationConstraintBuilder(
   letterTypeClassifier

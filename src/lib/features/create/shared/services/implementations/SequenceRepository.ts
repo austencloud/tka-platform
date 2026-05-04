@@ -16,9 +16,12 @@ import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 import type { DexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
 import type { SequenceImporter } from "./SequenceImporter";
-import type { ReversalDetector } from "./ReversalDetector";
-import type { SequenceNormalizer } from "$lib/features/compose/services/implementations/SequenceNormalizer";
-import type { SequenceDomainManager } from "./SequenceDomainManager";
+type ReversalDetector = { processReversals: (sequence: SequenceData) => SequenceData };
+import { separateStepsFromStartPosition } from "$lib/features/compose/services/sequence-normalizer";
+type SequenceDomainManager = {
+  createSequence: (request: unknown) => SequenceData;
+  updateStep: (sequence: SequenceData, stepIndex: number, stepData: unknown) => SequenceData;
+};
 import {
   collection,
   getDocs,
@@ -37,7 +40,6 @@ export class SequenceRepository {
     private readonly sequenceDomainManager: SequenceDomainManager,
     private readonly persistenceService: DexiePersistenceService,
     private readonly reversalDetector: ReversalDetector,
-    private readonly normalizationService: SequenceNormalizer,
     private readonly sequenceImportService?: SequenceImporter
   ) {}
 
@@ -130,7 +132,7 @@ export class SequenceRepository {
         // Normalize sequence data to ensure start position is separated from steps
         // This handles legacy data formats where beat 0 or startingPosition was mixed into steps array
         const normalized =
-          this.normalizationService.separateStepsFromStartPosition(sequence);
+          separateStepsFromStartPosition(sequence);
         sequence = {
           ...sequence,
           steps: normalized.steps,
@@ -160,7 +162,7 @@ export class SequenceRepository {
 
         // Normalize to separate start position from steps
         const normalized =
-          this.normalizationService.separateStepsFromStartPosition(processed);
+          separateStepsFromStartPosition(processed);
         return {
           ...processed,
           steps: normalized.steps,
@@ -237,15 +239,20 @@ export class SequenceRepository {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceDomainManager } from "./SequenceDomainManager";
+import * as sequenceDomainManagerModule from "../sequence-domain-manager";
+const sequenceDomainManager: SequenceDomainManager = {
+  createSequence: sequenceDomainManagerModule.createSequence as SequenceDomainManager['createSequence'],
+  updateStep: sequenceDomainManagerModule.updateStep as SequenceDomainManager['updateStep'],
+};
 import { dexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
-import { reversalDetector } from "./ReversalDetector";
-import { sequenceNormalizer } from "$lib/features/compose/services/implementations/SequenceNormalizer";
+import * as reversalDetectorModule from "../reversal-detector";
+const reversalDetector: ReversalDetector = {
+  processReversals: reversalDetectorModule.processReversals,
+};
 
 export const sequenceRepository = new SequenceRepository(
   sequenceDomainManager,
   dexiePersistenceService,
   reversalDetector,
-  sequenceNormalizer,
   undefined // sequenceImportService is optional
 );

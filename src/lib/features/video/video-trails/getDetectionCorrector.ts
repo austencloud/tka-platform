@@ -1,6 +1,5 @@
-import { DetectionCorrector } from './services/implementations/DetectionCorrector';
+import * as detectionCorrector from './services/detection-corrector';
 
-let instance: DetectionCorrector | null = null;
-export function getDetectionCorrector(): DetectionCorrector {
-  return instance ??= new DetectionCorrector();
+export function getDetectionCorrector(): typeof detectionCorrector {
+  return detectionCorrector;
 }

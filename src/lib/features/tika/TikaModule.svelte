@@ -10,8 +10,8 @@
 -->
 <script lang="ts">
   import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
-  import { getQuizHistoryRecorder } from "$lib/features/learn/getQuizHistoryRecorder";
-  import { getConceptRecommender } from "$lib/features/learn/getConceptRecommender";
+  import * as quizHistoryRecorderModule from "$lib/features/learn/services/quiz-history-recorder";
+  import * as conceptRecommenderModule from "$lib/features/learn/services/concept-recommender";
   import { getGapDetector } from "$lib/features/learn/getGapDetector";
   import { Chat, type UIMessage } from "@ai-sdk/svelte";
   import { DefaultChatTransport } from "ai";
@@ -24,14 +24,12 @@
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
-  import type { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
-  import type { ConceptRecommender } from "$lib/features/learn/services/implementations/ConceptRecommender";
   import type { GapDetector } from "../learn/services/implementations/GapDetector";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
-  import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
+  import * as tikaSessionRepository from "./services/tika-session-repository";
   import { ConversationMemoryRetriever } from "./services/implementations/ConversationMemoryRetriever";
   import { TikaInteractionTracker } from "./services/implementations/TikaInteractionTracker";
-  import { TikaWelcomeBuilder } from "./services/implementations/TikaWelcomeBuilder";
+  import { buildWelcome } from "./services/tika-welcome-builder";
   import type { WelcomeContext } from "./services/contracts/types";
   import { TIKA_LIMITS } from "./data/firestore-paths";
   import type { ModelOption } from "./types";
@@ -93,8 +91,8 @@
     browser ? localStorage.getItem(COMPARE_MODEL_B_KEY) || "sonnet-4" : "sonnet-4"
   );
 
-  // Repository instance (initialized lazily when user is authenticated)
-  const sessionRepository = browser ? new TikaSessionRepository() : null;
+  // Repository module (only active in browser for Firestore access)
+  const sessionRepository = browser ? tikaSessionRepository : null;
 
   // Memory retriever for past conversation context
   const memoryRetriever = sessionRepository
@@ -111,24 +109,14 @@
   const progressTracker: ConceptProgressTracker | null = browser
     ? (getConceptProgressTracker() as ConceptProgressTracker) ?? null
     : null;
-  const quizHistoryRecorder: QuizHistoryRecorder | null = browser
-    ? getQuizHistoryRecorder() ?? null
-    : null;
-  const conceptRecommender: ConceptRecommender | null = browser
-    ? getConceptRecommender() ?? null
-    : null;
   const gapDetector: GapDetector | null = browser
     ? getGapDetector() ?? null
     : null;
 
-  // Interaction tracker for quiz persistence and topic tracking (depends on quizHistoryRecorder)
-  const interactionTracker =
-    browser && quizHistoryRecorder
-      ? new TikaInteractionTracker(quizHistoryRecorder)
-      : null;
+  // Interaction tracker for quiz persistence and topic tracking
+  const interactionTracker = browser ? new TikaInteractionTracker() : null;
 
-  // Welcome builder for adaptive suggestions
-  const welcomeBuilder = new TikaWelcomeBuilder();
+  // Welcome builder for adaptive suggestions (module function)
 
   const completedConcepts = $derived.by(() => {
     if (!progressTracker) return [];
@@ -149,13 +137,13 @@
   // Load mastery context when user is authenticated
   $effect(() => {
     if (!isAuthenticated || !userId || userId === "anonymous") return;
-    if (!quizHistoryRecorder || !conceptRecommender || !progressTracker) return;
+    if (!progressTracker) return;
 
     // Initialize Firestore sync for progress tracker
     progressTracker.initializeForUser(userId);
 
     // Load mastery data asynchronously
-    quizHistoryRecorder
+    quizHistoryRecorderModule
       .getAllMasteryScores(userId)
       .then((masteryScores) => {
         const progress = progressTracker.getProgress();
@@ -172,12 +160,12 @@
           }
         }
 
-        const suggestedNext = conceptRecommender
+        const suggestedNext = conceptRecommenderModule
           .getNextConcepts(completedIds, 3)
           .map((c) => c.id);
 
         const dueForReview =
-          conceptRecommender.getConceptsDueForReview(masteryScores);
+          conceptRecommenderModule.getConceptsDueForReview(masteryScores);
 
         masteryContext = {
           masteredConcepts,
@@ -217,7 +205,7 @@
   $effect(() => {
     if (!isAuthenticated || userId === "anonymous") {
       // Anonymous users get static defaults
-      welcomeContext = welcomeBuilder.buildWelcome();
+      welcomeContext = buildWelcome();
       return;
     }
 
@@ -232,7 +220,7 @@
 
     Promise.all([topicHistoryPromise, historySummaryPromise])
       .then(([topicHistory, historySummary]) => {
-        welcomeContext = welcomeBuilder.buildWelcome(
+        welcomeContext = buildWelcome(
           masteryContext,
           topicHistory ?? undefined,
           historySummary ?? undefined,
@@ -241,7 +229,7 @@
       .catch((error) => {
         console.warn("[TIKA] Failed to build welcome context:", error);
         // Fall back to static defaults
-        welcomeContext = welcomeBuilder.buildWelcome();
+        welcomeContext = buildWelcome();
       });
   });
 

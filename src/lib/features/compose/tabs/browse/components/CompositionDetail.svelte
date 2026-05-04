@@ -7,11 +7,10 @@
 -->
 <script lang="ts">
 
-import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/browse/getCompositionThumbnailResolver";
+import { resolveThumbnail, generatePlaceholderSvg } from "$lib/features/compose/tabs/browse/services/composition-thumbnail-resolver";
   import { onMount, onDestroy } from "svelte";
 	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
-	import type { CompositionThumbnailResolver } from "../services/implementations/CompositionThumbnailResolver";
 	import CompositionDetailActions from "./CompositionDetailActions.svelte";
 
 	const {
@@ -39,10 +38,9 @@ import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/brow
 	let isClosing = $state(false);
 
 	const modeConfig = $derived(COMPOSE_MODE_CONFIG[composition.mode]);
-	const thumbnailResolver = getCompositionThumbnailResolver();
-	const thumbnailUrl = $derived(thumbnailResolver?.resolveThumbnail(composition) ?? null);
+	const thumbnailUrl = $derived(resolveThumbnail(composition));
 	const placeholderSvg = $derived(
-		thumbnailResolver?.generatePlaceholderSvg(composition.mode, modeConfig.accent) ?? ""
+		generatePlaceholderSvg(composition.mode, modeConfig.accent)
 	);
 
 	const layoutLabel = $derived(`${composition.layout.cols}x${composition.layout.rows}`);

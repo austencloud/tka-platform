@@ -51,7 +51,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
   import type { CreateModuleInitializer } from "../services/implementations/CreateModuleInitializer";
   import type { CreateModuleHandlers } from "../services/implementations/CreateModuleHandlers";
-  import type { CreateModuleEffectCoordinator } from "../services/implementations/CreateModuleEffectCoordinator";
+  import type { CreateModuleEffectCoordinator } from "../services/contracts/types";
   import type { PanelPersister } from "../services/implementations/PanelPersister.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { createConstructTabState as ConstructTabStateType } from "../state/construct-tab-state.svelte";

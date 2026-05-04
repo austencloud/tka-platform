@@ -8,7 +8,7 @@ Delegates all rendering to child components.
 
 import { getOptionFilter } from "$lib/features/create/construct/option-picker/getOptionFilter";
 import { getOptionLoader } from "$lib/features/create/construct/option-picker/getOptionLoader";
-import { getOptionOrganizer } from "$lib/features/create/construct/option-picker/getOptionOrganizer";
+import { organizePictographs } from "$lib/features/create/construct/option-picker/services/option-organizer";
 import { getOptionSorter } from "$lib/features/create/construct/option-picker/getOptionSorter";
 import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModeProvider";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
@@ -17,14 +17,14 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-  import { optionGridFitCalculator } from "../services/implementations/OptionGridFitCalculator";
+  import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
   import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/implementations/OptionLoader";
   import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/implementations/OptionFilter";
   import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/implementations/OptionSorter";
-  import type { OptionOrganizer } from "$lib/features/create/construct/option-picker/services/implementations/OptionOrganizer";
-  import type { IOptionGridFitCalculator } from "../services/contracts/types";
+  import type { OrganizedSection, SortMethod } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
+  import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/contracts/types";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import type { PictographPreparer } from "../services/PictographPreparer";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
@@ -77,8 +77,8 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   // Services
   let preparer: PictographPreparer | null = null;
   let hapticService = $state<HapticFeedback | null>(null);
-  let sizerService = $state<IOptionGridFitCalculator | null>(null);
-  let organizerService = $state<OptionOrganizer | null>(null);
+  let sizerService = $state<((params: DeviceAwareSizingParams) => DeviceAwareSizingResult) | null>(null);
+  let organizerService = $state<((pictographs: PictographData[], sortMethod: SortMethod) => OrganizedSection[]) | null>(null);
 
   // Dark Mode tracking - needed to re-prepare props when theme changes
   let darkMode = $state(false);
@@ -207,8 +207,8 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
       const filter = getOptionFilter();
       const sorter = getOptionSorter();
 
-      organizerService = getOptionOrganizer();
-      sizerService = optionGridFitCalculator;
+      organizerService = organizePictographs;
+      sizerService = calculateDeviceAwareSize;
       preparer = pictographPreparer as PictographPreparer;
       hapticService = getHapticFeedback();
 

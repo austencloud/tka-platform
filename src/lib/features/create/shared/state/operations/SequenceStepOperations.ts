@@ -15,7 +15,7 @@ import type { StepData } from "../../domain/models/StepData";
 import type { SequenceAnimationState } from "../animation/SequenceAnimationState.svelte";
 import type { SequenceCoreState } from "../core/SequenceCoreState.svelte";
 import type { SequenceSelectionState } from "../selection/SequenceSelectionState.svelte";
-import type { ReversalDetector } from "../../services/implementations/ReversalDetector";
+import type { ReversalDetector } from "../../services/reversal-detector";
 
 export interface StepOperationsConfig {
   coreState: SequenceCoreState;

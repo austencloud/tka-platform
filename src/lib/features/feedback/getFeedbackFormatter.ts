@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { FeedbackFormatter } from './services/implementations/FeedbackFormatter';
+import * as feedbackFormatter from './services/feedback-formatter';
 
-let instance: FeedbackFormatter | null = null;
-
-export function getFeedbackFormatter(): FeedbackFormatter {
+export function getFeedbackFormatter() {
 	if (!browser) throw new Error('getFeedbackFormatter() is browser-only');
-	return instance ??= new FeedbackFormatter();
+	return feedbackFormatter;
 }

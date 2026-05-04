@@ -14,8 +14,12 @@ import type {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
-import type { PictographFilter } from "./PictographFilter";
+import type { stepConverter as StepConverterType } from "$lib/features/create/generate/shared/services/step-converter";
+import type { pictographFilter as PictographFilterType } from "../pictograph-filter";
+
+// Local aliases so the constructor param annotations are readable
+type StepConverter = typeof StepConverterType;
+type PictographFilter = typeof PictographFilterType;
 export class StartPositionSelector {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
@@ -78,8 +82,8 @@ export class StartPositionSelector {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-import { pictographFilter } from "./PictographFilter";
-import { stepConverter } from "./StepConverter";
+import { pictographFilter } from "../pictograph-filter";
+import { stepConverter } from "../step-converter";
 import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
 
 export const startPositionSelector = new StartPositionSelector(

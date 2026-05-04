@@ -16,7 +16,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 import type { FeedbackItem, FeedbackStatus, StatusHistoryEntry, } from "../../domain/models/feedback-models";
-import { type FeedbackSubmissionService, feedbackSubmissionService } from "./FeedbackSubmitter";
+import { generateTitleFromDescription } from "../feedback-submission-service";
 import { feedbackQueryService } from "./FeedbackQuerier";
 import type { FeedbackQueryService } from "../implementations/FeedbackQuerier";
 
@@ -24,8 +24,7 @@ const COLLECTION_NAME = "feedback";
 
 export class FeedbackStatusService {
   constructor(
-    private readonly queryService: FeedbackQueryService = feedbackQueryService,
-    private readonly submissionService: FeedbackSubmissionService = feedbackSubmissionService
+    private readonly queryService: FeedbackQueryService = feedbackQueryService
   ) {}
 
   async updateStatus(
@@ -185,7 +184,7 @@ export class FeedbackStatusService {
       if (updates.description !== undefined) {
         updateData["description"] = updates.description;
         updateData["title"] =
-          this.submissionService.generateTitleFromDescription(
+          generateTitleFromDescription(
             updates.description
           );
       }
@@ -205,8 +204,8 @@ export class FeedbackStatusService {
     await updateDoc(docRef, updateData);
 
     const updatedDoc = await getDoc(docRef);
-    const { feedbackDocumentMapper } = await import("./FeedbackDocumentMapper");
-    return feedbackDocumentMapper.mapDocToFeedbackItem(
+    const { mapDocToFeedbackItem } = await import("../feedback-document-mapper");
+    return mapDocToFeedbackItem(
       updatedDoc.id,
       updatedDoc.data()!
     );

@@ -18,7 +18,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
-  import { getSequenceLoopabilityChecker } from "$lib/features/compose/getSequenceLoopabilityChecker";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -29,7 +28,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
   import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
   import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
-  import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
   // Auto-chaining
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -214,15 +212,13 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     try {
       sequenceService = getSequenceRepository();
       const propInterpolator = getPropInterpolator();
-      const loopabilityChecker = getSequenceLoopabilityChecker();
       const stateManager = new AnimationStateManager();
-      const stepCalculator = new StepCalculator();
       const loop = new AnimationLoop();
       const animOrchestrator = new SequenceAnimationOrchestrator(
-        stateManager, stepCalculator, propInterpolator
+        stateManager, propInterpolator
       );
       playbackController = new AnimationPlaybackController(
-        animOrchestrator, loop, loopabilityChecker
+        animOrchestrator, loop
       );
 
       const browseLoader = getBrowseLoader();

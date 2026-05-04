@@ -15,7 +15,6 @@
   import { svgPreloader } from "$lib/shared/pictograph/shared/services/implementations/SvgPreloader";
   import { getTriGridCalculator } from "../getTriGridCalculator";
   import { TRIGRID_SVG_SIZE } from "../domain/trigrid-constants";
-  import type { TriGridCalculator } from "../services/implementations/TriGridCalculator";
   import { applyColorToSvg } from "$lib/shared/utils/svg-color-utils";
 
   interface Props {

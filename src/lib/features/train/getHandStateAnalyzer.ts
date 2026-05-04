@@ -1,10 +1,7 @@
 import { browser } from '$app/environment';
+import * as handStateAnalyzer from './services/hand-state-analyzer';
 
-import { HandStateAnalyzer } from './services/implementations/HandStateAnalyzer';
-
-let instance: HandStateAnalyzer | null = null;
-
-export function getHandStateAnalyzer(): HandStateAnalyzer {
+export function getHandStateAnalyzer() {
 	if (!browser) throw new Error('getHandStateAnalyzer() is browser-only');
-	return instance ??= new HandStateAnalyzer();
+	return handStateAnalyzer;
 }

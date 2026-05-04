@@ -17,7 +17,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { VariationExplorationOrchestrator } from "../services/implementations/VariationExplorationOrchestrator";
   import type { RandomSequenceGenerator } from "../services/implementations/RandomSequenceGenerator";
-  import type { SpellServiceLoader } from "../services/implementations/SpellServiceLoader";
+  import * as spellServiceLoaderModule from "../services/spell-service-loader";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { UndoOperationType } from "../../shared/services/contracts/types";
@@ -29,7 +29,6 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
   import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import { getSpellServiceLoader as getSpellServiceLoaderGetter } from "$lib/features/create/spell/getSpellServiceLoader";
   import { getVariationExplorationOrchestrator as getVariationExplorationOrchestratorGetter } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
 
   // Props
@@ -85,15 +84,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
 
   // Lazy-resolved services
   let orchestrator: VariationExplorationOrchestrator | null = null;
-  let serviceLoader: SpellServiceLoader | null = null;
   let randomGenerator: RandomSequenceGenerator | null = null;
-
-  function getServiceLoader(): SpellServiceLoader {
-    if (!serviceLoader) {
-      serviceLoader = getSpellServiceLoaderGetter();
-    }
-    return serviceLoader;
-  }
 
   function getOrchestrator(): VariationExplorationOrchestrator {
     if (!orchestrator) {
@@ -104,8 +95,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
 
   async function getRandomGenerator(): Promise<RandomSequenceGenerator> {
     if (!randomGenerator) {
-      const loader = getServiceLoader();
-      randomGenerator = await loader.getRandomSequenceGenerator();
+      randomGenerator = await spellServiceLoaderModule.getRandomSequenceGenerator();
     }
     return randomGenerator;
   }
@@ -231,8 +221,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
       }
 
       // Build constraints from preferences
-      const loader = getServiceLoader();
-      const constraintBuilder = await loader.getVariationConstraintBuilder();
+      const constraintBuilder = await spellServiceLoaderModule.getVariationConstraintBuilder();
       const constraints = constraintBuilder.buildConstraints(
         spellState.preferences,
         letters

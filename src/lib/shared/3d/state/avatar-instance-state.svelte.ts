@@ -21,7 +21,7 @@ import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unifi
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
-import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
+import { interpolatePhrase } from "$lib/features/phrase-effort-lab/services/phrase-interpolator";
 import {
   makeDefaultPerformerSettings,
   type PerformerSettings,
@@ -274,8 +274,6 @@ export function createAvatarInstanceState(
   // (glide, punch, elastic, etc.) that reshape how progress flows within
   // each beat. The same curves apply cleanly here - we just transform the
   // raw progress that feeds into prop interpolation.
-  const phraseInterpolator = new PhraseInterpolator();
-
   // Timeline is sequence-scoped. Newer sequences store it under creatorIntent;
   // older ones use the top-level field.
   const effortTimeline = $derived<EffortTimeline | null>(
@@ -315,7 +313,7 @@ export function createAvatarInstanceState(
     }
 
     const totalMotionSteps = Math.max(1, stepConfigs.length - 1);
-    const { stepIndex, localProgress } = phraseInterpolator.interpolate(
+    const { stepIndex, localProgress } = interpolatePhrase(
       phrase,
       currentStep,
       totalMotionSteps,

@@ -8,7 +8,6 @@
 
 import type { FeedbackItem, FeedbackType, FeedbackPriority, FeedbackStatus, } from "../domain/models/feedback-models";
 import type { FeedbackManageState } from "./feedback-manage-state.svelte";
-import type { FeedbackFormatter } from "../services/implementations/FeedbackFormatter";
 import { TYPE_CONFIG, PRIORITY_CONFIG } from "../domain/models/feedback-models";
 import { getFeedbackEditor } from "$lib/features/feedback/getFeedbackEditor";
 import { getFeedbackFormatter } from "$lib/features/feedback/getFeedbackFormatter";

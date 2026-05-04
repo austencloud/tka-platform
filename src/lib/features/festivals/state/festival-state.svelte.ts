@@ -1,19 +1,39 @@
-import type { Festival } from "../domain/models/festival";
+import type { Festival, FestivalAttendance } from "../domain/models/festival";
 import type { UserFestivalTracker } from "../domain/models/festival-tracker";
 import type { TeachingPortfolio } from "../domain/models/teaching-portfolio";
 import type { FestivalFilters } from "../services/contracts/types";
-import type { FestivalTrackerRepository } from "../services/implementations/FestivalTrackerRepository";
-import type { FestivalAttendanceRepository } from "../services/implementations/FestivalAttendanceRepository";
-import type { WorkshopPortfolioRepository } from "../services/implementations/WorkshopPortfolioRepository";
-import type { FestivalLoader } from "../services/implementations/FestivalLoader";
+
+interface FestivalLoaderModule {
+  loadFestivals(filters: FestivalFilters, pageSize?: number, cursor?: unknown): Promise<{ festivals: Festival[]; nextCursor: unknown | null }>;
+  getByIds(ids: string[]): Promise<Festival[]>;
+}
+
+interface FestivalTrackerModule {
+  get(userId: string, festivalId: string): Promise<UserFestivalTracker | null>;
+  getAllForUser(userId: string): Promise<Map<string, UserFestivalTracker>>;
+  set(userId: string, festivalId: string, data: Partial<UserFestivalTracker>): Promise<void>;
+  deleteTracker(userId: string, festivalId: string): Promise<void>;
+}
+
+interface FestivalAttendanceModule {
+  getCount(festivalId: string): Promise<number>;
+  getAttendees(festivalId: string): Promise<FestivalAttendance[]>;
+  setAttendance(festivalId: string, userId: string, data: Omit<FestivalAttendance, "festivalId" | "userId">): Promise<void>;
+  removeAttendance(festivalId: string, userId: string): Promise<void>;
+}
+
+interface WorkshopPortfolioModule {
+  get(userId: string): Promise<TeachingPortfolio | null>;
+  set(userId: string, portfolio: TeachingPortfolio): Promise<void>;
+}
 
 export type FestivalTab = "discover" | "map" | "calendar" | "portfolio";
 
 export function createFestivalState(
-  loader: FestivalLoader,
-  trackerRepo: FestivalTrackerRepository,
-  attendanceRepo: FestivalAttendanceRepository,
-  portfolioRepo: WorkshopPortfolioRepository
+  loader: FestivalLoaderModule,
+  trackerRepo: FestivalTrackerModule,
+  attendanceRepo: FestivalAttendanceModule,
+  portfolioRepo: WorkshopPortfolioModule
 ) {
   let _festivals = $state<Festival[]>([]);
   let _trackers = $state<Map<string, UserFestivalTracker>>(new Map());

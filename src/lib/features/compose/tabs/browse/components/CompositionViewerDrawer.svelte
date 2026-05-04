@@ -7,13 +7,12 @@
 -->
 <script lang="ts">
 
-import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/browse/getCompositionThumbnailResolver";
+import { resolveThumbnail } from "$lib/features/compose/tabs/browse/services/composition-thumbnail-resolver";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 	import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
 	import CompositionAnimatedPreview from "./CompositionAnimatedPreview.svelte";
 	import CompositionMiniPreview from "./CompositionMiniPreview.svelte";
-	import type { CompositionThumbnailResolver } from "../services/implementations/CompositionThumbnailResolver";
 	import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 	let {
@@ -38,11 +37,8 @@ import { getCompositionThumbnailResolver } from "$lib/features/compose/tabs/brow
 
 	const modeConfig = $derived(composition ? COMPOSE_MODE_CONFIG[composition.mode] : null);
 
-	const thumbnailResolver = getCompositionThumbnailResolver()
-		?? undefined;
-
 	const thumbnailUrl = $derived(
-		composition ? (thumbnailResolver?.resolveThumbnail(composition) ?? null) : null
+		composition ? resolveThumbnail(composition) : null
 	);
 
 	const hasRenderableCells = $derived(

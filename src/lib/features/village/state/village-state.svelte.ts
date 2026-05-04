@@ -11,7 +11,7 @@ import type { SequenceConverter } from "$lib/shared/3d/services/implementations/
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { VillageOrchestrator } from "../engine/VillageOrchestrator";
-import { SequenceMutator } from "../services/implementations/SequenceMutator";
+import * as sequenceMutator from "../services/sequence-mutator";
 import type { VillageConfig } from "../engine/VillageConfig";
 import { createDefaultConfig } from "../engine/VillageConfig";
 import type {
@@ -62,8 +62,7 @@ export function createVillageState(
 	configOverrides?: Partial<VillageConfig>,
 ): VillageState {
 	const config = createDefaultConfig(configOverrides);
-	const mutator = new SequenceMutator();
-	const orchestrator = new VillageOrchestrator(config, mutator);
+	const orchestrator = new VillageOrchestrator(config, sequenceMutator);
 
 	// Internal map for O(1) lookups during sync; exposed as $state array for reactivity
 	const avatarStateMap = new Map<string, AvatarRenderState>();

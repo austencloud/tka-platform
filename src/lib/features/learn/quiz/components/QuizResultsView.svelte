@@ -3,9 +3,8 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onDestroy, onMount } from "svelte";
-  import { getQuizResultsAnalyzer } from "$lib/features/learn/quiz/getQuizResultsAnalyzer";
+  import * as quizResultsAnalyzerModule from "$lib/features/learn/quiz/quiz-results-analyzer";
   import type { QuizResults } from "../domain/models/quiz-models";
-  import type { IQuizResultsAnalyzer } from "../QuizResultsAnalyzer";
   import type { AchievementDefinition } from "../domain/achievement-definitions";
   import QuizResultsHeader from "./QuizResultsHeader.svelte";
   import QuizPerformanceGrade from "./QuizPerformanceGrade.svelte";
@@ -36,7 +35,7 @@
 
   // Services
   let hapticService = $state<HapticFeedback | null>(null);
-  let analyzer = $state<IQuizResultsAnalyzer | null>(null);
+  const analyzer = quizResultsAnalyzerModule;
 
   // Celebration overlay states
   let showPerfectCelebration = $state(false);
@@ -56,7 +55,6 @@
   // Initialize services and queue celebrations
   onMount(() => {
     hapticService = getHapticFeedback();
-    analyzer = getQuizResultsAnalyzer();
 
     if (results && analyzer) {
       // Show perfect quiz celebration first if applicable

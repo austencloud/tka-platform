@@ -23,7 +23,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { TikaTopicInteraction } from "../contracts/types";
-import type { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
+import { recordAttempt } from "$lib/features/learn/services/quiz-history-recorder";
 import {
   getUserTikaInteractionsPath,
   getUserTikaInteractionPath,
@@ -32,7 +32,7 @@ import {
 const DEFAULT_HISTORY_LIMIT = 20;
 
 export class TikaInteractionTracker {
-  constructor(private readonly quizHistoryRecorder: QuizHistoryRecorder) {}
+  constructor() {}
 
   async recordTopicDiscussion(userId: string, topic: string): Promise<void> {
     const firestore = await getFirestoreInstance();
@@ -103,8 +103,8 @@ export class TikaInteractionTracker {
       });
     }
 
-    // 2. Delegate to QuizHistoryRecorder for mastery tracking
-    await this.quizHistoryRecorder.recordAttempt(userId, {
+    // 2. Delegate to quiz-history-recorder for mastery tracking
+    await recordAttempt(userId, {
       conceptId: topicId,
       quizType: `tika-inline-${quizType}`,
       score: correct ? 100 : 0,

@@ -7,7 +7,7 @@ import {
 } from "three";
 import type { MuseumGrid, WingTheme } from "../../domain/museum-grid-types";
 import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
-import { PlacementPersister } from "./PlacementPersister";
+import { savePlacement, removePlacement } from "../placement-persister";
 
 export interface TorchSceneFns {
   add: (scene: Scene, x: number, z: number, woX: number, woZ: number, theme: WingTheme, id: string) => unknown;
@@ -21,7 +21,6 @@ interface PlacementEntry {
 
 export class MuseumEditorPlacement {
   private history: PlacementEntry[] = [];
-  private persister = new PlacementPersister();
 
   constructor(
     private grid: MuseumGrid,
@@ -57,7 +56,7 @@ export class MuseumEditorPlacement {
       yaw,
     };
 
-    this.persister.save(roomId, placement);
+    savePlacement(roomId, placement);
 
     if (def.category === "fixture") {
       let wallOffsetX = 0;
@@ -100,7 +99,7 @@ export class MuseumEditorPlacement {
     const roomId = entry?.roomId ?? "unknown";
 
     this.history = this.history.filter((h) => h.placementId !== placementId);
-    this.persister.remove(roomId, placementId);
+    removePlacement(roomId, placementId);
   }
 
   undo(): void {
@@ -109,7 +108,7 @@ export class MuseumEditorPlacement {
 
     const scn = this.getScene();
     if (scn) this.torch.remove(scn, entry.placementId);
-    this.persister.remove(entry.roomId, entry.placementId);
+    removePlacement(entry.roomId, entry.placementId);
   }
 
   private spawnPulse(

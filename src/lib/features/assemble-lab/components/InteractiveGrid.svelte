@@ -18,7 +18,7 @@
     MotionColor, Orientation, RotationDirection, } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import type { GridHitTarget } from "../services/contracts/types";
-  import { GridHitTargetCalculator } from "../services/implementations/GridHitTargetCalculator";
+  import { getHitTargets, getHitTargetRadius } from "../services/grid-hit-target-calculator";
   import { SvgPropAnimator } from "../services/implementations/SvgPropAnimator";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
 
@@ -41,13 +41,12 @@
   } = $props();
 
   // Services
-  const calculator = new GridHitTargetCalculator();
   const animator = new SvgPropAnimator();
   const ghostAnimator = new SvgPropAnimator();
 
   // Grid hit targets derived from current grid mode
-  const hitTargets = $derived(calculator.getHitTargets(builderState.gridMode, builderState.showCenter));
-  const hitRadius = calculator.getHitTargetRadius();
+  const hitTargets = $derived(getHitTargets(builderState.gridMode, builderState.showCenter));
+  const hitRadius = getHitTargetRadius();
 
   // Fallback circle radius (shown while SVG loads)
   const FALLBACK_RADIUS = 28;

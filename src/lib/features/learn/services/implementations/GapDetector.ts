@@ -13,18 +13,15 @@
 import type { QuizAnswerEvent } from "../../quiz/domain/models/quiz-models";
 import { QuizType } from "../../quiz/domain/enums/quiz-enums";
 import type { DetectedGap, MisconceptionPattern } from "../contracts/types";
-import type { LetterToConceptMapper } from "./LetterToConceptMapper";
+import { getTypeNodeId } from "../letter-to-concept-mapper";
 import {
   tkaKnowledgeGraph,
 } from "$lib/features/tika/knowledge/semantic-graph";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { QuizHistoryRecorder } from "./QuizHistoryRecorder";
+import { getHistory } from "../quiz-history-recorder";
 
 export class GapDetector {
-  constructor(
-    private readonly mapper: LetterToConceptMapper,
-    private readonly historyRecorder: QuizHistoryRecorder
-  ) {}
+  constructor() {}
 
   detectSingleError(event: QuizAnswerEvent): DetectedGap | null {
     if (event.isCorrect) return null;
@@ -34,8 +31,8 @@ export class GapDetector {
 
     if (!correctLetter || !chosenLetter) return null;
 
-    const correctNodeId = this.mapper.getTypeNodeId(correctLetter);
-    const chosenNodeId = this.mapper.getTypeNodeId(chosenLetter);
+    const correctNodeId = getTypeNodeId(correctLetter);
+    const chosenNodeId = getTypeNodeId(chosenLetter);
 
     if (!correctNodeId || !chosenNodeId) return null;
 
@@ -82,7 +79,7 @@ export class GapDetector {
   async getRecurringMisconceptions(
     userId: string
   ): Promise<MisconceptionPattern[]> {
-    const history = await this.historyRecorder.getHistory(userId, undefined, 50);
+    const history = await getHistory(userId, undefined, 50);
 
     // Count confusion pairs from wrong answers across attempts
     const pairCounts = new Map<
@@ -105,8 +102,8 @@ export class GapDetector {
 
         if (!correctLetter || !chosenLetter) continue;
 
-        const correctNode = this.mapper.getTypeNodeId(correctLetter);
-        const chosenNode = this.mapper.getTypeNodeId(chosenLetter);
+        const correctNode = getTypeNodeId(correctLetter);
+        const chosenNode = getTypeNodeId(chosenLetter);
 
         if (!correctNode || !chosenNode || correctNode === chosenNode) continue;
 

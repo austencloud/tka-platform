@@ -1,10 +1,6 @@
-import { browser } from '$app/environment';
-
-import { ReversalDetector } from './services/implementations/ReversalDetector';
-
-let instance: ReversalDetector | null = null;
+import { reversalDetector } from './services/reversal-detector';
+import type { ReversalDetector } from './services/reversal-detector';
 
 export function getReversalDetector(): ReversalDetector {
-	if (!browser) throw new Error('getReversalDetector() is browser-only');
-	return instance ??= new ReversalDetector();
+	return reversalDetector;
 }

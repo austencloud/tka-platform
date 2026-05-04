@@ -26,7 +26,7 @@ import type { UndoMetadata } from "../../shared/services/contracts/types";
 import { UndoOperationType } from "../../shared/services/contracts/types";
 import { UndoOperationType as UndoOp } from "../../shared/services/contracts/types";
 import type { VariationExplorationOrchestrator } from "../../spell/services/implementations/VariationExplorationOrchestrator";
-import type { SpellServiceLoader } from "$lib/features/create/spell/services/implementations/SpellServiceLoader";
+import * as spellServiceLoaderModule from "$lib/features/create/spell/services/spell-service-loader";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import {
@@ -34,7 +34,7 @@ import {
   Period,
   periodToNumber,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { loopViabilityService } from "$lib/features/create/generate/shared/services/implementations/LoopViabilityService";
+import { loopViabilityService } from "$lib/features/create/generate/shared/services/loop-viability-service";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -42,8 +42,7 @@ import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 
-import { getDurationPatternManager } from "$lib/features/create/shared/getDurationPatternManager";
-import { getSpellServiceLoader } from "$lib/features/create/spell/getSpellServiceLoader";
+import { applyPattern as dpApplyPattern } from "$lib/features/create/shared/services/duration-pattern-manager";
 import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
 
 // Letters with dash motions (Type 3, 4, and 5)
@@ -121,8 +120,7 @@ export function createGenerationActionsState(
               "system",
               generatedSequence.steps.length
             );
-            const durationManager = getDurationPatternManager();
-            const result = durationManager.applyPattern(pattern, generatedSequence);
+            const result = dpApplyPattern(pattern, generatedSequence);
             if (result.success && result.sequence) {
               generatedSequence = result.sequence;
             } else {
@@ -212,7 +210,6 @@ export function createGenerationActionsState(
   // bridge-letter expansion, target-length padding). The actual sequence
   // generation goes through generationOrchestrator (same path as freeform + MCP).
   let spellOrchestrator: VariationExplorationOrchestrator | null = null;
-  let spellServiceLoader: SpellServiceLoader | null = null;
 
   async function onSpellGenerate() {
     const spellState = getSpellState?.();
@@ -228,9 +225,6 @@ export function createGenerationActionsState(
       // Lazy-resolve services
       if (!spellOrchestrator) {
         spellOrchestrator = getVariationExplorationOrchestrator() as VariationExplorationOrchestrator;
-      }
-      if (!spellServiceLoader) {
-        spellServiceLoader = getSpellServiceLoader() as SpellServiceLoader;
       }
 
       const config = getConfig?.();
@@ -263,7 +257,7 @@ export function createGenerationActionsState(
         const extraBridgesNeeded = Math.max(0, spellTarget - finalLetters.length);
 
         if (extraBridgesNeeded > 0) {
-          const graph = await (getSpellServiceLoader() as SpellServiceLoader).getTransitionGraph();
+          const graph = await spellServiceLoaderModule.getTransitionGraph();
           const preferDash = config.motionTypeFilter === "prefer-dash";
           const avoidDash = config.motionTypeFilter === "no-dash";
 
@@ -377,8 +371,7 @@ export function createGenerationActionsState(
         if (template) {
           try {
             const pattern = templateToPattern(template, "system", loopedSequence.steps.length);
-            const durationManager = getDurationPatternManager();
-            const result = durationManager.applyPattern(pattern, loopedSequence);
+            const result = dpApplyPattern(pattern, loopedSequence);
             if (result.success && result.sequence) {
               Object.assign(loopedSequence, result.sequence);
             }

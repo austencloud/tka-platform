@@ -22,10 +22,10 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { FestivalSubmission } from "../../domain/models/festival";
-import type { FestivalRepository } from "./FestivalRepository";
+import { create as createFestival } from "../festival-repository";
 
 export class FestivalSubmissionReviewer {
-  constructor(private readonly festivalRepository: FestivalRepository) {}
+
 
   async getPending(): Promise<FestivalSubmission[]> {
     const db = await getFirestoreInstance();
@@ -51,7 +51,7 @@ export class FestivalSubmissionReviewer {
     const submission = submissionSnap.data() as FestivalSubmission;
     const now = Timestamp.now();
 
-    const festivalId = await this.festivalRepository.create({
+    const festivalId = await createFestival({
       name: submission.name,
       organizationId: "",
       organization: "",

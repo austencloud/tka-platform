@@ -9,7 +9,15 @@ import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import { getSVGGenerator } from "$lib/features/compose/getSVGGenerator";
+import {
+  generateGridSvg,
+  generatePropSvg,
+  generateBluePropSvg,
+  generateRedPropSvg,
+  generateBlueStaffSvg,
+  generateRedStaffSvg,
+} from "$lib/features/compose/services/svg-generator";
+import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
 import { getTrailCapturer } from "$lib/features/compose/getTrailCapturer";
 
@@ -24,24 +32,21 @@ export class AnimatorLoader {
   loadAnimatorServices(): AnimatorServiceLoadResult {
     try {
       // With ITI, all services are already composed at startup - no async loading needed
+      const svgGeneratorAdapter: ISVGGenerator = {
+        generateGridSvg,
+        generatePropSvg,
+        generateBluePropSvg,
+        generateRedPropSvg,
+        generateBlueStaffSvg,
+        generateRedStaffSvg,
+      };
       const services: AnimatorServices = {
-        svgGenerator: getSVGGenerator(),
+        svgGenerator: svgGeneratorAdapter,
         settingsService: settingsService,
         orchestrator: getSequenceAnimationOrchestrator(),
         TrailCapturer: getTrailCapturer(),
         turnsTupleGenerator: turnsTupleGenerator,
       };
-
-      if (!services.svgGenerator) {
-        console.error(
-          "[AnimatorLoader] CRITICAL: getSVGGenerator() returned null/undefined!"
-        );
-        return {
-          success: false,
-          error:
-            "DI container returned null for svgGenerator (this is a container bug)",
-        };
-      }
 
       return { success: true, services };
     } catch (err) {

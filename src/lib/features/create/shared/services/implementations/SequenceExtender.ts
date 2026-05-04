@@ -10,9 +10,10 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ExtensionAnalysis, ExtensionOptions, ExtensionType, CircularizationOption } from "../contracts/types";
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
-import type { ReversalDetector } from "./ReversalDetector";
+import type { ReversalDetector } from "../reversal-detector";
 import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
+type StepConverter = typeof StepConverterSingleton;
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { LOOPValidator } from "./LOOPValidator";
 import type { SequenceAnalyzer } from "./SequenceAnalyzer";
@@ -398,9 +399,9 @@ export class SequenceExtender {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
-import { reversalDetector } from "./ReversalDetector";
+import { reversalDetector } from "../reversal-detector";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { loopValidator } from "./LOOPValidator";
 import { sequenceAnalyzer } from "./SequenceAnalyzer";

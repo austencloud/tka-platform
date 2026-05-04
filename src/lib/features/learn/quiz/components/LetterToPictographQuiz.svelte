@@ -7,7 +7,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import { getGapDetector } from "$lib/features/learn/getGapDetector";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onDestroy, onMount } from "svelte";
-  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
+  import * as QuestionGenerator from "../services/question-generator";
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData, QuizAnswerEvent } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";

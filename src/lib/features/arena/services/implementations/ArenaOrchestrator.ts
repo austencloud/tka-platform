@@ -16,9 +16,17 @@ import {
   MIN_VOTE_INTERVAL_MS,
   RECENT_MATCHUP_BUFFER_SIZE,
 } from "../../domain/constants/arena-constants";
-import type { ArenaRepository } from "./ArenaRepository";
-import type { RatingCalculator } from "./RatingCalculator";
-import type { MatchupSelector } from "../implementations/MatchupSelector";
+import {
+  loadPool,
+  loadRecentVotePairs,
+  saveRatings,
+  saveVote,
+  loadLeaderboard,
+  loadUserStats,
+  loadFullSequenceData,
+} from "$lib/features/arena/services/arena-repository";
+import { computeUpdate, displayRating } from "$lib/features/arena/services/rating-calculator";
+import { selectMatchup } from "$lib/features/arena/services/matchup-selector";
 
 export class ArenaOrchestrator {
   private userId = "";
@@ -31,11 +39,7 @@ export class ArenaOrchestrator {
   private matchupsCompleted = 0;
   private lastVoteTime = 0;
 
-  constructor(
-    private readonly repository: ArenaRepository,
-    private readonly ratingCalculator: RatingCalculator,
-    private readonly matchupSelector: MatchupSelector
-  ) {}
+  constructor() {}
 
   async initialize(userId: string): Promise<void> {
     this.userId = userId;
@@ -44,8 +48,8 @@ export class ArenaOrchestrator {
     try {
       // Load pool and recent pairs in parallel
       const [pool, recentPairs] = await Promise.all([
-        this.repository.loadPool(),
-        this.repository.loadRecentVotePairs(userId, RECENT_MATCHUP_BUFFER_SIZE),
+        loadPool(),
+        loadRecentVotePairs(userId, RECENT_MATCHUP_BUFFER_SIZE),
       ]);
 
       this.pool = pool;
@@ -76,7 +80,7 @@ export class ArenaOrchestrator {
     const loser = isWinnerA ? ratingB : ratingA;
 
     // Compute new ratings
-    const update = this.ratingCalculator.computeUpdate(
+    const update = computeUpdate(
       winner.mu,
       winner.phi,
       winner.sigma,
@@ -92,16 +96,16 @@ export class ArenaOrchestrator {
       mu: update.winnerMu,
       phi: update.winnerPhi,
       sigma: update.winnerSigma,
-      displayRating: this.ratingCalculator.displayRating(update.winnerMu, update.winnerPhi),
+      displayRating: displayRating(update.winnerMu, update.winnerPhi),
       totalMatchups: winner.totalMatchups + 1,
       wins: winner.wins + 1,
       lastMatchAt: now2,
       peakRating: Math.max(
         winner.peakRating,
-        this.ratingCalculator.displayRating(update.winnerMu, update.winnerPhi)
+        displayRating(update.winnerMu, update.winnerPhi)
       ),
       peakRatingDate:
-        this.ratingCalculator.displayRating(update.winnerMu, update.winnerPhi) > winner.peakRating
+        displayRating(update.winnerMu, update.winnerPhi) > winner.peakRating
           ? now2
           : winner.peakRatingDate,
     };
@@ -111,7 +115,7 @@ export class ArenaOrchestrator {
       mu: update.loserMu,
       phi: update.loserPhi,
       sigma: update.loserSigma,
-      displayRating: this.ratingCalculator.displayRating(update.loserMu, update.loserPhi),
+      displayRating: displayRating(update.loserMu, update.loserPhi),
       totalMatchups: loser.totalMatchups + 1,
       losses: loser.losses + 1,
       lastMatchAt: now2,
@@ -119,8 +123,8 @@ export class ArenaOrchestrator {
 
     // Persist vote and updated ratings in parallel
     await Promise.all([
-      this.repository.saveRatings(updatedWinner, updatedLoser),
-      this.repository.saveVote({
+      saveRatings(updatedWinner, updatedLoser),
+      saveVote({
         voterId: this.userId,
         winnerEntryId: winnerId,
         loserEntryId: isWinnerA ? entryB.id : entryA.id,
@@ -154,11 +158,11 @@ export class ArenaOrchestrator {
   }
 
   async loadLeaderboard(limit = 50): Promise<ArenaLeaderboardEntry[]> {
-    return this.repository.loadLeaderboard(limit);
+    return loadLeaderboard(limit);
   }
 
   async loadUserStats(): Promise<ArenaUserStats> {
-    return this.repository.loadUserStats(this.userId);
+    return loadUserStats(this.userId);
   }
 
   isLoading(): boolean {
@@ -199,7 +203,7 @@ export class ArenaOrchestrator {
   }
 
   private buildMatchup(): ArenaMatchup | null {
-    const result = this.matchupSelector.selectMatchup(
+    const result = selectMatchup(
       this.pool,
       this.userId,
       this.recentPairs
@@ -227,8 +231,8 @@ export class ArenaOrchestrator {
     const refB = this.pool.find((c) => c.entry.id === matchup.entryB.id)?.sourceRef;
 
     const [fullA, fullB] = await Promise.all([
-      refA ? this.repository.loadFullSequenceData(refA) : null,
-      refB ? this.repository.loadFullSequenceData(refB) : null,
+      refA ? loadFullSequenceData(refA) : null,
+      refB ? loadFullSequenceData(refB) : null,
     ]);
 
     return {

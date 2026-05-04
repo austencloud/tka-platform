@@ -5,9 +5,13 @@
  * Also loads community favorites for browsing.
  */
 
-import { getFavoriteConfigRepository } from "../getFavoriteConfigRepository";
+import {
+  getMyFavorite,
+  setMyFavorite,
+  clearMyFavorite as clearMyFavoriteInDb,
+  getCommunityFavorites,
+} from "../services/favorite-config-repository";
 import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
-import type { FavoriteConfigRepository } from "$lib/features/create/generate/services/implementations/FavoriteConfigRepository";
 import type { FavoriteConfig, CommunityFavorite } from "../domain/models/favorite-config";
 import type { UIGenerationConfig } from "./generate-config.svelte";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -40,10 +44,9 @@ export function createFavoriteState() {
     }
 
     try {
-      const repo = getFavoriteConfigRepository();
       const [myFav, community] = await Promise.all([
-        repo.getMyFavorite(userId),
-        repo.getCommunityFavorites(20),
+        getMyFavorite(userId),
+        getCommunityFavorites(20),
       ]);
 
       myFavorite = myFav;
@@ -64,8 +67,7 @@ export function createFavoriteState() {
     if (!userId) return;
 
     try {
-      const repo = getFavoriteConfigRepository();
-      await repo.setMyFavorite(userId, config, startEndOptions);
+      await setMyFavorite(userId, config, startEndOptions);
       myFavorite = { config, startEndOptions: startEndOptions ?? null, setAt: new Date() };
     } catch (error) {
       console.error("[FavoriteState] Error saving favorite:", error);
@@ -77,8 +79,7 @@ export function createFavoriteState() {
     if (!userId) return;
 
     try {
-      const repo = getFavoriteConfigRepository();
-      await repo.clearMyFavorite(userId);
+      await clearMyFavoriteInDb(userId);
       myFavorite = null;
       if (activeFavoriteId === "mine") {
         activeFavoriteId = null;

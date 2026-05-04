@@ -22,14 +22,12 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 
 import type { FeedbackItem } from "../../domain/models/feedback-models";
-import { type FeedbackDocumentMapper, feedbackDocumentMapper } from "./FeedbackDocumentMapper";
+import * as feedbackDocumentMapper from "../feedback-document-mapper";
 
 const COLLECTION_NAME = "feedback";
 
 export class FeedbackSubscriptionService {
-  constructor(
-    private readonly mapper: FeedbackDocumentMapper = feedbackDocumentMapper
-  ) {}
+  private readonly mapper = feedbackDocumentMapper;
 
   subscribeToFeedback(
     onUpdate: (items: FeedbackItem[]) => void,

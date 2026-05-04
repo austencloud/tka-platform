@@ -16,8 +16,8 @@
 
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
   import { GalleryRenderer } from "../services/implementations/GalleryRenderer";
-  import { GalleryWriter } from "../services/implementations/GalleryWriter";
-  import { CloudGalleryUploader } from "../services/implementations/CloudGalleryUploader";
+  import { writeToGallery } from "../services/gallery-writer";
+  import { uploadGalleryImage } from "../services/cloud-gallery-uploader";
   import { galleryPersistence } from "../services/implementations/GalleryPersistence";
 
   import GallerySettings from "./GallerySettings.svelte";
@@ -34,8 +34,6 @@
 
   // Services (initialized on mount)
   let galleryRenderer: GalleryRenderer | null = null;
-  let galleryWriter: GalleryWriter | null = null;
-  let cloudUploader: CloudGalleryUploader | null = null;
 
   onMount(async () => {
     // Set up persistence callbacks
@@ -65,8 +63,6 @@
         loaderService,
         startPositionDeriver
       );
-      galleryWriter = new GalleryWriter();
-      cloudUploader = new CloudGalleryUploader();
 
       const sequences = await loaderService.loadSequenceMetadata();
       state.setSequences(sequences);
@@ -182,8 +178,6 @@
    * Write all previewed images to gallery
    */
   async function handleWriteAll() {
-    if (!galleryWriter) return;
-
     const toWrite = state.renderedImages.filter((r) => !r.written);
     if (toWrite.length === 0) return;
 
@@ -198,7 +192,7 @@
       }
 
       try {
-        await galleryWriter.writeToGallery(
+        await writeToGallery(
           img.name,
           blob,
           state.selectedPropType ?? undefined,
@@ -221,7 +215,7 @@
    * Upload all rendered images to Firebase Storage (cloud cache)
    */
   async function handleUploadToCloud() {
-    if (!cloudUploader || !state.selectedPropType) {
+    if (!state.selectedPropType) {
       state.setError(t('gallery_gen_select_prop_first'));
       return;
     }
@@ -247,7 +241,7 @@
       }
 
       try {
-        await cloudUploader.uploadImage(
+        await uploadGalleryImage(
           img.name,
           blob,
           state.selectedPropType,

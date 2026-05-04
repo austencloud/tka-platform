@@ -28,13 +28,12 @@
     insertPhrase,
     removePhrase,
   } from "./domain/effort-timeline-types";
-  import { PhraseInterpolator } from "./services/implementations/PhraseInterpolator";
+  import { interpolatePhrase } from "./services/phrase-interpolator";
 
-  import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
-  import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";
+  import { createAngleCalculator } from "$lib/features/compose/services/angle-calculator";
   import { EndpointCalculator } from "$lib/features/compose/services/implementations/EndpointCalculator";
   import { PropInterpolator } from "$lib/features/compose/services/implementations/PropInterpolator";
-  import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
+  import { mapTimePositionToBeat } from "$lib/features/compose/services/step-calculator";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -64,8 +63,6 @@
 
   // ─── Services (constructed in onMount) ───────────────────────────────
   let propInterpolator: PropInterpolator;
-  let stepCalculator: StepCalculator;
-  const phraseInterpolator = new PhraseInterpolator();
 
   // ─── Core state ──────────────────────────────────────────────────────
   let selectedEffort: EffortId = $state("linear");
@@ -144,11 +141,9 @@
   }
 
   onMount(() => {
-    const angleCalculator = new AngleCalculator();
-    const motionCalculator = new MotionCalculator();
-    const endpointCalculator = new EndpointCalculator(angleCalculator, motionCalculator);
+    const angleCalculator = createAngleCalculator();
+    const endpointCalculator = new EndpointCalculator(angleCalculator);
     propInterpolator = new PropInterpolator(angleCalculator, endpointCalculator);
-    stepCalculator = new StepCalculator();
 
     document.addEventListener("keydown", handleKeydown);
     rafId = requestAnimationFrame(onFrame);
@@ -221,7 +216,7 @@
   }
 
   function updatePropStates() {
-    if (!propInterpolator || !stepCalculator || steps.length === 0) return;
+    if (!propInterpolator || steps.length === 0) return;
 
     const beat1Based = playbackBeat + 1;
     const activePhrase = findPhraseAtBeat(timeline, beat1Based);
@@ -230,7 +225,7 @@
     let localProgress: number;
 
     if (activePhrase) {
-      const result = phraseInterpolator.interpolate(
+      const result = interpolatePhrase(
         activePhrase,
         beat1Based,
         steps.length,
@@ -289,7 +284,7 @@
       }
     } else {
       // No phrase covering this beat - use linear playback
-      const mapped = stepCalculator.mapTimePositionToBeat(playbackBeat, steps);
+      const mapped = mapTimePositionToBeat(playbackBeat, steps);
       stepIndex = mapped.stepIndex;
       localProgress = mapped.stepProgress;
     }

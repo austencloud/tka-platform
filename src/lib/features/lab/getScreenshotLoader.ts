@@ -1,9 +1,8 @@
 import { browser } from '$app/environment';
-import { ScreenshotLoader } from './services/implementations/ScreenshotLoader';
 
-let instance: ScreenshotLoader | null = null;
+import * as screenshotLoader from './services/screenshot-loader';
 
-export function getScreenshotLoader(): ScreenshotLoader {
+export function getScreenshotLoader() {
 	if (!browser) throw new Error('getScreenshotLoader() is browser-only');
-	return instance ??= new ScreenshotLoader();
+	return screenshotLoader;
 }

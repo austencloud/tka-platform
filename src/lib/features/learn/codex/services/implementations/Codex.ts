@@ -10,7 +10,17 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contra
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { QuizRepoManager } from "../../../quiz/services/implementations/QuizRepoManager";
-import type { CodexPictographUpdater } from "./CodexPictographUpdater";
+import type {
+  rotateAllPictographs,
+  mirrorAllPictographs,
+  colorSwapAllPictographs,
+} from "../codex-pictograph-updater";
+
+interface ICodexPictographUpdater {
+  rotateAllPictographs: typeof rotateAllPictographs;
+  mirrorAllPictographs: typeof mirrorAllPictographs;
+  colorSwapAllPictographs: typeof colorSwapAllPictographs;
+}
 
 import type { CodexLetterMappingRepo } from "./CodexLetterMappingRepo";
 
@@ -20,7 +30,7 @@ export class Codex {
   constructor(
     private letterMappingRepo: CodexLetterMappingRepo,
     private lessonRepo: QuizRepoManager,
-    private operationsService: CodexPictographUpdater,
+    private operationsService: ICodexPictographUpdater,
     private LetterQueryHandler: ILetterQueryHandler
   ) {}
 

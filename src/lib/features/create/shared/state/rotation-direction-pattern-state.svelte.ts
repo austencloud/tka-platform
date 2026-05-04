@@ -6,7 +6,12 @@
  */
 
 import type { RotationDirectionPattern } from "../domain/models/RotationDirectionPatternData";
-import { RotationDirectionPatternManager } from "../services/implementations/RotationDirectionPatternManager";
+import {
+  loadPatterns as rdLoadPatterns,
+  extractPattern as rdExtractPattern,
+  savePattern as rdSavePattern,
+  deletePattern as rdDeletePattern,
+} from "../services/rotation-direction-pattern-manager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -18,9 +23,6 @@ let _isLoading = false;
 let _selectedPattern: RotationDirectionPattern | null = null;
 let _error: string | null = null;
 let _initialized = false;
-
-// Create service instance
-const rotationDirectionPatternManager = new RotationDirectionPatternManager();
 
 export const rotationDirectionPatternState = {
   // Getters
@@ -55,7 +57,7 @@ export const rotationDirectionPatternState = {
     _error = null;
 
     try {
-      _patterns = await rotationDirectionPatternManager.loadPatterns(userId);
+      _patterns = await rdLoadPatterns(userId);
       _initialized = true;
       logger.log(`Loaded ${_patterns.length} rotation direction patterns`);
     } catch (err) {
@@ -80,14 +82,8 @@ export const rotationDirectionPatternState = {
     _error = null;
 
     try {
-      const patternData = rotationDirectionPatternManager.extractPattern(
-        sequence,
-        name
-      );
-      const saved = await rotationDirectionPatternManager.savePattern(
-        patternData,
-        userId
-      );
+      const patternData = rdExtractPattern(sequence, name);
+      const saved = await rdSavePattern(patternData, userId);
 
       // Add to local state
       _patterns = [saved, ..._patterns];
@@ -112,7 +108,7 @@ export const rotationDirectionPatternState = {
     _error = null;
 
     try {
-      await rotationDirectionPatternManager.deletePattern(patternId, userId);
+      await rdDeletePattern(patternId, userId);
 
       // Remove from local state
       _patterns = _patterns.filter((p) => p.id !== patternId);

@@ -11,7 +11,7 @@
 
 import type { LibraryQueryOptions } from "$lib/features/library/services/contracts/types";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-import { FileNameConverter } from "../services/implementations/FileNameConverter";
+import { convertFileName } from "../services/file-name-converter";
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
@@ -29,8 +29,6 @@ export interface RetroFile {
 	sequence: LibrarySequence;
 }
 
-const converter = new FileNameConverter();
-
 /**
  * Firestore timestamps come back with a .toDate() method, but after
  * hydration they might already be plain Date objects. This handles both.
@@ -44,7 +42,7 @@ function toDate(timestamp: unknown): Date {
 }
 
 function sequenceToRetroFile(seq: LibrarySequence, dosNames: string[]): RetroFile {
-	const dosName = converter.convert(
+	const dosName = convertFileName(
 		seq.displayName || seq.name || seq.word || "UNTITLED",
 		".SEQ",
 		dosNames,

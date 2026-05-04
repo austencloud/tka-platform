@@ -50,7 +50,7 @@ import { featureFlagService } from "../services/PostHogFeatureFlagService.svelte
 import type { UserRole } from "../domain/models/UserRole";
 import { identifyUser, resetUser } from "../../analytics/services/posthog";
 
-import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { ensureSystemCollections } from "$lib/features/library/services/collection-manager";
 import { getDeviceIdService } from "$lib/shared/auth/getDeviceIdService";
 
 import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
@@ -592,10 +592,7 @@ export async function initializeAuthListener() {
             // cleared _state.user while we were awaiting Firestore.
             if (!_state.user) return;
 
-            const collectionService = getCollectionManager();
-            if (collectionService?.ensureSystemCollections) {
-              await collectionService.ensureSystemCollections();
-            }
+            await ensureSystemCollections();
           } catch (error) {
             console.warn(
               "⚠️ [authState] System collections init failed:",

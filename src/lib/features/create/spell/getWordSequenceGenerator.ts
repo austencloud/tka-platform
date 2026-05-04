@@ -6,8 +6,8 @@ import { getStepConverter } from '$lib/features/create/generate/shared/getStepCo
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { getSequenceExtender } from '$lib/features/create/shared/getSequenceExtender';
 import { getStartPositionValidator } from './getStartPositionValidator';
-import { getOrientationContinuityValidator } from './getOrientationContinuityValidator';
-import { getReversalDetector } from '$lib/features/create/shared/getReversalDetector';
+import * as orientationContinuityValidator from './services/orientation-continuity-validator';
+import { reversalDetector } from '$lib/features/create/shared/services/reversal-detector';
 
 let instance: WordSequenceGenerator | null = null;
 
@@ -20,7 +20,7 @@ export function getWordSequenceGenerator(): WordSequenceGenerator {
 		orientationCalculator,
 		getSequenceExtender(),
 		getStartPositionValidator(),
-		getOrientationContinuityValidator(),
-		getReversalDetector()
+		orientationContinuityValidator,
+		reversalDetector
 	);
 }

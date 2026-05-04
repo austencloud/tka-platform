@@ -14,7 +14,7 @@ import type { EquivalenceResult, EquivalenceType, TransformDetails, SequenceSign
 import type { SequenceCanonicalizer } from "./SequenceCanonicalizer";
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { SpatialTransformDetector } from "./SpatialTransformDetector";
-import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
+import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/word-cyclic-equivalence-detector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceEquivalenceDetector {
@@ -383,7 +383,7 @@ export class SequenceEquivalenceDetector {
 import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
 import { stepSignatureGenerator } from "./StepSignatureGenerator";
 import { spatialTransformDetector } from "./SpatialTransformDetector";
-import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
+import * as wordCyclicEquivalenceDetector from "$lib/features/create/shared/services/word-cyclic-equivalence-detector";
 
 export const sequenceEquivalenceDetector = new SequenceEquivalenceDetector(
   sequenceCanonicalizer,

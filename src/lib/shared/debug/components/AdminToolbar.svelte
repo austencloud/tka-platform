@@ -26,7 +26,7 @@
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import { getCloudThumbnailCache } from "$lib/features/browse/sequences/display/getCloudThumbnailCache";
+  import * as cloudThumbnailCacheModule from "$lib/features/browse/sequences/display/services/cloud-thumbnail-cache";
   import { getThumbnailLocalCache } from "$lib/features/browse/sequences/display/getThumbnailLocalCache";
   import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
   import { getQuickAccessPersister } from "$lib/shared/debug/getQuickAccessPersister";
@@ -219,19 +219,17 @@ import type { QuickAccessUser } from "../services/contracts/types";
     introResetMessage = "Scanning cloud thumbnails...";
 
     try {
-      const cloudCache = getCloudThumbnailCache();
-
       let totalDeleted = 0;
 
       console.log("🗑️ Deleting gallery thumbnails...");
-      const galleryCount = await cloudCache.deleteVariant("gallery", (p) => {
+      const galleryCount = await cloudThumbnailCacheModule.deleteVariant("gallery", (p) => {
         introResetMessage = `Gallery: ${p.deleted}/${p.total}`;
       });
       totalDeleted += galleryCount;
       console.log(`🗑️ Deleted ${galleryCount} gallery thumbnails`);
 
       console.log("🗑️ Deleting wordcard thumbnails...");
-      const wordcardCount = await cloudCache.deleteVariant("wordcard", (p) => {
+      const wordcardCount = await cloudThumbnailCacheModule.deleteVariant("wordcard", (p) => {
         introResetMessage = `Choreo card: ${p.deleted}/${p.total}`;
       });
       totalDeleted += wordcardCount;

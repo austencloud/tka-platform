@@ -8,7 +8,7 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
   --option-header-bg, --option-header-border, --option-header-shadow, --option-header-text
 -->
 <script lang="ts">
-  import { LetterTypeTextPainter } from "../../utils/letter-type-text-painter";
+  import { formatSectionHeader } from "../../services/letter-type-text-painter";
 
   const { letterType = "mixed" } = $props<{
     letterType?: string;
@@ -40,7 +40,7 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
 
   // Generate colored header text
   const buttonText = $derived(
-    LetterTypeTextPainter.formatSectionHeader(
+    formatSectionHeader(
       typeInfo().typeName,
       typeInfo().description
     )

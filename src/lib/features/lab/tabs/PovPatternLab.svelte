@@ -7,7 +7,6 @@
 <script lang="ts">
 
 import { getPoiDeviceManager } from "$lib/features/poi/getPoiDeviceManager";
-import { getPoiImageLibrary } from "$lib/features/poi/getPoiImageLibrary";
 import { getStripPatternEngine } from "$lib/features/poi/getStripPatternEngine";
   import { onDestroy } from "svelte";
   import { createPoiState } from "$lib/features/poi/state/poi-state.svelte";
@@ -28,7 +27,6 @@ import { getStripPatternEngine } from "$lib/features/poi/getStripPatternEngine";
   const poi = createPoiState(
     getStripPatternEngine(),
     getPoiDeviceManager(),
-    getPoiImageLibrary(),
   );
   setPoiContext(poi);
 

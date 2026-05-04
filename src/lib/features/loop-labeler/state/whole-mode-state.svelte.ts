@@ -6,7 +6,7 @@
  */
 
 import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
-import { getLOOPDesignator } from "$lib/features/loop-labeler/getLOOPDesignator";
+import { isDuplicateDesignation } from "../services/loop-designator";
 import type {
   LOOPDesignation,
   LabeledSequence,
@@ -16,7 +16,6 @@ import type {
 import type { ComponentId } from "../domain/constants/loop-components";
 import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { LOOPLabelsFirebaseRepository } from "../services/implementations/LOOPLabelsFirebaseRepository";
-import type { LOOPDesignator } from "../services/implementations/LOOPDesignator";
 
 /**
  * Map component IDs to their corresponding interval keys
@@ -84,8 +83,6 @@ export function createWholeModeState(): WholeModeState {
   // Services
   const labelsService =
     getLOOPLabelsFirebaseRepository() as LOOPLabelsFirebaseRepository | null;
-  const designationService =
-    getLOOPDesignator() as LOOPDesignator | null;
 
   // Actions
   const actions = {
@@ -193,15 +190,9 @@ export function createWholeModeState(): WholeModeState {
       };
 
       // Check if this exact combination already exists
-      if (designationService) {
-        const exists = designationService.isDuplicateDesignation(
-          designation,
-          pendingDesignations
-        );
-        if (exists) {
-          console.warn("[WholeModeState] Designation already exists");
-          return;
-        }
+      if (isDuplicateDesignation(designation, pendingDesignations)) {
+        console.warn("[WholeModeState] Designation already exists");
+        return;
       }
 
       pendingDesignations = [...pendingDesignations, designation];

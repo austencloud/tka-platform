@@ -18,7 +18,8 @@ import {
   GenerationMode,
   PropContinuity,
 } from "../../domain/models/generate-models";
-import type { SequenceMetadataManager } from "./SequenceMetadataManager";
+import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "../sequence-metadata-manager";
+type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";
 import { LOOPType, Period as EnginePeriod } from "@tka/sequence-engine/loop";
@@ -241,8 +242,8 @@ export class GenerationOrchestrator {
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 import { BrowserVariationProvider } from "./BrowserVariationProvider";
 import { BuildResultTransformer } from "./BuildResultTransformer";
-import { sequenceMetadataManager } from "./SequenceMetadataManager";
-import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+import { sequenceMetadataManager } from "../sequence-metadata-manager";
+import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
 import { orientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 
 const browserVariationProvider = new BrowserVariationProvider(

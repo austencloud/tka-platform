@@ -4,7 +4,7 @@ Delegates ALL logic to services (SRP compliant)
 -->
 <script lang="ts">
 
-import { getCardConfigurator } from "$lib/features/create/generate/shared/getCardConfigurator";
+import { buildCardDescriptors } from "$lib/features/create/generate/shared/services/card-configurator";
 import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/getLOOPParameterProvider";
   import { onMount, getContext } from "svelte";
   import { flip } from "svelte/animate";
@@ -13,8 +13,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
 
   import type { CardDescriptor } from "../shared/services/contracts/types";
   import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
-  import type { CardConfigurator } from "../shared/services/implementations/CardConfigurator";
-  import { ResponsiveTypographer } from "../shared/services/implementations/ResponsiveTypographer";
+  import { calculateResponsiveFontSize } from "../shared/services/responsive-typographer";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
   import type {
@@ -30,7 +29,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
-  import { spellServiceLoader } from "$lib/features/create/spell/services/implementations/SpellServiceLoader";
+  import * as spellServiceLoader from "$lib/features/create/spell/services/spell-service-loader";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
@@ -84,8 +83,6 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   // Services - use $state to make them reactive
-  let typographyService = $state<ResponsiveTypographer | null>(null);
-  let cardConfigService = $state<CardConfigurator | null>(null);
   let loopParamProvider = $state<LOOPParameterProvider | null>(null);
 
   // State
@@ -239,8 +236,6 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
 
   // Initialize services
   onMount(() => {
-    typographyService = new ResponsiveTypographer();
-    cardConfigService = getCardConfigurator();
     loopParamProvider = getLOOPParameterProvider();
 
     updateFontSize();
@@ -250,13 +245,12 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   });
 
   function updateFontSize() {
-    if (!typographyService) return;
     // Desktop gets larger header text (11-18px) for better readability
     // Mobile/tablet stays at (9-14px)
     const isDesktop = window.innerWidth >= 1280;
     headerFontSize = isDesktop
-      ? typographyService.calculateResponsiveFontSize(11, 18, 1.2)
-      : typographyService.calculateResponsiveFontSize(9, 14, 1.2);
+      ? calculateResponsiveFontSize(11, 18, 1.2)
+      : calculateResponsiveFontSize(9, 14, 1.2);
   }
 
   // Event handlers - safe because we check loopParamProvider exists
@@ -391,7 +385,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   // the card list to recalculate because Svelte doesn't always track deep
   // property reads that happen inside a called method like buildCardDescriptors.
   let cards = $derived.by((): CardDescriptor[] => {
-    if (!cardConfigService || !currentLevel) return [];
+    if (!currentLevel) return [];
 
     // Explicit reads so Svelte registers these as reactive dependencies.
     // The period card's visibility depends on both values.
@@ -399,7 +393,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
     const _loopType = config.loopType;
     void _loopType;
 
-    return cardConfigService.buildCardDescriptors(
+    return buildCardDescriptors(
       config,
       currentLevel,
       isFreeformMode,

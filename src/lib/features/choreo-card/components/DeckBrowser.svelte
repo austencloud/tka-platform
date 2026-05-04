@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
 
-import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExporter";
+import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
@@ -21,9 +21,7 @@ import { getPrintZipExporter } from "$lib/features/choreo-card/getPrintZipExport
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
-  import type { PrintPDFExporter } from "../services/implementations/PrintPDFExporter";
 import type { CardPair } from "../services/contracts/types";
-  import type { PrintZipExporter } from "../services/implementations/PrintZipExporter";
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
   interface Props {
@@ -138,14 +136,13 @@ import type { CardPair } from "../services/contracts/types";
     if (renderedPairs.length === 0) return;
     isExporting = true;
     try {
-      // Lazy-load PrintPDFExporter - it pulls pdf-lib (~400KB + CSP-violating
+      // Lazy-load print-pdf-exporter - it pulls pdf-lib (~400KB + CSP-violating
       // runtime codegen). Only loaded when the user actually exports.
-      const { PrintPDFExporter } = await import(
-        "$lib/features/choreo-card/services/implementations/PrintPDFExporter"
+      const { exportHomePrintPDF } = await import(
+        "$lib/features/choreo-card/services/print-pdf-exporter"
       );
-      const exporter: PrintPDFExporter = new PrintPDFExporter();
       const deckName = selectedDeck?.name ?? "deck";
-      const blob = await exporter.exportHomePrintPDF(renderedPairs, deckName, cardSize);
+      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -161,9 +158,8 @@ import type { CardPair } from "../services/contracts/types";
     if (renderedPairs.length === 0) return;
     isExporting = true;
     try {
-      const exporter = getPrintZipExporter() as PrintZipExporter;
       const deckName = selectedDeck?.name ?? "deck";
-      const blob = await exporter.exportDeckZIP(renderedPairs, deckName);
+      const blob = await exportDeckZIP(renderedPairs, deckName);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

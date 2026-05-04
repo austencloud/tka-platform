@@ -24,8 +24,7 @@
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-  import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
-  import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";
+  import { createAngleCalculator } from "$lib/features/compose/services/angle-calculator";
   import { EndpointCalculator } from "$lib/features/compose/services/implementations/EndpointCalculator";
   import { PropInterpolator } from "$lib/features/compose/services/implementations/PropInterpolator";
 
@@ -41,11 +40,9 @@
   let propInterpolator: PropInterpolator | null = $state(null);
 
   onMount(() => {
-    const angleCalculator = new AngleCalculator();
-    const motionCalculator = new MotionCalculator();
+    const angleCalculator = createAngleCalculator();
     const endpointCalculator = new EndpointCalculator(
       angleCalculator,
-      motionCalculator,
     );
     propInterpolator = new PropInterpolator(
       angleCalculator,

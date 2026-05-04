@@ -1,6 +1,10 @@
-import type { ProductLoader } from "../services/implementations/ProductLoader";
 import type { MerchCheckoutCreator } from "../services/implementations/MerchCheckoutCreator";
 import type { Product } from "../domain/models/Product";
+
+interface ProductLoader {
+  loadActiveProducts(): Promise<Product[]>;
+  loadProduct(productId: string): Promise<Product | null>;
+}
 
 export function createStoreState(
   productLoader: ProductLoader,

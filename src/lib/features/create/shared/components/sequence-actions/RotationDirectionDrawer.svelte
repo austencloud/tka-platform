@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
 
-import { getRotationDirectionPatternManager } from "$lib/features/create/shared/getRotationDirectionPatternManager";
+import * as rotationDirectionPatternManagerModule from "$lib/features/create/shared/services/rotation-direction-pattern-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import { rotationDirectionPatternState } from "../../state/rotation-direction-pattern-state.svelte.ts";
@@ -22,7 +22,6 @@ import { getRotationDirectionPatternManager } from "$lib/features/create/shared/
     createUniformPattern,
     type RotationDirectionTemplateDefinition,
   } from "../../domain/templates/rotation-direction-templates";
-  import type { RotationDirectionPatternManager } from "../../services/implementations/RotationDirectionPatternManager";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
   // Child components
@@ -59,9 +58,6 @@ import { getRotationDirectionPatternManager } from "$lib/features/create/shared/
   let savingPattern = $state(false);
   let applyingPattern = $state(false);
   let errorMessage = $state<string | null>(null);
-
-  // Service via DI
-  const rotationPatternService = getRotationDirectionPatternManager();
 
   // Derived state
   const isMobile = $derived(!layoutState.isSideBySideLayout);
@@ -114,7 +110,7 @@ import { getRotationDirectionPatternManager } from "$lib/features/create/shared/
     errorMessage = null;
 
     try {
-      const result = await rotationPatternService.applyPattern(
+      const result = await rotationDirectionPatternManagerModule.applyPattern(
         pattern,
         sequence,
         targetHand

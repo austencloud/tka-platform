@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
 import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/effort-types";
-import { EffortHapticMapper } from "$lib/features/effort-lab/services/implementations/EffortHapticMapper";
+import * as effortHapticMapper from "$lib/features/effort-lab/services/effort-haptic-mapper";
 import type { HapticFeedbackConfig, HapticFeedbackType, HapticImpactStyle, HapticNotificationType } from "../contracts/types";
 import type { PlatformDetector } from "$lib/shared/platform/services/implementations/PlatformDetector";
 
@@ -24,7 +24,7 @@ const DEFAULT_CONFIG: HapticFeedbackConfig = {
 export class HapticFeedback {
   private lastFeedbackTime: number = 0;
   private config: HapticFeedbackConfig = { ...DEFAULT_CONFIG };
-  private effortMapper: EffortHapticMapper | null = null;
+  private _effortMapper = effortHapticMapper;
   private nativePlatformDetector: PlatformDetector | null;
   private hasVibrate: boolean = false;
 
@@ -85,11 +85,7 @@ export class HapticFeedback {
     if (!this.isNative()) return false;
     this.lastFeedbackTime = Date.now();
 
-    if (!this.effortMapper) {
-      this.effortMapper = new EffortHapticMapper();
-    }
-
-    const pattern = this.effortMapper.generatePattern(effortId, params, durationMs);
+    const pattern = this._effortMapper.generatePattern(effortId, params, durationMs);
     this.playPatternAsNativeImpacts(pattern);
     return true;
   }

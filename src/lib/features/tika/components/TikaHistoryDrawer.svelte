@@ -11,7 +11,16 @@
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import TikaHistoryItem from "./TikaHistoryItem.svelte";
   import type { TikaSessionPreview } from "../domain/models/tika-conversation-models";
-  import type { TikaSessionRepository } from "../services/implementations/TikaSessionRepository";
+  import type { TikaSessionPreview, TikaSessionQueryOptions } from "../domain/models/tika-conversation-models";
+
+  interface SessionRepository {
+    subscribeToSessions(
+      callback: (sessions: TikaSessionPreview[]) => void,
+      options?: TikaSessionQueryOptions,
+      onError?: (error: Error) => void
+    ): () => void;
+    deleteSession(sessionId: string): Promise<void>;
+  }
 
   let {
     repository,
@@ -20,7 +29,7 @@
     onLoadSession,
     onClose,
   }: {
-    repository: TikaSessionRepository;
+    repository: SessionRepository;
     currentSessionId: string | null;
     onNewChat: () => void;
     onLoadSession: (sessionId: string) => void;

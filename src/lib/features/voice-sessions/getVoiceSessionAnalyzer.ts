@@ -1,6 +1,5 @@
-import { VoiceSessionAnalyzer } from './services/implementations/VoiceSessionAnalyzer';
+import * as voiceSessionAnalyzer from './services/voice-session-analyzer';
 
-let instance: VoiceSessionAnalyzer | null = null;
-export function getVoiceSessionAnalyzer(): VoiceSessionAnalyzer {
-  return instance ??= new VoiceSessionAnalyzer();
+export function getVoiceSessionAnalyzer(): typeof voiceSessionAnalyzer {
+  return voiceSessionAnalyzer;
 }

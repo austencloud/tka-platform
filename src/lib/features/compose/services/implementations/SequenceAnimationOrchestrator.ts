@@ -17,11 +17,17 @@ import type {
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { AnimationStateManager } from "../implementations/AnimationStateManager";
-import type { StepCalculator } from "../implementations/StepCalculator";
+import {
+  validateSteps,
+  calculateBeatState,
+  calculateTotalDuration,
+  calculateBeatStateDurationAware,
+  getStepStartTime,
+} from "../step-calculator";
 import type { PropInterpolator } from "./PropInterpolator";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
-import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
+import { interpolatePhrase } from "$lib/features/phrase-effort-lab/services/phrase-interpolator";
 import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -47,7 +53,6 @@ export class SequenceAnimationOrchestrator {
   private missingMotionLogged = new Set<number>();
   private metadata: SequenceMetadata = { word: "", author: "", totalSteps: 0 };
   private effortTimeline: EffortTimeline | null = null;
-  private phraseInterpolator = new PhraseInterpolator();
   private visibilityManagerOverride: AnimationVisibilityStateManager | null = null;
   private initialized = false;
   private currentStepIndex = 0;
@@ -56,7 +61,6 @@ export class SequenceAnimationOrchestrator {
 
   constructor(
     private readonly animationStateService: AnimationStateManager,
-    private readonly stepCalculationService: StepCalculator,
     private readonly propInterpolationService: PropInterpolator
   ) {}
 
@@ -104,7 +108,7 @@ export class SequenceAnimationOrchestrator {
       }
 
       // Validate steps using focused service
-      if (!this.stepCalculationService.validateSteps(steps)) {
+      if (!validateSteps(steps)) {
         throw new Error("Invalid step data structure");
       }
 
@@ -199,7 +203,7 @@ export class SequenceAnimationOrchestrator {
     const adjustedBeat = currentStep - 1;
 
     // Use focused service for beat calculations
-    const stepState = this.stepCalculationService.calculateBeatState(
+    const stepState = calculateBeatState(
       adjustedBeat,
       this.steps,
       this.totalSteps
@@ -244,7 +248,7 @@ export class SequenceAnimationOrchestrator {
 
       if (phrase) {
         // Use phrase-level interpolation
-        const phraseResult = this.phraseInterpolator.interpolate(
+        const phraseResult = interpolatePhrase(
           phrase, currentStep, this.steps.length,
         );
         const targetStep = this.steps[phraseResult.stepIndex];
@@ -426,7 +430,7 @@ export class SequenceAnimationOrchestrator {
    * Does NOT include start position duration.
    */
   getTotalDuration(): number {
-    return this.stepCalculationService.calculateTotalDuration(this.steps);
+    return calculateTotalDuration(this.steps);
   }
 
   /**
@@ -476,7 +480,7 @@ export class SequenceAnimationOrchestrator {
     const adjustedTimePosition = timePosition - startPosDuration;
 
     // Use duration-aware beat calculation
-    const stepState = this.stepCalculationService.calculateBeatStateDurationAware(
+    const stepState = calculateBeatStateDurationAware(
       adjustedTimePosition,
       this.steps
     );
@@ -516,7 +520,7 @@ export class SequenceAnimationOrchestrator {
 
       if (phrase) {
         // Use phrase-level interpolation
-        const phraseResult = this.phraseInterpolator.interpolate(
+        const phraseResult = interpolatePhrase(
           phrase, currentStep, this.steps.length,
         );
         const targetStep = this.steps[phraseResult.stepIndex];
@@ -648,7 +652,7 @@ export class SequenceAnimationOrchestrator {
     const beatProgress = beat - Math.floor(beat);
 
     // Calculate time position: startPosDuration + sum of all previous beat durations + progress
-    let timePosition = startPosDuration + this.stepCalculationService.getStepStartTime(stepNumber, this.steps);
+    let timePosition = startPosDuration + getStepStartTime(stepNumber, this.steps);
 
     // Add progress within current beat
     if (stepNumber >= 0 && stepNumber < this.steps.length) {

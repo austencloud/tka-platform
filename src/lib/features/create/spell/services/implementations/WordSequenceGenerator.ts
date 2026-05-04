@@ -8,17 +8,18 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
+type StepConverter = typeof StepConverterSingleton;
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { SequenceExtender } from "../../../shared/services/implementations/SequenceExtender";
-import type { ReversalDetector } from "../../../shared/services/implementations/ReversalDetector";
+import type { ReversalDetector } from "../../../shared/services/reversal-detector";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 import type { LetterTransitionGraph } from "../implementations/LetterTransitionGraph";
 import type { StartPositionValidator } from "./StartPositionValidator";
-import type { OrientationContinuityValidator } from "./OrientationContinuityValidator";
+import type { OrientationContinuityValidator } from "../orientation-continuity-validator";
 import type {
   SpellGenerationOptions,
   SpellResult,
@@ -786,12 +787,12 @@ export class WordSequenceGenerator {
 // ============================================================================
 import { letterTransitionGraph } from "./LetterTransitionGraph";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import { startPositionValidator } from "./StartPositionValidator";
-import { orientationContinuityValidator } from "./OrientationContinuityValidator";
-import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+import * as orientationContinuityValidator from "../orientation-continuity-validator";
+import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
 
 export const wordSequenceGenerator = new WordSequenceGenerator(
   letterTransitionGraph,

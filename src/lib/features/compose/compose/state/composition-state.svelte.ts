@@ -22,7 +22,7 @@ import {
   getDefaultTrailSettings,
 } from "../domain/types";
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
-import { dexieCompositionRepository } from "../../services/implementations/DexieCompositionRepository";
+import { getComposition as dexieGetComposition, exists as dexieExists } from "../../services/dexie-composition-repository";
 import { compositionSyncer } from "../../services/implementations/CompositionSyncer";
 import { loadCustomPresets } from "$lib/features/constraint-layout-lab/services/LayoutPersistence";
 import type { CellMediaType } from "../domain/types";
@@ -500,7 +500,7 @@ export function createCompositionState() {
 
     try {
       const loaded =
-        await dexieCompositionRepository.getComposition(compositionId);
+        await dexieGetComposition(compositionId);
       if (loaded) {
         loadComposition(loaded);
       }
@@ -542,7 +542,7 @@ export function createCompositionState() {
    * Check if the current composition has been saved (exists in DB).
    */
   async function isCompositionSaved(): Promise<boolean> {
-    return await dexieCompositionRepository.exists(composition.id);
+    return await dexieExists(composition.id);
   }
 
   // =========================================================================

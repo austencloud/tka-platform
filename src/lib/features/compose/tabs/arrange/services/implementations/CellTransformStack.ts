@@ -11,11 +11,9 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
-import type { ArrangeLayerTransformer } from "../implementations/ArrangeLayerTransformer";
+import { applyTransform } from "../arrange-layer-transformer";
 
 export class CellTransformStack {
-  constructor(private readonly transformer: ArrangeLayerTransformer) {}
-
   async computeEffective(
     original: SequenceData,
     stack: AppliedTransform[]
@@ -24,7 +22,7 @@ export class CellTransformStack {
 
     let current = original;
     for (const transform of stack) {
-      const result = await this.transformer.applyTransform(
+      const result = await applyTransform(
         current,
         transform.type
       );

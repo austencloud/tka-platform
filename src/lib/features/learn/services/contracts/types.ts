@@ -1,4 +1,3 @@
-import type { LetterBreakdownGenerator } from "../implementations/LetterBreakdownGenerator";
 import type { LearningProgress } from "../../domain/types";
 
 /**

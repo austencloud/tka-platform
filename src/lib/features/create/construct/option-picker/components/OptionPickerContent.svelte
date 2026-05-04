@@ -6,8 +6,8 @@ Uses organizer and sizer services for section grouping and sizing.
 -->
 <script lang="ts">
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { OptionOrganizer } from "$lib/features/create/construct/option-picker/services/implementations/OptionOrganizer";
-  import type { IOptionGridFitCalculator } from "../services/contracts/types";
+  import type { OrganizedSection, SortMethod } from "../domain/option-picker-types";
+  import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/contracts/types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   // CSS animations used instead of Svelte transitions to avoid carousel dimension issues
   import OptionSection from "./OptionSection.svelte";
@@ -16,12 +16,12 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionCard from "./OptionCard.svelte";
   import OptionViewerSwipeLayout from "../swipe-layout/components/OptionViewerSwipeLayout.svelte";
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
-  import { continuationIdentifier } from "../services/implementations/ContinuationIdentifier";
+  import { identifyContinuation } from "../services/continuation-identifier";
 
   interface Props {
     options: PreparedPictographData[];
-    organizerService: OptionOrganizer | null;
-    sizerService: IOptionGridFitCalculator | null;
+    organizerService: ((pictographs: PictographData[], sortMethod: SortMethod) => OrganizedSection[]) | null;
+    sizerService: ((params: DeviceAwareSizingParams) => DeviceAwareSizingResult) | null;
     onSelect: (option: PreparedPictographData) => void;
     // Filter props
     isContinuousOnly?: boolean;
@@ -75,7 +75,7 @@ Uses organizer and sizer services for section grouping and sizing.
     if (!organizerService || options.length === 0) {
       return [];
     }
-    return organizerService.organizePictographs(options, "type");
+    return organizerService(options, "type");
   });
 
   // Apply continuation reordering when in continuous mode
@@ -98,7 +98,7 @@ Uses organizer and sizer services for section grouping and sizing.
     const reorderedSections = sections.map((section) => {
       if (section.title !== lastClickedSlot.typeSection) return section;
 
-      const continuation = continuationIdentifier.identifyContinuation(
+      const continuation = identifyContinuation(
         referenceBeat,
         section.pictographs
       );
@@ -215,7 +215,7 @@ Uses organizer and sizer services for section grouping and sizing.
     }
 
     try {
-      const result = sizerService.calculateDeviceAwareSize({
+      const result = sizerService({
         count: options.length,
         containerWidth: containerWidth,
         containerHeight: containerHeight,

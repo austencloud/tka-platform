@@ -1,12 +1,10 @@
 import type { Deck } from "../../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { DeckLoader } from "./DeckLoader";
+import { loadSequencesByIds } from "../deck-loader";
 import type { FamilyRatioGroup } from "../contracts/types";
 import { VTG_RATIO_TURNS_MAP } from "../../domain/elemental-theme";
 
 export class VtgFamilyAggregator {
-  constructor(private readonly deckLoader: DeckLoader) {}
-
   async aggregateFamilySequences(
     familyId: string,
     decks: Deck[],
@@ -22,7 +20,7 @@ export class VtgFamilyAggregator {
 
     const results = await Promise.all(
       deckFamilyPairs.map(async ({ deck, family }) => {
-        const sequences = await this.deckLoader.loadSequencesByIds(
+        const sequences = await loadSequencesByIds(
           deck.id,
           family.sequenceIds as string[],
         );

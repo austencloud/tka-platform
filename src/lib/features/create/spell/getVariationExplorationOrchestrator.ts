@@ -1,11 +1,8 @@
 import { browser } from '$app/environment';
 
-import { VariationExplorationOrchestrator } from './services/implementations/VariationExplorationOrchestrator';
-import { getSpellServiceLoader } from './getSpellServiceLoader';
+import { variationExplorationOrchestrator } from './services/implementations/VariationExplorationOrchestrator';
 
-let instance: VariationExplorationOrchestrator | null = null;
-
-export function getVariationExplorationOrchestrator(): VariationExplorationOrchestrator {
+export function getVariationExplorationOrchestrator() {
 	if (!browser) throw new Error('getVariationExplorationOrchestrator() is browser-only');
-	return instance ??= new VariationExplorationOrchestrator(getSpellServiceLoader());
+	return variationExplorationOrchestrator;
 }

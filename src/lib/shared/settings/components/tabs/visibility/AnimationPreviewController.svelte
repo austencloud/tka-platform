@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
   import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-  import { turnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
+  import * as turnPatternManager from "$lib/features/create/shared/services/turn-pattern-manager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";

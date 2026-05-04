@@ -13,7 +13,7 @@ void TRANSFORMATION_PRIORITY;
  * Service for analyzing transformation patterns across beat pairs.
  */
 export class TransformationAnalyzer {
-  constructor(private formattingService: CandidateFormatter) {}
+  constructor() {}
 
   normalizeToBase(transformation: string): string {
     return transformation
@@ -149,7 +149,7 @@ export class TransformationAnalyzer {
           pair.rawTransformations.includes(definitiveVariant)
         ) {
           pair.detectedTransformations = [
-            this.formattingService.formatSingleTransformation(
+            formatSingleTransformation(
               definitiveVariant
             ),
           ];
@@ -161,14 +161,14 @@ export class TransformationAnalyzer {
         );
         if (matchingMember) {
           pair.detectedTransformations = [
-            this.formattingService.formatSingleTransformation(matchingMember),
+            formatSingleTransformation(matchingMember),
           ];
           continue;
         }
       }
 
       const formattedCommon =
-        this.formattingService.formatSingleTransformation(primaryCommon);
+        formatSingleTransformation(primaryCommon);
       if (pair.allValidTransformations.includes(formattedCommon)) {
         pair.detectedTransformations = [formattedCommon];
       }
@@ -226,7 +226,7 @@ export class TransformationAnalyzer {
           // Only update if this pair has the definitive variant as a valid option
           if (pair.rawTransformations.includes(definitiveVariant)) {
             pair.detectedTransformations = [
-              this.formattingService.formatSingleTransformation(
+              formatSingleTransformation(
                 definitiveVariant
               ),
             ];
@@ -238,7 +238,7 @@ export class TransformationAnalyzer {
             );
             if (hasBase && hasInverted) {
               pair.detectedTransformations = [
-                this.formattingService.formatSingleTransformation(
+                formatSingleTransformation(
                   definitiveVariant
                 ),
               ];
@@ -430,7 +430,7 @@ export class TransformationAnalyzer {
         isFlipped,
         steps: columnPairs.map((p) => p.keyStep),
         transformations: uniqueTransformations.map((t) =>
-          this.formattingService.formatSingleTransformation(t)
+          formatSingleTransformation(t)
         ),
       });
     }
@@ -594,7 +594,7 @@ export class TransformationAnalyzer {
     columns: ColumnBehavior[]
   ): string {
     const baseName = commonBase
-      ? this.formattingService.formatSingleTransformation(commonBase)
+      ? formatSingleTransformation(commonBase)
       : "Mixed Transformations";
 
     if (swapRhythm === "uniform") {
@@ -618,10 +618,7 @@ export class TransformationAnalyzer {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 
-import { candidateFormatter } from "./CandidateFormatter";
+import { formatSingleTransformation } from "../candidate-formatter";
 import type { AxisAlternatingResult, ModularAnalysisResult, ColumnBehavior, SwapRhythmPattern } from "../contracts/types";
-import type { CandidateFormatter } from "./CandidateFormatter";
 
-export const transformationAnalyzer = new TransformationAnalyzer(
-  candidateFormatter
-);
+export const transformationAnalyzer = new TransformationAnalyzer();

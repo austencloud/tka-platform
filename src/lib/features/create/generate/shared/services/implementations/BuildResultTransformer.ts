@@ -25,8 +25,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { GenerationOptions } from "../../domain/models/generate-models";
-import type { SequenceMetadataManager } from "./SequenceMetadataManager";
-import type { ReversalDetector } from "../../../../shared/services/implementations/ReversalDetector";
+import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "../sequence-metadata-manager";
+type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
+import type { ReversalDetector } from "../../../../shared/services/reversal-detector";
 import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { PropContinuity } from "../../domain/models/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";

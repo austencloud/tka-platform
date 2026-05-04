@@ -12,10 +12,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ImageComposer } from "../../../../shared/render/services/implementations/ImageComposer";
 import type { PrintRenderOptions } from "../contracts/types";
-import type { CardBackDomRenderer } from "./CardBackDomRenderer";
-import type { InfoCardCanvasRenderer } from "./InfoCardCanvasRenderer";
-import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
-import type { LOOPExplainer } from "./LOOPExplainer";
+import { renderCardBack } from "../card-back-dom-renderer";
+import { renderInfoCardFront, renderInfoCardBack } from "../info-card-canvas-renderer";
 
 
 // MPC poker card defaults
@@ -34,10 +32,6 @@ const INNER_RADIUS = Math.round(CONTENT_WIDTH * CARD_RADIUS_PCT); // ~35px
 export class PrintCardRenderer {
   constructor(
     private readonly imageComposer: ImageComposer,
-    private readonly cardBackDomRenderer: CardBackDomRenderer,
-    private readonly infoCardRenderer: InfoCardCanvasRenderer,
-    private readonly sequenceToEntryConverter: SequenceToEntryConverter,
-    private readonly loopExplainer: LOOPExplainer,
     private readonly theme: string = "nightSky"
   ) {}
 
@@ -201,7 +195,7 @@ export class PrintCardRenderer {
     const bleedPx = options.bleedPx ?? MPC_BLEED;
     const theme = options.theme ?? this.theme;
 
-    return this.cardBackDomRenderer.render(sequence, {
+    return renderCardBack(sequence, {
       width: canvasWidth,
       height: canvasHeight,
       bleedPx,
@@ -210,7 +204,7 @@ export class PrintCardRenderer {
   }
 
   async renderInfoCardFront(theme?: string): Promise<HTMLCanvasElement> {
-    return this.infoCardRenderer.renderFront({
+    return renderInfoCardFront({
       width: MPC_WIDTH,
       height: MPC_HEIGHT,
       bleedPx: MPC_BLEED,
@@ -219,7 +213,7 @@ export class PrintCardRenderer {
   }
 
   async renderInfoCardBack(theme?: string): Promise<HTMLCanvasElement> {
-    return this.infoCardRenderer.renderBack({
+    return renderInfoCardBack({
       width: MPC_WIDTH,
       height: MPC_HEIGHT,
       bleedPx: MPC_BLEED,

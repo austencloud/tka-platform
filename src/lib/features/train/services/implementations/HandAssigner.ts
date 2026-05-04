@@ -12,14 +12,12 @@ import type {
 } from "../contracts/types";
 import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
 import type { DetectedPosition } from "../../domain/models/DetectionFrame";
-import { QuadrantMapper } from "./QuadrantMapper";
+import { mapToQuadrant } from "../quadrant-mapper";
 
 // How many frames to persist a hand after it disappears
 const HAND_PERSISTENCE_FRAMES = 5;
 
 export class HandAssigner {
-  private _quadrantMapper = new QuadrantMapper();
-
   // Track last known positions for persistence
   private _lastBluePosition: DetectedPosition | null = null;
   private _lastRedPosition: DetectedPosition | null = null;
@@ -213,7 +211,7 @@ export class HandAssigner {
     return {
       ...position,
       rawPosition: smoothed,
-      quadrant: this._quadrantMapper.mapToQuadrant(smoothed.x, smoothed.y),
+      quadrant: mapToQuadrant(smoothed.x, smoothed.y),
     };
   }
 

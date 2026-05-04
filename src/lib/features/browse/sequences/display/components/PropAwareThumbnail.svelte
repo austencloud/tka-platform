@@ -20,15 +20,13 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant } from "../services/contracts/types";
   import { getThumbnailRenderOrchestrator } from "../getThumbnailRenderOrchestrator";
-  import { getThumbnailKeyDeriver } from "../getThumbnailKeyDeriver";
-  import { getCloudThumbnailCache } from "../getCloudThumbnailCache";
   import { getThumbnailLocalCache } from "../getThumbnailLocalCache";
   import type { ThumbnailLoadStatus } from "../services/contracts/types";
   import type { ThumbnailRenderOrchestrator } from "../services/implementations/ThumbnailRenderOrchestrator";
   import type { ThumbnailRenderInput, ThumbnailVisibilitySettings } from "../services/contracts/types";
-  import type { ThumbnailKeyDeriver } from "../services/implementations/ThumbnailKeyDeriver";
-  import type { CloudThumbnailCache } from "../services/implementations/CloudThumbnailCache";
   import type { ThumbnailLocalCache } from "../services/implementations/ThumbnailLocalCache";
+  import { deriveKey } from "../services/thumbnail-key-deriver";
+  import { invalidateUrl as invalidateCloudUrl } from "../services/cloud-thumbnail-cache";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
@@ -97,8 +95,6 @@
 
   // Services (resolved once on mount)
   let orchestrator: ThumbnailRenderOrchestrator | null = null;
-  let keyDeriver: ThumbnailKeyDeriver | null = null;
-  let cloudCache: CloudThumbnailCache | null = null;
   let localCache: ThumbnailLocalCache | null = null;
   let servicesReady = $state(false);
 
@@ -161,8 +157,6 @@
   onMount(async () => {
     // Resolve services
     orchestrator = getThumbnailRenderOrchestrator();
-    keyDeriver = getThumbnailKeyDeriver();
-    cloudCache = getCloudThumbnailCache();
     localCache = getThumbnailLocalCache();
     servicesReady = true;
 
@@ -250,13 +244,13 @@
     const urlType = thumbnailUrl?.startsWith("blob:") ? "blob" : "cloud";
     console.warn(`[Thumbnail] "${sequenceName}" - img ERROR (${urlType}) - will re-render`);
 
-    if (!keyDeriver || !cloudCache || !orchestrator) return;
+    if (!orchestrator) return;
 
-    const key = keyDeriver.deriveKey(renderInput);
+    const key = deriveKey(renderInput);
 
     // Invalidate the stale cloud URL
     if (key.usesDefaults) {
-      cloudCache.invalidateUrl({
+      invalidateCloudUrl({
         sequenceName: key.inputs.sequenceName,
         sequenceId: key.inputs.sequenceId,
         propType: key.propKey as PropType,
@@ -285,11 +279,11 @@
   // React to visibility + input changes
   // Single effect replaces 13 prev* variable comparisons
   $effect(() => {
-    if (!isVisible || !servicesReady || !orchestrator || !keyDeriver || !sequenceName) {
+    if (!isVisible || !servicesReady || !orchestrator || !sequenceName) {
       return;
     }
 
-    const key = keyDeriver.deriveKey(renderInput);
+    const key = deriveKey(renderInput);
 
     // Skip if key hasn't changed
     if (key.hash === currentKeyHash) {
@@ -429,13 +423,13 @@
    * Force re-render: delete from all cache tiers, then re-fetch from scratch.
    */
   export function forceRerender(): void {
-    if (!keyDeriver || !orchestrator) return;
+    if (!orchestrator) return;
 
-    const key = keyDeriver.deriveKey(renderInput);
+    const key = deriveKey(renderInput);
 
     // 1. Invalidate cloud URL cache (in-memory)
-    if (key.usesDefaults && cloudCache) {
-      cloudCache.invalidateUrl({
+    if (key.usesDefaults) {
+      invalidateCloudUrl({
         sequenceName: key.inputs.sequenceName,
         sequenceId: key.inputs.sequenceId,
         propType: key.propKey as PropType,

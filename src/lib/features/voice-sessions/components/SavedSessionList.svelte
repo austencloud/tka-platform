@@ -8,7 +8,7 @@
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
-  import type { VoiceSessionFormatter } from "$lib/features/voice-sessions/services/implementations/VoiceSessionFormatter";
+  import type * as VoiceSessionFormatterModule from "$lib/features/voice-sessions/services/voice-session-formatter";
   import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
   import type { VoiceSessionPreview, VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import SavedSessionItem from "./SavedSessionItem.svelte";
@@ -21,7 +21,7 @@
     refreshTrigger = 0,
   }: {
     repository: VoiceSessionRepository;
-    formatter: VoiceSessionFormatter;
+    formatter: typeof VoiceSessionFormatterModule;
     replayer?: VoiceSessionReplayer | null;
     refreshTrigger?: number;
   } = $props();

@@ -6,51 +6,44 @@
  */
 
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
-import type { CollectionManager } from "./CollectionManager";
+import {
+  getFavoritesCollection,
+  removeSequenceFromCollection,
+  addSequenceToCollection,
+  getCollectionSequences,
+} from "../collection-manager";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 
 export class FavoritesManager {
-  constructor(private collectionManager: CollectionManager) {}
+  constructor() {}
 
   async toggleFavorite(sequenceId: string): Promise<boolean> {
-    const favoritesCollection =
-      await this.collectionManager.getFavoritesCollection();
+    const favoritesCollection = await getFavoritesCollection();
     const isFavorited = favoritesCollection.sequenceIds.includes(sequenceId);
 
     if (isFavorited) {
-      await this.collectionManager.removeSequenceFromCollection(
-        favoritesCollection.id,
-        sequenceId
-      );
+      await removeSequenceFromCollection(favoritesCollection.id, sequenceId);
       this.logFavoriteAction(sequenceId, false);
       return false;
     } else {
-      await this.collectionManager.addSequenceToCollection(
-        favoritesCollection.id,
-        sequenceId
-      );
+      await addSequenceToCollection(favoritesCollection.id, sequenceId);
       this.logFavoriteAction(sequenceId, true);
       return true;
     }
   }
 
   async isFavorite(sequenceId: string): Promise<boolean> {
-    const favoritesCollection =
-      await this.collectionManager.getFavoritesCollection();
+    const favoritesCollection = await getFavoritesCollection();
     return favoritesCollection.sequenceIds.includes(sequenceId);
   }
 
   async getFavorites(): Promise<LibrarySequence[]> {
-    const favoritesCollection =
-      await this.collectionManager.getFavoritesCollection();
-    return this.collectionManager.getCollectionSequences(
-      favoritesCollection.id
-    );
+    const favoritesCollection = await getFavoritesCollection();
+    return getCollectionSequences(favoritesCollection.id);
   }
 
   async getFavoriteIds(): Promise<Set<string>> {
-    const favoritesCollection =
-      await this.collectionManager.getFavoritesCollection();
+    const favoritesCollection = await getFavoritesCollection();
     return new Set(favoritesCollection.sequenceIds);
   }
 

@@ -6,7 +6,7 @@
  * - Explore: auto-cycle through position pair combinations, click-to-place
  *
  * Follows the factory + context pattern: DI services come in as arguments,
- * pure domain services (detector, mapper, enumerator) are instantiated locally.
+ * pure domain services (detectOverlaps, mapToTopology, enumerator) are called directly.
  */
 
 import type { GridTopology, PointRef } from "$lib/shared/multi-grid/domain/models/GridTopology";
@@ -17,8 +17,8 @@ import type { PrepareOptions } from "$lib/shared/pictograph/shared/services/cont
 import type { PositionPair } from "$lib/shared/multi-grid/services/contracts/types";
 import type { ConjoinedGridMode, PropPlacement, JunctionOverlap } from "../domain/types";
 import { TOPOLOGY_PRESETS, type TopologyPreset } from "$lib/shared/multi-grid/domain/constants/TopologyPresets";
-import { JunctionOverlapDetector } from "../services/implementations/JunctionOverlapDetector";
-import { PictographTopologyMapper } from "../services/implementations/PictographTopologyMapper";
+import { detectOverlaps } from "../services/junction-overlap-detector";
+import { mapToTopology } from "../services/pictograph-topology-mapper";
 import { TopologyPositionEnumerator } from "$lib/shared/multi-grid/services/implementations/TopologyPositionEnumerator";
 
 // ---------------------------------------------------------------------------
@@ -40,8 +40,6 @@ export interface ConjoinedGridDeps {
 
 export function createConjoinedGridState(deps: ConjoinedGridDeps) {
   // Pure domain services - no DI needed, deterministic and stateless
-  const detector = new JunctionOverlapDetector();
-  const mapper = new PictographTopologyMapper();
   const enumerator = new TopologyPositionEnumerator();
 
   // =========================================================================
@@ -87,8 +85,8 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps) {
   // Indices of pictographs whose placement causes a junction overlap
   const overlappingIndices: number[] = $derived(
     allPictographs.reduce<number[]>((acc, picto, i) => {
-      const placement = mapper.mapToTopology(picto, topology);
-      if (placement && detector.detectOverlaps(topology, placement).length > 0) {
+      const placement = mapToTopology(picto, topology);
+      if (placement && detectOverlaps(topology, placement).length > 0) {
         acc.push(i);
       }
       return acc;
@@ -234,7 +232,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps) {
     if (activeMode === "browse") {
       const picto = allPictographs[selectedPictographIndex];
       if (!picto) return null;
-      return mapper.mapToTopology(picto, topology);
+      return mapToTopology(picto, topology);
     }
 
     // Explore mode
@@ -250,7 +248,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps) {
 
   // Junction overlaps for the current placement
   const junctionOverlaps: JunctionOverlap[] = $derived(
-    currentPlacement ? detector.detectOverlaps(topology, currentPlacement) : [],
+    currentPlacement ? detectOverlaps(topology, currentPlacement) : [],
   );
 
   // =========================================================================

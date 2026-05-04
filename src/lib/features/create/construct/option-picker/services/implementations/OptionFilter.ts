@@ -15,12 +15,11 @@ import type {
   TypeFilter,
 } from "../../domain/option-picker-types";
 import type { PositionAnalyzer } from "./PositionAnalyzer";
-import type { ReversalChecker } from "./ReversalChecker";
+import { getReversalCount } from "../reversal-checker";
 import { LetterType } from "../../../../../../shared/foundation/domain/models/LetterType";
 
 export class OptionFilter {
   constructor(
-    private ReversalChecker: ReversalChecker,
     private positionAnalyzer: PositionAnalyzer
   ) {}
 
@@ -87,10 +86,7 @@ export class OptionFilter {
     sequence: PictographData[]
   ): PictographData[] {
     return options.filter((option) => {
-      const reversalCount = this.ReversalChecker.getReversalCount(
-        option,
-        sequence
-      );
+      const reversalCount = getReversalCount(option, sequence);
 
       switch (reversalCount) {
         case 0:
@@ -154,7 +150,6 @@ export class OptionFilter {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { reversalChecker } from "./ReversalChecker";
 import { positionAnalyzer } from "./PositionAnalyzer";
 
-export const optionFilter = new OptionFilter(reversalChecker, positionAnalyzer);
+export const optionFilter = new OptionFilter(positionAnalyzer);

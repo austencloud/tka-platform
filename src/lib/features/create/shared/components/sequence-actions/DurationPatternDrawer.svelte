@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
 
-import { getDurationPatternManager } from "$lib/features/create/shared/getDurationPatternManager";
+import * as durationPatternManagerModule from "$lib/features/create/shared/services/duration-pattern-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { durationPatternState } from "../../state/duration-pattern-state.svelte.ts";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -23,7 +23,7 @@ import { getDurationPatternManager } from "$lib/features/create/shared/getDurati
     templateToPattern,
     type DurationCategory,
   } from "../../domain/templates/duration-templates";
-  import type { DurationPatternManager } from "../../services/implementations/DurationPatternManager";
+  type DurationPatternManager = typeof durationPatternManagerModule;
   import PatternItemCard from "./PatternItemCard.svelte";
   import DurationPreviewGrid from "./DurationPreviewGrid.svelte";
 
@@ -73,7 +73,7 @@ import { getDurationPatternManager } from "$lib/features/create/shared/getDurati
   let previewedSequence = $state<SequenceData | null>(null);
   let previewWarnings = $state<readonly string[]>([]);
 
-  const durationPatternManager = getDurationPatternManager();
+  const durationPatternManager: DurationPatternManager = durationPatternManagerModule;
 
   // Load patterns when drawer opens and set appropriate default filter
   $effect(() => {

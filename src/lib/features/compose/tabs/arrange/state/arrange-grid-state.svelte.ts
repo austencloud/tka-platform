@@ -26,16 +26,16 @@ import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/do
 import type {
   ArrangeUndoOperationType, ArrangeGridSnapshot } from "../services/contracts/types";
 
-import { ArrangeGridSerializer } from "../services/implementations/ArrangeGridSerializer";
-import { ArrangeCompositionConverter } from "../services/implementations/ArrangeCompositionConverter";
+import { serializeGrid } from "../services/arrange-grid-serializer";
+import { gridCellsToComposition, compositionToGridState } from "../services/arrange-composition-converter";
+import { loadGrid, saveGrid, migrateLocalStorageCompositions } from "../services/arrange-grid-persister";
+import { calculateTotalBeats } from "../services/arrange-step-calculator";
+import { applyTransform } from "../services/arrange-layer-transformer";
 import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
-import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
+import { getComposition as dexieGetComposition } from "../../../services/dexie-composition-repository";
 
 import { getArrangeUndoManager } from "$lib/features/compose/tabs/arrange/getArrangeUndoManager";
-import { getArrangeStepCalculator } from "$lib/features/compose/tabs/arrange/getArrangeStepCalculator";
-import { getArrangeGridPersister } from "$lib/features/compose/tabs/arrange/getArrangeGridPersister";
 import { getArrangePlaybackEngine } from "$lib/features/compose/tabs/arrange/getArrangePlaybackEngine";
-import { getArrangeLayerTransformer } from "$lib/features/compose/tabs/arrange/getArrangeLayerTransformer";
 
 // Maximum backing array dimensions (8x8 = 64 cells)
 export const MAX_GRID_SIZE = 8;
@@ -119,15 +119,10 @@ const DEFAULT_GRID_ROWS = 2;
 const DEFAULT_GRID_COLS = 2;
 
 function createArrangeGridState() {
-  const serializer = new ArrangeGridSerializer();
-
-  // Services from module singleton getters (compose-arrange-container dissolved)
-  const beatCalculator = getArrangeStepCalculator();
-  const persister = getArrangeGridPersister();
+  // Services from module functions (stateless class ceremony retired)
   const playbackEngine = getArrangePlaybackEngine();
-  const layerTransformer = getArrangeLayerTransformer();
 
-  const initialConfig = persister.load();
+  const initialConfig = loadGrid();
 
   // Core reactive state
   let cells = $state<GridCell[]>(initialConfig.cells);
@@ -194,7 +189,7 @@ function createArrangeGridState() {
     redoDescription = undoManager.redoDescription;
   });
 
-  persister.migrateLocalStorageCompositions();
+  migrateLocalStorageCompositions();
 
   function withUndo(type: ArrangeUndoOperationType, description: string, fn: () => void): void {
     undoManager.captureState(type, description);
@@ -230,7 +225,7 @@ function createArrangeGridState() {
   // =========================================================================
 
   function save() {
-    persister.save({ cells, gridRows, gridCols });
+    saveGrid({ cells, gridRows, gridCols });
   }
 
   function getCellAt(row: number, col: number): GridCell | undefined {
@@ -255,7 +250,7 @@ function createArrangeGridState() {
   }
 
   function getTotalBeats(): number {
-    return beatCalculator.calculateTotalBeats(cells, skipStartPosition, gridRows, gridCols);
+    return calculateTotalBeats(cells, skipStartPosition, gridRows, gridCols);
   }
 
   function applySpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip" | "split-half" | "quad" | "gallery"): void {
@@ -890,7 +885,7 @@ function createArrangeGridState() {
       transformingLayer = { cellId, layerIndex };
 
       try {
-        const result = await layerTransformer.applyTransform(sequenceSnapshot, transformType);
+        const result = await applyTransform(sequenceSnapshot, transformType);
         if (!result.success || !result.transformed) {
           undoManager.cancelPending();
           return { success: false, error: result.error ?? "Transform failed" };
@@ -949,7 +944,7 @@ function createArrangeGridState() {
     },
 
     serializeState(): string {
-      return serializer.serialize({
+      return serializeGrid({
         cells: this.visibleCells.filter((c) => c.layers.length > 0),
         bpm: playbackBpm, skipStartPosition, gridRows, gridCols,
       });
@@ -957,19 +952,17 @@ function createArrangeGridState() {
 
     async saveComposition(name: string): Promise<string> {
       const id = `comp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const converter = new ArrangeCompositionConverter();
       const snapshot = $state.snapshot(cells) as GridCell[];
-      const composition = converter.gridCellsToComposition(id, name, { cells: snapshot, gridRows, gridCols, bpm: playbackBpm, skipStartPosition });
+      const composition = gridCellsToComposition(id, name, { cells: snapshot, gridRows, gridCols, bpm: playbackBpm, skipStartPosition });
       await compositionSyncer.saveComposition(composition);
       return id;
     },
 
     async loadComposition(id: string): Promise<boolean> {
-      const composition = await dexieCompositionRepository.getComposition(id);
+      const composition = await dexieGetComposition(id);
       if (!composition) return false;
 
-      const converter = new ArrangeCompositionConverter();
-      const restored = converter.compositionToGridState(composition);
+      const restored = compositionToGridState(composition);
       withUndo("LOAD_COMPOSITION", `Load: ${composition.name}`, () => {
         cells = restored.cells;
         gridRows = restored.gridRows;

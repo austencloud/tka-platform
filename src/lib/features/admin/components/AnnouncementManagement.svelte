@@ -5,16 +5,15 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
-  import type { AnnouncementManager } from "../services/implementations/AnnouncementManager";
+  import {
+    getAllAnnouncements,
+    deleteAnnouncement,
+  } from "$lib/features/admin/services/announcement-manager";
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementForm from "./announcements/AnnouncementForm.svelte";
   import AnnouncementList from "./announcements/AnnouncementList.svelte";
   import AdminModal from "$lib/shared/admin/components/AdminModal.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-
-  // Services
-  let announcementService: AnnouncementManager | null = null;
 
   // State
   let announcements = $state<Announcement[]>([]);
@@ -28,7 +27,6 @@
 
   onMount(async () => {
     try {
-      announcementService = getAnnouncementManager();
       await loadAnnouncements();
     } catch (error) {
       console.error("Failed to initialize announcement service:", error);
@@ -38,10 +36,9 @@
   });
 
   async function loadAnnouncements() {
-    if (!announcementService) return;
     try {
       isLoading = true;
-      announcements = await announcementService.getAllAnnouncements();
+      announcements = await getAllAnnouncements();
     } catch (error) {
       console.error("Failed to load announcements:", error);
     } finally {
@@ -65,10 +62,10 @@
   }
 
   async function confirmDelete() {
-    if (!announcementService || !pendingDeleteId) return;
+    if (!pendingDeleteId) return;
 
     try {
-      await announcementService.deleteAnnouncement(pendingDeleteId);
+      await deleteAnnouncement(pendingDeleteId);
       await loadAnnouncements();
     } catch (error) {
       console.error("Failed to delete announcement:", error);

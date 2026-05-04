@@ -21,14 +21,12 @@ import type {
   FeedbackItem,
   FeedbackFilterOptions,
 } from "../../domain/models/feedback-models";
-import { type FeedbackDocumentMapper, feedbackDocumentMapper } from "./FeedbackDocumentMapper";
+import * as feedbackDocumentMapper from "../feedback-document-mapper";
 
 const COLLECTION_NAME = "feedback";
 
 export class FeedbackQueryService {
-  constructor(
-    private readonly mapper: FeedbackDocumentMapper = feedbackDocumentMapper
-  ) {}
+  private readonly mapper = feedbackDocumentMapper;
 
   async loadFeedback(
     filters: FeedbackFilterOptions,

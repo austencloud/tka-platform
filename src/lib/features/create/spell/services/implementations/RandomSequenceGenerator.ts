@@ -14,12 +14,13 @@ import type { VariationConstraints } from "../../domain/models/spell-models";
 import type { RandomSequenceGenerationOptions } from "../contracts/types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionValidator } from "./StartPositionValidator";
-import type { OrientationContinuityValidator } from "./OrientationContinuityValidator";
+import type { OrientationContinuityValidator } from "../orientation-continuity-validator";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { SequenceExtender } from "../../../shared/services/implementations/SequenceExtender";
-import type { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
-import type { ReversalDetector } from "../../../shared/services/implementations/ReversalDetector";
-import type { LOOPEndPositionResolver } from "./LOOPEndPositionResolver";
+import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
+type StepConverter = typeof StepConverterSingleton;
+import type { ReversalDetector } from "../../../shared/services/reversal-detector";
+import type { LOOPEndPositionResolver } from "../loop-end-position-resolver";
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
@@ -968,12 +969,12 @@ export class RandomSequenceGenerator {
 // ============================================================================
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 import { startPositionValidator } from "./StartPositionValidator";
-import { orientationContinuityValidator } from "./OrientationContinuityValidator";
+import * as orientationContinuityValidator from "../orientation-continuity-validator";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
-import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
-import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
-import { loopEndPositionResolver } from "./LOOPEndPositionResolver";
+import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
+import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
+import * as loopEndPositionResolver from "../loop-end-position-resolver";
 
 export const randomSequenceGenerator = new RandomSequenceGenerator(
   letterQueryHandler,

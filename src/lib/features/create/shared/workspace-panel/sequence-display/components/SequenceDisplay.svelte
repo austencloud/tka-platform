@@ -17,7 +17,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { analyzeDifficulty } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
   import { updateStepDuration } from "../../../services/implementations/step-operations/DurationHandler";
@@ -130,12 +130,11 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   });
 
   // Difficulty analysis - returns both level and the feature that triggered it
-  const difficultyCalculator = new SequenceDifficultyCalculator();
   const difficultyAnalysis = $derived.by(() => {
     if (!currentSequence?.steps?.length) {
       return { level: 1 as const, trigger: "none" as const };
     }
-    return difficultyCalculator.analyzeDifficulty([...currentSequence.steps]);
+    return analyzeDifficulty([...currentSequence.steps]);
   });
   const difficultyLevel = $derived(difficultyAnalysis.level);
 

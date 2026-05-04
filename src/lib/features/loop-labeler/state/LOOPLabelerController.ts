@@ -74,7 +74,7 @@ export class LOOPLabelerController {
     const sequenceLoader = this.services.sequenceLoader;
     const labelsRepo = this.services.labelsRepository;
 
-    if (!sequenceLoader || !labelsRepo) {
+    if (!labelsRepo) {
       console.error("[LOOPLabelerController] Required services not available");
       this.state.setLoading(false);
       return;
@@ -85,7 +85,7 @@ export class LOOPLabelerController {
       const lastSequenceId = persisted?.lastSequenceId;
 
       const nav = this.services.navigator;
-      const urlSeqId = nav?.getSequenceFromUrl();
+      const urlSeqId = nav.getSequenceFromUrl();
 
       const sequenceIdToRestore = urlSeqId || lastSequenceId || null;
 
@@ -93,7 +93,7 @@ export class LOOPLabelerController {
       this.state.setSequences(sequences);
 
       if (!persisted?.filterMode) {
-        const urlFilter = nav?.getFilterFromUrl();
+        const urlFilter = nav.getFilterFromUrl();
         if (
           urlFilter &&
           ["all", "needsVerification", "verified"].includes(urlFilter)
@@ -132,8 +132,7 @@ export class LOOPLabelerController {
       });
     }
 
-    const nav = this.services.navigator;
-    nav?.updateUrlWithSequence(
+    this.services.navigator.updateUrlWithSequence(
       this.state.currentSequence?.id ?? null,
       this.state.filterMode,
       false
@@ -153,7 +152,7 @@ export class LOOPLabelerController {
       const historyState = event.state as { sequenceId?: string } | null;
       const seqId =
         historyState?.sequenceId ??
-        this.services.navigator?.getSequenceFromUrl();
+        this.services.navigator.getSequenceFromUrl();
       if (seqId) {
         this.navigateToSequenceInternal(seqId, { logPrefix: "Popstate" });
       }
@@ -225,7 +224,7 @@ export class LOOPLabelerController {
     this.state.setCurrentIndex(targetIndex);
 
     if (updateUrl) {
-      this.services.navigator?.updateUrlWithSequence(
+      this.services.navigator.updateUrlWithSequence(
         sequenceId,
         this.state.filterMode,
         addToHistory
@@ -240,7 +239,6 @@ export class LOOPLabelerController {
 
   nextSequence(): void {
     const nav = this.services.navigator;
-    if (!nav) return;
 
     const newIndex = nav.getNextIndex(
       this.state.currentIndex,
@@ -259,7 +257,6 @@ export class LOOPLabelerController {
 
   previousSequence(): void {
     const nav = this.services.navigator;
-    if (!nav) return;
 
     const newIndex = nav.getPreviousIndex(this.state.currentIndex);
     this.state.setCurrentIndex(newIndex);
@@ -303,10 +300,7 @@ export class LOOPLabelerController {
 
     this.detailFetchInFlight.add(seq.id);
     try {
-      const loader = this.services.sequenceLoader;
-      if (!loader) return;
-
-      const rawSequence = await loader.loadSequenceDetail(seq.sourceRef);
+      const rawSequence = await this.services.sequenceLoader.loadSequenceDetail(seq.sourceRef);
       if (!rawSequence || rawSequence.length === 0) return;
 
       const metadataGridMode = rawSequence[0]?.gridMode;
@@ -328,9 +322,8 @@ export class LOOPLabelerController {
     this.state.setCurrentIndex(0);
     this.persistFilterMode();
 
-    const nav = this.services.navigator;
     const firstSeq = this.state.filteredSequences[0];
-    nav?.updateUrlWithSequence(firstSeq?.id ?? null, mode);
+    this.services.navigator.updateUrlWithSequence(firstSeq?.id ?? null, mode);
   }
 
   setNotes(notes: string): void {
@@ -519,16 +512,15 @@ export class LOOPLabelerController {
   }
 
   exportLabels(): void {
-    this.services.navigator?.exportLabelsAsJson(this.state.labels);
+    this.services.navigator.exportLabelsAsJson(this.state.labels);
   }
 
   async importLabels(file: File): Promise<void> {
-    const nav = this.services.navigator;
     const repo = this.services.labelsRepository;
-    if (!nav || !repo) return;
+    if (!repo) return;
 
     try {
-      const importedLabels = await nav.importLabelsFromJson(file);
+      const importedLabels = await this.services.navigator.importLabelsFromJson(file);
       this.state.setLabels(importedLabels);
       repo.saveToLocalStorage(this.state.labels);
     } catch (error) {

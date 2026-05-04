@@ -12,10 +12,9 @@
 	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
 	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
-	import { getFuseAssemblyAnimator } from "../getFuseAssemblyAnimator";
+	import { animateFuseAssembly } from "../services/fuse-assembly-animator";
 	import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
 	import { onMount } from "svelte";
-	import type { FuseAssemblyAnimator } from "../services/implementations/FuseAssemblyAnimator";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 	const { state: fuseState } = getFuseContext();
@@ -46,12 +45,6 @@
 	let rightPanelEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
 	let fuseTargetEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
 
-	let fuseAssemblyAnimator: FuseAssemblyAnimator;
-	try {
-		fuseAssemblyAnimator = getFuseAssemblyAnimator();
-	} catch {
-		fuseAssemblyAnimator = { async animate() {} };
-	}
 
 	async function handleFuse() {
 		if (!leftBrowsingSeq || !rightBrowsingSeq) return;

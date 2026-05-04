@@ -5,8 +5,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceToEntryConverter } from "../../services/implementations/SequenceToEntryConverter";
-import type { LOOPExplainer } from "../../services/implementations/LOOPExplainer";
+import { explainLOOP } from "../../services/loop-explainer";
 import type { LOOPExplanation } from "../../services/contracts/types";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { DIFFICULTY_LEVELS, DIFFICULTY_FONT_FAMILY } from "$lib/shared/config/difficulty-styles";
@@ -422,8 +421,8 @@ export function deriveCardBackData(
   sequence: SequenceData,
   // Kept for call-site compatibility - the shared loop-display resolver
   // owns the SequenceData→SequenceEntry conversion internally now.
-  _converter: SequenceToEntryConverter | null,
-  explainer: LOOPExplainer | null = null
+  _converter: unknown = null,
+  _explainerUnused: unknown = null
 ): CardBackData {
   const levelNum = sequence.level ?? 1;
   const badge = LEVEL_BADGES[levelNum] ?? LEVEL_BADGES[1]!;
@@ -438,10 +437,10 @@ export function deriveCardBackData(
   const loopComponents = loopDisplay.components;
   const rotationPeriod = loopDisplay.rotationPeriod;
 
-  // Generate rich LOOP explanation when the explainer is available
+  // Generate rich LOOP explanation
   let loopExplanation: LOOPExplanation | null = null;
-  if (loopComponents.size > 0 && explainer) {
-    loopExplanation = explainer.explain(sequence, loopComponents);
+  if (loopComponents.size > 0) {
+    loopExplanation = explainLOOP(sequence, loopComponents);
   }
 
   const cycle = sequence.orientationCycleCount;

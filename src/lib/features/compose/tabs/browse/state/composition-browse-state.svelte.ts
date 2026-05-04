@@ -8,7 +8,7 @@
 
 import type { AnimationMode } from "../../../shared/domain/AnimationMode";
 import type { CellConfig, Composition, GridLayout } from "../../../compose/domain/types";
-import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
+import { getComposition as dexieGetComposition } from "../../../services/dexie-composition-repository";
 import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
 
 // ============================================================================
@@ -235,7 +235,7 @@ export function createCompositionBrowseState() {
 
 	async function duplicateComposition(compositionId: string): Promise<string | null> {
 		try {
-			const original = await dexieCompositionRepository.getComposition(compositionId);
+			const original = await dexieGetComposition(compositionId);
 			if (!original) return null;
 
 			const now = new Date();

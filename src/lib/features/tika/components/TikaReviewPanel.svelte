@@ -12,8 +12,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { TikaSessionRepository } from '../services/implementations/TikaSessionRepository';
-	import { TikaSessionFormatter } from '../services/implementations/TikaSessionFormatter';
+	import * as tikaSessionRepository from '../services/tika-session-repository';
+	import { formatForAIReview } from '../services/tika-session-formatter';
 	import { authState } from '$lib/shared/auth/state/authState.svelte';
 	import type { TikaSession, ReviewStatus } from '../domain/models/tika-conversation-models';
 	import CopyAsImageButton from '$lib/shared/foundation/ui/CopyAsImageButton.svelte';
@@ -26,9 +26,8 @@
 		onLoadSession?: (sessionId: string) => void;
 	} = $props();
 
-	// Services
-	const sessionRepository = browser ? new TikaSessionRepository() : null;
-	const sessionFormatter = new TikaSessionFormatter();
+	// Services - use module functions directly (only on browser for Firestore)
+	const sessionRepository = browser ? tikaSessionRepository : null;
 
 	// State
 	let sessions = $state<TikaSession[]>([]);
@@ -244,7 +243,7 @@
 	// Generate comprehensive conversation data for AI review (delegated to service)
 	function generateCopyForAI(): string {
 		if (!selectedSession) return '';
-		return sessionFormatter.formatForAIReview(selectedSession);
+		return formatForAIReview(selectedSession);
 	}
 
 	onMount(() => {

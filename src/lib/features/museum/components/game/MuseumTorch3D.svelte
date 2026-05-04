@@ -131,7 +131,7 @@
     BufferGeometry,
     Float32BufferAttribute,
   } from "three";
-  import type { TorchMaterials } from "../../services/implementations/TorchMaterialCache";
+  import type { TorchMaterials } from "../../services/torch-material-cache";
 
   interface Props {
     x: number;

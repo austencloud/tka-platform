@@ -1,8 +1,7 @@
 import { EndpointCalculator } from './services/implementations/EndpointCalculator';
-import { getAngleCalculator } from './getAngleCalculator';
-import { getMotionCalculator } from './getMotionCalculator';
+import { createAngleCalculator } from './services/angle-calculator';
 
 let instance: EndpointCalculator | null = null;
 export function getEndpointCalculator(): EndpointCalculator {
-  return instance ??= new EndpointCalculator(getAngleCalculator(), getMotionCalculator());
+  return instance ??= new EndpointCalculator(createAngleCalculator());
 }

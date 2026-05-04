@@ -10,9 +10,7 @@
   import type { StepPairRelationship } from "../../../domain/models/steppair-models";
   import type { AxisAlternatingPattern } from "../../../services/contracts/ILOOPDetector";
   import DesignationItem from "./DesignationItem.svelte";
-  import { getLabelFormatter } from "$lib/features/loop-labeler/getLabelFormatter";
-  import type { LabelFormatter } from "../../../services/implementations/LabelFormatter";
-  const labelFormatter = getLabelFormatter() as LabelFormatter;
+  import { formatSectionSteps, formatDesignation } from "../../../services/label-formatter";
 
   interface Props {
     wholeDesignations: LOOPDesignation[];
@@ -52,8 +50,8 @@
   }
 
   function formatSection(s: SectionDesignation): string {
-    const steps = labelFormatter.formatSectionSteps(s.steps);
-    const label = labelFormatter.formatDesignation(s);
+    const steps = formatSectionSteps(s.steps);
+    const label = formatDesignation(s);
     return `${steps}: ${label}`;
   }
 </script>
@@ -72,7 +70,7 @@
       <DesignationItem
         type="whole"
         badge="W"
-        label={labelFormatter.formatDesignation(d)}
+        label={formatDesignation(d)}
         onRemove={() => onRemoveWholeDesignation(i)}
       />
     {/each}

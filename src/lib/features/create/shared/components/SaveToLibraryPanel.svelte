@@ -8,7 +8,6 @@
 
 import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/getHallOfShameSubmitter";
 import { getLibrarySaveService } from "$lib/features/library/getLibrarySaveService";
-import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   export interface SaveMetadata {
     name: string;
     tags: string[];
@@ -29,13 +28,13 @@ import { getContentHasher } from "$lib/shared/foundation/getContentHasher";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import type { ContentModerator } from "$lib/features/moderation/services/implementations/ContentModerator";
   import { getContentModerator } from "$lib/features/moderation/getContentModerator";
+  type ContentModerator = ReturnType<typeof getContentModerator>;
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-  import type { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
+  import { computeHash as computeSequenceHash } from "$lib/features/library/services/sequence-content-hasher";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import type { LibrarySaveService } from "$lib/features/library/services/implementations/LibrarySaveService";
@@ -207,22 +206,16 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
   // If the user already saved this exact sequence (same orientations, turns,
   // positions), we show "Already saved" instead of the save button.
   let isExactDuplicate = $state(false);
-  let contentHasher: SequenceContentHasher | null = null;
-  try {
-    contentHasher = getContentHasher() as unknown as SequenceContentHasher;
-  } catch {
-    // Hasher not available - duplicate check won't run, save still works
-  }
 
   $effect(() => {
-    if (!show || !sequence || !contentHasher) {
+    if (!show || !sequence) {
       isExactDuplicate = false;
       return;
     }
 
     // Compute hash async, then compare against loaded library sequences
     let cancelled = false;
-    contentHasher.computeHash(sequence).then((hash) => {
+    computeSequenceHash(sequence).then((hash) => {
       if (cancelled) return;
       const match = libraryState.findByContentHash(hash);
       // Don't flag as duplicate if it's the same document being re-saved

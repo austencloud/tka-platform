@@ -1,0 +1,54 @@
+/**
+ * festival-attendance-repository
+ *
+ * Tracks who's going (or interested in) each festival.
+ * Each user gets one document per festival they've marked.
+ *
+ * Path: festivals/{festivalId}/attendance/{userId}
+ */
+
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  getCountFromServer,
+  serverTimestamp,
+} from "firebase/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import type { FestivalAttendance } from "../domain/models/festival";
+
+export async function getCount(festivalId: string): Promise<number> {
+  const db = await getFirestoreInstance();
+  const ref = collection(db, "festivals", festivalId, "attendance");
+  const result = await getCountFromServer(ref);
+  return result.data().count;
+}
+
+export async function getAttendees(festivalId: string): Promise<FestivalAttendance[]> {
+  const db = await getFirestoreInstance();
+  const ref = collection(db, "festivals", festivalId, "attendance");
+  const snap = await getDocs(ref);
+  return snap.docs.map((d) => d.data() as FestivalAttendance);
+}
+
+export async function setAttendance(
+  festivalId: string,
+  userId: string,
+  data: Omit<FestivalAttendance, "festivalId" | "userId">
+): Promise<void> {
+  const db = await getFirestoreInstance();
+  const ref = doc(db, "festivals", festivalId, "attendance", userId);
+  await setDoc(ref, {
+    ...data,
+    festivalId,
+    userId,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function removeAttendance(festivalId: string, userId: string): Promise<void> {
+  const db = await getFirestoreInstance();
+  await deleteDoc(doc(db, "festivals", festivalId, "attendance", userId));
+}

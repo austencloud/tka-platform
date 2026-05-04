@@ -19,11 +19,10 @@
     saveStaticPictograph,
     type PictographFileKey,
   } from "../services/implementations/StaticPictographWriter";
-  import { SvgSanitizer } from "../services/implementations/SvgSanitizer";
+  import { sanitizeSvg } from "../services/svg-sanitizer";
 
-  // Module-level SVG cache and sanitizer (shared across instances)
+  // Module-level SVG cache (shared across instances)
   const svgCache = new Map<string, string>();
-  const svgSanitizer = new SvgSanitizer();
 
   // Props
   let {
@@ -138,7 +137,7 @@
         if (response.ok) {
           const data = await response.json();
           if (data.svgMarkup) {
-            const sanitized = svgSanitizer.sanitize(data.svgMarkup);
+            const sanitized = sanitizeSvg(data.svgMarkup);
             svgCache.set(cacheKey, sanitized);
             newSvgMarkups.set(step.stepNumber, sanitized);
             loadedCount++;

@@ -4,10 +4,11 @@
   Modern chip-based form with solid gradients and vibrant colors.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { getAnnouncementManager } from "$lib/features/admin/getAnnouncementManager";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { AnnouncementManager } from "../../services/implementations/AnnouncementManager";
+  import {
+    createAnnouncement,
+    updateAnnouncement,
+  } from "$lib/features/admin/services/announcement-manager";
   import type {
     Announcement,
     AnnouncementSeverity,
@@ -24,13 +25,6 @@
   }
 
   let { announcement = null, onSave, onCancel }: Props = $props();
-
-  // Services
-  let announcementService: AnnouncementManager | null = null;
-
-  onMount(() => {
-    announcementService = getAnnouncementManager();
-  });
 
   // Form state - initialize with defaults, $effect syncs when announcement prop changes
   let title = $state("");
@@ -141,11 +135,6 @@
       return;
     }
 
-    if (!announcementService) {
-      error = t("form_error_service_unavailable");
-      return;
-    }
-
     try {
       isSaving = true;
       error = null;
@@ -168,12 +157,12 @@
       };
 
       if (announcement) {
-        await announcementService.updateAnnouncement(
+        await updateAnnouncement(
           announcement.id,
           announcementData
         );
       } else {
-        await announcementService.createAnnouncement(announcementData);
+        await createAnnouncement(announcementData);
       }
 
       onSave();

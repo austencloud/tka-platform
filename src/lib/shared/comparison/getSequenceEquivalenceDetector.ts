@@ -3,7 +3,7 @@ import { SequenceEquivalenceDetector } from './services/implementations/Sequence
 import { getSequenceCanonicalizer } from './getSequenceCanonicalizer';
 import { getStepSignatureGenerator } from './getStepSignatureGenerator';
 import { getSpatialTransformDetector } from './getSpatialTransformDetector';
-import { getWordCyclicEquivalenceDetector } from '$lib/features/create/shared/getWordCyclicEquivalenceDetector';
+import * as wordCyclicEquivalenceDetector from '$lib/features/create/shared/services/word-cyclic-equivalence-detector';
 
 let instance: SequenceEquivalenceDetector | null = null;
 
@@ -13,6 +13,6 @@ export function getSequenceEquivalenceDetector(): SequenceEquivalenceDetector {
 		getSequenceCanonicalizer(),
 		getStepSignatureGenerator(),
 		getSpatialTransformDetector(),
-		getWordCyclicEquivalenceDetector()
+		wordCyclicEquivalenceDetector
 	);
 }

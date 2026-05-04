@@ -7,7 +7,7 @@
     Point,
   } from "../../domain/models/mandala-element";
   import type { MandalaConfig } from "../../domain/models/mandala-config";
-  import type { MandalaTransformer } from "../../services/implementations/MandalaTransformer";
+  import { generateKaleidoscopePattern } from "../../services/mandala-transformer";
   import {
     CANVAS_SIZE,
     CANVAS_CENTER,
@@ -17,14 +17,12 @@
   import MandalaElementView from "./MandalaElementView.svelte";
 
   interface Props {
-    transformer?: MandalaTransformer;
     onElementSelect?: (id: string | null) => void;
     onElementMove?: (id: string, position: Point) => void;
     onCanvasClick?: (position: Point) => void;
   }
 
-  let { transformer, onElementSelect, onElementMove, onCanvasClick }: Props =
-    $props();
+  let { onElementSelect, onElementMove, onCanvasClick }: Props = $props();
 
   let canvasContainer: HTMLDivElement;
   let isDragging = false;
@@ -50,14 +48,11 @@
 
   // Compute transformed elements (symmetry copies)
   const transformedElements = $derived.by(() => {
-    if (!transformer || elements.length === 0) return [];
+    if (elements.length === 0) return [];
 
     const allTransformed: TransformedElement[] = [];
     for (const element of elements) {
-      const transformed = transformer.generateKaleidoscopePattern(
-        element,
-        config
-      );
+      const transformed = generateKaleidoscopePattern(element, config);
       // Skip the original (foldIndex 0, not mirrored) - we render source elements separately
       const copies = transformed.filter((t) => t.foldIndex > 0 || t.isMirrored);
       allTransformed.push(...copies);

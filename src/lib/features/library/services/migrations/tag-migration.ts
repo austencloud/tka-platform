@@ -12,7 +12,7 @@
  * - Backward compatibility (keeps both old and new fields during transition)
  */
 
-import type { TagManager } from "../implementations/TagManager";
+import { createUserTag } from "../tag-manager";
 import type { SequenceTag } from "../../domain/models/SequenceTag";
 import { createSequenceTag } from "../../domain/models/SequenceTag";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
@@ -40,12 +40,10 @@ export interface TagMigrationResult {
  * 4. Otherwise, return empty array
  *
  * @param sequence The sequence to migrate
- * @param tagService TagManager for creating tag documents
  * @returns Migration result with sequenceTags and tagIds
  */
 export async function migrateSequenceTags(
-  sequence: LibrarySequence | (SequenceData & Partial<LibrarySequence>),
-  tagService: TagManager
+  sequence: LibrarySequence | (SequenceData & Partial<LibrarySequence>)
 ): Promise<TagMigrationResult> {
   // Case 1: Already migrated (has sequenceTags)
   if (
@@ -83,7 +81,7 @@ export async function migrateSequenceTags(
 
       try {
         // Create tag (or get existing if duplicate)
-        const libraryTag = await tagService.createTag(tagName);
+        const libraryTag = await createUserTag(tagName);
         sequenceTags.push(createSequenceTag(libraryTag.id, "user"));
         tagIds.push(libraryTag.id);
       } catch (error) {
@@ -112,13 +110,11 @@ export async function migrateSequenceTags(
  * Useful for migrating a user's entire library
  *
  * @param sequences Sequences to migrate
- * @param tagService TagManager for creating tag documents
  * @param onProgress Optional progress callback
  * @returns Array of migration results
  */
 export async function batchMigrateSequenceTags(
   sequences: (LibrarySequence | (SequenceData & Partial<LibrarySequence>))[],
-  tagService: TagManager,
   onProgress?: (completed: number, total: number) => void
 ): Promise<TagMigrationResult[]> {
   const results: TagMigrationResult[] = [];
@@ -131,7 +127,7 @@ export async function batchMigrateSequenceTags(
       }
       continue;
     }
-    const result = await migrateSequenceTags(sequence, tagService);
+    const result = await migrateSequenceTags(sequence);
     results.push(result);
 
     if (onProgress) {

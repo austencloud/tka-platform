@@ -7,14 +7,17 @@
  */
 
 import type { ConversationMemorySummary } from "../contracts/types";
-import type { TikaSessionRepository } from "./TikaSessionRepository";
-import type { TikaSessionPreview } from "../../domain/models/tika-conversation-models";
+import type { TikaSessionPreview, TikaSessionQueryOptions } from "../../domain/models/tika-conversation-models";
+
+interface SessionRepository {
+  listSessions(options?: TikaSessionQueryOptions): Promise<TikaSessionPreview[]>;
+}
 
 const MAX_MEMORY_CHARS = 500;
 const DEFAULT_MATCH_LIMIT = 3;
 
 export class ConversationMemoryRetriever {
-  constructor(private readonly sessionRepository: TikaSessionRepository) {}
+  constructor(private readonly sessionRepository: SessionRepository) {}
 
   async findRelevantSessions(
     query: string,

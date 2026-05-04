@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import { getCollisionLabPoseLabelRepository } from "$lib/features/lab/tabs/collision-lab/getCollisionLabPoseLabelRepository";
-import { getDiamondPoseEnumerator } from "$lib/features/lab/tabs/collision-lab/getDiamondPoseEnumerator";
+import { enumerateDiamondInOut } from "$lib/features/lab/tabs/collision-lab/services/diamond-pose-enumerator";
 import { getStanceCandidateGenerator } from "$lib/features/lab/tabs/collision-lab/getStanceCandidateGenerator";
 import { getStanceOptimizer } from "$lib/features/lab/tabs/collision-lab/getStanceOptimizer";
   /**
@@ -85,12 +85,11 @@ import { getStanceOptimizer } from "$lib/features/lab/tabs/collision-lab/getStan
 
   onMount(async () => {
     try {
-      const enumerator = getDiamondPoseEnumerator();
       const repo = getCollisionLabPoseLabelRepository();
       const optimizer = getStanceOptimizer();
       const candidateGenerator = getStanceCandidateGenerator();
       labState = await createCollisionLabState(
-        enumerator,
+        { enumerateDiamondInOut },
         repo,
         optimizer,
         candidateGenerator

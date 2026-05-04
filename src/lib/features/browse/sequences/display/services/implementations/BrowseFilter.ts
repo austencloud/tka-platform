@@ -17,7 +17,7 @@ import {
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
-import { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
+import { calculateDifficultyLevel } from "../sequence-difficulty-calculator";
 
 // Constants
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -28,7 +28,6 @@ const DIFFICULTY_OPTIONS = ["beginner", "intermediate", "advanced"];
 const GRID_MODE_OPTIONS = [GridMode.DIAMOND, GridMode.BOX, GridMode.SKEWED];
 
 export class BrowseFilter {
-  private difficultyCalculator = new SequenceDifficultyCalculator();
 
   applyFilter(
     sequences: SequenceData[],
@@ -231,7 +230,7 @@ export class BrowseFilter {
 
       // Finally, calculate from steps (library sequences often don't have level stored)
       if (seq.steps && seq.steps.length > 0) {
-        const calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel([...seq.steps]);
+        const calculatedLevel = calculateDifficultyLevel([...seq.steps]);
         return calculatedLevel === targetLevel;
       }
 

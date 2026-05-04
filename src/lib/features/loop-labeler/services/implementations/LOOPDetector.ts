@@ -6,10 +6,7 @@ import type {
 } from "../contracts/ILOOPDetector";
 import type { TransformationIntervals } from "../../domain/models/label-models";
 import type { StepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
-import type {
-  PolyrhythmicDetector,
-  PolyrhythmicLOOPResult,
-} from "../implementations/PolyrhythmicDetector";
+import type { PolyrhythmicLOOPResult } from "../polyrhythmic-detector";
 import type {
   InternalStepPair,
   ExtractedStep,
@@ -20,7 +17,7 @@ import {
   type DetectedComponent,
   type LOOPDomain,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import { loopOrientationDetector } from "./LOOPOrientationDetector";
+import { detectOrientationPass } from "../loop-orientation-detector";
 import { detectUniformPattern } from "./detection";
 
 function componentIdToLOOPComponent(id: ComponentId): LOOPComponent | null {
@@ -88,13 +85,22 @@ function mergeComponents(
   return out;
 }
 
+/** Structural interface for polyrhythmic detection dependency */
+interface PolyrhythmicService {
+  detectPolyrhythmic(rawSequence: Record<string, unknown>[]): PolyrhythmicLOOPResult;
+}
+
+/** Structural interface for layered path detection dependency */
+interface LayeredPathService {
+  detectLayeredPath(rawSequence: Record<string, unknown>[]): LayeredPathResult;
+}
+
 export class LOOPDetector implements ILOOPDetector {
   constructor(
     private comparisonOrchestrator: StepComparisonOrchestrator,
     private analysisService: TransformationAnalyzer,
-    private formattingService: CandidateFormatter,
-    private polyrhythmicService?: PolyrhythmicDetector,
-    private layeredPathService?: LayeredPathDetector
+    private polyrhythmicService?: PolyrhythmicService,
+    private layeredPathService?: LayeredPathService
   ) {}
 
   isCircular(sequence: SequenceEntry): boolean {
@@ -124,7 +130,7 @@ export class LOOPDetector implements ILOOPDetector {
     result: LOOPDetectionResult,
     sequence: SequenceEntry
   ): LOOPDetectionResult {
-    const orientation = loopOrientationDetector.detectOrientationPass(sequence);
+    const orientation = detectOrientationPass(sequence);
     const mergedDetailed = mergeComponents(
       result.componentsDetailed,
       orientation.components
@@ -212,14 +218,14 @@ export class LOOPDetector implements ILOOPDetector {
       const halvedGroups =
         this.analysisService.groupStepPairsByPattern(halvedStepPairs);
 
-      let displayPairs = this.formattingService.toPublicStepPairs(halvedStepPairs);
+      let displayPairs = toPublicStepPairs(halvedStepPairs);
       let displayGroups = halvedGroups;
 
       if (steps.length >= 4 && steps.length % 4 === 0) {
         const quarteredStepPairs =
           this.comparisonOrchestrator.generateQuarteredBeatPairs(steps);
         this.analysisService.reprioritizeBeatPairs(quarteredStepPairs);
-        displayPairs = this.formattingService.toPublicStepPairs(quarteredStepPairs);
+        displayPairs = toPublicStepPairs(quarteredStepPairs);
         displayGroups =
           this.analysisService.groupStepPairsByPattern(quarteredStepPairs);
       }
@@ -311,7 +317,7 @@ export class LOOPDetector implements ILOOPDetector {
       transformationIntervals: {},
       rotationDirection: null,
       candidateDesignations: [],
-      stepPairs: this.formattingService.toPublicStepPairs(halvedStepPairs),
+      stepPairs: toPublicStepPairs(halvedStepPairs),
       stepPairGroups: halvedStepPairGroups,
       isCircular: true,
       isFreeform,
@@ -429,7 +435,7 @@ export class LOOPDetector implements ILOOPDetector {
 
     const components: ComponentId[] = [];
     if (modularAnalysis.baseTransformation) {
-      const baseComponents = this.formattingService.deriveComponentsFromPattern(
+      const baseComponents = deriveComponentsFromPattern(
         modularAnalysis.baseTransformation
       );
       components.push(...baseComponents);
@@ -508,7 +514,7 @@ export class LOOPDetector implements ILOOPDetector {
           denied: false,
         },
       ],
-      stepPairs: this.formattingService.toPublicStepPairs(quarteredStepPairs),
+      stepPairs: toPublicStepPairs(quarteredStepPairs),
       stepPairGroups: quarteredGroups,
       isCircular: true,
       isFreeform: false,
@@ -580,18 +586,15 @@ export class LOOPDetector implements ILOOPDetector {
 
 import { stepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
 import { transformationAnalyzer } from "./TransformationAnalyzer";
-import { candidateFormatter } from "./CandidateFormatter";
-import { polyrhythmicDetector } from "./PolyrhythmicDetector";
-import { layeredPathDetector } from "./LayeredPathDetector";
+import { toPublicStepPairs, deriveComponentsFromPattern } from "../candidate-formatter";
+import * as polyrhythmicDetectorModule from "../polyrhythmic-detector";
+import * as layeredPathDetectorModule from "../layered-path-detector";
 import type { LayeredPathResult } from "../contracts/types";
 import type { TransformationAnalyzer } from "./TransformationAnalyzer";
-import type { CandidateFormatter } from "./CandidateFormatter";
-import type { LayeredPathDetector } from "./LayeredPathDetector";
 
 export const loopDetector = new LOOPDetector(
   stepComparisonOrchestrator,
   transformationAnalyzer,
-  candidateFormatter,
-  polyrhythmicDetector,
-  layeredPathDetector
+  polyrhythmicDetectorModule,
+  layeredPathDetectorModule
 );

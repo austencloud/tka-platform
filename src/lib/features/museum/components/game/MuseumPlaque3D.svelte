@@ -48,7 +48,6 @@
   import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/types";
-  import type { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
 
   interface Props {
     worldX: number;
@@ -59,7 +58,7 @@
     content: PlaqueContent;
     size: PlaqueSize;
     refId: string;
-    generator: PlaqueTextureGenerator;
+    generator: (content: PlaqueContent, size: PlaqueSize, cacheKey?: string) => OffscreenCanvas;
   }
 
   const props: Props = $props();

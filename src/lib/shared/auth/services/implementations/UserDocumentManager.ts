@@ -122,9 +122,9 @@ export class UserDocumentManager {
         });
 
         // Notify admins of new user signup (async, non-blocking)
-        void import("$lib/features/admin/services/implementations/AdminNotifier").then(
-          ({ adminNotificationService }) => {
-            void adminNotificationService.notifyNewUserSignup(
+        void import("$lib/features/admin/services/admin-notifier").then(
+          ({ notifyNewUserSignup }) => {
+            void notifyNewUserSignup(
               user.uid,
               user.email,
               displayName

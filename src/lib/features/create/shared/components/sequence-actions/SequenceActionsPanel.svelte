@@ -7,20 +7,17 @@
 <script lang="ts">
 
 import { getExtensionFlowCoordinator } from "$lib/features/create/shared/getExtensionFlowCoordinator";
-import { getFirstStepAnalyzer } from "$lib/features/create/shared/getFirstStepAnalyzer";
-import { getSequenceJsonExporter } from "$lib/features/create/shared/getSequenceJsonExporter";
-import { getSequenceTransferHandler } from "$lib/features/create/shared/getSequenceTransferHandler";
-import { getSubDrawerStatePersister } from "$lib/features/create/shared/getSubDrawerStatePersister";
+import * as firstStepAnalyzerModule from "$lib/features/create/shared/services/first-step-analyzer";
+import * as sequenceJsonExporterModule from "$lib/features/create/shared/services/sequence-json-exporter";
+import * as sequenceTransferHandlerModule from "$lib/features/create/shared/services/sequence-transfer-handler";
+import * as subDrawerStatePersisterModule from "$lib/features/create/shared/services/sub-drawer-state-persister";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { ExtensionAnalysis, LOOPType, CircularizationOption } from "../../services/contracts/types";
   import type { ExtensionFlowCoordinator } from "../../services/implementations/ExtensionFlowCoordinator";
-  import type { SubDrawerStatePersister } from "../../services/implementations/SubDrawerStatePersister";
 import type { SubDrawerType } from "../../services/contracts/types";
-  import type { SequenceTransferHandler } from "../../services/implementations/SequenceTransferHandler";
-  import type { FirstStepAnalyzer } from "../../services/implementations/FirstStepAnalyzer";
-  import type { SequenceJsonExporter } from "../../services/implementations/SequenceJsonExporter";
+  type FirstStepAnalyzer = typeof firstStepAnalyzerModule;
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { UndoOperationType } from "../../services/contracts/types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -101,13 +98,13 @@ import type { SubDrawerType } from "../../services/contracts/types";
     panelState.navigationBarHeight + panelState.toolPanelHeight
   );
 
-  // Services - get from ITI container
+  // Services
   const hapticService = getHapticFeedback();
   const extensionFlowCoordinator = getExtensionFlowCoordinator();
-  const subDrawerPersister = getSubDrawerStatePersister();
-  const transferHandler = getSequenceTransferHandler();
-  const firstStepAnalyzer = getFirstStepAnalyzer();
-  const jsonExporter = getSequenceJsonExporter();
+  const subDrawerPersister = subDrawerStatePersisterModule;
+  const transferHandler = sequenceTransferHandlerModule;
+  const firstStepAnalyzer: FirstStepAnalyzer = firstStepAnalyzerModule;
+  const jsonExporter = sequenceJsonExporterModule;
 
   // Local state - $effect below handles initial and prop changes
   let isOpen = $state(false);
@@ -152,7 +149,7 @@ import type { SubDrawerType } from "../../services/contracts/types";
       subDrawerPersister.setActiveSubDrawer(activeDrawer);
     } else if (restorationComplete) {
       // Only clear if restoration is done - prevents clearing on initial mount
-      subDrawerPersister.clear();
+      subDrawerPersister.clearSubDrawer();
     }
   });
 

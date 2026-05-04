@@ -6,11 +6,14 @@
  */
 
 import type { DurationPattern } from "../domain/models/DurationPatternData";
-import type { DurationPatternManager } from "../services/implementations/DurationPatternManager";
+import {
+  loadPatterns as dpLoadPatterns,
+  extractPattern as dpExtractPattern,
+  savePattern as dpSavePattern,
+  deletePattern as dpDeletePattern,
+} from "../services/duration-pattern-manager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-
-import { getDurationPatternManager as getManager } from "$lib/features/create/shared/getDurationPatternManager";
 
 const logger = createComponentLogger("DurationPatternState");
 
@@ -20,8 +23,6 @@ let _isLoading = false;
 let _selectedPattern: DurationPattern | null = null;
 let _error: string | null = null;
 let _initialized = false;
-
-// Service accessed via module singleton getter (getDurationPatternManager)
 
 export const durationPatternState = {
   // Getters
@@ -56,7 +57,7 @@ export const durationPatternState = {
     _error = null;
 
     try {
-      _patterns = await getManager().loadPatterns(userId);
+      _patterns = await dpLoadPatterns(userId);
       _initialized = true;
       logger.log(`Loaded ${_patterns.length} duration patterns`);
     } catch (err) {
@@ -82,14 +83,8 @@ export const durationPatternState = {
     _error = null;
 
     try {
-      const patternData = getManager().extractPattern(
-        sequence,
-        name
-      );
-      const saved = await getManager().savePattern(
-        patternData,
-        userId
-      );
+      const patternData = dpExtractPattern(sequence, name);
+      const saved = await dpSavePattern(patternData, userId);
 
       // Add to local state
       _patterns = [saved, ..._patterns];
@@ -117,7 +112,7 @@ export const durationPatternState = {
     _error = null;
 
     try {
-      await getManager().deletePattern(patternId, userId);
+      await dpDeletePattern(patternId, userId);
 
       // Remove from local state
       _patterns = _patterns.filter((p) => p.id !== patternId);

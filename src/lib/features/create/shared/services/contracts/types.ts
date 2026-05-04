@@ -1,12 +1,7 @@
-import type { CreateModuleEffectCoordinator } from "../implementations/CreateModuleEffectCoordinator";
 import type { CreateModuleHandlers } from "../implementations/CreateModuleHandlers";
 import type { DeepLinkSequenceHandler } from "../implementations/DeepLinkSequenceHandler";
-import type { FirstStepAnalyzer } from "../implementations/FirstStepAnalyzer";
 import type { NavigationSyncer } from "../implementations/NavigationSyncer";
 import type { PanelPersister } from "../implementations/PanelPersister.svelte";
-import type { SequenceJsonExporter } from "../implementations/SequenceJsonExporter";
-import type { SequenceTransferHandler } from "../implementations/SequenceTransferHandler";
-import type { SubDrawerStatePersister } from "../implementations/SubDrawerStatePersister";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -109,6 +104,14 @@ export interface CreateModuleEffectConfig {
   onCurrentWordChange?: (word: string) => void;
   onLetterSourcesChange?: (sources: LetterSource[] | null) => void;
   onTabAccessibilityChange?: (canAccess: boolean) => void;
+}
+
+/**
+ * Interface for the effect coordinator – implemented by the
+ * create-module-effect-coordinator module as a plain object.
+ */
+export interface CreateModuleEffectCoordinator {
+  setupEffects(config: CreateModuleEffectConfig): () => void;
 }
 
 /**

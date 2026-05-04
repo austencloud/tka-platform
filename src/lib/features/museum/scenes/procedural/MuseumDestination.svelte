@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getMuseumPersister } from "$lib/features/museum/scenes/procedural/getMuseumPersister";
+import * as museumPersister from "$lib/features/museum/scenes/procedural/services/museum-persister";
   import WorldScene from "$lib/shared/3d/procedural-engine/components/WorldScene.svelte";
   import { MUSEUM_GROUNDS_CONFIG } from "$lib/shared/3d/procedural-engine/core/world-definitions";
   import { getActiveMuseumState } from "./state/museum-state-bridge.svelte";
@@ -33,8 +33,7 @@ import { getMuseumPersister } from "$lib/features/museum/scenes/procedural/getMu
     if (!museumState) return;
 
     try {
-      const persister = getMuseumPersister();
-      const data = await persister.loadMuseum(visitingUserId);
+      const data = await museumPersister.loadMuseum(visitingUserId);
       if (data) {
         for (const [slotId, exhibit] of data.exhibits) {
           museumState.assignExhibit(slotId, exhibit.sequenceId);
@@ -85,8 +84,7 @@ import { getMuseumPersister } from "$lib/features/museum/scenes/procedural/getMu
 
     // Persist to Firebase
     try {
-      const persister = getMuseumPersister();
-      await persister.saveExhibit(CURRENT_USER_ID, slotId, sequenceId);
+      await museumPersister.saveExhibit(CURRENT_USER_ID, slotId, sequenceId);
     } catch {
       // Exhibit is already assigned locally; Firebase failure is non-blocking
     }

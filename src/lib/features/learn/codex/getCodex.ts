@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 import { Codex } from './services/implementations/Codex';
 import type { CodexLetterMappingRepo } from './services/implementations/CodexLetterMappingRepo';
 import { getCodexLetterMappingRepo } from './getCodexLetterMappingRepo';
-import { getCodexPictographUpdater } from './getCodexPictographUpdater';
+import * as codexPictographUpdater from './services/codex-pictograph-updater';
 import { getQuizRepoManager } from '$lib/features/learn/quiz/getQuizRepoManager';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 
@@ -14,7 +14,7 @@ export function getCodex(): Codex {
 	return instance ??= new Codex(
 		getCodexLetterMappingRepo() as unknown as CodexLetterMappingRepo,
 		getQuizRepoManager(),
-		getCodexPictographUpdater(),
+		codexPictographUpdater,
 		letterQueryHandler,
 	);
 }

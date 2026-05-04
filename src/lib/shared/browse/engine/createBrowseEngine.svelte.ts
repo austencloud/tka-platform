@@ -32,9 +32,9 @@ import { detectRotationPeriod } from "$lib/features/create/generate/circular/dom
 import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
 import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
 import { getMultiFilter } from "$lib/features/browse/sequences/display/getMultiFilter";
-import { getBrowseSorter } from "$lib/features/browse/sequences/display/getBrowseSorter";
+import { sortSequences as browseSortSequences } from "$lib/features/browse/sequences/display/services/browse-sorter";
 import { getBrowseSectionManager } from "$lib/features/browse/sequences/display/getBrowseSectionManager";
-import { getCollectionManager } from "$lib/features/library/getCollectionManager";
+import { toggleFavorite as doToggleFavorite } from "$lib/features/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -105,7 +105,6 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	const loaderService = getBrowseLoader();
 	const filterService = getBrowseFilter();
 	const multiFilterService = getMultiFilter();
-	const sortService = getBrowseSorter();
 	const sectionManager = getBrowseSectionManager();
 
 	// --- Resolve persisted state ---
@@ -196,7 +195,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		}
 
 		// Apply sorting
-		const sorted = sortService.sortSequences(result, sortMethod);
+		const sorted = browseSortSequences(result, sortMethod);
 		if (sortDirection === "desc") {
 			sorted.reverse();
 		}
@@ -617,11 +616,8 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		// --- Favorites ---
 		async toggleFavorite(sequenceId: string): Promise<void> {
-			const collectionMgr = getCollectionManager();
-			if (!collectionMgr) return;
-
 			try {
-				const newStatus = await collectionMgr.toggleFavorite(sequenceId);
+				const newStatus = await doToggleFavorite(sequenceId);
 				const update = (seq: SequenceData) =>
 					seq.id === sequenceId
 						? { ...seq, isFavorite: newStatus }

@@ -8,15 +8,13 @@
 -->
 <script lang="ts">
 
-import { getArrowCollisionResolver } from "$lib/features/choreo-card/getArrowCollisionResolver";
-import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDataBuilder";
+import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-path-data-builder";
+  import { resolveCollisions } from "$lib/features/choreo-card/services/arrow-collision-resolver";
   import type { DeckFamily } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { HandPathDataBuilder } from "../services/implementations/HandPathDataBuilder";
-  import type { ArrowCollisionResolver } from "../services/implementations/ArrowCollisionResolver";
   import ChoreoCard from "./ChoreoCard.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
 
@@ -52,10 +50,6 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
 
   let expanded = $state((() => initiallyExpanded)());
 
-  // Resolve DI services once - these are cheap singletons.
-  const handPathBuilder = getHandPathDataBuilder() as HandPathDataBuilder;
-  const collisionResolver = getArrowCollisionResolver() as ArrowCollisionResolver;
-
   /**
    * Converts PictographData[] (from HandPathDataBuilder) into StepData[].
    *
@@ -88,8 +82,8 @@ import { getHandPathDataBuilder } from "$lib/features/choreo-card/getHandPathDat
    * subsequent loads.
    */
   function buildHandPathSequence(handPathId: string, representative: SequenceData): SequenceData {
-    const rawSteps = handPathBuilder.buildFromHandPathId(handPathId, representative);
-    const resolvedBeats = collisionResolver.resolveCollisions(rawSteps);
+    const rawSteps = buildFromHandPathId(handPathId, representative);
+    const resolvedBeats = resolveCollisions(rawSteps);
     const steps = toStepData(resolvedBeats);
 
     return createSequenceData({

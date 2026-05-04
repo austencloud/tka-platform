@@ -13,7 +13,7 @@ import {
 	normalizeAnglePositive,
 	normalizeAngleSigned,
 	mapOrientationToAngle,
-} from "$lib/features/compose/services/implementations/AngleCalculator";
+} from "$lib/features/compose/services/angle-calculator";
 import {
 	LOCATION_ANGLES,
 	PI,

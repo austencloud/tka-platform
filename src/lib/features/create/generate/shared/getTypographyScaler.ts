@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { TypographyScaler } from './services/implementations/TypographyScaler';
+import { typographyScaler } from './services/typography-scaler';
 
-let instance: TypographyScaler | null = null;
-
-export function getTypographyScaler(): TypographyScaler {
+export function getTypographyScaler(): typeof typographyScaler {
 	if (!browser) throw new Error('getTypographyScaler() is browser-only');
-	return instance ??= new TypographyScaler();
+	return typographyScaler;
 }

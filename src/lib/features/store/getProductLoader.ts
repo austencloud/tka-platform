@@ -1,6 +1,5 @@
-import { ProductLoader } from './services/implementations/ProductLoader';
+import * as productLoader from './services/product-loader';
 
-let instance: ProductLoader | null = null;
-export function getProductLoader(): ProductLoader {
-  return instance ??= new ProductLoader();
+export function getProductLoader() {
+  return productLoader;
 }

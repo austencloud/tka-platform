@@ -7,10 +7,9 @@
 <script lang="ts">
   import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount } from "svelte";
-  import { getStepDataConverter } from "$lib/features/loop-labeler/getStepDataConverter";
   import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
   import { loopDetector } from "../services/implementations/LOOPDetector";
-  import type { StepDataConverter } from "../services/implementations/StepDataConverter";
+  import { convertRawToBeats, getAuthoritativeGridMode } from "../services/step-data-converter";
   import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
   import type { LOOPDetector } from "../services/implementations/LOOPDetector";
   import type { ComponentId } from "../domain/constants/loop-components";
@@ -56,7 +55,6 @@
 
   // Store service references after loading (to avoid resolving in $derived)
   let detectionService = $state<LOOPDetector | null>(null);
-  let conversionService = $state<StepDataConverter | null>(null);
 
   // Create mode-specific state managers (after module loads)
   let sectionState = $state<ReturnType<typeof createSectionModeState>>();
@@ -72,10 +70,6 @@
       // loop-labeler services available synchronously via ITI
 
       detectionService = loopDetector;
-
-      // Also cache the conversion service for beat parsing
-      conversionService =
-        getStepDataConverter() as StepDataConverter | null;
 
       // Pre-cache all services to ensure they're available for subsequent operations
       loopLabelerController.cacheServices();
@@ -213,23 +207,14 @@
     }
   });
 
-  // Parse steps for current sequence (uses cached conversionService)
+  // Parse steps for current sequence
   const parsedData = $derived.by(() => {
     if (!currentSequence?.fullMetadata?.sequence) {
       return { steps: [], startPosition: null };
     }
 
-    // Use the cached conversion service instead of resolving each time
-    if (!conversionService) {
-      console.warn(
-        "[LOOPLabelerModule] StepDataConverter not available (not cached)"
-      );
-      return { steps: [], startPosition: null };
-    }
-
-    const gridMode =
-      conversionService.getAuthoritativeGridMode(currentSequence);
-    return conversionService.convertRawToBeats(
+    const gridMode = getAuthoritativeGridMode(currentSequence);
+    return convertRawToBeats(
       currentSequence.word,
       currentSequence.fullMetadata.sequence,
       gridMode

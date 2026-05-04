@@ -38,8 +38,8 @@ Last audit: 2025-12-27
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
-  import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
-  import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/features/compose/services/sequence-loopability-checker";
+  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
@@ -326,7 +326,7 @@ Last audit: 2025-12-27
   const effectiveIsSeamlesslyLoopable = $derived.by(() => {
     if (isSeamlesslyLoopable !== undefined) return isSeamlesslyLoopable;
     if (!sequenceData) return false;
-    return sequenceLoopabilityChecker.isSeamlesslyLoopable(sequenceData);
+    return sequenceLoopabilityCheck(sequenceData);
   });
 
   function handleVisibilityChange() {
@@ -349,11 +349,9 @@ Last audit: 2025-12-27
   });
 
   // Difficulty level from sequence data
-  const difficultyCalculator = new SequenceDifficultyCalculator();
-
   const computedDifficultyLevel = $derived.by(() => {
     if (!sequenceData?.steps?.length) return null;
-    return difficultyCalculator.calculateDifficultyLevel([...sequenceData.steps]);
+    return calculateSequenceDifficultyLevel([...sequenceData.steps]);
   });
 
   // Shared resolver: same components + slice-aware rotation as every other

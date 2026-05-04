@@ -7,7 +7,7 @@ import {
 } from "../../domain/constants/strict-loop-position-maps";
 import type { Period } from "../../domain/models/circular-models";
 import { LOOPType } from "../../domain/models/circular-models";
-import type { RotatedEndPositionSelector } from "./RotatedEndPositionSelector";
+import { determineRotatedEndPosition } from "../rotated-end-position-selector";
 
 /**
  * Service for determining required end positions for different LOOP types
@@ -26,9 +26,6 @@ import type { RotatedEndPositionSelector } from "./RotatedEndPositionSelector";
  * 4. SWAPPED (only for strict swapped)
  */
 export class LOOPEndPositionSelector {
-  constructor(
-    private readonly rotatedEndPositionSelector: RotatedEndPositionSelector
-  ) {}
 
   /**
    * Determine the required end position based on LOOP type
@@ -42,7 +39,7 @@ export class LOOPEndPositionSelector {
       // Strict LOOP types
       case LOOPType.ROTATED:
         // Rotated LOOP uses rotation maps (halved or quartered)
-        return this.rotatedEndPositionSelector.determineRotatedEndPosition(
+        return determineRotatedEndPosition(
           period,
           startPosition
         );
@@ -75,7 +72,7 @@ export class LOOPEndPositionSelector {
       case LOOPType.ROTATED_INVERTED:
       case LOOPType.ROTATED_SWAPPED:
         // Any rotation-based LOOP uses rotation maps
-        return this.rotatedEndPositionSelector.determineRotatedEndPosition(
+        return determineRotatedEndPosition(
           period,
           startPosition
         );
@@ -85,7 +82,7 @@ export class LOOPEndPositionSelector {
       // End position must satisfy the rotation requirement for the chosen slice size
       case LOOPType.MIRRORED_ROTATED:
         // Use the user-selected slice size for rotation (rotation returns to home)
-        return this.rotatedEndPositionSelector.determineRotatedEndPosition(
+        return determineRotatedEndPosition(
           period,
           startPosition
         );
@@ -95,7 +92,7 @@ export class LOOPEndPositionSelector {
       // End position must satisfy the rotation requirement for the chosen slice size
       case LOOPType.MIRRORED_INVERTED_ROTATED:
         // Use the user-selected slice size for rotation (rotation returns to home)
-        return this.rotatedEndPositionSelector.determineRotatedEndPosition(
+        return determineRotatedEndPosition(
           period,
           startPosition
         );
@@ -105,7 +102,7 @@ export class LOOPEndPositionSelector {
       // End position must satisfy the rotation requirement for the chosen slice size
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
         // Use the user-selected slice size for rotation (rotation returns to home)
-        return this.rotatedEndPositionSelector.determineRotatedEndPosition(
+        return determineRotatedEndPosition(
           period,
           startPosition
         );
@@ -150,8 +147,4 @@ export class LOOPEndPositionSelector {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { rotatedEndPositionSelector } from "./RotatedEndPositionSelector";
-
-export const loopEndPositionSelector = new LOOPEndPositionSelector(
-  rotatedEndPositionSelector
-);
+export const loopEndPositionSelector = new LOOPEndPositionSelector();

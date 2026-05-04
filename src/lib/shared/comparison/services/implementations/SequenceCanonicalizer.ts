@@ -9,7 +9,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { CanonicalSequence } from "../contracts/types";
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
-import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
+import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/word-cyclic-equivalence-detector";
 import type { SequenceSignature, StepSignature } from "../../domain/models/signatures";
 
 export class SequenceCanonicalizer {
@@ -168,7 +168,7 @@ export class SequenceCanonicalizer {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { stepSignatureGenerator } from "./StepSignatureGenerator";
-import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
+import * as wordCyclicEquivalenceDetector from "$lib/features/create/shared/services/word-cyclic-equivalence-detector";
 
 export const sequenceCanonicalizer = new SequenceCanonicalizer(
   stepSignatureGenerator,

@@ -8,7 +8,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import { getLocationSharingOrchestrator } from "./getLocationSharingOrchestrator";
-  import { getLocationProvider } from "./getLocationProvider";
+  import { getCurrentLocation } from "./services/location-provider";
   import GlobalUserMap from "./components/GlobalUserMap.svelte";
   import LocationSharingConsentSheet from "./components/LocationSharingConsentSheet.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -72,8 +72,7 @@
         await loadLocations();
 
         // Get user's location for map centering (city center will be shown)
-        const locationProvider = getLocationProvider();
-        const position = await locationProvider.getCurrentLocation();
+        const position = await getCurrentLocation();
         userLocation = { lat: position.lat, lng: position.lng };
       } else {
         toast.error(t('community_error_add_city'));
@@ -113,8 +112,7 @@
       await loadLocations();
 
       // Get user's location for map centering
-      const locationProvider = getLocationProvider();
-      const position = await locationProvider.getCurrentLocation();
+      const position = await getCurrentLocation();
       userLocation = { lat: position.lat, lng: position.lng };
     } catch (error) {
       console.error("Failed to update city:", error);

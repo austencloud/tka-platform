@@ -19,13 +19,11 @@ import type {
   DetectedPosition,
 } from "$lib/features/train/domain/models/DetectionFrame";
 import type { HandLandmark } from "$lib/features/train/services/contracts/types";
-import { QuadrantMapper } from "$lib/features/train/services/implementations/QuadrantMapper";
+import { mapToQuadrant } from "$lib/features/train/services/quadrant-mapper";
 import type { ExtractedFrame, HandTimeline, ProgressCallback } from "../../domain/models";
 import type { ImageModeHandLandmarker } from "./ImageModeHandLandmarker";
 
 export class VideoHandAnalyzer {
-  private readonly _quadrantMapper = new QuadrantMapper();
-
   constructor(private readonly _landmarker: ImageModeHandLandmarker) {}
 
   async analyze(
@@ -84,7 +82,7 @@ export class VideoHandAnalyzer {
 
         // Compute palm center from wrist + middle finger MCP
         const palmCenter = this.computePalmCenter(landmarks);
-        const quadrant = this._quadrantMapper.mapToQuadrant(
+        const quadrant = mapToQuadrant(
           palmCenter.x,
           palmCenter.y
         );

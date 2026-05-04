@@ -16,7 +16,7 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceVisibility } from "../../domain/models/LibrarySequence";
-import type { TagManager } from "./TagManager";
+import { findTagByName, createUserTag } from "../tag-manager";
 import type { ArtifactExtractor } from "./ArtifactExtractor";
 import { TAG_COLORS } from "../../domain/models/Tag";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
@@ -34,20 +34,17 @@ import type { LibraryRepository } from "../implementations/LibraryRepository";
 export class LibrarySaveService {
   private readonly shareService: Sharer | null;
   private readonly uploadService: R2VideoUploader | null;
-  private readonly tagService: TagManager | null;
   private readonly libraryRepository: LibraryRepository;
   private readonly artifactExtractor: ArtifactExtractor | null;
 
   constructor(
     shareService: Sharer | null,
     uploadService: R2VideoUploader | null,
-    tagService: TagManager | null,
     libraryRepository: LibraryRepository,
     artifactExtractor?: ArtifactExtractor | null
   ) {
     this.shareService = shareService ?? null;
     this.uploadService = uploadService ?? null;
-    this.tagService = tagService ?? null;
     this.libraryRepository = libraryRepository;
     this.artifactExtractor = artifactExtractor ?? null;
   }
@@ -266,20 +263,20 @@ export class LibrarySaveService {
    * Create any new tags that don't exist in the system
    */
   private async createNewTags(tags: string[]): Promise<void> {
-    if (tags.length === 0 || !this.tagService) {
+    if (tags.length === 0) {
       return;
     }
 
     try {
       for (const tagName of tags) {
         const normalized = tagName.toLowerCase().trim();
-        const existing = await this.tagService.findTagByName(normalized);
+        const existing = await findTagByName(normalized);
 
         if (!existing) {
           // Create new tag with random color
           const randomColor =
             TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)];
-          await this.tagService.createTag(normalized, { color: randomColor });
+          await createUserTag(normalized, { color: randomColor });
         }
       }
     } catch (error) {

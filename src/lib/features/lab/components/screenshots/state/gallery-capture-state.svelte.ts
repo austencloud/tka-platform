@@ -7,14 +7,20 @@
  */
 
 import type { DeviceInfo, RouteNode, CaptureJobStatus, CaptureStartResult } from "../../../services/contracts/types";
-import type { ScreenshotOrchestrator } from "../../../services/implementations/ScreenshotOrchestrator";
 import type { ScreenshotUploadOrchestrator } from "../../../services/implementations/ScreenshotUploadOrchestrator";
+
+interface ScreenshotOrchestratorLike {
+  getRoutes(): RouteNode[];
+  getDevices(): DeviceInfo[];
+  startCapture(request: { routes: string[]; devices: string[] }): Promise<CaptureStartResult>;
+  getJobStatus?(jobId: string): Promise<CaptureJobStatus>;
+}
 import type { UploadProgress } from "../../../services/contracts/types";
 
 export type CapturePhase = "idle" | "capturing" | "uploading";
 
 export interface GalleryCaptureDeps {
-  getOrchestrator: () => ScreenshotOrchestrator;
+  getOrchestrator: () => ScreenshotOrchestratorLike;
   getUploadOrchestrator: () => ScreenshotUploadOrchestrator;
 }
 

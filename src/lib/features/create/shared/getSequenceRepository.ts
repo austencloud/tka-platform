@@ -3,7 +3,6 @@ import { SequenceRepository } from './services/implementations/SequenceRepositor
 import { getSequenceDomainManager } from './getSequenceDomainManager';
 import { getPersistenceService } from '$lib/shared/persistence/getPersistenceService';
 import { getReversalDetector } from './getReversalDetector';
-import { getSequenceNormalizer } from '$lib/features/compose/getSequenceNormalizer';
 import { getSequenceImporter } from './getSequenceImporter';
 
 let instance: SequenceRepository | null = null;
@@ -14,7 +13,6 @@ export function getSequenceRepository(): SequenceRepository {
 		getSequenceDomainManager(),
 		getPersistenceService() as any,
 		getReversalDetector(),
-		getSequenceNormalizer(),
 		getSequenceImporter(),
 	);
 }

@@ -19,7 +19,13 @@ import {
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { FileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
 import type { AnimationPlaybackController } from "../implementations/AnimationPlaybackController";
-import type { CanvasRenderer } from "./CanvasRenderer";
+import {
+  getHeaderHeight,
+  getProgressBarHeight,
+  renderStepNumberToCanvas,
+  renderWordHeaderToCanvas,
+  renderProgressBarToCanvas,
+} from "../canvas-renderer";
 import type {
   VideoExportFormat,
   VideoExportOrchestratorOptions,
@@ -35,7 +41,7 @@ import type { BackgroundVideoEncoder } from "../implementations/BackgroundVideoE
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
-import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
@@ -47,7 +53,6 @@ export class VideoExportOrchestrator {
 
   constructor(
     private readonly VideoExporter: VideoExporter,
-    private readonly canvasRenderer: CanvasRenderer,
     private readonly fileDownloadService: FileDownloader,
     private readonly compositeRenderer: CompositeVideoRenderer,
     private readonly glyphPrerenderer: ExportGlyphPrerenderer,
@@ -84,17 +89,17 @@ export class VideoExportOrchestrator {
     // Header/progress bar heights at SOURCE resolution - used only for
     // aspect ratio calculation so the output dimensions stay correct.
     const srcHeaderHeight = showWordHeader
-      ? this.canvasRenderer.getHeaderHeight(canvas.width)
+      ? getHeaderHeight(canvas.width)
       : 0;
     const srcProgressBarHeight = showProgressBar
-      ? this.canvasRenderer.getProgressBarHeight(canvas.width)
+      ? getProgressBarHeight(canvas.width)
       : 0;
 
     // Compute header overlays (difficulty badge + LOOP icon strip) once per export.
     // Matches AnimatorCanvas.svelte:330-358 derivation so the exported video's
     // word header mirrors the live canvas.
     const difficultyLevel = panelState.sequenceData
-      ? new SequenceDifficultyCalculator().calculateDifficultyLevel([
+      ? calculateSequenceDifficultyLevel([
           ...(panelState.sequenceData.steps ?? []),
         ])
       : null;
@@ -681,7 +686,7 @@ export class VideoExportOrchestrator {
               previousStepNumber !== null &&
               fadeOutOpacity > 0
             ) {
-              this.canvasRenderer.renderStepNumberToCanvas(
+              renderStepNumberToCanvas(
                 offscreenCtx,
                 actualCanvasSize,
                 previousStepNumber,
@@ -693,7 +698,7 @@ export class VideoExportOrchestrator {
             // Render fading-in beat number (current beat number)
             if (currentStepNumber !== null) {
               const opacity = inCrossfade ? fadeInOpacity : 1;
-              this.canvasRenderer.renderStepNumberToCanvas(
+              renderStepNumberToCanvas(
                 offscreenCtx,
                 actualCanvasSize,
                 currentStepNumber,
@@ -712,7 +717,7 @@ export class VideoExportOrchestrator {
           // Pass activeStepNumber for letter highlighting
           if (showWordHeader) {
             const activeStepNumber = stepNumber;
-            this.canvasRenderer.renderWordHeaderToCanvas(
+            renderWordHeaderToCanvas(
               offscreenCtx,
               actualCanvasSize,
               panelState.sequenceWord,
@@ -735,7 +740,7 @@ export class VideoExportOrchestrator {
               : isInEndHold
                 ? steps.length
                 : (playbackPosition - 1); // Undo the +1 offset to get 0-based step index
-            this.canvasRenderer.renderProgressBarToCanvas(
+            renderProgressBarToCanvas(
               offscreenCtx,
               actualCanvasSize,
               progressBarY,

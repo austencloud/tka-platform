@@ -1,6 +1,3 @@
-import type { RotationComparer } from "./RotationComparer";
-import type { ReflectionComparer } from "./ReflectionComparer";
-import type { SwapInvertComparer } from "./SwapInvertComparer";
 import type {
   ExtractedStep,
   InternalStepPair,
@@ -10,17 +7,20 @@ import {
   ROTATE_90_CCW,
   ROTATE_90_CW,
 } from "../../../domain/constants/transformation-maps";
+import { checkRotations } from "../../../services/comparison/rotation-comparer";
+import { checkReflections } from "../../../services/comparison/reflection-comparer";
+import {
+  checkRepeated,
+  checkSwapInvert,
+} from "../../../services/comparison/swap-invert-comparer";
+import { formatBeatPairTransformations } from "../../candidate-formatter";
 
 /**
  * Orchestrator that combines comparison services and manages beat pair generation.
  */
 export class StepComparisonOrchestrator {
-  constructor(
-    private rotationService: RotationComparer,
-    private reflectionService: ReflectionComparer,
-    private swapInvertService: SwapInvertComparer,
-    private formattingService: CandidateFormatter
-  ) {}
+  constructor() {}
+
 
   extractBeats(sequence: SequenceEntry): ExtractedStep[] {
     const raw = sequence.fullMetadata?.sequence;
@@ -69,39 +69,19 @@ export class StepComparisonOrchestrator {
     const allTransformations: string[] = [];
 
     // Check for repeated (identity)
-    const repeated = this.swapInvertService.checkRepeated(
-      b1Blue,
-      b1Red,
-      b2Blue,
-      b2Red
-    );
+    const repeated = checkRepeated(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...repeated.transformations);
 
     // Check rotations
-    const rotations = this.rotationService.checkRotations(
-      b1Blue,
-      b1Red,
-      b2Blue,
-      b2Red
-    );
+    const rotations = checkRotations(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...rotations.transformations);
 
     // Check reflections
-    const reflections = this.reflectionService.checkReflections(
-      b1Blue,
-      b1Red,
-      b2Blue,
-      b2Red
-    );
+    const reflections = checkReflections(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...reflections.transformations);
 
     // Check swap/invert
-    const swapInvert = this.swapInvertService.checkSwapInvert(
-      b1Blue,
-      b1Red,
-      b2Blue,
-      b2Red
-    );
+    const swapInvert = checkSwapInvert(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...swapInvert.transformations);
 
     return allTransformations;
@@ -118,7 +98,7 @@ export class StepComparisonOrchestrator {
       const step2 = steps[halfLength + i]!;
       const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
-        this.formattingService.formatBeatPairTransformations(
+        formatBeatPairTransformations(
           rawTransformations
         );
 
@@ -146,7 +126,7 @@ export class StepComparisonOrchestrator {
       const step2 = steps[(i + quarterLength) % steps.length]!;
       const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
-        this.formattingService.formatBeatPairTransformations(
+        formatBeatPairTransformations(
           rawTransformations
         );
 
@@ -199,15 +179,4 @@ export class StepComparisonOrchestrator {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 
-import { rotationComparer } from "./RotationComparer";
-import { reflectionComparer } from "./ReflectionComparer";
-import { swapInvertComparer } from "./SwapInvertComparer";
-import { candidateFormatter } from "../CandidateFormatter";
-import type { CandidateFormatter } from "../CandidateFormatter";
-
-export const stepComparisonOrchestrator = new StepComparisonOrchestrator(
-  rotationComparer,
-  reflectionComparer,
-  swapInvertComparer,
-  candidateFormatter
-);
+export const stepComparisonOrchestrator = new StepComparisonOrchestrator();

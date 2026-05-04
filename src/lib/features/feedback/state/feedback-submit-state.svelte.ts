@@ -14,7 +14,7 @@
 
 import type { FeedbackFormData, FeedbackFormErrors, FeedbackSubmitStatus, FeedbackType, FeedbackUploadProgress, StagedImageState, } from "../domain/models/feedback-models";
 import { feedbackService } from "../services/implementations/FeedbackRepository";
-import { imageStager } from "../services/implementations/ImageStager";
+import * as imageStager from "../services/image-stager";
 import type { StagedUploadHandle } from "../services/contracts/types";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import {

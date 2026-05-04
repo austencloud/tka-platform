@@ -1,6 +1,8 @@
-import { TikaMessageExtractor } from './services/implementations/TikaMessageExtractor';
-
-let instance: TikaMessageExtractor | null = null;
-export function getTikaMessageExtractor(): TikaMessageExtractor {
-  return instance ??= new TikaMessageExtractor();
-}
+export {
+  getTextFromParts,
+  getToolsFromParts,
+  getToolOutputFromParts,
+  extractExplanation,
+  extractInlineContent,
+  getInlineContentFromParts,
+} from './services/tika-message-extractor';

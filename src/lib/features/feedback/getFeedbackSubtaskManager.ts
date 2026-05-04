@@ -1,9 +1,7 @@
 import { browser } from '$app/environment';
-import { FeedbackSubtaskManager } from './services/implementations/FeedbackSubtaskManager';
+import * as feedbackSubtaskManager from './services/feedback-subtask-manager';
 
-let instance: FeedbackSubtaskManager | null = null;
-
-export function getFeedbackSubtaskManager(): FeedbackSubtaskManager {
+export function getFeedbackSubtaskManager() {
 	if (!browser) throw new Error('getFeedbackSubtaskManager() is browser-only');
-	return instance ??= new FeedbackSubtaskManager();
+	return feedbackSubtaskManager;
 }

@@ -19,7 +19,7 @@
   import type { PreviewCellRenderOptions } from "../services/contracts/types";
   import { onMount, onDestroy, untrack } from "svelte";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
-  import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
@@ -434,13 +434,10 @@
       });
   });
 
-  // Layout calculations
-  const difficultyCalculator = new SequenceDifficultyCalculator();
-
   // Calculate difficulty level (with null safety)
   const difficultyLevel = $derived.by(() => {
     if (!sequence?.steps?.length) return 1;
-    return difficultyCalculator.calculateDifficultyLevel([...sequence.steps]);
+    return calculateSequenceDifficultyLevel([...sequence.steps]);
   });
 
   // Parse LOOP components for the glyph. The resolver handles both the

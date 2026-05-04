@@ -13,16 +13,20 @@
 
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
-import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/implementations/SequenceStatsCalculator";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
-import type { SequenceValidator } from "$lib/features/create/shared/services/implementations/SequenceValidator";
-import type { ReversalDetector } from "../services/implementations/ReversalDetector";
-import { getReversalDetector } from "$lib/features/create/shared/getReversalDetector";
+import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
+import { reversalDetector, type ReversalDetector } from "../services/reversal-detector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
 import type { AssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
-import { BuilderStepConverter } from "$lib/features/assemble-lab/services/implementations/BuilderStepConverter";
+import {
+  stepToMotion,
+  convertToStartPosition,
+  convertToPictographs,
+  lookupLetter,
+} from "$lib/features/assemble-lab/services/builder-step-converter";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "../domain/factories/createStepData";
 import { createStartPositionData } from "../domain/factories/createStartPositionData";
@@ -42,14 +46,11 @@ export function createAssembleTabState(
   // Builder state (per-hand click model from assemble-lab)
   const builderState: AssembleState = createAssembleState();
 
-  // Converter service
-  const converter = new BuilderStepConverter();
-
   // Letter cache: step index -> resolved letter
   let letterCache = $state<Map<number, Letter | null>>(new Map());
 
   // Isolated sequence state for this tab
-  const ReversalDetector: ReversalDetector | undefined = getReversalDetector();
+  const ReversalDetector: ReversalDetector | undefined = reversalDetector;
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,
@@ -114,11 +115,11 @@ export function createAssembleTabState(
 
         for (let i = 0; i < paired; i++) {
           if (letterCache.has(i)) continue;
-          const blueMotion = converter.stepToMotion(blueSteps[i]!, MotionColor.BLUE, gm);
-          const redMotion = converter.stepToMotion(redSteps[i]!, MotionColor.RED, gm);
+          const blueMotion = stepToMotion(blueSteps[i]!, MotionColor.BLUE, gm);
+          const redMotion = stepToMotion(redSteps[i]!, MotionColor.RED, gm);
           // Mark as pending
           letterCache = new Map(letterCache).set(i, null);
-          converter.lookupLetter(blueMotion, redMotion, gm).then((letter) => {
+          lookupLetter(blueMotion, redMotion, gm).then((letter) => {
             letterCache = new Map(letterCache).set(i, letter);
           });
         }
@@ -136,12 +137,12 @@ export function createAssembleTabState(
         const gm = builderState.gridMode;
 
         // Build start position
-        const startPicto = converter.convertToStartPosition(
+        const startPicto = convertToStartPosition(
           blueSteps, redSteps, currentPos, currentOri, activeHand, gm,
         );
 
         // Build step pictographs
-        const stepPictos = converter.convertToPictographs(blueSteps, redSteps, gm);
+        const stepPictos = convertToPictographs(blueSteps, redSteps, gm);
 
         // Apply cached letters
         const stepsWithLetters = stepPictos.map((p, i) => {

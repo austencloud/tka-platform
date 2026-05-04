@@ -1,10 +1,7 @@
 import { browser } from '$app/environment';
+import * as feedbackTypeResolver from './services/feedback-type-resolver';
 
-import { FeedbackTypeResolver } from './services/implementations/FeedbackTypeResolver';
-
-let instance: FeedbackTypeResolver | null = null;
-
-export function getFeedbackTypeResolver(): FeedbackTypeResolver {
+export function getFeedbackTypeResolver() {
 	if (!browser) throw new Error('getFeedbackTypeResolver() is browser-only');
-	return instance ??= new FeedbackTypeResolver();
+	return feedbackTypeResolver;
 }

@@ -6,11 +6,14 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import type { CaptureJobStatus } from "../../services/contracts/types";
-import type { ScreenshotOrchestrator } from "../../services/implementations/ScreenshotOrchestrator";
+
+  interface OrchestratorLike {
+    getJobStatus(jobId: string): Promise<CaptureJobStatus>;
+  }
 
   interface Props {
     jobId: string | null;
-    orchestrator: ScreenshotOrchestrator;
+    orchestrator: OrchestratorLike;
     onPollStatus?: (status: CaptureJobStatus) => void;
     onComplete?: () => void;
   }

@@ -10,21 +10,17 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PoiGravityOrientationDeriver } from "./PoiGravityOrientationDeriver";
+import { getGravityOrientation } from "../poi-gravity-orientation-deriver";
 import { PoiMotionValidity } from "../../domain/poi-enums";
 import type { PoiValidationResult, PoiConstraintViolation } from "../../domain/poi-models";
 
 export class PoiConstraintValidator {
-  constructor(private readonly gravityDeriver: PoiGravityOrientationDeriver) {}
-
   validateMotion(motion: MotionData): PoiValidationResult {
     const violations: PoiConstraintViolation[] = [];
 
     // Constraint 1: FLOAT only valid at gravity orientation
     if (motion.motionType === MotionType.FLOAT) {
-      const gravityOrientation = this.gravityDeriver.getGravityOrientation(
-        motion.startLocation
-      );
+      const gravityOrientation = getGravityOrientation(motion.startLocation);
       if (motion.startOrientation !== gravityOrientation) {
         violations.push({
           violation: PoiMotionValidity.INVALID_FLOAT_ORIENTATION,

@@ -1,14 +1,14 @@
 import { browser } from '$app/environment';
 
 import { RandomSequenceGenerator } from './services/implementations/RandomSequenceGenerator';
-import { LOOPEndPositionResolver } from './services/implementations/LOOPEndPositionResolver';
+import * as loopEndPositionResolver from './services/loop-end-position-resolver';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { getStartPositionValidator } from './getStartPositionValidator';
-import { getOrientationContinuityValidator } from './getOrientationContinuityValidator';
+import * as orientationContinuityValidator from './services/orientation-continuity-validator';
 import { getSequenceExtender } from '$lib/features/create/shared/getSequenceExtender';
 import { getStepConverter } from '$lib/features/create/generate/shared/getStepConverter';
-import { getReversalDetector } from '$lib/features/create/shared/getReversalDetector';
+import { reversalDetector } from '$lib/features/create/shared/services/reversal-detector';
 
 let instance: RandomSequenceGenerator | null = null;
 
@@ -17,11 +17,11 @@ export function getRandomSequenceGenerator(): RandomSequenceGenerator {
 	return instance ??= new RandomSequenceGenerator(
 		letterQueryHandler,
 		getStartPositionValidator(),
-		getOrientationContinuityValidator(),
+		orientationContinuityValidator,
 		orientationCalculator,
 		getSequenceExtender(),
 		getStepConverter(),
-		getReversalDetector(),
-		new LOOPEndPositionResolver()
+		reversalDetector,
+		loopEndPositionResolver
 	);
 }
