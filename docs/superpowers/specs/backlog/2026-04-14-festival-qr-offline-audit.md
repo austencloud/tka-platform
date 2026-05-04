@@ -2,11 +2,11 @@
 status: backlog
 value: 4
 effort: M
-remaining: "iOS Universal Links, web fallback redirect"
+remaining: "iOS Universal Links blocked: TEAMID placeholder in AASA file, ios/ not scaffolded, entitlements not configured. Android App Links + web fallback complete. Depends on Capacitor Phase 2."
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Festival QR Offline Flow — Audit & Path Forward (Capacitor-era)
 

@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 4
 effort: M
-remaining: L8 done. Verify and close out. L9 fusion = new spec
+remaining: ""
 depends_on: ""
 plan_path: plans/backlog/2026-04-05-atomic-plane-system.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Atomic Plane System (L8) — Design Spec
 

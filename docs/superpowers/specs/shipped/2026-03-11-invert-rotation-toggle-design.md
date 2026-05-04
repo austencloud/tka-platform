@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 3
 effort: S
-remaining: Single Invert button replacing CW/CCW pair
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Invert Rotation Toggle — Design Spec
 

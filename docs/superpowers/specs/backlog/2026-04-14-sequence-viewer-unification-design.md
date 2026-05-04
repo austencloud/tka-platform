@@ -2,11 +2,11 @@
 status: backlog
 value: 4
 effort: M
-remaining: Route consolidation — merge /p/ and /sequence/ into one shell
+remaining: "Route consolidation superseded by /q/ video-landing pivot. PendingActionQueue + SignInSheet + WebviewDetector all shipped. Shared SequenceViewerRoute shell not extracted — low value given /q/ repurpose."
 depends_on: ""
 plan_path: plans/backlog/2026-04-14-sequence-viewer-unification.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Sequence Viewer Unification
 

@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 3
 effort: S
-remaining: Sub-sheet polish on export panels
+remaining: ""
 depends_on: ""
 plan_path: plans/backlog/2026-04-19-mobile-bento-export-panels.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Mobile Bento Export Panels Design
 

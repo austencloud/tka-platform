@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 3
 effort: S
-remaining: "Wave 2 delivered via ScanActivityTab (sparklines, zero-scan view, live feed, globe). Wave 3 (community map pings) needs brainstorming session."
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-05-03
+last_triaged: 2026-05-04
 ---
 # Shortcode Durability Roadmap
 

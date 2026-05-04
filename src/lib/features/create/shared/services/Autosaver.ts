@@ -153,6 +153,11 @@ export class Autosaver {
    * Delete a draft
    */
   async deleteDraft(sessionId: string): Promise<void> {
+    await db.userWork
+      .where("[type+tabId]")
+      .equals([UserWorkType.SEQUENCE_DRAFT, "create"])
+      .delete();
+
     const user = getAuthSync().currentUser;
     if (!user) return;
 
