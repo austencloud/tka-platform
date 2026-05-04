@@ -548,16 +548,18 @@ export class LibraryRepository {
   }
 
   async getSequence(sequenceId: string): Promise<LibrarySequence | null> {
-    const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
-    const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-    const docSnap = await getDoc(docRef);
+    const validated = await firestoreGet(
+      getUserSequencesPath(userId),
+      sequenceId,
+      LibrarySequenceDocSchema,
+    );
 
-    if (!docSnap.exists()) {
+    if (!validated) {
       return null;
     }
 
-    const seq = this.mapDocToLibrarySequence(docSnap.data(), sequenceId);
+    const seq = this.mapDocToLibrarySequence(validated as DocumentData, sequenceId);
 
     // Hydrate: derive steps from compositional fields if present
     try {
@@ -571,21 +573,16 @@ export class LibraryRepository {
   async hasMatchingContent(contentHash: string): Promise<boolean> {
     if (!contentHash) return false;
 
-    const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
-    const sequencesRef = collection(
-      firestore,
-      getUserSequencesPath(userId)
+    const results = await firestoreList(
+      getUserSequencesPath(userId),
+      LibrarySequenceDocSchema,
+      {
+        where: [{ field: "contentHash", op: "==", value: contentHash }],
+        limit: 1,
+      },
     );
-
-    const duplicateQuery = query(
-      sequencesRef,
-      where("contentHash", "==", contentHash),
-      firestoreLimit(1)
-    );
-
-    const snapshot = await getDocs(duplicateQuery);
-    return !snapshot.empty;
+    return results.length > 0;
   }
 
   async updateSequence(
@@ -1453,24 +1450,19 @@ export class LibraryRepository {
   }
 
   async getDeletedSequences(): Promise<LibrarySequence[]> {
-    const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
-    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
-
-    const q = query(
-      sequencesRef,
-      where("isDeleted", "==", true),
-      orderBy("deletedAt", "desc")
+    const docs = await firestoreList(
+      getUserSequencesPath(userId),
+      LibrarySequenceDocSchema,
+      {
+        where: [{ field: "isDeleted", op: "==", value: true }],
+        orderBy: [{ field: "deletedAt", direction: "desc" }],
+      },
     );
 
-    const snapshot = await getDocs(q);
-    const sequences: LibrarySequence[] = [];
-
-    snapshot.forEach((docSnap) => {
-      sequences.push(this.mapDocToLibrarySequence(docSnap.data(), docSnap.id));
-    });
-
-    return sequences;
+    return docs.map((d) =>
+      this.mapDocToLibrarySequence(d as DocumentData, d.id),
+    );
   }
 
   async emptyRecycleBin(): Promise<void> {
