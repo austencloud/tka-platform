@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { JunctionOverlapDetector } from "../../../src/lib/features/conjoined-grid/services/implementations/JunctionOverlapDetector";
+import { detectOverlaps } from "../../../src/lib/features/conjoined-grid/services/junction-overlap-detector";
 import { TOPOLOGY_PRESETS } from "../../../src/lib/shared/multi-grid/domain/constants/TopologyPresets";
 import type { PropPlacement } from "../../../src/lib/features/conjoined-grid/domain/types";
 
@@ -10,7 +10,6 @@ function buildTopology(presetId: string) {
 }
 
 describe("JunctionOverlapDetector", () => {
-  const detector = new JunctionOverlapDetector();
 
   describe("2-grid diamond topology", () => {
     const topology = buildTopology("2-row-diamond");
@@ -24,7 +23,7 @@ describe("JunctionOverlapDetector", () => {
         red: { gridId: "b", location: "c" },
       };
 
-      const overlaps = detector.detectOverlaps(topology, placement);
+      const overlaps = detectOverlaps(topology, placement);
 
       expect(overlaps).toHaveLength(1);
       expect(overlaps[0].distance).toBe(0);
@@ -38,7 +37,7 @@ describe("JunctionOverlapDetector", () => {
         red: { gridId: "a", location: "e" },
       };
 
-      const overlaps = detector.detectOverlaps(topology, placement);
+      const overlaps = detectOverlaps(topology, placement);
 
       expect(overlaps).toHaveLength(1);
       expect(overlaps[0].distance).toBe(0);
@@ -50,7 +49,7 @@ describe("JunctionOverlapDetector", () => {
         red: { gridId: "b", location: "s" },
       };
 
-      const overlaps = detector.detectOverlaps(topology, placement);
+      const overlaps = detectOverlaps(topology, placement);
 
       expect(overlaps).toHaveLength(0);
     });
@@ -61,7 +60,7 @@ describe("JunctionOverlapDetector", () => {
         red: { gridId: "b", location: "s" },
       };
 
-      const overlaps = detector.detectOverlaps(topology, placement);
+      const overlaps = detectOverlaps(topology, placement);
 
       expect(overlaps).toHaveLength(0);
     });
@@ -84,7 +83,7 @@ describe("JunctionOverlapDetector", () => {
         red: { gridId: "g1", location: "c" },
       };
 
-      const overlaps = detector.detectOverlaps(topology, placement);
+      const overlaps = detectOverlaps(topology, placement);
 
       expect(overlaps).toHaveLength(1);
     });
@@ -96,7 +95,7 @@ describe("JunctionOverlapDetector", () => {
         red: { gridId: "g2", location: "c" },
       };
 
-      const overlaps = detector.detectOverlaps(topology, placement);
+      const overlaps = detectOverlaps(topology, placement);
 
       expect(overlaps).toHaveLength(1);
     });
@@ -108,7 +107,7 @@ describe("JunctionOverlapDetector", () => {
         red: { gridId: "g2", location: "c" },
       };
 
-      const overlaps = detector.detectOverlaps(topology, placement);
+      const overlaps = detectOverlaps(topology, placement);
 
       expect(overlaps).toHaveLength(0);
     });

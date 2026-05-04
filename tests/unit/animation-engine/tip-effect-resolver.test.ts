@@ -5,7 +5,13 @@ import {
   type TipEffectMap,
   type TipEffortMap,
 } from "../../../src/lib/shared/animation-engine/domain/types/TipEffectTypes";
-import { TipEffectResolver } from "../../../src/lib/shared/animation-engine/services/implementations/TipEffectResolver";
+import {
+  setCellWide,
+  setPerHand,
+  setPerTip,
+  resolveTipEffect as resolveEffectFn,
+  resolveTipEffort as resolveEffortFn,
+} from "../../../src/lib/shared/animation-engine/services/tip-effect-resolver";
 
 describe("resolveEffect (pure function)", () => {
   it("returns 'none' when both maps are empty", () => {
@@ -132,28 +138,26 @@ describe("resolveEffort (pure function)", () => {
   });
 });
 
-describe("TipEffectResolver (service class)", () => {
-  const resolver = new TipEffectResolver();
-
-  describe("resolveEffect delegation", () => {
+describe("tip-effect-resolver module functions", () => {
+  describe("resolveTipEffect delegation", () => {
     it("delegates to pure function correctly", () => {
       const cell: TipEffectMap = { "0-0": { effect: "fire" } };
-      expect(resolver.resolveEffect(0, 0, cell, {})).toBe("fire");
-      expect(resolver.resolveEffect(0, 1, cell, {})).toBe("none");
+      expect(resolveEffectFn(0, 0, cell, {})).toBe("fire");
+      expect(resolveEffectFn(0, 1, cell, {})).toBe("none");
     });
   });
 
-  describe("resolveEffort delegation", () => {
+  describe("resolveTipEffort delegation", () => {
     it("delegates to pure function correctly", () => {
       const global: TipEffortMap = { "*": { effort: "punch" } };
-      expect(resolver.resolveEffort(0, 0, undefined, global)).toBe("punch");
+      expect(resolveEffortFn(0, 0, undefined, global)).toBe("punch");
     });
   });
 
   describe("setCellWide", () => {
     it("returns a new map with '*' key set", () => {
       const original: TipEffectMap = {};
-      const result = resolver.setCellWide(original, "fire");
+      const result = setCellWide(original, "fire");
       expect(result["*"]).toEqual({ effect: "fire" });
       // original is not mutated
       expect(original["*"]).toBeUndefined();
@@ -161,33 +165,33 @@ describe("TipEffectResolver (service class)", () => {
 
     it("preserves existing entries", () => {
       const original: TipEffectMap = { "0": { effect: "led" } };
-      const result = resolver.setCellWide(original, "charcoal");
+      const result = setCellWide(original, "charcoal");
       expect(result["0"]).toEqual({ effect: "led" });
       expect(result["*"]).toEqual({ effect: "charcoal" });
     });
 
     it("overwrites existing '*' key", () => {
       const original: TipEffectMap = { "*": { effect: "fire" } };
-      const result = resolver.setCellWide(original, "trails");
+      const result = setCellWide(original, "trails");
       expect(result["*"]).toEqual({ effect: "trails" });
     });
   });
 
   describe("setPerHand", () => {
     it("sets effect for a specific hand index", () => {
-      const result = resolver.setPerHand({}, 0, "led");
+      const result = setPerHand({}, 0, "led");
       expect(result["0"]).toEqual({ effect: "led" });
     });
 
     it("does not mutate original", () => {
       const original: TipEffectMap = {};
-      resolver.setPerHand(original, 1, "fire");
+      setPerHand(original, 1, "fire");
       expect(original["1"]).toBeUndefined();
     });
 
     it("preserves other entries", () => {
       const original: TipEffectMap = { "0": { effect: "charcoal" } };
-      const result = resolver.setPerHand(original, 1, "trails");
+      const result = setPerHand(original, 1, "trails");
       expect(result["0"]).toEqual({ effect: "charcoal" });
       expect(result["1"]).toEqual({ effect: "trails" });
     });
@@ -195,13 +199,13 @@ describe("TipEffectResolver (service class)", () => {
 
   describe("setPerTip", () => {
     it("sets effect for a specific tip on a specific hand", () => {
-      const result = resolver.setPerTip({}, 0, 1, "fire");
+      const result = setPerTip({}, 0, 1, "fire");
       expect(result["0-1"]).toEqual({ effect: "fire" });
     });
 
     it("does not mutate original", () => {
       const original: TipEffectMap = {};
-      resolver.setPerTip(original, 0, 0, "led");
+      setPerTip(original, 0, 0, "led");
       expect(original["0-0"]).toBeUndefined();
     });
 
@@ -210,7 +214,7 @@ describe("TipEffectResolver (service class)", () => {
         "*": { effect: "charcoal" },
         "0": { effect: "fire" },
       };
-      const result = resolver.setPerTip(original, 1, 2, "trails");
+      const result = setPerTip(original, 1, 2, "trails");
       expect(result["*"]).toEqual({ effect: "charcoal" });
       expect(result["0"]).toEqual({ effect: "fire" });
       expect(result["1-2"]).toEqual({ effect: "trails" });

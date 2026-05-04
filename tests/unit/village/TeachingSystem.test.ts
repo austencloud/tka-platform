@@ -4,7 +4,7 @@ import {
 	createVillageWorld,
 	createAvatarEntity,
 } from "$lib/features/village/engine/VillageWorld";
-import { PersonalityGenerator } from "$lib/features/village/services/implementations/PersonalityGenerator";
+import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
 import type {
 	VillageEventMap,
@@ -15,13 +15,12 @@ import type {
 function makeTeacherLearnerPair(
 	world: ReturnType<typeof createVillageWorld>,
 ) {
-	const gen = new PersonalityGenerator();
 	const opts = {
 		generation: 1,
 		currentTick: 0,
 		lifespanTicks: 600,
 		arenaRadius: 8,
-		personalityGenerator: gen,
+		personalityGenerator,
 		traitMean: 0.5,
 		traitStdDev: 0.15,
 	};

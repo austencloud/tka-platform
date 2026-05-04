@@ -3,7 +3,7 @@ import {
 	createVillageWorld,
 	createAvatarEntity,
 } from "$lib/features/village/engine/VillageWorld";
-import { PersonalityGenerator } from "$lib/features/village/services/implementations/PersonalityGenerator";
+import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 
 describe("VillageWorld", () => {
 	it("creates an empty world", () => {
@@ -13,14 +13,13 @@ describe("VillageWorld", () => {
 
 	it("creates an avatar entity with all components", () => {
 		const world = createVillageWorld();
-		const generator = new PersonalityGenerator();
 		const entity = createAvatarEntity(world, {
 			name: "Ember",
 			generation: 1,
 			currentTick: 0,
 			lifespanTicks: 600,
 			arenaRadius: 8,
-			personalityGenerator: generator,
+			personalityGenerator,
 			traitMean: 0.5,
 			traitStdDev: 0.15,
 		});
@@ -38,14 +37,13 @@ describe("VillageWorld", () => {
 
 	it("spawns entity at arena edge", () => {
 		const world = createVillageWorld();
-		const generator = new PersonalityGenerator();
 		const entity = createAvatarEntity(world, {
 			name: "Soot",
 			generation: 1,
 			currentTick: 0,
 			lifespanTicks: 600,
 			arenaRadius: 8,
-			personalityGenerator: generator,
+			personalityGenerator,
 			traitMean: 0.5,
 			traitStdDev: 0.15,
 		});
@@ -59,14 +57,13 @@ describe("VillageWorld", () => {
 
 	it("adds entity to the world", () => {
 		const world = createVillageWorld();
-		const generator = new PersonalityGenerator();
 		createAvatarEntity(world, {
 			name: "Birch",
 			generation: 1,
 			currentTick: 0,
 			lifespanTicks: 600,
 			arenaRadius: 8,
-			personalityGenerator: generator,
+			personalityGenerator,
 			traitMean: 0.5,
 			traitStdDev: 0.15,
 		});

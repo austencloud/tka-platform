@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { StickerUnitRenderer } from "$lib/features/sticker-lab/services/implementations/StickerUnitRenderer";
+import { renderStickerUnitSVG } from "$lib/features/sticker-lab/services/sticker-unit-renderer";
 import {
   createDefaultStickerUnit,
   type MandalaPrimitiveRef,
@@ -18,38 +18,37 @@ const testRef: MandalaPrimitiveRef = {
 };
 
 describe("StickerUnitRenderer", () => {
-  const renderer = new StickerUnitRenderer();
 
   it("renders an SVG at the full tile size (art + bleed)", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef });
-    const svg = renderer.renderSVG(unit, emptyPaths);
+    const svg = renderStickerUnitSVG(unit, emptyPaths);
     expect(svg).toContain(`viewBox="0 0 ${STICKER_TILE_SIZE_PX} ${STICKER_TILE_SIZE_PX}"`);
   });
 
   it("transparent background produces no background rect", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef, background: "transparent" });
-    const svg = renderer.renderSVG(unit, emptyPaths);
+    const svg = renderStickerUnitSVG(unit, emptyPaths);
     expect(svg).not.toMatch(/<rect[^>]*fill="#ffffff"/i);
     expect(svg).not.toMatch(/url\(#sticker-bg-gradient/);
   });
 
   it("white background produces a solid white circle at art diameter", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef, background: "white" });
-    const svg = renderer.renderSVG(unit, emptyPaths);
+    const svg = renderStickerUnitSVG(unit, emptyPaths);
     expect(svg).toMatch(/<circle[^>]*fill="#ffffff"/i);
     expect(svg).toContain(`r="${STICKER_ART_DIAMETER_PX / 2}"`);
   });
 
   it("radial-gradient background defines a gradient and uses it as fill", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef, background: "radial-gradient" });
-    const svg = renderer.renderSVG(unit, emptyPaths);
+    const svg = renderStickerUnitSVG(unit, emptyPaths);
     expect(svg).toContain("<radialGradient");
     expect(svg).toMatch(/fill="url\(#sticker-bg-gradient[^)]*\)"/);
   });
 
   it("variant=blue passes show=blue to the mandala renderer", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef, variant: "blue" });
-    const svg = renderer.renderSVG(unit, {
+    const svg = renderStickerUnitSVG(unit, {
       blue: [{ d: "M0 0 L10 10", tipIndex: 0 }],
       red: [{ d: "M0 0 L20 20", tipIndex: 0 }],
       purple: [],
@@ -61,7 +60,7 @@ describe("StickerUnitRenderer", () => {
 
   it("variant=red renders only the red path", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef, variant: "red" });
-    const svg = renderer.renderSVG(unit, {
+    const svg = renderStickerUnitSVG(unit, {
       blue: [{ d: "M0 0 L10 10", tipIndex: 0 }],
       red: [{ d: "M0 0 L20 20", tipIndex: 0 }],
       purple: [],
@@ -72,7 +71,7 @@ describe("StickerUnitRenderer", () => {
 
   it("variant=full renders blue, red, and purple paths", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef, variant: "full" });
-    const svg = renderer.renderSVG(unit, {
+    const svg = renderStickerUnitSVG(unit, {
       blue: [{ d: "M0 0 L10 10", tipIndex: 0 }],
       red: [{ d: "M0 0 L20 20", tipIndex: 0 }],
       purple: [{ d: "M0 0 L30 30", tipIndex: 0 }],

@@ -1,7 +1,7 @@
 // tests/unit/video-trails/detection-corrector.test.ts
 
 import { describe, it, expect } from "vitest";
-import { DetectionCorrector } from "$lib/features/video/video-trails/services/implementations/DetectionCorrector";
+import { applyCorrections } from "$lib/features/video/video-trails/services/detection-corrector";
 import type { DetectedEndpoint, EndpointCorrection } from "$lib/features/video/video-trails/domain/types";
 
 function makeEndpoint(overrides: Partial<DetectedEndpoint> = {}): DetectedEndpoint {
@@ -10,31 +10,28 @@ function makeEndpoint(overrides: Partial<DetectedEndpoint> = {}): DetectedEndpoi
 
 describe("DetectionCorrector", () => {
   it("returns original endpoints when no corrections exist", () => {
-    const corrector = new DetectionCorrector();
     const detected = [makeEndpoint()];
-    const result = corrector.applyCorrections(5, detected, {});
+    const result = applyCorrections(5, detected, {});
     expect(result).toEqual(detected);
   });
 
   it("overrides position with corrected values", () => {
-    const corrector = new DetectionCorrector();
     const detected = [makeEndpoint({ x: 100, y: 100, propIndex: 0, tipIndex: 0 })];
     const corrections: Record<number, EndpointCorrection[]> = {
       5: [{ propIndex: 0, tipIndex: 0, detected: { x: 100, y: 100, confidence: 0.9 }, corrected: { x: 150, y: 160 }, status: "corrected" }],
     };
-    const result = corrector.applyCorrections(5, detected, corrections);
+    const result = applyCorrections(5, detected, corrections);
     expect(result[0].x).toBe(150);
     expect(result[0].y).toBe(160);
     expect(result[0].confidence).toBe(1);
   });
 
   it("removes occluded endpoints", () => {
-    const corrector = new DetectionCorrector();
     const detected = [makeEndpoint({ propIndex: 0, tipIndex: 0 }), makeEndpoint({ propIndex: 1, tipIndex: 0, x: 200 })];
     const corrections: Record<number, EndpointCorrection[]> = {
       5: [{ propIndex: 0, tipIndex: 0, detected: null, corrected: null, status: "occluded" }],
     };
-    const result = corrector.applyCorrections(5, detected, corrections);
+    const result = applyCorrections(5, detected, corrections);
     expect(result.length).toBe(1);
     expect(result[0].propIndex).toBe(1);
   });

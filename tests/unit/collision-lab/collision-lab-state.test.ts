@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createCollisionLabState } from "$lib/features/lab/tabs/collision-lab/state/collision-lab-state.svelte";
-import { DiamondPoseEnumerator } from "$lib/features/lab/tabs/collision-lab/services/implementations/DiamondPoseEnumerator";
+import { enumerateDiamondInOut } from "$lib/features/lab/tabs/collision-lab/services/diamond-pose-enumerator";
 import {
   StanceSimulator,
   restPoseFromHeight,
@@ -26,19 +26,19 @@ class InMemoryLabelRepo implements IPoseLabelRepository {
   }
 }
 
+const enumeratorAdapter = { enumerateDiamondInOut };
+
 async function setup() {
-  const enumerator = new DiamondPoseEnumerator();
   const repo = new InMemoryLabelRepo();
-  const state = await createCollisionLabState(enumerator, repo);
+  const state = await createCollisionLabState(enumeratorAdapter, repo);
   return { state, repo };
 }
 
 async function setupWithOptimizer() {
-  const enumerator = new DiamondPoseEnumerator();
   const repo = new InMemoryLabelRepo();
   const simulator = new StanceSimulator(restPoseFromHeight(1.7));
   const optimizer = new StanceOptimizer(simulator);
-  const state = await createCollisionLabState(enumerator, repo, optimizer);
+  const state = await createCollisionLabState(enumeratorAdapter, repo, optimizer);
   return { state, repo };
 }
 

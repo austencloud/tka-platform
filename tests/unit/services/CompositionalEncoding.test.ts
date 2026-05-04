@@ -1,11 +1,12 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import { describe, expect, it } from "vitest";
+import LZString from "lz-string";
+import { encodeSequence, decodeSequence, encodeSequenceForQR, decodeSequenceFromQR, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
 import { CompositionalDecoder } from "$lib/shared/qr/services/implementations/CompositionalDecoder";
 import {
   RECIPE_PREFIX,
   LOOP_TYPE_TAGS,
   TAG_TO_LOOP_TYPE,
-} from "$lib/shared/qr/services/contracts/ICompositionalEncoder";
+} from "$lib/shared/qr/services/contracts/types";
 import { computeRecipeHash } from "$lib/shared/qr/services/implementations/compositional-utils";
 import {
   createSequenceData,
@@ -155,11 +156,6 @@ function buildSimple3StepSequence(): SequenceData {
 }
 
 describe("CompositionalEncoding", () => {
-  let encoder: SequenceEncoder;
-
-  beforeEach(() => {
-    encoder = new SequenceEncoder();
-  });
 
   describe("LOOP_TYPE_TAGS", () => {
     it("maps all single-transform LOOP types to compact tags", () => {
@@ -193,7 +189,7 @@ describe("CompositionalEncoding", () => {
   describe("encodeForQR/decodeFromQR: flat encoding still works", () => {
     it("non-LOOP sequences use flat encoding (s~z: format)", async () => {
       const seq = buildSimple3StepSequence();
-      const encoded = await encoder.encodeForQR(seq);
+      const encoded = await encodeSequenceForQR(seq);
 
       expect(encoded.startsWith("s~")).toBe(true);
       expect(encoded.startsWith("s~r:")).toBe(false);
@@ -202,8 +198,8 @@ describe("CompositionalEncoding", () => {
 
     it("round-trips non-LOOP sequences through encodeForQR/decodeFromQR", async () => {
       const seq = buildSimple3StepSequence();
-      const encoded = await encoder.encodeForQR(seq);
-      const decoded = await encoder.decodeFromQR(encoded);
+      const encoded = await encodeSequenceForQR(seq);
+      const decoded = await decodeSequenceFromQR(encoded);
 
       expect(decoded.steps).toHaveLength(3);
 
@@ -221,12 +217,11 @@ describe("CompositionalEncoding", () => {
   describe("CompositionalDecoder", () => {
     it("isRecipeEncoded correctly identifies recipe strings", () => {
       const decoder = new CompositionalDecoder(
-        { encode: (s) => encoder.encode(s) },
-        { decode: (s) => encoder.decode(s) },
+        { encode: (s) => encodeSequence(s) },
+        { decode: (s) => decodeSequence(s) },
         {
           decompressString: (s) =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (encoder as any).decompressString(s),
+            LZString.decompressFromEncodedURIComponent(s),
         }
       );
 
@@ -237,8 +232,8 @@ describe("CompositionalEncoding", () => {
 
     it("rejects unknown LOOP type tags", async () => {
       const decoder = new CompositionalDecoder(
-        { encode: (s) => encoder.encode(s) },
-        { decode: (s) => encoder.decode(s) },
+        { encode: (s) => encodeSequence(s) },
+        { decode: (s) => decodeSequence(s) },
         {
           decompressString: () => null,
         }
@@ -251,8 +246,8 @@ describe("CompositionalEncoding", () => {
 
     it("rejects malformed recipe strings", async () => {
       const decoder = new CompositionalDecoder(
-        { encode: (s) => encoder.encode(s) },
-        { decode: (s) => encoder.decode(s) },
+        { encode: (s) => encodeSequence(s) },
+        { decode: (s) => decodeSequence(s) },
         { decompressString: () => null }
       );
 
@@ -263,8 +258,8 @@ describe("CompositionalEncoding", () => {
 
     it("rejects strings without recipe prefix", async () => {
       const decoder = new CompositionalDecoder(
-        { encode: (s) => encoder.encode(s) },
-        { decode: (s) => encoder.decode(s) },
+        { encode: (s) => encodeSequence(s) },
+        { decode: (s) => decodeSequence(s) },
         { decompressString: () => null }
       );
 
@@ -275,8 +270,8 @@ describe("CompositionalEncoding", () => {
 
     it("rejects decompression failures", async () => {
       const decoder = new CompositionalDecoder(
-        { encode: (s) => encoder.encode(s) },
-        { decode: (s) => encoder.decode(s) },
+        { encode: (s) => encodeSequence(s) },
+        { decode: (s) => decodeSequence(s) },
         { decompressString: () => null }
       );
 
@@ -308,13 +303,13 @@ describe("CompositionalEncoding", () => {
 
   describe("isInlineEncoded", () => {
     it("detects s~ prefix", () => {
-      expect(encoder.isInlineEncoded("s~z:compressed")).toBe(true);
-      expect(encoder.isInlineEncoded("s~r:sr:abc:data")).toBe(true);
+      expect(isInlineEncoded("s~z:compressed")).toBe(true);
+      expect(isInlineEncoded("s~r:sr:abc:data")).toBe(true);
     });
 
     it("rejects non-inline codes", () => {
-      expect(encoder.isInlineEncoded("abc123")).toBe(false);
-      expect(encoder.isInlineEncoded("r:sr:abc:data")).toBe(false);
+      expect(isInlineEncoded("abc123")).toBe(false);
+      expect(isInlineEncoded("r:sr:abc:data")).toBe(false);
     });
   });
 });

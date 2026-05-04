@@ -2,10 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PLANE_MODE_CONFIGS } from "$lib/shared/3d/domain/constants/plane-mode-configs";
 import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
-import { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
-import { AngleMathCalculator } from "$lib/shared/3d/services/implementations/AngleMathCalculator";
-import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
-import { MotionCalculator } from "$lib/shared/3d/services/implementations/MotionCalculator";
+import { calculatePropState } from "$lib/shared/3d/services/prop-state-interpolator";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
@@ -35,13 +32,6 @@ describe("PlaneModeConfigs", () => {
 });
 
 describe("lateral offset through PropStateInterpolator", () => {
-  const angleMath = new AngleMathCalculator();
-  const orientationService = new OrientationMapper();
-  const interpolator = new PropStateInterpolator(
-    angleMath,
-    orientationService,
-    new MotionCalculator(angleMath, orientationService)
-  );
 
   // STATIC at NORTH on WHEEL plane: x=0 at all progress values
   const baseConfig = {
@@ -57,7 +47,7 @@ describe("lateral offset through PropStateInterpolator", () => {
 
   it("no offset produces Z=approx 0 on WHEEL plane at NORTH", () => {
     // WHEEL NORTH: (0, radius, 0) — Z component from -cos(-π/2) * r = 0
-    const result = interpolator.calculatePropState(baseConfig, 0);
+    const result = calculatePropState(baseConfig, 0);
     expect(result.worldPosition.x).toBeCloseTo(0);
   });
 

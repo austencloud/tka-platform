@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { StripPatternEngine } from "$lib/features/poi/services/implementations/StripPatternEngine";
-import { ImagePatternLoader } from "$lib/features/poi/services/implementations/ImagePatternLoader";
 import { getPixel, setPixel, createEmptyPattern } from "$lib/features/poi/domain/StripPattern";
 import type { PatternParams, RGBColor } from "$lib/features/poi/domain/StripPattern";
 
@@ -34,8 +33,7 @@ function defaultParams(overrides: Partial<PatternParams> = {}): PatternParams {
 }
 
 describe("StripPatternEngine", () => {
-  const imageLoader = new ImagePatternLoader();
-  const engine = new StripPatternEngine(imageLoader);
+  const engine = new StripPatternEngine();
 
   describe("presets", () => {
     it("lists 5 built-in presets", () => {

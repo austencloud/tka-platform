@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { SequenceExportOptions } from "../../../src/lib/shared/render/domain/models/SequenceExportOptions";
-import { DimensionCalculator as DimensionCalculationService } from "../../../src/lib/shared/render/services/implementations/DimensionCalculator";
+import * as DimensionCalculationService from "../../../src/lib/shared/render/services/dimension-calculator";
 
 describe("DimensionCalculationService", () => {
-  let service: DimensionCalculationService;
   let baseOptions: SequenceExportOptions;
 
   beforeEach(() => {
-    service = new DimensionCalculationService();
-
     // Create base options matching desktop defaults
     baseOptions = {
       includeStartPosition: true,
@@ -34,7 +31,7 @@ describe("DimensionCalculationService", () => {
 
   describe("determineAdditionalHeights - Desktop Compatibility", () => {
     it("should calculate heights for 0 beats (no word area)", () => {
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         0,
         1.0
@@ -45,7 +42,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate heights for 1 beat", () => {
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         1,
         1.0
@@ -56,7 +53,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate heights for 2 beats", () => {
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         2,
         1.0
@@ -67,7 +64,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate heights for 3+ beats", () => {
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         3,
         1.0
@@ -77,7 +74,7 @@ describe("DimensionCalculationService", () => {
       expect(bottom).toBe(150); // User info area
 
       // Verify same for higher beat counts
-      const [top10, bottom10] = service.determineAdditionalHeights(
+      const [top10, bottom10] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         10,
         1.0
@@ -89,21 +86,21 @@ describe("DimensionCalculationService", () => {
     it("should respect addWord option", () => {
       const noWordOptions = { ...baseOptions, addWord: false };
 
-      const [top0, bottom0] = service.determineAdditionalHeights(
+      const [top0, bottom0] = DimensionCalculationService.determineAdditionalHeights(
         noWordOptions,
         0,
         1.0
       );
       expect(top0).toBe(0);
 
-      const [top1, bottom1] = service.determineAdditionalHeights(
+      const [top1, bottom1] = DimensionCalculationService.determineAdditionalHeights(
         noWordOptions,
         1,
         1.0
       );
       expect(top1).toBe(0);
 
-      const [top3, bottom3] = service.determineAdditionalHeights(
+      const [top3, bottom3] = DimensionCalculationService.determineAdditionalHeights(
         noWordOptions,
         3,
         1.0
@@ -114,21 +111,21 @@ describe("DimensionCalculationService", () => {
     it("should respect addUserInfo option", () => {
       const noUserInfoOptions = { ...baseOptions, addUserInfo: false };
 
-      const [top0, bottom0] = service.determineAdditionalHeights(
+      const [top0, bottom0] = DimensionCalculationService.determineAdditionalHeights(
         noUserInfoOptions,
         0,
         1.0
       );
       expect(bottom0).toBe(0);
 
-      const [top1, bottom1] = service.determineAdditionalHeights(
+      const [top1, bottom1] = DimensionCalculationService.determineAdditionalHeights(
         noUserInfoOptions,
         1,
         1.0
       );
       expect(bottom1).toBe(0);
 
-      const [top3, bottom3] = service.determineAdditionalHeights(
+      const [top3, bottom3] = DimensionCalculationService.determineAdditionalHeights(
         noUserInfoOptions,
         3,
         1.0
@@ -138,7 +135,7 @@ describe("DimensionCalculationService", () => {
 
     it("should apply beat scale correctly", () => {
       const scale2x = 2.0;
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         3,
         scale2x
@@ -152,7 +149,7 @@ describe("DimensionCalculationService", () => {
 
     it("should floor scaled values", () => {
       const scale = 1.5;
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         3,
         scale
@@ -167,30 +164,30 @@ describe("DimensionCalculationService", () => {
 
   describe("calculateScaledBeatSize", () => {
     it("should calculate scaled beat size correctly", () => {
-      expect(service.calculateScaledBeatSize(144, 1.0)).toBe(144);
-      expect(service.calculateScaledBeatSize(144, 2.0)).toBe(288);
-      expect(service.calculateScaledBeatSize(144, 0.5)).toBe(72);
+      expect(DimensionCalculationService.calculateScaledBeatSize(144, 1.0)).toBe(144);
+      expect(DimensionCalculationService.calculateScaledBeatSize(144, 2.0)).toBe(288);
+      expect(DimensionCalculationService.calculateScaledBeatSize(144, 0.5)).toBe(72);
     });
 
     it("should floor scaled values", () => {
-      expect(service.calculateScaledBeatSize(100, 1.5)).toBe(150);
-      expect(service.calculateScaledBeatSize(100, 1.33)).toBe(133);
+      expect(DimensionCalculationService.calculateScaledBeatSize(100, 1.5)).toBe(150);
+      expect(DimensionCalculationService.calculateScaledBeatSize(100, 1.33)).toBe(133);
     });
 
     it("should throw error for invalid base size", () => {
-      expect(() => service.calculateScaledBeatSize(0, 1.0)).toThrow(
+      expect(() => DimensionCalculationService.calculateScaledBeatSize(0, 1.0)).toThrow(
         "Invalid size parameters"
       );
-      expect(() => service.calculateScaledBeatSize(-10, 1.0)).toThrow(
+      expect(() => DimensionCalculationService.calculateScaledBeatSize(-10, 1.0)).toThrow(
         "Invalid size parameters"
       );
     });
 
     it("should throw error for invalid scale", () => {
-      expect(() => service.calculateScaledBeatSize(144, 0)).toThrow(
+      expect(() => DimensionCalculationService.calculateScaledBeatSize(144, 0)).toThrow(
         "Invalid size parameters"
       );
-      expect(() => service.calculateScaledBeatSize(144, -1)).toThrow(
+      expect(() => DimensionCalculationService.calculateScaledBeatSize(144, -1)).toThrow(
         "Invalid size parameters"
       );
     });
@@ -198,31 +195,31 @@ describe("DimensionCalculationService", () => {
 
   describe("calculateScaledMargin", () => {
     it("should calculate scaled margin correctly", () => {
-      expect(service.calculateScaledMargin(50, 1.0)).toBe(50);
-      expect(service.calculateScaledMargin(50, 2.0)).toBe(100);
-      expect(service.calculateScaledMargin(50, 0.5)).toBe(25);
+      expect(DimensionCalculationService.calculateScaledMargin(50, 1.0)).toBe(50);
+      expect(DimensionCalculationService.calculateScaledMargin(50, 2.0)).toBe(100);
+      expect(DimensionCalculationService.calculateScaledMargin(50, 0.5)).toBe(25);
     });
 
     it("should floor scaled values", () => {
-      expect(service.calculateScaledMargin(50, 1.5)).toBe(75);
-      expect(service.calculateScaledMargin(50, 1.33)).toBe(66);
+      expect(DimensionCalculationService.calculateScaledMargin(50, 1.5)).toBe(75);
+      expect(DimensionCalculationService.calculateScaledMargin(50, 1.33)).toBe(66);
     });
 
     it("should allow zero margin", () => {
-      expect(service.calculateScaledMargin(0, 1.0)).toBe(0);
+      expect(DimensionCalculationService.calculateScaledMargin(0, 1.0)).toBe(0);
     });
 
     it("should throw error for negative margin", () => {
-      expect(() => service.calculateScaledMargin(-10, 1.0)).toThrow(
+      expect(() => DimensionCalculationService.calculateScaledMargin(-10, 1.0)).toThrow(
         "Invalid margin parameters"
       );
     });
 
     it("should throw error for invalid scale", () => {
-      expect(() => service.calculateScaledMargin(50, 0)).toThrow(
+      expect(() => DimensionCalculationService.calculateScaledMargin(50, 0)).toThrow(
         "Invalid margin parameters"
       );
-      expect(() => service.calculateScaledMargin(50, -1)).toThrow(
+      expect(() => DimensionCalculationService.calculateScaledMargin(50, -1)).toThrow(
         "Invalid margin parameters"
       );
     });
@@ -230,45 +227,45 @@ describe("DimensionCalculationService", () => {
 
   describe("validateDimensions", () => {
     it("should validate correct dimensions", () => {
-      expect(service.validateDimensions(0, 1.0, baseOptions)).toBe(true);
-      expect(service.validateDimensions(16, 1.0, baseOptions)).toBe(true);
-      expect(service.validateDimensions(100, 2.0, baseOptions)).toBe(true);
+      expect(DimensionCalculationService.validateDimensions(0, 1.0, baseOptions)).toBe(true);
+      expect(DimensionCalculationService.validateDimensions(16, 1.0, baseOptions)).toBe(true);
+      expect(DimensionCalculationService.validateDimensions(100, 2.0, baseOptions)).toBe(true);
     });
 
     it("should reject negative beat count", () => {
-      expect(service.validateDimensions(-1, 1.0, baseOptions)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(-1, 1.0, baseOptions)).toBe(false);
     });
 
     it("should reject zero or negative beat scale", () => {
-      expect(service.validateDimensions(10, 0, baseOptions)).toBe(false);
-      expect(service.validateDimensions(10, -1, baseOptions)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(10, 0, baseOptions)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(10, -1, baseOptions)).toBe(false);
     });
 
     it("should reject excessive beat scale (memory protection)", () => {
-      expect(service.validateDimensions(10, 11, baseOptions)).toBe(false);
-      expect(service.validateDimensions(10, 100, baseOptions)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(10, 11, baseOptions)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(10, 100, baseOptions)).toBe(false);
     });
 
     it("should accept maximum safe beat scale", () => {
-      expect(service.validateDimensions(10, 10, baseOptions)).toBe(true);
+      expect(DimensionCalculationService.validateDimensions(10, 10, baseOptions)).toBe(true);
     });
 
     it("should reject null/undefined options", () => {
-      expect(service.validateDimensions(10, 1.0, null as any)).toBe(false);
-      expect(service.validateDimensions(10, 1.0, undefined as any)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(10, 1.0, null as any)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(10, 1.0, undefined as any)).toBe(false);
     });
 
     it("should reject options with missing boolean properties", () => {
       const invalidOptions = { ...baseOptions };
       delete (invalidOptions as any).addWord;
 
-      expect(service.validateDimensions(10, 1.0, invalidOptions)).toBe(false);
+      expect(DimensionCalculationService.validateDimensions(10, 1.0, invalidOptions)).toBe(false);
     });
   });
 
   describe("calculateTotalAdditionalHeight", () => {
     it("should sum top and bottom heights", () => {
-      const total = service.calculateTotalAdditionalHeight(baseOptions, 3, 1.0);
+      const total = DimensionCalculationService.calculateTotalAdditionalHeight(baseOptions, 3, 1.0);
       expect(total).toBe(450); // 300 + 150
     });
 
@@ -278,7 +275,7 @@ describe("DimensionCalculationService", () => {
         addWord: false,
         addUserInfo: false,
       };
-      const total = service.calculateTotalAdditionalHeight(
+      const total = DimensionCalculationService.calculateTotalAdditionalHeight(
         noExtrasOptions,
         3,
         1.0
@@ -295,7 +292,7 @@ describe("DimensionCalculationService", () => {
 
   describe("calculateWordAreaDimensions", () => {
     it("should calculate word area for 0 beats (no area)", () => {
-      const result = service.calculateWordAreaDimensions(0, 1.0, 1000);
+      const result = DimensionCalculationService.calculateWordAreaDimensions(0, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(0);
@@ -303,7 +300,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate word area for 1 beat", () => {
-      const result = service.calculateWordAreaDimensions(1, 1.0, 1000);
+      const result = DimensionCalculationService.calculateWordAreaDimensions(1, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(150);
@@ -311,7 +308,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate word area for 2 beats", () => {
-      const result = service.calculateWordAreaDimensions(2, 1.0, 1000);
+      const result = DimensionCalculationService.calculateWordAreaDimensions(2, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(200);
@@ -319,7 +316,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate word area for 3+ beats", () => {
-      const result = service.calculateWordAreaDimensions(3, 1.0, 1000);
+      const result = DimensionCalculationService.calculateWordAreaDimensions(3, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(300);
@@ -327,13 +324,13 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should apply beat scale to height", () => {
-      const result = service.calculateWordAreaDimensions(3, 2.0, 1000);
+      const result = DimensionCalculationService.calculateWordAreaDimensions(3, 2.0, 1000);
 
       expect(result.height).toBe(600); // 300 * 2.0
     });
 
     it("should floor scaled heights", () => {
-      const result = service.calculateWordAreaDimensions(3, 1.5, 1000);
+      const result = DimensionCalculationService.calculateWordAreaDimensions(3, 1.5, 1000);
 
       expect(result.height).toBe(450); // floor(300 * 1.5)
     });
@@ -341,7 +338,7 @@ describe("DimensionCalculationService", () => {
 
   describe("calculateUserInfoAreaDimensions", () => {
     it("should calculate user info area for 0 beats", () => {
-      const result = service.calculateUserInfoAreaDimensions(0, 1.0, 1000);
+      const result = DimensionCalculationService.calculateUserInfoAreaDimensions(0, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(55);
@@ -349,7 +346,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate user info area for 1 beat", () => {
-      const result = service.calculateUserInfoAreaDimensions(1, 1.0, 1000);
+      const result = DimensionCalculationService.calculateUserInfoAreaDimensions(1, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(55);
@@ -357,7 +354,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate user info area for 2 beats", () => {
-      const result = service.calculateUserInfoAreaDimensions(2, 1.0, 1000);
+      const result = DimensionCalculationService.calculateUserInfoAreaDimensions(2, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(75);
@@ -365,7 +362,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should calculate user info area for 3+ beats", () => {
-      const result = service.calculateUserInfoAreaDimensions(3, 1.0, 1000);
+      const result = DimensionCalculationService.calculateUserInfoAreaDimensions(3, 1.0, 1000);
 
       expect(result.width).toBe(1000);
       expect(result.height).toBe(150);
@@ -373,7 +370,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should apply beat scale to height", () => {
-      const result = service.calculateUserInfoAreaDimensions(3, 2.0, 1000);
+      const result = DimensionCalculationService.calculateUserInfoAreaDimensions(3, 2.0, 1000);
 
       expect(result.height).toBe(300); // 150 * 2.0
     });
@@ -381,7 +378,7 @@ describe("DimensionCalculationService", () => {
 
   describe("calculateDifficultyBadgeArea", () => {
     it("should calculate badge area from additional height", () => {
-      const result = service.calculateDifficultyBadgeArea(300);
+      const result = DimensionCalculationService.calculateDifficultyBadgeArea(300);
 
       expect(result.size).toBe(225); // floor(300 * 0.75)
       expect(result.inset).toBe(37); // floor(300 / 8)
@@ -389,7 +386,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should return zero for no additional height", () => {
-      const result = service.calculateDifficultyBadgeArea(0);
+      const result = DimensionCalculationService.calculateDifficultyBadgeArea(0);
 
       expect(result.size).toBe(0);
       expect(result.inset).toBe(0);
@@ -397,7 +394,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should floor calculated values", () => {
-      const result = service.calculateDifficultyBadgeArea(100);
+      const result = DimensionCalculationService.calculateDifficultyBadgeArea(100);
 
       expect(result.size).toBe(75); // floor(100 * 0.75)
       expect(result.inset).toBe(12); // floor(100 / 8)
@@ -406,33 +403,33 @@ describe("DimensionCalculationService", () => {
 
   describe("getTextScalingFactors", () => {
     it("should return small scaling for 0-1 beats", () => {
-      const factors0 = service.getTextScalingFactors(0);
+      const factors0 = DimensionCalculationService.getTextScalingFactors(0);
       expect(factors0.fontScale).toBeCloseTo(1 / 1.3);
       expect(factors0.marginScale).toBeCloseTo(1 / 3);
 
-      const factors1 = service.getTextScalingFactors(1);
+      const factors1 = DimensionCalculationService.getTextScalingFactors(1);
       expect(factors1.fontScale).toBeCloseTo(1 / 1.3);
       expect(factors1.marginScale).toBeCloseTo(1 / 3);
     });
 
     it("should return medium scaling for 2 beats", () => {
-      const factors = service.getTextScalingFactors(2);
+      const factors = DimensionCalculationService.getTextScalingFactors(2);
       expect(factors.fontScale).toBeCloseTo(1 / 1.4);
       expect(factors.marginScale).toBeCloseTo(1 / 2);
     });
 
     it("should return medium scaling for 3 beats", () => {
-      const factors = service.getTextScalingFactors(3);
+      const factors = DimensionCalculationService.getTextScalingFactors(3);
       expect(factors.fontScale).toBeCloseTo(1 / 1.5);
       expect(factors.marginScale).toBeCloseTo(1 / 2);
     });
 
     it("should return full scaling for 4+ beats", () => {
-      const factors4 = service.getTextScalingFactors(4);
+      const factors4 = DimensionCalculationService.getTextScalingFactors(4);
       expect(factors4.fontScale).toBe(1.0);
       expect(factors4.marginScale).toBe(1.0);
 
-      const factors10 = service.getTextScalingFactors(10);
+      const factors10 = DimensionCalculationService.getTextScalingFactors(10);
       expect(factors10.fontScale).toBe(1.0);
       expect(factors10.marginScale).toBe(1.0);
     });
@@ -440,24 +437,24 @@ describe("DimensionCalculationService", () => {
 
   describe("estimateMemoryUsage", () => {
     it("should calculate memory usage for standard dimensions", () => {
-      const memory = service.estimateMemoryUsage(1000, 1000);
+      const memory = DimensionCalculationService.estimateMemoryUsage(1000, 1000);
       expect(memory).toBe(4000000); // 1000 * 1000 * 4 bytes (RGBA)
     });
 
     it("should use custom bytes per pixel", () => {
-      const memory = service.estimateMemoryUsage(1000, 1000, 3);
+      const memory = DimensionCalculationService.estimateMemoryUsage(1000, 1000, 3);
       expect(memory).toBe(3000000); // 1000 * 1000 * 3 bytes (RGB)
     });
 
     it("should calculate memory for large dimensions", () => {
-      const memory = service.estimateMemoryUsage(4000, 3000);
+      const memory = DimensionCalculationService.estimateMemoryUsage(4000, 3000);
       expect(memory).toBe(48000000); // 4000 * 3000 * 4 bytes
     });
   });
 
   describe("getMaximumRecommendedDimensions", () => {
     it("should return conservative browser limits", () => {
-      const limits = service.getMaximumRecommendedDimensions();
+      const limits = DimensionCalculationService.getMaximumRecommendedDimensions();
 
       expect(limits.maxWidth).toBe(16384); // 16K width
       expect(limits.maxHeight).toBe(16384); // 16K height
@@ -467,39 +464,39 @@ describe("DimensionCalculationService", () => {
 
   describe("validateMemoryUsage", () => {
     it("should validate safe dimensions", () => {
-      const result = service.validateMemoryUsage(1000, 1000);
+      const result = DimensionCalculationService.validateMemoryUsage(1000, 1000);
 
       expect(result.safe).toBe(true);
       expect(result.estimatedMB).toBeCloseTo(3.81, 1); // ~4MB
     });
 
     it("should validate large but safe dimensions", () => {
-      const result = service.validateMemoryUsage(4000, 4000);
+      const result = DimensionCalculationService.validateMemoryUsage(4000, 4000);
 
       expect(result.safe).toBe(true);
       expect(result.estimatedMB).toBeCloseTo(61.04, 1); // ~64MB
     });
 
     it("should reject dimensions exceeding width limit", () => {
-      const result = service.validateMemoryUsage(20000, 1000);
+      const result = DimensionCalculationService.validateMemoryUsage(20000, 1000);
 
       expect(result.safe).toBe(false);
     });
 
     it("should reject dimensions exceeding height limit", () => {
-      const result = service.validateMemoryUsage(1000, 20000);
+      const result = DimensionCalculationService.validateMemoryUsage(1000, 20000);
 
       expect(result.safe).toBe(false);
     });
 
     it("should reject dimensions exceeding pixel limit", () => {
-      const result = service.validateMemoryUsage(16385, 16385);
+      const result = DimensionCalculationService.validateMemoryUsage(16385, 16385);
 
       expect(result.safe).toBe(false); // 268,500,225 pixels exceeds limit
     });
 
     it("should calculate estimated MB correctly", () => {
-      const result = service.validateMemoryUsage(2000, 2000);
+      const result = DimensionCalculationService.validateMemoryUsage(2000, 2000);
 
       // 2000 * 2000 * 4 = 16,000,000 bytes = ~15.26 MB
       expect(result.estimatedMB).toBeCloseTo(15.26, 1);
@@ -508,7 +505,7 @@ describe("DimensionCalculationService", () => {
 
   describe("Real-World Export Scenarios", () => {
     it("should handle typical 16-beat sequence export", () => {
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         16,
         1.0
@@ -517,7 +514,7 @@ describe("DimensionCalculationService", () => {
       expect(top).toBe(300); // Word area for 16 beats
       expect(bottom).toBe(150); // User info area
 
-      const total = service.calculateTotalAdditionalHeight(
+      const total = DimensionCalculationService.calculateTotalAdditionalHeight(
         baseOptions,
         16,
         1.0
@@ -527,7 +524,7 @@ describe("DimensionCalculationService", () => {
 
     it("should handle high-resolution export (2x scale)", () => {
       const scale = 2.0;
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         16,
         scale
@@ -536,10 +533,10 @@ describe("DimensionCalculationService", () => {
       expect(top).toBe(600); // 300 * 2.0
       expect(bottom).toBe(300); // 150 * 2.0
 
-      const beatSize = service.calculateScaledBeatSize(144, scale);
+      const beatSize = DimensionCalculationService.calculateScaledBeatSize(144, scale);
       expect(beatSize).toBe(288);
 
-      const margin = service.calculateScaledMargin(50, scale);
+      const margin = DimensionCalculationService.calculateScaledMargin(50, scale);
       expect(margin).toBe(100);
     });
 
@@ -550,7 +547,7 @@ describe("DimensionCalculationService", () => {
         addUserInfo: false,
       };
 
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         minimalOptions,
         16,
         1.0
@@ -562,7 +559,7 @@ describe("DimensionCalculationService", () => {
 
     it("should validate memory for typical export", () => {
       // Typical export: 16 beats, 150px each, 2 columns = ~1500x1500
-      const result = service.validateMemoryUsage(1500, 1500);
+      const result = DimensionCalculationService.validateMemoryUsage(1500, 1500);
 
       expect(result.safe).toBe(true);
       expect(result.estimatedMB).toBeLessThan(10); // Should be under 10MB
@@ -570,7 +567,7 @@ describe("DimensionCalculationService", () => {
 
     it("should prevent memory issues for large exports", () => {
       // Unreasonably large export
-      const result = service.validateMemoryUsage(20000, 20000);
+      const result = DimensionCalculationService.validateMemoryUsage(20000, 20000);
 
       expect(result.safe).toBe(false);
       expect(result.estimatedMB).toBeGreaterThan(1000); // Over 1GB
@@ -580,12 +577,12 @@ describe("DimensionCalculationService", () => {
   describe("Edge Cases", () => {
     it("should handle zero beat count", () => {
       expect(() =>
-        service.determineAdditionalHeights(baseOptions, 0, 1.0)
+        DimensionCalculationService.determineAdditionalHeights(baseOptions, 0, 1.0)
       ).not.toThrow();
     });
 
     it("should handle very large beat count", () => {
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         1000,
         1.0
@@ -597,7 +594,7 @@ describe("DimensionCalculationService", () => {
     });
 
     it("should handle fractional beat scale", () => {
-      const [top, bottom] = service.determineAdditionalHeights(
+      const [top, bottom] = DimensionCalculationService.determineAdditionalHeights(
         baseOptions,
         3,
         0.75
@@ -609,15 +606,15 @@ describe("DimensionCalculationService", () => {
 
     it("should throw error for invalid parameters in determineAdditionalHeights", () => {
       expect(() =>
-        service.determineAdditionalHeights(baseOptions, -1, 1.0)
+        DimensionCalculationService.determineAdditionalHeights(baseOptions, -1, 1.0)
       ).toThrow("Invalid dimension parameters");
 
       expect(() =>
-        service.determineAdditionalHeights(baseOptions, 10, 0)
+        DimensionCalculationService.determineAdditionalHeights(baseOptions, 10, 0)
       ).toThrow("Invalid dimension parameters");
 
       expect(() =>
-        service.determineAdditionalHeights(baseOptions, 10, 11)
+        DimensionCalculationService.determineAdditionalHeights(baseOptions, 10, 11)
       ).toThrow("Invalid dimension parameters");
     });
   });

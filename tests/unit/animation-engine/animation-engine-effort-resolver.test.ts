@@ -13,9 +13,8 @@ vi.mock(
   "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer",
   () => ({ Canvas2DAnimationRenderer: class {} })
 );
-vi.mock("$lib/shared/animation-engine/services/implementations/AnimatorLoader", () => ({
+vi.mock("$lib/shared/animation-engine/services/animator-loader", () => ({
   loadAnimatorServices: vi.fn(),
-  AnimatorLoader: class {},
 }));
 // Firestore (both CJS and ESM entry points) relies on protobufjs which crashes
 vi.mock("@firebase/firestore", () => ({}));

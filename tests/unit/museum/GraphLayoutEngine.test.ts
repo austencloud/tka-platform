@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { GraphLayoutEngine } from "$lib/features/museum/services/implementations/GraphLayoutEngine";
-import { CorridorRouter } from "$lib/features/museum/services/implementations/CorridorRouter";
-import { LayoutValidator } from "$lib/features/museum/services/implementations/LayoutValidator";
+import { computeLayout } from "$lib/features/museum/services/graph-layout-engine";
+import { routeCorridor } from "$lib/features/museum/services/corridor-router";
 import { buildMuseumGrid } from "$lib/features/museum/services/implementations/MuseumGridBuilder";
 import { MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG } from "$lib/features/museum/data/museum-room-graph";
 import { tileKey } from "$lib/features/museum/domain/museum-grid-types";
@@ -9,10 +8,8 @@ import { isWalkable } from "$lib/features/museum/domain/tile-registry";
 import type { RoomNode, RoomEdge, GridConfig } from "$lib/features/museum/domain/layout-types";
 
 describe("GraphLayoutEngine", () => {
-	const engine = new GraphLayoutEngine();
-
 	it("assigns rooms to non-overlapping grid positions", () => {
-		const layout = engine.computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
+		const layout = computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
 
 		expect(layout.rooms.length).toBe(MUSEUM_ROOMS.length);
 
@@ -32,7 +29,7 @@ describe("GraphLayoutEngine", () => {
 	});
 
 	it("rooms have positive dimensions derived from wall segments", () => {
-		const layout = engine.computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
+		const layout = computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
 
 		for (const room of layout.rooms) {
 			expect(room.w, `${room.id} width`).toBeGreaterThan(4);
@@ -41,7 +38,7 @@ describe("GraphLayoutEngine", () => {
 	});
 
 	it("grid dimensions accommodate all rooms", () => {
-		const layout = engine.computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
+		const layout = computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
 
 		for (const room of layout.rooms) {
 			expect(room.x + room.w).toBeLessThanOrEqual(layout.gridWidth);
@@ -53,14 +50,11 @@ describe("GraphLayoutEngine", () => {
 });
 
 describe("CorridorRouter", () => {
-	const engine = new GraphLayoutEngine();
-	const router = new CorridorRouter();
-
 	it("produces corridor segments between connected rooms", () => {
-		const layout = engine.computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
+		const layout = computeLayout(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
 		const [entrance, cave] = layout.rooms;
 
-		const segments = router.routeCorridor(entrance, cave, MUSEUM_EDGES[0]);
+		const segments = routeCorridor(entrance, cave, MUSEUM_EDGES[0]);
 
 		expect(segments.length).toBeGreaterThan(0);
 		// All segments should have positive width

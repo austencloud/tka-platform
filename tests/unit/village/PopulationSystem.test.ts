@@ -4,7 +4,7 @@ import {
 	createVillageWorld,
 	createAvatarEntity,
 } from "$lib/features/village/engine/VillageWorld";
-import { PersonalityGenerator } from "$lib/features/village/services/implementations/PersonalityGenerator";
+import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import { LineageTracker } from "$lib/features/village/services/implementations/LineageTracker";
 import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
 import {
@@ -34,7 +34,7 @@ function makeEmitter() {
 describe("PopulationSystem", () => {
 	it("removes entities that have finished passing", () => {
 		const world = createVillageWorld();
-		const gen = new PersonalityGenerator();
+		const gen = personalityGenerator;
 		const entity = createAvatarEntity(world, {
 			name: "Dying",
 			generation: 1,
@@ -65,7 +65,7 @@ describe("PopulationSystem", () => {
 
 	it("spawns new entities to maintain target population", () => {
 		const world = createVillageWorld();
-		const gen = new PersonalityGenerator();
+		const gen = personalityGenerator;
 		const config = createDefaultConfig({ targetPopulation: 4 });
 		const tracker = new LineageTracker();
 		const { emitter } = makeEmitter();
@@ -79,7 +79,7 @@ describe("PopulationSystem", () => {
 
 	it("increments passing timer for passing entities", () => {
 		const world = createVillageWorld();
-		const gen = new PersonalityGenerator();
+		const gen = personalityGenerator;
 		const entity = createAvatarEntity(world, {
 			name: "Dying",
 			generation: 1,

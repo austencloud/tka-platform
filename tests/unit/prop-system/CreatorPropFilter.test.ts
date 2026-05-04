@@ -23,7 +23,7 @@ vi.mock("$lib/shared/auth/firebase", () => ({
   getFirestoreInstance: vi.fn().mockResolvedValue({}),
 }));
 
-import { CreatorPropFilter } from "../../../src/lib/features/browse/creators/services/implementations/CreatorPropFilter";
+import { filterByProps } from "../../../src/lib/features/browse/creators/services/creator-prop-filter";
 import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/PropType";
 
 function makeProfile(
@@ -40,8 +40,6 @@ function makeProfile(
 }
 
 describe("CreatorPropFilter", () => {
-  const filter = new CreatorPropFilter();
-
   const staffOnly = makeProfile("alice", [PropType.STAFF]);
   const fanOnly = makeProfile("bob", [PropType.FAN]);
   const staffAndFan = makeProfile("carol", [PropType.STAFF, PropType.FAN]);
@@ -50,7 +48,7 @@ describe("CreatorPropFilter", () => {
 
   describe("filterByProps", () => {
     it("uses AND logic — requires ALL selected props", () => {
-      const result = filter.filterByProps(allProfiles, [PropType.STAFF, PropType.FAN]);
+      const result = filterByProps(allProfiles, [PropType.STAFF, PropType.FAN]);
       // Only carol has both staff AND fan
       expect(result).toEqual([staffAndFan]);
     });

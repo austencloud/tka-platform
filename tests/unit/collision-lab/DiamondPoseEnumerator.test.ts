@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DiamondPoseEnumerator } from "$lib/features/lab/tabs/collision-lab/services/implementations/DiamondPoseEnumerator";
+import { enumerateDiamondInOut } from "$lib/features/lab/tabs/collision-lab/services/diamond-pose-enumerator";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 import type {
   DiamondPosition,
@@ -7,21 +7,20 @@ import type {
 } from "$lib/features/lab/tabs/collision-lab/domain/types";
 
 describe("DiamondPoseEnumerator", () => {
-  const enumerator = new DiamondPoseEnumerator();
 
   it("enumerates exactly 576 poses (cross-plane × cross-plane)", () => {
-    const poses = enumerator.enumerateDiamondInOut();
+    const poses = enumerateDiamondInOut();
     expect(poses).toHaveLength(576);
   });
 
   it("generates unique ids for every pose", () => {
-    const poses = enumerator.enumerateDiamondInOut();
+    const poses = enumerateDiamondInOut();
     const ids = new Set(poses.map((p) => p.id));
     expect(ids.size).toBe(576);
   });
 
   it("every combination of (bluePlane, bluePos, blueOri, redPlane, redPos, redOri) appears exactly once", () => {
-    const poses = enumerator.enumerateDiamondInOut();
+    const poses = enumerateDiamondInOut();
     const planes: Plane[] = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
     const positions: DiamondPosition[] = ["N", "E", "S", "W"];
     const orientations: HandOrientation[] = ["in", "out"];
@@ -49,13 +48,13 @@ describe("DiamondPoseEnumerator", () => {
   });
 
   it("produces the same order on repeated calls (deterministic)", () => {
-    const a = enumerator.enumerateDiamondInOut();
-    const b = enumerator.enumerateDiamondInOut();
+    const a = enumerateDiamondInOut();
+    const b = enumerateDiamondInOut();
     expect(a.map((p) => p.id)).toEqual(b.map((p) => p.id));
   });
 
   it("encodes ids with both planes, e.g., wNi-hEo for blue-wall-N-in / red-wheel-E-out", () => {
-    const poses = enumerator.enumerateDiamondInOut();
+    const poses = enumerateDiamondInOut();
     const wNi_hEo = poses.find((p) => p.id === "wNi-hEo");
     expect(wNi_hEo).toBeDefined();
     expect(wNi_hEo!.blueHand).toEqual({
@@ -71,12 +70,12 @@ describe("DiamondPoseEnumerator", () => {
   });
 
   it("first pose is wNi-wNi (outermost loop at first value)", () => {
-    const poses = enumerator.enumerateDiamondInOut();
+    const poses = enumerateDiamondInOut();
     expect(poses[0]!.id).toBe("wNi-wNi");
   });
 
   it("includes same-plane poses (single-plane combos are a subset)", () => {
-    const poses = enumerator.enumerateDiamondInOut();
+    const poses = enumerateDiamondInOut();
     const samePlane = poses.filter(
       (p) => p.blueHand.plane === p.redHand.plane
     );
@@ -85,7 +84,7 @@ describe("DiamondPoseEnumerator", () => {
   });
 
   it("includes cross-plane poses (the main reason for this lab)", () => {
-    const poses = enumerator.enumerateDiamondInOut();
+    const poses = enumerateDiamondInOut();
     const crossPlane = poses.filter(
       (p) => p.blueHand.plane !== p.redHand.plane
     );

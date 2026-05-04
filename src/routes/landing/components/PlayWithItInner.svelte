@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/getAnimationPlaybackControllerFactory";
+import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
 import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -16,7 +16,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-  import type { AnimationPlaybackControllerFactory } from "$lib/features/compose/services/implementations/AnimationPlaybackControllerFactory";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { EndState } from '$lib/features/landing/services/contracts/types';
@@ -280,8 +279,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       visibilityManager.setActiveEffect("trails");
 
       browseLoader = getBrowseLoader();
-      const controllerFactory = getAnimationPlaybackControllerFactory() as AnimationPlaybackControllerFactory;
-      playbackController = controllerFactory.create();
+      playbackController = createAnimationPlaybackController();
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;
 

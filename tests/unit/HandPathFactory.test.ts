@@ -7,20 +7,17 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { HandPathFactory } from "$lib/shared/foundation/services/implementations/HandPathFactory";
-import { ContentHasher } from "$lib/shared/foundation/services/implementations/ContentHasher";
+import { createHandPath } from "$lib/shared/foundation/services/hand-path-factory";
 import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 describe("HandPathFactory", () => {
-  const hasher = new ContentHasher();
-  const factory = new HandPathFactory(hasher);
 
   describe("impliedGridMode", () => {
     it("derives DIAMOND from all cardinal locations", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTH,
         GridLocation.EAST,
         GridLocation.SOUTH,
@@ -30,7 +27,7 @@ describe("HandPathFactory", () => {
     });
 
     it("derives BOX from all intercardinal locations", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTHEAST,
         GridLocation.SOUTHEAST,
       ]);
@@ -38,7 +35,7 @@ describe("HandPathFactory", () => {
     });
 
     it("derives SKEWED from mixed cardinal and intercardinal locations", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTH,
         GridLocation.SOUTHEAST,
       ]);
@@ -46,7 +43,7 @@ describe("HandPathFactory", () => {
     });
 
     it("derives CENTRIC when CENTER is present", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTH,
         GridLocation.CENTER,
         GridLocation.SOUTH,
@@ -55,14 +52,14 @@ describe("HandPathFactory", () => {
     });
 
     it("derives CENTRIC for CENTER-only path", () => {
-      const path = factory.create([GridLocation.CENTER]);
+      const path = createHandPath([GridLocation.CENTER]);
       expect(path.impliedGridMode).toBe(GridMode.CENTRIC);
     });
   });
 
   describe("bigrams", () => {
     it("produces one bigram per consecutive pair", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTH,
         GridLocation.EAST,
         GridLocation.SOUTH,
@@ -71,19 +68,19 @@ describe("HandPathFactory", () => {
     });
 
     it("produces empty bigrams for a single-location path", () => {
-      const path = factory.create([GridLocation.NORTH]);
+      const path = createHandPath([GridLocation.NORTH]);
       expect(path.bigrams).toEqual([]);
     });
 
     it("produces one bigram for a two-location path", () => {
-      const path = factory.create([GridLocation.WEST, GridLocation.EAST]);
+      const path = createHandPath([GridLocation.WEST, GridLocation.EAST]);
       expect(path.bigrams).toEqual(["w_e"]);
     });
   });
 
   describe("isClosed", () => {
     it("detects a closed path when first and last location match", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTH,
         GridLocation.EAST,
         GridLocation.NORTH,
@@ -92,29 +89,29 @@ describe("HandPathFactory", () => {
     });
 
     it("detects an open path when first and last location differ", () => {
-      const path = factory.create([GridLocation.NORTH, GridLocation.EAST]);
+      const path = createHandPath([GridLocation.NORTH, GridLocation.EAST]);
       expect(path.isClosed).toBe(false);
     });
 
     it("treats a single location as closed (degenerate case)", () => {
-      const path = factory.create([GridLocation.NORTH]);
+      const path = createHandPath([GridLocation.NORTH]);
       expect(path.isClosed).toBe(true);
     });
   });
 
   describe("derived location fields", () => {
     it("sets startLocation to first location", () => {
-      const path = factory.create([GridLocation.SOUTH, GridLocation.EAST]);
+      const path = createHandPath([GridLocation.SOUTH, GridLocation.EAST]);
       expect(path.startLocation).toBe(GridLocation.SOUTH);
     });
 
     it("sets endLocation to last location", () => {
-      const path = factory.create([GridLocation.SOUTH, GridLocation.EAST]);
+      const path = createHandPath([GridLocation.SOUTH, GridLocation.EAST]);
       expect(path.endLocation).toBe(GridLocation.EAST);
     });
 
     it("sets length to the number of beats (locations minus one)", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTH,
         GridLocation.EAST,
         GridLocation.SOUTH,
@@ -124,7 +121,7 @@ describe("HandPathFactory", () => {
     });
 
     it("deduplicates uniqueLocations while preserving order", () => {
-      const path = factory.create([
+      const path = createHandPath([
         GridLocation.NORTH,
         GridLocation.EAST,
         GridLocation.NORTH,
@@ -140,21 +137,21 @@ describe("HandPathFactory", () => {
 
   describe("contentHash", () => {
     it("produces the same hash for identical location sequences", () => {
-      const path1 = factory.create([GridLocation.NORTH, GridLocation.EAST]);
-      const path2 = factory.create([GridLocation.NORTH, GridLocation.EAST]);
+      const path1 = createHandPath([GridLocation.NORTH, GridLocation.EAST]);
+      const path2 = createHandPath([GridLocation.NORTH, GridLocation.EAST]);
       expect(path1.contentHash).toBe(path2.contentHash);
     });
 
     it("produces different hashes for different location sequences", () => {
-      const path1 = factory.create([GridLocation.NORTH, GridLocation.EAST]);
-      const path2 = factory.create([GridLocation.EAST, GridLocation.NORTH]);
+      const path1 = createHandPath([GridLocation.NORTH, GridLocation.EAST]);
+      const path2 = createHandPath([GridLocation.EAST, GridLocation.NORTH]);
       expect(path1.contentHash).not.toBe(path2.contentHash);
     });
   });
 
   describe("metadata passthrough", () => {
     it("includes provided metadata on the created path", () => {
-      const path = factory.create([GridLocation.NORTH, GridLocation.EAST], {
+      const path = createHandPath([GridLocation.NORTH, GridLocation.EAST], {
         name: "test path",
         author: "austen",
         notes: "for testing",
@@ -165,7 +162,7 @@ describe("HandPathFactory", () => {
     });
 
     it("leaves metadata fields undefined when not provided", () => {
-      const path = factory.create([GridLocation.NORTH, GridLocation.EAST]);
+      const path = createHandPath([GridLocation.NORTH, GridLocation.EAST]);
       expect(path.name).toBeUndefined();
       expect(path.author).toBeUndefined();
       expect(path.notes).toBeUndefined();
@@ -174,8 +171,8 @@ describe("HandPathFactory", () => {
 
   describe("identity", () => {
     it("produces a unique id for each created path", () => {
-      const path1 = factory.create([GridLocation.NORTH]);
-      const path2 = factory.create([GridLocation.NORTH]);
+      const path1 = createHandPath([GridLocation.NORTH]);
+      const path2 = createHandPath([GridLocation.NORTH]);
       expect(path1.id).not.toBe(path2.id);
     });
   });

@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { SequenceContentHasher } from "../../../src/lib/features/library/services/implementations/SequenceContentHasher";
+import { computeHash } from "../../../src/lib/features/library/services/sequence-content-hasher";
 import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // Minimal motion data that satisfies the hasher's extraction
@@ -66,14 +66,13 @@ function makeSequence(overrides: Record<string, unknown> = {}) {
 }
 
 describe("SequenceContentHasher — Duplicate Detection", () => {
-  const hasher = new SequenceContentHasher();
 
   it("identical sequences produce the same hash", async () => {
     const a = makeSequence();
     const b = makeSequence();
 
-    const hashA = await hasher.computeHash(a);
-    const hashB = await hasher.computeHash(b);
+    const hashA = await computeHash(a);
+    const hashB = await computeHash(b);
 
     expect(hashA).toBe(hashB);
   });
@@ -91,8 +90,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       ownerDisplayName: "Someone Else",
     });
 
-    const hashBase = await hasher.computeHash(base);
-    const hashMeta = await hasher.computeHash(withDifferentMeta);
+    const hashBase = await computeHash(base);
+    const hashMeta = await computeHash(withDifferentMeta);
 
     expect(hashBase).toBe(hashMeta);
   });
@@ -110,8 +109,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       ],
     });
 
-    const hashA = await hasher.computeHash(a);
-    const hashB = await hasher.computeHash(b);
+    const hashA = await computeHash(a);
+    const hashB = await computeHash(b);
 
     expect(hashA).not.toBe(hashB);
   });
@@ -129,8 +128,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       ],
     });
 
-    const hashA = await hasher.computeHash(a);
-    const hashB = await hasher.computeHash(b);
+    const hashA = await computeHash(a);
+    const hashB = await computeHash(b);
 
     expect(hashA).not.toBe(hashB);
   });
@@ -148,8 +147,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       ],
     });
 
-    const hashA = await hasher.computeHash(a);
-    const hashB = await hasher.computeHash(b);
+    const hashA = await computeHash(a);
+    const hashB = await computeHash(b);
 
     expect(hashA).not.toBe(hashB);
   });
@@ -160,8 +159,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       steps: [makeStep({ letter: "B" })],
     });
 
-    const hashA = await hasher.computeHash(a);
-    const hashB = await hasher.computeHash(b);
+    const hashA = await computeHash(a);
+    const hashB = await computeHash(b);
 
     expect(hashA).not.toBe(hashB);
   });
@@ -170,14 +169,14 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
     const a = makeSequence({ gridMode: "diamond" });
     const b = makeSequence({ gridMode: "box" });
 
-    const hashA = await hasher.computeHash(a);
-    const hashB = await hasher.computeHash(b);
+    const hashA = await computeHash(a);
+    const hashB = await computeHash(b);
 
     expect(hashA).not.toBe(hashB);
   });
 
   it("hash is a 64-character hex string (SHA-256)", async () => {
-    const hash = await hasher.computeHash(makeSequence());
+    const hash = await computeHash(makeSequence());
 
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
   });
@@ -188,8 +187,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       steps: [makeStep({ blueReversal: true })],
     });
 
-    const hashA = await hasher.computeHash(a);
-    const hashB = await hasher.computeHash(b);
+    const hashA = await computeHash(a);
+    const hashB = await computeHash(b);
 
     expect(hashA).not.toBe(hashB);
   });
@@ -207,8 +206,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       steps: [makeStep({ gridMode: undefined })],
     });
 
-    const hashExplicit = await hasher.computeHash(withExplicit);
-    const hashInherited = await hasher.computeHash(withInherited);
+    const hashExplicit = await computeHash(withExplicit);
+    const hashInherited = await computeHash(withInherited);
 
     expect(hashExplicit).toBe(hashInherited);
   });
@@ -223,8 +222,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       steps: [makeStep({ gridMode: null })],
     });
 
-    const hashExplicit = await hasher.computeHash(withExplicit);
-    const hashNull = await hasher.computeHash(withNull);
+    const hashExplicit = await computeHash(withExplicit);
+    const hashNull = await computeHash(withNull);
 
     expect(hashExplicit).toBe(hashNull);
   });

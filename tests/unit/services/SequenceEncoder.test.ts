@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import { describe, expect, it } from "vitest";
+import { encodeSequence, decodeSequence, encodeSequenceWithCompression, decodeSequenceWithCompression, parseSequenceRouteId, generateSequenceRoutePath } from "$lib/shared/navigation/services/sequence-encoder";
 import {
   createSequenceData,
   type SequenceData,
@@ -68,11 +68,6 @@ function buildTestSequence(steps: StepData[]): SequenceData {
 }
 
 describe("SequenceEncoder", () => {
-  let encoder: SequenceEncoder;
-
-  beforeEach(() => {
-    encoder = new SequenceEncoder();
-  });
 
   describe("encode/decode round-trip", () => {
     it("preserves all motion fields through uncompressed round-trip", () => {
@@ -124,8 +119,8 @@ describe("SequenceEncoder", () => {
         step,
       ]);
 
-      const encoded = encoder.encode(seq);
-      const decoded = encoder.decode(encoded);
+      const encoded = encodeSequence(seq);
+      const decoded = decodeSequence(encoded);
 
       expect(decoded.steps).toHaveLength(1);
 
@@ -197,8 +192,8 @@ describe("SequenceEncoder", () => {
         step,
       ]);
 
-      const { encoded } = encoder.encodeWithCompression(seq);
-      const decoded = encoder.decodeWithCompression(encoded);
+      const { encoded } = encodeSequenceWithCompression(seq);
+      const decoded = decodeSequenceWithCompression(encoded);
 
       const blueMotion = decoded.steps[0].motions.blue!;
       expect(blueMotion.motionType).toBe(MotionType.DASH);
@@ -292,8 +287,8 @@ describe("SequenceEncoder", () => {
       ];
 
       const seq = buildTestSequence(steps);
-      const { encoded } = encoder.encodeWithCompression(seq);
-      const decoded = encoder.decodeWithCompression(encoded);
+      const { encoded } = encodeSequenceWithCompression(seq);
+      const decoded = decodeSequenceWithCompression(encoded);
 
       expect(decoded.steps).toHaveLength(3);
 
@@ -355,8 +350,8 @@ describe("SequenceEncoder", () => {
         step,
       ]);
 
-      const encoded = encoder.encode(seq);
-      const decoded = encoder.decode(encoded);
+      const encoded = encodeSequence(seq);
+      const decoded = decodeSequence(encoded);
 
       expect(decoded.steps[0].motions.blue!.turns).toBe("fl");
       expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.FLOAT);
@@ -411,8 +406,8 @@ describe("SequenceEncoder", () => {
           step,
         ]);
 
-        const encoded = encoder.encode(seq);
-        const decoded = encoder.decode(encoded);
+        const encoded = encodeSequence(seq);
+        const decoded = decodeSequence(encoded);
 
         expect(decoded.steps[0].motions.blue!.startLocation).toBe(loc);
       }
@@ -465,8 +460,8 @@ describe("SequenceEncoder", () => {
           step,
         ]);
 
-        const encoded = encoder.encode(seq);
-        const decoded = encoder.decode(encoded);
+        const encoded = encodeSequence(seq);
+        const decoded = decodeSequence(encoded);
 
         expect(decoded.steps[0].motions.blue!.startOrientation).toBe(orient);
         expect(decoded.steps[0].motions.blue!.endOrientation).toBe(orient);
@@ -521,8 +516,8 @@ describe("SequenceEncoder", () => {
           step,
         ]);
 
-        const encoded = encoder.encode(seq);
-        const decoded = encoder.decode(encoded);
+        const encoded = encodeSequence(seq);
+        const decoded = decodeSequence(encoded);
 
         expect(decoded.steps[0].motions.blue!.propType).toBe(propType);
         expect(decoded.steps[0].motions.red!.propType).toBe(propType);
@@ -532,19 +527,19 @@ describe("SequenceEncoder", () => {
 
   describe("parseSequenceRouteId", () => {
     it("detects compressed encoded sequences (z: prefix)", () => {
-      const result = encoder.parseSequenceRouteId("z:CoCkBEjA2oBh");
+      const result = parseSequenceRouteId("z:CoCkBEjA2oBh");
       expect(result.encoded).toBe("z:CoCkBEjA2oBh");
       expect(result.legacyId).toBeNull();
     });
 
     it("detects URL-encoded z: prefix", () => {
-      const result = encoder.parseSequenceRouteId("z%3ACoCkBEjA2oBh");
+      const result = parseSequenceRouteId("z%3ACoCkBEjA2oBh");
       expect(result.encoded).toBe("z:CoCkBEjA2oBh");
       expect(result.legacyId).toBeNull();
     });
 
     it("detects uncompressed pipe-delimited sequences", () => {
-      const result = encoder.parseSequenceRouteId(
+      const result = parseSequenceRouteId(
         "nosoiic0sS:sonoiic0sS|noeaioc1pS:soweioc1pS"
       );
       expect(result.encoded).not.toBeNull();
@@ -552,7 +547,7 @@ describe("SequenceEncoder", () => {
     });
 
     it("identifies legacy Firebase IDs", () => {
-      const result = encoder.parseSequenceRouteId(
+      const result = parseSequenceRouteId(
         "seq_1769720340144_pm6d0gz72"
       );
       expect(result.encoded).toBeNull();
@@ -560,13 +555,13 @@ describe("SequenceEncoder", () => {
     });
 
     it("identifies plain words as legacy IDs", () => {
-      const result = encoder.parseSequenceRouteId("CAKE");
+      const result = parseSequenceRouteId("CAKE");
       expect(result.encoded).toBeNull();
       expect(result.legacyId).toBe("CAKE");
     });
 
     it("returns both null for empty input", () => {
-      const result = encoder.parseSequenceRouteId("");
+      const result = parseSequenceRouteId("");
       expect(result.encoded).toBeNull();
       expect(result.legacyId).toBeNull();
     });
@@ -610,7 +605,7 @@ describe("SequenceEncoder", () => {
         ),
       ]);
 
-      const path = encoder.generateSequenceRoutePath(seq);
+      const path = generateSequenceRoutePath(seq);
 
       expect(path).toMatch(/^\/sequence\//);
     });
@@ -652,15 +647,15 @@ describe("SequenceEncoder", () => {
         ),
       ]);
 
-      const path = encoder.generateSequenceRoutePath(seq);
+      const path = generateSequenceRoutePath(seq);
 
       const id = path.replace("/sequence/", "");
-      const parsed = encoder.parseSequenceRouteId(id);
+      const parsed = parseSequenceRouteId(id);
 
       expect(parsed.encoded).not.toBeNull();
       expect(parsed.legacyId).toBeNull();
 
-      const decoded = encoder.decodeWithCompression(parsed.encoded!);
+      const decoded = decodeSequenceWithCompression(parsed.encoded!);
       expect(decoded.steps).toHaveLength(1);
       expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
       expect(decoded.steps[0].motions.blue!.startLocation).toBe(
@@ -674,7 +669,7 @@ describe("SequenceEncoder", () => {
 
   describe("edge cases", () => {
     it("throws on empty input", () => {
-      expect(() => encoder.decode("")).toThrow();
+      expect(() => decodeSequence("")).toThrow();
     });
 
     it("handles start position with no actual steps", () => {
@@ -695,8 +690,8 @@ describe("SequenceEncoder", () => {
         ),
       ]);
 
-      const encoded = encoder.encode(seq);
-      const decoded = encoder.decode(encoded);
+      const encoded = encodeSequence(seq);
+      const decoded = decodeSequence(encoded);
 
       expect(decoded.steps).toHaveLength(0);
       expect(decoded.startPosition).toBeDefined();
@@ -743,9 +738,9 @@ describe("SequenceEncoder", () => {
         ),
       ]);
 
-      const uncompressed = encoder.decode(encoder.encode(seq));
-      const { encoded: compressedStr } = encoder.encodeWithCompression(seq);
-      const compressed = encoder.decodeWithCompression(compressedStr);
+      const uncompressed = decodeSequence(encodeSequence(seq));
+      const { encoded: compressedStr } = encodeSequenceWithCompression(seq);
+      const compressed = decodeSequenceWithCompression(compressedStr);
 
       const uBlue = uncompressed.steps[0].motions.blue!;
       const cBlue = compressed.steps[0].motions.blue!;

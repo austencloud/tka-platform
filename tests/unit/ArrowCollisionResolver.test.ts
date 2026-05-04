@@ -9,8 +9,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { ArrowCollisionResolver } from "$lib/features/choreo-card/services/implementations/ArrowCollisionResolver";
-import { HandPathDataBuilder } from "$lib/features/choreo-card/services/implementations/HandPathDataBuilder";
+import { resolveCollisions } from "$lib/features/choreo-card/services/arrow-collision-resolver";
+import { buildFromTrace } from "$lib/features/choreo-card/services/hand-path-data-builder";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { HandPathTrace } from "$lib/features/choreo-card/services/contracts/IHandPathDataBuilder";
 
@@ -22,16 +22,13 @@ const { N, E, S, W } = {
 };
 
 describe("ArrowCollisionResolver", () => {
-  const resolver = new ArrowCollisionResolver();
-  const builder = new HandPathDataBuilder();
-
   it("does not modify beats where arrows end at different locations", () => {
     const trace: HandPathTrace = {
       blue: [N, E, E, S, S, W, W, N, N],
       red:  [S, W, W, N, N, E, E, S, S],
     };
-    const beats = builder.buildFromTrace(trace);
-    const resolved = resolver.resolveCollisions(beats);
+    const beats = buildFromTrace(trace);
+    const resolved = resolveCollisions(beats);
 
     for (const beat of resolved) {
       expect(beat.motions.blue!.arrowPlacementData.manualAdjustmentX).toBe(0);
@@ -46,8 +43,8 @@ describe("ArrowCollisionResolver", () => {
       blue: [N, E, N, E, N, E, N, E, N],
       red:  [N, E, N, E, N, E, N, E, N],
     };
-    const beats = builder.buildFromTrace(trace);
-    const resolved = resolver.resolveCollisions(beats);
+    const beats = buildFromTrace(trace);
+    const resolved = resolveCollisions(beats);
 
     const b = resolved[0].motions.blue!.arrowPlacementData;
     const r = resolved[0].motions.red!.arrowPlacementData;
@@ -65,8 +62,8 @@ describe("ArrowCollisionResolver", () => {
       blue: [N, N, N, N, N, N, N, N, N],
       red:  [N, N, N, N, N, N, N, N, N],
     };
-    const beats = builder.buildFromTrace(trace);
-    const resolved = resolver.resolveCollisions(beats);
+    const beats = buildFromTrace(trace);
+    const resolved = resolveCollisions(beats);
 
     const b = resolved[0].motions.blue!.arrowPlacementData;
     // Cardinals now push diagonally — both axes get an offset
@@ -81,8 +78,8 @@ describe("ArrowCollisionResolver", () => {
       blue: [S, S, W, W, N, N, E, E, S],
       red:  [S, W, W, N, N, E, E, S, S],
     };
-    const beats = builder.buildFromTrace(trace);
-    const resolved = resolver.resolveCollisions(beats);
+    const beats = buildFromTrace(trace);
+    const resolved = resolveCollisions(beats);
 
     // Beat 0: blue S→S, red S→W — different endLocations — no collision
     expect(resolved[0].motions.blue!.arrowPlacementData.manualAdjustmentX).toBe(0);

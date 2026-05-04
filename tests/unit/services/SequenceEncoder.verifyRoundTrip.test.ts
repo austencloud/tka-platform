@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import { encodeSequenceWithCompression, verifySequenceRoundTrip } from "$lib/shared/navigation/services/sequence-encoder";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
@@ -12,7 +12,6 @@ import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enum
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 describe("SequenceEncoder.verifyRoundTrip", () => {
-  const encoder = new SequenceEncoder();
 
   function makeAntiHalfTurn() {
     return createSequenceData({
@@ -60,15 +59,15 @@ describe("SequenceEncoder.verifyRoundTrip", () => {
 
   it("returns ok=true for a clean round-trip", () => {
     const seq = makeAntiHalfTurn();
-    const { encoded } = encoder.encodeWithCompression(seq);
-    const result = encoder.verifyRoundTrip(encoded);
+    const { encoded } = encodeSequenceWithCompression(seq);
+    const result = verifySequenceRoundTrip(encoded);
     expect(result.ok).toBe(true);
     expect(result.decoded).toBeDefined();
     expect(result.reason).toBeUndefined();
   });
 
   it("returns ok=false for a corrupted blob", () => {
-    const result = encoder.verifyRoundTrip("s~z:not-actually-valid-data");
+    const result = verifySequenceRoundTrip("s~z:not-actually-valid-data");
     expect(result.ok).toBe(false);
     expect(result.reason).toBeDefined();
   });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Vector3, Quaternion } from "three";
-import { ClavicleRaiser } from "$lib/shared/3d/services/implementations/ClavicleRaiser";
+import { computeClavicleRotation } from "$lib/shared/3d/services/clavicle-raiser";
 
 function angleDegrees(q: Quaternion): number {
   const angle = 2 * Math.acos(Math.min(1, Math.abs(q.w)));
@@ -19,20 +19,19 @@ function expectIdentity(q: Quaternion) {
 }
 
 describe("ClavicleRaiser", () => {
-  const raiser = new ClavicleRaiser();
   const shoulderRestY = 1.4;
   const armLength = 0.55;
 
   describe("hand below shoulder: no rotation", () => {
     it("hand at waist height", () => {
-      const q = raiser.computeClavicleRotation(
+      const q = computeClavicleRotation(
         new Vector3(0.3, 0.9, 0), "left", shoulderRestY, armLength
       );
       expectIdentity(q);
     });
 
     it("hand at shoulder height", () => {
-      const q = raiser.computeClavicleRotation(
+      const q = computeClavicleRotation(
         new Vector3(0.3, shoulderRestY, 0), "left", shoulderRestY, armLength
       );
       expectIdentity(q);
@@ -41,7 +40,7 @@ describe("ClavicleRaiser", () => {
 
   describe("activation threshold: setting phase", () => {
     it("hand slightly above shoulder: still no rotation (within setting phase)", () => {
-      const q = raiser.computeClavicleRotation(
+      const q = computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength * 0.1, 0),
         "left", shoulderRestY, armLength
       );
@@ -49,7 +48,7 @@ describe("ClavicleRaiser", () => {
     });
 
     it("hand just past threshold: small but nonzero rotation", () => {
-      const q = raiser.computeClavicleRotation(
+      const q = computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength * 0.25, 0),
         "left", shoulderRestY, armLength
       );
@@ -62,7 +61,7 @@ describe("ClavicleRaiser", () => {
 
   describe("overhead positions", () => {
     it("hand well above shoulder: significant rotation", () => {
-      const q = raiser.computeClavicleRotation(
+      const q = computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength * 0.6, 0),
         "left", shoulderRestY, armLength
       );
@@ -73,7 +72,7 @@ describe("ClavicleRaiser", () => {
     });
 
     it("hand at maximum reach: capped at 15 degrees", () => {
-      const q = raiser.computeClavicleRotation(
+      const q = computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength, 0),
         "left", shoulderRestY, armLength
       );
@@ -83,7 +82,7 @@ describe("ClavicleRaiser", () => {
     });
 
     it("hand beyond maximum reach: still capped at 15 degrees", () => {
-      const q = raiser.computeClavicleRotation(
+      const q = computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength * 1.5, 0),
         "left", shoulderRestY, armLength
       );
@@ -95,11 +94,11 @@ describe("ClavicleRaiser", () => {
 
   describe("left vs right: opposite rotation directions", () => {
     it("same elevation produces opposite X-axis rotations", () => {
-      const leftQ = raiser.computeClavicleRotation(
+      const leftQ = computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength * 0.6, 0),
         "left", shoulderRestY, armLength
       );
-      const rightQ = raiser.computeClavicleRotation(
+      const rightQ = computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength * 0.6, 0),
         "right", shoulderRestY, armLength
       );
@@ -119,7 +118,7 @@ describe("ClavicleRaiser", () => {
     ];
     positions.forEach((pos, i) => {
       it(`position ${i}: unit quaternion`, () => {
-        const q = raiser.computeClavicleRotation(pos, "left", shoulderRestY, armLength);
+        const q = computeClavicleRotation(pos, "left", shoulderRestY, armLength);
         expectUnitQuaternion(q);
       });
     });
@@ -130,7 +129,7 @@ describe("ClavicleRaiser", () => {
       const heights = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
       let prevAngle = 0;
       for (const h of heights) {
-        const q = raiser.computeClavicleRotation(
+        const q = computeClavicleRotation(
           new Vector3(0, shoulderRestY + armLength * h, 0),
           "left", shoulderRestY, armLength
         );

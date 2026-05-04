@@ -4,7 +4,7 @@ import {
 	createVillageWorld,
 	createAvatarEntity,
 } from "$lib/features/village/engine/VillageWorld";
-import { PersonalityGenerator } from "$lib/features/village/services/implementations/PersonalityGenerator";
+import * as personalityGenerator from "$lib/features/village/services/personality-generator";
 import {
 	DECAY_GRACE_PERIOD,
 	FORGET_THRESHOLD,
@@ -42,7 +42,7 @@ function makeEntity(
 		currentTick: 0,
 		lifespanTicks: 600,
 		arenaRadius: 8,
-		personalityGenerator: new PersonalityGenerator(),
+		personalityGenerator,
 		traitMean: 0.5,
 		traitStdDev: 0.15,
 	});

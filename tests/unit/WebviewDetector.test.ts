@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { WebviewDetector } from "$lib/shared/sequence-viewer/services/implementations/WebviewDetector";
+import { isInAppWebview } from "$lib/shared/sequence-viewer/services/webview-detector";
 
 function setUa(ua: string | undefined) {
 	Object.defineProperty(globalThis, "navigator", {
@@ -47,8 +47,7 @@ describe("WebviewDetector", () => {
 		["Snapchat", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Snapchat/12.0.0"],
 	])("detects %s as in-app webview", (_label, ua) => {
 		setUa(ua);
-		const d = new WebviewDetector();
-		expect(d.isInAppWebview).toBe(true);
+		expect(isInAppWebview()).toBe(true);
 	});
 
 	it.each([
@@ -74,13 +73,11 @@ describe("WebviewDetector", () => {
 		],
 	])("does NOT flag %s as in-app webview", (_label, ua) => {
 		setUa(ua);
-		const d = new WebviewDetector();
-		expect(d.isInAppWebview).toBe(false);
+		expect(isInAppWebview()).toBe(false);
 	});
 
 	it("returns false when navigator is undefined (SSR)", () => {
 		setUa(undefined);
-		const d = new WebviewDetector();
-		expect(d.isInAppWebview).toBe(false);
+		expect(isInAppWebview()).toBe(false);
 	});
 });

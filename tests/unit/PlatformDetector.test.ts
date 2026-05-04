@@ -7,44 +7,45 @@ vi.mock("@capacitor/core", () => ({
 	},
 }));
 
-import { PlatformDetector } from "$lib/shared/platform/services/implementations/PlatformDetector";
+vi.mock("$app/environment", () => ({
+	browser: false,
+}));
+
+import { isNative, isWeb, isIOS, isAndroid, getPlatform } from "$lib/shared/platform/services/platform-detector";
 import { Capacitor } from "@capacitor/core";
 
 describe("PlatformDetector", () => {
-	let detector: PlatformDetector;
-
 	beforeEach(() => {
 		vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
 		vi.mocked(Capacitor.getPlatform).mockReturnValue("web");
-		detector = new PlatformDetector();
 	});
 
 	it("reports web platform when not in native shell", () => {
-		expect(detector.isNative).toBe(false);
-		expect(detector.isWeb).toBe(true);
-		expect(detector.isIOS).toBe(false);
-		expect(detector.isAndroid).toBe(false);
-		expect(detector.platform).toBe("web");
+		expect(isNative()).toBe(false);
+		expect(isWeb()).toBe(true);
+		expect(isIOS()).toBe(false);
+		expect(isAndroid()).toBe(false);
+		expect(getPlatform()).toBe("web");
 	});
 
 	it("reports iOS when running in iOS native shell", () => {
 		vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
 		vi.mocked(Capacitor.getPlatform).mockReturnValue("ios");
 
-		expect(detector.isNative).toBe(true);
-		expect(detector.isIOS).toBe(true);
-		expect(detector.isAndroid).toBe(false);
-		expect(detector.isWeb).toBe(false);
-		expect(detector.platform).toBe("ios");
+		expect(isNative()).toBe(true);
+		expect(isIOS()).toBe(true);
+		expect(isAndroid()).toBe(false);
+		expect(isWeb()).toBe(false);
+		expect(getPlatform()).toBe("ios");
 	});
 
 	it("reports Android when running in Android native shell", () => {
 		vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
 		vi.mocked(Capacitor.getPlatform).mockReturnValue("android");
 
-		expect(detector.isNative).toBe(true);
-		expect(detector.isAndroid).toBe(true);
-		expect(detector.isIOS).toBe(false);
-		expect(detector.platform).toBe("android");
+		expect(isNative()).toBe(true);
+		expect(isAndroid()).toBe(true);
+		expect(isIOS()).toBe(false);
+		expect(getPlatform()).toBe("android");
 	});
 });

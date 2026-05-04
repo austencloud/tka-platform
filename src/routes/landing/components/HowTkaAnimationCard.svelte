@@ -9,12 +9,11 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/getAnimationPlaybackControllerFactory";
+import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
   import { onMount, onDestroy, tick } from "svelte";
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-  import type { AnimationPlaybackControllerFactory } from "$lib/features/compose/services/implementations/AnimationPlaybackControllerFactory";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
@@ -131,8 +130,7 @@ import { getAnimationPlaybackControllerFactory } from "$lib/features/compose/get
       visibilityManager.setDarkMode(true);
       visibilityManager.setActiveEffect("none");
 
-      const factory = getAnimationPlaybackControllerFactory() as AnimationPlaybackControllerFactory;
-      playbackController = factory.create();
+      playbackController = createAnimationPlaybackController();
       startPositionDeriver = startPositionDeriverInstance;
 
       const prepared = applyPropType(sequence);

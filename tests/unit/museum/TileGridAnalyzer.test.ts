@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TileGridAnalyzer } from "$lib/features/museum/services/implementations/TileGridAnalyzer";
+import { analyze } from "$lib/features/museum/services/tile-grid-analyzer";
 import {
 	createEmptyGrid,
 	tileKey,
@@ -77,12 +77,11 @@ function buildTwoRoomsWithDoor(): MuseumGrid {
 }
 
 describe("TileGridAnalyzer", () => {
-	const analyzer = new TileGridAnalyzer();
 
 	describe("simple room", () => {
 		it("produces 1 RoomDefinition from a walled 10x10 grid", () => {
 			const grid = buildSimpleRoom(10, 10);
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 
 			expect(result.rooms).toHaveLength(1);
 
@@ -119,7 +118,7 @@ describe("TileGridAnalyzer", () => {
 			];
 			grid.exhibits = [{ id: "ex-1", tileX: 5, tileY: 10, sequenceId: "seq-abc" }];
 
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 			expect(result.exhibits).toHaveLength(1);
 			expect(result.exhibits[0].position).toEqual([2.5, 0, 5.0]);
 		});
@@ -160,7 +159,7 @@ describe("TileGridAnalyzer", () => {
 				autoPlay: false,
 			}));
 
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 			expect(result.performers).toHaveLength(4);
 
 			for (const perf of result.performers) {
@@ -178,7 +177,7 @@ describe("TileGridAnalyzer", () => {
 				{ id: "ex-alpha", tileX: 3, tileY: 5, sequenceId: "seq-123" },
 			];
 
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 			expect(result.exhibits).toHaveLength(1);
 
 			const ex = result.exhibits[0];
@@ -204,7 +203,7 @@ describe("TileGridAnalyzer", () => {
 				},
 			];
 
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 			expect(result.performers).toHaveLength(1);
 
 			const perf = result.performers[0];
@@ -222,7 +221,7 @@ describe("TileGridAnalyzer", () => {
 			grid.tiles.set(tileKey(1, 3), { type: "torch" });
 			grid.tiles.set(tileKey(8, 5), { type: "torch" });
 
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 			const torches = result.lights.filter((l) => l.type === "torch");
 			expect(torches).toHaveLength(2);
 
@@ -237,7 +236,7 @@ describe("TileGridAnalyzer", () => {
 	describe("two rooms with door", () => {
 		it("produces 2 RoomDefinitions and 1 ConnectionDef", () => {
 			const grid = buildTwoRoomsWithDoor();
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 
 			expect(result.rooms).toHaveLength(2);
 			expect(result.connections).toHaveLength(1);
@@ -252,7 +251,7 @@ describe("TileGridAnalyzer", () => {
 	describe("wall segment merging", () => {
 		it("merges adjacent wall tiles in a row into fewer segments", () => {
 			const grid = buildSimpleRoom(10, 10);
-			const result = analyzer.analyze(grid);
+			const result = analyze(grid);
 			const room = result.rooms[0];
 
 			// A 10-tile wide top wall (y=0) should be merged into 1 wall segment,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import { encodeSequenceWithCompression, decodeSequenceWithCompression } from "$lib/shared/navigation/services/sequence-encoder";
 import { PositionDeriver } from "$lib/shared/navigation/services/implementations/PositionDeriver";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
@@ -133,13 +133,12 @@ const stubLetterDeriver: ILetterDeriver = {
 
 describe("hydrateSequence — encode/decode round-trip", () => {
   it("restores gridMode, word, and per-step letter/positions after decode", async () => {
-    const encoder = new SequenceEncoder();
     const positionDeriver = new PositionDeriver(gridPositionDeriver);
 
     const original = buildDiamondSequence();
 
-    const { encoded } = encoder.encodeWithCompression(original);
-    const decoded = encoder.decodeWithCompression(encoded);
+    const { encoded } = encodeSequenceWithCompression(original);
+    const decoded = decodeSequenceWithCompression(encoded);
 
     expect(decoded.word).toBe("");
     expect(decoded.steps[0]?.letter).toBeNull();
@@ -166,7 +165,6 @@ describe("hydrateSequence — encode/decode round-trip", () => {
   });
 
   it("preserves fractional turns (0.5) through encode → decode", () => {
-    const encoder = new SequenceEncoder();
 
     const original = createSequenceData({
       word: "",
@@ -198,8 +196,8 @@ describe("hydrateSequence — encode/decode round-trip", () => {
       ],
     });
 
-    const { encoded } = encoder.encodeWithCompression(original);
-    const decoded = encoder.decodeWithCompression(encoded);
+    const { encoded } = encodeSequenceWithCompression(original);
+    const decoded = decodeSequenceWithCompression(encoded);
 
     expect(decoded.steps[0]?.motions.blue.turns).toBe(0.5);
     expect(decoded.steps[0]?.motions.red.turns).toBe(0);

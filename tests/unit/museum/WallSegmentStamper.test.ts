@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { WallSegmentStamper } from "../../../src/lib/features/museum/services/implementations/WallSegmentStamper";
+import { stampRoom } from "../../../src/lib/features/museum/services/wall-segment-stamper";
 import type { MuseumTile } from "../../../src/lib/features/museum/domain/museum-grid-types";
 import { tileKey } from "../../../src/lib/features/museum/domain/museum-grid-types";
 import type { PlacedRoom } from "../../../src/lib/features/museum/domain/layout-types";
@@ -26,7 +26,6 @@ function makeRoom(overrides: Partial<PlacedRoom> & Pick<PlacedRoom, "x" | "y" | 
 }
 
 describe("WallSegmentStamper", () => {
-	const stamper = new WallSegmentStamper();
 
 	it("stamps exhibit-panel tiles on north wall at correct positions", () => {
 		const room = makeRoom({
@@ -49,7 +48,7 @@ describe("WallSegmentStamper", () => {
 		});
 
 		const tiles = new Map<string, MuseumTile>();
-		const result = stamper.stampRoom(tiles, room, []);
+		const result = stampRoom(tiles, room, []);
 
 		// North wall: fixed Y = 0, cursor starts at room.x + 1 + minMargin = 0 + 1 + 1 = 2
 		// gap(3): cursor advances 3 tiles (no tiles stamped), cursor now at 5
@@ -86,7 +85,7 @@ describe("WallSegmentStamper", () => {
 		});
 
 		const tiles = new Map<string, MuseumTile>();
-		const result = stamper.stampRoom(tiles, room, []);
+		const result = stampRoom(tiles, room, []);
 
 		// North wall: fixed Y = 20, cursor starts at 10 + 1 + 2 = 13
 		// gap(3): cursor now at 16
@@ -123,7 +122,7 @@ describe("WallSegmentStamper", () => {
 		});
 
 		const tiles = new Map<string, MuseumTile>();
-		expect(() => stamper.stampRoom(tiles, room, [])).toThrow();
+		expect(() => stampRoom(tiles, room, [])).toThrow();
 	});
 
 	it("stamps along Y axis on east wall", () => {
@@ -146,7 +145,7 @@ describe("WallSegmentStamper", () => {
 		});
 
 		const tiles = new Map<string, MuseumTile>();
-		const result = stamper.stampRoom(tiles, room, []);
+		const result = stampRoom(tiles, room, []);
 
 		// East wall: fixed X = room.x + room.w - 1 = 9, cursor starts at room.y + 1 + 1 = 2
 		// exhibit(standard, width=2): stamps at Y=2 and Y=3
@@ -178,7 +177,7 @@ describe("WallSegmentStamper", () => {
 		});
 
 		const tiles = new Map<string, MuseumTile>();
-		stamper.stampRoom(tiles, room, []);
+		stampRoom(tiles, room, []);
 
 		// South wall: fixed Y = 0 + 12 - 1 = 11, cursor starts at 0 + 1 + 1 = 2
 		// rope(width=3): stamps at X=2,3,4

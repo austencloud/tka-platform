@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
+import { computeHash } from "$lib/features/library/services/sequence-content-hasher";
 import {
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -55,8 +55,6 @@ function makeStep(overrides: Partial<StepData> = {}): StepData {
 }
 
 describe("SequenceContentHasher", () => {
-  const hasher = new SequenceContentHasher();
-
   it("produces a deterministic 64-character hex hash (SHA-256)", async () => {
     const sequence = createSequenceData({
       name: "TEST",
@@ -64,8 +62,8 @@ describe("SequenceContentHasher", () => {
       steps: [makeStep()],
     });
 
-    const hash1 = await hasher.computeHash(sequence);
-    const hash2 = await hasher.computeHash(sequence);
+    const hash1 = await computeHash(sequence);
+    const hash2 = await computeHash(sequence);
 
     expect(hash1).toBe(hash2);
     expect(hash1).toMatch(/^[0-9a-f]{64}$/);
@@ -103,8 +101,8 @@ describe("SequenceContentHasher", () => {
     const seq1 = createSequenceData({ word: "A", steps: [step1Turn] });
     const seq2 = createSequenceData({ word: "A", steps: [step2Turns] });
 
-    const hash1 = await hasher.computeHash(seq1);
-    const hash2 = await hasher.computeHash(seq2);
+    const hash1 = await computeHash(seq1);
+    const hash2 = await computeHash(seq2);
 
     expect(hash1).not.toBe(hash2);
   });
@@ -130,8 +128,8 @@ describe("SequenceContentHasher", () => {
       notes: undefined,
     });
 
-    const hashA = await hasher.computeHash(seqA);
-    const hashB = await hasher.computeHash(seqB);
+    const hashA = await computeHash(seqA);
+    const hashB = await computeHash(seqB);
 
     expect(hashA).toBe(hashB);
   });
@@ -169,8 +167,8 @@ describe("SequenceContentHasher", () => {
     const seqAB = createSequenceData({ word: "AB", steps: [stepA, stepB] });
     const seqBA = createSequenceData({ word: "AB", steps: [stepB, stepA] });
 
-    const hashAB = await hasher.computeHash(seqAB);
-    const hashBA = await hasher.computeHash(seqBA);
+    const hashAB = await computeHash(seqAB);
+    const hashBA = await computeHash(seqBA);
 
     expect(hashAB).not.toBe(hashBA);
   });
@@ -203,8 +201,8 @@ describe("SequenceContentHasher", () => {
       steps: [boxStep],
     });
 
-    const hashDiamond = await hasher.computeHash(seqDiamond);
-    const hashBox = await hasher.computeHash(seqBox);
+    const hashDiamond = await computeHash(seqDiamond);
+    const hashBox = await computeHash(seqBox);
 
     expect(hashDiamond).not.toBe(hashBox);
   });

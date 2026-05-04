@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ImagePatternLoader } from "$lib/features/poi/services/implementations/ImagePatternLoader";
+import { fromImageData, fromDiscImage, fromStripImage } from "$lib/features/poi/services/image-pattern-loader";
 import { getPixel } from "$lib/features/poi/domain/StripPattern";
 
 // Polyfill ImageData for Node environment
@@ -23,8 +23,6 @@ if (typeof globalThis.ImageData === "undefined") {
 }
 
 describe("ImagePatternLoader", () => {
-  const loader = new ImagePatternLoader();
-
   describe("disc mode (default)", () => {
     it("uses polar sampling — frameCount based on circumference", () => {
       const size = 10;
@@ -34,7 +32,7 @@ describe("ImagePatternLoader", () => {
         data[i * 4 + 3] = 255;
       }
       const imageData = new ImageData(data, size, size);
-      const pattern = loader.fromImageData(imageData, 8);
+      const pattern = fromImageData(imageData, 8);
 
       expect(pattern.ledCount).toBe(8);
       expect(pattern.frameCount).toBeGreaterThanOrEqual(180);
@@ -49,7 +47,7 @@ describe("ImagePatternLoader", () => {
         data[i * 4 + 3] = 255;
       }
       const imageData = new ImageData(data, size, size);
-      const pattern = loader.fromDiscImage(imageData, 10);
+      const pattern = fromDiscImage(imageData, 10);
 
       const midLed = Math.floor(pattern.ledCount / 2);
       expect(pattern.frames[0]!.colors[midLed * 3 + 1]).toBeGreaterThan(150);
@@ -64,7 +62,7 @@ describe("ImagePatternLoader", () => {
         0, 0, 0, 255,       255, 255, 0, 255,
       ]);
       const imageData = new ImageData(data, 2, 3);
-      const pattern = loader.fromStripImage(imageData, 3);
+      const pattern = fromStripImage(imageData, 3);
 
       expect(pattern.ledCount).toBe(3);
       expect(pattern.frameCount).toBe(2);

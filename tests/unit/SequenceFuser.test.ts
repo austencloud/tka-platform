@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { SequenceFuser } from "$lib/features/fuse/services/implementations/SequenceFuser";
+import { fuseSequences } from "$lib/features/fuse/services/sequence-fuser";
 import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 import {
 	GridLocation,
@@ -43,13 +43,11 @@ function makeHandPath(length: number): HandPathData {
 }
 
 describe("SequenceFuser", () => {
-	const fuser = new SequenceFuser();
-
 	it("fuses two equal-length hand paths into correct length", () => {
 		const blue = makeHandPath(8);
 		const red = makeHandPath(8);
 
-		const result = fuser.fuse(blue, red);
+		const result = fuseSequences(blue, red);
 
 		// LCM(8, 8) = 8, so output should be 8 beats
 		expect(result.stepPairings).toBeDefined();
@@ -65,7 +63,7 @@ describe("SequenceFuser", () => {
 		const blue = makeHandPath(3);
 		const red = makeHandPath(4);
 
-		const result = fuser.fuse(blue, red);
+		const result = fuseSequences(blue, red);
 
 		// LCM(3, 4) = 12, which is under the default 64-beat cap
 		expect(result.stepPairings!.length).toBe(12);
@@ -79,7 +77,7 @@ describe("SequenceFuser", () => {
 		const red = makeHandPath(41);
 
 		// LCM(37, 41) = 1517, way over 64. Should truncate to min(37, 41) = 37.
-		const result = fuser.fuse(blue, red);
+		const result = fuseSequences(blue, red);
 
 		expect(result.stepPairings!.length).toBe(37);
 		expect(result.sequenceLength).toBe(37);
@@ -90,7 +88,7 @@ describe("SequenceFuser", () => {
 		const red = makeHandPath(7);
 
 		// LCM(5, 7) = 35. With maxSteps=10, should truncate to min(5, 7) = 5.
-		const result = fuser.fuse(blue, red, { maxSteps: 10 });
+		const result = fuseSequences(blue, red, { maxSteps: 10 });
 
 		expect(result.stepPairings!.length).toBe(5);
 		expect(result.sequenceLength).toBe(5);
@@ -100,7 +98,7 @@ describe("SequenceFuser", () => {
 		const blue = makeHandPath(4);
 		const red = makeHandPath(4);
 
-		const result = fuser.fuse(blue, red);
+		const result = fuseSequences(blue, red);
 
 		expect(result.id).toBeDefined();
 		expect(typeof result.id).toBe("string");

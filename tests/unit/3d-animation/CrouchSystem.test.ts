@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { AnimationStateMachine } from "$lib/shared/3d/services/implementations/AnimationStateMachine";
-import { LocomotionState } from "$lib/shared/3d/services/contracts/IAnimationStateMachine";
+import { AnimationStateMachine, LocomotionState } from "$lib/shared/3d/services/implementations/AnimationStateMachine";
 
 describe("AnimationStateMachine crouch transitions", () => {
   function createInput(overrides: Record<string, unknown> = {}) {

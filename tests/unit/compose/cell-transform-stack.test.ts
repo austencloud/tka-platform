@@ -7,10 +7,25 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { CellTransformStack } from "$lib/features/compose/tabs/arrange/services/implementations/CellTransformStack";
-import type { ArrangeLayerTransformer } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeLayerTransformer";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
+
+vi.mock("$lib/features/compose/tabs/arrange/services/arrange-layer-transformer", () => ({
+  applyTransform: vi.fn(async (seq: SequenceData, type: string) => ({
+    success: true,
+    transformed: { ...seq, name: `${seq.name}+${type}` } as SequenceData,
+  })),
+}));
+
+import {
+  computeEffective,
+  push,
+  pop,
+  clear,
+} from "$lib/features/compose/tabs/arrange/services/cell-transform-stack";
+import { applyTransform } from "$lib/features/compose/tabs/arrange/services/arrange-layer-transformer";
+
+const mockedApplyTransform = vi.mocked(applyTransform);
 
 function makeSequence(name: string): SequenceData {
   return {
@@ -22,45 +37,32 @@ function makeSequence(name: string): SequenceData {
   } as unknown as SequenceData;
 }
 
-function makeMockTransformer(): ArrangeLayerTransformer {
-  return {
-    applyTransform: vi.fn(async (seq: SequenceData, type: string) => ({
-      success: true,
-      transformed: { ...seq, name: `${seq.name}+${type}` } as SequenceData,
-    })),
-  };
-}
-
 describe("CellTransformStack", () => {
   describe("computeEffective", () => {
     it("returns original sequence when stack is empty", async () => {
-      const transformer = makeMockTransformer();
-      const stack = new CellTransformStack(transformer);
       const original = makeSequence("ABC");
 
-      const result = await stack.computeEffective(original, []);
+      const result = await computeEffective(original, []);
 
       expect(result).toBe(original);
-      expect(transformer.applyTransform).not.toHaveBeenCalled();
+      expect(mockedApplyTransform).not.toHaveBeenCalled();
     });
 
     it("replays a single transform", async () => {
-      const transformer = makeMockTransformer();
-      const stack = new CellTransformStack(transformer);
+      mockedApplyTransform.mockClear();
       const original = makeSequence("ABC");
       const transforms: AppliedTransform[] = [
         { type: "rotate90", hand: "both", timestamp: 1 },
       ];
 
-      const result = await stack.computeEffective(original, transforms);
+      const result = await computeEffective(original, transforms);
 
       expect(result.name).toBe("ABC+rotate90");
-      expect(transformer.applyTransform).toHaveBeenCalledTimes(1);
+      expect(mockedApplyTransform).toHaveBeenCalledTimes(1);
     });
 
     it("replays transforms in order", async () => {
-      const transformer = makeMockTransformer();
-      const stack = new CellTransformStack(transformer);
+      mockedApplyTransform.mockClear();
       const original = makeSequence("ABC");
       const transforms: AppliedTransform[] = [
         { type: "rotate90", hand: "both", timestamp: 1 },
@@ -68,28 +70,27 @@ describe("CellTransformStack", () => {
         { type: "swapColors", hand: "both", timestamp: 3 },
       ];
 
-      const result = await stack.computeEffective(original, transforms);
+      const result = await computeEffective(original, transforms);
 
       // Each transform appends "+type" to the name, so the final name
       // shows the full chain: ABC -> ABC+rotate90 -> ABC+rotate90+mirror -> ...
       expect(result.name).toBe("ABC+rotate90+mirror+swapColors");
-      expect(transformer.applyTransform).toHaveBeenCalledTimes(3);
+      expect(mockedApplyTransform).toHaveBeenCalledTimes(3);
     });
 
     it("skips failed transforms and continues with the last good state", async () => {
-      const transformer: ArrangeLayerTransformer = {
-        applyTransform: vi.fn()
-          .mockResolvedValueOnce({
-            success: true,
-            transformed: { ...makeSequence("ABC"), name: "ABC+rotate90" },
-          })
-          .mockResolvedValueOnce({ success: false, error: "failed" })
-          .mockResolvedValueOnce({
-            success: true,
-            transformed: { ...makeSequence("ABC"), name: "ABC+rotate90+swapColors" },
-          }),
-      };
-      const stack = new CellTransformStack(transformer);
+      mockedApplyTransform
+        .mockClear()
+        .mockResolvedValueOnce({
+          success: true,
+          transformed: { ...makeSequence("ABC"), name: "ABC+rotate90" },
+        })
+        .mockResolvedValueOnce({ success: false, error: "failed" } as any)
+        .mockResolvedValueOnce({
+          success: true,
+          transformed: { ...makeSequence("ABC"), name: "ABC+rotate90+swapColors" },
+        });
+
       const original = makeSequence("ABC");
       const transforms: AppliedTransform[] = [
         { type: "rotate90", hand: "both", timestamp: 1 },
@@ -97,7 +98,7 @@ describe("CellTransformStack", () => {
         { type: "swapColors", hand: "both", timestamp: 3 },
       ];
 
-      const result = await stack.computeEffective(original, transforms);
+      const result = await computeEffective(original, transforms);
 
       // Mirror failed, so swapColors was applied to the rotate90 result
       expect(result.name).toBe("ABC+rotate90+swapColors");
@@ -106,8 +107,7 @@ describe("CellTransformStack", () => {
 
   describe("push", () => {
     it("adds a transform to an empty stack", () => {
-      const stack = new CellTransformStack(makeMockTransformer());
-      const result = stack.push([], "rotate90", "both");
+      const result = push([], "rotate90", "both");
 
       expect(result).toHaveLength(1);
       expect(result[0]!.type).toBe("rotate90");
@@ -116,11 +116,10 @@ describe("CellTransformStack", () => {
     });
 
     it("appends to existing stack without mutating it", () => {
-      const stack = new CellTransformStack(makeMockTransformer());
       const existing: AppliedTransform[] = [
         { type: "mirror", hand: "both", timestamp: 1 },
       ];
-      const result = stack.push(existing, "rotate90", "left");
+      const result = push(existing, "rotate90", "left");
 
       expect(result).toHaveLength(2);
       expect(existing).toHaveLength(1); // original not mutated
@@ -131,12 +130,11 @@ describe("CellTransformStack", () => {
 
   describe("pop", () => {
     it("removes the last transform", () => {
-      const stack = new CellTransformStack(makeMockTransformer());
       const existing: AppliedTransform[] = [
         { type: "mirror", hand: "both", timestamp: 1 },
         { type: "rotate90", hand: "both", timestamp: 2 },
       ];
-      const result = stack.pop(existing);
+      const result = pop(existing);
 
       expect(result).toHaveLength(1);
       expect(result[0]!.type).toBe("mirror");
@@ -144,18 +142,16 @@ describe("CellTransformStack", () => {
     });
 
     it("returns empty array when popping from single-item stack", () => {
-      const stack = new CellTransformStack(makeMockTransformer());
       const existing: AppliedTransform[] = [
         { type: "mirror", hand: "both", timestamp: 1 },
       ];
-      const result = stack.pop(existing);
+      const result = pop(existing);
 
       expect(result).toHaveLength(0);
     });
 
     it("returns empty array when popping from empty stack", () => {
-      const stack = new CellTransformStack(makeMockTransformer());
-      const result = stack.pop([]);
+      const result = pop([]);
 
       expect(result).toHaveLength(0);
     });
@@ -163,8 +159,7 @@ describe("CellTransformStack", () => {
 
   describe("clear", () => {
     it("returns an empty array", () => {
-      const stack = new CellTransformStack(makeMockTransformer());
-      const result = stack.clear();
+      const result = clear();
 
       expect(result).toEqual([]);
     });

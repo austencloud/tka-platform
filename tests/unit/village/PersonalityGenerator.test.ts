@@ -1,11 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { PersonalityGenerator } from "$lib/features/village/services/implementations/PersonalityGenerator";
+import { generatePersonality } from "$lib/features/village/services/personality-generator";
 
 describe("PersonalityGenerator", () => {
-	const generator = new PersonalityGenerator();
-
 	it("generates all five traits", () => {
-		const personality = generator.generate(0.5, 0.15);
+		const personality = generatePersonality(0.5, 0.15);
 		expect(personality).toHaveProperty("learnSpeed");
 		expect(personality).toHaveProperty("sociability");
 		expect(personality).toHaveProperty("creativity");
@@ -15,7 +13,7 @@ describe("PersonalityGenerator", () => {
 
 	it("clamps all traits between 0 and 1", () => {
 		for (let i = 0; i < 100; i++) {
-			const personality = generator.generate(0.5, 0.5);
+			const personality = generatePersonality(0.5, 0.5);
 			for (const value of Object.values(personality)) {
 				expect(value).toBeGreaterThanOrEqual(0);
 				expect(value).toBeLessThanOrEqual(1);
@@ -24,7 +22,7 @@ describe("PersonalityGenerator", () => {
 	});
 
 	it("produces varied traits (not all identical)", () => {
-		const personality = generator.generate(0.5, 0.15);
+		const personality = generatePersonality(0.5, 0.15);
 		const values = Object.values(personality);
 		const allSame = values.every((v) => v === values[0]);
 		expect(allSame).toBe(false);
@@ -35,8 +33,8 @@ describe("PersonalityGenerator", () => {
 		let lowSum = 0;
 		const runs = 200;
 		for (let i = 0; i < runs; i++) {
-			const high = generator.generate(0.8, 0.1);
-			const low = generator.generate(0.2, 0.1);
+			const high = generatePersonality(0.8, 0.1);
+			const low = generatePersonality(0.2, 0.1);
 			highSum += Object.values(high).reduce((a, b) => a + b, 0);
 			lowSum += Object.values(low).reduce((a, b) => a + b, 0);
 		}

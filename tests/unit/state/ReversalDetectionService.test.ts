@@ -5,18 +5,13 @@
  * If broken: Wrong symbols shown, incorrect exports, impossible to debug.
  */
 
-import { describe, expect, it, beforeEach } from "vitest";
-import { ReversalDetector } from "../../../src/lib/features/create/shared/services/implementations/ReversalDetector";
+import { describe, expect, it } from "vitest";
+import { processReversals, detectReversal } from "../../../src/lib/features/create/shared/services/reversal-detector";
 import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "../../../src/lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "../../../src/lib/shared/foundation/domain/models/SequenceData";
 
 describe("ReversalDetector", () => {
-  let service: ReversalDetector;
-
-  beforeEach(() => {
-    service = new ReversalDetector();
-  });
 
   const createBeat = (
     num: number,
@@ -59,13 +54,13 @@ describe("ReversalDetector", () => {
 
   describe("processReversals", () => {
     it("should handle empty sequence", () => {
-      const result = service.processReversals(createSeq([]));
+      const result = processReversals(createSeq([]));
       expect(result.steps).toHaveLength(0);
     });
 
     it("should have no reversal on first beat", () => {
       const beat = createBeat(1, "cw", "ccw");
-      const result = service.processReversals(createSeq([beat]));
+      const result = processReversals(createSeq([beat]));
 
       expect(result.steps[0]!.blueReversal).toBe(false);
       expect(result.steps[0]!.redReversal).toBe(false);
@@ -73,7 +68,7 @@ describe("ReversalDetector", () => {
 
     it("should detect NO reversal when same direction", () => {
       const beats = [createBeat(1, "cw", "cw"), createBeat(2, "cw", "cw")];
-      const result = service.processReversals(createSeq(beats));
+      const result = processReversals(createSeq(beats));
 
       expect(result.steps[1]!.blueReversal).toBe(false);
       expect(result.steps[1]!.redReversal).toBe(false);
@@ -84,7 +79,7 @@ describe("ReversalDetector", () => {
         createBeat(1, "cw", "ccw"),
         createBeat(2, "ccw", "cw"), // Both reverse!
       ];
-      const result = service.processReversals(createSeq(beats));
+      const result = processReversals(createSeq(beats));
 
       expect(result.steps[1]!.blueReversal).toBe(true); // cw → ccw
       expect(result.steps[1]!.redReversal).toBe(true); // ccw → cw
@@ -96,7 +91,7 @@ describe("ReversalDetector", () => {
         createBeat(2, null, null, true), // Blank
         createBeat(3, "ccw", "ccw"),
       ];
-      const result = service.processReversals(createSeq(beats));
+      const result = processReversals(createSeq(beats));
 
       // Beat 3 should reverse based on beat 1 (blank ignored)
       expect(result.steps[2]!.blueReversal).toBe(true);
@@ -108,7 +103,7 @@ describe("ReversalDetector", () => {
         createBeat(1, "cw", "cw"),
         createBeat(2, "cw", "ccw"), // Only red reverses
       ];
-      const result = service.processReversals(createSeq(beats));
+      const result = processReversals(createSeq(beats));
 
       expect(result.steps[1]!.blueReversal).toBe(false); // Blue stays cw
       expect(result.steps[1]!.redReversal).toBe(true); // Red reverses
@@ -120,7 +115,7 @@ describe("ReversalDetector", () => {
         createBeat(2, "ccw", "ccw"), // Reversal
         createBeat(3, "cw", "cw"), // Reversal again
       ];
-      const result = service.processReversals(createSeq(beats));
+      const result = processReversals(createSeq(beats));
 
       expect(result.steps[1]!.blueReversal).toBe(true);
       expect(result.steps[2]!.blueReversal).toBe(true);
@@ -131,7 +126,7 @@ describe("ReversalDetector", () => {
         createBeat(1, "cw", "cw"),
         createBeat(2, "noRotation", "cw"),
       ];
-      const result = service.processReversals(createSeq(beats));
+      const result = processReversals(createSeq(beats));
 
       expect(result.steps[1]!.blueReversal).toBe(false);
       expect(result.steps[1]!.redReversal).toBe(false);
@@ -141,7 +136,7 @@ describe("ReversalDetector", () => {
   describe("detectReversal", () => {
     it("should return no reversal for blank beat", () => {
       const blank = createBeat(1, null, null, true);
-      const result = service.detectReversal([], blank);
+      const result = detectReversal([], blank);
 
       expect(result.blueReversal).toBe(false);
       expect(result.redReversal).toBe(false);
@@ -150,7 +145,7 @@ describe("ReversalDetector", () => {
     it("should detect reversal correctly", () => {
       const prev = createBeat(1, "cw", "ccw");
       const curr = createBeat(2, "ccw", "cw");
-      const result = service.detectReversal([prev], curr);
+      const result = detectReversal([prev], curr);
 
       expect(result.blueReversal).toBe(true);
       expect(result.redReversal).toBe(true);
@@ -163,7 +158,7 @@ describe("ReversalDetector", () => {
         createBeat(3, null, null, true),
       ];
       const curr = createBeat(4, "ccw", "ccw");
-      const result = service.detectReversal(prevSteps, curr);
+      const result = detectReversal(prevSteps, curr);
 
       expect(result.blueReversal).toBe(true);
       expect(result.redReversal).toBe(true);
@@ -173,7 +168,7 @@ describe("ReversalDetector", () => {
   describe("Edge Cases", () => {
     it("should handle missing motion data", () => {
       const beat = { ...createBeat(1), motions: {} };
-      const result = service.detectReversal([], beat);
+      const result = detectReversal([], beat);
 
       expect(result.blueReversal).toBe(false);
       expect(result.redReversal).toBe(false);
@@ -187,7 +182,7 @@ describe("ReversalDetector", () => {
       }
 
       const start = performance.now();
-      const result = service.processReversals(createSeq(beats));
+      const result = processReversals(createSeq(beats));
       const duration = performance.now() - start;
 
       expect(result.steps).toHaveLength(64);

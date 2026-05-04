@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { StepDeriver } from "$lib/shared/foundation/services/implementations/StepDeriver";
+import { deriveSteps, deriveStartPosition } from "$lib/shared/foundation/services/step-deriver";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   Orientation,
@@ -73,7 +73,6 @@ function makePairing(overrides: Partial<StepPairingData> = {}): StepPairingData 
 }
 
 describe("StepDeriver", () => {
-  const deriver = new StepDeriver();
 
   describe("deriveSteps — basic structure", () => {
     it("returns one StepData per pairing", () => {
@@ -84,7 +83,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redStep, redStep]);
       const pairings = [makePairing(), makePairing({ letter: Letter.B })];
 
-      const steps = deriver.deriveSteps(blue, red, pairings);
+      const steps = deriveSteps(blue, red, pairings);
 
       expect(steps).toHaveLength(2);
     });
@@ -97,7 +96,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redStep, redStep, redStep]);
       const pairings = [makePairing(), makePairing(), makePairing()];
 
-      const steps = deriver.deriveSteps(blue, red, pairings);
+      const steps = deriveSteps(blue, red, pairings);
 
       expect(steps[0]!.stepNumber).toBe(1);
       expect(steps[1]!.stepNumber).toBe(2);
@@ -118,7 +117,7 @@ describe("StepDeriver", () => {
         }),
       ];
 
-      const [step] = deriver.deriveSteps(blue, red, pairings);
+      const [step] = deriveSteps(blue, red, pairings);
 
       expect(step!.letter).toBe(Letter.C);
       expect(step!.startPosition).toBe(GridPosition.GAMMA1);
@@ -133,7 +132,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redStep]);
       const pairings = [makePairing({ blueReversal: true, redReversal: false })];
 
-      const [step] = deriver.deriveSteps(blue, red, pairings);
+      const [step] = deriveSteps(blue, red, pairings);
 
       expect(step!.blueReversal).toBe(true);
       expect(step!.redReversal).toBe(false);
@@ -146,7 +145,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.isBlank).toBe(false);
       expect(step!.isStep).toBe(true);
@@ -160,7 +159,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redStep, redStep]);
       const pairings = [makePairing(), makePairing()];
 
-      const steps = deriver.deriveSteps(blue, red, pairings);
+      const steps = deriveSteps(blue, red, pairings);
 
       expect(steps[0]!.id).not.toBe(steps[1]!.id);
     });
@@ -174,7 +173,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.duration).toBe(3);
     });
@@ -186,7 +185,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.duration).toBe(2);
     });
@@ -200,7 +199,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.motions.blue?.color).toBe(MotionColor.BLUE);
       expect(step!.motions.red?.color).toBe(MotionColor.RED);
@@ -213,7 +212,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.motions.blue?.startLocation).toBe(GridLocation.NORTH);
       expect(step!.motions.blue?.endLocation).toBe(GridLocation.EAST);
@@ -228,7 +227,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()], {
+      const [step] = deriveSteps(blue, red, [makePairing()], {
         bluePropType: PropType.FAN,
         redPropType: PropType.FAN,
         catDogMode: false,
@@ -245,7 +244,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.motions.blue?.propType).toBe(PropType.STAFF);
       expect(step!.motions.red?.propType).toBe(PropType.STAFF);
@@ -258,7 +257,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.motions.blue?.isVisible).toBe(true);
       expect(step!.motions.red?.isVisible).toBe(true);
@@ -274,7 +273,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.gridMode).toBe(GridMode.DIAMOND);
       expect(step!.motions.blue?.gridMode).toBe(GridMode.DIAMOND);
@@ -289,7 +288,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.gridMode).toBe(GridMode.BOX);
     });
@@ -302,7 +301,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.gridMode).toBe(GridMode.SKEWED);
     });
@@ -314,7 +313,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.gridMode).toBe(GridMode.CENTRIC);
     });
@@ -326,7 +325,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([blueStep]);
       const red = makeSoloProp([redStep]);
 
-      const [step] = deriver.deriveSteps(blue, red, [makePairing()]);
+      const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.motions.blue?.gridMode).toBe(step!.gridMode);
       expect(step!.motions.red?.gridMode).toBe(step!.gridMode);
@@ -342,7 +341,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redStep]);
       const pairings = [makePairing()];
 
-      expect(() => deriver.deriveSteps(blue, red, pairings)).toThrow();
+      expect(() => deriveSteps(blue, red, pairings)).toThrow();
     });
   });
 
@@ -351,7 +350,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([], GridLocation.NORTH, Orientation.IN);
       const red = makeSoloProp([], GridLocation.SOUTH, Orientation.OUT);
 
-      const startPos = deriver.deriveStartPosition(blue, red);
+      const startPos = deriveStartPosition(blue, red);
 
       expect(startPos.isStartPosition).toBe(true);
     });
@@ -360,7 +359,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([], GridLocation.NORTH, Orientation.IN);
       const red = makeSoloProp([], GridLocation.SOUTH, Orientation.OUT);
 
-      const startPos = deriver.deriveStartPosition(blue, red);
+      const startPos = deriveStartPosition(blue, red);
 
       expect(startPos.motions.blue?.motionType).toBe(MotionType.STATIC);
       expect(startPos.motions.red?.motionType).toBe(MotionType.STATIC);
@@ -370,7 +369,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([], GridLocation.EAST, Orientation.IN);
       const red = makeSoloProp([], GridLocation.WEST, Orientation.OUT);
 
-      const startPos = deriver.deriveStartPosition(blue, red);
+      const startPos = deriveStartPosition(blue, red);
 
       expect(startPos.motions.blue?.startLocation).toBe(GridLocation.EAST);
       expect(startPos.motions.blue?.endLocation).toBe(GridLocation.EAST);
@@ -382,7 +381,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([], GridLocation.NORTH, Orientation.CLOCK);
       const red = makeSoloProp([], GridLocation.SOUTH, Orientation.COUNTER);
 
-      const startPos = deriver.deriveStartPosition(blue, red);
+      const startPos = deriveStartPosition(blue, red);
 
       expect(startPos.motions.blue?.startOrientation).toBe(Orientation.CLOCK);
       expect(startPos.motions.red?.startOrientation).toBe(Orientation.COUNTER);
@@ -392,7 +391,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([], GridLocation.NORTH, Orientation.IN);
       const red = makeSoloProp([], GridLocation.SOUTH, Orientation.OUT);
 
-      const startPos = deriver.deriveStartPosition(blue, red);
+      const startPos = deriveStartPosition(blue, red);
 
       expect(startPos.gridMode).toBe(GridMode.DIAMOND);
     });
@@ -401,8 +400,8 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([], GridLocation.NORTH, Orientation.IN);
       const red = makeSoloProp([], GridLocation.SOUTH, Orientation.OUT);
 
-      const sp1 = deriver.deriveStartPosition(blue, red);
-      const sp2 = deriver.deriveStartPosition(blue, red);
+      const sp1 = deriveStartPosition(blue, red);
+      const sp2 = deriveStartPosition(blue, red);
 
       expect(sp1.id).not.toBe(sp2.id);
     });
@@ -411,7 +410,7 @@ describe("StepDeriver", () => {
       const blue = makeSoloProp([], GridLocation.NORTH, Orientation.IN);
       const red = makeSoloProp([], GridLocation.SOUTH, Orientation.OUT);
 
-      const startPos = deriver.deriveStartPosition(blue, red);
+      const startPos = deriveStartPosition(blue, red);
 
       expect(startPos.gridPosition).toBeNull();
     });
@@ -435,7 +434,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redAnti]);
       const pairings = [makePairing({ letter: Letter.I })];
 
-      const steps = deriver.deriveSteps(blue, red, pairings);
+      const steps = deriveSteps(blue, red, pairings);
 
       expect(steps[0]!.motions.blue.prefloatMotionType).toBe(MotionType.PRO);
     });
@@ -457,7 +456,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redAnti]);
       const pairings = [makePairing({ letter: Letter.I })];
 
-      const steps = deriver.deriveSteps(blue, red, pairings);
+      const steps = deriveSteps(blue, red, pairings);
 
       expect(steps[0]!.motions.blue.prefloatRotationDirection).toBe(
         RotationDirection.COUNTER_CLOCKWISE
@@ -481,7 +480,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redPro]);
       const pairings = [makePairing({ letter: Letter.I })];
 
-      const steps = deriver.deriveSteps(blue, red, pairings);
+      const steps = deriveSteps(blue, red, pairings);
 
       expect(steps[0]!.motions.blue.prefloatRotationDirection).toBe(
         RotationDirection.CLOCKWISE
@@ -496,7 +495,7 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redStep]);
       const pairings = [makePairing()];
 
-      const steps = deriver.deriveSteps(blue, red, pairings);
+      const steps = deriveSteps(blue, red, pairings);
 
       expect(steps[0]!.motions.blue.prefloatMotionType).toBeUndefined();
       expect(steps[0]!.motions.blue.prefloatRotationDirection).toBeUndefined();

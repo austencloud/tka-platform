@@ -17,9 +17,8 @@ import {
   planeAngleToWorldPosition,
   calculatePropQuaternion,
 } from "$lib/shared/3d/domain/constants/plane-transforms";
-import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
+import { mapOrientationToAngle } from "$lib/shared/3d/services/orientation-mapper";
 
-const orientationMapper = new OrientationMapper();
 
 function getTBarDirection(staffAngle: number, plane: Plane): Vector3 {
   const worldRot = calculatePropQuaternion(plane, staffAngle);
@@ -59,7 +58,7 @@ describe("3D Prop — X-negated positions, positive quaternion", () => {
 
     function checkOrientation(loc: GridLocation, ori: Orientation): number {
       const centerAngle = LOCATION_ANGLES[loc];
-      const staffAngle = orientationMapper.mapOrientationToAngle(ori, centerAngle);
+      const staffAngle = mapOrientationToAngle(ori, centerAngle);
       const pos = planeAngleToWorldPosition(Plane.WALL, centerAngle);
       const outward = pos.clone().normalize();
       const tBar = getTBarDirection(staffAngle, Plane.WALL);

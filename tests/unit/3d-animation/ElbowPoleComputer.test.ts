@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Vector3 } from "three";
-import { ElbowPoleComputer } from "$lib/shared/3d/services/implementations/ElbowPoleComputer";
+import { computePoleVector } from "$lib/shared/3d/services/elbow-pole-computer";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
 /**
@@ -31,26 +31,25 @@ function expectDominantComponent(v: Vector3, axis: "x" | "y" | "z") {
 }
 
 describe("ElbowPoleComputer", () => {
-  const computer = new ElbowPoleComputer();
   const bodyCenter = new Vector3(0, 1, 0);
 
   describe("all returned vectors are unit length", () => {
     it("wall plane", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(-0.3, 1.2, 0), Plane.WALL, "left", bodyCenter
       );
       expectNormalized(pole);
     });
 
     it("wheel plane", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0, 1.2, 0.3), Plane.WHEEL, "right", bodyCenter
       );
       expectNormalized(pole);
     });
 
     it("floor plane", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(-0.3, 1, 0.3), Plane.FLOOR, "left", bodyCenter
       );
       expectNormalized(pole);
@@ -60,7 +59,7 @@ describe("ElbowPoleComputer", () => {
   describe("wall plane", () => {
     it("left arm on its native side: pole is primarily forward (+Z)", () => {
       // Left arm at localX = -0.3 → native side, not cross-body
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(-0.3, 1.2, 0), Plane.WALL, "left", bodyCenter
       );
       expect(pole.z).toBeGreaterThan(0);
@@ -70,10 +69,10 @@ describe("ElbowPoleComputer", () => {
     it("left arm cross-body (hand at +X): extra forward Z push", () => {
       // Left arm's wrong side is +X. Cross-body should push pole more forward
       // than the native-side case.
-      const nativePole = computer.computePoleVector(
+      const nativePole = computePoleVector(
         new Vector3(-0.3, 1.2, 0), Plane.WALL, "left", bodyCenter
       );
-      const crossBodyPole = computer.computePoleVector(
+      const crossBodyPole = computePoleVector(
         new Vector3(0.3, 1.2, 0), Plane.WALL, "left", bodyCenter
       );
       expect(crossBodyPole.z).toBeGreaterThan(0.5);
@@ -83,7 +82,7 @@ describe("ElbowPoleComputer", () => {
     });
 
     it("right arm cross-body (hand at -X): extra forward Z push", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(-0.3, 1.2, 0), Plane.WALL, "right", bodyCenter
       );
       expect(pole.z).toBeGreaterThan(0.5);
@@ -92,7 +91,7 @@ describe("ElbowPoleComputer", () => {
 
     it("left arm at south: forward Z + outward (-X) bias", () => {
       // Low-pose outward bias for the left arm should push toward -X.
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0, 0.3, 0), Plane.WALL, "left", bodyCenter
       );
       expect(pole.z).toBeGreaterThan(0);
@@ -100,7 +99,7 @@ describe("ElbowPoleComputer", () => {
     });
 
     it("right arm at south: forward Z + outward (+X) bias", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0, 0.3, 0), Plane.WALL, "right", bodyCenter
       );
       expect(pole.z).toBeGreaterThan(0);
@@ -108,7 +107,7 @@ describe("ElbowPoleComputer", () => {
     });
 
     it("overhead position: pole shifts slightly downward", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0, 2.2, 0), Plane.WALL, "left", bodyCenter
       );
       expect(pole.z).toBeGreaterThan(0);
@@ -118,7 +117,7 @@ describe("ElbowPoleComputer", () => {
 
   describe("wheel plane", () => {
     it("left arm: pole is primarily lateral outward (-X)", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0, 1.2, 0.3), Plane.WHEEL, "left", bodyCenter
       );
       expect(pole.x).toBeLessThan(0);
@@ -126,7 +125,7 @@ describe("ElbowPoleComputer", () => {
     });
 
     it("right arm: pole is primarily lateral outward (+X)", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0, 1.2, 0.3), Plane.WHEEL, "right", bodyCenter
       );
       expect(pole.x).toBeGreaterThan(0);
@@ -135,10 +134,10 @@ describe("ElbowPoleComputer", () => {
 
     it("hand in front: adds upward Y bias", () => {
       // Hand far forward in Z — should increase Y component
-      const poleFar = computer.computePoleVector(
+      const poleFar = computePoleVector(
         new Vector3(0, 1.2, 0.5), Plane.WHEEL, "left", bodyCenter
       );
-      const poleNear = computer.computePoleVector(
+      const poleNear = computePoleVector(
         new Vector3(0, 1.2, 0.01), Plane.WHEEL, "left", bodyCenter
       );
       expect(poleFar.y).toBeGreaterThan(poleNear.y);
@@ -147,7 +146,7 @@ describe("ElbowPoleComputer", () => {
 
   describe("floor plane", () => {
     it("pole is primarily upward (+Y)", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0.3, 1, 0.3), Plane.FLOOR, "left", bodyCenter
       );
       expect(pole.y).toBeGreaterThan(0);
@@ -155,7 +154,7 @@ describe("ElbowPoleComputer", () => {
     });
 
     it("left arm near center: upward +Y plus outward -X bias", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0.02, 1, 0.02), Plane.FLOOR, "left", bodyCenter
       );
       expect(pole.y).toBeGreaterThan(0);
@@ -163,7 +162,7 @@ describe("ElbowPoleComputer", () => {
     });
 
     it("right arm near center: upward +Y plus outward +X bias", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0.02, 1, 0.02), Plane.FLOOR, "right", bodyCenter
       );
       expect(pole.y).toBeGreaterThan(0);
@@ -173,7 +172,7 @@ describe("ElbowPoleComputer", () => {
 
   describe("degenerate cases", () => {
     it("floor plane, hand directly above body: still returns valid vector", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(0, 2.5, 0), Plane.FLOOR, "left", bodyCenter
       );
       expectNormalized(pole);
@@ -181,7 +180,7 @@ describe("ElbowPoleComputer", () => {
     });
 
     it("wheel plane, hand directly to the side: still returns valid vector", () => {
-      const pole = computer.computePoleVector(
+      const pole = computePoleVector(
         new Vector3(-0.5, 1, 0), Plane.WHEEL, "left", bodyCenter
       );
       expectNormalized(pole);
@@ -190,10 +189,10 @@ describe("ElbowPoleComputer", () => {
 
   describe("mixed planes: each arm independent", () => {
     it("left on wall, right on wheel: different dominant axes", () => {
-      const leftPole = computer.computePoleVector(
+      const leftPole = computePoleVector(
         new Vector3(-0.3, 1.2, 0), Plane.WALL, "left", bodyCenter
       );
-      const rightPole = computer.computePoleVector(
+      const rightPole = computePoleVector(
         new Vector3(0, 1.2, 0.3), Plane.WHEEL, "right", bodyCenter
       );
       expectDominantComponent(leftPole, "z");
@@ -204,11 +203,11 @@ describe("ElbowPoleComputer", () => {
   describe("left/right symmetry", () => {
     it("mirroring the hand across the body mirrors the pole X", () => {
       // Right arm native-side sample
-      const rightPole = computer.computePoleVector(
+      const rightPole = computePoleVector(
         new Vector3(0.3, 1.2, 0), Plane.WALL, "right", bodyCenter
       );
       // Left arm mirrored
-      const leftPole = computer.computePoleVector(
+      const leftPole = computePoleVector(
         new Vector3(-0.3, 1.2, 0), Plane.WALL, "left", bodyCenter
       );
       expect(leftPole.z).toBeCloseTo(rightPole.z, 4);

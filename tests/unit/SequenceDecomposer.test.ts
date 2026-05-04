@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { SequenceDecomposer } from "$lib/shared/foundation/services/implementations/SequenceDecomposer";
-import { SoloPropFactory } from "$lib/shared/foundation/services/implementations/SoloPropFactory";
-import { HandPathFactory } from "$lib/shared/foundation/services/implementations/HandPathFactory";
-import { ContentHasher } from "$lib/shared/foundation/services/implementations/ContentHasher";
-import { StepDeriver } from "$lib/shared/foundation/services/implementations/StepDeriver";
+import { deriveSteps } from "$lib/shared/foundation/services/step-deriver";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
   GridLocation,
@@ -164,10 +161,7 @@ function createTestSequence() {
   });
 }
 
-const hasher = new ContentHasher();
-const handPathFactory = new HandPathFactory(hasher);
-const soloPropFactory = new SoloPropFactory(handPathFactory, hasher);
-const decomposer = new SequenceDecomposer(soloPropFactory);
+const decomposer = new SequenceDecomposer();
 
 describe("SequenceDecomposer — extractBlueSoloProp", () => {
   it("returns a SoloPropData with one step per sequence step", () => {
@@ -306,13 +300,12 @@ describe("SequenceDecomposer — extractStepPairings", () => {
 describe("SequenceDecomposer — round-trip", () => {
   it("decompose then deriveSteps produces domain-equivalent steps", () => {
     const original = createTestSequence();
-    const deriver = new StepDeriver();
 
     const blue = decomposer.extractBlueSoloProp(original);
     const red = decomposer.extractRedSoloProp(original);
     const pairings = decomposer.extractStepPairings(original);
 
-    const derived = deriver.deriveSteps(blue, red, pairings);
+    const derived = deriveSteps(blue, red, pairings);
 
     expect(derived).toHaveLength(original.steps.length);
 
@@ -362,12 +355,11 @@ describe("SequenceDecomposer — round-trip", () => {
     );
 
     const sequence = createSequenceData({ steps: [step1, step2], word: "AB" });
-    const deriver = new StepDeriver();
 
     const blue = decomposer.extractBlueSoloProp(sequence);
     const red = decomposer.extractRedSoloProp(sequence);
     const pairings = decomposer.extractStepPairings(sequence);
-    const derived = deriver.deriveSteps(blue, red, pairings);
+    const derived = deriveSteps(blue, red, pairings);
 
     expect(derived[0]?.duration).toBe(2);
     expect(derived[1]?.duration).toBe(4);
@@ -396,12 +388,11 @@ describe("SequenceDecomposer — round-trip", () => {
     );
 
     const sequence = createSequenceData({ steps: [step], word: "S" });
-    const deriver = new StepDeriver();
 
     const blue = decomposer.extractBlueSoloProp(sequence);
     const red = decomposer.extractRedSoloProp(sequence);
     const pairings = decomposer.extractStepPairings(sequence);
-    const derived = deriver.deriveSteps(blue, red, pairings);
+    const derived = deriveSteps(blue, red, pairings);
 
     expect(derived[0]?.motions.blue?.motionType).toBe(MotionType.STATIC);
     expect(derived[0]?.motions.blue?.turns).toBe(0);

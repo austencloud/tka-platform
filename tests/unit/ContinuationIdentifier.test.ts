@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { ContinuationIdentifier } from "$lib/features/create/construct/option-picker/services/implementations/ContinuationIdentifier";
+import { identifyContinuation } from "$lib/features/create/construct/option-picker/services/continuation-identifier";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -47,7 +47,6 @@ function makePictograph(
 }
 
 describe("ContinuationIdentifier", () => {
-  const identifier = new ContinuationIdentifier();
 
   describe("Type 1 continuation (both hands shift)", () => {
     it("picks the candidate that continues both shift directions", () => {
@@ -69,7 +68,7 @@ describe("ContinuationIdentifier", () => {
         { start: GridLocation.EAST, end: GridLocation.NORTH }
       );
 
-      const result = identifier.identifyContinuation(reference, [
+      const result = identifyContinuation(reference, [
         wrong,
         continuation,
       ]);
@@ -99,7 +98,7 @@ describe("ContinuationIdentifier", () => {
         }
       );
 
-      const result = identifier.identifyContinuation(reference, [
+      const result = identifyContinuation(reference, [
         oneMatch,
         bothMatch,
       ]);
@@ -139,7 +138,7 @@ describe("ContinuationIdentifier", () => {
         }
       );
 
-      const result = identifier.identifyContinuation(reference, [
+      const result = identifyContinuation(reference, [
         wrong,
         continuation,
       ]);
@@ -175,7 +174,7 @@ describe("ContinuationIdentifier", () => {
         }
       );
 
-      const result = identifier.identifyContinuation(reference, [candidate]);
+      const result = identifyContinuation(reference, [candidate]);
       expect(result).toBeNull();
     });
 
@@ -193,7 +192,7 @@ describe("ContinuationIdentifier", () => {
         }
       );
 
-      const result = identifier.identifyContinuation(reference, [
+      const result = identifyContinuation(reference, [
         makePictograph(
           { start: GridLocation.EAST, end: GridLocation.SOUTH },
           { start: GridLocation.WEST, end: GridLocation.NORTH }
@@ -210,7 +209,7 @@ describe("ContinuationIdentifier", () => {
         { start: GridLocation.SOUTH, end: GridLocation.WEST }
       );
 
-      const result = identifier.identifyContinuation(reference, []);
+      const result = identifyContinuation(reference, []);
       expect(result).toBeNull();
     });
 
@@ -226,7 +225,7 @@ describe("ContinuationIdentifier", () => {
         { start: GridLocation.WEST, end: GridLocation.NORTH }
       );
 
-      const result = identifier.identifyContinuation(reference, [candidate]);
+      const result = identifyContinuation(reference, [candidate]);
       expect(result).toBeNull();
     });
 
@@ -243,7 +242,7 @@ describe("ContinuationIdentifier", () => {
         { start: GridLocation.NORTHWEST, end: GridLocation.NORTHEAST }
       );
 
-      const result = identifier.identifyContinuation(reference, [
+      const result = identifyContinuation(reference, [
         continuation,
       ]);
       expect(result).toBe(continuation);
@@ -270,7 +269,7 @@ describe("ContinuationIdentifier", () => {
         }
       );
 
-      const result = identifier.identifyContinuation(reference, [wrongDir]);
+      const result = identifyContinuation(reference, [wrongDir]);
       expect(result).toBeNull();
     });
   });

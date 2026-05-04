@@ -24,13 +24,12 @@ vi.mock("$lib/shared/auth/firebase", () => ({
   getFirestoreInstance: vi.fn().mockResolvedValue({}),
 }));
 
-import { PropPreferencePersister } from "../../../src/lib/shared/community/services/implementations/PropPreferencePersister";
+import { savePropPreferences, removePropPreference } from "../../../src/lib/shared/community/services/prop-preference-persister";
 import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/PropType";
 import type { PropPreferences } from "../../../src/lib/shared/community/services/contracts/types";
 import { updateDoc, getDoc } from "firebase/firestore";
 
 describe("PropPreferencePersister", () => {
-  const persister = new PropPreferencePersister();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -45,7 +44,7 @@ describe("PropPreferencePersister", () => {
         favoriteCatdog: null,
       };
 
-      await expect(persister.save("user1", prefs)).rejects.toThrow(
+      await expect(savePropPreferences("user1", prefs)).rejects.toThrow(
         'favoriteProp "fan" must be in propsISpinWith'
       );
     });
@@ -60,7 +59,7 @@ describe("PropPreferencePersister", () => {
         },
       };
 
-      await expect(persister.save("user1", prefs)).rejects.toThrow(
+      await expect(savePropPreferences("user1", prefs)).rejects.toThrow(
         'catdog blue "fan" must be in propsISpinWith'
       );
     });
@@ -75,7 +74,7 @@ describe("PropPreferencePersister", () => {
         },
       };
 
-      await expect(persister.save("user1", prefs)).rejects.toThrow(
+      await expect(savePropPreferences("user1", prefs)).rejects.toThrow(
         'catdog red "staff" must be in propsISpinWith'
       );
     });
@@ -87,7 +86,7 @@ describe("PropPreferencePersister", () => {
         favoriteCatdog: null,
       };
 
-      await expect(persister.save("user1", prefs)).resolves.not.toThrow();
+      await expect(savePropPreferences("user1", prefs)).resolves.not.toThrow();
     });
 
     it("succeeds when both catdog props are in propsISpinWith", async () => {
@@ -100,7 +99,7 @@ describe("PropPreferencePersister", () => {
         },
       };
 
-      await expect(persister.save("user1", prefs)).resolves.not.toThrow();
+      await expect(savePropPreferences("user1", prefs)).resolves.not.toThrow();
     });
   });
 
@@ -123,7 +122,7 @@ describe("PropPreferencePersister", () => {
         favoriteCatdog: null,
       });
 
-      await persister.removeProp("user1", PropType.STAFF);
+      await removePropPreference("user1", PropType.STAFF);
 
       const savedPrefs = vi.mocked(updateDoc).mock.calls[0][1] as any;
       expect(savedPrefs.propsISpinWith).toEqual([PropType.FAN]);
@@ -140,7 +139,7 @@ describe("PropPreferencePersister", () => {
         },
       });
 
-      await persister.removeProp("user1", PropType.STAFF);
+      await removePropPreference("user1", PropType.STAFF);
 
       const savedPrefs = vi.mocked(updateDoc).mock.calls[0][1] as any;
       expect(savedPrefs.propsISpinWith).toEqual([PropType.FAN, PropType.CLUB]);
@@ -159,7 +158,7 @@ describe("PropPreferencePersister", () => {
         },
       });
 
-      await persister.removeProp("user1", PropType.FAN);
+      await removePropPreference("user1", PropType.FAN);
 
       const savedPrefs = vi.mocked(updateDoc).mock.calls[0][1] as any;
       expect(savedPrefs.favoriteCatdog).toBeNull();
@@ -172,7 +171,7 @@ describe("PropPreferencePersister", () => {
         favoriteCatdog: null,
       });
 
-      await persister.removeProp("user1", PropType.FAN);
+      await removePropPreference("user1", PropType.FAN);
 
       const savedPrefs = vi.mocked(updateDoc).mock.calls[0][1] as any;
       expect(savedPrefs.favoriteProp).toBe(PropType.STAFF);

@@ -36,10 +36,7 @@ describe("TextRenderer glyph methods", () => {
   let renderer: InstanceType<typeof TextRenderer>;
 
   beforeEach(async () => {
-    const { dimensionCalculator } = await import(
-      "$lib/shared/render/services/implementations/DimensionCalculator"
-    );
-    renderer = new TextRenderer(dimensionCalculator);
+    renderer = new TextRenderer();
     await renderer.preloadGlyphImages();
   });
 

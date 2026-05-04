@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
+import { computeHash } from "$lib/features/library/services/sequence-content-hasher";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
@@ -92,11 +92,10 @@ function makeSequence(overrides: Partial<Parameters<typeof createSequenceData>[0
 }
 
 describe("Fork detection scenarios", () => {
-  const hasher = new SequenceContentHasher();
 
   it("editing a turn value produces a different hash (triggers fork)", async () => {
     const original = makeSequence();
-    const originalHash = await hasher.computeHash(original);
+    const originalHash = await computeHash(original);
 
     const step1Edited = makeStep("step-1", {
       stepNumber: 1,
@@ -130,14 +129,14 @@ describe("Fork detection scenarios", () => {
       ...original,
       steps: [step1Edited, original.steps[1]!],
     });
-    const editedHash = await hasher.computeHash(edited);
+    const editedHash = await computeHash(edited);
 
     expect(editedHash).not.toBe(originalHash);
   });
 
   it("editing motion type produces a different hash (triggers fork)", async () => {
     const original = makeSequence();
-    const originalHash = await hasher.computeHash(original);
+    const originalHash = await computeHash(original);
 
     const step1Edited = makeStep("step-1", {
       stepNumber: 1,
@@ -171,7 +170,7 @@ describe("Fork detection scenarios", () => {
       ...original,
       steps: [step1Edited, original.steps[1]!],
     });
-    const editedHash = await hasher.computeHash(edited);
+    const editedHash = await computeHash(edited);
 
     expect(editedHash).not.toBe(originalHash);
   });
@@ -182,7 +181,7 @@ describe("Fork detection scenarios", () => {
       word: "A",
       steps: [makeStep("step-1", { stepNumber: 1 })],
     });
-    const oneStepHash = await hasher.computeHash(oneStep);
+    const oneStepHash = await computeHash(oneStep);
 
     const newStep = makeStep("step-2", {
       stepNumber: 2,
@@ -216,7 +215,7 @@ describe("Fork detection scenarios", () => {
       ...oneStep,
       steps: [...oneStep.steps, newStep],
     });
-    const twoStepHash = await hasher.computeHash(twoStep);
+    const twoStepHash = await computeHash(twoStep);
 
     expect(twoStepHash).not.toBe(oneStepHash);
   });
@@ -225,8 +224,8 @@ describe("Fork detection scenarios", () => {
     const original = makeSequence({ name: "My Sequence" });
     const renamed = createSequenceData({ ...original, name: "A Different Name" });
 
-    const originalHash = await hasher.computeHash(original);
-    const renamedHash = await hasher.computeHash(renamed);
+    const originalHash = await computeHash(original);
+    const renamedHash = await computeHash(renamed);
 
     expect(renamedHash).toBe(originalHash);
   });
@@ -235,8 +234,8 @@ describe("Fork detection scenarios", () => {
     const withNotes = makeSequence({ notes: "for the competition" });
     const withoutNotes = createSequenceData({ ...withNotes, notes: undefined });
 
-    const hashWith = await hasher.computeHash(withNotes);
-    const hashWithout = await hasher.computeHash(withoutNotes);
+    const hashWith = await computeHash(withNotes);
+    const hashWithout = await computeHash(withoutNotes);
 
     expect(hashWith).toBe(hashWithout);
   });
@@ -245,8 +244,8 @@ describe("Fork detection scenarios", () => {
     const withTags = makeSequence({ tags: ["favorite", "performance", "competition"] });
     const withDifferentTags = createSequenceData({ ...withTags, tags: [] });
 
-    const hashWithTags = await hasher.computeHash(withTags);
-    const hashWithDifferentTags = await hasher.computeHash(withDifferentTags);
+    const hashWithTags = await computeHash(withTags);
+    const hashWithDifferentTags = await computeHash(withDifferentTags);
 
     expect(hashWithTags).toBe(hashWithDifferentTags);
   });

@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { TurnManager } from "$lib/features/create/generate/shared/services/implementations/TurnManager";
+import { updateDashStaticRotationDirections } from "$lib/features/create/generate/shared/services/turn-manager";
 import { PropContinuity } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -69,7 +69,6 @@ function isSpinningRotation(rot: string | undefined): boolean {
 }
 
 describe("TurnManager.updateDashStaticRotationDirections", () => {
-  const manager = new TurnManager();
 
   // ──────────────────────────────────────────────────────────────────────
   // CONTINUOUS mode (smooth preset) — the failing case from the bug report
@@ -82,7 +81,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "cw", "");
+    updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "cw", "");
 
     expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
   });
@@ -94,7 +93,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "ccw", "");
+    updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "ccw", "");
 
     expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.COUNTER_CLOCKWISE);
   });
@@ -106,7 +105,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "", "");
+    updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "", "");
 
     // The critical invariant — no empty string, no "noRotation" on a spinning motion
     expect(isSpinningRotation(step.motions.blue!.rotationDirection)).toBe(true);
@@ -119,7 +118,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(
+    updateDashStaticRotationDirections(
       step,
       PropContinuity.CONTINUOUS,
       RotationDirection.NO_ROTATION,
@@ -140,7 +139,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
+    updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
 
     expect(isSpinningRotation(step.motions.blue!.rotationDirection)).toBe(true);
   });
@@ -152,7 +151,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       redRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
+    updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
 
     expect(isSpinningRotation(step.motions.red!.rotationDirection)).toBe(true);
   });
@@ -168,7 +167,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "cw", "cw");
+    updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "cw", "cw");
 
     expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.NO_ROTATION);
   });
@@ -180,7 +179,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.NO_ROTATION,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
+    updateDashStaticRotationDirections(step, PropContinuity.RANDOM, "", "");
 
     expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.NO_ROTATION);
   });
@@ -196,7 +195,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
       blueRot: RotationDirection.CLOCKWISE,
     });
 
-    manager.updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "ccw", "");
+    updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, "ccw", "");
 
     // Pro motions keep their CSV-assigned direction; they already have one
     expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
@@ -219,7 +218,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
     let prevBlueRot = "";
     let prevRedRot = "";
     for (const step of steps) {
-      manager.updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, prevBlueRot, prevRedRot);
+      updateDashStaticRotationDirections(step, PropContinuity.CONTINUOUS, prevBlueRot, prevRedRot);
       const blueRot = step.motions.blue!.rotationDirection;
       const redRot = step.motions.red!.rotationDirection;
       if (blueRot && blueRot !== RotationDirection.NO_ROTATION) prevBlueRot = blueRot;

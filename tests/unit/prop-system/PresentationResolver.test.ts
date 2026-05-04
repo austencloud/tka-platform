@@ -1,11 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { PresentationResolver } from "$lib/shared/sequence-viewer/services/implementations/PresentationResolver";
+import { resolvePresentation } from "$lib/shared/sequence-viewer/services/presentation-resolver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-function makeResolver() {
-  return new PresentationResolver();
-}
 
 function sequenceWithCreatorIntent() {
   return createSequenceData({
@@ -40,13 +37,12 @@ function bareSequence() {
 }
 
 describe("PresentationResolver", () => {
-  const resolver = makeResolver();
   const viewerBlue = PropType.STAFF;
   const viewerRed = PropType.STAFF;
 
   describe("creator-expression mode", () => {
     it("uses creatorIntent when present", () => {
-      const result = resolver.resolve(
+      const result = resolvePresentation(
         sequenceWithCreatorIntent(),
         "creator-expression",
         viewerBlue, viewerRed, false
@@ -58,7 +54,7 @@ describe("PresentationResolver", () => {
     });
 
     it("falls back to legacy intendedProp", () => {
-      const result = resolver.resolve(
+      const result = resolvePresentation(
         sequenceWithLegacyIntendedProp(),
         "creator-expression",
         viewerBlue, viewerRed, false
@@ -68,7 +64,7 @@ describe("PresentationResolver", () => {
     });
 
     it("falls back to viewer settings when no intent exists", () => {
-      const result = resolver.resolve(
+      const result = resolvePresentation(
         bareSequence(),
         "creator-expression",
         viewerBlue, viewerRed, false
@@ -80,7 +76,7 @@ describe("PresentationResolver", () => {
 
   describe("notation mode", () => {
     it("always uses viewer settings for props", () => {
-      const result = resolver.resolve(
+      const result = resolvePresentation(
         sequenceWithCreatorIntent(),
         "notation",
         viewerBlue, viewerRed, false
@@ -90,7 +86,7 @@ describe("PresentationResolver", () => {
     });
 
     it("still includes effort from creator intent", () => {
-      const result = resolver.resolve(
+      const result = resolvePresentation(
         sequenceWithCreatorIntent(),
         "notation",
         viewerBlue, viewerRed, false
@@ -106,7 +102,7 @@ describe("PresentationResolver", () => {
           transition: "hard",
         },
       });
-      const result = resolver.resolve(
+      const result = resolvePresentation(
         seq, "notation", viewerBlue, viewerRed, false
       );
       expect(result.effortTimeline?.phrases).toHaveLength(1);
