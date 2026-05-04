@@ -21,8 +21,21 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
-import type { CardPair } from "../services/contracts/types";
+  import type { CardPair } from "../services/contracts/types";
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
+  import {
+    resolveVtgFamilyId as resolveVtgFamily,
+    computeTkaDesignation as computeTkaLabel,
+    computeVtgDesignation as computeVtgLabel,
+    computeDeckLeftLabel as computeLeftLabel,
+  } from "../domain/deck-vtg-labels";
+  import {
+    createDeckInteriorState,
+    filterSequences as filterDeckSequences,
+    groupByStartPosition as groupSeqsByPosition,
+    groupByFamily as groupSeqsByFamily,
+    formatCount as fmtCount,
+  } from "../state/deck-interior-state.svelte";
 
   interface Props {
     decks: Deck[];
