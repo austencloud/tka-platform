@@ -1,0 +1,18 @@
+import { z } from "zod";
+import { firestoreDate } from "$lib/shared/firestore";
+
+export const UserLocationSchema = z
+  .object({
+    userId: z.string(),
+    city: z.string(),
+    country: z.string(),
+    cityCenterCoordinates: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }),
+    visibility: z.enum(["public", "private"]),
+    updatedAt: firestoreDate,
+  })
+  .passthrough();
+
+export type UserLocation = z.infer<typeof UserLocationSchema>;
