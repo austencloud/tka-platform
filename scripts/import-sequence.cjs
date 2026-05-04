@@ -30,6 +30,8 @@ let useStdin = false;
 let notes = null;
 let visibility = "private";
 let dryRun = false;
+let forceCircular = null;
+let forceLoopType = null;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--stdin") {
@@ -38,6 +40,10 @@ for (let i = 0; i < args.length; i++) {
     notes = args[++i];
   } else if (args[i] === "--visibility" && args[i + 1]) {
     visibility = args[++i];
+  } else if (args[i] === "--circular") {
+    forceCircular = true;
+  } else if (args[i] === "--loop-type" && args[i + 1]) {
+    forceLoopType = args[++i];
   } else if (args[i] === "--dry-run") {
     dryRun = true;
   } else if (!args[i].startsWith("--")) {
@@ -46,7 +52,7 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (!jsonPath && !useStdin) {
-  console.error("Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--dry-run]");
+  console.error("Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--circular] [--loop-type mirrored_swapped] [--dry-run]");
   console.error("       echo '{...}' | node scripts/import-sequence.cjs --stdin");
   process.exit(1);
 }
@@ -273,7 +279,7 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
   const word = raw.word || "";
   const name = word;
 
-  // Use LOOP detector's circularity check (more reliable), fall back to manual
+  // Use CLI override > LOOP detector > manual end-matches-start check
   const steps = raw.steps || [];
   const startPos = raw.startPosition || raw.startingPosition;
   const startPosObject = buildStartPositionObject(startPos, steps, sequenceId);
@@ -286,7 +292,11 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
   const manualCircular = lastStep && startGridPos
     ? lastStep.endPosition === startGridPos
     : false;
-  const isCircular = loopInfo?.isCircular ?? manualCircular;
+  const isCircular = forceCircular != null
+    ? forceCircular
+    : loopInfo != null
+      ? loopInfo.isCircular
+      : manualCircular;
 
   // Determine starting position group (alpha, beta, gamma)
   let startingPositionGroup = null;
@@ -324,8 +334,10 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
     _version: 1,
   };
 
-  // Add LOOP type if detected
-  if (loopInfo?.loopType) {
+  // Add LOOP type — CLI override takes precedence over detector
+  if (forceLoopType) {
+    doc.loopType = forceLoopType;
+  } else if (loopInfo?.loopType) {
     doc.loopType = loopInfo.loopType;
   }
 
@@ -385,6 +397,8 @@ async function main() {
     console.log(`\n[DRY RUN] Would save as: users/${AUSTEN_UID}/sequences/${id}`);
     console.log(`Fields: ${Object.keys(data).join(", ")}`);
     console.log(`Visibility: ${data.visibility}`);
+    console.log(`isCircular: ${data.isCircular}`);
+    if (data.loopType) console.log(`loopType: ${data.loopType}`);
     if (data.notes) console.log(`Notes: ${data.notes}`);
     return;
   }
