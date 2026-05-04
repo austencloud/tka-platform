@@ -1,25 +1,25 @@
-import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { parseLoopComponents } from "../../../../features/create/generate/shared/services/implementations/loop-type-utils";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   RESERVED_ORIENTATION_PRIMITIVES,
   type LOOPComponent,
-} from "$lib/features/create/generate/shared/domain/models/generate-models";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
-import { createStartPositionFromBeatStart } from "../../../../features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 import { cellCacheKeyDeriver } from "../../../sequence-viewer/services/implementations/CellCacheKeyDeriver";
 import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/preview-cell-renderer";
-import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
+import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { CompositionProgressCallback } from "../contracts/types";
 import type { TextRenderer } from "./TextRenderer";
@@ -35,6 +35,9 @@ import {
   calculateHeaderHeight as sharedHeaderHeight,
   calculateFooterHeight as sharedFooterHeight,
 } from "@tka/render-composition";
+import { blobToImage, canvasToImage, imageToBlob } from "./ImageFormatConverter";
+import { drawSmartCellBorders, findEmptyCellForQR } from "./cell-border-renderer";
+import { composeCardImage as composeCardImageFn } from "./card-composer";
 
 const DECK_HEADER_RATIO = 0.133;
 const DECK_FOOTER_RATIO = 0.067;
@@ -378,7 +381,7 @@ export class ImageComposer {
     }
 
     if (options.visibilityOverrides?.showQRCode && this.qrCodeGenerator) {
-      const emptyCell = this.findEmptyCellForQR(columns, rows, sequence, options);
+      const emptyCell = findEmptyCellForQR(columns, rows, sequence, options);
       if (emptyCell) {
         await this.renderQRCode(
           ctx,
@@ -394,7 +397,7 @@ export class ImageComposer {
       }
     }
 
-    this.drawSmartCellBorders(
+    drawSmartCellBorders(
       ctx,
       columns,
       rows,
@@ -592,7 +595,7 @@ export class ImageComposer {
         if (cachedBlob) {
           this.layer1Hits++;
           this.compositionL1Hits++;
-          img = await this.blobToImage(cachedBlob);
+          img = await blobToImage(cachedBlob);
         } else {
           this.layer1Misses++;
           this.compositionFreshRenders++;
@@ -608,9 +611,9 @@ export class ImageComposer {
               redPropType: redPropType,
             }
           );
-          img = await this.canvasToImage(pictographCanvas);
+          img = await canvasToImage(pictographCanvas);
 
-          this.imageToBlob(img).then((blob) => {
+          imageToBlob(img).then((blob) => {
             this.blobCache.set(blobKey, blob).catch((err) => {
               console.warn("[ImageComposer] Failed to cache blob:", err);
             });
@@ -721,141 +724,6 @@ export class ImageComposer {
     this.layer2Misses = 0;
   }
 
-  private drawSmartCellBorders(
-    ctx: CanvasRenderingContext2D,
-    columns: number,
-    rows: number,
-    stepSize: number,
-    sequence: SequenceData,
-    options: Partial<SequenceExportOptions>,
-    titleOffset: number = 0,
-    isDarkMode: boolean = false,
-    horizontalOffset: number = 0
-  ): void {
-    ctx.strokeStyle = isDarkMode ? "rgba(255, 255, 255, 0.15)" : "#e0e0e0";
-    ctx.lineWidth = 1;
-
-    const occupiedCells = this.getOccupiedCells(sequence, options, columns);
-
-    const isOccupied = (col: number, row: number): boolean => {
-      return occupiedCells.has(`${col},${row}`);
-    };
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < columns - 1; col++) {
-        if (isOccupied(col, row) && isOccupied(col + 1, row)) {
-          const x = (col + 1) * stepSize + horizontalOffset;
-          ctx.beginPath();
-          ctx.moveTo(x, row * stepSize + titleOffset);
-          ctx.lineTo(x, (row + 1) * stepSize + titleOffset);
-          ctx.stroke();
-        }
-      }
-    }
-
-    for (let col = 0; col < columns; col++) {
-      for (let row = 0; row < rows - 1; row++) {
-        if (isOccupied(col, row) && isOccupied(col, row + 1)) {
-          const y = (row + 1) * stepSize + titleOffset;
-          ctx.beginPath();
-          ctx.moveTo(col * stepSize + horizontalOffset, y);
-          ctx.lineTo((col + 1) * stepSize + horizontalOffset, y);
-          ctx.stroke();
-        }
-      }
-    }
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < columns; col++) {
-        if (!isOccupied(col, row)) continue;
-
-        const x = col * stepSize + horizontalOffset;
-        const y = row * stepSize + titleOffset;
-
-        if (row === 0 || !isOccupied(col, row - 1)) {
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + stepSize, y);
-          ctx.stroke();
-        }
-
-        if (row === rows - 1 || !isOccupied(col, row + 1)) {
-          ctx.beginPath();
-          ctx.moveTo(x, y + stepSize);
-          ctx.lineTo(x + stepSize, y + stepSize);
-          ctx.stroke();
-        }
-
-        if (col === 0 || !isOccupied(col - 1, row)) {
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x, y + stepSize);
-          ctx.stroke();
-        }
-
-        if (col === columns - 1 || !isOccupied(col + 1, row)) {
-          ctx.beginPath();
-          ctx.moveTo(x + stepSize, y);
-          ctx.lineTo(x + stepSize, y + stepSize);
-          ctx.stroke();
-        }
-      }
-    }
-  }
-
-  private getOccupiedCells(
-    sequence: SequenceData,
-    options: Partial<SequenceExportOptions>,
-    columns: number
-  ): Set<string> {
-    const occupied = new Set<string>();
-
-    const hasStartPositionToRender =
-      options.includeStartPosition &&
-      (sequence.startPosition || (sequence.steps && sequence.steps.length > 0));
-    if (hasStartPositionToRender) {
-      occupied.add("0,0");
-    }
-
-    const layoutMode = options.startPositionLayout ?? "column";
-    const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
-    const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
-    const startColumn = useColumnMode ? 1 : 0;
-    const stepsPerRow = columns - startColumn;
-
-    for (let i = 0; i < (sequence.steps?.length || 0); i++) {
-      const col = startColumn + (i % stepsPerRow);
-      const row = startRow + Math.floor(i / stepsPerRow);
-      occupied.add(`${col},${row}`);
-    }
-
-    return occupied;
-  }
-
-  private findEmptyCellForQR(
-    columns: number,
-    rows: number,
-    sequence: SequenceData,
-    options: Partial<SequenceExportOptions>
-  ): { col: number; row: number } | null {
-    const layoutMode = options.startPositionLayout ?? "column";
-    const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
-
-    if (options.includeStartPosition && !useColumnMode) {
-      return { col: columns - 1, row: 0 };
-    }
-
-    const occupiedCells = this.getOccupiedCells(sequence, options, columns);
-    for (let row = rows - 1; row >= 0; row--) {
-      for (let col = 0; col < columns; col++) {
-        if (!occupiedCells.has(`${col},${row}`)) {
-          return { col, row };
-        }
-      }
-    }
-
-    return null;
-  }
 
   private async renderQRCode(
     ctx: CanvasRenderingContext2D,
@@ -905,87 +773,6 @@ export class ImageComposer {
     }
   }
 
-  private async svgStringToImage(svgString: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("Failed to load SVG as image"));
-      const blob = new Blob([svgString], { type: "image/svg+xml" });
-      const url = URL.createObjectURL(blob);
-      img.src = url;
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(img);
-      };
-    });
-  }
-
-  private async canvasToImage(canvas: HTMLCanvasElement): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("Failed to convert canvas to image"));
-      const dataUrl = canvas.toDataURL("image/png");
-      img.src = dataUrl;
-      img.onload = () => {
-        resolve(img);
-      };
-    });
-  }
-
-  private async svgToImage(svgString: string, size: number): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.width = size;
-      img.height = size;
-      img.onerror = () => reject(new Error("Failed to load SVG as image"));
-      const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      img.src = url;
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(img);
-      };
-    });
-  }
-
-  private async blobToImage(blob: Blob): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("Failed to load blob as image"));
-      const url = URL.createObjectURL(blob);
-      img.src = url;
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(img);
-      };
-    });
-  }
-
-  private async imageToBlob(img: HTMLImageElement): Promise<Blob> {
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width || img.naturalWidth;
-    canvas.height = img.height || img.naturalHeight;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      throw new Error("Failed to get 2D context for blob conversion");
-    }
-
-    ctx.drawImage(img, 0, 0);
-
-    return new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Failed to convert canvas to blob"));
-          }
-        },
-        "image/png",
-        1.0
-      );
-    });
-  }
 
   async composeFromCanvases(): Promise<HTMLCanvasElement> {
     throw new Error("Not implemented in simple version");
@@ -1118,102 +905,13 @@ export class ImageComposer {
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal
   ): Promise<HTMLCanvasElement> {
-    const tightCanvas = await this.composeSequenceImage(
+    return composeCardImageFn(
       sequence,
       options,
+      (seq, opts, prog, sig) => this.composeSequenceImage(seq, opts, prog, sig),
       onProgress,
       signal
     );
-
-    const cardWidth = tightCanvas.width;
-    const cardHeight = Math.round(cardWidth * (7 / 5));
-
-    if (tightCanvas.height >= cardHeight) {
-      return tightCanvas;
-    }
-
-    const cardCanvas = document.createElement("canvas");
-    cardCanvas.width = cardWidth;
-    cardCanvas.height = cardHeight;
-    const ctx = cardCanvas.getContext("2d");
-    if (!ctx) throw new Error("Failed to get 2D context for card canvas");
-
-    const isDarkMode = options.visibilityOverrides?.darkMode ?? false;
-    ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
-    ctx.fillRect(0, 0, cardWidth, cardHeight);
-
-    const stepCount = sequence.steps?.length ?? 0;
-    const layout = calculateLayout(
-      stepCount,
-      options.includeStartPosition ?? false,
-      options.startPositionLayout ?? "column"
-    );
-    const [columns, rows] = layout;
-    const baseBeatSize = options.stepSize || 120;
-    const stepSize = Math.floor(baseBeatSize * (options.stepScale || 1));
-
-    const earlyLoopType = options.loopType ?? sequence.loopType;
-    const earlyShowLoopGlyph = options.showLoopGlyph !== false && !!earlyLoopType;
-    const rawWord = (sequence.steps ?? [])
-      .map((s: StepData) => s.letter ?? "")
-      .join("");
-    const showHeader =
-      (options.addWord && (rawWord || options.customName)) ||
-      options.addDifficultyLevel ||
-      earlyShowLoopGlyph;
-    const headerHeight = showHeader
-      ? this.calculateHeaderHeight(stepCount, stepSize, columns)
-      : 0;
-
-    const showCreatorName = options.showCreatorName ?? options.addUserInfo;
-    const showNotes = options.showNotes ?? options.addUserInfo;
-    const showBirthday = options.showBirthday ?? options.addUserInfo;
-    const hasFooter = showCreatorName || showNotes || showBirthday;
-    const footerHeight = hasFooter ? this.calculateFooterHeight(stepSize, columns) : 0;
-
-    const gridHeight = rows * stepSize;
-
-    const availableHeight = cardHeight - headerHeight - footerHeight;
-
-    const topPadding = Math.max(0, (availableHeight - gridHeight) / 2);
-
-    const tightGridEnd = Math.min(
-      headerHeight + gridHeight,
-      tightCanvas.height
-    );
-    const tightFooterStart = tightGridEnd;
-    const tightFooterEnd = Math.min(
-      tightFooterStart + footerHeight,
-      tightCanvas.height
-    );
-
-    if (headerHeight > 0) {
-      ctx.drawImage(
-        tightCanvas,
-        0, 0, cardWidth, headerHeight,
-        0, 0, cardWidth, headerHeight
-      );
-    }
-
-    const sourceGridHeight = tightGridEnd - headerHeight;
-    if (sourceGridHeight > 0) {
-      ctx.drawImage(
-        tightCanvas,
-        0, headerHeight, cardWidth, sourceGridHeight,
-        0, headerHeight + topPadding, cardWidth, sourceGridHeight
-      );
-    }
-
-    const sourceFooterHeight = tightFooterEnd - tightFooterStart;
-    if (footerHeight > 0 && sourceFooterHeight > 0) {
-      ctx.drawImage(
-        tightCanvas,
-        0, tightFooterStart, cardWidth, sourceFooterHeight,
-        0, cardHeight - footerHeight, cardWidth, footerHeight
-      );
-    }
-
-    return cardCanvas;
   }
 }
 
