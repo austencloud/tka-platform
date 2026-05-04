@@ -30,7 +30,7 @@ Provides quiz functionality for learning TKA notation:
   import { getQuizSessionManager } from "$lib/features/learn/quiz/getQuizSessionManager";
   import * as quizHistoryRecorderModule from "$lib/features/learn/services/quiz-history-recorder";
   import * as letterToConceptMapperModule from "$lib/features/learn/services/letter-to-concept-mapper";
-  import { getGapDetector } from "$lib/features/learn/getGapDetector";
+  import { analyzeErrors } from "$lib/features/learn/services/gap-detector";
 
   // Import learn components
 
@@ -44,7 +44,6 @@ Provides quiz functionality for learning TKA notation:
   const hapticService = getHapticFeedback();
   const quizHistoryRecorder = quizHistoryRecorderModule;
   const letterToConceptMapper = letterToConceptMapperModule;
-  const gapDetector = getGapDetector();
   const delightOrchestrator = getDelightOrchestrator();
 
   // Component refs
@@ -167,8 +166,8 @@ Provides quiz functionality for learning TKA notation:
 
       // Analyze wrong answers for misconception patterns
       const wrongAnswers = sessionAnswers.filter((a) => !a.isCorrect);
-      if (wrongAnswers.length > 0 && gapDetector) {
-        detectedGaps = gapDetector.analyzeErrors(wrongAnswers);
+      if (wrongAnswers.length > 0) {
+        detectedGaps = analyzeErrors(wrongAnswers);
       }
 
       currentView = "results";

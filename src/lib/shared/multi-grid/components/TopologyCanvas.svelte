@@ -24,7 +24,7 @@
   import type { TopologyPropRenderData } from "../services/contracts/types";
   import type { BetaOffset } from "../services/contracts/types";
   import type { GridLocation } from "$lib/shared/render/core/types";
-  import { TopologyRenderer } from "../services/implementations/TopologyRenderer";
+  import { computeTopologyViewBox, worldToSvg, gridCenterToSvg } from "../services/topology-renderer";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { HAND_POINT_LOCATIONS, PIXELS_PER_UNIT, SVG_CENTER } from "../domain/constants/GridModeOffsets";
@@ -72,8 +72,6 @@
     clickTargetsEnabled = false,
   }: Props = $props();
 
-  const renderer = new TopologyRenderer();
-
   // Grid SVG constants (matching the 950x950 canonical grid SVG)
   const GRID_CENTER = 475;
   const OUTER_POINT_RADIUS = 25;
@@ -83,7 +81,7 @@
   const CLICK_TARGET_RADIUS = 24;
 
   // Compute viewBox
-  const viewBoxData = $derived<ViewBoxData>(renderer.computeViewBox(topology));
+  const viewBoxData = $derived<ViewBoxData>(computeTopologyViewBox(topology));
 
   // Background and grid colors
   const backgroundColor = $derived(darkMode ? "#0a0a0f" : "#d8d8d2");
@@ -92,12 +90,12 @@
 
   // Grid translations in SVG space
   const gridTranslations = $derived(
-    topology.grids.map((grid) => renderer.gridCenterToSvg(grid)),
+    topology.grids.map((grid) => gridCenterToSvg(grid)),
   );
 
   // Junction positions in SVG space
   const junctionPositions = $derived(
-    topology.junctions.map((junction) => renderer.worldToSvg(junction.position)),
+    topology.junctions.map((junction) => worldToSvg(junction.position)),
   );
 
   // Convert GridMode string to enum for GridSvg component

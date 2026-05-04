@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
-import { getVtgFamilyAggregator } from "$lib/features/choreo-card/getVtgFamilyAggregator";
+import { aggregateFamilySequences } from "$lib/features/choreo-card/services/vtg-family-aggregator";
 
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -66,9 +66,7 @@ import type { CardPair } from "../services/contracts/types";
   $effect(() => {
     loading = true;
     error = null;
-    const aggregator = getVtgFamilyAggregator();
-    aggregator
-      .aggregateFamilySequences(familyId, decks)
+    aggregateFamilySequences(familyId, decks)
       .then((groups) => {
         ratioGroups = groups;
         loading = false;

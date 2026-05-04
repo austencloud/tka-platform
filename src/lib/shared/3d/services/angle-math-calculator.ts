@@ -7,6 +7,18 @@ import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pi
 const TWO_PI = Math.PI * 2;
 const PI = Math.PI;
 
+/**
+ * Structural interface for the old AngleMathCalculator class API.
+ * Used by implementation classes that accept it as a constructor parameter.
+ */
+export interface AngleMathCalculatorAPI {
+  normalizeAngle(angle: number): number;
+  normalizeAngleSigned(angle: number): number;
+  lerp(a: number, b: number, t: number): number;
+  lerpAngle(a: number, b: number, t: number): number;
+  lerpAngleDirectional(start: number, end: number, direction: RotationDirection, t: number): number;
+}
+
 /** Normalize angle to [0, 2π) */
 export function normalizeAngle(angle: number): number {
   let normalized = angle % TWO_PI;

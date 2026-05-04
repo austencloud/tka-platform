@@ -17,15 +17,12 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 import type { FeedbackItem, FeedbackStatus, StatusHistoryEntry, } from "../../domain/models/feedback-models";
 import { generateTitleFromDescription } from "../feedback-submission-service";
-import { feedbackQueryService } from "./FeedbackQuerier";
-import type { FeedbackQueryService } from "../implementations/FeedbackQuerier";
+import { getFeedback } from "../feedback-querier";
 
 const COLLECTION_NAME = "feedback";
 
 export class FeedbackStatusService {
-  constructor(
-    private readonly queryService: FeedbackQueryService = feedbackQueryService
-  ) {}
+  constructor() {}
 
   async updateStatus(
     feedbackId: string,
@@ -34,7 +31,7 @@ export class FeedbackStatusService {
     const firestore = await getFirestoreInstance();
     const docRef = doc(firestore, COLLECTION_NAME, feedbackId);
 
-    const feedback = await this.queryService.getFeedback(feedbackId);
+    const feedback = await getFeedback(feedbackId);
     if (!feedback) {
       throw new Error("Feedback not found");
     }
@@ -148,7 +145,7 @@ export class FeedbackStatusService {
       throw new Error("User must be authenticated to update feedback");
     }
 
-    const feedback = await this.queryService.getFeedback(feedbackId);
+    const feedback = await getFeedback(feedbackId);
     if (!feedback) {
       throw new Error("Feedback not found");
     }
@@ -215,7 +212,7 @@ export class FeedbackStatusService {
       throw new Error("User must be authenticated to delete feedback");
     }
 
-    const feedback = await this.queryService.getFeedback(feedbackId);
+    const feedback = await getFeedback(feedbackId);
     if (!feedback) {
       throw new Error("Feedback not found");
     }

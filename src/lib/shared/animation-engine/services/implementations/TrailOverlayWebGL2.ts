@@ -24,7 +24,7 @@ import type {
 import type { TrailPoint } from "../../domain/types/TrailTypes";
 import { TrackingMode } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
-import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import { calculatePropCenter } from "$lib/shared/animation-engine/services/prop-position-calculator";
 import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
@@ -84,7 +84,6 @@ function hexToRgb(hex: string): [number, number, number] {
 export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private canvas: HTMLCanvasElement | null = null;
   private backend: RenderBackend | null = null;
-  private propPositionCalculator = new PropPositionCalculator();
   private width = 0;
   private height = 0;
 
@@ -524,7 +523,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
           ? 1
           : 0;
 
-    const center = this.propPositionCalculator.calculateCenter(prop, {
+    const center = calculatePropCenter(prop, {
       canvasSize,
       propDimensions: { width: 252.8, height: 77.8 },
     });

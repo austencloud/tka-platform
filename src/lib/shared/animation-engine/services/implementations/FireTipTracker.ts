@@ -11,8 +11,10 @@
 import type { PropState } from "../../domain/PropState";
 import type { PropTipData, RenderedPropTransform } from "../../domain/types/FireTypes";
 import { getTipPoints, type TipPoint } from "../../domain/types/PropTipPoints";
-import { PropPositionCalculator } from "./PropPositionCalculator";
-import type { PropEndpointConfig } from "./PropPositionCalculator";
+import {
+  calculatePropCenter,
+  type PropEndpointConfig,
+} from "../prop-position-calculator";
 
 export interface FireTipTrackerConfig {
   canvasSize: number;
@@ -67,7 +69,6 @@ function createStoredTip(): StoredTip {
 const VIEWBOX_SIZE = 950;
 
 export class FireTipTracker {
-	private positionCalculator = new PropPositionCalculator();
 
 	/**
 	 * Previous frame positions. Fixed-size pool, indexed by a stable key
@@ -214,7 +215,7 @@ export class FireTipTracker {
 				canvasSize,
 				propDimensions,
 			};
-			const center = this.positionCalculator.calculateCenter(prop, endpointConfig);
+			const center = calculatePropCenter(prop, endpointConfig);
 			centerX = center.x;
 			centerY = center.y;
 			gridScaleFactor = canvasSize / VIEWBOX_SIZE;

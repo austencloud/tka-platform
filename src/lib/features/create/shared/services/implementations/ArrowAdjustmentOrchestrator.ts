@@ -8,7 +8,7 @@
  */
 
 import { Point } from "fabric";
-import type { KeyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
+import { calculateAdjustment } from "../keyboard-arrow-adjuster";
 import type { ScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
 import type { ArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
 import type { ArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
@@ -101,7 +101,6 @@ export class ArrowAdjustmentOrchestrator {
   }
 
   constructor(
-    private keyboardAdjuster: KeyboardArrowAdjuster,
     private screenSpaceTransformer: ScreenSpaceAdjustmentTransformer,
     private arrowAdjustmentCalculator: ArrowAdjustmentCalculator,
     private arrowLocationCalculator: ArrowLocationCalculator,
@@ -186,7 +185,7 @@ export class ArrowAdjustmentOrchestrator {
     const arrowColor = color as MotionColor;
 
     // Calculate WASD direction (screen space - what user wants to see)
-    const screenSpaceAdjustment = this.keyboardAdjuster.calculateAdjustment(key, increment);
+    const screenSpaceAdjustment = calculateAdjustment(key, increment);
 
     // Calculate the arrow location properly
     // The motionData.arrowLocation often defaults to NORTH when not explicitly set,
@@ -369,7 +368,6 @@ export class ArrowAdjustmentOrchestrator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { keyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
 import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
 import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
@@ -377,7 +375,6 @@ import { pictographPreparer } from "$lib/shared/pictograph/shared/services/imple
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 
 export const arrowAdjustmentOrchestrator = new ArrowAdjustmentOrchestrator(
-  keyboardArrowAdjuster,
   screenSpaceAdjustmentTransformer,
   arrowAdjustmentCalculator,
   arrowLocationCalculator,

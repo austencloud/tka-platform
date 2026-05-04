@@ -12,7 +12,7 @@
   import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
   import * as quizHistoryRecorderModule from "$lib/features/learn/services/quiz-history-recorder";
   import * as conceptRecommenderModule from "$lib/features/learn/services/concept-recommender";
-  import { getGapDetector } from "$lib/features/learn/getGapDetector";
+  import { getRecurringMisconceptions } from "$lib/features/learn/services/gap-detector";
   import { Chat, type UIMessage } from "@ai-sdk/svelte";
   import { DefaultChatTransport } from "ai";
   import { browser } from "$app/environment";
@@ -24,7 +24,6 @@
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
-  import type { GapDetector } from "../learn/services/implementations/GapDetector";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import * as tikaSessionRepository from "./services/tika-session-repository";
   import { ConversationMemoryRetriever } from "./services/implementations/ConversationMemoryRetriever";
@@ -109,9 +108,6 @@
   const progressTracker: ConceptProgressTracker | null = browser
     ? (getConceptProgressTracker() as ConceptProgressTracker) ?? null
     : null;
-  const gapDetector: GapDetector | null = browser
-    ? getGapDetector() ?? null
-    : null;
 
   // Interaction tracker for quiz persistence and topic tracking
   const interactionTracker = browser ? new TikaInteractionTracker() : null;
@@ -175,9 +171,8 @@
         };
 
         // Load active misconceptions and inject into mastery context
-        if (gapDetector && userId) {
-          gapDetector
-            .getRecurringMisconceptions(userId)
+        if (userId) {
+          getRecurringMisconceptions(userId)
             .then((patterns) => {
               if (patterns.length > 0 && masteryContext) {
                 masteryContext = {

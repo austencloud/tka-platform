@@ -15,8 +15,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
-import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import {
+  calculatePropEndpoints,
+  type PropEndpointConfig,
+} from "$lib/shared/animation-engine/services/prop-position-calculator";
 
 /**
  * A single point in a trail
@@ -62,8 +64,6 @@ export interface TrailGenerationConfig {
   redPropDimensions: { width: number; height: number };
 }
 
-// Module-scoped calculator instance (stateless, safe to share)
-const propPositionCalculator = new PropPositionCalculator();
 
 /**
  * Generate complete trail data for a sequence
@@ -141,8 +141,8 @@ export function generateTrailsForSequence(
     const redState = orchestrator.getRedPropState();
 
     // Calculate endpoints using shared calculator
-    const blueEnds = propPositionCalculator.calculateEndpoints(blueState, blueEndpointConfig);
-    const redEnds = propPositionCalculator.calculateEndpoints(redState, redEndpointConfig);
+    const blueEnds = calculatePropEndpoints(blueState, blueEndpointConfig);
+    const redEnds = calculatePropEndpoints(redState, redEndpointConfig);
 
     // Add points to trails
     blueLeft.push({

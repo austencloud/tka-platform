@@ -24,10 +24,7 @@ import type {
 
 // Import focused services
 import * as feedbackSubmissionModule from "../feedback-submission-service";
-import {
-  feedbackQueryService,
-  type FeedbackQueryService,
-} from "./FeedbackQuerier";
+import * as feedbackQuerierModule from "../feedback-querier";
 import {
   feedbackStatusService,
   type FeedbackStatusService,
@@ -36,17 +33,12 @@ import {
   feedbackTesterWorkflowService,
   type FeedbackTesterWorkflowService,
 } from "./FeedbackTesterWorkflow";
-import {
-  feedbackSubscriptionService,
-  type FeedbackSubscriptionService,
-} from "./FeedbackSubscriber";
+import * as feedbackSubscriberModule from "../feedback-subscriber";
 
 export class FeedbackService {
   constructor(
-    private readonly queryService: FeedbackQueryService = feedbackQueryService,
     private readonly statusService: FeedbackStatusService = feedbackStatusService,
     private readonly testerWorkflowService: FeedbackTesterWorkflowService = feedbackTesterWorkflowService,
-    private readonly subscriptionService: FeedbackSubscriptionService = feedbackSubscriptionService
   ) {}
 
   // ============================================================
@@ -84,7 +76,7 @@ export class FeedbackService {
     lastDocId: string | null;
     hasMore: boolean;
   }> {
-    return this.queryService.loadFeedback(filters, pageSize, lastDocId);
+    return feedbackQuerierModule.loadFeedback(filters, pageSize, lastDocId);
   }
 
   async loadUserFeedback(
@@ -96,11 +88,11 @@ export class FeedbackService {
     lastDocId: string | null;
     hasMore: boolean;
   }> {
-    return this.queryService.loadUserFeedback(userId, pageSize, lastDocId);
+    return feedbackQuerierModule.loadUserFeedback(userId, pageSize, lastDocId);
   }
 
   async getFeedback(feedbackId: string): Promise<FeedbackItem | null> {
-    return this.queryService.getFeedback(feedbackId);
+    return feedbackQuerierModule.getFeedback(feedbackId);
   }
 
   // ============================================================
@@ -198,7 +190,7 @@ export class FeedbackService {
     onUpdate: (items: FeedbackItem[]) => void,
     onError?: (error: Error) => void
   ): Unsubscribe {
-    return this.subscriptionService.subscribeToFeedback(onUpdate, onError);
+    return feedbackSubscriberModule.subscribeToFeedback(onUpdate, onError);
   }
 
   subscribeToUserFeedback(
@@ -206,11 +198,7 @@ export class FeedbackService {
     onUpdate: (items: FeedbackItem[]) => void,
     onError?: (error: Error) => void
   ): Unsubscribe {
-    return this.subscriptionService.subscribeToUserFeedback(
-      userId,
-      onUpdate,
-      onError
-    );
+    return feedbackSubscriberModule.subscribeToUserFeedback(userId, onUpdate, onError);
   }
 }
 

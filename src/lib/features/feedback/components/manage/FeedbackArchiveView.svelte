@@ -2,7 +2,7 @@
 <script lang="ts">
   import type { VersionState } from "../../state/version-state.svelte";
   import type { FeedbackItem } from "../../domain/models/feedback-models";
-  import { feedbackQueryService } from "../../services/implementations/FeedbackQuerier";
+  import { getFeedback } from "../../services/feedback-querier";
   import { archiveLoader } from "../../services/implementations/ArchiveLoader";
   import type { AppVersion } from "../../domain/models/version-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -88,7 +88,7 @@
     isDetailOpen = true;
 
     try {
-      const item = await feedbackQueryService.getFeedback(feedbackId);
+      const item = await getFeedback(feedbackId);
       selectedItem = item;
     } catch (e) {
       console.error("Failed to load feedback item:", e);

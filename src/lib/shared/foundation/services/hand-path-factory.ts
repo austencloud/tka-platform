@@ -1,5 +1,5 @@
 import { hashHandPath } from "$lib/shared/foundation/services/content-hasher";
-import type { HandPathData } from "../../domain/models/HandPathData";
+import type { HandPathData } from "../domain/models/HandPathData";
 import {
   GridLocation,
   GridMode,
@@ -63,38 +63,35 @@ function deduplicateLocations(
   return result;
 }
 
-export class HandPathFactory {
-
-  create(
-    locations: readonly GridLocation[],
-    metadata?: { name?: string; author?: string; notes?: string }
-  ): HandPathData {
-    if (locations.length === 0) {
-      throw new Error("HandPathFactory: locations must not be empty");
-    }
-
-    const startLocation = locations[0] as GridLocation;
-    const endLocation = locations[locations.length - 1] as GridLocation;
-    const length = locations.length - 1;
-    const bigrams = buildBigrams(locations);
-    const uniqueLocations = deduplicateLocations(locations);
-    const impliedGridMode = deriveGridMode(locations);
-    const isClosed = startLocation === endLocation;
-    const contentHash = hashHandPath(locations);
-    const id = crypto.randomUUID();
-
-    return {
-      id,
-      locations,
-      contentHash,
-      startLocation,
-      endLocation,
-      length,
-      bigrams,
-      uniqueLocations,
-      impliedGridMode,
-      isClosed,
-      ...metadata,
-    };
+export function createHandPath(
+  locations: readonly GridLocation[],
+  metadata?: { name?: string; author?: string; notes?: string }
+): HandPathData {
+  if (locations.length === 0) {
+    throw new Error("createHandPath: locations must not be empty");
   }
+
+  const startLocation = locations[0] as GridLocation;
+  const endLocation = locations[locations.length - 1] as GridLocation;
+  const length = locations.length - 1;
+  const bigrams = buildBigrams(locations);
+  const uniqueLocations = deduplicateLocations(locations);
+  const impliedGridMode = deriveGridMode(locations);
+  const isClosed = startLocation === endLocation;
+  const contentHash = hashHandPath(locations);
+  const id = crypto.randomUUID();
+
+  return {
+    id,
+    locations,
+    contentHash,
+    startLocation,
+    endLocation,
+    length,
+    bigrams,
+    uniqueLocations,
+    impliedGridMode,
+    isClosed,
+    ...metadata,
+  };
 }

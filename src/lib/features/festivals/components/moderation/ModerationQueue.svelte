@@ -1,13 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getFestivalSubmissionReviewer } from "../../getFestivalSubmissionReviewer";
+  import { getPending, approve, reject } from "../../services/festival-submission-reviewer";
   import { getFestivalContext } from "../../context/festival-context";
   import type { FestivalSubmission } from "../../domain/models/festival";
 
   // Destructure as festivalState to avoid conflict with Svelte 5 $state rune
   const { state: festivalState } = getFestivalContext();
-
-  const submissionReviewer = getFestivalSubmissionReviewer();
 
   let pending = $state<FestivalSubmission[]>([]);
   let isLoading = $state(true);
@@ -23,7 +21,7 @@
     isLoading = true;
     loadError = "";
     try {
-      pending = await submissionReviewer.getPending();
+      pending = await getPending();
     } catch (err) {
       loadError = err instanceof Error ? err.message : "Failed to load submissions.";
     } finally {
@@ -35,7 +33,7 @@
     actingOn = { ...actingOn, [id]: true };
     actionErrors = { ...actionErrors, [id]: "" };
     try {
-      await submissionReviewer.approve(id);
+      await approve(id);
       pending = pending.filter((s) => s.id !== id);
     } catch (err) {
       actionErrors = {
@@ -51,7 +49,7 @@
     actingOn = { ...actingOn, [id]: true };
     actionErrors = { ...actionErrors, [id]: "" };
     try {
-      await submissionReviewer.reject(id);
+      await reject(id);
       pending = pending.filter((s) => s.id !== id);
     } catch (err) {
       actionErrors = {

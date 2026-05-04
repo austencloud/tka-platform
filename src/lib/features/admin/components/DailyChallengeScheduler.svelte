@@ -5,7 +5,11 @@
    */
 
   import { onMount } from "svelte";
-  import type { AdminChallengeManager } from '../services/implementations/AdminChallengeManager';
+  import {
+    getScheduledChallenges,
+    createChallenge,
+    deleteChallenge,
+  } from "../services/admin-challenge-manager";
   import type {
     ChallengeScheduleEntry,
     ChallengeFormData,
@@ -17,12 +21,6 @@
   import AdminModal from "$lib/shared/admin/components/AdminModal.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-
-  interface Props {
-    adminChallengeService: AdminChallengeManager;
-  }
-
-  let { adminChallengeService }: Props = $props();
 
   // State
   let isLoading = $state(true);
@@ -142,10 +140,7 @@
       endDate.setMonth(endDate.getMonth() + 2);
       endDate.setDate(0);
 
-      const entries = await adminChallengeService.getScheduledChallenges(
-        startDate,
-        endDate
-      );
+      const entries = await getScheduledChallenges(startDate, endDate);
       scheduleEntries = entries;
     } catch (error) {
       console.error("Failed to load scheduler data:", error);
@@ -200,7 +195,7 @@
         },
       };
 
-      await adminChallengeService.createChallenge(formData);
+      await createChallenge(formData);
       toast.success(t("admin_challenge_scheduled"));
       await loadData();
       handleClosePanel();
@@ -219,7 +214,7 @@
     if (!pendingDeleteId) return;
 
     try {
-      await adminChallengeService.deleteChallenge(pendingDeleteId);
+      await deleteChallenge(pendingDeleteId);
       toast.success(t("admin_challenge_deleted"));
       await loadData();
     } catch (error) {

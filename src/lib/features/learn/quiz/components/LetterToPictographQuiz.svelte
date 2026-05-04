@@ -4,7 +4,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { getGapDetector } from "$lib/features/learn/getGapDetector";
+  import { detectSingleError } from "$lib/features/learn/services/gap-detector";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onDestroy, onMount } from "svelte";
   import * as QuestionGenerator from "../services/question-generator";
@@ -18,7 +18,6 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import QuizPictographButton from "./shared/QuizPictographButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
   import MisconceptionHint from "./shared/MisconceptionHint.svelte";
-  import type { GapDetector } from "../../services/implementations/GapDetector";
 import type { DetectedGap } from "../../services/contracts/types";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
@@ -28,7 +27,6 @@ import type { DetectedGap } from "../../services/contracts/types";
   }>();
 
   let hapticService: HapticFeedback;
-  let gapDetector: GapDetector;
 
   let hapticTimer: ReturnType<typeof setTimeout> | null = null;
   let nextQuestionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -60,7 +58,6 @@ import type { DetectedGap } from "../../services/contracts/types";
 
   onMount(async () => {
     hapticService = getHapticFeedback();
-    gapDetector = getGapDetector();
     await loadQuestion();
   });
 
@@ -88,10 +85,10 @@ import type { DetectedGap } from "../../services/contracts/types";
 
     // Detect misconception gap on wrong answers
     currentGap = null;
-    if (!isCorrect && questionData && gapDetector) {
+    if (!isCorrect && questionData) {
       const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
-      const gap = gapDetector.detectSingleError({
+      const gap = detectSingleError({
         isCorrect: false,
         questionData,
         selectedOptionId: optionId,

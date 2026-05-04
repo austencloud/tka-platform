@@ -12,8 +12,10 @@
 
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
-import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import {
+  calculatePropEndpoints,
+  type PropEndpointConfig,
+} from "$lib/shared/animation-engine/services/prop-position-calculator";
 
 // ============================================================================
 // PATH CACHE CONSTANTS
@@ -116,8 +118,6 @@ export const DEFAULT_PATH_CACHE_CONFIG: PathCacheConfig = {
 export class AnimationPathCache {
   private cacheData: AnimationPathCacheData | null = null;
   private config: PathCacheConfig;
-  // Shared calculator for prop endpoint positions
-  private readonly propPositionCalculator = new PropPositionCalculator();
 
   constructor(config: Partial<PathCacheConfig> = {}) {
     this.config = { ...DEFAULT_PATH_CACHE_CONFIG, ...config };
@@ -179,8 +179,8 @@ export class AnimationPathCache {
 
         const { blueProp, redProp } = calculateStateFunc(playbackPosition);
 
-        const blueEndpoints = this.propPositionCalculator.calculateEndpoints(blueProp, endpointConfig);
-        const redEndpoints = this.propPositionCalculator.calculateEndpoints(redProp, endpointConfig);
+        const blueEndpoints = calculatePropEndpoints(blueProp, endpointConfig);
+        const redEndpoints = calculatePropEndpoints(redProp, endpointConfig);
 
         bluePositions[frame] = {
           beat: playbackPosition,

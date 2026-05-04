@@ -17,15 +17,12 @@ import type { FeedbackItem, AdminResponse, TesterConfirmation, TesterConfirmatio
 import { FeedbackItemSchema } from "../../domain/models/feedback-schemas";
 import type { FeedbackNotification } from "../../domain/models/notification-models";
 import * as notificationTriggerService from "$lib/features/feedback/services/notification-trigger-service";
-import { feedbackQueryService } from "./FeedbackQuerier";
-import type { FeedbackQueryService } from "../implementations/FeedbackQuerier";
+import { getFeedback } from "../feedback-querier";
 
 const COLLECTION_NAME = "feedback";
 
 export class FeedbackTesterWorkflowService {
-  constructor(
-    private readonly queryService: FeedbackQueryService = feedbackQueryService
-  ) {}
+  constructor() {}
 
   async sendAdminResponse(
     feedbackId: string,
@@ -38,7 +35,7 @@ export class FeedbackTesterWorkflowService {
       throw new Error("User must be authenticated");
     }
 
-    const feedback = await this.queryService.getFeedback(feedbackId);
+    const feedback = await getFeedback(feedbackId);
     if (!feedback) {
       throw new Error("Feedback not found");
     }
@@ -119,7 +116,7 @@ export class FeedbackTesterWorkflowService {
     message?: string
   ): Promise<void> {
     const firestore = await getFirestoreInstance();
-    const feedback = await this.queryService.getFeedback(feedbackId);
+    const feedback = await getFeedback(feedbackId);
     if (!feedback) return;
 
     await this.createNotification(

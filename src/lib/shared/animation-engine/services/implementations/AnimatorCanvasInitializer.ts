@@ -5,7 +5,7 @@
  */
 
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import { loadAnimationRenderer } from "./AnimatorLoader";
+import { loadAnimationRenderer } from "../animator-loader";
 import { DEFAULT_CANVAS_SIZE } from "./CanvasResizer.svelte";
 import type {
   IAnimatorCanvasInitializer,

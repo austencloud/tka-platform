@@ -27,7 +27,7 @@ import { TrackingMode } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
 import { Canvas2DTrailRenderer } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DTrailRenderer";
 import { Canvas2DVisibilityFadeManager } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
-import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import { calculatePropCenter } from "$lib/shared/animation-engine/services/prop-position-calculator";
 import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
@@ -60,7 +60,6 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     | OffscreenCanvasRenderingContext2D
     | null = null;
   private trailRenderer = new Canvas2DTrailRenderer();
-  private propPositionCalculator = new PropPositionCalculator();
   private width = 0;
   private height = 0;
 
@@ -596,7 +595,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       ? trailConfig.right.index
       : (pts.length >= 2 ? 1 : 0);
 
-    const center = this.propPositionCalculator.calculateCenter(
+    const center = calculatePropCenter(
       prop,
       { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }
     );

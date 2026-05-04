@@ -49,6 +49,15 @@ export interface Scene3DPersistedState {
 
 const STORAGE_KEY = "tka-3d-animator-state";
 
+/**
+ * Structural interface matching the old class API consumed by AvatarCustomizer.
+ * Satisfiable by passing `{ saveState: saveScene3DState, loadState: loadScene3DState }`.
+ */
+export interface Scene3DPersisterAPI {
+  saveState(state: Partial<Scene3DPersistedState>): void;
+  loadState(): Partial<Scene3DPersistedState>;
+}
+
 /** Save state to localStorage (merges with existing) */
 export function saveScene3DState(state: Partial<Scene3DPersistedState>): void {
   try {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getStickerLabContext } from "../context/sticker-lab-context";
-  import { StickerUnitRenderer } from "../services/implementations/StickerUnitRenderer";
+  import { renderStickerUnitSVG } from "../services/sticker-unit-renderer";
   import {
     getPrimitivePaths,
     loadPrimitivePaths,
@@ -11,7 +11,6 @@
   } from "../domain/sticker-constants";
 
   const stickerState = getStickerLabContext();
-  const renderer = new StickerUnitRenderer();
 
   let showCutLines = $state(true);
   let showBleed = $state(false);
@@ -82,7 +81,7 @@
         <div class="slot">
           {#if paths}
             <!-- Inline SVG rendering. The SVG already includes its own bleed padding. -->
-            {@html renderer.renderSVG(sticker, paths)}
+            {@html renderStickerUnitSVG(sticker, paths)}
           {:else}
             <div class="missing">No paths for {sticker.primitiveRef.displayName ?? sticker.primitiveRef.shapeHash.slice(0, 8)}</div>
           {/if}

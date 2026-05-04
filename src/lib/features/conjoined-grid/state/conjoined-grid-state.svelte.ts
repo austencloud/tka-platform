@@ -19,7 +19,7 @@ import type { ConjoinedGridMode, PropPlacement, JunctionOverlap } from "../domai
 import { TOPOLOGY_PRESETS, type TopologyPreset } from "$lib/shared/multi-grid/domain/constants/TopologyPresets";
 import { detectOverlaps } from "../services/junction-overlap-detector";
 import { mapToTopology } from "../services/pictograph-topology-mapper";
-import { TopologyPositionEnumerator } from "$lib/shared/multi-grid/services/implementations/TopologyPositionEnumerator";
+import { enumeratePositionPairs } from "$lib/shared/multi-grid/services/topology-position-enumerator";
 
 // ---------------------------------------------------------------------------
 // Dependency contract - only the methods we actually call
@@ -39,8 +39,6 @@ export interface ConjoinedGridDeps {
 // ---------------------------------------------------------------------------
 
 export function createConjoinedGridState(deps: ConjoinedGridDeps) {
-  // Pure domain services - no DI needed, deterministic and stateless
-  const enumerator = new TopologyPositionEnumerator();
 
   // =========================================================================
   // Topology
@@ -163,7 +161,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps) {
   let manualRedRef = $state<PointRef | null>(null);
 
   // All (blue, red) position pair combinations for the current topology
-  const allPairs: PositionPair[] = $derived(enumerator.enumeratePositionPairs(topology));
+  const allPairs: PositionPair[] = $derived(enumeratePositionPairs(topology));
 
   function play(): void {
     if (allPairs.length === 0) return;

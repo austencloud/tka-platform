@@ -6,16 +6,14 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { PoiConstraintValidator } from "./PoiConstraintValidator";
+import { validateMotion, validateTransition } from "../poi-constraint-validator";
 import type {
   PoiValidationResult,
   PoiConstraintViolation,
 } from "../../domain/poi-models";
 
 export class PoiSequenceValidator {
-  constructor(
-    private readonly constraintValidator: PoiConstraintValidator
-  ) {}
+  constructor() {}
 
   validateSequence(sequence: readonly PictographData[]): PoiValidationResult {
     const violations: PoiConstraintViolation[] = [];
@@ -29,7 +27,7 @@ export class PoiSequenceValidator {
 
       // Validate blue motion if it's poi
       if (blueMotion?.propType === PropType.POI) {
-        const blueResult = this.constraintValidator.validateMotion(blueMotion);
+        const blueResult = validateMotion(blueMotion);
         violations.push(...blueResult.violations);
 
         // Check transition from previous beat
@@ -37,7 +35,7 @@ export class PoiSequenceValidator {
           const prevPictograph = sequence[i - 1];
           const prevBlue = prevPictograph?.motions?.blue;
           if (prevBlue?.propType === PropType.POI) {
-            const transitionResult = this.constraintValidator.validateTransition(
+            const transitionResult = validateTransition(
               prevBlue,
               blueMotion
             );
@@ -48,7 +46,7 @@ export class PoiSequenceValidator {
 
       // Validate red motion if it's poi
       if (redMotion?.propType === PropType.POI) {
-        const redResult = this.constraintValidator.validateMotion(redMotion);
+        const redResult = validateMotion(redMotion);
         violations.push(...redResult.violations);
 
         // Check transition from previous beat
@@ -56,7 +54,7 @@ export class PoiSequenceValidator {
           const prevPictograph = sequence[i - 1];
           const prevRed = prevPictograph?.motions?.red;
           if (prevRed?.propType === PropType.POI) {
-            const transitionResult = this.constraintValidator.validateTransition(
+            const transitionResult = validateTransition(
               prevRed,
               redMotion
             );

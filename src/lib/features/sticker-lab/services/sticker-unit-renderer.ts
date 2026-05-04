@@ -1,12 +1,13 @@
 import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
 import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-import type { StickerBackground, StickerUnit, StickerVariant } from "../../domain/sticker-types";
+import type { StickerBackground, StickerUnit, StickerVariant } from "../domain/sticker-types";
 import {
   STICKER_ART_DIAMETER_PX,
   STICKER_ART_RADIUS_PX,
   STICKER_BLEED_PX,
   STICKER_TILE_SIZE_PX,
-} from "../../domain/sticker-constants";
+} from "../domain/sticker-constants";
+
 const LIGHT_MODE_PALETTE: MandalaPalette = {
   blueStroke: "#1e40af",
   blueFill: "transparent",
@@ -22,34 +23,29 @@ const LIGHT_MODE_PALETTE: MandalaPalette = {
  */
 const STICKER_STROKE_WIDTH = 6;
 
-export class StickerUnitRenderer {
-  renderSVG(unit: StickerUnit, mandalaPaths: MandalaPaths): string {
-    const mandalaSvg = renderMandalaSVG(mandalaPaths, {
-      size: STICKER_ART_DIAMETER_PX,
-      style: "stroke",
-      showGridDots: false,
-      show: toMandalaShow(unit.variant),
-      strokeWidth: STICKER_STROKE_WIDTH,
-      transparentBackground: true,
-      palette: LIGHT_MODE_PALETTE,
-    });
+export function renderStickerUnitSVG(unit: StickerUnit, mandalaPaths: MandalaPaths): string {
+  const mandalaSvg = renderMandalaSVG(mandalaPaths, {
+    size: STICKER_ART_DIAMETER_PX,
+    style: "stroke",
+    showGridDots: false,
+    show: toMandalaShow(unit.variant),
+    strokeWidth: STICKER_STROKE_WIDTH,
+    transparentBackground: true,
+    palette: LIGHT_MODE_PALETTE,
+  });
 
-    // Strip the outer <svg> wrapper from the mandala - we inline its <defs> and <g>
-    // into our sticker-scoped SVG.
-    const mandalaInner = extractSvgInner(mandalaSvg);
+  const mandalaInner = extractSvgInner(mandalaSvg);
+  const bg = renderBackground(unit.background);
 
-    const bg = renderBackground(unit.background);
-
-    return [
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${STICKER_TILE_SIZE_PX} ${STICKER_TILE_SIZE_PX}" width="${STICKER_TILE_SIZE_PX}" height="${STICKER_TILE_SIZE_PX}">`,
-      bg.defs,
-      `  <g transform="translate(${STICKER_BLEED_PX}, ${STICKER_BLEED_PX})">`,
-      bg.body,
-      mandalaInner,
-      `  </g>`,
-      `</svg>`,
-    ].join("\n");
-  }
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${STICKER_TILE_SIZE_PX} ${STICKER_TILE_SIZE_PX}" width="${STICKER_TILE_SIZE_PX}" height="${STICKER_TILE_SIZE_PX}">`,
+    bg.defs,
+    `  <g transform="translate(${STICKER_BLEED_PX}, ${STICKER_BLEED_PX})">`,
+    bg.body,
+    mandalaInner,
+    `  </g>`,
+    `</svg>`,
+  ].join("\n");
 }
 
 function toMandalaShow(variant: StickerVariant): "blue" | "red" | "both" {
@@ -77,7 +73,6 @@ function renderBackground(background: StickerBackground): BackgroundParts {
     };
   }
 
-  // radial-gradient
   const gradientId = `sticker-bg-gradient-${Math.random().toString(36).slice(2, 8)}`;
   return {
     defs: [
@@ -94,8 +89,6 @@ function renderBackground(background: StickerBackground): BackgroundParts {
 
 /**
  * Extract the contents of the outer <svg>...</svg> wrapper.
- * MandalaRenderer.renderSVG returns a complete <svg> element; we need its inner
- * content to inline into our sticker-scoped SVG.
  */
 function extractSvgInner(svg: string): string {
   const openEnd = svg.indexOf(">", svg.indexOf("<svg"));

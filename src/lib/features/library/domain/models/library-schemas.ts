@@ -94,7 +94,7 @@ export const LibrarySequenceDocSchema = z
     orientationCycleCount: z.number().optional(),
     period: z.number().optional(),
     tags: z.array(z.string()).default([]),
-    metadata: z.record(z.unknown()).default({}),
+    metadata: z.record(z.string(), z.unknown()).default({}),
 
     // Owner display info
     ownerDisplayName: z.string().optional(),

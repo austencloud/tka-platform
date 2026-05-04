@@ -815,11 +815,10 @@ export class LibraryRepository {
     let ownerAvatarUrl: string | undefined;
 
     try {
-      const userDoc = await getDoc(doc(firestore, `users/${userId}`));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        ownerDisplayName = userData?.displayName;
-        ownerAvatarUrl = userData?.photoURL;
+      const userProfile = await firestoreGet("users", userId, UserProfileDocSchema);
+      if (userProfile) {
+        ownerDisplayName = userProfile.displayName;
+        ownerAvatarUrl = userProfile.photoURL;
       }
     } catch (err) {
       console.warn(

@@ -2,7 +2,7 @@ import { PDFDocument, rgb } from "pdf-lib";
 import type { StickerSheet, StickerUnit, SheetSize } from "../../domain/sticker-types";
 import {
   SHEET_DIMENSIONS_IN, STICKER_GAP_IN, STICKER_TILE_SIZE_PX, STICKER_DPI, } from "../../domain/sticker-constants";
-import { StickerUnitRenderer } from "./StickerUnitRenderer";
+import { renderStickerUnitSVG } from "../sticker-unit-renderer";
 import { rasterizeSvgToPng } from "./rasterizeSvg";
 import type { StickerMandalaLookup } from "../contracts/types";
 
@@ -18,12 +18,6 @@ interface Placement {
 }
 
 export class StickerSheetPdfExporter {
-  private readonly unitRenderer: StickerUnitRenderer;
-
-  constructor(unitRenderer: StickerUnitRenderer = new StickerUnitRenderer()) {
-    this.unitRenderer = unitRenderer;
-  }
-
   async export(sheet: StickerSheet, lookup: StickerMandalaLookup): Promise<Uint8Array> {
     const placements = this.computePlacements(sheet);
     const doc = await PDFDocument.create();
@@ -41,7 +35,7 @@ export class StickerSheetPdfExporter {
     const rasterJobs = placements.map(async (placement) => {
       const paths = lookup.getPaths(placement.unit.primitiveRef.shapeHash);
       if (!paths) return null;
-      const svg = this.unitRenderer.renderSVG(placement.unit, paths);
+      const svg = renderStickerUnitSVG(placement.unit, paths);
       const png = await rasterizeSvgToPng(svg, STICKER_TILE_SIZE_PX, STICKER_TILE_SIZE_PX);
       return { placement, png };
     });

@@ -36,7 +36,6 @@ import { logSessionStart } from "../../analytics/services/posthog-activity-logge
 import { getPresenceTracker } from "../../presence/getPresenceTracker";
 
 // Service imports
-import type { ProfilePictureManager } from "../services/implementations/ProfilePictureManager";
 import type { UserDocumentManager } from '$lib/shared/auth/services/implementations/UserDocumentManager'
 import { auth } from "../firebase";
 // Preview state for admin "View As" feature

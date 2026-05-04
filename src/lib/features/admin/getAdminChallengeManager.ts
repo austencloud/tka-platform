@@ -1,10 +1,8 @@
-import { browser } from '$app/environment';
-
-import { AdminChallengeManager } from './services/implementations/AdminChallengeManager';
-
-let instance: AdminChallengeManager | null = null;
-
-export function getAdminChallengeManager(): AdminChallengeManager {
-	if (!browser) throw new Error('getAdminChallengeManager() is browser-only');
-	return instance ??= new AdminChallengeManager();
-}
+export {
+  getScheduledChallenges,
+  createChallenge,
+  updateChallenge,
+  deleteChallenge,
+  getUserSequences,
+  getChallengeByDate,
+} from './services/admin-challenge-manager';

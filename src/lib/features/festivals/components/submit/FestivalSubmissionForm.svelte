@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Timestamp } from "firebase/firestore";
-  import { getFestivalSubmissionReviewer } from "../../getFestivalSubmissionReviewer";
+  import { submit as submitFestival } from "../../services/festival-submission-reviewer";
   import { getGeocodingService } from "$lib/features/community/getGeocodingService";
   import { auth } from "$lib/shared/auth/firebase";
   import { getFestivalContext } from "../../context/festival-context";
@@ -19,7 +19,6 @@
   const { open, onclose }: Props = $props();
 
   // Services
-  const submissionReviewer = getFestivalSubmissionReviewer();
   const geocodingService = getGeocodingService();
 
   // Form fields
@@ -95,7 +94,7 @@
         .map((t) => t.trim())
         .filter(Boolean);
 
-      await submissionReviewer.submit({
+      await submitFestival({
         name: name.trim(),
         city: city.trim(),
         country: country.trim(),

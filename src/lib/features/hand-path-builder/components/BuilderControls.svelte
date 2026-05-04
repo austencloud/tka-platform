@@ -12,7 +12,7 @@
 
 import { getHandPathSaveOrchestrator } from "$lib/features/library/getHandPathSaveOrchestrator";
   import { getBuilderContext } from "../context/builder-context";
-  import { getHandPathFactory } from "$lib/shared/foundation/getHandPathFactory";
+  import { createHandPath } from "$lib/shared/foundation/services/hand-path-factory";
   import type { HandPathSaveOrchestrator } from "$lib/features/library/services/implementations/HandPathSaveOrchestrator";
   import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 
@@ -47,13 +47,12 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/getHandPathSa
     savedRed = null;
 
     try {
-      const factory = getHandPathFactory();
       const orchestrator = getHandPathSaveOrchestrator();
 
-      const blue = factory.create(builder.blueLocations, {
+      const blue = createHandPath(builder.blueLocations, {
         name: builder.bluePathName,
       });
-      const red = factory.create(builder.redLocations, {
+      const red = createHandPath(builder.redLocations, {
         name: builder.redPathName,
       });
 

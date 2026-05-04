@@ -32,7 +32,7 @@ import type { AdditionalLayerProps } from "$lib/features/compose/services/implem
 import type { AnimationVisibilityState } from "./AnimationVisibilitySynchronizer";
 import type { PreRenderProgress } from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
 
-import { loadAnimatorServices as loadServices } from "./AnimatorLoader";
+import { loadAnimatorServices as loadServices } from "../animator-loader";
 import { loadTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
 import { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
 import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";

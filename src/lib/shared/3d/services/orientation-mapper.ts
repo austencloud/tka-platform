@@ -7,6 +7,14 @@ import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 const PI = Math.PI;
 const HALF_PI = PI / 2;
 
+/**
+ * Structural interface for the old OrientationMapper class API.
+ * Used by implementation classes that accept it as a constructor parameter.
+ */
+export interface OrientationMapperAPI {
+  mapOrientationToAngle(orientation: Orientation, centerPathAngle: number): number;
+}
+
 export function mapOrientationToAngle(orientation: Orientation, centerPathAngle: number): number {
   switch (orientation) {
     case Orientation.IN:

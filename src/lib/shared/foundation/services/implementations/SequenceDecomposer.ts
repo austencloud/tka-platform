@@ -1,4 +1,4 @@
-import type { SoloPropFactory } from "./SoloPropFactory";
+import { createSoloProp } from "../solo-prop-factory";
 import type { SequenceData } from "../../domain/models/SequenceData";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
@@ -71,7 +71,7 @@ function makePlaceholderStep(
 }
 
 export class SequenceDecomposer {
-  constructor(private readonly soloPropFactory: SoloPropFactory) {}
+  constructor() {}
 
   extractBlueSoloProp(sequence: SequenceData): SoloPropData {
     return this.extractSoloProp(sequence, "blue");
@@ -139,6 +139,6 @@ export class SequenceDecomposer {
       return motionToSoloPropStep(motion, step.duration);
     });
 
-    return this.soloPropFactory.create(steps, startLocation, startOrientation);
+    return createSoloProp(steps, startLocation, startOrientation);
   }
 }

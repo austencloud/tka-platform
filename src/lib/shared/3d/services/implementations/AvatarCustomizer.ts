@@ -7,7 +7,7 @@
 
 import { MeshStandardMaterial, Color } from "three";
 import type { Material } from "three";
-import type { Scene3DPersister } from "./Scene3DPersister";
+import type { Scene3DPersisterAPI } from "../scene3d-persister";
 
 export type BodyType = "masculine" | "feminine" | "androgynous";
 
@@ -185,7 +185,7 @@ export class AvatarCustomizer {
   private bodyMaterial: MeshStandardMaterial;
   private listeners: Set<(state: AvatarCustomization) => void> = new Set();
 
-  constructor(private persistence: Scene3DPersister) {
+  constructor(private persistence: Scene3DPersisterAPI) {
     // Get Austen preset (index 2)
     const austenPreset = PROPORTION_PRESETS.find((p) => p.id === "tall-male");
     const defaultProportions =

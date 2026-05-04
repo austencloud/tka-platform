@@ -91,8 +91,10 @@ export interface IAnimationCacheService {
 export interface IPerformanceMonitorService {
   getAdaptivePointSpacing(): number;
 }
-import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
-import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import {
+  calculatePropCenter,
+  type PropEndpointConfig,
+} from "$lib/shared/animation-engine/services/prop-position-calculator";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 
 /** Standard viewbox size used by the prop coordinate system */
@@ -225,8 +227,6 @@ interface LastCapturedPoint {
 }
 
 export class TrailCapturer {
-  // Shared calculator for prop endpoint positions
-  private readonly propPositionCalculator = new PropPositionCalculator();
   // Configuration
   private config: TrailCaptureConfig = {
     canvasSize: 500,
@@ -583,7 +583,7 @@ export class TrailCapturer {
 
     const tipConfig = getTipPoints(propType);
     const tipPoints = tipConfig.points;
-    const center = this.propPositionCalculator.calculateCenter(prop, {
+    const center = calculatePropCenter(prop, {
       canvasSize: this.config.canvasSize,
       propDimensions,
     });
@@ -735,7 +735,7 @@ export class TrailCapturer {
       canvasSize: this.config.canvasSize,
       propDimensions,
     };
-    const center = this.propPositionCalculator.calculateCenter(prop, endpointConfig);
+    const center = calculatePropCenter(prop, endpointConfig);
     const gridScaleFactor = this.config.canvasSize / VIEWBOX_SIZE;
     const cosA = Math.cos(prop.staffRotationAngle);
     const sinA = Math.sin(prop.staffRotationAngle);

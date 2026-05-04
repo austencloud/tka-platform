@@ -137,10 +137,9 @@ export class ErrorHandler {
    * warning actually fires (same pattern as reportBug).
    */
   private reportToTelemetry(options: ShowErrorOptions): void {
-    import("$lib/shared/error/services/implementations/ErrorTelemetryReporter")
-      .then(({ ErrorTelemetryReporter }) => {
-        const reporter = new ErrorTelemetryReporter();
-        reporter.report(options);
+    import("$lib/shared/error/services/error-telemetry-reporter")
+      .then(({ reportErrorTelemetry }) => {
+        reportErrorTelemetry(options);
       })
       .catch((err) =>
         console.error("[ErrorHandler] Telemetry import failed:", err)

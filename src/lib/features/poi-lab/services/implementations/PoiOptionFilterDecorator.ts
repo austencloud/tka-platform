@@ -6,12 +6,10 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { PoiConstraintValidator } from "./PoiConstraintValidator";
+import { validateMotion, validateTransition } from "../poi-constraint-validator";
 
 export class PoiOptionFilterDecorator {
-  constructor(
-    private readonly constraintValidator: PoiConstraintValidator
-  ) {}
+  constructor() {}
 
   filterPoiLegalOptions(
     options: readonly PictographData[],
@@ -31,7 +29,7 @@ export class PoiOptionFilterDecorator {
 
       // Validate blue poi motion
       if (blueIsPoi && blueMotion) {
-        const blueResult = this.constraintValidator.validateMotion(blueMotion);
+        const blueResult = validateMotion(blueMotion);
         if (!blueResult.isValid) {
           return false;
         }
@@ -39,7 +37,7 @@ export class PoiOptionFilterDecorator {
         // Check transition if we have a previous pictograph
         const prevBlue = previousPictograph?.motions?.blue;
         if (prevBlue?.propType === PropType.POI) {
-          const transitionResult = this.constraintValidator.validateTransition(
+          const transitionResult = validateTransition(
             prevBlue,
             blueMotion
           );
@@ -51,7 +49,7 @@ export class PoiOptionFilterDecorator {
 
       // Validate red poi motion
       if (redIsPoi && redMotion) {
-        const redResult = this.constraintValidator.validateMotion(redMotion);
+        const redResult = validateMotion(redMotion);
         if (!redResult.isValid) {
           return false;
         }
@@ -59,7 +57,7 @@ export class PoiOptionFilterDecorator {
         // Check transition if we have a previous pictograph
         const prevRed = previousPictograph?.motions?.red;
         if (prevRed?.propType === PropType.POI) {
-          const transitionResult = this.constraintValidator.validateTransition(
+          const transitionResult = validateTransition(
             prevRed,
             redMotion
           );

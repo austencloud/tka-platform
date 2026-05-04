@@ -17,9 +17,8 @@ import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSa
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
   import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
-  import type { SoloPropFactory } from '$lib/shared/foundation/services/implementations/SoloPropFactory'
   import type { SoloPropSaveOrchestrator } from "$lib/features/library/services/implementations/SoloPropSaveOrchestrator";
-  import { getSoloPropFactory } from "$lib/shared/foundation/getSoloPropFactory";
+  import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import GridModePicker from "./GridModePicker.svelte";
 
@@ -112,14 +111,13 @@ import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSa
     soloPropSaveError = null;
 
     try {
-      const soloPropFactory = getSoloPropFactory();
       const orchestrator = getSoloPropSaveOrchestrator() as SoloPropSaveOrchestrator;
 
       const soloPropSteps = steps.map(builderStepToSoloPropStep);
       const startLocation = steps[0]!.startPosition;
       const startOrientation = steps[0]!.startOrientation;
 
-      const soloPropData = soloPropFactory.create(
+      const soloPropData = createSoloProp(
         soloPropSteps,
         startLocation,
         startOrientation

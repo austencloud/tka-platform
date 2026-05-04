@@ -29,7 +29,7 @@ import {
   hasCurve,
   getContactAt,
 } from "../contact-curve-cache";
-import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
+import { computeKneeHingeAxis } from "../knee-hinge-axis-calibrator";
 
 export interface FootPlanterInput {
   /** World Y of the ground plane under the avatar */
@@ -147,15 +147,14 @@ export class FootPlanter {
     }
 
     // Derive per-leg hinge axes from bind-pose rest directions
-    const calibrator = new KneeHingeAxisCalibrator();
     if (this.leftLegChain) {
       this.leftKneeHingeAxis.copy(
-        calibrator.compute(this.leftLegChain.rootRestDir, this.leftLegChain.middleRestDir)
+        computeKneeHingeAxis(this.leftLegChain.rootRestDir, this.leftLegChain.middleRestDir)
       );
     }
     if (this.rightLegChain) {
       this.rightKneeHingeAxis.copy(
-        calibrator.compute(this.rightLegChain.rootRestDir, this.rightLegChain.middleRestDir)
+        computeKneeHingeAxis(this.rightLegChain.rootRestDir, this.rightLegChain.middleRestDir)
       );
     }
   }

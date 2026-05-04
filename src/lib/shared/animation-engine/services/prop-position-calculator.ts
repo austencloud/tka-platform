@@ -3,13 +3,34 @@
  */
 
 import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
-import type {
-  PropEndpointConfig,
-  PropEndpointResult,
-  PropEndpointPair,
-} from "./implementations/PropPositionCalculator";
 import { getTrailPointConfig, type TrailPointSource } from "../domain/types/TrailPointTypes";
 import { getTipPoints } from "../domain/types/PropTipPoints";
+
+/** Configuration for prop endpoint calculations */
+export interface PropEndpointConfig {
+  /** Canvas size in pixels */
+  canvasSize: number;
+  /** Prop dimensions in viewbox coordinates */
+  propDimensions: { width: number; height: number };
+  /** Grid halfway point offset (default: 150) */
+  gridHalfwayOffset?: number;
+  /** Inward factor for radius (default: 1.0) */
+  inwardFactor?: number;
+}
+
+/** Result of a single endpoint calculation */
+export interface PropEndpointResult {
+  x: number;
+  y: number;
+}
+
+/** Result of calculating both endpoints */
+export interface PropEndpointPair {
+  /** Left end (tipIndex 0) */
+  left: PropEndpointResult;
+  /** Right end (tipIndex 1, tip) */
+  right: PropEndpointResult;
+}
 
 const VIEWBOX_SIZE = 950;
 const DEFAULT_GRID_HALFWAY_OFFSET = 150;

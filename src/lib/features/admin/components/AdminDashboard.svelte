@@ -5,9 +5,6 @@
    * Main admin interface for managing TKA system
    */
 
-  import { onMount } from "svelte";
-  import { getAdminChallengeManager } from "$lib/features/admin/getAdminChallengeManager";
-  import type { AdminChallengeManager } from '../services/implementations/AdminChallengeManager';
   import DailyChallengeScheduler from "./DailyChallengeScheduler.svelte";
   import TrainChallengeManager from "./TrainChallengeManager.svelte";
   import UsersDashboard from "./UsersDashboard.svelte";
@@ -62,24 +59,11 @@
 
   });
 
-  // Services
-  let adminChallengeService = $state<AdminChallengeManager | null>(null);
-
   // State
-  let isLoading = $state(true);
+  let isLoading = $state(false);
 
   // Get current section from navigation coordinator
   const activeSection = $derived(navigationState.currentSection);
-
-  onMount(() => {
-    try {
-      adminChallengeService = getAdminChallengeManager();
-      isLoading = false;
-    } catch (error) {
-      console.error("❌ Failed to initialize AdminDashboard:", error);
-      isLoading = false;
-    }
-  });
 </script>
 
 <div class="admin-dashboard">
@@ -99,13 +83,13 @@
         >
           <UsersDashboard />
         </div>
-      {:else if activeSection === "challenges" && adminChallengeService}
+      {:else if activeSection === "challenges"}
         <div
           id="challenges-panel"
           role="tabpanel"
           aria-labelledby="challenges-tab"
         >
-          <DailyChallengeScheduler {adminChallengeService} />
+          <DailyChallengeScheduler />
         </div>
       {:else if activeSection === "train-challenges"}
         <div

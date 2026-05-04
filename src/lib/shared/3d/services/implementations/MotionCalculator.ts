@@ -10,15 +10,15 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionConfig3D } from "../../domain/models/MotionData3D";
-import type { AngleMathCalculator } from "./AngleMathCalculator";
-import type { OrientationMapper } from "./OrientationMapper";
+import type { AngleMathCalculatorAPI } from "../angle-math-calculator";
+import type { OrientationMapperAPI } from "../orientation-mapper";
 
 const PI = Math.PI;
 
 export class MotionCalculator {
   constructor(
-    private angleMath: AngleMathCalculator,
-    private orientationService: OrientationMapper
+    private angleMath: AngleMathCalculatorAPI,
+    private orientationService: OrientationMapperAPI
   ) {}
 
   /**

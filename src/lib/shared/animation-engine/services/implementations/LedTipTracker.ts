@@ -20,8 +20,10 @@ import {
 	type TipEvaluationContext,
 	type TipRelationData,
 } from "../../domain/patterns/context";
-import { PropPositionCalculator } from "./PropPositionCalculator";
-import type { PropEndpointConfig } from "./PropPositionCalculator";
+import {
+  calculatePropCenter,
+  type PropEndpointConfig,
+} from "../prop-position-calculator";
 
 export interface LedTipTrackerConfig {
 	canvasSize: number;
@@ -55,7 +57,6 @@ function createStoredTip(): StoredTip {
 }
 
 export class LedTipTracker {
-	private positionCalculator = new PropPositionCalculator();
 
 	/**
 	 * Previous frame positions. Fixed-size pool, indexed by a stable key
@@ -211,7 +212,7 @@ export class LedTipTracker {
 			canvasSize,
 			propDimensions,
 		};
-		const center = this.positionCalculator.calculateCenter(prop, endpointConfig);
+		const center = calculatePropCenter(prop, endpointConfig);
 		const gridScaleFactor = canvasSize / VIEWBOX_SIZE;
 		const angle = prop.staffRotationAngle;
 		const cosA = Math.cos(angle);

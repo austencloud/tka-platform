@@ -12,7 +12,7 @@ import type {
 	FeedContentType,
 	FeedItemIntent,
 } from "../../domain/models/feed-models";
-import type { PublicVideoLoader } from "./PublicVideoLoader";
+import { loadPublicVideos } from "../public-video-loader";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -22,7 +22,6 @@ const LOAD_BATCH_SIZE = 30;
 
 export class FeedLoader {
 	constructor(
-		private videoLoader: PublicVideoLoader,
 		private sequenceLoader: PublicSequencesLoader
 	) {}
 
@@ -77,7 +76,7 @@ export class FeedLoader {
 		}
 
 		try {
-			const result = await this.videoLoader.loadPublicVideos({
+			const result = await loadPublicVideos({
 				limit: LOAD_BATCH_SIZE,
 			});
 			return result.videos;
