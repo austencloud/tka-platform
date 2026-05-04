@@ -6,11 +6,11 @@
    * Handles clip interactions (click to select, drag to move).
    */
 
-  import type { TimelineTrack } from "../domain/timeline-types";
+  import type { TimelineTrack } from "$lib/shared/animation-engine/domain/timeline-types";
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import TimelineClip from "./TimelineClip.svelte";
   import StepGrid from "./StepGrid.svelte";
-  import { timeToPixels } from "../domain/timeline-types";
+  import { timeToPixels } from "$lib/shared/animation-engine/domain/timeline-types";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 
   interface Props {

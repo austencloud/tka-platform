@@ -42,10 +42,10 @@
 
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import EffortPalette from "./components/EffortPalette.svelte";
+  import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import PhraseTimeline from "./components/PhraseTimeline.svelte";
   import PhraseEasingCurveOverlay from "./components/PhraseEasingCurveOverlay.svelte";
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import type { CreatorIntent } from "$lib/shared/foundation/domain/models/CreatorIntent";

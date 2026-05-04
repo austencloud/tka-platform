@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { BrowseSectionManager } from '$lib/features/browse/sequences/display/services/implementations/BrowseSectionManager';
+import { BrowseSectionManager } from '$lib/shared/browse/services/BrowseSectionManager';
 
 let instance: BrowseSectionManager | null = null;
 

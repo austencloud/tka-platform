@@ -15,7 +15,7 @@
   import ArenaDivider from "./ArenaDivider.svelte";
   import ArenaStreakCounter from "./ArenaStreakCounter.svelte";
   import ArenaVoteConfirmation from "./ArenaVoteConfirmation.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import ArenaPropDrawer from "./ArenaPropDrawer.svelte";
   import { arenaState } from "../../state/arena-state.svelte";
   import { getArenaOrchestrator } from "../../getArenaOrchestrator";

@@ -16,7 +16,7 @@ Container-aware responsive design (2-tier):
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOOPType, LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
-  import { parseLoopComponents, generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
+  import { parseLoopComponents, generateLOOPType } from "$lib/shared/create/services/loop-type-utils";
   import { LOOP_COMPONENTS } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import MorphChipGroup from "$lib/shared/foundation/ui/morph-chip/MorphChipGroup.svelte";
   import MorphChip from "$lib/shared/foundation/ui/morph-chip/MorphChip.svelte";

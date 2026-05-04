@@ -15,7 +15,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/Sta
 import {
   saveSequence as persistSaveSequence,
 } from "$lib/shared/persistence/services/dexie-persistence-service";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 export class Workbench {
   constructor(
     private sequenceService: SequenceRepository,
@@ -153,6 +153,6 @@ export class Workbench {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import { sequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 
 export const workbench = new Workbench(sequenceRepository);

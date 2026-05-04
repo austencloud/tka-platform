@@ -14,7 +14,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import LevelInfoModal from "./LevelInfoModal.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
-  import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
+  import { formatLOOPTypeForDisplay } from "$lib/shared/create/services/loop-type-utils";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { analyzeDifficulty } from "$lib/shared/browse/services/sequence-difficulty-calculator";

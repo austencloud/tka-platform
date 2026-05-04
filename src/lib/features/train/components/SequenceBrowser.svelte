@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

@@ -1,6 +1,6 @@
 import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

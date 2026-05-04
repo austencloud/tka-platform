@@ -27,7 +27,7 @@ import type {
 import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
 import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
 import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
-import { captureDeviceContext } from "$lib/features/feedback/utils/device-context-capturer";
+import { captureDeviceContext } from "$lib/shared/feedback/utils/device-context-capturer";
 
 const ADMIN_USER_ID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
 const COLLECTION_NAME = "feedback";

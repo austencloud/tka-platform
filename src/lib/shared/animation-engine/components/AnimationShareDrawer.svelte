@@ -16,9 +16,9 @@
   import { onMount, onDestroy } from "svelte";
 
   // Extracted components (from animate module)
-  import AnimationPanelHeader from "$lib/features/compose/components/canvas/AnimationPanelHeader.svelte";
-  import AnimationCanvas from "$lib/features/compose/components/canvas/AnimationCanvas.svelte";
-  import AnimationControlsPanel from "$lib/features/compose/components/canvas/AnimationControlsPanel.svelte";
+  import AnimationPanelHeader from "$lib/shared/animation-engine/components/canvas/AnimationPanelHeader.svelte";
+  import AnimationCanvas from "$lib/shared/animation-engine/components/canvas/AnimationCanvas.svelte";
+  import AnimationControlsPanel from "$lib/shared/animation-engine/components/canvas/AnimationControlsPanel.svelte";
   import CreatePanelDrawer from "$lib/features/create/shared/components/CreatePanelDrawer.svelte";
   import AnimationViewerHelpSheet from "./AnimationViewerHelpSheet.svelte";
 

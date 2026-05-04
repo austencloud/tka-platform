@@ -1,7 +1,7 @@
 <!-- FeedbackAssigneeSelector - Assign a feedback item to a contributor -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { Contributor } from "../../../domain/models/contributor-models";
+  import type { Contributor } from "$lib/shared/feedback/domain/models/contributor-models";
   import type { FeedbackDetailState } from "../../../state/feedback-detail-state.svelte";
   import { getContributorLoader } from "$lib/shared/feedback/getContributorLoader";
 

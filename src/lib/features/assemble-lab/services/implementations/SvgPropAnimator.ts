@@ -11,7 +11,7 @@ import {
   PI,
   TWO_PI,
 } from "$lib/shared/foundation/domain/math-constants";
-import type { AnimationParams } from "../contracts/types";
+import type { AnimationParams } from "$lib/shared/assemble-lab/domain/types";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 

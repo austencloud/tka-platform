@@ -18,7 +18,7 @@ import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { ThumbnailVariant } from "$lib/features/browse/sequences/display/services/thumbnail-key-deriver";
+import type { ThumbnailVariant } from "$lib/shared/browse/services/thumbnail-key-deriver";
 
 export interface CloudThumbnailKey {
   sequenceName: string;

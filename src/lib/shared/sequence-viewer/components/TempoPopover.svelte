@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import { scale } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
 

@@ -3,7 +3,7 @@
    * ClipInfoSection - Displays clip metadata and label input
    */
 
-  import type { TimelineClip } from "../../domain/timeline-types";
+  import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

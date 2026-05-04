@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
-  import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
+  import LevelFilterChip from "$lib/shared/browse/components/filter-chips/LevelFilterChip.svelte";
   import GridModeFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/GridModeFilterChip.svelte";
 
   interface Props {

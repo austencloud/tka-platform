@@ -13,7 +13,7 @@ import type { CreateModuleOrchestrator } from "$lib/features/create/shared/servi
 import type { NavigationSyncer } from "../services/implementations/NavigationSyncer";
 import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { Sharer } from "../../../../shared/share/services/implementations/Sharer";
 
 /**

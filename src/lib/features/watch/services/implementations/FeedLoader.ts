@@ -13,7 +13,7 @@ import type {
 	FeedItemIntent,
 } from "../../domain/models/feed-models";
 import { loadPublicVideos } from "../public-video-loader";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 

@@ -22,7 +22,7 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 
 import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
-import * as feedbackDocumentMapper from "$lib/features/feedback/services/feedback-document-mapper";
+import * as feedbackDocumentMapper from "$lib/shared/feedback/services/feedback-document-mapper";
 
 const COLLECTION_NAME = "feedback";
 

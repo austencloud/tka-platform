@@ -20,7 +20,7 @@
   import { renderPictographToSVG } from '$lib/shared/render/utils/pictograph-to-svg';
   import { Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
   import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
-  import { PublicSequencesLoader } from '$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader';
+  import { PublicSequencesLoader } from '$lib/shared/browse/services/PublicSequencesLoader';
 
   const STORAGE_KEY = 'render-compare-state';
 

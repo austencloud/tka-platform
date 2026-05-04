@@ -5,8 +5,8 @@
  * Provides snap calculations for steps, clip edges, grid, and playhead.
  */
 
-import type { SnapResult, SnapPoint, SnapType } from "../contracts/types";
-import type { TimeSeconds } from "../../domain/timeline-types";
+import type { SnapResult, SnapPoint, SnapType } from "$lib/shared/animation-engine/timeline/domain/types";
+import type { TimeSeconds } from "$lib/shared/animation-engine/domain/timeline-types";
 import {
   snapTimeValue,
   calculateSnapPoints,

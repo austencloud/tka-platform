@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import * as contributorLoader from '$lib/features/feedback/services/contributor-loader';
+import * as contributorLoader from '$lib/shared/feedback/services/contributor-loader';
 
 const api = {
 	...contributorLoader,

@@ -10,8 +10,8 @@
 import type {
   DeepLinkResult,
 } from "../contracts/types";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import { getCachedSequence } from "../../state/ui/modal-url-state.svelte";
 
 export class DeepLinkResolver {

@@ -5,9 +5,9 @@ import {
   renderWordHeaderToCanvas,
   renderProgressBarToCanvas,
 } from "../canvas-renderer";
-import type { GlyphAsset } from "./ExportGlyphPrerenderer";
-import type { ExportGlyphPrerenderer } from "./ExportGlyphPrerenderer";
-import type { CompositeVideoRenderer } from "./CompositeVideoRenderer";
+import type { GlyphAsset } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
+import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
+import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
 export interface FrameCompositorConfig {

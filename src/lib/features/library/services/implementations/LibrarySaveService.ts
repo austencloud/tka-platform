@@ -24,13 +24,13 @@ import { getImageCompositionManager } from "$lib/shared/share/state/image-compos
 import type {
   SaveToLibraryOptions, SaveProgress, SaveResult } from "../contracts/types";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
-import { LibraryError } from "./LibraryRepository";
+import { LibraryError } from "$lib/shared/library/services/LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import type { Sharer } from "../../../../shared/share/services/implementations/Sharer";
 import type { R2VideoUploader } from "../../../../shared/share/services/implementations/R2VideoUploader";
-import type { LibraryRepository } from "../implementations/LibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 export class LibrarySaveService {
   private readonly shareService: Sharer | null;
   private readonly uploadService: R2VideoUploader | null;

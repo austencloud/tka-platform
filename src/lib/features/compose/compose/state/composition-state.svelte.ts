@@ -13,19 +13,19 @@ import type {
   CellType,
   MediaDisplayType,
   CellConfig,
-} from "../domain/types";
+} from "$lib/shared/animation-engine/domain/compose-types";
 import {
   createEmptyCells,
   isCellConfigured,
   isCompositionComplete,
   generateCellId,
   getDefaultTrailSettings,
-} from "../domain/types";
+} from "$lib/shared/animation-engine/domain/compose-types";
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
 import { getComposition as dexieGetComposition, exists as dexieExists } from "../../services/dexie-composition-repository";
 import { compositionSyncer } from "../../services/implementations/CompositionSyncer";
 import { loadCustomPresets } from "$lib/features/constraint-layout-lab/services/LayoutPersistence";
-import type { CellMediaType } from "../domain/types";
+import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
 
 // Import types and helpers
 import type { WorkflowPhase } from "./composition-types";

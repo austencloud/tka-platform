@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { VariationGrouper } from '$lib/features/browse/sequences/display/services/implementations/VariationGrouper';
+import { VariationGrouper } from '$lib/shared/browse/services/VariationGrouper';
 
 let instance: VariationGrouper | null = null;
 

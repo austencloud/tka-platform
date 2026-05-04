@@ -10,14 +10,14 @@ import type {
   BrowseEventHandlerParams } from "../contracts/types";
 import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
 import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 import { openVariationPicker } from "../../state/variation-picker-state.svelte";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 export class BrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
 

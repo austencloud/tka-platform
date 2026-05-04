@@ -7,7 +7,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { Composition, CellConfig, CellType } from "../../domain/types";
+import type { Composition, CellConfig, CellType } from "$lib/shared/animation-engine/domain/compose-types";
 
 export type CellOperationsManager = ReturnType<
   typeof createCellOperationsManager

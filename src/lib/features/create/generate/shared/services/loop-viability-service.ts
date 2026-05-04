@@ -2,7 +2,7 @@ import {
   LOOPType,
   ROTATED_LOOP_TYPES,
 } from "../../circular/domain/models/circular-models";
-import type { LoopViabilityArgs, LoopViabilityCheck } from "./contracts/types";
+import type { LoopViabilityArgs, LoopViabilityCheck } from "$lib/shared/create/domain/generator-contract-types";
 
 const VIABLE: LoopViabilityCheck = Object.freeze({ viable: true });
 

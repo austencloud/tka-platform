@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
+import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
   import { onMount, onDestroy, tick } from "svelte";
@@ -20,7 +20,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
-  import { generationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
+  import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
   import { startPositionDeriver as startPositionDeriverDirect } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { orientationCalculator as orientationCalculatorDirect } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { gridPositionDeriver as gridPositionDeriverDirect } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";

@@ -7,7 +7,7 @@
  */
 
 import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
-import type { DetectedPosition } from "../../domain/models/DetectionFrame";
+import type { DetectedPosition } from "$lib/shared/train/domain/DetectionFrame";
 
 export interface DetectedHandData {
   position: DetectedPosition;

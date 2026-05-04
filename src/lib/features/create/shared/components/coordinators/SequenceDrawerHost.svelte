@@ -32,7 +32,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { ExportOrchestrator } from "$lib/shared/export-panel/services/implementations/ExportOrchestrator";
 
-  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import { getCreateModuleContext } from "../../context/create-module-context";
@@ -46,7 +46,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-  import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+  import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
   import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import {

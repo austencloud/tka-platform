@@ -25,7 +25,7 @@ import {
 import {
   mapDocToCollection,
   batchFetchSequences,
-} from "./implementations/collection-firestore-mapper";
+} from "$lib/shared/library/services/collection-firestore-mapper";
 
 export async function getUserPublicCollections(
   userId: string

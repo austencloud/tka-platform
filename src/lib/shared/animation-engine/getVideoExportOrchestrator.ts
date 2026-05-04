@@ -1,8 +1,8 @@
 import { VideoExportOrchestrator } from '$lib/features/compose/services/implementations/VideoExportOrchestrator';
 import { getVideoExporter } from './getVideoExporter';
-import { getCompositeVideoRenderer } from '$lib/features/compose/getCompositeVideoRenderer';
-import { getExportGlyphPrerenderer } from '$lib/features/compose/getExportGlyphPrerenderer';
-import { getBackgroundVideoEncoder } from '$lib/features/compose/getBackgroundVideoEncoder';
+import { getCompositeVideoRenderer } from '$lib/shared/animation-engine/getCompositeVideoRenderer';
+import { getExportGlyphPrerenderer } from '$lib/shared/animation-engine/getExportGlyphPrerenderer';
+import { getBackgroundVideoEncoder } from '$lib/shared/animation-engine/getBackgroundVideoEncoder';
 
 let instance: VideoExportOrchestrator | null = null;
 export function getVideoExportOrchestrator(): VideoExportOrchestrator {

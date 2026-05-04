@@ -4,9 +4,9 @@
  * Pure utility functions for composition state management.
  */
 
-import type { Composition } from "../domain/types";
+import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 import type { AudioState } from "./composition-types";
-import { createEmptyCells } from "../domain/types";
+import { createEmptyCells } from "$lib/shared/animation-engine/domain/compose-types";
 
 // ============================================================================
 // Default Audio State

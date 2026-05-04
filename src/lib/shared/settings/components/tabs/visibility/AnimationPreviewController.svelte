@@ -12,7 +12,7 @@
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/createPlaybackControllerFactory";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TurnPattern } from "$lib/shared/create/domain/TurnPatternData";
   import { Timestamp } from "firebase/firestore";

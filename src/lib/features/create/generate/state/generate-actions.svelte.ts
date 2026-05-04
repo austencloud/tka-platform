@@ -13,8 +13,8 @@ import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-positio
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import { GenerationMode } from "../shared/domain/models/generate-models";
-import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
-import { generationOrchestrator } from "../shared/services/implementations/GenerationOrchestrator";
+import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
+import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { levelToDifficulty, type UIGenerationConfig } from "../shared/utils/config-mapper";
 import {

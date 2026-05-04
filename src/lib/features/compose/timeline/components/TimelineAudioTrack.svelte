@@ -12,7 +12,7 @@
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
-  import { timeToPixels } from "../domain/timeline-types";
+  import { timeToPixels } from "$lib/shared/animation-engine/domain/timeline-types";
 
   interface Props {
     headerWidth: number;

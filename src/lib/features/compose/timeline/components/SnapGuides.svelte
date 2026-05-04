@@ -7,7 +7,7 @@
    */
 
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
-  import { timeToPixels, type TimeSeconds } from "../domain/timeline-types";
+  import { timeToPixels, type TimeSeconds } from "$lib/shared/animation-engine/domain/timeline-types";
   import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
 
   interface Props {

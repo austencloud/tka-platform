@@ -12,7 +12,7 @@
 
   import { getCompositionState } from "../../state/composition-state.svelte";
   import { LAYOUT_PRESETS, type LayoutPresetKey } from "../../domain/types";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
 
   // Renamed to avoid conflict with $state rune
   const compState = getCompositionState();

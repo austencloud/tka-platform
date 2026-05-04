@@ -6,9 +6,9 @@
 -->
 <script lang="ts">
 	import TempoControl from "./TempoControl.svelte";
-	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
-	import PlaybackPane from "$lib/features/compose/components/controls/settings-panel/PlaybackPane.svelte";
-	import VisualPane from "$lib/features/compose/components/controls/settings-panel/VisualPane.svelte";
+	import SettingsTogglePanel from "$lib/shared/animation-engine/components/controls/SettingsTogglePanel.svelte";
+	import PlaybackPane from "$lib/shared/animation-engine/components/controls/settings-panel/PlaybackPane.svelte";
+	import VisualPane from "$lib/shared/animation-engine/components/controls/settings-panel/VisualPane.svelte";
 	import type { ControlsLevel } from "../domain/types";
 
 	let {

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { CreateModuleInitializer } from './services/implementations/CreateModuleInitializer';
-import { getSequenceRepository } from './getSequenceRepository';
+import { getSequenceRepository } from '$lib/shared/create/getSequenceRepository';
 import { getSequencePersister } from './getSequencePersister';
 import { getStartPositionManager } from '$lib/features/create/construct/start-position-picker/getStartPositionManager';
 import { getCreateModuleOrchestrator } from './getCreateModuleOrchestrator';
@@ -15,7 +15,7 @@ import { getCreateModuleEffectCoordinator } from './getCreateModuleEffectCoordin
 import { getSharer } from '$lib/shared/share/getSharer';
 import { getPanelPersister } from './getPanelPersister';
 import * as sequenceStatsCalculator from './services/sequence-stats-calculator';
-import { getSequenceTransformer } from './getSequenceTransformer';
+import { getSequenceTransformer } from '$lib/shared/create/getSequenceTransformer';
 import * as sequenceValidator from './services/sequence-validator';
 
 let instance: CreateModuleInitializer | null = null;

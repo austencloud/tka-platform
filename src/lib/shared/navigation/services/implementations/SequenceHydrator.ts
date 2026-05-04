@@ -23,7 +23,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LetterDeriver } from '$lib/shared/navigation/services/implementations/LetterDeriver'
 import type { PositionDeriver } from '$lib/shared/navigation/services/implementations/PositionDeriver'
-import type { ILOOPDetector } from "$lib/features/create/generate/circular/services/contracts/ILOOPDetector";
+import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
 import type { GridModeDeriver } from "../../../pictograph/grid/services/implementations/GridModeDeriver";
 
 export interface SequenceHydratorDeps {

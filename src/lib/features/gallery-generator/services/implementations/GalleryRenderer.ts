@@ -10,7 +10,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/SequenceExportOptions";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

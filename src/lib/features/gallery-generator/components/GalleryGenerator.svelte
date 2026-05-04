@@ -10,7 +10,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
-  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 

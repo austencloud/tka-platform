@@ -19,7 +19,7 @@ import {
 import { notifyLibraryMutated } from "$lib/shared/library/library-events";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import type { PublicIndexSyncer } from "./PublicIndexSyncer";
-import { LibraryError } from "./LibraryRepository";
+import { LibraryError } from "$lib/shared/library/services/LibraryRepository";
 
 export class LibraryRecycleBin {
   constructor(

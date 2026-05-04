@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ClaudeCodeCopier } from '$lib/features/browse/sequences/display/services/implementations/ClaudeCodeCopier';
+import { ClaudeCodeCopier } from '$lib/shared/browse/services/ClaudeCodeCopier';
 import { getSequenceDetailLoader } from '$lib/shared/browse/getSequenceDetailLoader';
 
 let instance: ClaudeCodeCopier | null = null;

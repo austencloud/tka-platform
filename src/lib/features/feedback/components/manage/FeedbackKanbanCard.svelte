@@ -5,7 +5,7 @@
   import {
     TYPE_CONFIG, PRIORITY_CONFIG, } from "$lib/shared/feedback/domain/models/feedback-models";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
-  import type { ClaimHealth } from "../../services/contracts/types";
+  import type { ClaimHealth } from "$lib/shared/feedback/domain/feedback-contract-types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 

@@ -4,7 +4,7 @@
  * Returns event handlers for adjusting a clip's in and out points.
  */
 
-import type { TimelineClip } from "../../domain/timeline-types";
+import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
 import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
 
 export interface ClipTrimHandlers {

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { GenerationOrchestrator } from './services/implementations/GenerationOrchestrator';
+import { GenerationOrchestrator } from '$lib/shared/create/services/GenerationOrchestrator';
 import { BrowserVariationProvider } from './services/implementations/BrowserVariationProvider';
 import { BuildResultTransformer } from './services/implementations/BuildResultTransformer';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';

@@ -3,7 +3,7 @@ import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implemen
 import { getCatalogEntry, loadPrimitiveCatalog } from "../services/implementations/PrimitiveCatalogReader";
 // Cross-feature import: DI index uses the same path (no shared re-export exists).
 // Stage B will replace this with MandalaPrimitiveRegistry.getPaths(), removing the dependency.
-import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
 
 /**
  * Mandala paths cache keyed by shapeHash.

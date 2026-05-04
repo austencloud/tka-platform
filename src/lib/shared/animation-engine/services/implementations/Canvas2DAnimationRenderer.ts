@@ -43,11 +43,11 @@ export type {
   AnimationVisibilitySettings,
   RenderSceneParams,
 } from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
-import { Canvas2DApplicationManager } from "./canvas2d/Canvas2DApplicationManager";
-import { Canvas2DImageLoader } from "./canvas2d/Canvas2DImageLoader";
-import { Canvas2DTrailRenderer } from "./canvas2d/Canvas2DTrailRenderer";
-import { Canvas2DFadeManager } from "./canvas2d/Canvas2DFadeManager";
-import { Canvas2DGridFadeManager } from "./canvas2d/Canvas2DGridFadeManager";
+import { Canvas2DApplicationManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DApplicationManager";
+import { Canvas2DImageLoader } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DImageLoader";
+import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DTrailRenderer";
+import { Canvas2DFadeManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DFadeManager";
+import { Canvas2DGridFadeManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DGridFadeManager";
 import { Canvas2DVisibilityFadeManager } from "./canvas2d/Canvas2DVisibilityFadeManager";
 
 // Constants matching AnimatorCanvas EXACTLY

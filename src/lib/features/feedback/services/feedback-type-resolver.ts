@@ -1,4 +1,4 @@
-import type { FeedbackTypeConfig } from "./contracts/types";
+import type { FeedbackTypeConfig } from "$lib/shared/feedback/domain/feedback-contract-types";
 import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
 import { TYPE_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
 

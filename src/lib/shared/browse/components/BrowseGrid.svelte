@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import ChoreoCardThumbnail from "$lib/features/browse/sequences/display/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
-  import SectionHeader from "$lib/features/browse/sequences/display/components/SectionHeader.svelte";
+  import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
+  import SectionHeader from "$lib/shared/browse/components/SectionHeader.svelte";
   import VirtualizedSequenceGrid, {
     type VirtualGridApi,
-  } from "$lib/features/browse/sequences/display/components/VirtualizedSequenceGrid.svelte";
+  } from "$lib/shared/browse/components/VirtualizedSequenceGrid.svelte";
   import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
   import { getVariationGrouper } from "$lib/shared/browse/getVariationGrouper";
   import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";

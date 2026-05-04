@@ -4,7 +4,7 @@ import type { PictographData } from "../../../pictograph/shared/domain/models/Pi
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
-import { parseLoopComponents } from "../../../../features/create/generate/shared/services/implementations/loop-type-utils";
+import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {

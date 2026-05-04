@@ -2,7 +2,7 @@
 
 import { getCreateModuleInitializer } from "$lib/features/create/shared/getCreateModuleInitializer";
 import { getExtensionFlowCoordinator } from "$lib/features/create/shared/getExtensionFlowCoordinator";
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 
   /**
    * CreateModule.svelte - COMPOSITION ROOT
@@ -84,7 +84,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
+  import { formatLOOPTypeForDisplay } from "$lib/shared/create/services/loop-type-utils";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { UndoOperationType } from "../services/implementations/UndoManager";
 

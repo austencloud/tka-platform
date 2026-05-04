@@ -8,7 +8,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 
 export type SequenceType = "primary" | "secondary";
 export type TransformOperation = "mirror" | "rotate" | "colorSwap" | "rewind";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 
 export class TunnelModeSequenceManager {

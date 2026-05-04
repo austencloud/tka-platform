@@ -19,7 +19,7 @@ import {
   invertMotionType,
   rotateLocation,
   getToggledGridMode,
-} from "./rotation-helpers";
+} from "$lib/shared/create/services/rotation-helpers";
 
 /**
  * Mirror a motion across the vertical axis (E ↔ W).

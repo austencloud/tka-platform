@@ -27,15 +27,15 @@ import type { SectionConfig, SequenceSection } from "$lib/shared/browse/domain/m
 
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
-import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
+import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
+import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getBrowseFilter } from "$lib/shared/browse/getBrowseFilter";
 import { getMultiFilter } from "$lib/shared/browse/getMultiFilter";
-import { sortSequences as browseSortSequences } from "$lib/features/browse/sequences/display/services/browse-sorter";
+import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import { getBrowseSectionManager } from "$lib/shared/browse/getBrowseSectionManager";
 import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";

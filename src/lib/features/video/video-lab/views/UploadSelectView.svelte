@@ -6,14 +6,14 @@
 -->
 <script lang="ts">
 
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
   import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+  import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 
   const STORAGE_KEY = "video-lab-sequence";
 

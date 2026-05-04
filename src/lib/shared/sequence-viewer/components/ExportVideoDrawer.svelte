@@ -17,7 +17,7 @@
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
-  import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
+  import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import "./bento/rail-tile.css";
   import "./pill-nav/pill-nav.css";

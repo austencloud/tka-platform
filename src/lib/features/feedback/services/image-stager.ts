@@ -10,7 +10,7 @@
  */
 
 import { getStorageInstance } from "$lib/shared/auth/firebase";
-import type { StagedUploadHandle, StagedProgressCallback } from "./contracts/types";
+import type { StagedUploadHandle, StagedProgressCallback } from "$lib/shared/feedback/domain/feedback-contract-types";
 
 export function stageImage(
   file: File,

@@ -6,7 +6,7 @@
    * Adapts tick density to current zoom.
    */
 
-  import type { TimeSeconds } from "../domain/timeline-types";
+  import type { TimeSeconds } from "$lib/shared/animation-engine/domain/timeline-types";
 
   interface Props {
     duration: TimeSeconds;

@@ -15,7 +15,7 @@
   import { getUserProfile } from "$lib/shared/community/services/user-repository";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import AvatarImage from "$lib/features/browse/creators/components/profile/AvatarImage.svelte";
+  import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import ProfileAdminSection from "$lib/features/browse/creators/components/profile/ProfileAdminSection.svelte";
   import UserActivityAnalytics from "./UserActivityAnalytics.svelte";

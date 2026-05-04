@@ -10,7 +10,7 @@ import type { LibraryCollection } from "$lib/shared/library/domain/models/Collec
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import { getUsers } from "$lib/shared/community/services/user-repository";
 import { getUserPublicCollections } from "$lib/features/library/services/public-collection-loader";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 
 /**
  * Creator library data - profile + their public content

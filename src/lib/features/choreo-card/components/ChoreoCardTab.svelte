@@ -11,7 +11,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import { onMount, onDestroy } from "svelte";
-  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import ChoreoCardNavigation from "./Navigation.svelte";

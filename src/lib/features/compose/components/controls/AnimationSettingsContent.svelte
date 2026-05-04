@@ -11,9 +11,9 @@
   Note: Export settings (loop count) are in ExportActionsPanel
 -->
 <script lang="ts">
-  import BpmChips from "./BpmChips.svelte";
-  import SimpleTrailControls from "../trail/SimpleTrailControls.svelte";
-  import PlaybackModeToggle from "./PlaybackModeToggle.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
+  import SimpleTrailControls from "$lib/shared/animation-engine/components/trail/SimpleTrailControls.svelte";
+  import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import StepModeSettings from "./StepModeSettings.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type {

@@ -13,7 +13,7 @@ import {
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { loopDetector } from "./implementations/LOOPDetector";
 import { convert as convertSequenceToEntry } from "$lib/features/choreo-card/services/sequence-to-entry-converter";
-import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
+import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 
 export interface LoopDisplay {
   components: Set<LOOPComponent>;

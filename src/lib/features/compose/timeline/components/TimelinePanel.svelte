@@ -21,7 +21,7 @@
     loadFromStorage,
     saveToStorage,
     TIMELINE_STORAGE_KEYS,
-  } from "../state/timeline-storage";
+  } from "$lib/shared/animation-engine/timeline/state/timeline-storage";
   import TimelineControls from "./TimelineControls.svelte";
   import ClipInspector from "./ClipInspector.svelte";
   import MediaBrowserPanel, {
@@ -30,7 +30,7 @@
   import TimelinePreview from "./TimelinePreview.svelte";
   import SourcePreview from "./SourcePreview.svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
-  import { timeToPixels, type TimelineTrack, type TimelineClip } from "../domain/timeline-types";
+  import { timeToPixels, type TimelineTrack, type TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { untrack } from "svelte";
 

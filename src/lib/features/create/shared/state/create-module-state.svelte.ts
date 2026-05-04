@@ -10,7 +10,7 @@ import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import { createCreateModulePersistenceController } from "./create-module/persistence-controller.svelte";
 import { createNavigationController } from "./create-module/navigation-controller.svelte";
 import { createOptionHistoryManager } from "./create-module/option-history-manager.svelte";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";

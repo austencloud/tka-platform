@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import HorizontalTransportRow from "$lib/shared/sequence-viewer/components/HorizontalTransportRow.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
 
   let {
     isPlaying,

@@ -17,7 +17,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
-  import type { TimelineClip } from "../domain/timeline-types";
+  import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
   import type { PropState } from "$lib/shared/foundation/domain/types/PropState";

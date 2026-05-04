@@ -1,4 +1,4 @@
-import type { DraftSaveStatus } from "../contracts/types";
+import type { DraftSaveStatus } from "$lib/shared/feedback/domain/feedback-contract-types";
 import type {
   FeedbackFormData,
   FeedbackDraft,

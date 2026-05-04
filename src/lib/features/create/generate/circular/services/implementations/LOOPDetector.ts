@@ -20,9 +20,9 @@ import type {
   ILOOPDetector,
   LOOPDetectionResult,
   CompoundPattern,
-} from "../contracts/ILOOPDetector";
+} from "$lib/shared/create/services/ILOOPDetector";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
-import { generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
+import { generateLOOPType } from "$lib/shared/create/services/loop-type-utils";
 import {
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,

@@ -3,7 +3,7 @@
   import PerformerChipStrip from "$lib/shared/3d/components/controls/PerformerChipStrip.svelte";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
-  import EffortPalette from "$lib/features/phrase-effort-lab/components/EffortPalette.svelte";
+  import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import { scale } from "svelte/transition";

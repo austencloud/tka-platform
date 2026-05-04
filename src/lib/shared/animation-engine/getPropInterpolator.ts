@@ -1,6 +1,6 @@
 import { PropInterpolator } from './services/implementations/PropInterpolator';
 import { createAngleCalculator } from './services/angle-calculator';
-import { getEndpointCalculator } from '$lib/features/compose/getEndpointCalculator';
+import { getEndpointCalculator } from '$lib/shared/animation-engine/getEndpointCalculator';
 
 let instance: PropInterpolator | null = null;
 export function getPropInterpolator(): PropInterpolator {

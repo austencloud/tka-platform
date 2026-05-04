@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+  import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import { doc, setDoc } from "firebase/firestore";
@@ -22,7 +22,7 @@
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
   import FollowersModal from "./profile/FollowersModal.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 
   interface Props {
     userId: string;

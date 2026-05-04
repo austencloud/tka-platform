@@ -15,7 +15,7 @@ import { getPoiSequenceValidator } from "$lib/features/poi-lab/getPoiSequenceVal
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PoiValidationResult } from "../domain/poi-models";
-  import ChoreoCardThumbnail from "$lib/features/browse/sequences/display/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
+  import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // State

@@ -8,11 +8,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // import { wrapGrid } from "animate-css-grid";
   import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
   import type { VariationGrouper } from "../services/implementations/VariationGrouper";
-  import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
-  import SectionHeader from "./SectionHeader.svelte";
+  import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
+  import SectionHeader from "$lib/shared/browse/components/SectionHeader.svelte";
   import VirtualizedSequenceGrid, {
     type VirtualGridApi,
-  } from "./VirtualizedSequenceGrid.svelte";
+  } from "$lib/shared/browse/components/VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";

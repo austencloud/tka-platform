@@ -9,8 +9,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { cellPreWarmer } from "./CellPreWarmer";
 

@@ -5,8 +5,8 @@
  * Templates replace the old "mode" concept with more flexible presets.
  */
 
-import type { CompositionTemplate, CellConfig, GridLayout } from "./types";
-import { generateCellId, getDefaultTrailSettings } from "./types";
+import type { CompositionTemplate, CellConfig, GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
+import { generateCellId, getDefaultTrailSettings } from "$lib/shared/animation-engine/domain/compose-types";
 
 // ============================================================================
 // Template Definitions

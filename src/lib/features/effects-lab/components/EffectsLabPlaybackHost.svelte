@@ -10,14 +10,14 @@
 
 import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
-import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
+import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+  import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";

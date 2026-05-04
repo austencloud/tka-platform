@@ -5,14 +5,14 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { EndState, SpinnerStats } from '$lib/shared/landing/domain/types';
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
-import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
+import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
 
 
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

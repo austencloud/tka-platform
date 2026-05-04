@@ -12,11 +12,11 @@
   import { onMount, onDestroy } from "svelte";
   import type { BrowseEngine } from "../engine/types";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
-  import ExpandableSearchBar from "$lib/features/browse/shared/components/ExpandableSearchBar.svelte";
-  import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
-  import FavoritesFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";
-  import LengthFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LengthFilterChip.svelte";
-  import LOOPFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LOOPFilterChip.svelte";
+  import ExpandableSearchBar from "$lib/shared/browse/components/ExpandableSearchBar.svelte";
+  import LevelFilterChip from "$lib/shared/browse/components/filter-chips/LevelFilterChip.svelte";
+  import FavoritesFilterChip from "$lib/shared/browse/components/filter-chips/FavoritesFilterChip.svelte";
+  import LengthFilterChip from "$lib/shared/browse/components/filter-chips/LengthFilterChip.svelte";
+  import LOOPFilterChip from "$lib/shared/browse/components/filter-chips/LOOPFilterChip.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { SequenceSource } from "../engine/types";
 

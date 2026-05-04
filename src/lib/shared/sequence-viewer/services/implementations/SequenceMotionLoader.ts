@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 
 export class SequenceMotionLoader {
   constructor(private readonly browseLoader: PublicSequencesLoader) {}

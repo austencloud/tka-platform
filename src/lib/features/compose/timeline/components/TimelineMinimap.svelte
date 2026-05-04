@@ -6,8 +6,8 @@
    * Helps users orient when zoomed in. Click to jump, drag to scroll.
    */
 
-  import type { TimelineClip } from "../domain/timeline-types";
-  import { getClipEndTime } from "../domain/timeline-types";
+  import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
+  import { getClipEndTime } from "$lib/shared/animation-engine/domain/timeline-types";
 
   interface Props {
     totalDuration: number;

@@ -5,7 +5,7 @@
   Auto-hides after 3 seconds and shows on tap.
 -->
 <script lang="ts">
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TempoControl from "./TempoControl.svelte";
 
   interface Props {

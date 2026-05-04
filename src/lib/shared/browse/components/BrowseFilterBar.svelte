@@ -8,10 +8,10 @@ Reads from / writes to a headless BrowseEngine instance.
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-  import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
-  import FavoritesFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";
-  import LengthFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LengthFilterChip.svelte";
-  import LOOPFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LOOPFilterChip.svelte";
+  import LevelFilterChip from "$lib/shared/browse/components/filter-chips/LevelFilterChip.svelte";
+  import FavoritesFilterChip from "$lib/shared/browse/components/filter-chips/FavoritesFilterChip.svelte";
+  import LengthFilterChip from "$lib/shared/browse/components/filter-chips/LengthFilterChip.svelte";
+  import LOOPFilterChip from "$lib/shared/browse/components/filter-chips/LOOPFilterChip.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseEngine } from "../engine/types";
 

@@ -13,7 +13,7 @@
   import ZapCustomize from "./customize/ZapCustomize.svelte";
   import ComingSoonCustomize from "./customize/ComingSoonCustomize.svelte";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import { LED_PRESET_GROUP } from "./presets/led-presets";
   import { FIRE_PRESET_GROUP } from "./presets/fire-presets";
   import { TRAIL_PRESET_GROUP } from "./presets/trail-presets";

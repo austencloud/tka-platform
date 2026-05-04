@@ -8,7 +8,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   import {
     LOOPType,
   } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
+  import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";

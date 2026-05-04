@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionIndexSidebar from "$lib/features/browse/sequences/navigation/components/SectionIndexSidebar.svelte";
+  import SectionIndexSidebar from "$lib/shared/browse/components/SectionIndexSidebar.svelte";
   import type { BrowseEngine } from "../engine/types";
 
   interface Props {

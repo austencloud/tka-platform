@@ -28,7 +28,7 @@ import type { TargetHand } from "./panel-coordination-state.svelte";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";

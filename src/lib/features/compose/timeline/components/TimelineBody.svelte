@@ -9,7 +9,7 @@
   import TimelineEmptyState from "./TimelineEmptyState.svelte";
   import TimelineMinimap from "./TimelineMinimap.svelte";
   import TimelineAudioTrack from "./TimelineAudioTrack.svelte";
-  import type { TimelineTrack, TimelineClip } from "../domain/timeline-types";
+  import type { TimelineTrack, TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
 
   interface Props {
     totalDuration: number;

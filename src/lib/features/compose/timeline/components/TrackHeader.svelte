@@ -6,7 +6,7 @@
    * Controls are hidden behind a three-dots menu for cleaner UI.
    */
 
-  import type { TimelineTrack } from "../domain/timeline-types";
+  import type { TimelineTrack } from "$lib/shared/animation-engine/domain/timeline-types";
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 

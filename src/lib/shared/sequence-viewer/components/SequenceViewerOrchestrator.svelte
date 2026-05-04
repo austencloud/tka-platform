@@ -1,7 +1,7 @@
 <script lang="ts" module>
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
 import { getViewer3DUndoManager } from "$lib/shared/3d/getViewer3DUndoManager";
 import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinator";

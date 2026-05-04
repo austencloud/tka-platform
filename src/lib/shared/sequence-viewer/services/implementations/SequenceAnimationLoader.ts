@@ -1,7 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 export interface AnimationLoadResult {

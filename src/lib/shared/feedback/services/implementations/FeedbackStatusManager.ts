@@ -199,7 +199,7 @@ export class FeedbackStatusService {
     await updateDoc(docRef, updateData);
 
     const updatedDoc = await getDoc(docRef);
-    const { mapDocToFeedbackItem } = await import("$lib/features/feedback/services/feedback-document-mapper");
+    const { mapDocToFeedbackItem } = await import("$lib/shared/feedback/services/feedback-document-mapper");
     return mapDocToFeedbackItem(
       updatedDoc.id,
       updatedDoc.data()!

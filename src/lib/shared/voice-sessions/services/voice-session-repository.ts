@@ -23,7 +23,7 @@ import type {
 import {
   getUserVoiceSessionsPath,
   VOICE_SESSION_LIMITS,
-} from "$lib/features/voice-sessions/data/firestore-paths";
+} from "$lib/shared/voice-sessions/data/firestore-paths";
 
 export class VoiceSessionError extends Error {
   constructor(

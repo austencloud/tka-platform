@@ -7,7 +7,7 @@
    */
 
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
-  import type { TimelineClip } from "../domain/timeline-types";
+  import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
   import ClipInfoSection from "./inspector/ClipInfoSection.svelte";
   import ClipSpeedSection from "./inspector/ClipSpeedSection.svelte";
   import ClipTrimSection from "./inspector/ClipTrimSection.svelte";

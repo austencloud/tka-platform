@@ -10,8 +10,8 @@ import type {
   CodexConfig,
   CodexLetterMapping,
   CodexLetterRow,
-} from "$lib/features/learn/codex/domain/models/codex-models";
-import { createLetterMapping } from "$lib/features/learn/codex/domain/models/codex-models";
+} from "$lib/shared/learn/domain/codex-models";
+import { createLetterMapping } from "$lib/shared/learn/domain/codex-models";
 
 export class CodexLetterMappingRepo {
   private configuration: CodexConfig | null = null;

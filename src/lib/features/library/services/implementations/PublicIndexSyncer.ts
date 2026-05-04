@@ -34,7 +34,7 @@ interface ContentModerator {
 interface ContentAppealManager {
   isWhitelisted(contentType: 'sequence' | 'act', contentId: string): Promise<boolean>;
 }
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";

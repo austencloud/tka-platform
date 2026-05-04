@@ -13,7 +13,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { Phase1OverlayRenderer } from "../../services/implementations/Phase1OverlayRenderer";
   import type { Phase1Result } from "../../domain/models";
-  import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
+  import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
   import DetectionOverlay from "./DetectionOverlay.svelte";
   import FrameDataPanel from "./FrameDataPanel.svelte";
 

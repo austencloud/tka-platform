@@ -32,7 +32,7 @@ import type { DeepLinkSequenceHandler } from "./DeepLinkSequenceHandler";
 import type { NavigationSyncer } from "./NavigationSyncer";
 import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
-import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
@@ -316,7 +316,7 @@ export class CreateModuleInitializer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceRepository } from "./SequenceRepository";
+import { sequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import { sequencePersister } from "./SequencePersister";
 import { startPositionManager } from "$lib/shared/create/services/StartPositionManager";
 import { createModuleOrchestrator } from "./CreateModuleOrchestrator";

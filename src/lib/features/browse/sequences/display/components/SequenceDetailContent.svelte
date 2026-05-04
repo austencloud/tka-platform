@@ -11,12 +11,12 @@ Used by both desktop side panel and mobile slide-up overlay.
 <script lang="ts">
 
 import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { SequenceDetailLoader } from "../services/implementations/SequenceDetailLoader";
+  import type { SequenceDetailLoader } from "$lib/shared/browse/services/SequenceDetailLoader";
   import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
   import type { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
   import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
@@ -26,7 +26,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
   import { resolvePresentation } from "$lib/shared/sequence-viewer/services/presentation-resolver";
 import type { ViewingContext } from "$lib/shared/sequence-viewer/services/presentation-resolver";
-  import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+  import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
   import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
   import { getVideoCountManager } from "../getVideoCountManager";
   import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";

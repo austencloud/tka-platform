@@ -31,7 +31,7 @@ import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter"
 import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
   import type { VideoExporter } from "$lib/shared/animation-engine/services/implementations/VideoExporter";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import {

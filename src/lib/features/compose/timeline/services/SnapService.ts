@@ -12,8 +12,8 @@ import type {
   TimeSeconds,
   SnapSettings,
   TimelineClip,
-} from "../domain/timeline-types";
-import { getClipEndTime } from "../domain/timeline-types";
+} from "$lib/shared/animation-engine/domain/timeline-types";
+import { getClipEndTime } from "$lib/shared/animation-engine/domain/timeline-types";
 import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
 
 // ============================================================================

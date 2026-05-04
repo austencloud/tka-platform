@@ -12,7 +12,7 @@ import {
 	GridLocation,
 	GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { GridHitTarget } from "$lib/features/assemble-lab/services/contracts/types";
+import type { GridHitTarget } from "$lib/shared/assemble-lab/domain/types";
 
 /** Parse "(x, y)" string format from gridCoordinates into numbers */
 function parseCoord(coordString: string): { x: number; y: number } {

@@ -159,4 +159,4 @@ export interface RotationDirections {
 }
 
 // Re-exporting TurnAllocation for backwards compatibility
-export type { TurnAllocation } from "../../services/contracts/types";
+export type { TurnAllocation } from "$lib/shared/create/domain/generator-contract-types";

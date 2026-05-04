@@ -3,7 +3,7 @@ import type {
   ILOOPDetector,
   LOOPDetectionResult,
   ModularPattern,
-} from "../contracts/ILOOPDetector";
+} from "$lib/shared/create/services/ILOOPDetector";
 import type { TransformationIntervals } from "../../domain/models/label-models";
 import type { StepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
 import type { PolyrhythmicLOOPResult } from "../polyrhythmic-detector";

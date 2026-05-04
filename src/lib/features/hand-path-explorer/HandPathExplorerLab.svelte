@@ -6,8 +6,8 @@
   which paths are reused most across your library.
 -->
 <script lang="ts">
-  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
-  import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
+  import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
   import { createExplorerState } from "./state/explorer-state.svelte";
   import { setExplorerContext } from "./context/explorer-context";
   import HandPathCard from "./components/HandPathCard.svelte";

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { Workbench } from './services/implementations/Workbench';
-import { getSequenceRepository } from '$lib/features/create/shared/getSequenceRepository';
+import { getSequenceRepository } from '$lib/shared/create/getSequenceRepository';
 
 let instance: Workbench | null = null;
 

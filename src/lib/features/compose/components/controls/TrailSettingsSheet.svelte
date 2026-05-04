@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import SimpleTrailControls from "../trail/SimpleTrailControls.svelte";
+  import SimpleTrailControls from "$lib/shared/animation-engine/components/trail/SimpleTrailControls.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   let {

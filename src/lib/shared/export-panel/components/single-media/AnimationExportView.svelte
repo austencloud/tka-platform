@@ -14,7 +14,7 @@
 -->
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import AnimationControlsPanel from "$lib/features/compose/components/canvas/AnimationControlsPanel.svelte";
+  import AnimationControlsPanel from "$lib/shared/animation-engine/components/canvas/AnimationControlsPanel.svelte";
   import { getAnimationExportContext } from "../../context/animation-export-context.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 

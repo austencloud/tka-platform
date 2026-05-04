@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import CreatePanelDrawer from "$lib/features/create/shared/components/CreatePanelDrawer.svelte";
-  import PanelHeader from "$lib/features/create/shared/components/PanelHeader.svelte";
+  import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import VideoRecordPanel from "./VideoRecordPanel.svelte";
   import type { RecordingResult } from "../services/contracts/types";

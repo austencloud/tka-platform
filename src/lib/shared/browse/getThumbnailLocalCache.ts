@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ThumbnailLocalCache } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailLocalCache';
+import { ThumbnailLocalCache } from '$lib/shared/browse/services/ThumbnailLocalCache';
 
 let instance: ThumbnailLocalCache | null = null;
 

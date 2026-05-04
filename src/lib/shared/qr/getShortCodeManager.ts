@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import { ShortCodeManager } from './services/implementations/ShortCodeManager';
 import { getPublicSequenceHashMatcher } from '$lib/shared/sequence-viewer/getPublicSequenceHashMatcher';
 

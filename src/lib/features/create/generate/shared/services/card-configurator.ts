@@ -7,7 +7,7 @@ import {
   periodToNumber,
 } from "../../circular/domain/models/circular-models";
 import { minLength as minLengthEngine } from "@tka/sequence-engine/generation";
-import type { CardDescriptor, CardHandlers } from "./contracts/types";
+import type { CardDescriptor, CardHandlers } from "$lib/shared/create/domain/generator-contract-types";
 
 /**
  * Derive minimum sequence length for a LOOP configuration via the engine's

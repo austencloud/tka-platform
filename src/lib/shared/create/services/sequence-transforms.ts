@@ -38,16 +38,16 @@ import {
   colorSwapBeat,
   invertBeat,
   rewindBeat,
-} from "$lib/features/create/shared/services/implementations/sequence-transforms/step-transforms";
+} from "$lib/shared/create/services/step-transforms";
 import {
   mirrorStartPosition,
   flipStartPosition,
   rotateStartPosition,
   colorSwapStartPosition,
   invertStartPosition,
-} from "$lib/features/create/shared/services/implementations/sequence-transforms/start-position-transforms";
+} from "$lib/shared/create/services/start-position-transforms";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
-import { getToggledGridMode } from "$lib/features/create/shared/services/implementations/sequence-transforms/rotation-helpers";
+import { getToggledGridMode } from "$lib/shared/create/services/rotation-helpers";
 import type { TargetHand } from "$lib/shared/create/state/panel-coordination-state.svelte";
 
 /**

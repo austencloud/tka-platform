@@ -22,7 +22,7 @@ export interface BackgroundExportConfig {
 import type {
   ExportWorkerMessage,
   ExportWorkerResponse,
-} from "../../workers/video-export.worker";
+} from "$lib/shared/animation-engine/workers/video-export.worker";
 import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
 
 export class BackgroundVideoEncoder {

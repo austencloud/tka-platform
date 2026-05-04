@@ -21,7 +21,7 @@
 	import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
-	import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
+	import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
 	import ChoreoCard from "./ChoreoCard.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";

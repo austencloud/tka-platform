@@ -11,7 +11,7 @@ import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/impl
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
-import { executeClearSequenceWorkflow } from "$lib/features/create/shared/utils/clearSequenceWorkflow";
+import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clearSequenceWorkflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";

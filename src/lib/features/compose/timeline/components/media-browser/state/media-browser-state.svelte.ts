@@ -4,10 +4,10 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
 import type { BrowseFilter } from "$lib/features/browse/sequences/display/services/implementations/BrowseFilter";
-import { sortSequences as browseSortSequences } from "$lib/features/browse/sequences/display/services/browse-sorter";
+import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";

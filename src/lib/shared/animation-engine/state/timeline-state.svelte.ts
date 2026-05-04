@@ -15,14 +15,14 @@ import {
   createProject, createTrack, createClip, createDefaultPlayheadState, createDefaultSelectionState, createDefaultViewportState, generateClipId, getClipEndTime, calculateProjectDuration, snapTime, } from "../domain/timeline-types";
 
 import {
-  loadFromStorage, saveToStorage, TIMELINE_STORAGE_KEYS, } from "./timeline-storage";
-import { getStepTimes } from "../services/StepGridCalculator";
-import { createPlayheadActions } from "./actions/playhead-actions";
-import { createSelectionActions } from "./actions/selection-actions";
-import { createViewportActions } from "./actions/viewport-actions";
-import { createUIStateActions } from "./actions/ui-state-actions";
-import { getTimelineUndoManager } from "../services/implementations/TimelineUndoManager";
-import type { TimelineUndoOperationType } from "../services/contracts/types";
+  loadFromStorage, saveToStorage, TIMELINE_STORAGE_KEYS, } from "$lib/shared/animation-engine/timeline/state/timeline-storage";
+import { getStepTimes } from "$lib/shared/animation-engine/timeline/services/StepGridCalculator";
+import { createPlayheadActions } from "$lib/shared/animation-engine/timeline/state/actions/playhead-actions";
+import { createSelectionActions } from "$lib/shared/animation-engine/timeline/state/actions/selection-actions";
+import { createViewportActions } from "$lib/shared/animation-engine/timeline/state/actions/viewport-actions";
+import { createUIStateActions } from "$lib/shared/animation-engine/timeline/state/actions/ui-state-actions";
+import { getTimelineUndoManager } from "$lib/shared/animation-engine/timeline/services/TimelineUndoManager";
+import type { TimelineUndoOperationType } from "$lib/shared/animation-engine/timeline/domain/types";
 
 // ============================================================================
 // Project Deduplication Helper

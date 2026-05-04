@@ -20,7 +20,7 @@ import {
   calculateStaticStaffAngle,
   calculateDashTargetAngle,
   calculateFloatStaffAngle,
-} from "../motion-calculator";
+} from "$lib/shared/animation-engine/services/motion-calculator";
 import { PI } from "$lib/shared/foundation/domain/math-constants";
 
 // ✅ ELIMINATED: StepEndpoints and StepDefinition - pointless reshuffling!

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
+  import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 

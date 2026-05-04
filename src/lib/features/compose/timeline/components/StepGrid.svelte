@@ -9,7 +9,7 @@
    */
 
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
-  import type { TimeSeconds } from "../domain/timeline-types";
+  import type { TimeSeconds } from "$lib/shared/animation-engine/domain/timeline-types";
   import {
     calculateStepMarkers,
     calculateMeasureMarkers,
@@ -17,8 +17,8 @@
     type StepMarker,
     type MeasureMarker,
     type SubdivisionMarker,
-  } from "../services/StepGridCalculator";
-  import { timeToPixels } from "../domain/timeline-types";
+  } from "$lib/shared/animation-engine/timeline/services/StepGridCalculator";
+  import { timeToPixels } from "$lib/shared/animation-engine/domain/timeline-types";
 
   interface Props {
     bpm: number;

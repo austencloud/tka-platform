@@ -20,8 +20,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { compareKineticLetters } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 
 export type LibraryViewSection =
   | "sequences"

@@ -13,8 +13,8 @@ import type { LibraryQueryOptions } from "$lib/features/library/services/contrac
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import { convertFileName } from "../services/file-name-converter";
 
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 
 export interface RetroFile {
 	id: string;

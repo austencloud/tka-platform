@@ -19,16 +19,16 @@
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { getThumbnailRenderOrchestrator } from '$lib/shared/browse/getThumbnailRenderOrchestrator';
-  import { deriveKey as deriveThumbnailKey } from '$lib/features/browse/sequences/display/services/thumbnail-key-deriver';
-  import { getThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/getThumbnailMetricsCollector';
+  import { deriveKey as deriveThumbnailKey } from '$lib/shared/browse/services/thumbnail-key-deriver';
+  import { getThumbnailMetricsCollector } from '$lib/shared/browse/getThumbnailMetricsCollector';
   import { getThumbnailLocalCache } from '$lib/shared/browse/getThumbnailLocalCache';
-  import { PublicSequencesLoader } from '$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader';
+  import { PublicSequencesLoader } from '$lib/shared/browse/services/PublicSequencesLoader';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-  import type { ThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator';
-  import type { ThumbnailRenderInput } from '$lib/features/browse/sequences/display/services/thumbnail-key-deriver';
+  import type { ThumbnailRenderOrchestrator } from '$lib/shared/browse/services/ThumbnailRenderOrchestrator';
+  import type { ThumbnailRenderInput } from '$lib/shared/browse/services/thumbnail-key-deriver';
   import type { ThumbnailMetricsSummary } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector';
 import type { ThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector';
-  import type { ThumbnailLocalCache } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailLocalCache';
+  import type { ThumbnailLocalCache } from '$lib/shared/browse/services/ThumbnailLocalCache';
 
   // Configuration
   const DEFAULT_SEQUENCE_COUNT = 50;

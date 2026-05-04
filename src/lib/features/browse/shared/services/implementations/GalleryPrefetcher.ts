@@ -9,7 +9,7 @@
  * No skeleton loaders. No Firestore wait.
  */
 
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { GalleryOfflineCache } from "../../../../../shared/offline/services/implementations/GalleryOfflineCache";
 import {
   onLibraryMutated,

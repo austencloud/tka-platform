@@ -6,9 +6,9 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { ActiveClipInfo } from "../contracts/types";
-import type { TimeSeconds, TimelineClip } from "../../domain/timeline-types";
-import { getClipEndTime } from "../../domain/timeline-types";
+import type { ActiveClipInfo } from "$lib/shared/animation-engine/timeline/domain/types";
+import type { TimeSeconds, TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
+import { getClipEndTime } from "$lib/shared/animation-engine/domain/timeline-types";
 import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 

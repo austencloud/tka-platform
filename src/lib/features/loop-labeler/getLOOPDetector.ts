@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { ILOOPDetector } from './services/contracts/ILOOPDetector';
+import type { ILOOPDetector } from '$lib/shared/create/services/ILOOPDetector';
 import { LOOPDetector } from './services/implementations/LOOPDetector';
 import { getStepComparisonOrchestrator } from './getStepComparisonOrchestrator';
 import { getTransformationAnalyzer } from './getTransformationAnalyzer';

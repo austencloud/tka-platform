@@ -11,7 +11,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
-  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 
   const animationState = createAnimationPanelState();
   const visibilityManager = getAnimationVisibilityManager();

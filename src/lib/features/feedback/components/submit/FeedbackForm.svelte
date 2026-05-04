@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import type { VoiceRecordingResult } from "../../services/contracts/types";
+  import type { VoiceRecordingResult } from "$lib/shared/feedback/domain/feedback-contract-types";
   import { getVoiceRecorder } from "$lib/features/feedback/getVoiceRecorder";
   import * as transcriptionClient from "$lib/features/feedback/services/transcription-client";
   import { getFormDraftPersister } from "$lib/features/feedback/getFormDraftPersister";

@@ -10,7 +10,7 @@ import type {
   VersionFeedbackItem,
   ChangelogEntry,
 } from "../domain/models/version-models";
-import { generateFromFeedback } from "$lib/features/feedback/services/changelog/changelog-generator";
+import { generateFromFeedback } from "$lib/shared/feedback/services/changelog-generator";
 
 export interface VersionState {
   // Data

@@ -19,7 +19,7 @@
   import { Z_ORDER } from "$lib/shared/render-graph/domain/RenderPass";
   import { toTrailPassPayload } from "$lib/shared/render-graph/translators/TrailTranslator";
   import type { TrailsIntent } from "$lib/shared/effects/domain/EffectsConfig";
-  import { Canvas2DTrailRenderer } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DTrailRenderer";
+  import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DTrailRenderer";
   import {
     TrailMode,
     TrailEffect,

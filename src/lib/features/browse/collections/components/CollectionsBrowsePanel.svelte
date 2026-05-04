@@ -8,7 +8,7 @@ Uses singleton state for caching - data persists across tab switches.
 -->
 <script lang="ts">
 
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
@@ -23,7 +23,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
-import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
+import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 
   // Services
   let libraryService: LibraryRepository;

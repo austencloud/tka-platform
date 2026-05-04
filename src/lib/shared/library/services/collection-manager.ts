@@ -46,7 +46,7 @@ import {
   batchFetchSequences,
   batchFetchPublicSequences,
   CollectionError,
-} from "$lib/features/library/services/implementations/collection-firestore-mapper";
+} from "$lib/shared/library/services/collection-firestore-mapper";
 
 // Re-export so existing imports of CollectionError from this module still work
 export { CollectionError };

@@ -29,7 +29,7 @@ import {
   type SequenceData,
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import {
   encodeSequenceForQR,
   isInlineEncoded,

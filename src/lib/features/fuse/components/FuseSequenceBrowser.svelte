@@ -8,7 +8,7 @@
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+	import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 	import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";

@@ -25,7 +25,7 @@ import type {
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrackingMode } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import { Canvas2DTrailRenderer } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DTrailRenderer";
+import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DTrailRenderer";
 import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
 import { calculatePropCenter } from "$lib/shared/animation-engine/services/prop-position-calculator";
 import { getTipPoints } from "../../domain/types/PropTipPoints";

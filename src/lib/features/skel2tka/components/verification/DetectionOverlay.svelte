@@ -8,7 +8,7 @@
 <script lang="ts">
   import type { Phase1OverlayRenderer } from "../../services/implementations/Phase1OverlayRenderer";
 import type { OverlayRenderContext } from "../../services/contracts/types";
-  import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
+  import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
   import type { DetectedBeat } from "../../domain/models";
 
   let {

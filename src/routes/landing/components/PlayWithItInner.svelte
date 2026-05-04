@@ -9,14 +9,14 @@
 <script lang="ts">
 
 import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
-import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
+import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { EndState } from '$lib/shared/landing/domain/types';
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -28,7 +28,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import { generationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
+  import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     animationSettings,

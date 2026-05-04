@@ -15,8 +15,8 @@ import {
   LOOP_TYPE_LABELS,
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
-import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
+import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
+import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 
 // Constants

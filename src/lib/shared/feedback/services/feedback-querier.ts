@@ -17,13 +17,13 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreGet, firestoreList } from "$lib/shared/firestore";
-import type { FeedbackQueryResult } from "$lib/features/feedback/services/contracts/types";
+import type { FeedbackQueryResult } from "$lib/shared/feedback/domain/feedback-contract-types";
 import type {
   FeedbackItem,
   FeedbackFilterOptions,
 } from "$lib/shared/feedback/domain/models/feedback-models";
 import { FeedbackItemSchema } from "../domain/models/feedback-schemas";
-import * as feedbackDocumentMapper from "$lib/features/feedback/services/feedback-document-mapper";
+import * as feedbackDocumentMapper from "$lib/shared/feedback/services/feedback-document-mapper";
 
 const COLLECTION_NAME = "feedback";
 

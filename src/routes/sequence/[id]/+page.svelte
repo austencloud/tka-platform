@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
+import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { page } from "$app/stores";

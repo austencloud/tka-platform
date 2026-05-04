@@ -20,7 +20,7 @@ export interface ClearSequenceParams {
   panelState: PanelCoordinationState;
 }
 import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
-import { executeClearSequenceWorkflow } from "../../utils/clearSequenceWorkflow";
+import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clearSequenceWorkflow";
 
 export class CreateModuleHandlers {
   constructor(
