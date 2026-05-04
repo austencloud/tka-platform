@@ -9,7 +9,7 @@
 
 import type { Sharer } from "$lib/shared/share/services/implementations/Sharer";
 import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
+import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ExportSettings } from "../../domain/models/ExportSettings";
 import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "../contracts/types";

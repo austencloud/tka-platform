@@ -1,8 +1,9 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { PreviewCellRenderOptions } from "../contracts/types";
-import type { PreWarmPriority } from "../contracts/types";
+import type { PreviewCellRenderOptions } from "../preview-cell-renderer";
 import type { LayerRenderOptions, LayerVisibility } from "../../../render/services/contracts/types";
+
+export type PreWarmPriority = "background" | "user-visible" | "user-blocking";
 import { cellCacheKeyDeriver } from "./CellCacheKeyDeriver";
 import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";

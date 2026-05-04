@@ -10,7 +10,12 @@
  */
 
 import { browser } from "$app/environment";
-import type { TikaPictographCacheStats } from "../contracts/types";
+
+export interface TikaPictographCacheStats {
+  memoryCount: number;
+  persistedCount: number;
+  sizeBytes: number;
+}
 
 const DB_NAME = "tika-pictograph-cache";
 const STORE_NAME = "pictographs";

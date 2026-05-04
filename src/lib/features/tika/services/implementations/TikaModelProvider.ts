@@ -7,7 +7,11 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import type { LanguageModel } from "ai";
-import type { ModelConfig } from "../contracts/types";
+
+export interface ModelConfig {
+  provider: "anthropic" | "deepseek";
+  modelId: string;
+}
 
 const MODELS: Record<string, ModelConfig> = {
   "sonnet-4": { provider: "anthropic", modelId: "claude-sonnet-4-6" },

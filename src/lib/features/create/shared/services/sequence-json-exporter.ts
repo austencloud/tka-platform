@@ -2,7 +2,47 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "../domain/models/StepData";
 import type { StartPositionData } from "../domain/models/StartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { MinimalSequence, MinimalStep, MinimalMotion } from "./contracts/types";
+
+export interface MinimalMotion {
+  type: string;
+  dir: string;
+  startLoc: string;
+  endLoc: string;
+  turns: number;
+  startOri: string;
+  endOri: string;
+}
+
+export interface MinimalStep {
+  step: number;
+  letter: string;
+  startPos: string;
+  endPos: string;
+  blue: MinimalMotion | null;
+  red: MinimalMotion | null;
+}
+
+export interface SequenceKey {
+  startPos: string;
+  endPos: string;
+  startLoc: string;
+  endLoc: string;
+  startOri: string;
+  endOri: string;
+  type: string;
+  dir: string;
+  turns: string;
+}
+
+export interface MinimalSequence {
+  key: SequenceKey;
+  name: string;
+  word: string;
+  isCircular: boolean;
+  gridMode: string;
+  startPosition: MinimalStep | null;
+  steps: (MinimalStep | null)[];
+}
 
 /** Union type for beat-like objects that can be exported */
 type StepLike = StepData | StartPositionData | null | undefined;

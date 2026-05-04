@@ -1,8 +1,13 @@
-import type { PendingAction, PendingActionType } from "../contracts/types";
-import {
-  PENDING_URL_PARAM,
-  PENDING_ACTION_TTL_MS,
-} from "../contracts/types";
+export type PendingActionType = 'save' | 'favorite' | 'publish' | 'remix' | 'sendTo';
+
+export interface PendingAction {
+  type: PendingActionType;
+  sequenceId: string;
+  ts: number;
+}
+
+export const PENDING_URL_PARAM = 'pending';
+export const PENDING_ACTION_TTL_MS = 10 * 60 * 1000;
 
 const VALID_TYPES: ReadonlySet<PendingActionType> = new Set([
   "save",

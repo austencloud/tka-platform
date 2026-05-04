@@ -7,12 +7,12 @@
 import {
   doc,
   updateDoc,
-  deleteDoc,
   getDoc,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreDelete } from "$lib/shared/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 import type { FeedbackItem, FeedbackStatus, StatusHistoryEntry, } from "../../domain/models/feedback-models";
@@ -107,9 +107,7 @@ export class FeedbackStatusService {
   }
 
   async deleteFeedback(feedbackId: string): Promise<void> {
-    const firestore = await getFirestoreInstance();
-    const docRef = doc(firestore, COLLECTION_NAME, feedbackId);
-    await deleteDoc(docRef);
+    await firestoreDelete(COLLECTION_NAME, feedbackId);
   }
 
   async updateFeedback(
@@ -212,7 +210,6 @@ export class FeedbackStatusService {
   }
 
   async deleteUserFeedback(feedbackId: string): Promise<void> {
-    const firestore = await getFirestoreInstance();
     const user = authState.user;
     if (!user) {
       throw new Error("User must be authenticated to delete feedback");
@@ -231,8 +228,7 @@ export class FeedbackStatusService {
       throw new Error("Cannot delete feedback that is already being processed");
     }
 
-    const docRef = doc(firestore, COLLECTION_NAME, feedbackId);
-    await deleteDoc(docRef);
+    await firestoreDelete(COLLECTION_NAME, feedbackId);
   }
 }
 

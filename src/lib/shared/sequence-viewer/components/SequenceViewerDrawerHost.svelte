@@ -42,7 +42,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
+  import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
   import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
@@ -452,7 +452,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                                 simplifyRepeatedWord(rawName)
                               );
                               const safeName =
-                                fileDownloader.sanitizeFilename(simplified) ||
+                                sanitizeFilename(simplified) ||
                                 "sequence";
                               const a = document.createElement("a");
                               a.href = ctx.previewBlobUrl!;

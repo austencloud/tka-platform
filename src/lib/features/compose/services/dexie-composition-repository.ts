@@ -8,7 +8,36 @@
 
 import type { Composition } from "../compose/domain/types";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
-import type { CompositionQueryOptions, CompositionStats } from "./contracts/types";
+
+/**
+ * Options for querying compositions
+ */
+export interface CompositionQueryOptions {
+  /** Filter by favorite status */
+  isFavorite?: boolean;
+  /** Search query (name) */
+  searchQuery?: string;
+  /** Sort field */
+  sortBy?: "name" | "createdAt" | "updatedAt";
+  /** Sort direction */
+  sortDirection?: "asc" | "desc";
+  /** Maximum results */
+  limit?: number;
+  /** Pagination offset */
+  offset?: number;
+}
+
+/**
+ * Statistics about saved compositions
+ */
+export interface CompositionStats {
+  /** Total compositions saved */
+  totalCompositions: number;
+  /** Favorite compositions */
+  favoriteCompositions: number;
+  /** Total cells across all compositions */
+  totalCells: number;
+}
 
 // ============================================================================
 // CRUD OPERATIONS

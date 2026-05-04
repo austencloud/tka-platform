@@ -23,8 +23,8 @@ export async function getMyFavorite(userId: string): Promise<FavoriteConfig | nu
     if (!fav || !fav.config) return null;
 
     return {
-      config: fav.config as UIGenerationConfig,
-      startEndOptions: (fav.startEndOptions as StartEndOptions) ?? null,
+      config: fav.config as unknown as UIGenerationConfig,
+      startEndOptions: (fav.startEndOptions as unknown as StartEndOptions) ?? null,
       setAt: fav.setAt ?? new Date(),
     };
   } catch (error) {
@@ -82,8 +82,8 @@ export async function getCommunityFavorites(limitCount = 20): Promise<CommunityF
         userId: user.id,
         displayName: user.displayName ?? "Unknown",
         avatar: user.photoURL ?? undefined,
-        config: fav.config as UIGenerationConfig,
-        startEndOptions: (fav.startEndOptions as StartEndOptions) ?? null,
+        config: fav.config as unknown as UIGenerationConfig,
+        startEndOptions: (fav.startEndOptions as unknown as StartEndOptions) ?? null,
         setAt: fav.setAt ?? new Date(),
       });
     }

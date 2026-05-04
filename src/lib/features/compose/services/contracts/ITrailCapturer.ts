@@ -13,49 +13,21 @@ import type {
   TrailPoint,
   TrailSettings,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { PropState } from "../../shared/domain/types/PropState";
+import type {
+  TrailCapturePropStates,
+  TrailCaptureConfig,
+  IAnimationCacheService,
+  IPerformanceMonitorService,
+} from "../implementations/TrailCapturer";
 
-/**
- * Prop states for one additional tunnel layer
- */
-export interface AdditionalLayerProps {
-  blueProp: PropState | null;
-  redProp: PropState | null;
-}
-
-/**
- * Prop states for trail capture (distinct from the simpler PropStates in domain)
- */
-export interface TrailCapturePropStates {
-  blueProp: PropState | null;
-  redProp: PropState | null;
-  /** Additional tunnel layers (index 0 = layer 1, up to 3 additional layers) */
-  additionalLayers?: AdditionalLayerProps[];
-}
-
-/**
- * Prop dimensions for endpoint calculation
- */
-export interface PropDimensions {
-  width: number;
-  height: number;
-}
-
-/**
- * Trail capture configuration
- */
-export interface TrailCaptureConfig {
-  canvasSize: number;
-  bluePropDimensions: PropDimensions;
-  redPropDimensions: PropDimensions;
-  trailSettings: TrailSettings;
-  /** Prop type for blue prop (e.g., "staff", "minihoop") - used for bilateral detection */
-  bluePropType?: string | null;
-  /** Prop type for red prop (e.g., "staff", "minihoop") - used for bilateral detection */
-  redPropType?: string | null;
-  /** Whether the sequence returns to its starting position (LOOP pattern) */
-  isSeamlesslyLoopable?: boolean;
-}
+export type {
+  AdditionalLayerProps,
+  TrailCapturePropStates,
+  PropDimensions,
+  TrailCaptureConfig,
+  IAnimationCacheService,
+  IPerformanceMonitorService,
+} from "../implementations/TrailCapturer";
 
 /**
  * Service for capturing trail points during animation
@@ -129,27 +101,4 @@ export interface ITrailCapturer {
    * Set the performance monitor for adaptive sampling
    */
   setPerformanceMonitor(monitor: IPerformanceMonitorService | null): void;
-}
-
-/**
- * Animation cache service interface
- * Implemented by AnimationPathCache for backfilling trail gaps during device stutters
- */
-export interface IAnimationCacheService {
-  getCachedPoints(
-    propIndex: 0 | 1,
-    tipIndex: number,
-    startStep: number,
-    endStep: number,
-    canvasSize: number
-  ): TrailPoint[];
-  isValid(): boolean;
-}
-
-/**
- * Performance monitor interface
- * Provides adaptive point spacing based on device performance
- */
-export interface IPerformanceMonitorService {
-  getAdaptivePointSpacing(): number;
 }

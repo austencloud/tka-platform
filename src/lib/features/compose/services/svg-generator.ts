@@ -1,5 +1,10 @@
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { PropSvgData } from "./contracts/types";
+
+export interface PropSvgData {
+  svg: string;
+  width: number;
+  height: number;
+}
 import {
   applyColorToSvg,
   SELECTIVE_COLOR_PROP_TYPES,

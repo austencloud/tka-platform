@@ -1,7 +1,30 @@
 // src/lib/shared/3d/services/implementations/HingeConstrainedLegIKSolver.ts
 
 import { Vector3, Quaternion, Matrix4 } from "three";
-import type { LegIKInput } from "../contracts/types";
+import type { BoneChain } from "./AvatarSkeletonBuilder";
+
+export interface LegIKInput {
+  /** The leg chain: UpLeg -> Leg -> Foot */
+  chain: BoneChain;
+  /** World-space target position for the foot bone */
+  footTarget: Vector3;
+  /** Ground normal at the target (for foot rotation alignment).
+   *  Usually (0, 1, 0). */
+  groundNormal: Vector3;
+  /** Forward direction the foot should face (for toe alignment).
+   *  Usually the avatar's facing direction. */
+  footForward: Vector3;
+  /** Sagittal hinge axis in UpLeg local space.
+   *  Derived at skeleton-build time from the cross product of the
+   *  rest-pose UpLeg direction and the rest-pose Leg direction -
+   *  that gives the axis perpendicular to the natural bend plane. */
+  kneeHingeAxis: Vector3;
+  /** Forward vector biasing the knee bend direction. Prevents the
+   *  knee from flipping backward when the target is directly below. */
+  poleDirection: Vector3;
+  /** Blend weight 0-1 (0 = leave bones untouched, 1 = fully IK pose) */
+  weight: number;
+}
 
 /**
  * HingeConstrainedLegIKSolver

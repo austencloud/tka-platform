@@ -8,8 +8,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
 import type { UndoManager } from "../../services/implementations/UndoManager";
-import type { UndoMetadata } from "../../services/contracts/types";
-import { UndoOperationType } from "../../services/contracts/types";
+import type { UndoMetadata } from "../../services/implementations/UndoManager";
+import { UndoOperationType } from "../../services/implementations/UndoManager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 // @ts-ignore tsc doesn't recognize Svelte module script exports, but svelte-check does

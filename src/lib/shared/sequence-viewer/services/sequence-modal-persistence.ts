@@ -1,4 +1,4 @@
-import type { ViewMode } from "./contracts/types";
+export type ViewMode = "animation" | "image" | "split";
 
 const STORAGE_KEYS = {
   viewMode: "tka_sequence_details_view_mode",

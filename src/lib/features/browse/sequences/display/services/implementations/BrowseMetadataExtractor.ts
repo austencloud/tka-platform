@@ -22,8 +22,20 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { extractMetadata as extractUniversalMetadata } from "$lib/shared/services/universal-metadata-extractor";
-import type { SequenceMetadata } from "../contracts/types";
 import * as difficultyCalculator from "../sequence-difficulty-calculator";
+
+export interface SequenceMetadata {
+  steps: StepData[];
+  author: string;
+  difficultyLevel: string;
+  dateAdded: Date;
+  gridMode: GridMode;
+  isCircular: boolean;
+  propType: PropType;
+  sequenceLength: number;
+  startingPosition: string; // Just the letter/position name (e.g., "gamma")
+  startPosition?: StartPositionData; // Full start position data with motions
+}
 // Constants for metadata extraction
 // Using function to avoid module-level enum reference (fixes test initialization)
 const getDefaultMetadata = (): SequenceMetadata => ({

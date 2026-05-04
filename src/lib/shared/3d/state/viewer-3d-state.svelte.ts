@@ -15,7 +15,7 @@ import type { Viewer3DUndoManager } from "../services/implementations/Viewer3DUn
 import type {
   PerformerSnapshot,
   ViewerSnapshot,
-} from "../services/contracts/types";
+} from "../services/implementations/Viewer3DUndoManager";
 import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
 import { Plane } from "../domain/enums/Plane";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";

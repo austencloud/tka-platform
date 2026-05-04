@@ -6,10 +6,29 @@
  */
 
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
-import type {
-  AnimationVisibilityState,
-  VisibilityStateCallback,
-} from "../contracts/types";
+import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
+
+/**
+ * All visibility settings as a single object
+ */
+export interface AnimationVisibilityState {
+  grid: boolean;
+  stepNumbers: boolean;
+  props: boolean;
+  trails: boolean;
+  tkaGlyph: boolean; // TKA Glyph includes turn numbers
+  /** Dark Mode: dark background, inverted grid, white text/outlines */
+  darkMode: boolean;
+  /** Word header overlay showing sequence name */
+  wordHeader: boolean;
+  activeEffect: EffectType;
+  tipEffectMap: TipEffectMap;
+}
+
+/**
+ * Callback for visibility state changes
+ */
+export type VisibilityStateCallback = (state: AnimationVisibilityState) => void;
 
 export class AnimationVisibilitySynchronizer {
   private manager: AnimationVisibilityStateManager;

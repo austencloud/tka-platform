@@ -7,7 +7,7 @@ import type {
   PropEndpointConfig,
   PropEndpointResult,
   PropEndpointPair,
-} from "./contracts/types";
+} from "./implementations/PropPositionCalculator";
 import { getTrailPointConfig, type TrailPointSource } from "../domain/types/TrailPointTypes";
 import { getTipPoints } from "../domain/types/PropTipPoints";
 

@@ -8,7 +8,29 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { OrientationAlignment } from "./contracts/types";
+
+/**
+ * Describes orientation alignment status for exact position matches.
+ */
+export interface OrientationAlignment {
+  /** Whether both blue and red orientations match the start position */
+  matches: boolean;
+  /** End orientation of blue prop after adding bridge letter */
+  blueEndOri: string;
+  /** End orientation of red prop after adding bridge letter */
+  redEndOri: string;
+  /** Start orientation of blue prop (from sequence start position) */
+  blueStartOri: string;
+  /** Start orientation of red prop (from sequence start position) */
+  redStartOri: string;
+  /**
+   * How many times the sequence needs to repeat to return to original orientations.
+   * 1 = orientations already match (true loop)
+   * 2 = orientations flip once, need 2 repetitions
+   * 4 = orientations quarter-cycle, need 4 repetitions
+   */
+  repetitionsNeeded: 1 | 2 | 4;
+}
 
 /**
  * Get the starting orientations from a sequence's start position.

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/types";
+  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/implementations/PendingActionQueue";
   interface Props {
     open: boolean;
     reason: PendingActionType | null;

@@ -9,7 +9,7 @@ Renders a section with:
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { reversalDetector as _reversalDetector, type ReversalDetector } from "../../../../shared/services/reversal-detector";
-  import type { PictographWithReversals } from "../../../../shared/services/contracts/types";
+  import type { PictographWithReversals } from "../../../../shared/services/reversal-detector";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { calculateFitSize as calculateGridFitSize, calculateOptimalColumnLayout } from "../../services/option-grid-fit-calculator";

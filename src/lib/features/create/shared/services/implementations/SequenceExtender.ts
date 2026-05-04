@@ -7,8 +7,131 @@
 
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { ExtensionAnalysis, ExtensionOptions, ExtensionType, CircularizationOption } from "../contracts/types";
+import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { LOOPOption } from "./LOOPValidator";
+import type { OrientationAlignment } from "../orientation-alignment-calculator";
+import { Period, type LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+
+/**
+ * Describes the type of extension available for a sequence
+ */
+export type ExtensionType =
+  | "already_complete"
+  | "half_rotation"
+  | "quarter_rotation"
+  | "not_extendable";
+
+/**
+ * Result of analyzing whether a sequence can be extended
+ */
+export interface ExtensionAnalysis {
+  /** Whether extension is available */
+  canExtend: boolean;
+  /** The type of extension possible */
+  extensionType: ExtensionType;
+  /** Start position of the sequence */
+  startPosition: GridPosition | null;
+  /** Current end position of the sequence */
+  currentEndPosition: GridPosition | null;
+  /** Available LOOP options for extension */
+  availableLOOPOptions: LOOPOption[];
+  /** Unavailable LOOP options */
+  unavailableLOOPOptions: LOOPOption[];
+  /** Human-readable description of the extension */
+  description: string;
+}
+
+/**
+ * Options for generating extension steps
+ */
+export interface ExtensionOptions {
+  /** The LOOP type to use for extension */
+  loopType: LOOPType;
+  /** Period override */
+  period?: Period;
+  /** Difficulty level (1-3) */
+  difficulty?: number;
+  /** Turn intensity (0-1) */
+  turnIntensity?: number;
+}
+
+/**
+ * Describes the rotation relationship between end position and start position.
+ */
+export type RotationRelation =
+  | "exact"
+  | "quarter"
+  | "half";
+
+/**
+ * Option for making a non-loopable sequence circular via bridge letter.
+ */
+export interface CircularizationOption {
+  /** Bridge letters needed to reach a loopable position */
+  bridgeLetters: Letter[];
+  /** The position we'd end at after adding bridge letters */
+  endPosition: string;
+  /** Available LOOP types for this ending position */
+  availableLOOPs: LOOPOption[];
+  /** Description for UI display */
+  description: string;
+  /** Pictograph data for visual display of the bridge letter */
+  pictographData?: PictographData;
+  /** Rotation relationship to start position */
+  rotationRelation?: RotationRelation;
+  /** Orientation alignment info */
+  orientationAlignment?: OrientationAlignment;
+  /** Current sequence length */
+  currentLength?: number;
+  /** Resulting sequence length after applying LOOP with this bridge */
+  resultingLength?: number;
+}
+
+/**
+ * Result of starting an extension flow
+ */
+export interface ExtensionFlowStart {
+  /** Whether extension is possible at all */
+  canExtend: boolean;
+  /** Analysis of the sequence's extension potential */
+  analysis: ExtensionAnalysis | null;
+  /** Bridge options if direct LOOPs not available */
+  circularizationOptions: CircularizationOption[];
+  /** Reason direct extension isn't available (if applicable) */
+  directUnavailableReason: string | null;
+  /** Error message if extension is impossible */
+  errorMessage: string | null;
+}
+
+/**
+ * Result of appending a bridge beat
+ */
+export interface BridgeAppendResult {
+  /** Whether the bridge was successfully appended */
+  success: boolean;
+  /** The sequence with bridge appended (if successful) */
+  sequence: SequenceData | null;
+  /** Updated analysis after adding bridge */
+  analysis: ExtensionAnalysis | null;
+  /** Message to display to user */
+  message: string;
+}
+
+/**
+ * Result of applying a LOOP extension
+ */
+export interface ExtensionApplyResult {
+  /** Whether the extension was successful */
+  success: boolean;
+  /** The extended sequence (if successful) */
+  sequence: SequenceData | null;
+  /** Number of steps added */
+  stepsAdded: number;
+  /** Message to display to user */
+  message: string;
+}
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
 import type { ReversalDetector } from "../reversal-detector";
 import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
@@ -18,17 +141,11 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 import type { LOOPValidator } from "./LOOPValidator";
 import type { SequenceAnalyzer } from "./SequenceAnalyzer";
 import type { BridgeFinder } from "./BridgeFinder";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { recalculateAllOrientations } from "./sequence-transforms/orientation-propagation";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
-import type {
-  LOOPType} from "$lib/features/create/generate/circular/domain/models/circular-models";
-import {
-  Period,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 export class SequenceExtender {
   constructor(

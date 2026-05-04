@@ -1,51 +1,21 @@
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
   setDoc,
-  deleteDoc,
-  query,
-  where,
-  limit as firestoreLimit,
   arrayUnion,
-  type DocumentData,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
+import {
+  firestoreGet,
+  firestoreList,
+  firestoreDelete,
+  requireAuth,
+  type WhereClause,
+} from "$lib/shared/firestore";
+import { SoloPropDataSchema } from "../../domain/models/solo-prop-schemas";
 import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { SoloPropFilters } from "../contracts/types";
 import type { ArtifactProvenance } from "../../domain/models/ArtifactProvenance";
-
-function toDateOrUndefined(value: unknown): Date | undefined {
-  if (value == null) return undefined;
-  if (typeof value === "object" && "toDate" in (value as object)) {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  if (value instanceof Date) return value;
-  return undefined;
-}
-
-function docToSoloProp(data: DocumentData, id: string): SoloPropData {
-  return {
-    id,
-    steps: data["steps"] ?? [],
-    startLocation: data["startLocation"],
-    startOrientation: data["startOrientation"],
-    contentHash: data["contentHash"] ?? "",
-    handPath: data["handPath"],
-    length: data["length"] ?? 0,
-    bigrams: data["bigrams"] ?? [],
-    impliedGridMode: data["impliedGridMode"],
-    name: data["name"] ?? undefined,
-    author: data["author"] ?? undefined,
-    notes: data["notes"] ?? undefined,
-    thumbnails: data["thumbnails"] ?? undefined,
-    dateCreated: toDateOrUndefined(data["dateCreated"]),
-    ownerId: data["ownerId"] ?? undefined,
-    ownerDisplayName: data["ownerDisplayName"] ?? undefined,
-  } as SoloPropData;
-}
 
 function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
   const raw: Record<string, unknown> = {
@@ -71,73 +41,58 @@ function soloPropToDoc(soloProp: SoloPropData): Record<string, unknown> {
   return raw;
 }
 
+function collectionPath(): string {
+  const uid = requireAuth();
+  return `users/${uid}/soloProps`;
+}
+
 export class SoloPropRepository {
-  private getUserId(): string {
-    const uid = authState.effectiveUserId;
-    if (!uid) throw new Error("[SoloPropRepository] User not authenticated");
-    return uid;
-  }
-
-  private async collectionRef() {
-    const firestore = await getFirestoreInstance();
-    const uid = this.getUserId();
-    return collection(firestore, `users/${uid}/soloProps`);
-  }
-
   async get(id: string): Promise<SoloPropData | null> {
-    const firestore = await getFirestoreInstance();
-    const uid = this.getUserId();
-    const docRef = doc(firestore, `users/${uid}/soloProps/${id}`);
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return null;
-    return docToSoloProp(snap.data(), snap.id);
+    return firestoreGet(collectionPath(), id, SoloPropDataSchema) as unknown as Promise<SoloPropData | null>;
   }
 
   async getByHash(contentHash: string): Promise<SoloPropData | null> {
-    const ref = await this.collectionRef();
-    const q = query(ref, where("contentHash", "==", contentHash), firestoreLimit(1));
-    const snap = await getDocs(q);
-    if (snap.empty || snap.docs[0] === undefined) return null;
-    const docSnap = snap.docs[0];
-    return docToSoloProp(docSnap.data(), docSnap.id);
+    const results = await firestoreList(collectionPath(), SoloPropDataSchema, {
+      where: [{ field: "contentHash", op: "==", value: contentHash }],
+      limit: 1,
+    });
+    return (results[0] as unknown as SoloPropData | undefined) ?? null;
   }
 
   async list(filters?: SoloPropFilters): Promise<SoloPropData[]> {
-    const ref = await this.collectionRef();
-    let q = query(ref);
+    const clauses: WhereClause[] = [];
 
     if (filters?.startLocation !== undefined) {
-      q = query(q, where("startLocation", "==", filters.startLocation));
+      clauses.push({ field: "startLocation", op: "==", value: filters.startLocation });
     }
     if (filters?.startOrientation !== undefined) {
-      q = query(q, where("startOrientation", "==", filters.startOrientation));
+      clauses.push({ field: "startOrientation", op: "==", value: filters.startOrientation });
     }
     if (filters?.impliedGridMode !== undefined) {
-      q = query(q, where("impliedGridMode", "==", filters.impliedGridMode));
+      clauses.push({ field: "impliedGridMode", op: "==", value: filters.impliedGridMode });
     }
     if (filters?.containsBigram !== undefined) {
-      q = query(q, where("bigrams", "array-contains", filters.containsBigram));
+      clauses.push({ field: "bigrams", op: "array-contains", value: filters.containsBigram });
     }
     if (filters?.pathHash !== undefined) {
-      q = query(q, where("pathHash", "==", filters.pathHash));
+      clauses.push({ field: "pathHash", op: "==", value: filters.pathHash });
     }
     if (filters?.minLength !== undefined) {
-      q = query(q, where("length", ">=", filters.minLength));
+      clauses.push({ field: "length", op: ">=", value: filters.minLength });
     }
     if (filters?.maxLength !== undefined) {
-      q = query(q, where("length", "<=", filters.maxLength));
-    }
-    if (filters?.limit !== undefined) {
-      q = query(q, firestoreLimit(filters.limit));
+      clauses.push({ field: "length", op: "<=", value: filters.maxLength });
     }
 
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => docToSoloProp(d.data(), d.id));
+    return firestoreList(collectionPath(), SoloPropDataSchema, {
+      where: clauses.length > 0 ? clauses : undefined,
+      limit: filters?.limit,
+    }) as unknown as Promise<SoloPropData[]>;
   }
 
   async save(soloProp: SoloPropData, provenance?: ArtifactProvenance): Promise<void> {
     const firestore = await getFirestoreInstance();
-    const uid = this.getUserId();
+    const uid = requireAuth();
     const docRef = doc(firestore, `users/${uid}/soloProps/${soloProp.id}`);
 
     if (provenance) {
@@ -168,10 +123,8 @@ export class SoloPropRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const firestore = await getFirestoreInstance();
-    const uid = this.getUserId();
-    const docRef = doc(firestore, `users/${uid}/soloProps/${id}`);
-    await deleteDoc(docRef);
+    const uid = requireAuth();
+    await firestoreDelete(`users/${uid}/soloProps`, id);
   }
 }
 

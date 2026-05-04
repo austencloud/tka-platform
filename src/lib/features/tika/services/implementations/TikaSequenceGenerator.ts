@@ -5,9 +5,32 @@
  * that chain together based on position groups.
  */
 
-import type { PictographData } from "../contracts/types";
+import type { PictographData } from "./TikaPictographLoader";
 import type { TikaPictographLoader } from "./TikaPictographLoader";
-import type { GeneratedSequenceResult, SequenceStep } from "../contracts/types";
+
+export interface SequenceStepMotion {
+  motionType: string;
+  startLocation: string;
+  endLocation: string;
+  rotationDirection: string;
+}
+export interface SequenceStep {
+  letter: string;
+  variation: number;
+  startPosition: string;
+  endPosition: string;
+  stepNumber: number;
+  blueMotion: SequenceStepMotion;
+  redMotion: SequenceStepMotion;
+}
+export interface GeneratedSequenceResult {
+  word: string;
+  steps: SequenceStep[];
+  startPosition: string;
+  endPosition: string;
+  isValid: boolean;
+  error?: string;
+}
 
 const TYPE_6_LETTERS = ["α", "β", "γ"];
 

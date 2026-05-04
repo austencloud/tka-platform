@@ -19,11 +19,51 @@
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type {
-  VideoRenderProgress,
-  VideoRenderResult,
-  VideoRenderOptions,
-} from "../contracts/types";
+
+export interface VideoRenderProgress {
+  /** Current frame being rendered */
+  currentFrame: number;
+  /** Total frames to render */
+  totalFrames: number;
+  /** Progress percentage (0-100) */
+  percent: number;
+  /** Estimated time remaining in ms */
+  estimatedTimeRemaining: number;
+  /** Current phase: 'rendering' | 'encoding' | 'complete' */
+  phase: "rendering" | "encoding" | "complete";
+}
+
+export interface VideoRenderResult {
+  /** Whether rendering succeeded */
+  success: boolean;
+  /** Video blob (if successful) */
+  videoBlob?: Blob;
+  /** Blob URL for playback (if successful) */
+  blobUrl?: string;
+  /** Video duration in seconds */
+  duration?: number;
+  /** Error message (if failed) */
+  error?: string;
+  /** Sequence ID this video was generated for */
+  sequenceId: string;
+}
+
+export interface VideoRenderOptions {
+  /** Target FPS for the video (default: 60) */
+  fps?: number;
+  /** Video width in pixels (default: canvas size) */
+  width?: number;
+  /** Video height in pixels (default: canvas size) */
+  height?: number;
+  /** Playback speed multiplier (default: 1) */
+  speed?: number;
+  /** Whether to include trails in the render */
+  includeTrails?: boolean;
+  /** Video format: 'webm' or 'mp4' (default: 'webm') */
+  format?: "webm" | "mp4";
+  /** Video quality (0-1, default: 0.9) */
+  quality?: number;
+}
 import { Canvas2DAnimationRenderer } from "./Canvas2DAnimationRenderer";
 import { generateBluePropSvg, generateRedPropSvg } from "$lib/features/compose/services/svg-generator";
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";

@@ -14,11 +14,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
+  import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type {
     ViewerPlaybackState, ImageCompositionProps, PropRenderingProps, } from "../domain/viewer-prop-groups";
-  import type { ResolvedPresentation, ViewingContext } from "../services/contracts/types";
+  import type { ResolvedPresentation, ViewingContext } from "../services/presentation-resolver";
   export type ViewMode = "animation" | "image" | "split";
   export type ExportType = "animation" | "image" | "both";
   export type PlaybackSource = "animation" | "video";
@@ -193,7 +193,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
-  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/types";
+  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/implementations/PendingActionQueue";
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
 

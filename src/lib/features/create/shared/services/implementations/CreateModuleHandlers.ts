@@ -8,8 +8,17 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { CreateModuleState } from "../../state/create-module-state.svelte";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
-import type { ClearSequenceParams } from "../contracts/types";
+import type { ConstructTabState } from "../../state/construct-tab-state.svelte";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
+
+/**
+ * Parameters for clear sequence handler
+ */
+export interface ClearSequenceParams {
+  CreateModuleState: CreateModuleState;
+  constructTabState: ConstructTabState;
+  panelState: PanelCoordinationState;
+}
 import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import { executeClearSequenceWorkflow } from "../../utils/clearSequenceWorkflow";
 

@@ -22,7 +22,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
-  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
+  import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequencePanel, { type PanelMode, type CreatorInfo } from "./SequencePanel.svelte";
   import { setAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";

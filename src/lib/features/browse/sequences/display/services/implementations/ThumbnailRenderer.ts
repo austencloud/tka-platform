@@ -17,8 +17,23 @@ import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/service
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { ILOOPDetector } from "$lib/features/create/generate/circular/services/contracts/ILOOPDetector";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { RenderOptions, RenderProgressCallback } from "../contracts/types";
-import type { ThumbnailRenderInput, CompositionDefaults } from "../contracts/types";
+import type { ThumbnailRenderInput, CompositionDefaults } from "../thumbnail-key-deriver";
+
+export interface RenderOptions {
+  /** Beat size in pixels (default: 240) */
+  stepSize?: number;
+
+  /** Output format (default: WebP) */
+  format?: "WebP" | "PNG" | "JPEG";
+
+  /** Quality for lossy formats 0-1 (default: 0.9) */
+  quality?: number;
+}
+export type RenderProgressCallback = (progress: {
+  current: number;
+  total: number;
+  stage: "preparing" | "rendering" | "finalizing";
+}) => void;
 
 const DEFAULT_BEAT_SIZE = 240;
 const DEFAULT_FORMAT = "WebP" as const;

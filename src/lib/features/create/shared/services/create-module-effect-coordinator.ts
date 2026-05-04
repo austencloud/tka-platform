@@ -7,7 +7,49 @@
  * Domain: Create module - Effect Orchestration
  */
 
-import type { CreateModuleEffectConfig, CreateModuleEffectCoordinator } from "./contracts/types";
+import type { CreateModuleState } from "../state/create-module-state.svelte";
+import type { ConstructTabState } from "../state/construct-tab-state.svelte";
+import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
+import type { NavigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+import type { ResponsiveLayoutManager } from "./implementations/ResponsiveLayoutManager";
+import type { NavigationSyncer } from "./implementations/NavigationSyncer";
+import type { DeepLinkSequenceHandler } from "./implementations/DeepLinkSequenceHandler";
+import type { StepOperator } from "./implementations/StepOperator";
+import type { Autosaver } from "./Autosaver";
+import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+
+/**
+ * Configuration for CreateModule effects
+ */
+export interface CreateModuleEffectConfig {
+  getCreateModuleState: () => CreateModuleState | null;
+  getConstructTabState: () => ConstructTabState | null;
+  panelState: PanelCoordinationState;
+  navigationState: NavigationState;
+
+  layoutService: ResponsiveLayoutManager;
+  NavigationSyncer: NavigationSyncer;
+  getDeepLinker: () => DeepLinkSequenceHandler | null;
+  getStepOperator: () => StepOperator | null;
+  getAutosaver: () => Autosaver | null;
+
+  isServicesInitialized: () => boolean;
+
+  onLayoutChange: (shouldUseSideBySideLayout: boolean) => void;
+  getShouldUseSideBySideLayout: () => boolean;
+  setAnimatingStepNumber: (beat: number | null) => void;
+
+  onCurrentWordChange?: (word: string) => void;
+  onLetterSourcesChange?: (sources: LetterSource[] | null) => void;
+  onTabAccessibilityChange?: (canAccess: boolean) => void;
+}
+
+/**
+ * Interface for the effect coordinator
+ */
+export interface CreateModuleEffectCoordinator {
+  setupEffects(config: CreateModuleEffectConfig): () => void;
+}
 import {
   createAutoEditPanelEffect,
   createAutoStepEditorEffect,

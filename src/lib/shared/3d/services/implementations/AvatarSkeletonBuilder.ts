@@ -8,16 +8,71 @@
 import type { Object3D, Bone, SkinnedMesh, Skeleton} from "three";
 import { Vector3, Box3 } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
-import type {
-  BoneName,
-  BoneChain,
-  SkeletonState,
-} from "../contracts/types";
 import {
   FINGER_BONES,
   type FingerBoneName,
   type FingerChains,
 } from "../../domain/models/GripPose";
+
+export type BoneName =
+  | "Hips"
+  | "Spine"
+  | "Spine1"
+  | "Spine2"
+  | "Neck"
+  | "Head"
+  | "LeftShoulder"
+  | "LeftArm"
+  | "LeftForeArm"
+  | "LeftHand"
+  | "RightShoulder"
+  | "RightArm"
+  | "RightForeArm"
+  | "RightHand"
+  | "LeftUpLeg"
+  | "LeftLeg"
+  | "LeftFoot"
+  | "RightUpLeg"
+  | "RightLeg"
+  | "RightFoot";
+
+export interface BoneChain {
+  /** Root bone of the chain (e.g., shoulder) */
+  root: Bone;
+  /** Middle bone (e.g., elbow) */
+  middle: Bone;
+  /** End effector (e.g., hand) */
+  effector: Bone;
+  /** Total length of the chain */
+  totalLength: number;
+  /** Length of first segment */
+  upperLength: number;
+  /** Length of second segment */
+  lowerLength: number;
+  /** Rest direction of root bone (local space, normalized) */
+  rootRestDir: Vector3;
+  /** Rest direction of middle bone (local space, normalized) */
+  middleRestDir: Vector3;
+}
+
+export interface SkeletonState {
+  /** Whether the skeleton is loaded and ready */
+  isLoaded: boolean;
+  /** The root object containing the skeleton */
+  root: Object3D | null;
+  /** All skinned meshes in the model */
+  meshes: SkinnedMesh[];
+  /** Map of bone names to bone objects */
+  bones: Map<BoneName, Bone>;
+  /** Pre-computed arm chains for IK */
+  leftArmChain: BoneChain | null;
+  rightArmChain: BoneChain | null;
+  /** Pre-computed leg chains for foot IK (UpLeg -> Leg -> Foot) */
+  leftLegChain: BoneChain | null;
+  rightLegChain: BoneChain | null;
+  /** Mapped finger bone chains. Null if model lacks finger bones. */
+  fingerChains: FingerChains | null;
+}
 
 /**
  * Mapping of standard bone names to common variations

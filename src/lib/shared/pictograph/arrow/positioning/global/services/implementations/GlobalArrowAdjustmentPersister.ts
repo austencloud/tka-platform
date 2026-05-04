@@ -11,14 +11,15 @@
 import {
   collection,
   doc,
-  getDocs,
-  setDoc,
   deleteDoc,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreList, firestoreSet } from "$lib/shared/firestore";
+import { GlobalArrowAdjustmentSchema } from "../../domain/arrow-adjustment-schemas";
 import {
   generateAdjustmentKeyString,
   type GlobalArrowAdjustment,
@@ -41,44 +42,13 @@ export class GlobalArrowAdjustmentPersister {
    */
   async loadAll(): Promise<GlobalArrowAdjustment[]> {
     try {
-      const firestore = await getFirestoreInstance();
-      const colRef = collection(firestore, COLLECTION_NAME);
-      const snapshot = await getDocs(colRef);
-
-      const adjustments: GlobalArrowAdjustment[] = [];
-
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        // Validate required fields
-        if (
-          data.gridMode &&
-          data.oriKey &&
-          data.letter &&
-          data.turnsTuple &&
-          data.arrowKey &&
-          typeof data.adjustmentX === "number" &&
-          typeof data.adjustmentY === "number"
-        ) {
-          adjustments.push({
-            gridMode: data.gridMode,
-            oriKey: data.oriKey,
-            letter: data.letter,
-            turnsTuple: data.turnsTuple,
-            arrowKey: data.arrowKey,
-            ...(data.propType && { propType: data.propType }),
-            ...(data.otherPropType && { otherPropType: data.otherPropType }),
-            adjustmentX: data.adjustmentX,
-            adjustmentY: data.adjustmentY,
-            updatedAt: data.updatedAt,
-            updatedBy: data.updatedBy ?? "unknown",
-          });
-        } else {
-          logger.warn(`Invalid adjustment document: ${docSnap.id}`);
-        }
-      });
+      const adjustments = await firestoreList(
+        COLLECTION_NAME,
+        GlobalArrowAdjustmentSchema,
+      );
 
       logger.success(`Loaded ${adjustments.length} global adjustments`);
-      return adjustments;
+      return adjustments as unknown as GlobalArrowAdjustment[];
     } catch (error) {
       logger.error("Failed to load adjustments:", error);
       throw error;
@@ -93,7 +63,7 @@ export class GlobalArrowAdjustmentPersister {
     userEmail: string,
     previousX: number = 0,
     previousY: number = 0,
-    action: AdjustmentHistoryAction = "save"
+    action: AdjustmentHistoryAction = "save",
   ): Promise<void> {
     const keyString = generateAdjustmentKeyString({
       gridMode: input.gridMode,
@@ -106,25 +76,25 @@ export class GlobalArrowAdjustmentPersister {
     });
 
     try {
-      const firestore = await getFirestoreInstance();
-      const docRef = doc(firestore, COLLECTION_NAME, keyString);
-
-      await setDoc(docRef, {
-        gridMode: input.gridMode,
-        oriKey: input.oriKey,
-        letter: input.letter,
-        turnsTuple: input.turnsTuple,
-        arrowKey: input.arrowKey,
-        ...(input.propType && { propType: input.propType }),
-        ...(input.otherPropType && { otherPropType: input.otherPropType }),
-        adjustmentX: input.adjustmentX,
-        adjustmentY: input.adjustmentY,
-        updatedAt: serverTimestamp(),
-        updatedBy: userEmail,
-      });
+      await firestoreSet(
+        COLLECTION_NAME,
+        keyString,
+        {
+          gridMode: input.gridMode,
+          oriKey: input.oriKey,
+          letter: input.letter,
+          turnsTuple: input.turnsTuple,
+          arrowKey: input.arrowKey,
+          ...(input.propType && { propType: input.propType }),
+          ...(input.otherPropType && { otherPropType: input.otherPropType }),
+          adjustmentX: input.adjustmentX,
+          adjustmentY: input.adjustmentY,
+          updatedBy: userEmail,
+        } as Record<string, unknown>,
+      );
 
       logger.success(
-        `Saved adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
+        `Saved adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`,
       );
 
       // Fire-and-forget history write
@@ -136,7 +106,7 @@ export class GlobalArrowAdjustmentPersister {
         previousX,
         previousY,
         userEmail,
-        keyString
+        keyString,
       );
     } catch (error) {
       logger.error(`Failed to save adjustment ${keyString}:`, error);
@@ -160,7 +130,7 @@ export class GlobalArrowAdjustmentPersister {
       arrowKey: string;
       propType?: string;
       otherPropType?: string;
-    }
+    },
   ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
@@ -178,7 +148,7 @@ export class GlobalArrowAdjustmentPersister {
           previousX,
           previousY,
           userEmail,
-          keyString
+          keyString,
         );
       }
     } catch (error) {
@@ -206,7 +176,7 @@ export class GlobalArrowAdjustmentPersister {
     previousX: number,
     previousY: number,
     userEmail: string,
-    sourceKey: string
+    sourceKey: string,
   ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
@@ -241,7 +211,7 @@ export class GlobalArrowAdjustmentPersister {
    */
   subscribe(
     onAdd: (adjustment: GlobalArrowAdjustment) => void,
-    onRemove: (keyString: string) => void
+    onRemove: (keyString: string) => void,
   ): () => void {
     // Clean up any existing subscription
     if (this.unsubscribe) {
@@ -278,7 +248,9 @@ export class GlobalArrowAdjustmentPersister {
                     turnsTuple: data.turnsTuple,
                     arrowKey: data.arrowKey,
                     ...(data.propType && { propType: data.propType }),
-                    ...(data.otherPropType && { otherPropType: data.otherPropType }),
+                    ...(data.otherPropType && {
+                      otherPropType: data.otherPropType,
+                    }),
                     adjustmentX: data.adjustmentX,
                     adjustmentY: data.adjustmentY,
                     updatedAt: data.updatedAt,
@@ -292,7 +264,7 @@ export class GlobalArrowAdjustmentPersister {
           },
           (subscriptionError: unknown) => {
             logger.error("Subscription error:", subscriptionError);
-          }
+          },
         );
       })
       .catch((initError: unknown) => {

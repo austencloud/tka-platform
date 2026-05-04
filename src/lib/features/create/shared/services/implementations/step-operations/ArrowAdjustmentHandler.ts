@@ -10,7 +10,7 @@ import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getStepDataFromState, START_POSITION_BEAT_NUMBER } from "./step-data-helpers";
-import { UndoOperationType } from "../../contracts/types";
+import { UndoOperationType } from "../UndoManager";
 
 const logger = createComponentLogger("ArrowAdjustmentHandler");
 

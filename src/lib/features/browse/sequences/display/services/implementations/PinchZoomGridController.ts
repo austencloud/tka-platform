@@ -1,4 +1,3 @@
-import type { PinchZoomState } from "../contracts/types";
 /**
  * Grid Zoom Controller
  *
@@ -10,6 +9,15 @@ import type { PinchZoomState } from "../contracts/types";
  * No scale transforms - layout changes are handled by CSS grid + transitions.
  */
 
+
+export interface PinchZoomState {
+	/** Current column count. Mobile: 2-3, Desktop: 2-5 */
+	columns: number;
+	/** Whether gesture is active */
+	isGesturing: boolean;
+	/** True for ~200ms after column change (for CSS transition timing) */
+	isTransitioning: boolean;
+}
 
 /** Column count limits */
 const MIN_COLUMNS = 2;

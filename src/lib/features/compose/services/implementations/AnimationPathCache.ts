@@ -13,7 +13,7 @@
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
-import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/types";
+import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 
 // ============================================================================
 // PATH CACHE CONSTANTS

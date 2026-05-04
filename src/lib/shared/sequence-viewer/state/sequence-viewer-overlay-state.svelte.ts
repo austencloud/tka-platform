@@ -1,6 +1,6 @@
 import { pushState, replaceState } from '$app/navigation';
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-import type { ViewingContext } from "../services/contracts/types";
+import type { ViewingContext } from "../services/presentation-resolver";
 import { getShortCodeManager } from '$lib/shared/qr/getShortCodeManager';
 import { authState } from '$lib/shared/auth/state/authState.svelte';
 

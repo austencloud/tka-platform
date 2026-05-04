@@ -16,7 +16,7 @@ import {
   sequenceToMotionConfigs,
   getStartPositionConfigs,
 } from "../services/sequence-converter";
-import type { StepMotionConfigs } from "../services/contracts/types";
+import type { StepMotionConfigs } from "../services/implementations/SequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
 import { SCALE } from "$lib/shared/3d/scale/scale-constants";

@@ -13,14 +13,57 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { ThumbnailRequest, ThumbnailResult } from "../contracts/types";
-import type { ThumbnailCacheKey } from "../contracts/types";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ThumbnailRenderInput, ThumbnailCacheKey } from "../thumbnail-key-deriver";
 import * as keyDeriverModule from "../thumbnail-key-deriver";
 import type { ThumbnailRenderQueue } from "./ThumbnailRenderQueue";
 import type { ThumbnailRenderer } from "./ThumbnailRenderer";
 import * as cloudCacheModule from "../cloud-thumbnail-cache";
 import type { ThumbnailLocalCache } from "./ThumbnailLocalCache";
 import type { ThumbnailMetricsCollector } from "./ThumbnailMetricsCollector";
+
+export interface RenderProgress {
+  current: number;
+  total: number;
+  stage: "preparing" | "rendering" | "finalizing";
+}
+export type ThumbnailLoadStatus =
+  | { state: "idle" }
+  | { state: "checking-cache" }
+  | { state: "queued"; position: number }
+  | { state: "rendering"; progress?: RenderProgress }
+  | { state: "uploading" }
+  | { state: "complete"; url: string }
+  | { state: "error"; error: Error };
+export interface ThumbnailRequest {
+  /** The sequence to render */
+  sequence: SequenceData;
+
+  /** Render configuration */
+  input: ThumbnailRenderInput;
+
+  /** Optional callback for status updates */
+  onStatusChange?: (status: ThumbnailLoadStatus) => void;
+
+  /** Skip cloud cache check and render directly (use after 404 errors) */
+  skipCache?: boolean;
+
+  /** Priority for queue ordering (lower = higher priority). Use element's Y position. */
+  priority?: number;
+}
+export interface ThumbnailResult {
+  /** URL to display (either cloud URL or blob URL), null if render failed */
+  url: string | null;
+
+  /** Whether this came from cache (true) or was freshly rendered (false) */
+  fromCache: boolean;
+
+  /** The cache key used (for cancellation) */
+  key: ThumbnailCacheKey;
+
+  /** Error if rendering failed (only present when url is null) */
+  error?: Error;
+}
 
 // In-memory LRU cache of hash → blobUrl for instant revisits.
 // Survives component remounts within the same page session.

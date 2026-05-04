@@ -10,7 +10,6 @@
   import { onMount } from "svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import TikaHistoryItem from "./TikaHistoryItem.svelte";
-  import type { TikaSessionPreview } from "../domain/models/tika-conversation-models";
   import type { TikaSessionPreview, TikaSessionQueryOptions } from "../domain/models/tika-conversation-models";
 
   interface SessionRepository {

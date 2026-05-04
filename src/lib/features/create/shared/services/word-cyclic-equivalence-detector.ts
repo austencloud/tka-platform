@@ -1,4 +1,14 @@
-import type { WordCyclicEquivalenceResult } from "./contracts/types";
+/**
+ * Result of cyclic equivalence comparison
+ */
+export interface WordCyclicEquivalenceResult {
+  /** Whether the words are cyclic rotations of each other */
+  readonly isEquivalent: boolean;
+  /** Number of positions the first word needs to rotate to match the second (null if not equivalent) */
+  readonly rotationOffset: number | null;
+  /** The canonical (normalized) form of the word */
+  readonly canonicalForm: string;
+}
 
 /**
  * Interface describing the shape of the word cyclic equivalence detector module.

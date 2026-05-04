@@ -15,7 +15,14 @@ import {
   KNOWLEDGE_GRAPH,
   isConceptUnlocked,
 } from "@tka/domain";
-import type { VerificationResult } from "../contracts/types";
+
+export interface VerificationResult {
+  success: boolean;
+  completedConcepts: string[];
+  rejectedConcepts: Array<{ id: string; reason: string }>;
+  errors: string[];
+  newMajorLevel?: number;
+}
 
 const MAX_CONCEPTS_PER_CALL = 8;
 

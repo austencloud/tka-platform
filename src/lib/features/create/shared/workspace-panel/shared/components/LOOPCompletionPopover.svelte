@@ -12,7 +12,7 @@
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
-  import type { LOOPOption } from "../../../services/contracts/types";
+  import type { LOOPOption } from "../../../services/implementations/LOOPValidator";
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
   interface Props {

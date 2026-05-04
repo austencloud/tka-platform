@@ -7,7 +7,7 @@
    * - Skin tone selection (preset colors)
    */
 
-  import type { BodyType } from "../../services/contracts/types";
+  import type { BodyType } from "../../services/implementations/AvatarCustomizer";
 
   interface Props {
     bodyType: BodyType;

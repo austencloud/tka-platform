@@ -5,7 +5,7 @@
  * comparisons, term definitions, and visual examples.
  */
 
-import type { PictographData } from "../contracts/types";
+import type { PictographData } from "./TikaPictographLoader";
 import type { TikaPictographLoader } from "./TikaPictographLoader";
 import type { TikaSequenceValidator } from "./TikaSequenceValidator";
 import {
@@ -15,8 +15,112 @@ import {
   LETTER_TO_TYPE,
   LETTER_TYPES,
 } from "@tka/domain";
-import type { LetterExplanationResult, ComparisonResult, TypeListResult, TermDefinitionResult, PositionExamplesResult, MotionExamplesResult, ToolExecutorSequenceResult, StepGridResult, PictographExample } from "../contracts/types";
 import type { TikaSequenceGenerator } from "./TikaSequenceGenerator";
+import type {
+  InlineGallery,
+  InlinePictograph,
+  InlineSequencePlayer,
+  InlineStepGrid,
+} from "../../types";
+
+export interface PictographExample {
+  letter: string;
+  variation: number;
+  startPosition: string;
+  endPosition: string;
+  blueMotion?: string;
+  redMotion?: string;
+}
+export interface LetterExplanationResult {
+  explanation: string;
+  inlinePictograph: InlinePictograph;
+  contextData: {
+    type: "letter";
+    letter: string;
+    letterType: number;
+    typeName: string;
+    startPosition: string;
+    endPosition: string;
+    blueMotion: {
+      motionType: string;
+      startLoc: string;
+      endLoc: string;
+      propRotDir: string;
+    };
+    redMotion: {
+      motionType: string;
+      startLoc: string;
+      endLoc: string;
+      propRotDir: string;
+    };
+  };
+}
+export interface ComparisonResult {
+  explanation: string;
+  inlineGallery: InlineGallery;
+  contextData: {
+    type: "comparison";
+    letter1: string;
+    letter2: string;
+    letter1Data: {
+      letter: string;
+      type: number;
+      typeName: string;
+      blueMotion: string;
+      redMotion: string;
+    };
+    letter2Data: {
+      letter: string;
+      type: number;
+      typeName: string;
+      blueMotion: string;
+      redMotion: string;
+    };
+  };
+}
+export interface TypeListResult {
+  explanation: string;
+  inlineGallery: InlineGallery;
+  contextData: {
+    type: "typeList";
+    typeNumber: number;
+    typeName: string;
+    description: string;
+    exampleLetters: string[];
+    allLetters: string[];
+    motionPattern: {
+      blueMotion: string;
+      redMotion: string;
+    };
+    rotationPattern?: unknown;
+  };
+}
+export interface TermDefinitionResult {
+  explanation: string;
+  contextData?: {
+    type: "termWithVisuals";
+    term: string;
+    definition: string;
+    examples: PictographExample[];
+  };
+}
+export interface PositionExamplesResult {
+  explanation: string;
+  vtgEquivalent?: string | null;
+  inlineGalleries?: InlineGallery[];
+}
+export interface MotionExamplesResult {
+  explanation: string;
+  inlineGallery: InlineGallery;
+}
+export interface ToolExecutorSequenceResult {
+  explanation: string;
+  inlineSequencePlayer?: InlineSequencePlayer;
+}
+export interface StepGridResult {
+  explanation: string;
+  inlineStepGrid?: InlineStepGrid;
+}
 
 const POSITION_STATIC_LETTERS: Record<string, string> = {
   alpha: "α",

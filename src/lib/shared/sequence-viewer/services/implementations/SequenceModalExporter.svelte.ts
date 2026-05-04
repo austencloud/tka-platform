@@ -1,24 +1,128 @@
-import type {
-  ExportState,
-  ExportCallbacks,
-  VideoExportDependencies,
-  Video3DExportDependencies,
-  ImageExportDependencies,
-  VideoExportOptions,
-  ImageExportOptions,
-} from "../contracts/types";
 import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
+import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { Offline3DExporter } from "$lib/shared/3d/services/implementations/Offline3DExporter";
 import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
-import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
+import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { recordExportThroughput } from "../../state/export-timing-tracker";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { AnimationPlaybackController } from '$lib/features/compose/services/implementations/AnimationPlaybackController';
+import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 
 import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
+
+export interface VideoExportEffectOverrides {
+  fire?: boolean;
+  led?: boolean;
+  trails?: boolean;
+  charcoal?: boolean;
+}
+
+export interface VideoExportOptions {
+  fps: number;
+  loopCount: number;
+  resolution: 720 | 1080 | 2160 | 4320;
+  effectOverrides?: VideoExportEffectOverrides;
+  includeStartPosition?: boolean;
+  includeEndHold?: boolean;
+  /**
+   * "standard" (default): one render per output frame, native resolution.
+   * "cinema": 2× supersampling + 4× temporal motion blur. Roughly 4-8×
+   * slower but produces a visibly smoother, sharper result. 3D exports only.
+   */
+  quality?: "standard" | "cinema";
+}
+
+export interface ImageExportOptions {
+  includeStartPosition: boolean;
+  showStepNumbers: boolean;
+  showWord: boolean;
+  showDifficulty: boolean;
+  showCreatorName: boolean;
+  showNotes: boolean;
+  showQRCode: boolean;
+  darkMode: boolean;
+  columnCount: number | null;
+}
+
+/**
+ * Export state for UI binding
+ */
+export interface ExportState {
+  isExporting: boolean;
+  progress: VideoExportProgress | null;
+  error: string | null;
+  /** Object URL of the exported video blob, available after successful video export */
+  previewBlobUrl: string | null;
+}
+
+/**
+ * Callbacks for export lifecycle events
+ */
+export interface ExportCallbacks {
+  onSuccess: (message: string) => void;
+  onError: (message: string) => void;
+  onHaptic: (type: "success" | "error" | "selection") => void;
+}
+
+/**
+ * Dependencies required for video exports
+ */
+export interface VideoExportDependencies {
+  canvas: HTMLCanvasElement;
+  playbackController: AnimationPlaybackController;
+  panelState: AnimationPanelState;
+}
+
+/**
+ * Dependencies required for image exports
+ */
+export interface ImageExportDependencies {
+  sequence: SequenceData;
+  userName: string;
+}
+
+/**
+ * Dependencies required for 3D video exports (offline two-pass pipeline).
+ * The caller gathers these from the live 3D scene; SequenceModalExporter
+ * forwards them into Offline3DExportDependencies.
+ */
+export interface Video3DExportDependencies {
+  webglCanvas: HTMLCanvasElement;
+  /** Three.js PerspectiveCamera (from useThrelte().camera) */
+  camera: {
+    position: { x: number; y: number; z: number; set(x: number, y: number, z: number): void };
+    quaternion: { x: number; y: number; z: number; w: number; set(x: number, y: number, z: number, w: number): void };
+    fov: number;
+    updateProjectionMatrix(): void;
+  };
+  /** Beats per second for converting animation time to currentStep */
+  beatsPerSecond: number;
+  /** Total animation duration in seconds (single loop, no start/end hold) */
+  totalDurationSeconds: number;
+  /** Camera keyframe buffer from pass 1 (or static capture) */
+  cameraKeyframes: import("$lib/shared/video-export/domain/CameraKeyframe").CameraKeyframeBuffer;
+  /** Three.js WebGLRenderer - needed for cinema-mode supersampling resize */
+  renderer: {
+    getSize(target: { x: number; y: number; set(w: number, h: number): unknown }): unknown;
+    setSize(w: number, h: number, updateStyle?: boolean): void;
+    getPixelRatio(): number;
+    setPixelRatio(ratio: number): void;
+  };
+  /** Run the full Threlte pipeline synchronously for one frame */
+  runFrame(timeMs: number): void;
+  /** Pause Threlte's native rAF loop for the duration of the export */
+  pauseAutoLoop(): void;
+  /** Resume Threlte's native rAF loop after export completes */
+  resumeAutoLoop(): void;
+  /** Signal export mode to the puppet loop */
+  setExporting(value: boolean): void;
+  /** Set the animation step for the puppet loop to distribute each frame */
+  setExportCurrentStep(step: number | null): void;
+}
 
 export class SequenceModalExporter {
   private _isExporting = $state(false);
@@ -223,7 +327,7 @@ export class SequenceModalExporter {
       const rawName =
         seq.displayName || seq.intendedWord || seq.word || "sequence";
       const simplified = greekToAscii(simplifyRepeatedWord(rawName));
-      const safeName = fileDownloader.sanitizeFilename(simplified) || "sequence";
+      const safeName = sanitizeFilename(simplified) || "sequence";
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

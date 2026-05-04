@@ -26,15 +26,73 @@ import {
   TrailMode,
   TrailEffect,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type {
-  TrailCapturePropStates,
-  PropDimensions,
-  TrailCaptureConfig,
-  IAnimationCacheService,
-  IPerformanceMonitorService,
-} from "../contracts/types";
+
+/**
+ * Prop states for one additional tunnel layer
+ */
+export interface AdditionalLayerProps {
+  blueProp: PropState | null;
+  redProp: PropState | null;
+}
+
+/**
+ * Prop states for trail capture (distinct from the simpler PropStates in domain)
+ */
+export interface TrailCapturePropStates {
+  blueProp: PropState | null;
+  redProp: PropState | null;
+  /** Additional tunnel layers (index 0 = layer 1, up to 3 additional layers) */
+  additionalLayers?: AdditionalLayerProps[];
+}
+
+/**
+ * Prop dimensions for endpoint calculation
+ */
+export interface PropDimensions {
+  width: number;
+  height: number;
+}
+
+/**
+ * Trail capture configuration
+ */
+export interface TrailCaptureConfig {
+  canvasSize: number;
+  bluePropDimensions: PropDimensions;
+  redPropDimensions: PropDimensions;
+  trailSettings: TrailSettings;
+  /** Prop type for blue prop (e.g., "staff", "minihoop") - used for bilateral detection */
+  bluePropType?: string | null;
+  /** Prop type for red prop (e.g., "staff", "minihoop") - used for bilateral detection */
+  redPropType?: string | null;
+  /** Whether the sequence returns to its starting position (LOOP pattern) */
+  isSeamlesslyLoopable?: boolean;
+}
+
+/**
+ * Animation cache service interface
+ * Implemented by AnimationPathCache for backfilling trail gaps during device stutters
+ */
+export interface IAnimationCacheService {
+  getCachedPoints(
+    propIndex: 0 | 1,
+    tipIndex: number,
+    startStep: number,
+    endStep: number,
+    canvasSize: number
+  ): TrailPoint[];
+  isValid(): boolean;
+}
+
+/**
+ * Performance monitor interface
+ * Provides adaptive point spacing based on device performance
+ */
+export interface IPerformanceMonitorService {
+  getAdaptivePointSpacing(): number;
+}
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
-import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/types";
+import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 
 /** Standard viewbox size used by the prop coordinate system */

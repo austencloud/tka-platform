@@ -16,9 +16,22 @@
  */
 
 import type { Bone } from "three";
-import type {
-  RootMotionDelta,
-} from "../contracts/types";
+
+export interface RootMotionDelta {
+  /** Local-space lateral displacement this frame (left/right) */
+  x: number;
+  /** Local-space forward/backward displacement this frame.
+   *  Positive = forward, negative = backward.
+   *  Named 'forward' (not 'z') because the raw Hips data from Mixamo
+   *  uses Y for forward motion after Blender FBX->GLB conversion. */
+  forward: number;
+  /** Local-space yaw delta this frame in radians.
+   *  Positive = counterclockwise (left turn) when viewed from above.
+   *  Zero on first frame and on loop boundaries (clamped).
+   *  Extracted from Hips bone rotation around the Mixamo local
+   *  vertical axis, which is Z (not Y) after FBX->GLB conversion. */
+  yawDelta: number;
+}
 
 const ZERO_DELTA: RootMotionDelta = { x: 0, forward: 0, yawDelta: 0 };
 

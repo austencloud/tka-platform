@@ -16,7 +16,7 @@ import {
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepMotionConfigs } from "./contracts/types";
+import type { StepMotionConfigs } from "./implementations/SequenceConverter";
 import type { PlaneModeConfig } from "../domain/constants/plane-mode-configs";
 
 /** Convert a MotionData object to MotionConfig3D */

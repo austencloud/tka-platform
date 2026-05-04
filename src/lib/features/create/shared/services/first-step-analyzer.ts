@@ -1,5 +1,15 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { FirstBeatAnalysisResult, FirstBeatResult } from "./contracts/types";
+
+export type FirstBeatAnalysisResult =
+  | { action: "no-op"; reason: string }
+  | { action: "immediate"; stepNumber: number }
+  | { action: "confirm-needed"; stepNumber: number; stepsToRemove: number };
+
+export interface FirstBeatResult {
+  success: boolean;
+  stepsRemoved: number;
+  message: string;
+}
 
 /**
  * first-step-analyzer.ts

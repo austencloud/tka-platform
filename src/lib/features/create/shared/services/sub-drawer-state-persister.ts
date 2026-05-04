@@ -1,4 +1,13 @@
-import type { SubDrawerType } from "./contracts/types";
+/**
+ * SubDrawerStatePersister
+ */
+export type SubDrawerType =
+  | "help"
+  | "turnPattern"
+  | "rotationDirection"
+  | "duration"
+  | "extend"
+  | null;
 
 const SUB_DRAWER_KEY = "tka_sequence_actions_sub_drawer";
 

@@ -1,5 +1,5 @@
 import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
-import { MandalaRenderer } from "$lib/shared/mandala/services/implementations/MandalaRenderer";
+import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 import type { StickerBackground, StickerUnit, StickerVariant } from "../../domain/sticker-types";
 import {
   STICKER_ART_DIAMETER_PX,
@@ -23,14 +23,8 @@ const LIGHT_MODE_PALETTE: MandalaPalette = {
 const STICKER_STROKE_WIDTH = 6;
 
 export class StickerUnitRenderer {
-  private readonly mandalaRenderer: MandalaRenderer;
-
-  constructor(mandalaRenderer?: MandalaRenderer) {
-    this.mandalaRenderer = mandalaRenderer ?? new MandalaRenderer();
-  }
-
   renderSVG(unit: StickerUnit, mandalaPaths: MandalaPaths): string {
-    const mandalaSvg = this.mandalaRenderer.renderSVG(mandalaPaths, {
+    const mandalaSvg = renderMandalaSVG(mandalaPaths, {
       size: STICKER_ART_DIAMETER_PX,
       style: "stroke",
       showGridDots: false,

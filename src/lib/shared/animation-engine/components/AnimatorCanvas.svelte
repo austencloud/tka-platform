@@ -29,7 +29,7 @@ Last audit: 2025-12-27
   import type { StepData } from "../../../features/create/shared/domain/models/StepData";
   import type { PropState } from "../domain/PropState";
   import type { TrailSettings } from "../domain/types/TrailTypes";
-  import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/types";
+  import type { AdditionalLayerProps } from "$lib/features/compose/services/implementations/TrailCapturer";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import WordHeader from "./layers/WordHeader.svelte";

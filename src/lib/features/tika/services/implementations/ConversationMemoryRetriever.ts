@@ -6,8 +6,15 @@
  * full message arrays.
  */
 
-import type { ConversationMemorySummary } from "../contracts/types";
 import type { TikaSessionPreview, TikaSessionQueryOptions } from "../../domain/models/tika-conversation-models";
+
+export interface ConversationMemorySummary {
+  sessionId: string;
+  title: string;
+  lastUserMessage: string;
+  updatedAt: Date;
+  messageCount: number;
+}
 
 interface SessionRepository {
   listSessions(options?: TikaSessionQueryOptions): Promise<TikaSessionPreview[]>;

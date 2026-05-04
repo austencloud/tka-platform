@@ -19,7 +19,7 @@
  */
 
 import { untrack } from "svelte";
-import type { CreateModuleStateForSync } from "../../services/contracts/types";
+import type { CreateModuleStateForSync } from "../../services/implementations/NavigationSyncer";
 import type { NavigationSyncer } from "../../services/implementations/NavigationSyncer";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 import type { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";

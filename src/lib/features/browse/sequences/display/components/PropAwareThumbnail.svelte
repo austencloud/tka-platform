@@ -18,12 +18,10 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import RenderingOverlay from "$lib/shared/components/loading/RenderingOverlay.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { ThumbnailVariant } from "../services/contracts/types";
+  import type { ThumbnailVariant, ThumbnailRenderInput, ThumbnailVisibilitySettings } from "../services/thumbnail-key-deriver";
   import { getThumbnailRenderOrchestrator } from "../getThumbnailRenderOrchestrator";
   import { getThumbnailLocalCache } from "../getThumbnailLocalCache";
-  import type { ThumbnailLoadStatus } from "../services/contracts/types";
-  import type { ThumbnailRenderOrchestrator } from "../services/implementations/ThumbnailRenderOrchestrator";
-  import type { ThumbnailRenderInput, ThumbnailVisibilitySettings } from "../services/contracts/types";
+  import type { ThumbnailLoadStatus, ThumbnailRenderOrchestrator } from "../services/implementations/ThumbnailRenderOrchestrator";
   import type { ThumbnailLocalCache } from "../services/implementations/ThumbnailLocalCache";
   import { deriveKey } from "../services/thumbnail-key-deriver";
   import { invalidateUrl as invalidateCloudUrl } from "../services/cloud-thumbnail-cache";

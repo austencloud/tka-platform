@@ -13,7 +13,11 @@
  */
 
 import { browser } from "$app/environment";
-import type { ThumbnailLocalCacheStats } from "../contracts/types";
+
+export interface ThumbnailLocalCacheStats {
+  count: number;
+  sizeBytes: number;
+}
 
 const DB_NAME = "thumbnail-local-cache";
 const STORE_NAME = "thumbnails";

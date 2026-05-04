@@ -6,7 +6,7 @@
   based on mastery data, topic history, and conversation history.
 -->
 <script lang="ts">
-  import type { WelcomeContext, WelcomeSuggestion } from "../services/contracts/types";
+  import type { WelcomeContext, WelcomeSuggestion } from "../services/tika-welcome-builder";
 
   let {
     onSubmit,

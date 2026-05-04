@@ -23,11 +23,17 @@ import {
   getDefaultFormation,
 } from "../../config/formation-presets";
 
-import type {
-  PerformerFormationState,
-  FormationChangeCallback,
-  TransitionUpdateCallback,
-} from "../contracts/types";
+export interface PerformerFormationState {
+  index: number;
+  position: Position2D;
+  facingAngle: number;
+}
+
+export type FormationChangeCallback = (formation: Formation) => void;
+
+export type TransitionUpdateCallback = (
+  positions: PerformerFormationState[]
+) => void;
 
 /**
  * Easing function for smooth transitions (ease-in-out cubic)

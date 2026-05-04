@@ -28,8 +28,8 @@ import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { PropState } from "../../domain/PropState";
 import { type TrailSettings } from "../../domain/types/TrailTypes";
-import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/types";
-import type { AnimationVisibilityState } from "../contracts/types";
+import type { AdditionalLayerProps } from "$lib/features/compose/services/implementations/TrailCapturer";
+import type { AnimationVisibilityState } from "./AnimationVisibilitySynchronizer";
 import type { PreRenderProgress } from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
 
 import { loadAnimatorServices as loadServices } from "./AnimatorLoader";
@@ -45,7 +45,7 @@ import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTyp
 import { CanvasResizer } from "./CanvasResizer.svelte";
 import {
   DEFAULT_CANVAS_SIZE,
-} from "../contracts/types";
+} from "./CanvasResizer.svelte";
 import { PropTextureLoader } from "./PropTextureLoader.svelte";
 import {
   DEFAULT_PROP_DIMENSIONS,

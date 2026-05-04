@@ -7,14 +7,60 @@
 
 import { MeshStandardMaterial, Color } from "three";
 import type { Material } from "three";
-import type {
-  BodyType,
-  SkinTonePreset,
-  BodyProportions,
-  AvatarCustomization,
-  ProportionPreset,
-} from "../contracts/types";
 import type { Scene3DPersister } from "./Scene3DPersister";
+
+export type BodyType = "masculine" | "feminine" | "androgynous";
+
+export interface SkinTonePreset {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface BodyProportions {
+  /** Total height */
+  height: number;
+  /** Head height (crown to chin) */
+  headHeight: number;
+  /** Neck length */
+  neckLength: number;
+  /** Shoulder width (shoulder to shoulder) */
+  shoulderWidth: number;
+  /** Torso length (base of neck to hip) */
+  torsoLength: number;
+  /** Hip width */
+  hipWidth: number;
+  /** Upper arm length (shoulder to elbow) */
+  upperArmLength: number;
+  /** Forearm length (elbow to wrist) */
+  forearmLength: number;
+  /** Hand length */
+  handLength: number;
+  /** Inseam (crotch to ankle) */
+  inseam: number;
+  /** Thigh length */
+  thighLength: number;
+  /** Shin length */
+  shinLength: number;
+}
+
+export interface AvatarCustomization {
+  /** Body type preset */
+  bodyType: BodyType;
+  /** Skin tone hex color */
+  skinTone: string;
+  /** Body proportions */
+  proportions: BodyProportions;
+  /** Whether to show the avatar */
+  visible: boolean;
+}
+
+export interface ProportionPreset {
+  id: string;
+  name: string;
+  description: string;
+  proportions: BodyProportions;
+}
 
 /**
  * Anthropometric ratios based on research

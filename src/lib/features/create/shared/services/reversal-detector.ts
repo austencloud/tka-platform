@@ -10,7 +10,19 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "../domain/models/StepData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "../domain/factories/createStepData";
-import type { PictographWithReversals, ReversalInfo } from "./contracts/types";
+
+/**
+ * Reversal Detection Service Contract
+ */
+export interface ReversalInfo {
+  blueReversal: boolean;
+  redReversal: boolean;
+}
+
+export interface PictographWithReversals extends PictographData {
+  blueReversal: boolean;
+  redReversal: boolean;
+}
 
 /**
  * Process reversals for an entire sequence.

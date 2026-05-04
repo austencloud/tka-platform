@@ -29,17 +29,58 @@ import {
   renderWordHeaderToCanvas,
   renderProgressBarToCanvas,
 } from "../canvas-renderer";
-import type {
-  VideoExportFormat,
-  VideoExportOrchestratorOptions,
-  VideoExportProgress,
-  VideoResolution,
-  VideoEffectOverrides,
-} from "../contracts/types";
 import type { VideoExporter } from "../implementations/VideoExporter";
 import type { CompositeVideoRenderer } from "../implementations/CompositeVideoRenderer";
 import type { ExportGlyphPrerenderer } from "../implementations/ExportGlyphPrerenderer";
-import type { GlyphAsset } from "../contracts/types";
+import type { GlyphAsset } from "../implementations/ExportGlyphPrerenderer";
+
+export type VideoExportFormat = "webm" | "mp4";
+
+export interface VideoExportProgress {
+  progress: number;
+  stage: "capturing" | "encoding" | "complete" | "error";
+  currentFrame?: number;
+  totalFrames?: number;
+  error?: string;
+}
+
+export type VideoResolution = 720 | 1080 | 2160 | 4320;
+
+export interface VideoEffectOverrides {
+  fire?: boolean;
+  led?: boolean;
+  trails?: boolean;
+  charcoal?: boolean;
+}
+
+export interface VideoExportOrchestratorOptions {
+  /** Custom filename for the export (defaults to sequence word) */
+  filename?: string;
+  /** Frame rate in FPS (default: 60) */
+  fps?: number;
+  /** Output resolution height in pixels (default: 1080) */
+  resolution?: VideoResolution;
+  /** Number of times to loop the sequence (default: 1, only used for loopable sequences) */
+  loopCount?: number;
+  /** Desired output format (mp4 or webm) */
+  format?: VideoExportFormat;
+  /** Override effect visibility for export (null = use current viewer state) */
+  effectOverrides?: VideoEffectOverrides;
+  /** Composite mode: renders animation + grid side-by-side with beat highlighting */
+  compositeMode?: "none" | "horizontal" | "vertical";
+  /** Size of each beat cell in composite grid (default: 120) */
+  gridStepSize?: number;
+  /** Show beat numbers in composite grid (default: true) */
+  showStepNumbers?: boolean;
+  /** Include start position in composite grid (default: false) */
+  includeStartPosition?: boolean;
+  /** Include 1-step start position pause before motion begins (default: true) */
+  includeAnimationStartPosition?: boolean;
+  /** Include 1-step end hold after last motion step for non-looping sequences (default: true) */
+  includeEndHold?: boolean;
+  /** Called after export completes (success or failure) to reset transient state like fire caches */
+  onCleanup?: () => void;
+}
 import type { BackgroundVideoEncoder } from "../implementations/BackgroundVideoEncoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";

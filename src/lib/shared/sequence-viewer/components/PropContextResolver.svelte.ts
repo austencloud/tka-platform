@@ -15,7 +15,7 @@ import { resolvePresentation as resolvePresentationFn } from "../services/presen
 import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
 import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ResolvedPresentation, ViewingContext } from "../services/contracts/types";
+import type { ResolvedPresentation, ViewingContext } from "../services/presentation-resolver";
 export interface PropContextResolverDeps {
   /** @deprecated Not read internally - activeContext is resolved via getActiveContext() param. */
   viewingContext?: ViewingContext;

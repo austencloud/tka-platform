@@ -1,6 +1,6 @@
 import { Vector3 } from "three";
 import type { AvatarAnimator } from "../services/implementations/AvatarAnimator";
-import type { BoneName } from "../services/contracts/types";
+import type { BoneName } from "../services/implementations/AvatarSkeletonBuilder";
 import type { AvatarSkeletonBuilder } from "../services/implementations/AvatarSkeletonBuilder";
 
 type ToggleAnimator = AvatarAnimator & {

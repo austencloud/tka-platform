@@ -12,7 +12,14 @@
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SvgImageConverter } from '$lib/shared/foundation/services/implementations/SvgImageConverter'
-import type { GlyphAsset } from "../contracts/types";
+
+export interface GlyphAsset {
+  image: HTMLImageElement;
+  dimensions: { width: number; height: number };
+  /** Pixels the image extends above the standard glyph origin (50, 800).
+   *  When turns are present, the top turn number sits above the letter. */
+  yOffset: number;
+}
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { interpretTurnColors } from "$lib/shared/pictograph/tka-glyph/services/turn-color-interpreter";

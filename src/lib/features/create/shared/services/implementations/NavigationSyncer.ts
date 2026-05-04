@@ -11,7 +11,31 @@
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-import type { BuildSection, CreateModuleStateForSync, NavigationStateForSync } from "../contracts/types";
+
+export type CreateTab = "construct" | "generate";
+
+/** @deprecated Use CreateTab instead */
+export type BuildSection = CreateTab;
+
+/**
+ * Minimal interface for CreateModule state needed for navigation sync
+ */
+export interface CreateModuleStateForSync {
+  activeSection: string;
+  isPersistenceInitialized: boolean;
+  isNavigatingBack: boolean;
+  isUpdatingFromToggle: boolean;
+  canAccessEditTab: boolean;
+  setActiveToolPanel: (panel: string) => void;
+}
+
+/**
+ * Minimal interface for navigation state needed for navigation sync
+ */
+export interface NavigationStateForSync {
+  currentSection: string;
+  setCurrentSection: (section: string) => void;
+}
 
 export class NavigationSyncer {
   private logger = createComponentLogger("CreateModule:NavigationSync");

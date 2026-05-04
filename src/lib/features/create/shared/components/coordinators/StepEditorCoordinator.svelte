@@ -31,7 +31,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
     getSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
-  import { UndoOperationType } from "../../services/contracts/types";
+  import { UndoOperationType } from "../../services/implementations/UndoManager";
 
   const logger = createComponentLogger("StepEditorCoordinator");
 

@@ -10,7 +10,7 @@ import type {
   GridPositionGroup,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { CircularityAnalysis, StrictLoopType } from "../../../create/shared/services/contracts/types";
+import type { CircularityAnalysis, StrictLoopType } from "../../../create/shared/services/implementations/SequenceAnalyzer";
 
 /**
  * Position group dominance analysis

@@ -1,6 +1,12 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { VideoGenerationOptions } from "../contracts/types";
-import type { VideoRenderProgress, VideoRenderResult } from "../contracts/types";
+import type { VideoRenderProgress, VideoRenderResult } from "./VideoPreRenderer";
+
+export interface VideoGenerationOptions {
+  fps?: number;
+  quality?: number;
+  width?: number;
+  height?: number;
+}
 import { getVideoPreRenderer } from "./VideoPreRenderer";
 
 /**

@@ -1,4 +1,3 @@
-import type { QueueStats } from "../contracts/types";
 /**
  * ThumbnailRenderQueue
  *
@@ -12,6 +11,17 @@ import type { QueueStats } from "../contracts/types";
  * - Deduplicates identical requests
  * - Supports cancellation
  */
+
+export interface QueueStats {
+  /** Number of tasks waiting in queue */
+  queued: number;
+
+  /** Number of tasks currently executing */
+  active: number;
+
+  /** IDs of currently executing tasks */
+  activeIds: string[];
+}
 
 
 interface QueuedTask<T> {

@@ -8,8 +8,82 @@
  */
 
 import { browser } from "$app/environment";
-import type { CreateModuleStateSnapshot, UndoHistoryEntry, UndoMetadata } from "../contracts/types";
-import { UndoOperationType } from "../contracts/types";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
+
+/**
+ * Types of undoable operations in the Create module
+ */
+export enum UndoOperationType {
+  // Sequence construction operations
+  SELECT_START_POSITION = "SELECT_START_POSITION",
+  ADD_BEAT = "ADD_BEAT",
+  REMOVE_BEATS = "REMOVE_BEATS",
+  CLEAR_SEQUENCE = "CLEAR_SEQUENCE",
+
+  // Beat modification operations
+  UPDATE_BEAT = "UPDATE_BEAT",
+  INSERT_BEAT = "INSERT_BEAT",
+  BATCH_EDIT = "BATCH_EDIT",
+
+  // Transform operations
+  MIRROR_SEQUENCE = "MIRROR_SEQUENCE",
+  FLIP_SEQUENCE = "FLIP_SEQUENCE",
+  ROTATE_SEQUENCE = "ROTATE_SEQUENCE",
+  SWAP_COLORS = "SWAP_COLORS",
+  INVERT_SEQUENCE = "INVERT_SEQUENCE",
+  REWIND_SEQUENCE = "REWIND_SEQUENCE",
+  SHIFT_START = "SHIFT_START",
+
+  // Pattern operations
+  APPLY_TURN_PATTERN = "APPLY_TURN_PATTERN",
+  APPLY_ROTATION_PATTERN = "APPLY_ROTATION_PATTERN",
+  APPLY_DURATION_PATTERN = "APPLY_DURATION_PATTERN",
+  EXTEND_SEQUENCE = "EXTEND_SEQUENCE",
+
+  // Edit operations
+  MODIFY_BEAT_PROPERTIES = "MODIFY_BEAT_PROPERTIES",
+
+  // Generate operations
+  GENERATE_SEQUENCE = "GENERATE_SEQUENCE",
+
+  // Spell module operations
+  SPELL_GENERATE = "SPELL_GENERATE",
+  SPELL_APPLY_LOOP = "SPELL_APPLY_LOOP",
+}
+
+/**
+ * Metadata for undo history entries
+ */
+export interface UndoMetadata {
+  stepIndex?: number;
+  stepsRemoved?: number;
+  description?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Snapshot of Create Module State at a specific point in time
+ */
+export interface CreateModuleStateSnapshot {
+  sequence: SequenceData | null;
+  selectedStepNumber: number | null;
+  activeSection: ActiveCreateModule | null;
+  shouldShowStartPositionPicker?: boolean;
+  timestamp: number;
+}
+
+/**
+ * A single undoable action in the history
+ */
+export interface UndoHistoryEntry {
+  id: string;
+  type: UndoOperationType;
+  timestamp: number;
+  beforeState: CreateModuleStateSnapshot;
+  afterState?: CreateModuleStateSnapshot;
+  metadata?: UndoMetadata;
+}
 
 /**
  * Default maximum number of undo entries to keep

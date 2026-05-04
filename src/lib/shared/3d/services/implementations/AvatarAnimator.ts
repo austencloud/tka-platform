@@ -6,21 +6,73 @@
  */
 
 import { Vector3, Quaternion } from "three";
-import type {
-  HandPose,
-  BodyPose,
-  AnimationLayer,
-  TransitionConfig,
-  PositionOffset,
-  IKTarget,
-  BoneName,
-} from "../contracts/types";
+import type { Plane } from "../../domain/enums/Plane";
+import type { IKTarget } from "./IKSolver";
+import type { BoneName } from "./AvatarSkeletonBuilder";
 import type { IKSolver } from "./IKSolver";
 import type { AvatarSkeletonBuilder } from "./AvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import { computePoleVector } from "../elbow-pole-computer";
 import { computeClavicleRotation } from "../clavicle-raiser";
 import { computeSpineTwist } from "../spine-twister";
+
+export interface HandPose {
+  /** Target position in world space */
+  targetPosition: Vector3;
+  /** Target rotation for wrist (optional) */
+  wristRotation?: Quaternion;
+  /** Staff rotation angle in radians - used to twist the hand to match the prop angle */
+  staffAngle?: number;
+  /** Grip type for fingers - see GripType enum in GripPose.ts */
+  gripType?: import("../../domain/models/GripPose").GripType;
+  /** Which plane this hand's prop is operating on */
+  plane?: Plane;
+  /** Blend weight (0-1) */
+  weight: number;
+}
+
+/**
+ * Full body pose.
+ *
+ * `leftHand` / `rightHand` may be null when that side holds no prop. Body
+ * systems (spine twist, clavicle raise, pole vectors, IK) must treat null
+ * as "hand not present" and skip the side rather than reading stale
+ * positions from a prior frame.
+ */
+export interface BodyPose {
+  leftHand: HandPose | null;
+  rightHand: HandPose | null;
+  /** Optional head look target */
+  headLookAt?: Vector3;
+  /** Root position offset */
+  rootOffset?: Vector3;
+  /** Timestamp for animation */
+  timestamp: number;
+}
+
+export interface AnimationLayer {
+  id: string;
+  name: string;
+  weight: number;
+  pose: BodyPose;
+}
+
+export type BlendMode = "override" | "additive" | "multiply";
+
+export interface TransitionConfig {
+  /** Duration in seconds */
+  duration: number;
+  /** Easing function */
+  easing: "linear" | "easeIn" | "easeOut" | "easeInOut";
+  /** Blend mode */
+  blendMode: BlendMode;
+}
+
+export interface PositionOffset {
+  x: number;
+  y: number;
+  z: number;
+}
 
 export class AvatarAnimator {
   private currentPose: BodyPose;

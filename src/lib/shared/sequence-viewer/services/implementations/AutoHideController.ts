@@ -1,4 +1,11 @@
-import type { AutoHideControllerOptions } from "../contracts/types";
+export interface AutoHideControllerOptions {
+  /** Delay in ms before auto-hiding (default: 3000) */
+  hideDelay?: number;
+  /** Callback when visibility changes */
+  onVisibilityChange?: (visible: boolean) => void;
+  /** Condition that must be true for auto-hide to activate */
+  shouldAutoHide?: () => boolean;
+}
 /**
  * Controls auto-hiding behavior for UI elements.
  * Used for fullscreen controls and footer auto-hide.

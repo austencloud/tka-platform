@@ -16,11 +16,13 @@ import {
   startAfter,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreGet, firestoreList } from "$lib/shared/firestore";
 import type { FeedbackQueryResult } from "../contracts/types";
 import type {
   FeedbackItem,
   FeedbackFilterOptions,
 } from "../../domain/models/feedback-models";
+import { FeedbackItemSchema } from "../../domain/models/feedback-schemas";
 import * as feedbackDocumentMapper from "../feedback-document-mapper";
 
 const COLLECTION_NAME = "feedback";
@@ -33,10 +35,49 @@ export class FeedbackQueryService {
     pageSize: number,
     lastDocId?: string
   ): Promise<FeedbackQueryResult> {
+    // Pagination uses doc snapshot cursors — keep raw Firestore for startAfter
+    if (lastDocId) {
+      return this.loadFeedbackWithCursor(filters, pageSize, lastDocId);
+    }
+
+    const whereClauses: { field: string; op: "==" | "in"; value: unknown }[] = [];
+    if (filters.type !== "all") {
+      whereClauses.push({ field: "type", op: "==", value: filters.type });
+    }
+    if (filters.status !== "all") {
+      whereClauses.push({ field: "status", op: "==", value: filters.status });
+    }
+    if (filters.priority !== "all") {
+      whereClauses.push({ field: "priority", op: "==", value: filters.priority });
+    }
+
+    const items = await firestoreList<FeedbackItem>(
+      COLLECTION_NAME,
+      FeedbackItemSchema,
+      {
+        where: whereClauses,
+        orderBy: [{ field: "createdAt", direction: "desc" }],
+        limit: pageSize,
+      },
+    );
+
+    const lastItem = items[items.length - 1];
+
+    return {
+      items,
+      lastDocId: lastItem?.id || null,
+      hasMore: items.length === pageSize,
+    };
+  }
+
+  private async loadFeedbackWithCursor(
+    filters: FeedbackFilterOptions,
+    pageSize: number,
+    lastDocId: string
+  ): Promise<FeedbackQueryResult> {
     const firestore = await getFirestoreInstance();
     const constraints: Parameters<typeof query>[1][] = [];
 
-    // Add filters
     if (filters.type !== "all") {
       constraints.push(where("type", "==", filters.type));
     }
@@ -47,17 +88,13 @@ export class FeedbackQueryService {
       constraints.push(where("priority", "==", filters.priority));
     }
 
-    // Order by createdAt descending
     constraints.push(orderBy("createdAt", "desc"));
     constraints.push(limit(pageSize));
 
-    // Handle pagination
-    if (lastDocId) {
-      const lastDocRef = doc(firestore, COLLECTION_NAME, lastDocId);
-      const lastDocSnap = await getDoc(lastDocRef);
-      if (lastDocSnap.exists()) {
-        constraints.push(startAfter(lastDocSnap));
-      }
+    const lastDocRef = doc(firestore, COLLECTION_NAME, lastDocId);
+    const lastDocSnap = await getDoc(lastDocRef);
+    if (lastDocSnap.exists()) {
+      constraints.push(startAfter(lastDocSnap));
     }
 
     const q = query(collection(firestore, COLLECTION_NAME), ...constraints);
@@ -81,21 +118,46 @@ export class FeedbackQueryService {
     pageSize: number,
     lastDocId?: string
   ): Promise<FeedbackQueryResult> {
+    // Pagination uses doc snapshot cursors — keep raw Firestore for startAfter
+    if (lastDocId) {
+      return this.loadUserFeedbackWithCursor(userId, pageSize, lastDocId);
+    }
+
+    const items = await firestoreList<FeedbackItem>(
+      COLLECTION_NAME,
+      FeedbackItemSchema,
+      {
+        where: [{ field: "userId", op: "==", value: userId }],
+        orderBy: [{ field: "createdAt", direction: "desc" }],
+        limit: pageSize,
+      },
+    );
+
+    const lastItem = items[items.length - 1];
+
+    return {
+      items,
+      lastDocId: lastItem?.id || null,
+      hasMore: items.length === pageSize,
+    };
+  }
+
+  private async loadUserFeedbackWithCursor(
+    userId: string,
+    pageSize: number,
+    lastDocId: string
+  ): Promise<FeedbackQueryResult> {
     const firestore = await getFirestoreInstance();
     const constraints: Parameters<typeof query>[1][] = [];
 
-    // Filter by user
     constraints.push(where("userId", "==", userId));
     constraints.push(orderBy("createdAt", "desc"));
     constraints.push(limit(pageSize));
 
-    // Handle pagination
-    if (lastDocId) {
-      const lastDocRef = doc(firestore, COLLECTION_NAME, lastDocId);
-      const lastDocSnap = await getDoc(lastDocRef);
-      if (lastDocSnap.exists()) {
-        constraints.push(startAfter(lastDocSnap));
-      }
+    const lastDocRef = doc(firestore, COLLECTION_NAME, lastDocId);
+    const lastDocSnap = await getDoc(lastDocRef);
+    if (lastDocSnap.exists()) {
+      constraints.push(startAfter(lastDocSnap));
     }
 
     const q = query(collection(firestore, COLLECTION_NAME), ...constraints);
@@ -115,15 +177,11 @@ export class FeedbackQueryService {
   }
 
   async getFeedback(feedbackId: string): Promise<FeedbackItem | null> {
-    const firestore = await getFirestoreInstance();
-    const docRef = doc(firestore, COLLECTION_NAME, feedbackId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    return this.mapper.mapDocToFeedbackItem(docSnap.id, docSnap.data());
+    return firestoreGet<FeedbackItem>(
+      COLLECTION_NAME,
+      feedbackId,
+      FeedbackItemSchema,
+    );
   }
 }
 

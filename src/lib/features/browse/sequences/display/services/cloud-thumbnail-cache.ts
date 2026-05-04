@@ -17,7 +17,24 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
-import type { CloudThumbnailKey, ThumbnailVariant, DeleteProgress } from "./contracts/types";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { ThumbnailVariant } from "./thumbnail-key-deriver";
+
+export interface CloudThumbnailKey {
+  sequenceName: string;
+  /** Unique sequence ID - distinguishes variations with the same word */
+  sequenceId?: string;
+  propType: PropType;
+  lightMode: boolean;
+  /** Cache variant - defaults to 'gallery' for backwards compatibility */
+  variant?: ThumbnailVariant;
+}
+
+export interface DeleteProgress {
+  deleted: number;
+  total: number;
+  currentFile?: string;
+}
 
 // In-memory cache with TTL to avoid stale URLs
 // Firebase download URLs expire after ~1 hour, so we refresh after 30 minutes

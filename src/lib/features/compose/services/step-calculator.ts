@@ -6,7 +6,13 @@
  */
 
 import type { StepData } from "../../create/shared/domain/models/StepData";
-import type { StepCalculationResult } from "./contracts/types";
+
+export interface StepCalculationResult {
+  currentStepIndex: number;
+  stepProgress: number;
+  currentStepData: StepData;
+  isValid: boolean;
+}
 
 /**
  * Calculate current beat index and progress from animation time

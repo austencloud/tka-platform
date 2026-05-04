@@ -6,11 +6,34 @@
  * no localStorage persistence (viewer undo is ephemeral), no per-section filtering.
  */
 
-import type {
-  ViewerOperationType,
-  ViewerSnapshot,
-  ViewerUndoEntry,
-} from "../contracts/types";
+import type { Plane } from "../../domain/enums/Plane";
+import type { FormationPreset } from "../../domain/formation";
+
+export interface PerformerSnapshot {
+  id: string;
+  position: { x: number; z: number };
+  facingAngle: number;
+  customBluePlane: Plane;
+  customRedPlane: Plane;
+  sequenceRef: { ownerId: string; sequenceId: string } | null;
+}
+
+export interface ViewerSnapshot {
+  performers: PerformerSnapshot[];
+  selectedPerformerIndex: number | null;
+  activeFormation: FormationPreset | "manual";
+  timestamp: number;
+}
+
+export type ViewerOperationType = "spawn" | "remove" | "formation" | "spatial";
+
+export interface ViewerUndoEntry {
+  id: string;
+  type: ViewerOperationType;
+  beforeState: ViewerSnapshot;
+  afterState?: ViewerSnapshot;
+  timestamp: number;
+}
 
 const DEFAULT_MAX_HISTORY_SIZE = 50;
 

@@ -21,7 +21,36 @@
 import { Quaternion, Euler, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { Object3D, AnimationClip, QuaternionKeyframeTrack } from "three";
-import type { TurnRequest, TurnSample, ContactCurveData } from "../contracts/types";
+import type { ContactCurveData } from "./ContactCurveCache";
+
+export interface TurnRequest {
+  /** Heading at phase 0, in radians (0 = +Z toward audience). */
+  fromHeading: number;
+  /** Heading at phase 1, in radians. */
+  toHeading: number;
+  /** Phase 0->1 within the turn. 0 = start pose, 1 = end pose.
+   *  Can go backward (scrubbing). Values outside [0,1] are clamped. */
+  phase: number;
+}
+
+export interface TurnSample {
+  /** Accumulated yaw delta from phase=0 to this phase, in radians.
+   *  Positive = counterclockwise (left turn) when viewed from above. */
+  yawDelta: number;
+  /** Per-bone local rotations to apply to the skeleton.
+   *  Keys are canonical bone names without prefix (e.g. "Hips", "LeftUpLeg").
+   *  Only lower-body + spine bones are included. */
+  boneRotations: Map<string, Quaternion>;
+  /** Hips local position at this phase (for root motion extraction).
+   *  Null when using linear fallback (no clip data). */
+  hipsPosition: Vector3 | null;
+  /** Per-foot contact state: 0 = airborne, 1 = fully planted. */
+  leftFootContact: number;
+  rightFootContact: number;
+  /** Name of the clip being sampled (for ContactCurveCache lookup).
+   *  Empty string when using linear fallback. */
+  clipName: string;
+}
 
 // ---------------------------------------------------------------------------
 // Constants

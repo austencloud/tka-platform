@@ -20,7 +20,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import * as spellServiceLoaderModule from "../services/spell-service-loader";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import { UndoOperationType } from "../../shared/services/contracts/types";
+  import { UndoOperationType } from "../../shared/services/implementations/UndoManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import WordInput from "./WordInput.svelte";

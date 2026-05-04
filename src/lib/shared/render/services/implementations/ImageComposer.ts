@@ -18,7 +18,7 @@ import { getAnimationVisibilityManager } from "../../../animation-engine/state/a
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 import { cellCacheKeyDeriver } from "../../../sequence-viewer/services/implementations/CellCacheKeyDeriver";
-import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/contracts/types";
+import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/preview-cell-renderer";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { CompositionProgressCallback } from "../contracts/types";

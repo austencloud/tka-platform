@@ -6,12 +6,32 @@
  */
 
 import type { TikaPictographLoader } from "./TikaPictographLoader";
-import type {
-  SequenceValidationResult,
-  SequenceTransition,
-  InvalidTransition,
-} from "../contracts/types";
 import { LETTER_TO_TYPE, LETTER_TYPES } from "@tka/domain";
+
+export interface SequenceTransition {
+  from: string;
+  to: string;
+  fromEndGroup: string;
+  toStartGroup: string;
+  isValid: boolean;
+  bridgeOptions?: string[];
+}
+export interface InvalidTransition {
+  position: number;
+  from: string;
+  to: string;
+  reason: string;
+  suggestedBridges: string[];
+}
+export interface SequenceValidationResult {
+  isValid: boolean;
+  word: string;
+  letters: string[];
+  transitions: SequenceTransition[];
+  invalidTransitions: InvalidTransition[];
+  interpolatedSequence?: string;
+  explanation: string;
+}
 
 export class TikaSequenceValidator {
   constructor(private pictographLoader: TikaPictographLoader) {}

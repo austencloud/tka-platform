@@ -8,7 +8,6 @@
  */
 
 import { Point } from "fabric";
-import type { SelectedArrowContext, ApplyMovementResult, AdjustmentTargetKey, CascadingLookupResult } from "../contracts/types";
 import type { KeyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
 import type { ScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
 import type { ArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
@@ -23,6 +22,49 @@ import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pic
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
+
+/**
+ * Arrow selection context for adjustment operations
+ */
+export interface SelectedArrowContext {
+  motionData: MotionData;
+  pictographData: PictographData;
+  color: MotionColor | string;
+}
+
+/**
+ * Result of applying a WASD movement
+ */
+export interface ApplyMovementResult {
+  /** The key used for saving (for auto-save scheduling) */
+  targetKey: AdjustmentTargetKey;
+  /** New X adjustment value */
+  newX: number;
+  /** New Y adjustment value */
+  newY: number;
+  /** Whether the operation succeeded */
+  success: boolean;
+}
+
+/**
+ * Target key for adjustment storage
+ */
+export interface AdjustmentTargetKey {
+  gridMode: string;
+  oriKey: string;
+  letter: string;
+  turnsTuple: string;
+  arrowKey: string;
+  propType?: string;
+}
+
+/**
+ * Result of looking up current adjustment via cascading
+ */
+export interface CascadingLookupResult {
+  adjustment: { x: number; y: number };
+  layer: 1 | 2 | 3 | null;
+}
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("ArrowAdjustmentOrchestrator");

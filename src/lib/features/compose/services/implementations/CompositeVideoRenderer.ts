@@ -9,11 +9,26 @@
  * - Each frame only composites cached grid + current animation + highlight
  */
 
-import type {
-  CompositeDimensions,
-  CompositeLayoutOptions,
-  StepGridPosition,
-} from "../contracts/types";
+export interface CompositeDimensions {
+  width: number;
+  height: number;
+}
+
+export interface CompositeLayoutOptions {
+  orientation: "horizontal" | "vertical";
+  gridStepSize: number; // Size of each beat cell in pixels
+  includeStartPosition: boolean;
+  showStepNumbers: boolean;
+}
+
+export interface StepGridPosition {
+  col: number; // Column index (0-based)
+  row: number; // Row index (0-based)
+  x: number; // Pixel X coordinate
+  y: number; // Pixel Y coordinate
+  width: number; // Beat cell width
+  height: number; // Beat cell height
+}
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ImageComposer } from "../../../../shared/render/services/implementations/ImageComposer";
 import { calculateLayout } from "$lib/shared/render/services/layout-calculator";

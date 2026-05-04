@@ -45,7 +45,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   // Animation imports
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-import type { VideoExportProgress } from "$lib/features/compose/services/contracts/types";
+import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
   import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";

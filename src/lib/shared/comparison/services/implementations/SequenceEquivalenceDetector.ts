@@ -10,8 +10,64 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { EquivalenceResult, EquivalenceType, TransformDetails, SequenceSignature, StepSignature, MotionSignature } from "../../../../features/create/shared/services/contracts/types";
 import type { SequenceCanonicalizer } from "./SequenceCanonicalizer";
+
+/**
+ * Result of equivalence comparison
+ */
+export interface EquivalenceResult {
+  readonly isEquivalent: boolean;
+  readonly equivalenceType: EquivalenceType | null;
+  readonly transform: TransformDetails | null;
+}
+
+/**
+ * Types of equivalence supported
+ */
+export type EquivalenceType =
+  | "identical"
+  | "spatial-rotation"
+  | "circular-rotation"
+  | "combined";
+
+/**
+ * Details about the transform that makes sequences equivalent
+ */
+export interface TransformDetails {
+  readonly spatialRotationSteps: number | null;
+  readonly circularOffset: number | null;
+  readonly gridModeToggled: boolean;
+}
+
+/**
+ * Canonical signature for a sequence
+ */
+export interface SequenceSignature {
+  readonly word: string;
+  readonly stepCount: number;
+  readonly isCircular: boolean;
+  readonly beatSignatures: readonly StepSignature[];
+  readonly hash: string;
+}
+
+/**
+ * Rotation-invariant signature for a single beat
+ */
+export interface StepSignature {
+  readonly blue: MotionSignature;
+  readonly red: MotionSignature;
+  readonly positionGroup: string;
+}
+
+/**
+ * Rotation-invariant signature for a single motion
+ */
+export interface MotionSignature {
+  readonly type: string;
+  readonly direction: string;
+  readonly turns: number | string;
+  readonly orientationTransition: string;
+}
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { SpatialTransformDetector } from "./SpatialTransformDetector";
 import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/word-cyclic-equivalence-detector";

@@ -12,7 +12,33 @@ import {
   LETTER_TYPES,
   LETTER_TO_TYPE,
 } from "@tka/domain";
-import type { QuizResult, InlineQuiz, QuizDifficulty, PictographOption, MotionPatternOption, TextOption } from "../contracts/types";
+import type { InlineQuiz } from "../../types";
+
+export type QuizDifficulty = "easy" | "medium" | "hard";
+export interface TextOption {
+  id: string;
+  type: "text";
+  text: string;
+  correct: boolean;
+}
+export interface PictographOption {
+  id: string;
+  type: "pictograph";
+  letter: string;
+  variation?: number;
+  correct: boolean;
+}
+export interface MotionPatternOption {
+  id: string;
+  type: "motion-pattern";
+  blueMotion: string;
+  redMotion: string;
+  correct: boolean;
+}
+export interface QuizResult {
+  explanation: string;
+  inlineQuiz: InlineQuiz;
+}
 
 interface PositionQuestion {
   question: string;

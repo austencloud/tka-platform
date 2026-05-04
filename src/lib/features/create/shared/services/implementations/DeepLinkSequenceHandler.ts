@@ -12,7 +12,18 @@ import {
   createSequenceData,
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { DeepLinkLoadResult } from "../contracts/types";
+
+/**
+ * Deep Link Sequence Service Contract
+ */
+export interface DeepLinkLoadResult {
+  /** Whether a sequence was loaded */
+  loaded: boolean;
+  /** The tab to navigate to (if specified in deep link) */
+  targetTab?: string;
+  /** Source of the loaded sequence */
+  source?: "deepLink" | "pendingEdit";
+}
 import type { DeepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { LetterDeriver } from '$lib/shared/navigation/services/implementations/LetterDeriver'
 import type { PositionDeriver } from '$lib/shared/navigation/services/implementations/PositionDeriver'

@@ -18,10 +18,13 @@ import {
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type {
-  StepMotionConfigs,
-} from "../contracts/types";
 import type { PlaneModeConfig } from "../../domain/constants/plane-mode-configs";
+
+export interface StepMotionConfigs {
+  stepNumber: number;
+  blue: MotionConfig3D | null;
+  red: MotionConfig3D | null;
+}
 
 export class SequenceConverter {
   /**

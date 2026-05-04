@@ -5,70 +5,14 @@
  * Replaces PixiJS WebGL rendering with simpler, leak-free Canvas2D.
  */
 
-import type { PropState } from "../../shared/domain/types/PropState";
-import type {
-  TrailPoint,
-  TrailSettings,
-} from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
-
-/**
- * Complete render data for one additional tunnel layer (props + trails + colors)
- */
-export interface AdditionalLayerRenderData {
-  blueProp: PropState | null;
-  redProp: PropState | null;
-  blueTrailPoints: TrailPoint[];
-  redTrailPoints: TrailPoint[];
-  hasBlue: boolean;
-  hasRed: boolean;
-  blueColor: string;
-  redColor: string;
-}
-
-/**
- * Visibility settings for animation rendering
- */
-export interface AnimationVisibilitySettings {
-  gridVisible: boolean;
-  propsVisible: boolean;
-  trailsVisible: boolean;
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
-}
-
-/**
- * Parameters for renderScene()
- */
-export interface RenderSceneParams {
-  blueProp: PropState | null;
-  redProp: PropState | null;
-  gridVisible: boolean;
-  gridMode: string | null;
-  letter: string | null;
-  turnsTuple: string | null;
-  bluePropDimensions: { width: number; height: number };
-  redPropDimensions: { width: number; height: number };
-  blueTrailPoints: TrailPoint[];
-  redTrailPoints: TrailPoint[];
-  /** Additional tunnel layers with props, trails, and colors */
-  additionalLayers?: AdditionalLayerRenderData[];
-  trailSettings: TrailSettings;
-  currentTime: number;
-  visibility: AnimationVisibilitySettings;
-  // Prop flip settings (for asymmetric props like Buugeng)
-  bluePropFlipped?: boolean;
-  redPropFlipped?: boolean;
-  // Prop types - used to apply prop-specific rendering rules (e.g., hands never rotate)
-  bluePropType?: string;
-  redPropType?: string;
-  // Quality hints for adaptive rendering (optional - full quality when absent)
-  qualityHints?: QualityHints;
-  /** When true, trails are rendered by the overlay canvas, not the main renderer */
-  skipTrailRendering?: boolean;
-}
-
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
+import type { RenderSceneParams } from "../implementations/Canvas2DAnimationRenderer";
+
+export type {
+  AdditionalLayerRenderData,
+  AnimationVisibilitySettings,
+  RenderSceneParams,
+} from "../implementations/Canvas2DAnimationRenderer";
 
 export interface IAnimationRenderer {
   /**

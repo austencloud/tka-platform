@@ -5,12 +5,9 @@
  */
 
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { PropSvgData } from "../svg-generator";
 
-export interface PropSvgData {
-  svg: string;
-  width: number;
-  height: number;
-}
+export type { PropSvgData } from "../svg-generator";
 
 export interface ISVGGenerator {
   /**

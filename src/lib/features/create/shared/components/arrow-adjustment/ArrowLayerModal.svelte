@@ -10,7 +10,7 @@
 import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { StepData } from "../../domain/models/StepData";
-  import type { AdjustmentTargetKey } from "../../services/contracts/types";
+  import type { AdjustmentTargetKey } from "../../services/implementations/ArrowAdjustmentOrchestrator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import LayerTabBar from "./LayerTabBar.svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
@@ -19,7 +19,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import type { ArrowAdjustmentOrchestrator } from "../../services/implementations/ArrowAdjustmentOrchestrator";
-import type { SelectedArrowContext } from "../../services/contracts/types";
+import type { SelectedArrowContext } from "../../services/implementations/ArrowAdjustmentOrchestrator";
   import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 

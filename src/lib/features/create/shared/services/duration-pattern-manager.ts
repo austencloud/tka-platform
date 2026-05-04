@@ -27,7 +27,21 @@ import type {
   DurationPatternCreateData,
   DurationPatternEntry,
 } from "../domain/models/DurationPatternData";
-import type { DurationPatternApplyResult } from "./contracts/types";
+/**
+ * Result of applying a duration pattern to a sequence
+ */
+export interface DurationPatternApplyResult {
+  /** Whether the application was successful */
+  readonly success: boolean;
+  /** The modified sequence (if successful) */
+  readonly sequence?: SequenceData;
+  /** Error message if not successful */
+  readonly error?: string;
+  /** Number of steps that were modified */
+  readonly modifiedSteps?: number;
+  /** Warnings about edge cases encountered */
+  readonly warnings?: readonly string[];
+}
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("DurationPatternManager");

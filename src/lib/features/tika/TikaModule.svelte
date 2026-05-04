@@ -30,7 +30,7 @@
   import { ConversationMemoryRetriever } from "./services/implementations/ConversationMemoryRetriever";
   import { TikaInteractionTracker } from "./services/implementations/TikaInteractionTracker";
   import { buildWelcome } from "./services/tika-welcome-builder";
-  import type { WelcomeContext } from "./services/contracts/types";
+  import type { WelcomeContext } from "./services/tika-welcome-builder";
   import { TIKA_LIMITS } from "./data/firestore-paths";
   import type { ModelOption } from "./types";
 

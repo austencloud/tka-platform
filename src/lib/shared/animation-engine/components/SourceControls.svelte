@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/types";
+  import type { SourceMode } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   interface Props {

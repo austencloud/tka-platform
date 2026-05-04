@@ -6,7 +6,31 @@
  * Does NOT control playback - fires return values for the consumer to act on.
  */
 
-import type { TempoPracticeConfig, TempoPracticeProgress } from "../contracts/types";
+export interface TempoPracticeConfig {
+  /** Starting BPM (default: 15) */
+  startBpm: number;
+  /** BPM increase per level (default: 5) */
+  increment: number;
+  /** Number of full sequence loops per level before bumping BPM (default: 5) */
+  roundsPerLevel: number;
+  /** Optional maximum BPM cap (default: 300) */
+  maxBpm: number;
+}
+
+export interface TempoPracticeProgress {
+  /** Whether practice is currently running */
+  active: boolean;
+  /** Current BPM */
+  currentBpm: number;
+  /** Which round within the current level (1-based) */
+  currentRound: number;
+  /** How many rounds per level */
+  roundsPerLevel: number;
+  /** How many levels completed */
+  currentLevel: number;
+  /** Total rounds completed across all levels */
+  totalRoundsCompleted: number;
+}
 const DEFAULT_CONFIG: TempoPracticeConfig = {
   startBpm: 15,
   increment: 5,

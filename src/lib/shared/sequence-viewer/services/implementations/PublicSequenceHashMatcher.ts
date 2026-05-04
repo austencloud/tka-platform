@@ -20,7 +20,11 @@ import { getPublicSequencesPath } from "$lib/features/library/data/firestore-pat
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
 import { encodeSequence } from "$lib/shared/navigation/services/sequence-encoder";
-import type { SequenceMatchResult } from "../contracts/types";
+
+export interface SequenceMatchResult {
+	readonly matched: boolean;
+	readonly publicRecord: PublicSequenceIndex | null;
+}
 export class PublicSequenceHashMatcher {
 
 	async findPublicMatch(

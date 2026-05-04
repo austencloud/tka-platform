@@ -51,7 +51,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
   import type { CreateModuleInitializer } from "../services/implementations/CreateModuleInitializer";
   import type { CreateModuleHandlers } from "../services/implementations/CreateModuleHandlers";
-  import type { CreateModuleEffectCoordinator } from "../services/contracts/types";
+  import type { CreateModuleEffectCoordinator } from "../services/create-module-effect-coordinator";
   import type { PanelPersister } from "../services/implementations/PanelPersister.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { createConstructTabState as ConstructTabStateType } from "../state/construct-tab-state.svelte";
@@ -86,7 +86,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { UndoOperationType } from "../services/contracts/types";
+  import { UndoOperationType } from "../services/implementations/UndoManager";
 
   const logger = createComponentLogger("CreateModule");
 

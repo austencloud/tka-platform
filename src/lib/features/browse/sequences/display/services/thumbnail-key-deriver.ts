@@ -6,8 +6,86 @@
  */
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { ThumbnailRenderInput, ThumbnailCacheKey, CompositionDefaults } from "./contracts/types";
-import type { ThumbnailVariant } from "./contracts/types";
+
+export type ThumbnailVariant = "gallery" | "wordcard";
+
+export interface ThumbnailVisibilitySettings {
+  showTKA?: boolean;
+  showReversals?: boolean;
+  showGrid?: boolean;
+  showNonRadialPoints?: boolean;
+  handPointVisibility?: "all" | "active";
+  /** Render QR code in an empty cell (if available) */
+  showQRCode?: boolean;
+  /** Render as hand path visualization (HAND props, float arrows, no TKA) */
+  handPathMode?: boolean;
+}
+
+export interface ThumbnailRenderInput {
+  // Identity
+  sequenceName: string;
+  /** Unique sequence ID - distinguishes variations with the same word */
+  sequenceId?: string;
+
+  // Prop configuration
+  bluePropType: PropType | undefined;
+  redPropType: PropType | undefined;
+  catDogModeEnabled: boolean;
+
+  // Visual mode
+  lightMode: boolean;
+  variant: ThumbnailVariant;
+
+  // LOOP badge
+  loopType?: string | null;
+
+  // Composition overrides (undefined = use variant defaults)
+  addWord?: boolean;
+  addStepNumbers?: boolean;
+  includeStartPosition?: boolean;
+  startPositionLayout?: "row" | "column";
+  addDifficultyLevel?: boolean;
+  addUserInfo?: boolean;
+  showCreatorName?: boolean;
+  showNotes?: boolean;
+  showBirthday?: boolean;
+  customNotesText?: string;
+  userName?: string;
+
+  // Visibility overrides (undefined = use defaults: showTKA=true, showReversals=true, etc.)
+  visibility?: ThumbnailVisibilitySettings;
+
+  /** Use 5:7 playing card layout for physical card export (different from lightMode/printMode) */
+  cardMode?: boolean;
+}
+
+export interface ThumbnailCacheKey {
+  /** Hash of all inputs that affect visual output */
+  readonly hash: string;
+
+  /** Cloud storage path (for ICloudThumbnailCache) */
+  readonly cloudPath: string;
+
+  /** Original inputs (for debugging/logging) */
+  readonly inputs: Readonly<ThumbnailRenderInput>;
+
+  /** Whether this uses default composition settings (cacheable to cloud) */
+  readonly usesDefaults: boolean;
+
+  /** Effective prop type string (for cloud cache key construction) */
+  readonly propKey: string;
+}
+
+export interface CompositionDefaults {
+  addWord: boolean;
+  addStepNumbers: boolean;
+  includeStartPosition: boolean;
+  addDifficultyLevel: boolean;
+  addUserInfo: boolean;
+  showCreatorName: boolean;
+  showNotes: boolean;
+  showBirthday: boolean;
+}
 
 const GALLERY_DEFAULTS: CompositionDefaults = {
   addWord: true,

@@ -1,9 +1,25 @@
-import type { AnimationLoadResult, AnimationLoadOptions } from "../contracts/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+
+export interface AnimationLoadResult {
+  success: boolean;
+  sequenceData?: SequenceData;
+  error?: string;
+}
+
+export interface AnimationLoadOptions {
+  /** Initial BPM to restore */
+  initialBpm?: number;
+  /** Initial playback time in ms to restore */
+  initialPlaybackTimeMs?: number;
+  /** Whether to auto-start playback */
+  autoStart?: boolean;
+  /** Delay before auto-start in ms */
+  autoStartDelay?: number;
+}
 
 /**
  * Handles loading and initializing sequence animation data.

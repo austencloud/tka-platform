@@ -22,9 +22,9 @@ import {
   templateToPattern,
 } from "$lib/features/create/shared/domain/templates/duration-templates";
 import type { SpellModeState } from "./spell-mode-state.svelte";
-import type { UndoMetadata } from "../../shared/services/contracts/types";
-import { UndoOperationType } from "../../shared/services/contracts/types";
-import { UndoOperationType as UndoOp } from "../../shared/services/contracts/types";
+import type { UndoMetadata } from "../../shared/services/implementations/UndoManager";
+import { UndoOperationType } from "../../shared/services/implementations/UndoManager";
+import { UndoOperationType as UndoOp } from "../../shared/services/implementations/UndoManager";
 import type { VariationExplorationOrchestrator } from "../../spell/services/implementations/VariationExplorationOrchestrator";
 import * as spellServiceLoaderModule from "$lib/features/create/spell/services/spell-service-loader";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

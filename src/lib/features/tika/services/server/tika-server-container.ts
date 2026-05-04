@@ -12,13 +12,12 @@ import { TikaQuizGenerator } from "../implementations/TikaQuizGenerator";
 import { TikaToolExecutor } from "../implementations/TikaToolExecutor";
 import { TikaModelProvider } from "../implementations/TikaModelProvider";
 import * as tikaProgressWriter from "./tika-progress-writer";
+import type { VerificationResult } from "./tika-progress-writer";
 
 export interface TikaServerContainerDeps {
   anthropicApiKey: string;
   deepseekApiKey: string;
 }
-
-import type { VerificationResult } from "../contracts/types";
 
 interface ProgressWriter {
   validateConceptIds(conceptIds: string[], alreadyCompleted: string[]): { valid: string[]; rejected: Array<{ id: string; reason: string }> };

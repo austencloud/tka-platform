@@ -8,13 +8,49 @@
 
 import fs from "fs";
 import path from "path";
-import type {
-  PictographData,
-  PictographDataWithMode,
-  GlossaryEntry,
-  LetterTypeInfo,
-  LetterPositionMapping,
-} from "../contracts/types";
+
+export interface MotionData {
+  color: string;
+  startLocation: string;
+  endLocation: string;
+  motionType: string;
+  rotationDirection: string;
+}
+export interface PictographData {
+  letter: string;
+  startPosition: string;
+  endPosition: string;
+  timing: string;
+  direction: string;
+  blueMotion: MotionData;
+  redMotion: MotionData;
+}
+export interface PictographDataWithMode extends PictographData {
+  gridMode: "diamond" | "box";
+}
+export interface GlossaryEntry {
+  definition: string;
+  examples: string[];
+  relatedTerms: string[];
+  category: string;
+}
+export interface LetterTypeInfo {
+  name: string;
+  description: string;
+  characteristics: string[];
+  letters: string[];
+  motionPattern: {
+    blueMotion: string;
+    redMotion: string;
+    note?: string;
+  };
+}
+export interface LetterPositionMapping {
+  startPosition: string;
+  endPosition: string;
+  startGroup: string;
+  endGroup: string;
+}
 
 export class TikaPictographLoader {
   private allPictographs: PictographData[] = [];

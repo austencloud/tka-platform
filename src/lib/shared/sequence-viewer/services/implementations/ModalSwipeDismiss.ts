@@ -1,4 +1,24 @@
-import type { ModalSwipeDismissConfig, ModalSwipeDismissState } from "../contracts/types";
+export interface ModalSwipeDismissConfig {
+  /** Pixel threshold to trigger dismiss (default: 100) */
+  threshold?: number;
+  /** Minimum vertical movement to commit to swipe gesture (default: 10) */
+  commitThreshold?: number;
+  /** Vertical must be > horizontal * this to swipe (default: 2) */
+  horizontalTolerance?: number;
+  /** Duration to block clicks after swipe gesture (default: 100ms) */
+  clickBlockDuration?: number;
+}
+
+export interface ModalSwipeDismissState {
+  /** Current vertical offset in pixels */
+  readonly swipeY: number;
+  /** Whether actively swiping */
+  readonly isSwiping: boolean;
+  /** Whether gesture has committed to swipe (past commit threshold) */
+  readonly isCommitted: boolean;
+  /** Whether clicks should be blocked (after a swipe gesture) */
+  readonly blockClicks: boolean;
+}
 /**
  * Modal swipe-to-dismiss gesture handler.
  *

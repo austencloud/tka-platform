@@ -22,11 +22,13 @@ import {
   lerpCameraPosition,
 } from "../../domain/camera-choreography";
 
-import type {
-  PerformerPositionProvider,
-  CameraStateChangeCallback,
-  KeyframeEventCallback,
-} from "../contracts/types";
+export interface PerformerPositionProvider {
+  getPosition(index: number): CameraPosition | null;
+}
+
+export type CameraStateChangeCallback = (state: CameraState) => void;
+
+export type KeyframeEventCallback = (keyframe: CameraKeyframe) => void;
 
 /**
  * Create a CameraChoreographer instance

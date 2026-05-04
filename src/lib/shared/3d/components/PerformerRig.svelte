@@ -34,7 +34,7 @@
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { GridMode } from "../domain/constants/grid-layout";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
-  import type { TurnRequest } from "../services/contracts/types";
+  import type { TurnRequest } from "../services/implementations/ClipBasedTurnAnimator";
   import { derivePlaneModeFromHands } from "../state/avatar-instance-state.svelte";
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
 

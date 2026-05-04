@@ -43,7 +43,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { STAGE } from "$lib/shared/3d/scale/scale-constants";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
-  import type { CollisionEvent } from "$lib/shared/3d/services/contracts/types";
+  import type { CollisionEvent } from "$lib/shared/3d/services/implementations/CollisionDetector";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
   import type {
     DiamondPosition,

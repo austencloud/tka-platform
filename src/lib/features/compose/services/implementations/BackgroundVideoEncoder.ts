@@ -12,7 +12,13 @@
  *   4. cancel()     - aborts immediately and terminates the worker
  */
 
-import type { BackgroundExportConfig } from "../contracts/types";
+export interface BackgroundExportConfig {
+  width: number;
+  height: number;
+  fps: number;
+  bitrate: number;
+  totalFrames: number;
+}
 import type {
   ExportWorkerMessage,
   ExportWorkerResponse,

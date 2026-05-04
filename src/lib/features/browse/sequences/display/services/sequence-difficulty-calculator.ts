@@ -11,7 +11,12 @@ import {
   Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { DifficultyAnalysis } from "./contracts/types";
+
+export type DifficultyTrigger = "none" | "turns" | "nonRadial";
+export interface DifficultyAnalysis {
+  readonly level: 1 | 2 | 3;
+  readonly trigger: DifficultyTrigger;
+}
 
 export function analyzeDifficulty(steps: StepData[]): DifficultyAnalysis {
   if (!steps || steps.length === 0) {

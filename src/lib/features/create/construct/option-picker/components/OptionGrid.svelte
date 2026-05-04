@@ -10,7 +10,7 @@ Computes reversal indicators for options based on current sequence.
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { reversalDetector, type ReversalDetector } from "../../../shared/services/reversal-detector";
-  import type { PictographWithReversals } from "../../../shared/services/contracts/types";
+  import type { PictographWithReversals } from "../../../shared/services/reversal-detector";
   import OptionCard from "./OptionCard.svelte";
 
   interface Props {

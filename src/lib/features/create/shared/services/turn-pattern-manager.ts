@@ -25,7 +25,26 @@ import type {
   TurnPatternEntry,
   TurnValue,
 } from "../domain/models/TurnPatternData";
-import type { TurnPatternApplyResult, TargetHand } from "./contracts/types";
+/**
+ * Specifies which hand(s) to apply pattern changes to
+ */
+export type TargetHand = "blue" | "red" | "both";
+
+/**
+ * Result of applying a turn pattern to a sequence
+ */
+export interface TurnPatternApplyResult {
+  /** Whether the application was successful */
+  readonly success: boolean;
+  /** The modified sequence (if successful) */
+  readonly sequence?: SequenceData;
+  /** Error message if not successful */
+  readonly error?: string;
+  /** Number of steps that were modified */
+  readonly modifiedSteps?: number;
+  /** Warnings about edge cases encountered */
+  readonly warnings?: readonly string[];
+}
 import {
   createMotionData,
   type MotionData,

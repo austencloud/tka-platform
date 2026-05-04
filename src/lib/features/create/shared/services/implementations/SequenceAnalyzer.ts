@@ -2,7 +2,42 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BetaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
-import type { CircularityAnalysis, CircularType, StrictLoopType } from "../contracts/types";
+
+/**
+ * Circular Sequence Type
+ */
+export type CircularType = "same" | "halved" | "quartered";
+
+/**
+ * LOOP (Linked Orbital Offset Pattern) Type
+ */
+export type StrictLoopType =
+  | "rotated"
+  | "mirrored"
+  | "rotated-mirrored"
+  | "static";
+
+/**
+ * Circularity Analysis Result
+ */
+export interface CircularityAnalysis {
+  /** Whether the sequence forms a valid circular pattern */
+  readonly isCircular: boolean;
+  /** Type of circular relationship (same/halved/quartered) */
+  readonly circularType: CircularType | null;
+  /** Starting position of the sequence */
+  readonly startPosition: GridPosition | null;
+  /** Ending position of the sequence */
+  readonly endPosition: GridPosition | null;
+  /** Whether start position is a beta position */
+  readonly startIsBeta: boolean;
+  /** Whether end position is a beta position */
+  readonly endIsBeta: boolean;
+  /** Possible LOOP types this sequence could become */
+  readonly possibleLoopTypes: readonly StrictLoopType[];
+  /** Human-readable description of the circular relationship */
+  readonly description: string;
+}
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,

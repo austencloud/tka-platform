@@ -10,7 +10,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ExportSettings } from "../../domain/models/ExportSettings";
-import type { VideoExportProgress } from '$lib/features/compose/services/contracts/types';
+import type { VideoExportProgress } from '$lib/features/compose/services/implementations/VideoExportOrchestrator';
 import type { AnimationPlaybackController } from '$lib/features/compose/services/implementations/AnimationPlaybackController';
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 

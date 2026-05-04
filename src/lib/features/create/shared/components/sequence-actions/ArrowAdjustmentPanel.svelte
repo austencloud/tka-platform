@@ -22,7 +22,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
   import type { StepData } from "../../domain/models/StepData";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { ArrowAdjustmentOrchestrator } from "../../services/implementations/ArrowAdjustmentOrchestrator";
-import type { AdjustmentTargetKey } from "../../services/contracts/types";
+import type { AdjustmentTargetKey } from "../../services/implementations/ArrowAdjustmentOrchestrator";
   import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
   import { onMount } from "svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";

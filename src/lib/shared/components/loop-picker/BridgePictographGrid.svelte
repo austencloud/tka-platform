@@ -10,7 +10,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { CircularizationOption } from "../../../features/create/shared/services/contracts/types";
+  import type { CircularizationOption } from "../../../features/create/shared/services/implementations/SequenceExtender";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { onMount } from "svelte";

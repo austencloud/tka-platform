@@ -7,7 +7,7 @@ import type {
   ICreateModuleState,
   BatchEditChanges,
 } from "../../../types/create-module-types";
-import { UndoOperationType } from "../../contracts/types";
+import { UndoOperationType } from "../UndoManager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("BatchEdit");

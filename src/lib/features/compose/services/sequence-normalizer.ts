@@ -6,9 +6,20 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { NormalizedSequenceData } from "./contracts/types";
 import type { StepData } from "../../create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../create/shared/domain/models/StartPositionData";
+
+export interface NormalizedSequenceData {
+  /**
+   * Steps array with stepNumber >= 1 (excludes start position)
+   */
+  steps: readonly StepData[];
+
+  /**
+   * Start position (always StartPositionData, never StepData)
+   */
+  startPosition: StartPositionData | null;
+}
 import { createStartPositionData } from "../../create/shared/domain/factories/createStartPositionData";
 
 /**

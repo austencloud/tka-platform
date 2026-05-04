@@ -11,7 +11,8 @@ import type { AnimationPlaybackController } from "$lib/features/compose/services
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/features/landing/services/contracts/types";
 import type { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
-import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/types";
+
+export type SourceMode = "pick" | "library" | "infinite";
 
 import * as propTypeApplierModule from "$lib/features/landing/services/prop-type-applier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

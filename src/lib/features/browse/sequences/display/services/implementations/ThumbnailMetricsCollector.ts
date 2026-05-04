@@ -1,4 +1,3 @@
-import type { CacheLayer, ThumbnailRequestMetrics, ThumbnailMetricsSummary, TimingDistribution } from "../contracts/types";
 /**
  * ThumbnailMetricsCollector
  *
@@ -10,6 +9,93 @@ import type { CacheLayer, ThumbnailRequestMetrics, ThumbnailMetricsSummary, Timi
  * - Call getSummary() programmatically
  */
 
+export type CacheLayer = "memory" | "static" | "local" | "cloud" | "render";
+
+export interface ThumbnailRequestMetrics {
+  /** Unique request ID for correlation */
+  requestId: string;
+
+  /** Which cache layer served this request */
+  layer: CacheLayer | "failed";
+
+  /** Time from request start to URL available (ms) */
+  timeToUrl: number;
+
+  /** Was the thumbnail visible when request started? */
+  wasVisibleAtStart: boolean;
+
+  /** Did the user scroll away before completion? */
+  wasCancelled: boolean;
+
+  /** For renders: time spent in queue before render started */
+  queueWaitTime?: number;
+
+  /** For renders: actual render duration */
+  renderTime?: number;
+
+  /** For cloud: upload succeeded? */
+  uploadSucceeded?: boolean;
+}
+
+export interface TimingDistribution {
+  /** Number of samples */
+  count: number;
+  /** Mean (average) in ms */
+  mean: number;
+  /** Standard deviation in ms */
+  stdDev: number;
+  /** Minimum value in ms */
+  min: number;
+  /** Maximum value in ms */
+  max: number;
+  /** 50th percentile (median) in ms */
+  p50: number;
+  /** 95th percentile in ms - 95% of requests faster than this */
+  p95: number;
+  /** 99th percentile in ms - 99% of requests faster than this */
+  p99: number;
+}
+
+export interface ThumbnailMetricsSummary {
+  /** Total requests tracked */
+  totalRequests: number;
+
+  /** Requests by layer */
+  byLayer: Record<CacheLayer | "failed", number>;
+
+  /** Average time to URL by layer (ms) */
+  avgTimeByLayer: Record<CacheLayer | "failed", number>;
+
+  /** Hit rate per layer (as percentage of total) */
+  hitRateByLayer: Record<CacheLayer | "failed", number>;
+
+  /** Percentage of requests cancelled before completion */
+  cancelRate: number;
+
+  /** Percentage of render attempts that failed */
+  renderFailureRate: number;
+
+  /** Percentage of cloud uploads that succeeded */
+  uploadSuccessRate: number;
+
+  /** Highest queue depth observed */
+  queueHighWaterMark: number;
+
+  /** Average queue wait time for rendered items (ms) */
+  avgQueueWaitTime: number;
+
+  /** Average render time (ms) */
+  avgRenderTime: number;
+
+  /** Session duration (ms) */
+  sessionDuration: number;
+
+  /** Full timing distribution across all requests */
+  timeDistribution: TimingDistribution;
+
+  /** Timing distribution by layer (only layers with data) */
+  timeDistributionByLayer: Partial<Record<CacheLayer | "failed", TimingDistribution>>;
+}
 
 interface PendingRequest {
   startTime: number;

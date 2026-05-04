@@ -18,7 +18,7 @@
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createPlaybackControllerFactory } from "$lib/features/compose/createPlaybackControllerFactory";
-  import type { AdditionalLayerProps } from "../../../services/contracts/types";
+  import type { AdditionalLayerProps } from "../../../services/implementations/TrailCapturer";
   interface Props {
     cell: CellConfig;
     isPlaying: boolean;

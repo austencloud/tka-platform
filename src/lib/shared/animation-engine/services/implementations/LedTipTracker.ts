@@ -10,7 +10,6 @@
  * - Velocity clamping for physics stability
  */
 
-import type { LedTipTrackerConfig } from "../contracts/types";
 import type { LedTipData, LedOverlayConfig } from "../../domain/types/LedTypes";
 import { hexToLedColor, resolveHandColor } from "../../domain/types/LedTypes";
 import type { PropState } from "../../domain/PropState";
@@ -22,7 +21,15 @@ import {
 	type TipRelationData,
 } from "../../domain/patterns/context";
 import { PropPositionCalculator } from "./PropPositionCalculator";
-import type { PropEndpointConfig } from "../contracts/types";
+import type { PropEndpointConfig } from "./PropPositionCalculator";
+
+export interface LedTipTrackerConfig {
+	canvasSize: number;
+	bluePropDimensions: { width: number; height: number };
+	redPropDimensions: { width: number; height: number };
+	bluePropType?: string;
+	redPropType?: string;
+}
 
 /** Minimum dt to avoid velocity spikes on first frame or pauses */
 const MIN_DT_SECONDS = 1 / 120;

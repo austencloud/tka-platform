@@ -5,18 +5,16 @@
  */
 
 import {
-  collection,
-  query,
-  where,
-  getDocs,
   doc,
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreList } from "$lib/shared/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
-import type { AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "../../domain/models/feedback-models";
+import type { FeedbackItem, AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "../../domain/models/feedback-models";
+import { FeedbackItemSchema } from "../../domain/models/feedback-schemas";
 import type { FeedbackNotification } from "../../domain/models/notification-models";
 import * as notificationTriggerService from "$lib/features/feedback/services/notification-trigger-service";
 import { feedbackQueryService } from "./FeedbackQuerier";
@@ -98,30 +96,22 @@ export class FeedbackTesterWorkflowService {
   }
 
   async countPendingConfirmations(userId: string): Promise<number> {
-    const firestore = await getFirestoreInstance();
-
-    // Get in-review items for this user
-    const inReviewQuery = query(
-      collection(firestore, COLLECTION_NAME),
-      where("userId", "==", userId),
-      where("status", "==", "in-review")
+    const items = await firestoreList<FeedbackItem>(
+      COLLECTION_NAME,
+      FeedbackItemSchema,
+      {
+        where: [
+          { field: "userId", op: "==", value: userId },
+          { field: "status", op: "==", value: "in-review" },
+        ],
+      },
     );
 
-    const snapshot = await getDocs(inReviewQuery);
-
     // Count items where testerConfirmation is pending or doesn't exist
-    let count = 0;
-    snapshot.docs.forEach((docSnap) => {
-      const data = docSnap.data();
-      const confirmation = data["testerConfirmation"] as
-        | TesterConfirmation
-        | undefined;
-      if (!confirmation || confirmation.status === "pending") {
-        count++;
-      }
-    });
-
-    return count;
+    return items.filter((item) => {
+      const confirmation = item.testerConfirmation;
+      return !confirmation || confirmation.status === "pending";
+    }).length;
   }
 
   async notifyTesterResolved(

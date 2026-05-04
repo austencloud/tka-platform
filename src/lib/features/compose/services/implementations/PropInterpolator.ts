@@ -9,7 +9,7 @@ import type { StepData } from "../../../create/shared/domain/models/StepData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
-import type { InterpolationResult } from "../contracts/types";
+import type { InterpolationResult } from "./AnimationStateManager";
 import type { AngleCalculatorLike } from "../angle-calculator";
 import type { EndpointCalculator } from "./EndpointCalculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";

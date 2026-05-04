@@ -36,7 +36,23 @@ import type {
   RotationDirectionPatternEntry,
   RotationDirectionValue,
 } from "../domain/models/RotationDirectionPatternData";
-import type { RotationDirectionPatternApplyResult, TargetHand } from "./contracts/types";
+import type { TargetHand } from "./turn-pattern-manager";
+
+/**
+ * Result of applying a rotation direction pattern to a sequence
+ */
+export interface RotationDirectionPatternApplyResult {
+  /** Whether the application was successful */
+  readonly success: boolean;
+  /** The modified sequence (if successful) */
+  readonly sequence?: SequenceData;
+  /** Error message if not successful */
+  readonly error?: string;
+  /** Number of steps that were modified */
+  readonly modifiedSteps?: number;
+  /** Warnings about edge cases encountered (e.g., skipped motions) */
+  readonly warnings?: readonly string[];
+}
 import {
   createMotionData,
   type MotionData,

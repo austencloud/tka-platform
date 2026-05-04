@@ -11,12 +11,27 @@
 import type { PropState } from "../../domain/PropState";
 import type { PropTipData, RenderedPropTransform } from "../../domain/types/FireTypes";
 import { getTipPoints, type TipPoint } from "../../domain/types/PropTipPoints";
-import type {
-	FireTipTrackerConfig,
-	FireTipUpdateResult,
-} from "../contracts/types";
 import { PropPositionCalculator } from "./PropPositionCalculator";
-import type { PropEndpointConfig } from "../contracts/types";
+import type { PropEndpointConfig } from "./PropPositionCalculator";
+
+export interface FireTipTrackerConfig {
+  canvasSize: number;
+  bluePropDimensions: { width: number; height: number };
+  redPropDimensions: { width: number; height: number };
+  bluePropType?: string;
+  redPropType?: string;
+  /** Transforms from the Canvas2D renderer. When provided, used instead of recomputing positions. */
+  renderedTransforms?: {
+    blue: RenderedPropTransform | null;
+    red: RenderedPropTransform | null;
+  };
+}
+
+export interface FireTipUpdateResult {
+  tips: PropTipData[];
+  /** True when a time gap was detected (HMR, tab switch, frame drop). Caller should clear the fire simulation. */
+  gapDetected: boolean;
+}
 
 /** Minimum dt to avoid velocity spikes on first frame or pauses */
 const MIN_DT_SECONDS = 1 / 120;

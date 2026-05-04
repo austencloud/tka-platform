@@ -25,8 +25,8 @@
   import { PublicSequencesLoader } from '$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import type { ThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator';
-  import type { ThumbnailRenderInput } from '$lib/features/browse/sequences/display/services/contracts/types';
-  import type { ThumbnailMetricsSummary } from '$lib/features/browse/sequences/display/services/contracts/types';
+  import type { ThumbnailRenderInput } from '$lib/features/browse/sequences/display/services/thumbnail-key-deriver';
+  import type { ThumbnailMetricsSummary } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector';
 import type { ThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector';
   import type { ThumbnailLocalCache } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailLocalCache';
 

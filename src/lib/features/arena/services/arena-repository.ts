@@ -17,17 +17,18 @@ import {
   INITIAL_PHI,
   INITIAL_SIGMA,
 } from "../domain/constants/arena-constants";
+import { z } from "zod";
+import {
+  firestoreGet,
+  firestoreList,
+  firestoreSet,
+} from "$lib/shared/firestore";
+import { ArenaRatingSchema, ArenaVoteSchema } from "../domain/models/arena-schemas";
 import {
   collection,
   doc,
   getDoc,
   getDocs,
-  setDoc,
-  addDoc,
-  query,
-  where,
-  orderBy,
-  limit as firestoreLimit,
   writeBatch,
   Timestamp,
 } from "firebase/firestore";
@@ -98,10 +99,9 @@ export async function loadPool(): Promise<MatchupCandidate[]> {
 }
 
 export async function getRating(entryId: string): Promise<ArenaRating | null> {
-  const firestore = await getFirestoreInstance();
-  const snap = await getDoc(doc(firestore, RATINGS_COLLECTION, entryId));
-  if (!snap.exists()) return null;
-  return deserializeRating(snap.data());
+  const parsed = await firestoreGet(RATINGS_COLLECTION, entryId, ArenaRatingSchema);
+  if (!parsed) return null;
+  return parsed as ArenaRating;
 }
 
 export async function saveRatings(winner: ArenaRating, loser: ArenaRating): Promise<void> {
@@ -119,25 +119,21 @@ export async function saveRatings(winner: ArenaRating, loser: ArenaRating): Prom
 }
 
 export async function saveVote(vote: ArenaVote): Promise<void> {
-  const firestore = await getFirestoreInstance();
-  await addDoc(collection(firestore, VOTES_COLLECTION), {
+  await firestoreSet(VOTES_COLLECTION, null, {
     ...vote,
     timestamp: Timestamp.fromDate(vote.timestamp),
   });
 }
 
 export async function loadLeaderboard(limit: number): Promise<ArenaLeaderboardEntry[]> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, RATINGS_COLLECTION),
-    orderBy("displayRating", "desc"),
-    firestoreLimit(limit)
-  );
-  const snap = await getDocs(q);
+  const ratings = await firestoreList(RATINGS_COLLECTION, ArenaRatingSchema, {
+    orderBy: [{ field: "displayRating", direction: "desc" }],
+    limit,
+  });
   const previousRanks = await loadPreviousSnapshot();
 
-  return snap.docs.map((d, idx) => {
-    const rating = deserializeRating(d.data());
+  return ratings.map((parsed, idx) => {
+    const rating = parsed as ArenaRating;
     const rank = idx + 1;
     const prevRank = previousRanks.get(rating.entryId);
     const rankChange = prevRank != null ? prevRank - rank : 0;
@@ -157,15 +153,12 @@ export async function loadLeaderboard(limit: number): Promise<ArenaLeaderboardEn
 }
 
 export async function loadUserStats(userId: string): Promise<ArenaUserStats> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, VOTES_COLLECTION),
-    where("voterId", "==", userId),
-    orderBy("timestamp", "desc")
-  );
-  const snap = await getDocs(q);
+  const votes = await firestoreList(VOTES_COLLECTION, ArenaVoteSchema, {
+    where: [{ field: "voterId", op: "==", value: userId }],
+    orderBy: [{ field: "timestamp", direction: "desc" }],
+  });
 
-  if (snap.empty) {
+  if (votes.length === 0) {
     return {
       totalVotes: 0,
       currentStreak: 0,
@@ -174,9 +167,8 @@ export async function loadUserStats(userId: string): Promise<ArenaUserStats> {
     };
   }
 
-  const totalVotes = snap.size;
-  const lastDoc = snap.docs[snap.docs.length - 1];
-  const firstVoteDate = lastDoc?.data().timestamp?.toDate?.() ?? null;
+  const totalVotes = votes.length;
+  const firstVoteDate = votes[votes.length - 1]?.timestamp ?? null;
 
   return {
     totalVotes,
@@ -187,20 +179,16 @@ export async function loadUserStats(userId: string): Promise<ArenaUserStats> {
 }
 
 export async function loadRecentVotePairs(userId: string, limit: number): Promise<Set<string>> {
-  const firestore = await getFirestoreInstance();
-  const q = query(
-    collection(firestore, VOTES_COLLECTION),
-    where("voterId", "==", userId),
-    orderBy("timestamp", "desc"),
-    firestoreLimit(limit)
-  );
-  const snap = await getDocs(q);
+  const votes = await firestoreList(VOTES_COLLECTION, ArenaVoteSchema, {
+    where: [{ field: "voterId", op: "==", value: userId }],
+    orderBy: [{ field: "timestamp", direction: "desc" }],
+    limit,
+  });
   const pairs = new Set<string>();
 
-  for (const d of snap.docs) {
-    const data = d.data();
-    const a = data.winnerEntryId;
-    const b = data.loserEntryId;
+  for (const vote of votes) {
+    const a = vote.winnerEntryId;
+    const b = vote.loserEntryId;
     const key = a < b ? `${a}|${b}` : `${b}|${a}`;
     pairs.add(key);
   }
@@ -209,30 +197,28 @@ export async function loadRecentVotePairs(userId: string, limit: number): Promis
 }
 
 export async function saveDailySnapshot(entries: ArenaLeaderboardEntry[]): Promise<void> {
-  const firestore = await getFirestoreInstance();
   const today = new Date().toISOString().slice(0, 10);
   const rankMap: Record<string, number> = {};
   for (const entry of entries) {
     rankMap[entry.entry.id] = entry.rank;
   }
-  await setDoc(doc(firestore, SNAPSHOTS_COLLECTION, today), {
+  await firestoreSet(SNAPSHOTS_COLLECTION, today, {
     ranks: rankMap,
-    createdAt: Timestamp.now(),
   });
 }
 
-export async function loadPreviousSnapshot(): Promise<Map<string, number>> {
-  const firestore = await getFirestoreInstance();
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const snap = await getDoc(doc(firestore, SNAPSHOTS_COLLECTION, yesterday));
-  const map = new Map<string, number>();
-  if (!snap.exists()) return map;
+const SnapshotSchema = z.object({
+  ranks: z.record(z.string(), z.number()),
+}).passthrough();
 
-  const ranks = snap.data()?.ranks;
-  if (ranks && typeof ranks === "object") {
-    for (const [id, rank] of Object.entries(ranks)) {
-      map.set(id, rank as number);
-    }
+export async function loadPreviousSnapshot(): Promise<Map<string, number>> {
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const parsed = await firestoreGet(SNAPSHOTS_COLLECTION, yesterday, SnapshotSchema);
+  const map = new Map<string, number>();
+  if (!parsed) return map;
+
+  for (const [id, rank] of Object.entries(parsed.ranks)) {
+    map.set(id, rank);
   }
   return map;
 }
@@ -288,7 +274,6 @@ async function getOrCreateRating(entry: ArenaEntry): Promise<ArenaRating> {
   const existing = await getRating(entry.id);
   if (existing) return existing;
 
-  const firestore = await getFirestoreInstance();
   const now = new Date();
   const rating: ArenaRating = {
     entryId: entry.id,
@@ -308,7 +293,7 @@ async function getOrCreateRating(entry: ArenaEntry): Promise<ArenaRating> {
     ownerId: entry.ownerId,
   };
 
-  await setDoc(doc(firestore, RATINGS_COLLECTION, entry.id), serializeRating(rating));
+  await firestoreSet(RATINGS_COLLECTION, entry.id, serializeRating(rating));
   return rating;
 }
 
@@ -321,22 +306,3 @@ function serializeRating(r: ArenaRating): Record<string, unknown> {
   };
 }
 
-function deserializeRating(data: Record<string, unknown>): ArenaRating {
-  return {
-    entryId: data.entryId as string,
-    entryKind: (data.entryKind as string) || "sequence",
-    mu: data.mu as number,
-    phi: data.phi as number,
-    sigma: data.sigma as number,
-    displayRating: data.displayRating as number,
-    totalMatchups: data.totalMatchups as number,
-    wins: data.wins as number,
-    losses: data.losses as number,
-    peakRating: data.peakRating as number,
-    peakRatingDate: (data.peakRatingDate as Timestamp)?.toDate?.() ?? new Date(),
-    lastMatchAt: (data.lastMatchAt as Timestamp)?.toDate?.() ?? new Date(),
-    enteredPoolAt: (data.enteredPoolAt as Timestamp)?.toDate?.() ?? new Date(),
-    word: data.word as string,
-    ownerId: data.ownerId as string,
-  } as ArenaRating;
-}

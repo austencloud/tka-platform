@@ -11,7 +11,8 @@ import type {
 import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { CircularizationOption, OrientationAlignment } from "../contracts/types";
+import type { CircularizationOption } from "./SequenceExtender";
+import type { OrientationAlignment } from "../orientation-alignment-calculator";
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
@@ -31,7 +32,7 @@ import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
-import type { LOOPOption } from "../contracts/types";
+import type { LOOPOption } from "./LOOPValidator";
 
 export class BridgeFinder {
   constructor(

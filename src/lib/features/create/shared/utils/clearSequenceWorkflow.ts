@@ -20,7 +20,7 @@ import { navigationState } from "$lib/shared/navigation/state/navigation-state.s
 import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
 import type { createConstructTabState as ConstructTabStateType } from "../state/construct-tab-state.svelte";
 import type { createPanelCoordinationState as PanelCoordinationStateType } from "../state/panel-coordination-state.svelte";
-import { UndoOperationType } from "../services/contracts/types";
+import { UndoOperationType } from "../services/implementations/UndoManager";
 
 type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 type ConstructTabState = ReturnType<typeof ConstructTabStateType>;

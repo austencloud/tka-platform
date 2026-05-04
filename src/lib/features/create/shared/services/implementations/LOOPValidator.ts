@@ -6,14 +6,36 @@
  */
 
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { LOOPOption } from "../contracts/types";
-import type { LOOPValidationResult } from "../contracts/types";
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
 import {
   LOOPType,
   LOOP_TYPE_LABELS,
   Period,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
+
+/**
+ * Describes a single LOOP option available for extension
+ */
+export interface LOOPOption {
+  /** The LOOP type */
+  loopType: LOOPType;
+  /** Human-readable name */
+  name: string;
+  /** Short description of what this LOOP does */
+  description: string;
+  /** Icon class (FontAwesome) */
+  icon: string;
+}
+
+/**
+ * Result of validating LOOP options for a position pair
+ */
+export interface LOOPValidationResult {
+  /** LOOP options that are valid for this position pair */
+  available: LOOPOption[];
+  /** LOOP options that exist but aren't valid for this position pair */
+  unavailable: LOOPOption[];
+}
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,

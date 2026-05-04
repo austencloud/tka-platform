@@ -46,7 +46,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
-import type { PreviewCellRenderOptions } from "../contracts/types";
+import type { PreviewCellRenderOptions } from "../preview-cell-renderer";
 import type { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import { pictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 

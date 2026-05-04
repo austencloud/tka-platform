@@ -14,12 +14,13 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { ExtensionAnalysis, LOOPType, CircularizationOption } from "../../services/contracts/types";
+  import type { ExtensionAnalysis, CircularizationOption } from "../../services/implementations/SequenceExtender";
+  import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import type { ExtensionFlowCoordinator } from "../../services/implementations/ExtensionFlowCoordinator";
-import type { SubDrawerType } from "../../services/contracts/types";
+  import type { SubDrawerType } from "../../services/sub-drawer-state-persister";
   type FirstStepAnalyzer = typeof firstStepAnalyzerModule;
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import { UndoOperationType } from "../../services/contracts/types";
+  import { UndoOperationType } from "../../services/implementations/UndoManager";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";

@@ -6,16 +6,10 @@
  * Document ID: the full 9-part key string
  */
 
-import {
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  onSnapshot,
-  serverTimestamp,
-  type Unsubscribe,
-} from "firebase/firestore";
+import { collection, onSnapshot, type Unsubscribe } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreList, firestoreSet } from "$lib/shared/firestore";
+import { PropGeometryAdjustmentSchema } from "../../domain/prop-geometry-schemas";
 import {
   generatePropGeometryKeyString,
   type PropGeometryAdjustment,
@@ -32,49 +26,15 @@ export class PropGeometryAdjustmentPersister {
 
   async loadAll(): Promise<PropGeometryAdjustment[]> {
     try {
-      const firestore = await getFirestoreInstance();
-      const colRef = collection(firestore, COLLECTION_NAME);
-      const snapshot = await getDocs(colRef);
+      const adjustments = await firestoreList(
+        COLLECTION_NAME,
+        PropGeometryAdjustmentSchema,
+      );
 
-      const adjustments: PropGeometryAdjustment[] = [];
-
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (
-          data.gridMode &&
-          data.propType &&
-          data.otherPropType &&
-          data.positionType &&
-          data.endOrientation &&
-          data.otherEndOrientation &&
-          data.motionType &&
-          data.turns !== undefined &&
-          data.arrowColor &&
-          typeof data.adjustmentX === "number" &&
-          typeof data.adjustmentY === "number"
-        ) {
-          adjustments.push({
-            gridMode: data.gridMode,
-            propType: data.propType,
-            otherPropType: data.otherPropType,
-            positionType: data.positionType,
-            endOrientation: data.endOrientation,
-            otherEndOrientation: data.otherEndOrientation,
-            motionType: data.motionType,
-            turns: String(data.turns),
-            arrowColor: data.arrowColor,
-            adjustmentX: data.adjustmentX,
-            adjustmentY: data.adjustmentY,
-            updatedAt: data.updatedAt,
-            updatedBy: data.updatedBy ?? "unknown",
-          });
-        } else {
-          logger.warn(`Invalid prop geometry document: ${docSnap.id}`);
-        }
-      });
-
-      logger.success(`Loaded ${adjustments.length} prop geometry adjustments`);
-      return adjustments;
+      logger.success(
+        `Loaded ${adjustments.length} prop geometry adjustments`,
+      );
+      return adjustments as unknown as PropGeometryAdjustment[];
     } catch (error) {
       // Permissions errors are expected when Firestore rules don't allow
       // public reads on this collection. Fall back to empty data gracefully.
@@ -85,7 +45,7 @@ export class PropGeometryAdjustmentPersister {
 
       if (isPermissionError) {
         logger.warn(
-          "Prop geometry adjustments not accessible (permissions). Using defaults."
+          "Prop geometry adjustments not accessible (permissions). Using defaults.",
         );
         return [];
       }
@@ -97,7 +57,7 @@ export class PropGeometryAdjustmentPersister {
 
   async save(
     input: PropGeometryAdjustmentInput,
-    userEmail: string
+    userEmail: string,
   ): Promise<void> {
     const keyString = generatePropGeometryKeyString({
       gridMode: input.gridMode,
@@ -112,27 +72,27 @@ export class PropGeometryAdjustmentPersister {
     });
 
     try {
-      const firestore = await getFirestoreInstance();
-      const docRef = doc(firestore, COLLECTION_NAME, keyString);
-
-      await setDoc(docRef, {
-        gridMode: input.gridMode,
-        propType: input.propType,
-        otherPropType: input.otherPropType,
-        positionType: input.positionType,
-        endOrientation: input.endOrientation,
-        otherEndOrientation: input.otherEndOrientation,
-        motionType: input.motionType,
-        turns: input.turns,
-        arrowColor: input.arrowColor,
-        adjustmentX: input.adjustmentX,
-        adjustmentY: input.adjustmentY,
-        updatedAt: serverTimestamp(),
-        updatedBy: userEmail,
-      });
+      await firestoreSet(
+        COLLECTION_NAME,
+        keyString,
+        {
+          gridMode: input.gridMode,
+          propType: input.propType,
+          otherPropType: input.otherPropType,
+          positionType: input.positionType,
+          endOrientation: input.endOrientation,
+          otherEndOrientation: input.otherEndOrientation,
+          motionType: input.motionType,
+          turns: input.turns,
+          arrowColor: input.arrowColor,
+          adjustmentX: input.adjustmentX,
+          adjustmentY: input.adjustmentY,
+          updatedBy: userEmail,
+        } as Record<string, unknown>,
+      );
 
       logger.success(
-        `Saved prop geometry: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
+        `Saved prop geometry: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`,
       );
     } catch (error) {
       logger.error(`Failed to save prop geometry ${keyString}:`, error);
@@ -142,7 +102,7 @@ export class PropGeometryAdjustmentPersister {
 
   subscribe(
     onAdd: (adjustment: PropGeometryAdjustment) => void,
-    onRemove: (keyString: string) => void
+    onRemove: (keyString: string) => void,
   ): () => void {
     if (this.unsubscribe) {
       this.unsubscribe();
@@ -193,18 +153,18 @@ export class PropGeometryAdjustmentPersister {
             const isPermissionError =
               subscriptionError instanceof Error &&
               (subscriptionError.message.includes(
-                "Missing or insufficient permissions"
+                "Missing or insufficient permissions",
               ) ||
                 subscriptionError.message.includes("permission-denied"));
 
             if (isPermissionError) {
               logger.warn(
-                "Prop geometry subscription not accessible (permissions). Real-time updates disabled."
+                "Prop geometry subscription not accessible (permissions). Real-time updates disabled.",
               );
             } else {
               logger.error("Subscription error:", subscriptionError);
             }
-          }
+          },
         );
       })
       .catch((initError: unknown) => {

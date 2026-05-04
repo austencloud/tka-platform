@@ -28,7 +28,7 @@ import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
   import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compose/services/contracts/types";
+import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
   import type { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";

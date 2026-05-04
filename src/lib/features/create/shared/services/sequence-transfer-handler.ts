@@ -2,7 +2,14 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartPositionData } from "../domain/models/StartPositionData";
-import type { TransferCheckResult } from "./contracts/types";
+
+/**
+ * SequenceTransferHandler
+ */
+export type TransferCheckResult =
+  | { action: "transfer"; sequence: SequenceData }
+  | { action: "already-loaded" }
+  | { action: "confirm-needed"; pendingSequence: SequenceData };
 import { areSequencesEqual } from "../utils/sequence-comparison";
 
 /**

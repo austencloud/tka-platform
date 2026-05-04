@@ -15,7 +15,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
   import type { StepData } from "../../../domain/models/StepData";
   import type { ArrowAdjustmentOrchestrator } from "../../../services/implementations/ArrowAdjustmentOrchestrator";
-import type { SelectedArrowContext } from "../../../services/contracts/types";
+import type { SelectedArrowContext } from "../../../services/implementations/ArrowAdjustmentOrchestrator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import LayerTabBar from "../../arrow-adjustment/LayerTabBar.svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";

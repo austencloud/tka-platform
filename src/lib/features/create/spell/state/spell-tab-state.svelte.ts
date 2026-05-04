@@ -19,8 +19,8 @@ import type { SequenceValidator } from "$lib/features/create/shared/services/seq
 import { reversalDetector, type ReversalDetector } from "../../shared/services/reversal-detector";
 import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
-import type { UndoMetadata } from "../../shared/services/contracts/types";
-import { UndoOperationType } from "../../shared/services/contracts/types";
+import type { UndoMetadata } from "../../shared/services/implementations/UndoManager";
+import { UndoOperationType } from "../../shared/services/implementations/UndoManager";
 import { createUndoController } from "$lib/features/create/shared/state/create-module/undo-controller.svelte";
 import { undoManager } from "$lib/features/create/shared/services/implementations/UndoManager";
 import { browser } from "$app/environment";

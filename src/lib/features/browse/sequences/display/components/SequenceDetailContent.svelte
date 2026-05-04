@@ -25,7 +25,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
   import { resolvePresentation } from "$lib/shared/sequence-viewer/services/presentation-resolver";
-import type { ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/types";
+import type { ViewingContext } from "$lib/shared/sequence-viewer/services/presentation-resolver";
   import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
   import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
   import { getVideoCountManager } from "../getVideoCountManager";

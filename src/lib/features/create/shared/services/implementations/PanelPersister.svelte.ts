@@ -6,8 +6,16 @@
  */
 
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { PanelId } from "../contracts/types";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
+
+export type PanelId =
+  | "animation"
+  | "stepEditor"
+  | "videoRecord"
+  | "filter"
+  | "sequenceActions"
+  | "cap"
+  | "customize";
 
 /**
  * Maps panel IDs to the tabs that support them.

@@ -9,8 +9,12 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { CopyResult } from "../contracts/types";
 import type { SequenceDetailLoader } from "./SequenceDetailLoader";
+
+export interface CopyResult {
+  success: boolean;
+  error?: Error;
+}
 
 export class ClaudeCodeCopier {
   constructor(private readonly detailLoader: SequenceDetailLoader) {}

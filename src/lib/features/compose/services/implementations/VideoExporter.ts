@@ -7,7 +7,20 @@
  * Falls back to WASM-based h264-mp4-encoder for browsers without WebCodecs (Firefox).
  */
 
-import type { VideoExportOptions, VideoFormat } from "../contracts/types";
+export type VideoFormat = "webm" | "mp4";
+
+export interface VideoExportOptions {
+  /** Video format - mp4 (H.264) is recommended. Default: mp4 */
+  format?: VideoFormat;
+  /** Target bitrate in bits per second. Default: 5_000_000 (5 Mbps) */
+  bitrate?: number;
+  /** Frames per second. Default: 50 */
+  fps?: number;
+  /** Output filename. Default: animation.{format} */
+  filename?: string;
+  /** Auto-download when complete. Default: true */
+  autoDownload?: boolean;
+}
 import { VIDEO_EXPORT_FPS } from "../../shared/domain/constants/timing";
 import { WebCodecsVideoEncoder } from "./WebCodecsVideoEncoder";
 import { WasmVideoEncoder } from "./WasmVideoEncoder";

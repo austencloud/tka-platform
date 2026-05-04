@@ -7,7 +7,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceAnalyzer } from "../../../create/shared/services/implementations/SequenceAnalyzer";
-import type { StrictLoopType } from "../../../create/shared/services/contracts/types";
+import type { StrictLoopType } from "../../../create/shared/services/implementations/SequenceAnalyzer";
 import type {
   SequenceFeatures,
   PositionDominance,

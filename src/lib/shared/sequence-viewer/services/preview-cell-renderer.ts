@@ -7,14 +7,74 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { PreviewCellRenderOptions } from "./contracts/types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { LayerRenderOptions, LayerVisibility } from "../../render/services/contracts/types";
+import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
+
+/**
+ * Options for rendering a preview cell.
+ * All visibility and prop settings that affect the rendered output.
+ */
+export interface PreviewCellRenderOptions {
+  /** Render size in pixels (e.g., 480 for high-res) - this is the height; width = size * widthMultiplier */
+  size: number;
+
+  /** Width multiplier for duration-expanded cells (1 = square, 2 = double-wide). Default: 1 */
+  widthMultiplier?: number;
+
+  /** Blue hand prop type override */
+  bluePropType?: PropType;
+
+  /** Red hand prop type override (used when catDogModeEnabled) */
+  redPropType?: PropType;
+
+  /** When true, red hand uses redPropType; otherwise uses bluePropType */
+  catDogModeEnabled?: boolean;
+
+  /** Whether to render step numbers on the pictograph */
+  showStepNumbers?: boolean;
+
+  // Visibility settings (from user preferences)
+
+  /** Show non-radial (corner) grid points */
+  showNonRadialPoints?: boolean;
+
+  /** Hand point visibility mode */
+  handPointVisibility?: "all" | "active";
+
+  /** Show TKA letter glyph */
+  showTKA?: boolean;
+
+  /** Show reversal indicators */
+  showReversals?: boolean;
+
+  /** Show VTG glyph (bottom-right category badge) */
+  showVTG?: boolean;
+
+  /** Show elemental glyph (paired with VTG, same corner) */
+  showElemental?: boolean;
+
+  /** Show start/end position letters (alpha/beta/gamma labels) */
+  showPositions?: boolean;
+
+  /** When true, renders hand path visualization: HAND props, float arrows for shifts,
+   *  no TKA overlay, no reversals. Shows pure spatial trajectory. */
+  handPathMode?: boolean;
+
+  /** Browse view mode (props/hands x combined/solo x blue/red).
+   *  Affects cache keys so the same sequence renders differently per mode. */
+  browseViewMode?: BrowseViewMode;
+
+  /** Show blue motion (prop + arrow). When false, renderer skips blue entirely. Default: true. */
+  showBlueMotion?: boolean;
+
+  /** Show red motion (prop + arrow). When false, renderer skips red entirely. Default: true. */
+  showRedMotion?: boolean;
+}
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/implementations/WorkerRenderPool";
 import { cellCacheKeyDeriver } from "./implementations/CellCacheKeyDeriver";
-import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 
 function filterSoloMotions(
   data: PictographData,
