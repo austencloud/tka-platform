@@ -560,3 +560,61 @@ export function biomeTypeToLegacy(biome: BiomeType): "ocean" | "plains" | "fores
       return "plains";
   }
 }
+
+// ============================================================================
+// BIOME COLOR HELPERS
+// ============================================================================
+
+export function getBiomeColor(biome: string, height: number): { r: number; g: number; b: number } {
+  const heightFactor = Math.min(1, Math.max(0, height / 50));
+
+  switch (biome) {
+    case "ocean":
+      return { r: 0.1, g: 0.3, b: 0.6 };
+    case "plains":
+      return {
+        r: 0.3 + heightFactor * 0.2,
+        g: 0.5 + heightFactor * 0.1,
+        b: 0.2,
+      };
+    case "forest":
+      return {
+        r: 0.1,
+        g: 0.4 - heightFactor * 0.1,
+        b: 0.15,
+      };
+    case "mountains": {
+      const snow = heightFactor > 0.8;
+      return snow
+        ? { r: 0.9, g: 0.9, b: 0.95 }
+        : { r: 0.4 + heightFactor * 0.3, g: 0.35 + heightFactor * 0.3, b: 0.3 + heightFactor * 0.3 };
+    }
+    case "desert":
+      return {
+        r: 0.8,
+        g: 0.7,
+        b: 0.4,
+      };
+    default:
+      return { r: 0.5, g: 0.5, b: 0.5 };
+  }
+}
+
+export function getCampgroundColor(height: number): { r: number; g: number; b: number } {
+  const heightFactor = Math.min(1, Math.max(0, height / 40));
+  return {
+    r: 0.25 + heightFactor * 0.15,
+    g: 0.45 - heightFactor * 0.05,
+    b: 0.15 + heightFactor * 0.05,
+  };
+}
+
+export function getClearingGrassColor(height: number, waterLevel: number): { r: number; g: number; b: number } {
+  const heightAboveWater = height - waterLevel;
+  const heightFactor = Math.min(1, Math.max(0, heightAboveWater / 10));
+  return {
+    r: 0.2 + heightFactor * 0.1,
+    g: 0.55 - heightFactor * 0.05,
+    b: 0.15,
+  };
+}
