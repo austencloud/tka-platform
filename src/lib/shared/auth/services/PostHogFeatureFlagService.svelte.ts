@@ -25,12 +25,10 @@ import {
   type UserFeatureOverrides,
   moduleIdToFeatureId,
   tabIdToFeatureId,
-  getDefaultFeatureRole,
   isValidFeatureId,
   isValidUserRole,
 } from "../domain/models/FeatureFlag";
 import type { ModuleId } from "../../navigation/domain/types";
-import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
 import { isModuleEnabledInEnvironment } from "../../environment/environment-features";
 import {
   getFeatureFlag,
@@ -38,12 +36,12 @@ import {
   getAllFeatureFlags,
   setUserProperties,
 } from "../../analytics/services/posthog";
-import { auth } from "../firebase";
 import { GlobalFeatureFlagPersister } from "./implementations/GlobalFeatureFlagPersister";
 import { UserFeatureFlagPersister } from "./implementations/UserFeatureFlagPersister";
 import type { GlobalFlagOverrides } from "./contracts/types";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { PREMIUM_CAPABILITY_CONFIGS } from "$lib/shared/subscription/domain/capability-flag-configs";
+import { DEFAULT_FEATURE_FLAGS, getDefaultFeatureConfig } from "../domain/default-feature-flags";
+import { createPostHogFlagAdminService } from "./posthog-flag-admin-service";
 
 // ============================================================================
 // POSTHOG FLAG NAMING CONVENTIONS
@@ -202,72 +200,38 @@ const _state = $state<FeatureFlagState>({
   globalRoleOverrides: browser ? loadLocalRoleOverrides() : {},
 });
 
+
 // ============================================================================
-// FEATURE FLAG GENERATION (same as original)
+// ADMIN SERVICE (delegated CRUD)
 // ============================================================================
 
-/**
- * Generate feature flags dynamically from MODULE_DEFINITIONS
- * This ensures feature flags always match the actual navigation modules
- */
-function generateFeatureFlagsFromModules(): FeatureFlagConfig[] {
-  const flags: FeatureFlagConfig[] = [];
-
-  // Generate module and tab flags from MODULE_DEFINITIONS
-  for (const module of MODULE_DEFINITIONS) {
-    const moduleFeatureId = moduleIdToFeatureId(module.id);
-    const moduleRole = getDefaultFeatureRole(moduleFeatureId);
-
-    // Add module flag
-    flags.push({
-      id: moduleFeatureId,
-      name: `${module.label} Module`,
-      description:
-        module.description ||
-        `Access to ${module.label.toLowerCase()} features`,
-      minimumRole: moduleRole,
-      enabled: true,
-      category: "module",
-    });
-
-    // Add tab flags for this module
-    for (const section of module.sections) {
-      const tabFeatureId = tabIdToFeatureId(module.id, section.id);
-      const tabRole = getDefaultFeatureRole(tabFeatureId, moduleRole);
-
-      flags.push({
-        id: tabFeatureId,
-        name: `${section.label} Tab`,
-        description:
-          section.description || `${section.label} in ${module.label}`,
-        minimumRole: tabRole,
-        enabled: true,
-        category: "tab",
-      });
-    }
-  }
-
-  return flags;
-}
-
-// Default feature flags from navigation modules, merged with premium capability configs
-const _DEFAULT_FEATURE_FLAGS: FeatureFlagConfig[] = [
-  ...generateFeatureFlagsFromModules(),
-  ...PREMIUM_CAPABILITY_CONFIGS,
-];
+const _adminService = createPostHogFlagAdminService(
+  () => ({
+    userId: _state.userId,
+    userRole: _state.userRole,
+    globalFlagOverrides: _state.globalFlagOverrides,
+    globalRoleOverrides: _state.globalRoleOverrides,
+    flagsVersion: _state.flagsVersion,
+    userOverrides: _state.userOverrides,
+  }),
+  (patch) => {
+    if (patch.userId !== undefined) _state.userId = patch.userId;
+    if (patch.userRole !== undefined) _state.userRole = patch.userRole;
+    if (patch.globalFlagOverrides !== undefined) _state.globalFlagOverrides = patch.globalFlagOverrides;
+    if (patch.globalRoleOverrides !== undefined) _state.globalRoleOverrides = patch.globalRoleOverrides;
+    if (patch.flagsVersion !== undefined) _state.flagsVersion = patch.flagsVersion;
+    if (patch.userOverrides !== undefined) _state.userOverrides = patch.userOverrides;
+  },
+  _globalFlagPersister,
+  _userFlagPersister,
+  () => _selfInitiatedSaveTimestamp,
+  (ts) => { _selfInitiatedSaveTimestamp = ts; }
+);
 
 // ============================================================================
 // PRIVATE HELPERS
 // ============================================================================
 
-/**
- * Get the default feature config from MODULE_DEFINITIONS
- */
-function getDefaultFeatureConfig(
-  featureId: FeatureId
-): FeatureFlagConfig | null {
-  return _DEFAULT_FEATURE_FLAGS.find((f) => f.id === featureId) || null;
-}
 
 /**
  * Check if a feature is globally enabled (kill switch).
@@ -468,7 +432,7 @@ export const postHogFeatureFlagService = {
     const postHogFlags = getAllFeatureFlags();
 
     // Merge default configs with PostHog values and local admin overrides
-    return _DEFAULT_FEATURE_FLAGS.map((config) => {
+    return DEFAULT_FEATURE_FLAGS.map((config) => {
       const postHogKey = featureIdToPostHogKey(config.id);
       let mergedConfig = { ...config };
 
@@ -744,71 +708,19 @@ export const postHogFeatureFlagService = {
     }
   },
 
-  // ===== User Override Management =====
+  // ===== Admin Operations (delegated) =====
 
-  /**
-   * Update user's feature overrides.
-   * Persists to Firestore + localStorage for cross-device sync.
-   */
   async setUserFeatureOverrides(
     targetUserId: string,
     overrides: UserFeatureOverrides
   ): Promise<void> {
-    // For the current user, update local state immediately
-    if (targetUserId === _state.userId) {
-      _state.userOverrides = overrides;
-      _state.flagsVersion++;
-    }
-
-    // Persist to Firestore + localStorage
-    try {
-      await _userFlagPersister.save(targetUserId, overrides);
-    } catch (err) {
-      console.error("[PostHogFeatureFlagService] Failed to persist user overrides:", err);
-      toast.error("Failed to save feature overrides");
-    }
+    return _adminService.setUserFeatureOverrides(targetUserId, overrides);
   },
 
-  /**
-   * Update a user's role
-   * Note: In PostHog implementation, roles are managed via custom claims (Firebase Auth)
-   * This method is kept for interface compatibility but logs a warning.
-   */
   async setUserRole(targetUserId: string, newRole: UserRole): Promise<void> {
-    console.warn(
-      "[PostHogFeatureFlagService] setUserRole is deprecated. " +
-      "User roles should be managed via Firebase Auth custom claims. " +
-      `Attempted to set ${targetUserId} to ${newRole}.`
-    );
-
-    // If setting current user's role (for testing), allow it locally
-    if (targetUserId === _state.userId) {
-      _state.userRole = newRole;
-      if (browser) {
-        setUserProperties({
-          role: newRole,
-          is_admin: newRole === "admin",
-          is_tester: hasRolePrivilege(newRole, "tester"),
-          is_premium: hasRolePrivilege(newRole, "premium"),
-        });
-        reloadFeatureFlags();
-      }
-    }
+    return _adminService.setUserRole(targetUserId, newRole);
   },
 
-  /**
-   * Result of a feature flag update operation
-   */
-  // (Type defined inline to avoid circular imports)
-
-  /**
-   * Update global feature flag configuration.
-   *
-   * - enabled changes: Optimistic update + PostHog API call + Firestore persist
-   * - minimumRole changes: Firestore persist (PostHog doesn't support role filters)
-   *
-   * Both are synced to all clients in real-time via Firestore onSnapshot.
-   */
   async updateGlobalFeatureFlag(
     featureId: FeatureId,
     updates: Partial<FeatureFlagConfig>
@@ -819,180 +731,11 @@ export const postHogFeatureFlagService = {
     note?: string;
     dashboardUrl?: string;
   }> {
-    if (!browser) {
-      return { action: "updated", flagKey: featureIdToPostHogKey(featureId) };
-    }
-
-    const flagKey = featureIdToPostHogKey(featureId);
-
-    // Handle minimumRole updates (persisted to Firestore for cross-device sync)
-    if (updates.minimumRole) {
-      _state.globalRoleOverrides = {
-        ..._state.globalRoleOverrides,
-        [flagKey]: updates.minimumRole,
-      };
-      // Persist to Firestore + localStorage
-      _selfInitiatedSaveTimestamp = Date.now();
-      _globalFlagPersister.save({
-        globalFlagOverrides: _state.globalFlagOverrides,
-        globalRoleOverrides: _state.globalRoleOverrides,
-      }).catch((err) => {
-        console.error(`[PostHogFeatureFlagService] Failed to persist role override:`, err);
-        toast.error("Failed to save role change. Other users won't see this update.");
-      });
-      // Trigger reactive update
-      _state.flagsVersion++;
-      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} minimumRole set to: ${updates.minimumRole} (persisted to Firestore)`);
-
-      // If only role update (no enabled change), return early
-      if (typeof updates.enabled !== "boolean") {
-        return { action: "role_updated", flagKey };
-      }
-    }
-
-    // Handle enabled updates via PostHog API
-    if (typeof updates.enabled === "boolean") {
-      // Store previous value for rollback on failure
-      const previousValue = _state.globalFlagOverrides[flagKey];
-
-      // OPTIMISTIC UPDATE: Apply immediately for responsive UI
-      _state.globalFlagOverrides = {
-        ..._state.globalFlagOverrides,
-        [flagKey]: updates.enabled,
-      };
-      // Persist to Firestore + localStorage (don't await -- optimistic)
-      _selfInitiatedSaveTimestamp = Date.now();
-      _globalFlagPersister.save({
-        globalFlagOverrides: _state.globalFlagOverrides,
-        globalRoleOverrides: _state.globalRoleOverrides,
-      }).catch((err) => {
-        console.error(`[PostHogFeatureFlagService] Failed to persist flag override:`, err);
-        toast.error("Failed to save flag change. Other users won't see this update.");
-      });
-      _state.flagsVersion++;
-
-      try {
-        // Get the current user's auth token for server-side verification
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-          throw new Error("Not authenticated");
-        }
-        const idToken = await currentUser.getIdToken();
-
-        const response = await fetch("/api/admin/feature-flags", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            flagKey,
-            enabled: updates.enabled,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const detail = errorData.detail ? ` - ${errorData.detail}` : "";
-          throw new Error((errorData.message || `HTTP ${response.status}`) + detail);
-        }
-
-        const result = await response.json();
-        console.log(`[PostHogFeatureFlagService] Flag ${flagKey} ${result.action}:`, result.flag);
-
-        // Also reload PostHog's local flags (for user-facing access checks)
-        reloadFeatureFlags();
-
-        // Build dashboard URL if we have the flag ID
-        let dashboardUrl: string | undefined;
-        if (result.flag?.id) {
-          // PostHog project ID from env (passed through the response)
-          dashboardUrl = `https://us.posthog.com/project/${result.projectId || "unknown"}/feature_flags/${result.flag.id}`;
-        }
-
-        return {
-          action: result.action as "created" | "updated",
-          flagKey,
-          flagId: result.flag?.id,
-          note: result.note,
-          dashboardUrl,
-        };
-      } catch (err) {
-        // ROLLBACK: Revert optimistic update on failure
-        console.error(`[PostHogFeatureFlagService] Failed to update ${flagKey}, rolling back:`, err);
-
-        if (previousValue !== undefined) {
-          _state.globalFlagOverrides = {
-            ..._state.globalFlagOverrides,
-            [flagKey]: previousValue,
-          };
-        } else {
-          // Remove the key if it didn't exist before
-          const { [flagKey]: _, ...rest } = _state.globalFlagOverrides;
-          _state.globalFlagOverrides = rest;
-        }
-        // Rollback Firestore + localStorage
-        _globalFlagPersister.save({
-          globalFlagOverrides: _state.globalFlagOverrides,
-          globalRoleOverrides: _state.globalRoleOverrides,
-        }).catch(() => { /* rollback best-effort */ });
-        _state.flagsVersion++;
-
-        throw err;
-      }
-    }
-
-    return { action: "updated", flagKey };
+    return _adminService.updateGlobalFeatureFlag(featureId, updates);
   },
 
-  /**
-   * Log an audit entry
-   * Note: PostHog automatically tracks all feature flag evaluations.
-   * This method is kept for interface compatibility but is a no-op.
-   */
-  async logAuditEntry(
-    entry: Record<string, unknown>
-  ): Promise<void> {
-    // PostHog tracks flag evaluations automatically
-    // No manual audit logging needed
-    if (import.meta.env.DEV) {
-      console.debug("[PostHogFeatureFlagService] Audit entry (no-op):", entry);
-    }
-  },
-
-  // ===== Firestore Methods (Compatibility Stubs) =====
-
-  /**
-   * Fetch user data from Firestore
-   * @deprecated Use initialize() instead - PostHog gets role from person properties
-   */
-  async fetchUserData(_userId: string): Promise<void> {
-    console.warn(
-      "[PostHogFeatureFlagService] fetchUserData is deprecated. " +
-      "Use initialize() instead."
-    );
-  },
-
-  /**
-   * Subscribe to user overrides
-   * @deprecated PostHog doesn't need real-time subscriptions - flags are evaluated on-demand
-   */
-  subscribeToUserOverrides(_userId: string): void {
-    console.warn(
-      "[PostHogFeatureFlagService] subscribeToUserOverrides is deprecated. " +
-      "PostHog flags are evaluated on-demand."
-    );
-  },
-
-  /**
-   * Subscribe to global flags
-   * @deprecated PostHog loads flags automatically
-   */
-  subscribeToGlobalFlags(): void {
-    console.warn(
-      "[PostHogFeatureFlagService] subscribeToGlobalFlags is deprecated. " +
-      "PostHog loads flags automatically."
-    );
+  async logAuditEntry(entry: Record<string, unknown>): Promise<void> {
+    return _adminService.logAuditEntry(entry);
   },
 
   // ===== Cleanup =====
