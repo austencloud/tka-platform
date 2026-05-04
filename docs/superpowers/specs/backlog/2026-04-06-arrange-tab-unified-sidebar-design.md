@@ -2,11 +2,11 @@
 status: backlog
 value: 3
 effort: M
-remaining: Collapsible-section refactor of arrange tab
+remaining: "ArrangeSidebar was built then deleted in e45885d24 cleanup (2026-04-30). Needs full rebuild: collapsible sections, auto-collapse on cell select, playback pinned bottom."
 depends_on: ""
 plan_path: plans/backlog/2026-04-06-arrange-tab-unified-sidebar.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Arrange Tab: Unified Sections Sidebar
 

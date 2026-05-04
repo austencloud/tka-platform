@@ -2,11 +2,11 @@
 status: backlog
 value: 3
 effort: M
-remaining: Authored turn clips for 14 heading changes
+remaining: "Code framework complete (ClipBasedTurnAnimator, IK solver, RootMotionExtractor). Blocked on clip assets: no FBX/GLB files exist. Need 3 Mixamo clips (90L, 90R, 180) + 4 mocap clips (45L, 45R, 135L, 135R)."
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Turn-In-Place Animation System Design
 

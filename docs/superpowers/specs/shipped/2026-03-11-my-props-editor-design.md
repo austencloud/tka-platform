@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 3
 effort: M
-remaining: Full build — prop collection editor
+remaining: ""
 depends_on: ""
 plan_path: plans/backlog/2026-03-11-my-props-editor.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # My Props Editor — Design Spec
 

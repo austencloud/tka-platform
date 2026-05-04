@@ -2,11 +2,11 @@
 status: backlog
 value: 3
 effort: M
-remaining: "2x2 browse taxonomy UI, progressive disclosure"
+remaining: "Infrastructure 90% done (ViewModeToggle, BrowseDataSource, BrowseViewMode, CompositionBreakdown all exist). Gap: ViewModeToggle removed from BrowseLayout in bef243f23 simplification. Re-integrate toggle into browse UI and wire to state."
 depends_on: ""
 plan_path: plans/backlog/2026-03-19-compositional-data-model.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Compositional Data Model: Browsing, Saving, and Progressive Disclosure
 

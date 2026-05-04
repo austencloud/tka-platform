@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: shipped
 value: 3
 effort: M
-remaining: Replace global ambient with per-room local lights
+remaining: ""
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Per-Room Lighting System
 

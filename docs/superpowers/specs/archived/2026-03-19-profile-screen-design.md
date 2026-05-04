@@ -1,12 +1,12 @@
 ---
-status: backlog
+status: archived
 value: 3
 effort: M
-remaining: Full build — user profile screen
+remaining: "Superseded: ProfileScreen built then intentionally removed same day. Profile editing lives in Settings > Profile tab instead."
 depends_on: ""
 plan_path: plans/backlog/2026-03-19-profile-screen.md
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # Profile Screen: Separate Identity from Account Plumbing
 
