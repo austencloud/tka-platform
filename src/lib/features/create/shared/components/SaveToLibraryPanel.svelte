@@ -5,9 +5,6 @@
   Uses CreatePanelDrawer for responsive layout matching other Create panels.
 -->
 <script lang="ts" module>
-
-import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/getHallOfShameSubmitter";
-import { getLibrarySaveService } from "$lib/features/library/getLibrarySaveService";
   export interface SaveMetadata {
     name: string;
     tags: string[];
@@ -23,21 +20,13 @@ import { getLibrarySaveService } from "$lib/features/library/getLibrarySaveServi
   import ExpandableField from "$lib/features/library/components/ExpandableField.svelte";
   import ContentAppealModal from "$lib/features/moderation/components/ContentAppealModal.svelte";
   import HallOfShameGate from "$lib/features/hall-of-shame/components/HallOfShameGate.svelte";
-  import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/implementations/HallOfShameSubmitter";
-  import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { getCreateModuleContext } from "../context/create-module-context";
-  import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import { getContentModerator } from "$lib/features/moderation/getContentModerator";
-  type ContentModerator = ReturnType<typeof getContentModerator>;
-  import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-  import { computeHash as computeSequenceHash } from "$lib/features/library/services/sequence-content-hasher";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
-import type { LibrarySaveService } from "$lib/features/library/services/implementations/LibrarySaveService";
+  import { getCreateModuleContext } from "../context/create-module-context";
+  import { getLibrarySaveService } from "$lib/features/library/getLibrarySaveService";
+  import { getContentModerator } from "$lib/features/moderation/getContentModerator";
+  import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/getHallOfShameSubmitter";
+  import { createSavePanelState } from "../state/save-panel-state.svelte";
+
   interface Props {
     show: boolean;
     word?: string;
@@ -55,230 +44,31 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
     onSaveComplete,
   }: Props = $props();
 
-  const logger = createComponentLogger("SaveToLibraryPanel");
-
   // Context
   const ctx = getCreateModuleContext();
-  const { CreateModuleState } = ctx;
 
-  // Only show drag handle on mobile (bottom sheet) - on desktop the panel
-  // slides from the right, so a horizontal handle implies wrong swipe direction
-  const isBottomSheet = $derived(!ctx.layout.shouldUseSideBySideLayout);
+  // Resolve services (once, at component init)
+  let librarySaveService: ReturnType<typeof getLibrarySaveService> | null = null;
+  try { librarySaveService = getLibrarySaveService(); } catch { /* optional */ }
 
-  // Get current sequence
-  // Use $derived.by() to ensure reactive property tracking through function calls
-  const activeSequenceState = $derived.by(() =>
-    CreateModuleState.getActiveTabSequenceState()
-  );
-  const sequence = $derived.by(() => activeSequenceState.currentSequence);
+  let contentModerator: ReturnType<typeof getContentModerator> | null = null;
+  try { contentModerator = getContentModerator(); } catch { /* optional */ }
 
-  // Local state - initialized with default, $effect below syncs from prop
-  let isOpen = $state(false);
-  let isSaving = $state(false);
-  let saveStep = $state(0);
-  let renderProgress = $state({ current: 0, total: 0 });
-  let publishToCommunity = $state(false);
+  let hallOfShameSubmitter: ReturnType<typeof getHallOfShameSubmitter> | null = null;
+  try { hallOfShameSubmitter = getHallOfShameSubmitter(); } catch { /* optional */ }
 
-  // Get the save service
-  let librarySaveService: LibrarySaveService | null = null;
-  try {
-    librarySaveService = getLibrarySaveService();
-  } catch (error) {
-    console.warn("Failed to resolve librarySaveService:", error);
-  }
-
-  // Get the content moderator
-  let contentModerator: ContentModerator | null = null;
-  try {
-    contentModerator = getContentModerator();
-  } catch (error) {
-    console.warn("Failed to resolve contentModerator:", error);
-  }
-
-  // Save steps definition
-  const saveSteps = [
-    { icon: "fa-image", label: "Creating thumbnail" },
-    { icon: "fa-cloud-upload-alt", label: "Uploading preview" },
-    { icon: "fa-tags", label: "Creating tags" },
-    { icon: "fa-save", label: "Saving to library" },
-    { icon: "fa-sync", label: "Syncing data" },
-  ];
-
-  // Dynamic label for step 1 showing render progress
-  // Uses "frame" instead of "beat" since total includes start position
-  const step1Label = $derived(
-    saveStep === 1 && renderProgress.total > 0
-      ? `Rendering frame ${renderProgress.current} of ${renderProgress.total}`
-      : "Creating thumbnail"
-  );
-
-  // Form state
-  let notes = $state("");
-
-  // Expandable sections
-  let showNotes = $state(false);
-
-  // Responsive layout detection
-  let panelWidth = $state(0);
-  const isMobileLayout = $derived(panelWidth < 640);
-
-  // Prop type indicator
-  const currentSettings = $derived(getSettings());
-  const bluePropType = $derived(currentSettings.bluePropType ?? PropType.STAFF);
-  const redPropType = $derived(currentSettings.redPropType ?? PropType.STAFF);
-  const isSamePropType = $derived(bluePropType === redPropType);
-  const propTypeLabel = $derived(
-    isSamePropType
-      ? formatPropType(bluePropType)
-      : `${formatPropType(bluePropType)} / ${formatPropType(redPropType)}`
-  );
-
-  function formatPropType(pt: PropType): string {
-    const map: Record<string, string> = {
-      [PropType.STAFF]: "Staff",
-      [PropType.FAN]: "Fan",
-      [PropType.CLUB]: "Club",
-      [PropType.BUUGENG]: "Buugeng",
-      [PropType.MINIHOOP]: "Mini Hoop",
-      [PropType.TRIAD]: "Triad",
-      [PropType.DOUBLESTAR]: "Double Star",
-      [PropType.BIGDOUBLESTAR]: "Big Double Star",
-      [PropType.QUIAD]: "Quiad",
-    };
-    return map[pt] ?? pt;
-  }
-
-  // Content moderation state
-  let moderationResult = $state<ContentModerationResult | null>(null);
-  let showAppealModal = $state(false);
-  let savedSequenceIdForAppeal = $state<string | null>(null);
-
-  // Hall of Shame state
-  let showShameGate = $state(false);
-  let isSubmittingToShame = $state(false);
-  let shameSubmitError = $state<string | null>(null);
-
-  // Get the Hall of Shame submitter
-  let hallOfShameSubmitter: HallOfShameSubmitter | null = null;
-  try {
-    hallOfShameSubmitter = getHallOfShameSubmitter();
-  } catch (error) {
-    console.warn("Failed to resolve hallOfShameSubmitter:", error);
-  }
-
-  // Derive TKA name from word prop, sequence word, or compute from beat letters
-  const derivedWord = $derived.by(() => {
-    // First try props and sequence.word
-    if (word) return word;
-    if (sequence?.word) return sequence.word;
-
-    // If no word available, derive from step letters
-    if (sequence?.steps && sequence.steps.length > 0) {
-      const letters = sequence.steps
-        .map((step) => step?.letter || "")
-        .filter(Boolean)
-        .join("");
-      return letters || "";
-    }
-
-    return "";
+  // Create the reactive state object
+  const s = createSavePanelState({
+    ctx,
+    librarySaveService,
+    contentModerator,
+    hallOfShameSubmitter,
   });
 
-  const tkaName = $derived(derivedWord);
-  const currentUser = $derived(authState.user);
-  const creatorName = $derived(
-    currentUser?.displayName || currentUser?.email || "Anonymous"
-  );
-  const darkMode = $derived(getSettings().darkMode ?? false);
+  // Bind props reactively so the state factory can read them
+  s.setPropsGetter(() => ({ show, word, showShareContext, onClose, onSaveComplete }));
 
-  // Check content moderation when word changes
-  const isFlagged = $derived(moderationResult !== null && !moderationResult.isAllowed);
-
-  // Duplicate detection - check if this word already exists in library
-  const duplicateCheck = $derived.by(() => {
-    if (!tkaName || !show) return { hasDuplicate: false, existingSequences: [] };
-    return libraryState.checkForDuplicate(tkaName);
-  });
-  const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
-  const duplicateCount = $derived(duplicateCheck.existingSequences.length);
-
-  // Exact duplicate detection - compares motion content hash against library.
-  // If the user already saved this exact sequence (same orientations, turns,
-  // positions), we show "Already saved" instead of the save button.
-  let isExactDuplicate = $state(false);
-
-  $effect(() => {
-    if (!show || !sequence) {
-      isExactDuplicate = false;
-      return;
-    }
-
-    // Compute hash async, then compare against loaded library sequences
-    let cancelled = false;
-    computeSequenceHash(sequence).then((hash) => {
-      if (cancelled) return;
-      const match = libraryState.findByContentHash(hash);
-      // Don't flag as duplicate if it's the same document being re-saved
-      isExactDuplicate = !!match && match.id !== sequence.id;
-    });
-
-    return () => { cancelled = true; };
-  });
-
-  // The saved version of this sequence (if it exists in the user's library)
-  const savedSequence = $derived.by(() => {
-    const id = sequence?.id;
-    if (!id) return null;
-    return libraryState.getSequenceById(id) ?? null;
-  });
-
-  // Whether the sequence is currently published to the community library
-  const isAlreadyPublished = $derived(savedSequence?.visibility === "public");
-
-  const headerTitle = "Save to Library";
-
-  // Sync isOpen with show prop
-  $effect(() => {
-    isOpen = show;
-  });
-
-  // Default the community toggle to match the current published state when panel opens
-  $effect(() => {
-    if (show) {
-      publishToCommunity = isAlreadyPublished;
-    }
-  });
-
-  // Run content moderation when tkaName changes
-  $effect(() => {
-    if (tkaName && contentModerator && show) {
-      moderationResult = contentModerator.checkWord(tkaName);
-    } else {
-      moderationResult = null;
-    }
-  });
-
-  // Reset form when sequence changes or panel opens
-  $effect(() => {
-    if (sequence && show) {
-      notes = "";
-      showNotes = false;
-
-    }
-  });
-
-  // Eagerly load library sequences when panel opens so duplicate detection works on first save
-  $effect(() => {
-    if (show && authState.user) {
-      libraryState.loadSequences();
-    }
-  });
-
-  // Whether the save button would be enabled
-  const canSave = $derived(
-    !!tkaName && !isSaving && !isFlagged && !isExactDuplicate
-  );
-
+  // DOM-bound effects that must stay in the component
   // ResizeObserver for responsive layout detection
   let panelInnerEl: HTMLDivElement | null = null;
 
@@ -286,7 +76,7 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
     if (!panelInnerEl) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        panelWidth = entry.contentRect.width;
+        s.panelWidth = entry.contentRect.width;
       }
     });
     observer.observe(panelInnerEl);
@@ -295,192 +85,68 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
 
   // Enter key submits the panel when it's open
   $effect(() => {
-    if (!isOpen) return;
+    if (!s.isOpen) return;
 
     function onKeydown(e: KeyboardEvent) {
-      if (e.key === "Enter" && !e.shiftKey && canSave) {
+      if (e.key === "Enter" && !e.shiftKey && s.canSave) {
         const target = e.target as HTMLElement;
         if (target.tagName === "TEXTAREA" || target.tagName === "INPUT") return;
         e.preventDefault();
-        handleSave();
+        s.handleSave();
       }
     }
 
     window.addEventListener("keydown", onKeydown);
     return () => window.removeEventListener("keydown", onKeydown);
   });
-
-  async function handleSave() {
-    if (!tkaName || !sequence) return;
-    if (!librarySaveService) {
-      logger.error("LibrarySaveService not available");
-      return;
-    }
-
-    isSaving = true;
-    saveStep = 1;
-    renderProgress = { current: 0, total: 0 };
-
-    try {
-      logger.info("Saving sequence to library...", {
-        stepCount: sequence.steps.length,
-        tkaName,
-      });
-
-      const result = await librarySaveService.saveSequence(
-        sequence,
-        {
-          name: tkaName,
-          visibility: publishToCommunity && !isFlagged ? "public" : "private",
-          tags: [],
-          notes: notes.trim(),
-        },
-        (progress) => {
-          saveStep = progress.step;
-          if (progress.renderProgress) {
-            renderProgress = progress.renderProgress;
-          }
-        }
-      );
-
-      logger.success("Sequence saved to library with ID:", result.sequenceId);
-
-      if (ctx.sessionManager) {
-        await ctx.sessionManager.markAsSaved(result.sequenceId);
-      }
-
-      onSaveComplete?.(result.sequenceId);
-      handleClose();
-    } catch (error) {
-      logger.error("Failed to save sequence:", error);
-      saveStep = 0;
-    } finally {
-      isSaving = false;
-      saveStep = 0;
-    }
-  }
-
-  function handleClose() {
-    isOpen = false;
-    onClose?.();
-  }
-
-  function handleOpenAppeal() {
-    showAppealModal = true;
-  }
-
-  function handleCloseAppeal() {
-    showAppealModal = false;
-  }
-
-  function handleAppealSubmitted() {
-    // Appeal was submitted - could show a success message
-    // For now, just close the appeal modal
-    showAppealModal = false;
-  }
-
-  function handleSubmitToShame() {
-    // Show the age verification gate first
-    showShameGate = true;
-  }
-
-  async function handleShameVerified() {
-    showShameGate = false;
-
-    if (!sequence || !tkaName || !currentUser) {
-      shameSubmitError = "Missing required data for submission.";
-      return;
-    }
-
-    if (!hallOfShameSubmitter) {
-      shameSubmitError = "Hall of Shame service unavailable.";
-      return;
-    }
-
-    isSubmittingToShame = true;
-    shameSubmitError = null;
-
-    try {
-      // Derive category from flagged terms
-      const flaggedCategories = moderationResult?.flaggedTerms?.map(t => t.category) || [];
-      const category: ShameCategory = flaggedCategories.includes('sexual') ? 'sexual'
-        : flaggedCategories.includes('profanity') ? 'profanity'
-        : 'creative';
-
-      await hallOfShameSubmitter.submit({
-        sourceSequenceId: sequence.id || `temp-${Date.now()}`,
-        userId: currentUser.uid,
-        word: tkaName,
-        thumbnails: [...(sequence.thumbnails || [])],
-        sequenceLength: sequence.steps?.length || 0,
-        flaggedTerms: moderationResult?.flaggedTerms || [],
-        category,
-        displayName: sequence.displayName,
-        difficulty: sequence.level,
-      });
-
-      logger.success("Submitted to Hall of Shame successfully");
-      handleClose();
-    } catch (error) {
-      logger.error("Failed to submit to Hall of Shame:", error);
-      shameSubmitError = error instanceof Error ? error.message : "Failed to submit. Please try again.";
-    } finally {
-      isSubmittingToShame = false;
-    }
-  }
-
-  function handleShameCanceled() {
-    showShameGate = false;
-  }
-
 </script>
 
 <CreatePanelDrawer
-  bind:isOpen
+  bind:isOpen={s.isOpen}
   panelName="save-library"
   fullHeightOnMobile={true}
   showHandle={true}
   closeOnBackdrop={true}
-  onClose={handleClose}
+  onClose={s.handleClose}
   ariaLabel="Add to Gallery"
 >
   <div class="panel-inner" bind:this={panelInnerEl}>
-    {#if isBottomSheet}
+    {#if s.isBottomSheet}
       <SheetDragHandle />
     {/if}
 
-    {#if isSaving}
+    {#if s.isSaving}
       <SaveProgressOverlay
-        currentStep={saveStep}
-        steps={saveSteps}
-        {renderProgress}
-        {step1Label}
+        currentStep={s.saveStep}
+        steps={s.saveSteps}
+        renderProgress={s.renderProgress}
+        step1Label={s.step1Label}
       />
     {/if}
 
     <button
       class="close-button"
-      onclick={handleClose}
+      onclick={s.handleClose}
       aria-label="Close panel"
-      disabled={isSaving}
+      disabled={s.isSaving}
     >
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
 
     <div class="panel-header">
-      <h2>{headerTitle}</h2>
+      <h2>{s.headerTitle}</h2>
     </div>
 
     <div class="panel-body">
       <!-- Sequence Preview -->
-      {#if sequence}
-        {#if isMobileLayout}
+      {#if s.sequence}
+        {#if s.isMobileLayout}
           <div class="choreo-group">
             <div class="choreo-preview">
               <ChoreoCard
-                sequence={{ ...sequence, word: tkaName }}
-                {darkMode}
-                userName={creatorName}
+                sequence={{ ...s.sequence, word: s.tkaName }}
+                darkMode={s.darkMode}
+                userName={s.creatorName}
                 showCreatorName={true}
                 showBirthday={true}
                 showNotes={true}
@@ -492,7 +158,7 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
         {:else}
           <!-- Desktop: compact word display (workspace visible behind panel) -->
           <div class="word-display">
-            <span class="word-text">{tkaName}</span>
+            <span class="word-text">{s.tkaName}</span>
           </div>
         {/if}
 
@@ -500,24 +166,24 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
         <div class="info-row">
           <span class="info-tag">
             <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-            {propTypeLabel}
+            {s.propTypeLabel}
           </span>
-          {#if isExactDuplicate && !isFlagged}
+          {#if s.isExactDuplicate && !s.isFlagged}
             <span class="info-tag info-tag-saved">
               <i class="fas fa-check-circle" aria-hidden="true"></i>
               Already saved
             </span>
-          {:else if hasDuplicate && !isFlagged}
+          {:else if s.hasDuplicate && !s.isFlagged}
             <span class="info-tag info-tag-variation">
               <i class="fas fa-layer-group" aria-hidden="true"></i>
-              Variation {duplicateCount + 1}
+              Variation {s.duplicateCount + 1}
             </span>
           {/if}
         </div>
       {/if}
 
       <!-- Content Moderation Warning -->
-      {#if isFlagged && moderationResult}
+      {#if s.isFlagged && s.moderationResult}
         <div class="moderation-warning">
           <div class="warning-header">
             <i class="fas fa-shield-alt" aria-hidden="true"></i>
@@ -528,7 +194,7 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
             You can still save it privately or share via link.
           </p>
           <div class="flagged-terms">
-            {#each moderationResult.flaggedTerms as term}
+            {#each s.moderationResult.flaggedTerms as term}
               <span class="flagged-term">
                 {term.category}: "{term.matchedPattern}"
               </span>
@@ -538,7 +204,7 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
             <button
               type="button"
               class="appeal-button"
-              onclick={handleOpenAppeal}
+              onclick={s.handleOpenAppeal}
             >
               <i class="fas fa-gavel" aria-hidden="true"></i>
               Appeal
@@ -546,10 +212,10 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
             <button
               type="button"
               class="shame-button"
-              onclick={handleSubmitToShame}
-              disabled={isSubmittingToShame}
+              onclick={s.handleSubmitToShame}
+              disabled={s.isSubmittingToShame}
             >
-              {#if isSubmittingToShame}
+              {#if s.isSubmittingToShame}
                 <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
                 Submitting to Hall of Shame...
               {:else}
@@ -558,17 +224,17 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
               {/if}
             </button>
           </div>
-          {#if shameSubmitError}
+          {#if s.shameSubmitError}
             <div class="shame-error" role="alert">
               <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-              <span>{shameSubmitError}</span>
+              <span>{s.shameSubmitError}</span>
             </div>
           {/if}
         </div>
       {/if}
 
       <!-- Community visibility section -->
-      {#if !isFlagged}
+      {#if !s.isFlagged}
         <div class="community-section">
           <label class="toggle-row">
             <div class="toggle-label">
@@ -581,11 +247,11 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
             <button
               type="button"
               class="toggle-button"
-              class:toggle-on={publishToCommunity}
-              onclick={() => (publishToCommunity = !publishToCommunity)}
-              disabled={isSaving}
-              aria-pressed={publishToCommunity}
-              aria-label={publishToCommunity
+              class:toggle-on={s.publishToCommunity}
+              onclick={() => (s.publishToCommunity = !s.publishToCommunity)}
+              disabled={s.isSaving}
+              aria-pressed={s.publishToCommunity}
+              aria-label={s.publishToCommunity
                 ? "Will publish to community on save"
                 : "Will save to personal library only"}
             >
@@ -601,13 +267,13 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
       <div class="optional-section">
         <ExpandableField
           label="Notes"
-          expanded={showNotes}
-          onExpandedChange={(v) => (showNotes = v)}
-          onCollapse={() => (notes = "")}
+          expanded={s.showNotes}
+          onExpandedChange={(v) => (s.showNotes = v)}
+          onCollapse={() => (s.notes = "")}
         >
           <textarea
             id="notes"
-            bind:value={notes}
+            bind:value={s.notes}
             placeholder="Add personal notes about this sequence"
             class="textarea-field"
             rows="3"
@@ -621,24 +287,24 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
       <button
         type="button"
         class="button button-secondary"
-        onclick={handleClose}
+        onclick={s.handleClose}
       >
         Cancel
       </button>
       <button
         type="button"
         class="button button-primary"
-        class:button-saved={isExactDuplicate && !isFlagged}
-        onclick={handleSave}
-        disabled={!canSave}
+        class:button-saved={s.isExactDuplicate && !s.isFlagged}
+        onclick={s.handleSave}
+        disabled={!s.canSave}
       >
-        {#if isSaving}
+        {#if s.isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Saving...
-        {:else if isExactDuplicate && !isFlagged}
+        {:else if s.isExactDuplicate && !s.isFlagged}
           <i class="fas fa-check" aria-hidden="true"></i>
           Saved
-        {:else if isFlagged}
+        {:else if s.isFlagged}
           <i class="fas fa-ban" aria-hidden="true"></i>
           Cannot Publish
         {:else}
@@ -651,22 +317,22 @@ import type { LibrarySaveService } from "$lib/features/library/services/implemen
 </CreatePanelDrawer>
 
 <!-- Content Appeal Modal -->
-{#if showAppealModal && moderationResult && tkaName}
+{#if s.showAppealModal && s.moderationResult && s.tkaName}
   <ContentAppealModal
-    word={tkaName}
-    contentId={savedSequenceIdForAppeal || "pending"}
+    word={s.tkaName}
+    contentId={s.savedSequenceIdForAppeal || "pending"}
     contentType="sequence"
-    flaggedTerms={moderationResult.flaggedTerms}
-    onClose={handleCloseAppeal}
-    onAppealSubmitted={handleAppealSubmitted}
+    flaggedTerms={s.moderationResult.flaggedTerms}
+    onClose={s.handleCloseAppeal}
+    onAppealSubmitted={s.handleAppealSubmitted}
   />
 {/if}
 
 <!-- Hall of Shame Age Gate -->
-{#if showShameGate}
+{#if s.showShameGate}
   <HallOfShameGate
-    onVerified={handleShameVerified}
-    onCancel={handleShameCanceled}
+    onVerified={s.handleShameVerified}
+    onCancel={s.handleShameCanceled}
   />
 {/if}
 
